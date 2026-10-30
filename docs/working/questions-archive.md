@@ -81,6 +81,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-071](#q-071--skill-eval-suite-design) | The 50 `@needs-reports` suites can't stay green under this repo's editing rate. Their freshness stamp hashe... | 2026-09-26 |
 | [Q-072](#q-072--living-ledger-not-fed) | The review-eval goal is "recall against the living issue ledger", but `docs/working/canon-issue-ledger.md` ... | 2026-09-26 |
 | [Q-073](#q-073--skill-descriptions-truncated) | Skill descriptions run 957–2973 characters, and the live skill listing truncates them. In this session 7 ... | 2026-09-26 |
+| [Q-074](#q-074--failure-pattern-writer-trigger) | After the Q-018 backfill (164 entries), `docs/thoughts/failure-patterns.md` has gained 1 entry across about... | 2026-09-26 |
 | [Q-075](#q-075--si-loop-trust-before-resume) | Q-068 was answered "resume", but only once the user trusts `scripts/self-improvement.sh` not to break their... | 2026-09-27 |
 | [Q-076](#q-076--cc-isolated-git-exit-scan) | - **Interim:** the guide's documented caveat only. | 2026-09-27 |
 | [Q-077](#q-077--cc-isolated-auto-approve-backstops) | Implement Q-070 [1]. The cc-isolated settings merge gains Bash deny rules for the credentials path and a sa... | 2026-09-27 |
@@ -4895,4 +4896,16 @@ path docs/working/briefs/2026-10-29-convention-migrations-first.md M test/script
 
 - **Blocks:** nothing else.
 - **Interim:** the branch waits; nothing on main changes.
+
+### Q-074 · failure-pattern-writer-trigger
+**Needs:** trigger · **Opened:** 2026-09-26 · **Status:** ANSWERED
+
+After the Q-018 backfill (164 entries), `docs/thoughts/failure-patterns.md` has gained 1 entry across about 128 `fix` commits. The writer is still pr-prep Step 0, a workflow step that is advisory only. If it reaches 2026-10-26 with fewer than 5 new entries, reopen L1 as a judgment: automate the harvest, or drop the "do not skip" line.
+
+- **Interim:** nothing changed. The read side (the RPI failure-pattern grep) works.
+- **Fired (dev cycle 2026-10-28):** 2 entries since the backfill (FP-173, FP-174), under 5 by 2026-10-26; reopened as Q-223.
+- **2026-10-29:** Q-226 answered [5] (put both steps where build loops run, checked by the gate); briefed as `docs/working/briefs/2026-10-29-failure-pattern-loop-wiring.md`. This watch is superseded once that brief merges.
+
+**Answered:** superseded. The brief merged at f91d7d09 (Q-228 [1]), which meets this watch's own closure line. Closed by the dev cycle on 2026-10-30 (trial T4, stale sweep).
+
 
