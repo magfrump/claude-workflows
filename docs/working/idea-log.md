@@ -128,3 +128,25 @@ Ran because the digest counted 14 seeds since the last brainstorm heading; 7 of 
 - Release soon after Q-235 merges: repos that already ran `questions.sh migrate` have a digest blind to their watches until the image carries unit 3 (signal: philosophy-research F-001)
 - The D6 block as a fixed, root-owned wrapper the skill names by absolute path (signal: this session's D6 seed)
 - Do nothing more now: three merge entries (Q-235, Q-236, Q-237) wait on the owner, and no loop is running (signal: queue state)
+
+## Brainstorm 2026-10-29 (owner: friction and engagement)
+
+Full text: `docs/working/brainstorm-2026-10-29-friction-and-engagement.md`.
+
+- Tier gate merges by risk; only enforcement-changing ones stay owner entries, the rest self-merge with ⚑ (signal: 19 of 19 archived merge entries approved, none dropped or changed)
+- One batched merge entry per cycle with merge-all / all-but / hold-all options (signal: Q-235, Q-236, Q-237 open at once)
+- Merge and release in one answer: a gate merge option that also yields the release paste (signal: merged gate fixes inactive until install.sh, Q-230 at 014e5219)
+- Image-lag entry as release notes: chore lands collapsed to a count, ⚑ self-merges first (signal: Q-227 lists 27 commits, its one ⚑ is item 23)
+- One land per iteration instead of two (signal: paired chore merges per iteration on main)
+- Stamp the harness image version in the digest and let migrations require a minimum image (signal: philosophy-research F-001)
+- Collect projects' harness-feedback files at release time from the host (signal: hand copy staged at the wrong path, 2026-10-30-0116)
+- `questions.sh paste`: one dependency-ordered script from every open `you: terminal` entry (signal: five terminal entries open, oldest Q-084 from 2026-09-27)
+- In self-merge projects, the first digest after a new image prints the behavior changes that apply there (signal: F-001, F-003)
+- A reserved security channel (route, marker or notification) used for nothing else (signal: owner asks for a non-habituating path for security warnings)
+- Track owner asks per week and the default-answer rate; propose moving a class off the desk when it is always [1] (signal: S1)
+- Weekly "what changed in your harness" digest that asks for nothing (signal: owner awareness request)
+- Sampled weekly review of one random self-merged change in place of per-item approval (signal: S1)
+- Entries open 21+ days get one forced close/convert/re-ask choice (signal: open entries from 2026-09-26)
+- Zero recurring warnings: a warning printed on every run is a bug (signal: setlocale lines on every D6 call)
+- Owner entries name in line one what would differ on "no", and for gate merges what an attacker would want from the code (signal: owner-entry clarity memory)
+- Quarterly threat-model walk-through of Q-103's residuals (signal: owner awareness request)

@@ -110,6 +110,16 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 Unranked. Each names the signal that motivates it.
 
+- **Cut merge and release friction (owner brainstorm 2026-10-29, area A).** Signal: 19 of 19
+  merge entries approved; merged gate fixes wait on a host release; five terminal pastes open.
+  Ten ideas in `docs/working/brainstorm-2026-10-29-friction-and-engagement.md`. A1/A2/A3/A10
+  (how gate merges and releases are bundled) go to `divergent-design` first; A4, A6, A7, A8 are
+  independent of that choice.
+- **Keep the owner from habituating to asks (owner brainstorm 2026-10-29, area B).** Signal:
+  always-[1] merge entries and month-old open entries train skimming. Eight ideas in the same
+  doc; the security-channel form (B1) goes to `divergent-design`; B2's metric is the check that
+  area A actually lowers owner load.
+
 - **The brainstorm triggers count their own output and re-fire on one signal.** Signal:
   iteration 2026-10-30-0136's 10-seed trigger counted 7 lines the previous brainstorm wrote;
   philosophy-research F-003 (`docs/working/feedback/philosophy-research.md`): the "Now holds
