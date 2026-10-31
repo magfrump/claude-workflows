@@ -48,7 +48,9 @@ The index below is generated — edit entries, not the table.
 ## Open
 
 ### Q-241 · merge-q106-host-settings-8486c3da
-**Needs:** you: judgment · **Opened:** 2026-10-30 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-10-30 · **Status:** ANSWERED
+
+**Answered:** [1] (owner, in session 2026-10-30: "Q-239..241: [1]", the batched answer of trial T3)
 
 **If you say no:** the install keeps printing its reminder to merge `settings.json` by hand after a wiring change, and Q-108's two stale lines in decision 037 stay stale.
 
@@ -317,7 +319,9 @@ The `merge-base` check runs no hook and only confirms that your checkout holds a
 - **Blocks:** Q-234 (the migration needs the new digest live first).
 
 ### Q-239 · merge-gate-2026-10-30-health-check-clean-checkout-8f3fbf92c11d
-**Needs:** you: judgment · **Opened:** 2026-10-30 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-10-30 · **Status:** ANSWERED
+
+**Answered:** [1] (owner, in session 2026-10-30: "Q-239..241: [1]", the batched answer of trial T3)
 
 **If you say no:** the dev cycle keeps running its health check in the worktree it edits. A questions entry filed mid-run can turn the check red, as it did twice today, and the orchestrator has to avoid that by remembering not to.
 
@@ -359,7 +363,9 @@ path docs/working/briefs/2026-10-30-health-check-clean-checkout.md M test/script
 - **Interim:** the branch waits. The orchestrator stages its edits in the scratchpad until the check ends (done in 2026-10-30-0800, which passed).
 
 ### Q-240 · merge-gate-2026-10-30-brainstorm-trigger-count-ab401bdf6846
-**Needs:** you: judgment · **Opened:** 2026-10-30 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-10-30 · **Status:** ANSWERED
+
+**Answered:** [1] (owner, in session 2026-10-30: "Q-239..241: [1]", the batched answer of trial T3)
 
 **If you say no:** the digest keeps counting a brainstorm's own lines as new ideas (today it reports 17 where the true number is 0). The "Now holds 0-1 ready items" trigger also keeps re-firing on an unchanged Now, and the orchestrator keeps overriding both by hand.
 
