@@ -25,6 +25,7 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
+| [Q-242](#q-242--merge-gate-2026-10-31-failure-patterns-out-of-thoughts-c3f3f0e49f17) | you: judgment | Merge `refactor/failure-patterns-out-of-thoughts` at c3f3f0e49f1721319de7279ddc47ec15bdac7695? It does what... | 2026-10-31 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-222](#q-222--install-cc-verify-and-r6) | you: terminal | Four approved merges landed today, two of them in host tools: the `cc-verify` host tool (37b24c02, Q-217) a... | 2026-10-28 |
@@ -42,6 +43,40 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
+
+### Q-242 · merge-gate-2026-10-31-failure-patterns-out-of-thoughts-c3f3f0e49f17
+**Needs:** you: judgment · **Opened:** 2026-10-31 · **Status:** OPEN
+
+**If you say no:** `docs/thoughts/` stays on the self-merge floor, so a branch that touches a thoughts note keeps going to your review, in this repo and the others.
+
+**What an attacker would want here:** nothing new from an outside party. The change moves one file and narrows what the floor refuses. It reads and writes nothing outside the repo.
+
+Merge `refactor/failure-patterns-out-of-thoughts` at c3f3f0e49f1721319de7279ddc47ec15bdac7695? It does what you asked on 2026-10-31. The failure-pattern library moves to `docs/failure-patterns.md`, next to `dev-cycle.md` and `constraints.md`. `docs/thoughts/` leaves the self-merge floor, so branches that edit thoughts notes can self-merge.
+
+- **Why it's yours:** it changes the gate's own code (`scripts/build-loop.sh`, `scripts/lib/`, `skills/dev-cycle/SKILL.md`), which never self-merges.
+- **What changes:**
+  - **The library stays protected at its new path.** The floor, the cycle's in-cycle fixes and the cycle's land check all refuse it, and the old path too, so a repo that hasn't migrated can't lose its library unreviewed.
+  - **The rest of `docs/thoughts/` is open** to all three.
+  - **About 40 references now name the new path:** the gate, `self-improvement.sh`, `questions.sh`, three workflows, a guide and the tests.
+  - **Your other repos:** a migration, `failure-patterns-out-of-thoughts` (`git mv docs/thoughts/failure-patterns.md docs/failure-patterns.md`). The dev cycle files it as a paste for you in each repo after the release. Until a repo runs it, only a `fix(...)` branch there with no skip line is held, with a message naming the remedy; every other branch passes.
+- **Checks:**
+  - The loop ran two review rounds. Both Mediums in round 1 were fixed: the old path had been unguarded, and two lists of truth files were stale. Round 2 found only Lows, fixed but one: a new stderr line in `self-improvement.sh` has no test.
+  - Every new or changed test fails on the code before the change.
+  - The loop's full health check passed.
+  - On the tree the branch makes with main (a1310a3f), the six touched suites pass 308/308.
+  - I read the floor, migration and gate diffs myself.
+- **Takes effect:** at the next release (Q-227), since the gate runs from the image; then once per repo, its migration.
+- **`--check` printed:** `ok docs/working/briefs/2026-10-31-failure-patterns-out-of-thoughts.md c3f3f0e49f1721319de7279ddc47ec15bdac7695 a1310a3f3f4f5a8e4dad436cf92060124d662b9d`, plus 23 path lines. The code paths are `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/migrations.sh`, `scripts/questions.sh`, `scripts/self-improvement.sh`, `skills/dev-cycle/SKILL.md`, three workflows, `guides/harness-feedback.md` and six test files. The docs are `docs/decisions/log.md`, the moved library, the plan, the brief and its research doc.
+- **Paths self-merge's floor would refuse:** the gate code and `SKILL.md` above; `docs/decisions/log.md`; the library at both paths.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next iteration merges c3f3f0e4; it takes effect at the next release | None beyond this answer | One `git revert` of the merge, plus moving the file back in any repo that already migrated |
+| **[2] drop** | The brief closes; `docs/thoughts/` stays on the floor | None now | Thoughts edits keep coming to your review |
+| **[3] changes needed** | Your note goes back to the loop (for example, take the library off the floor too) | A one-line note | Another loop round |
+
+- **Blocks:** nothing.
+- **Interim:** the branch waits.
 
 ### Q-222 · install-cc-verify-and-r6
 **Needs:** you: terminal · **Opened:** 2026-10-28 · **Status:** OPEN
