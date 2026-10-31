@@ -39,3 +39,5 @@ Policy: review
 - Editing `docs/roadmap.md` or the questions files: the dev cycle moves those.
 
 Dispatched: 1
+
+Applied: Q-239=merged

@@ -49,14 +49,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
-- **Bug: step 1's health check reads WT while the orchestrator edits it** (from Ideas; red
-  twice: 2026-10-30-0035, -0731). Review (gate code). Ready at 8f3fbf92, merge entry Q-239
-  (2026-10-30-0841). Brief: `docs/working/briefs/2026-10-30-health-check-clean-checkout.md`
-- **Bug: the brainstorm triggers count their own output and re-fire on an unchanged Now**
-  (from Ideas; 2026-10-30-0136, today's 17-seed count, philosophy-research F-003). Review
-  (gate code). Ready at ab401bdf, merge entry Q-240 (2026-10-30-0848). Brief:
-  `docs/working/briefs/2026-10-30-brainstorm-trigger-count.md`
-
 ## Next
 
 1. **Q-125's host live run, now that `cc-verify` is merged.** Motive: Q-125 (the
@@ -280,6 +272,12 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- Bug: step 1's health check read WT while the orchestrator edited it: it now runs in a
+  detached clean checkout of WT's HEAD (Q-239 [1]): merged 4c731ab7. Brief:
+  `docs/working/briefs/closed/2026-10-30-health-check-clean-checkout.md`
+- Bug: the brainstorm triggers counted their own output and re-fired on an unchanged Now
+  (Q-240 [1]): merged c24c0916. Brief:
+  `docs/working/briefs/closed/2026-10-30-brainstorm-trigger-count.md`
 - Host settings.json merge (Q-106 [2]): `install.sh`'s host target runs the container's
   merge program inside its review; also closes Q-108. Merged 086f08c8 (Q-241 [1]).
 - Questions doc owner-only, unit 3: the digest reads `watching.md`, agent work goes to the

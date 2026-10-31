@@ -250,28 +250,31 @@ Q-089 unit A's review-fix loop ran a 4th iteration before recording a cap decisi
 ### Q-227 · image-lag
 **Needs:** you: terminal · **Opened:** 2026-10-29 · **Status:** OPEN
 
-**Release notes** (trial T1; rewritten 2026-10-30 for main at 01022de2). Installed image: `fe57e352`, read from `/opt/claude-workflows/.manifest`. Main is ahead in gate code and the Dockerfile, and none of the changes below is live until you run the paste.
+**Release notes** (trial T1; rewritten 2026-10-31 for main at c7900ea3). Installed image: `fe57e352`, read from `/opt/claude-workflows/.manifest`. Main is ahead in gate code, the Dockerfile and the host installer. None of the changes below is live until you run the paste.
 
 **⚑ Merged without your review (read these first):**
 - `8d1ae831` fix/zshrc-locale: two lines in the Dockerfile set `LANG`/`LC_ALL` to `C.UTF-8` in `~/.zshrc`. Merged by the orchestrator (trial T7) with `Live-verified: no`. Check after this release: a fresh session's `bash -c true` prints no `setlocale` warning.
 - `431397bf` fix/flaky-vanish-test: a test fixture moved off shared `/tmp` (build-loop self-merge).
-- `49d441ec`, `57db0394`: the brainstorm and trial docs (docs only).
+- `49d441ec`, `57db0394`, `b4faffa7`: the brainstorm and trial docs (docs only).
 
-**What changes for you** (approved by you, Q-235–Q-237):
+**What changes for you** (approved by you, Q-235–Q-237 and Q-239–Q-241):
+- **The host install merges the hook wiring into your `~/.claude/settings.json`** (Q-106, merged at 086f08c8). From this release, `install.sh` shows a `settings.json:` diff with a by-name list of the hooks and rules it changes, then applies it with the same y as the files. The old file goes to the backup first. This is the one change here that writes your host settings, so read that list the first time it appears.
 - The dev cycle reads watches from `watching.md`, files agent work to the roadmap, and the global instructions' questions section says so (decision 040, unit 3).
+- The dev cycle's health check runs in its own clean checkout, so the cycle's own edits can't turn it red (Q-239).
+- The brainstorm trigger stops counting a brainstorm's own lines as new ideas, and stops re-firing when Now hasn't changed (Q-240).
 - `migrations.sh check .` works with a relative root.
 - The health check stops raising a false "missing field" now and then.
 - Sessions stop printing the `setlocale` warning (the image is rebuilt).
 
-**Not listed:** 7 routine dev-cycle record lands.
+**Not listed:** 13 routine dev-cycle record lands and answer commits. Paths changed outside `docs/` (35 under `docs/` not listed): `README.md`, `devcontainer-config/Dockerfile`, `devcontainer-config/install.sh`, `devcontainer-config/link-claude-home.sh`, `global-instructions/CLAUDE.md`, `guides/bare-host-hook-wiring.md`, `guides/claude-config-security-checkup.md`, `hooks/lib/wiring-merge.jq`, `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/health-check.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/migrations.sh`, `scripts/questions.sh`, `skills/dev-cycle/SKILL.md`, and nine test files.
 
 **The paste** (host terminal in WSL, not inside a session; stop every session first):
 
 ```
-cd /home/magfrump/claude-workflows && git merge-base --is-ancestor 01022de266e27489507f25c2b87e8f59565af8af HEAD && ./devcontainer-config/install.sh
+cd /home/magfrump/claude-workflows && git merge-base --is-ancestor c7900ea362e36f3e52d241ca6fe3030869514d51 HEAD && ./devcontainer-config/install.sh
 ```
 
-The `merge-base` check runs no hook and only confirms that your checkout holds at least these changes. After the release, run Q-234 in a session.
+The `merge-base` check runs no hook and only confirms that your checkout holds at least these changes. After the release, run Q-234 in a session, and Q-167's host checks can include the new `settings.json` merge.
 
 - **Interim:** the image at fe57e352 runs. The dev cycle still follows the old questions routes, and new sessions still show the warning.
 - **Blocks:** Q-234 (the migration needs the new digest live first).
