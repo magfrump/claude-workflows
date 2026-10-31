@@ -353,6 +353,17 @@ shim() {
     for p in $P; do [[ "$p" =~ $g || "${p}x" =~ $g ]] || { echo "not GATE_CODE: $p"; return 1; }; done
 }
 
+@test "SKILL.md step 1 runs the health check from HC, a detached checkout of WT's commit that it removes, not from WT, which the iteration edits while the check runs (brief 2026-10-30-health-check-clean-checkout)" {
+    s="$(awk '/^### 1\. Health and cleanup$/ { on = 1; next } on && /^### / { exit } on' "$REPO_ROOT/skills/dev-cycle/SKILL.md" | tr '\n' ' ' | tr -s ' ')"
+    [ -n "$s" ] || { echo "step 1 not found"; return 1; }
+    q=$'\x60'
+    for f in "It runs from a health checkout HC, not WT" "${q}hg -C MAIN_WT worktree add --detach HC W${q}, W being WT's HEAD commit" \
+        "${q}.claude/wt-dev-cycle-health-DATE-HHMM${q}" "removed as step 0.3 removes WT once the check exits" "${q}skipped: HC not made${q}"; do
+        [[ "$s" == *"$f"* ]] || { echo "missing: $f"; echo "$s"; return 1; }
+    done
+    [[ "$s" != *"health check from WT"* ]] || { echo "$s"; return 1; }
+}
+
 @test "SKILL.md's merge-entry slug rule quotes the lib's GATE_CODE, which --approved's heading reads, on one line of its own (row 674, U4b2)" {
     g="$(bash -c 'source "$1"; printf %s "$GATE_CODE"' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh")"
     [[ "$g" == *dev-cycle/* ]] || { echo "GATE_CODE: $g"; return 1; }
