@@ -52,8 +52,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 - **Failure patterns move out of `docs/thoughts/`; `docs/thoughts/` leaves the self-merge
   floor** (owner, 2026-10-31: it blocked normal harness work in another repo). The library
   moves to `docs/failure-patterns.md` and stays on the floor, and a migration covers the
-  other repos. Review (gate code). Brief:
-  `docs/working/briefs/2026-10-31-failure-patterns-out-of-thoughts.md`
+  other repos. Review (gate code). Ready at c3f3f0e4, merge entry Q-242 (2026-10-31-2325).
+  Brief: `docs/working/briefs/2026-10-31-failure-patterns-out-of-thoughts.md`
 
 ## Next
 
