@@ -556,9 +556,13 @@ Brainstorming is the expensive part (generating and weighing options against the
 it runs only when one of these holds (the digest's section 7 prints the counts and dates;
 readiness and direction are judged here):
 
-- roadmap Now holds 0–1 items ready for a build brief;
+- roadmap Now holds 0–1 items ready for a build brief, and the digest's "Roadmap Now since
+  the last brainstorm" line does not say `unchanged` (an unchanged Now is no new signal,
+  unless something outside it changed what is ready: say what);
 - a fired revisit or deep-audit trigger reopens direction;
-- 10+ ideas seeded since the last brainstorm;
+- 10+ ideas seeded since the last brainstorm (the digest counts seed lines absent from the
+  log as the commit that added the last `## Brainstorm` heading left it, so the
+  brainstorm's own lines never count);
 - a week or more since the last brainstorm, by date, or none recorded yet (cycles vary from
   fortnightly to many a day);
 - the user asks.
@@ -567,8 +571,9 @@ None holds: one line saying so. Otherwise read this cycle's signals, the idea lo
 idea sources `docs/dev-cycle.md` lists (none listed: the repo's own idea backlog wherever it
 keeps one, and the record says which file was used), and generate 3–8 ideas. Each names its **signal** and what it would change; no signal, no idea.
 A choice among 3+ approaches is flagged for `divergent-design`, not picked here. "Do nothing"
-is allowed. Then append `## Brainstorm YYYY-MM-DD` to the idea log, so the next digest counts
-seeds from here; the surviving ideas go to the roadmap's Ideas.
+is allowed. Then append `## Brainstorm YYYY-MM-DD` to the idea log and land it with this
+iteration's roadmap: the next digest counts seeds and compares Now from that commit. The
+surviving ideas go to the roadmap's Ideas.
 
 ### 6. Roadmap
 
