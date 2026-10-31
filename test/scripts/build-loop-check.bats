@@ -1379,11 +1379,11 @@ memo-indexed 1" ] || { echo "$status $output $stderr"; return 1; }
         docs/imported.md "$IMP" Docs/Imported.md "$IMP" docs/deep.md "$IMP" skills/x/ref.md "$IMP" docs/new.md "$IMP" docs/private.md "$IMP"
         docs/constraints.md "$USER" docs/dev-cycle.md "$OWN" docs/roadmap.md "$OWN" Docs/Roadmap.md "$OWN"
         docs/working/questions.md "$OWN" docs/working/briefs/2026-10-02-y.md "$OWN" docs/working/briefs/closed/2026-10-01-x.md "$OWN"
-        docs/decisions/001-x.md "$REC" docs/failure-patterns.md "$REC" Docs/Failure-Patterns.md "$REC" docs/human-author/x.md "$REC"
+        docs/decisions/001-x.md "$REC" docs/failure-patterns.md "$REC" Docs/Failure-Patterns.md "$REC" docs/thoughts/failure-patterns.md "$REC" docs/human-author/x.md "$REC"
         docs/working/checkpoint-2026-10-02-y.md "$WORK" docs/working/plan-x.md "$WORK" docs/working/notes.md "$WORK"
         docs/working/plan-2026-10-01-xy.md "$WORK" docs/working/scratch/plan-2026-10-01-x.md "$WORK"
         docs/reviews/r-2026-10-01-x.md "$REV")
-    pass=(scripts/other.sh skills/x/helper.md skills/dev-cycle-x/a.md hooks/x.sh install.sh test/x.bats docs/guide.md docs/wt-only.md docs/thoughts/x.md docs/thoughts/failure-patterns.md
+    pass=(scripts/other.sh skills/x/helper.md skills/dev-cycle-x/a.md hooks/x.sh install.sh test/x.bats docs/guide.md docs/wt-only.md docs/thoughts/x.md
         workflows/x.md docs/working/plan-2026-10-01-x.md docs/working/Research-2026-10-01-x.md docs/working/test-strategy-2026-10-01-x.md)
     paths=(); for ((i = 0; i < ${#refuse[@]}; i += 2)); do paths+=("${refuse[i]}"); done
     floors "$s" M "${paths[@]}" "${pass[@]}"
@@ -1477,7 +1477,7 @@ C: the path could not be lower-cased" ] && [ ! -e "$BATS_TEST_TMPDIR/calls" ] ||
     run --separate-stderr env LC_ALL=C bash -c 'source "$1"; shift
         for p in "$@"; do if truthrule "$p"; then echo "$p: $TRUTH_WHY"; else echo "$p: -"; fi; done' _ "$LIB" \
         claude.md docs/x/skill.md .claude/commands/c.md .envrc docs/x/.y docs/roadmap.md docs/dev-cycle.md docs/constraints.md \
-        docs/decisions/1.md docs/human-author/a.md docs/failure-patterns.md docs/thoughts/t.md docs/guide.md Docs/Constraints.md
+        docs/decisions/1.md docs/human-author/a.md docs/failure-patterns.md docs/thoughts/failure-patterns.md docs/thoughts/t.md docs/guide.md Docs/Constraints.md
     [ "$output" = "claude.md: instr
 docs/x/skill.md: instr
 .claude/commands/c.md: instr
@@ -1489,6 +1489,7 @@ docs/constraints.md: user
 docs/decisions/1.md: record
 docs/human-author/a.md: record
 docs/failure-patterns.md: record
+docs/thoughts/failure-patterns.md: record
 docs/thoughts/t.md: -
 docs/guide.md: -
 Docs/Constraints.md: case" ] || { echo "$output $stderr"; return 1; }
@@ -2543,7 +2544,7 @@ entry() { echo "- **FP-$1** 2026-10-01 symptom:s$1 cause:c fix:f ref:r"; }
 
 # The library's path before the move; MIGGAP: the gap while main still holds it.
 FPO=docs/thoughts/failure-patterns.md
-miggap() { echo "$1 fix(...) commits on feat/x need a failure-pattern entry, but the default branch still keeps the library at $FPO, which the gate no longer reads: the owner runs migration failure-patterns-out-of-thoughts from the repo root and commits (git mv $FPO $FPL), or its research doc gets a line starting \"Failure-pattern skip:\" with a reason"; }
+miggap() { echo "$1 fix(...) commits on feat/x need a failure-pattern entry, but the default branch still keeps the library at $FPO, which the gate no longer reads: the owner runs migration failure-patterns-out-of-thoughts from the repo root and commits (git mv $FPO $FPL; if $FPL exists too, merge the two and remove the old one), or its research doc gets a line starting \"Failure-pattern skip:\" with a reason"; }
 
 @test "--check in a repo that has not migrated the library: a fix(...) branch gets a gap naming the remedy, whatever entry it adds; a skip line or no fix passes; after the move the new path counts (brief 2026-10-31-failure-patterns-out-of-thoughts)" {
     mkdir -p docs/thoughts && entry 001 > "$FPO" && commit_all "old library"
@@ -2565,7 +2566,8 @@ miggap() { echo "$1 fix(...) commits on feat/x need a failure-pattern entry, but
 @test "the gate's remedy for an unmigrated library is the registry's (scripts/lib/migrations.sh), and the registry's old path is the gate's FP_OLD" {
     run --separate-stderr bash -c 'source "$1"; for i in "${!MIG_ID[@]}"; do [[ "${MIG_ID[$i]}" != failure-patterns-out-of-thoughts ]] || printf "%s\n%s\n" "${MIG_PATH[$i]}" "${MIG_REMEDY[$i]}"; done' _ "$REPO_ROOT/scripts/lib/migrations.sh"
     [ "${lines[0]}" = "$FPO" ] && [ "${lines[1]}" = "git mv $FPO $FPL" ] || { echo "$output $stderr"; return 1; }
-    grep -qxF "FP_OLD=$FPO" "$REPO_ROOT/scripts/build-loop.sh" && grep -qxF "FP_LIB=$FPL" "$REPO_ROOT/scripts/build-loop.sh"
+    grep -qxF "FP_OLD=$FPO" "$REPO_ROOT/scripts/build-loop.sh" || { echo "FP_OLD is not $FPO"; return 1; }
+    grep -qxF "FP_LIB=$FPL" "$REPO_ROOT/scripts/build-loop.sh" || { echo "FP_LIB is not $FPL"; return 1; }
     grep -qxF 'FP_REMEDY="git mv $FP_OLD $FP_LIB"' "$REPO_ROOT/scripts/build-loop.sh"
 }
 
@@ -2579,6 +2581,16 @@ miggap() { echo "$1 fix(...) commits on feat/x need a failure-pattern entry, but
     chk "$B"
     [ "$status" -eq 2 ] && [ "${lines[0]}" = "$(nref 1 1)" ] || { show; return 1; }
     has "deny $B A docs/failure-patterns.md: $REC"
+    # In a repo not yet migrated, the old path stays on the floor: no self-merge edits or deletes it.
+    mkdir -p docs/thoughts && entry 001 > "$FPO" && commit_all "old library"
+    onx 'entry 002 >> "$FPO"'
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "${lines[0]}" = "$(nref 1 1)" ] || { show; return 1; }
+    has "deny $B M $FPO: $REC"
+    onx 'git rm -q "$FPO"'
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "${lines[0]}" = "$(nref 1 1)" ] || { show; return 1; }
+    has "deny $B D $FPO: $REC"
 }
 
 @test "--check over two briefs: one's failure-pattern gaps and files do not carry into the next (Q-226 [5])" {

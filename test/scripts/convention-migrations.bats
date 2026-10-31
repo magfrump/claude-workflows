@@ -265,7 +265,8 @@ FPMIG="- pending failure-patterns-out-of-thoughts (library): docs/thoughts/failu
     rem="$(bash -c 'source "$1"; for i in "${!MIG_ID[@]}"; do [[ "${MIG_ID[$i]}" != failure-patterns-out-of-thoughts ]] || echo "${MIG_REMEDY[$i]}"; done' _ "$S/lib/migrations.sh")"
     [ "$rem" = "git mv docs/thoughts/failure-patterns.md docs/failure-patterns.md" ] || { echo "remedy: $rem"; return 1; }
     git mv docs/thoughts/failure-patterns.md docs/failure-patterns.md && git commit -q -m migrate
-    [ ! -e docs/thoughts/failure-patterns.md ] && grep -qxF -- '- **FP-001** x' docs/failure-patterns.md
+    [ ! -e docs/thoughts/failure-patterns.md ] || { echo "the old file is still there"; return 1; }
+    grep -qxF -- '- **FP-001** x' docs/failure-patterns.md || { echo "the entry did not move"; return 1; }
     run --separate-stderr bash "$S/dev-cycle.sh"
     [ "$status" -eq 0 ] || { echo "$output"; return 1; }
     [[ "$(section)" != *"pending"* ]] || { section; return 1; }

@@ -52,6 +52,8 @@ Historical (keep text; amendment or log row): `docs/decisions/013-...md`, `docs/
 
 Option 1 dominates: the brief calls the file "a truth file, like docs/constraints.md", the cycle has no in-cycle use of the library (no mention in `skills/dev-cycle/SKILL.md`), and it removes a difference rather than adding one. Result: `docs/thoughts/` is fixable in-cycle and self-mergeable; `docs/failure-patterns.md` is neither, and a review-policy branch can still add an entry. check_fix and cycle_rules now match on both paths; the pre-existing difference above stays as written in the header.
 
+Amended in review (iteration 1, M1): the old path `docs/thoughts/failure-patterns.md` is a `record` too, so in a repo not yet migrated no self-merge or in-cycle fix edits or deletes the library before the owner's `git mv` (FP-151: the old key stays guarded). The rest of `docs/thoughts/` is free.
+
 ### D2: the gate in a repo that has not migrated yet
 
 Between the release and the owner running the migration, main still holds `docs/thoughts/failure-patterns.md`.

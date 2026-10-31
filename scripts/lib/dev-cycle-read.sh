@@ -1960,8 +1960,11 @@ walk_has() {
 # (writable), settings (docs/dev-cycle.md), user (docs/constraints.md, the
 # user's: plan D2) or record (docs/decisions/, docs/human-author/, and
 # docs/failure-patterns.md, the library the gate's fp_gaps compares entry
-# numbers in), and case for a path holding an upper-case letter (a caller
-# that did not lower it). Each caller words the words and adds its own rules;
+# numbers in, and its old path docs/thoughts/failure-patterns.md, which a repo
+# not yet migrated still holds: an unreviewed edit or delete there would
+# become the library, or drop the pending migration, at the owner's git mv),
+# and case for a path holding an upper-case letter (a caller that did not
+# lower it). Each caller words the words and adds its own rules; the rest of
 # docs/thoughts/ is in none of them (a living doc an in-cycle fix may edit and
 # a self-merge may land; brief 2026-10-31-failure-patterns-out-of-thoughts).
 # truthwalk then asks the import walk. Run both in the caller's shell: they set TRUTH_WHY.
@@ -1974,7 +1977,7 @@ truthrule() {
   elif writable "$1"; then TRUTH_WHY="cycle"
   elif [[ "$1" == docs/dev-cycle.md ]]; then TRUTH_WHY="settings"
   elif [[ "$1" == docs/constraints.md ]]; then TRUTH_WHY="user"
-  elif [[ "$1" =~ ^docs/(decisions|human-author)/ || "$1" == docs/failure-patterns.md ]]; then TRUTH_WHY="record"
+  elif [[ "$1" =~ ^docs/(decisions|human-author)/ || "$1" == docs/failure-patterns.md || "$1" == docs/thoughts/failure-patterns.md ]]; then TRUTH_WHY="record"
   else return 1; fi
 }
 # truthwalk WALK PATH: runs the import walk WALK (tree for --check-fix, main

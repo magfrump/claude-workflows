@@ -240,8 +240,9 @@
 #                 path of the gate's own code (GATE_CODE) refuses, and so
 #                 does one the lib's truthrule reads as truth (an instruction
 #                 or prompt file, a dot path, docs/dev-cycle.md,
-#                 docs/constraints.md, docs/decisions/, docs/human-author/;
-#                 --check-fix refuses them too), both compared lower-cased,
+#                 docs/constraints.md, docs/decisions/, docs/human-author/,
+#                 docs/failure-patterns.md and its old path
+#                 docs/thoughts/failure-patterns.md; --check-fix refuses them too), both compared lower-cased,
 #                 and a cycle file spelled in another case. A brief's first
 #                 unfenced "Asked:" line, matched by file name (a move to
 #                 closed/ under its name too; two changed paths with one name
@@ -380,8 +381,9 @@
 #                 (a line starting "- **FP-NNN**", leading zeros aside) main's lacks and the
 #                 research doc no such "Failure-pattern skip:" line, or
 #                 (that line absent too) main still holds the library's old
-#                 path docs/thoughts/failure-patterns.md, whatever TREE's
-#                 entries (the gap names the migration's remedy); the
+#                 path docs/thoughts/failure-patterns.md, in any form,
+#                 whatever TREE's entries (the gap names the migration's
+#                 remedy), or that old path on main cannot be read; the
 #                 library in TREE or on main is not a regular file or unread,
 #                 or its entries cannot be compared (a library on neither
 #                 side is no gap by itself); or TREE holds an entry number
@@ -1468,7 +1470,10 @@ FP_LIB=docs/failure-patterns.md
 # (scripts/lib/migrations.sh, whose remedy FP_REMEDY repeats; a bats case
 # holds the two equal). While main still holds it, a fix(...) branch without a
 # skip line is a gap naming the remedy: an entry in the old file is one the
-# gate no longer reads, and one in a new file would split the library.
+# gate no longer reads, and one in a new file would split the library. The
+# gap fires for an old path in any form (an empty file too, which the
+# digest's pending check, a line matching ^, does not report), and when main
+# holds both paths (then the remedy is a merge of the two, not the git mv).
 FP_OLD=docs/thoughts/failure-patterns.md
 FP_REMEDY="git mv $FP_OLD $FP_LIB"
 fp_gaps() {
@@ -1521,7 +1526,7 @@ fp_gaps() {
     case "$rc" in
       1) [[ "$nnew" -gt 0 ]] || FP_GAPS+=("$nfix fix(...) commits on $4 add no new FP-NNN entry to $FP_LIB, and its research doc has no line starting \"Failure-pattern skip:\" with a reason (pr-prep's failure-pattern advisory)") ;;
       3) FP_GAPS+=("$FP_OLD on the default branch could not be read") ;;
-      *) FP_GAPS+=("$nfix fix(...) commits on $4 need a failure-pattern entry, but the default branch still keeps the library at $FP_OLD, which the gate no longer reads: the owner runs migration failure-patterns-out-of-thoughts from the repo root and commits ($FP_REMEDY), or its research doc gets a line starting \"Failure-pattern skip:\" with a reason") ;;
+      *) FP_GAPS+=("$nfix fix(...) commits on $4 need a failure-pattern entry, but the default branch still keeps the library at $FP_OLD, which the gate no longer reads: the owner runs migration failure-patterns-out-of-thoughts from the repo root and commits ($FP_REMEDY; if $FP_LIB exists too, merge the two and remove the old one), or its research doc gets a line starting \"Failure-pattern skip:\" with a reason") ;;
     esac
   fi
 }

@@ -555,6 +555,11 @@ refuse SKILLS/dev-cycle/x.md: the gate's own code; $G
 refuse docs/dev-cycle.md: the dev cycle's settings file; $G (--check-fix refuses it too)
 refuse docs/working/Questions.md: one of the dev cycle's own files, spelled in another case, which these rules do not read
 refuse scripts/lib/a.sh: the gate's own code; $G"; git reset -q --hard
+    # The failure-pattern library and its old path are records; another docs/thoughts/ note is a fixable doc.
+    mkdir -p docs/thoughts; echo f > docs/failure-patterns.md; echo f > docs/thoughts/failure-patterns.md; echo n > docs/thoughts/n.md; git add -A
+    R="a record later runs read as truth; $G (--check-fix refuses it too)"; cd_is "refuse docs/failure-patterns.md: $R
+refuse docs/thoughts/failure-patterns.md: $R"; git reset -q --hard; rm -rf docs/thoughts docs/failure-patterns.md
+    mkdir -p docs/thoughts; echo n > docs/thoughts/n.md; git add -A; cd_is ok; git reset -q --hard; rm -rf docs/thoughts
     # Only the cycle's files, a .md under docs/ or README.md: a loop's commit carried on the chore branch refuses (final F1, F3, F4).
     mkdir -p src docs/x; echo s > src/app.sh; echo m > docs/x/y.md; echo r > README.md; echo k > "AGENTS.md$(printf '\u212a')"; git add -A
     O="not a file the cycle changes (its own files, a .md under docs/ or README.md)"; cd_is "refuse AGENTS.md$(printf '\u212a'): $O

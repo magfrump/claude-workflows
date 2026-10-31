@@ -1864,7 +1864,10 @@ SOLVED_EOF
         RETRO="$REPO_DIR/docs/thoughts/retro-r${ROUND}-${TASK_ID}.md"
         [ -f "$RETRO" ] && FIX_RETROS="${FIX_RETROS} ${RETRO}"
     done
-    if [ -f "$FP_LIB" ] && [ -n "$FIX_RETROS" ] && command -v claude >/dev/null 2>&1; then
+    if [ ! -f "$FP_LIB" ] && [ -f "$REPO_DIR/docs/thoughts/failure-patterns.md" ] && [ -n "$FIX_RETROS" ]; then
+        # A repo not yet migrated (scripts/lib/migrations.sh, failure-patterns-out-of-thoughts).
+        echo "Failure-pattern harvest skipped: the library is still at docs/thoughts/failure-patterns.md; run 'git mv docs/thoughts/failure-patterns.md docs/failure-patterns.md' from the repo root and commit" >&2
+    elif [ -f "$FP_LIB" ] && [ -n "$FIX_RETROS" ] && command -v claude >/dev/null 2>&1; then
         echo "Harvesting failure patterns from fix tasks..."
         NEXT_FP=$(grep -oE 'FP-[0-9]+' "$FP_LIB" | sed 's/FP-//' | sort -n | tail -1 || true)
         NEXT_FP=$((10#${NEXT_FP:-0} + 1))

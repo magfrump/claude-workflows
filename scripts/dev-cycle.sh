@@ -181,8 +181,8 @@ check_write() {
 }
 # An in-cycle fix edits documentation only; the header's --check-fix paragraph
 # is the rule, and the skip messages below repeat it. constraints.md is the
-# user's (plan D2); docs/failure-patterns.md is a record the gate reads; docs/thoughts/
-# stays fixable. Anything else is filed. The denials it shares with the
+# user's (plan D2); docs/failure-patterns.md (and its old path under docs/thoughts/)
+# is a record the gate reads; the rest of docs/thoughts/ stays fixable. Anything else is filed. The denials it shares with the
 # self-merge floor and --cycle-diff are the lib's truthrule.
 check_fix() {
   local a="$1" lp

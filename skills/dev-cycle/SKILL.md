@@ -157,7 +157,8 @@ files, printed `ok` for: the cycle rules `build-loop.sh --cycle-diff` applies to
 commit repeat only part of `--check-fix` (a `.md` under `docs/working/` or `docs/reviews/`,
 a doc an instruction file imports, and a symlink pass them; rows 764, 769, 771; a new
 file, which `--check-fix` refuses wherever it is, passes them too; both refuse
-`docs/failure-patterns.md` and both pass `docs/thoughts/`). Briefs in the directory are found only
+`docs/failure-patterns.md` and its old path `docs/thoughts/failure-patterns.md`, and both
+pass the rest of `docs/thoughts/`). Briefs in the directory are found only
 through `--check-path 'docs/working/briefs/*.md'` (a done or dropped brief moves to
 `docs/working/briefs/closed/`, so the glob lists only briefs not yet moved). A brief's state
 comes only from `--check-brief '<path>'` (for a path in `briefs/` or `briefs/closed/`),
@@ -832,7 +833,8 @@ Then land WT's branch (D13; not through `pr-prep`: rows 747-759, 781), all from 
    index`); any path but the
    cycle's own files, a `.md` under `docs/` or `README.md`; the gate's own code; a truth
    file (instruction and prompt files, dot paths, `docs/dev-cycle.md`,
-   `docs/constraints.md`, `docs/decisions/`, `docs/human-author/`); a cycle file in
+   `docs/constraints.md`, `docs/decisions/`, `docs/human-author/`,
+   `docs/failure-patterns.md` and its old path `docs/thoughts/failure-patterns.md`); a cycle file in
    another case; an `Asked:` line other than extended by items step 7's form allows, or
    deleted, or its brief renamed; two changed brief paths with one file name; and a
    questions file `--check-answer` refuses whole. The remedy is to fix the iteration's
