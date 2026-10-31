@@ -25,6 +25,7 @@ copy_sources() {
     cp "$W/scripts/questions.sh" "$1/scripts/"
     cp "$LIB" "$1/scripts/lib/"
     cp "$W/skills/dev-cycle/SKILL.md" "$1/skills/dev-cycle/"
+    cp "$W/scripts/build-loop.sh" "$1/scripts/"
 }
 
 # Add registry lines ($2...) to the copy's lib $1, where an author adds them:
@@ -101,7 +102,11 @@ add_mig() {
     for c in questions record brief; do
         [ "$(grep "^$c " <<< "$before")" != "$(grep "^$c " <<< "$output")" ] || { echo "$c unchanged"; return 1; }
     done
-    [ "$(grep '^roadmap ' <<< "$before")" = "$(grep '^roadmap ' <<< "$output")" ]
+    for c in roadmap library; do [ "$(grep "^$c " <<< "$before")" = "$(grep "^$c " <<< "$output")" ] || { echo "$c changed"; return 1; }; done
+    # library: the gate's library path moves.
+    perl -0pi -e 's/^FP_LIB=docs\/failure-patterns\.md$/FP_LIB=docs\/lib\/failure-patterns.md/m' "$T/scripts/build-loop.sh"
+    run --separate-stderr bash "$T/scripts/lib/migrations.sh" fingerprint "$T"
+    [ "$(grep '^library ' <<< "$before")" != "$(grep '^library ' <<< "$output")" ] || { echo "library unchanged"; return 1; }
 }
 
 @test "a relative ROOT (., c, ../c, x=y, -) gives the same check and fingerprint as an absolute one; a missing or non-directory one still refuses, naming it" {
@@ -121,7 +126,7 @@ add_mig() {
     for bad in no-such-dir scripts/questions.sh; do
         run --separate-stderr bash "$T/scripts/lib/migrations.sh" check "$bad"
         [ "$status" -eq 1 ] || { echo "$bad passed: $output"; return 1; }
-        for c in questions roadmap brief record; do
+        for c in questions roadmap brief record library; do
             [[ "$output" == *"refuse $c: its source was not found in $bad "* ]] || { echo "$bad: $output"; return 1; }
         done
     done
@@ -231,4 +236,37 @@ mig r-old roadmap 0123456789abcdef docs/roadmap.md '^## Later\$' 'fix it'"
     run --separate-stderr bash "$S/dev-cycle.sh"
     [ "$status" -eq 0 ]
     [[ "$(section)" == *"**Migrations were NOT checked** — lib/migrations.sh is missing beside this script"* ]] || { section; return 1; }
+}
+
+# The digest from a copy of scripts/ with the registry as shipped (no reset).
+digest_real() {
+    S="$BATS_TEST_TMPDIR/s"; mkdir -p "$S/lib"
+    cp "$W/scripts/dev-cycle.sh" "$W/scripts/questions.sh" "$S/"
+    cp "$W"/scripts/lib/*.sh "$S/lib/"
+    R="$BATS_TEST_TMPDIR/repo"; mkdir -p "$R"; cd "$R" || return 1
+    git init -q -b main . && git commit -q --allow-empty -m initial
+}
+FPMIG="- pending failure-patterns-out-of-thoughts (library): docs/thoughts/failure-patterns.md line 1; remedy: git mv docs/thoughts/failure-patterns.md docs/failure-patterns.md"
+
+@test "migration failure-patterns-out-of-thoughts: a repo still holding docs/thoughts/failure-patterns.md is pending, naming the remedy; other notes there are not" {
+    digest_real
+    mkdir -p docs/thoughts && printf '# Failure Pattern Library\n' > docs/thoughts/failure-patterns.md && printf 'x\n' > docs/thoughts/note.md
+    git add -A && git commit -q -m old
+    run --separate-stderr bash "$S/dev-cycle.sh"
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+    [[ "$(section)" == *"$FPMIG"* ]] || { section; return 1; }
+    [ "$(section | grep -c '^- pending')" -eq 1 ] || { section; return 1; }
+}
+
+@test "migration failure-patterns-out-of-thoughts: its remedy, run from the repo root, moves the library and clears the pending line" {
+    digest_real
+    mkdir -p docs/thoughts && printf '# Failure Pattern Library\n- **FP-001** x\n' > docs/thoughts/failure-patterns.md
+    git add -A && git commit -q -m old
+    rem="$(bash -c 'source "$1"; for i in "${!MIG_ID[@]}"; do [[ "${MIG_ID[$i]}" != failure-patterns-out-of-thoughts ]] || echo "${MIG_REMEDY[$i]}"; done' _ "$S/lib/migrations.sh")"
+    [ "$rem" = "git mv docs/thoughts/failure-patterns.md docs/failure-patterns.md" ] || { echo "remedy: $rem"; return 1; }
+    git mv docs/thoughts/failure-patterns.md docs/failure-patterns.md && git commit -q -m migrate
+    [ ! -e docs/thoughts/failure-patterns.md ] && grep -qxF -- '- **FP-001** x' docs/failure-patterns.md
+    run --separate-stderr bash "$S/dev-cycle.sh"
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+    [[ "$(section)" != *"pending"* ]] || { section; return 1; }
 }

@@ -118,12 +118,12 @@ The gate on **implementation** is firm: do not implement until the plan has been
 
 #### Failure-pattern lookup (final sub-step of research)
 
-Before exiting step 2 — and therefore before the plan is formed — run a mechanical grep of `docs/thoughts/failure-patterns.md` for prior bugs that touch the area under research. The file is an append-only log of root-caused bugs that this research step **reads**; new entries are **appended by `pr-prep.md`** when a `fix(...)` commit ships (schema: `FP-NNN YYYY-MM-DD symptom:<...> cause:<...> fix:<...> ref:<...>`, fields hyphenated into single tokens so they're grep-friendly). A hit is a strong prior on what could go wrong in similar code; a miss is a fact worth recording explicitly so a future reader can distinguish "no recorded failures in this area" from "the check was skipped."
+Before exiting step 2 — and therefore before the plan is formed — run a mechanical grep of `docs/failure-patterns.md` for prior bugs that touch the area under research. The file is an append-only log of root-caused bugs that this research step **reads**; new entries are **appended by `pr-prep.md`** when a `fix(...)` commit ships (schema: `FP-NNN YYYY-MM-DD symptom:<...> cause:<...> fix:<...> ref:<...>`, fields hyphenated into single tokens so they're grep-friendly). A hit is a strong prior on what could go wrong in similar code; a miss is a fact worth recording explicitly so a future reader can distinguish "no recorded failures in this area" from "the check was skipped."
 
 Use a concrete extended-regex grep that combines all candidate keywords in one pass — symptom keywords (`null`, `timezone`, `n+1`, `race`, `stale`, etc.), file paths or subsystem names that may appear in the `ref:` field, and `cause:`/`fix:` categories that fit the work:
 
 ```
-grep -inE '<keyword1>|<keyword2>|<keyword3>' docs/thoughts/failure-patterns.md
+grep -inE '<keyword1>|<keyword2>|<keyword3>' docs/failure-patterns.md
 ```
 
 The `-i` makes the match case-insensitive (the schema is lowercase but author input may not be); the `-n` surfaces line numbers so each matched FP-NNN entry is easy to cite back; the `-E` lets you alternate keywords with `|`. Pick keywords from the same three buckets every time — symptoms, paths/subsystems, cause/fix categories — so the grep is reproducible by a re-reader.
@@ -146,7 +146,7 @@ The recording line lives **under Gotchas** when one or two FP-NNN entries matche
 - [ ] Actual implementations were read, not just signatures or file names
 - [ ] Every invariant listed can be verified by pointing to specific code that depends on it
 - [ ] If 3+ viable approaches surfaced, a Divergent Design sub-procedure was invoked (or a note explains why it wasn't needed)
-- [ ] The Failure-pattern lookup sub-step ran and the research doc contains a literal `Failure-pattern grep: <matches or 'no matches found'>` line — either listing matched FP-NNN IDs from `docs/thoughts/failure-patterns.md` or recording the empty result with the exact phrase `no matches found` (the literal `Failure-pattern grep:` token must be present verbatim so the check is grep-auditable)
+- [ ] The Failure-pattern lookup sub-step ran and the research doc contains a literal `Failure-pattern grep: <matches or 'no matches found'>` line — either listing matched FP-NNN IDs from `docs/failure-patterns.md` or recording the empty result with the exact phrase `no matches found` (the literal `Failure-pattern grep:` token must be present verbatim so the check is grep-auditable)
 - [ ] Research doc contains a `## Files read` section whose first line is `Last verified: <YYYY-MM-DD>` and whose remaining lines list every file path consulted during research (one path per line, repo-relative; directory paths and globs are fine) — so a future session can pass these to `git log --since=<Last verified> -- <paths>` (the staleness primitive defined in `guides/doc-freshness.md`) to detect whether any consulted file has moved since research was written
 
 ### 3. Plan (essential) — specify the implementation steps

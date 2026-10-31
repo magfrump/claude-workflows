@@ -1379,11 +1379,11 @@ memo-indexed 1" ] || { echo "$status $output $stderr"; return 1; }
         docs/imported.md "$IMP" Docs/Imported.md "$IMP" docs/deep.md "$IMP" skills/x/ref.md "$IMP" docs/new.md "$IMP" docs/private.md "$IMP"
         docs/constraints.md "$USER" docs/dev-cycle.md "$OWN" docs/roadmap.md "$OWN" Docs/Roadmap.md "$OWN"
         docs/working/questions.md "$OWN" docs/working/briefs/2026-10-02-y.md "$OWN" docs/working/briefs/closed/2026-10-01-x.md "$OWN"
-        docs/decisions/001-x.md "$REC" docs/thoughts/x.md "$REC" docs/human-author/x.md "$REC"
+        docs/decisions/001-x.md "$REC" docs/failure-patterns.md "$REC" Docs/Failure-Patterns.md "$REC" docs/human-author/x.md "$REC"
         docs/working/checkpoint-2026-10-02-y.md "$WORK" docs/working/plan-x.md "$WORK" docs/working/notes.md "$WORK"
         docs/working/plan-2026-10-01-xy.md "$WORK" docs/working/scratch/plan-2026-10-01-x.md "$WORK"
         docs/reviews/r-2026-10-01-x.md "$REV")
-    pass=(scripts/other.sh skills/x/helper.md skills/dev-cycle-x/a.md hooks/x.sh install.sh test/x.bats docs/guide.md docs/wt-only.md
+    pass=(scripts/other.sh skills/x/helper.md skills/dev-cycle-x/a.md hooks/x.sh install.sh test/x.bats docs/guide.md docs/wt-only.md docs/thoughts/x.md docs/thoughts/failure-patterns.md
         workflows/x.md docs/working/plan-2026-10-01-x.md docs/working/Research-2026-10-01-x.md docs/working/test-strategy-2026-10-01-x.md)
     paths=(); for ((i = 0; i < ${#refuse[@]}; i += 2)); do paths+=("${refuse[i]}"); done
     floors "$s" M "${paths[@]}" "${pass[@]}"
@@ -1473,11 +1473,11 @@ b: -
 C: the path could not be lower-cased" ] && [ ! -e "$BATS_TEST_TMPDIR/calls" ] || { echo "$output $stderr"; cat "$BATS_TEST_TMPDIR/calls"; return 1; }
 }
 
-@test "check_fix and floor share one read-as-truth rule; docs/thoughts/ differs on purpose (U2a4; override rows 204, 322, 348)" {
+@test "check_fix, floor and --cycle-diff share one read-as-truth rule: all refuse docs/failure-patterns.md and pass docs/thoughts/ (U2a4; override rows 204, 322, 348; brief 2026-10-31-failure-patterns-out-of-thoughts)" {
     run --separate-stderr env LC_ALL=C bash -c 'source "$1"; shift
         for p in "$@"; do if truthrule "$p"; then echo "$p: $TRUTH_WHY"; else echo "$p: -"; fi; done' _ "$LIB" \
         claude.md docs/x/skill.md .claude/commands/c.md .envrc docs/x/.y docs/roadmap.md docs/dev-cycle.md docs/constraints.md \
-        docs/decisions/1.md docs/human-author/a.md docs/thoughts/t.md docs/guide.md Docs/Constraints.md
+        docs/decisions/1.md docs/human-author/a.md docs/failure-patterns.md docs/thoughts/t.md docs/guide.md Docs/Constraints.md
     [ "$output" = "claude.md: instr
 docs/x/skill.md: instr
 .claude/commands/c.md: instr
@@ -1488,14 +1488,18 @@ docs/dev-cycle.md: settings
 docs/constraints.md: user
 docs/decisions/1.md: record
 docs/human-author/a.md: record
+docs/failure-patterns.md: record
 docs/thoughts/t.md: -
 docs/guide.md: -
 Docs/Constraints.md: case" ] || { echo "$output $stderr"; return 1; }
     mkdir -p docs/thoughts && printf 'x\n' > docs/thoughts/t.md && commit_all thoughts
     run --separate-stderr bash "$REPO_ROOT/scripts/dev-cycle.sh" --check-fix docs/thoughts/t.md
     [ "$output" = "ok docs/thoughts/t.md" ] || { echo "$output $stderr"; return 1; }
-    floors 2026-10-01-x M docs/thoughts/t.md
-    want docs/thoughts/t.md "$REC"
+    printf 'x\n' > docs/failure-patterns.md && commit_all library
+    run --separate-stderr bash "$REPO_ROOT/scripts/dev-cycle.sh" --check-fix docs/failure-patterns.md
+    [[ "$output" == "skip docs/failure-patterns.md: in-cycle fixes edit only"*"failure-patterns.md"* ]] || { echo "$output $stderr"; return 1; }
+    floors 2026-10-01-x M docs/thoughts/t.md docs/failure-patterns.md
+    want docs/thoughts/t.md -; want docs/failure-patterns.md "$REC"
 }
 
 @test "both walks start at .md files under .claude/rules/, commands/, agents/ and output-styles/ at any depth, tracked or not; a prompt's names also resolve against its .claude/'s directory and the top level (U2a4; override rows 370, 435)" {
@@ -2189,16 +2193,16 @@ NLIST="neither listed in the brief's Paths: line nor one of its own files"
 @test "--check refuses a self-merge path the floor names though Paths: lists it, a symlink at a listed path, and a path Paths: does not list exactly (T10, rows 349, 474, U2c1)" {
     mkdir -p docs/reviews && printf 'see @docs/imp.md\n' > CLAUDE.md && echo r > docs/reviews/old.md && commit_all floor
     fl=(CLAUDE.md skills/x/SKILL.md docs/imp.md .claude/settings.json .envrc docs/x/.y scripts/build-loop.sh scripts/lib/dev-cycle-read.sh
-        docs/decisions/001-x.md docs/thoughts/x.md docs/working/checkpoint-2026-10-02-y.md docs/reviews/r-2026-10-02-y.md docs/reviews/old.md)
+        docs/decisions/001-x.md docs/failure-patterns.md docs/working/checkpoint-2026-10-02-y.md docs/reviews/r-2026-10-02-y.md docs/reviews/old.md)
     smb "Paths: ${fl[*]:0:11} docs/reviews/ docs/a scripts/link.sh hooks/x.sh"
-    onx 'mkdir -p skills/x .claude docs/x scripts/lib docs/decisions docs/thoughts docs/working Hooks
+    onx 'mkdir -p skills/x .claude docs/x scripts/lib docs/decisions docs/working Hooks
         for f in "${fl[@]}" docs/a docs/ab.md Hooks/x.sh scripts/x.sh; do echo x > "$f"; done; ln -s x.sh scripts/link.sh'
     chk "$B"
     [ "$status" -eq 2 ] && [ "${lines[0]}" = "$(nref 17 18)" ] && [ -z "$stderr" ] || { show; return 1; }
     has "deny $B M CLAUDE.md: $INSTR"; has "deny $B A skills/x/SKILL.md: $INSTR"; has "deny $B A docs/imp.md: $IMP"
     for f in .claude/settings.json .envrc docs/x/.y; do has "deny $B A $f: $DOT"; done
     has "deny $B A scripts/build-loop.sh: $GATE"; has "deny $B A scripts/lib/dev-cycle-read.sh: $GATE"
-    has "deny $B A docs/decisions/001-x.md: $REC"; has "deny $B A docs/thoughts/x.md: $REC"
+    has "deny $B A docs/decisions/001-x.md: $REC"; has "deny $B A docs/failure-patterns.md: $REC"
     has "deny $B A docs/working/checkpoint-2026-10-02-y.md: $WORK"
     has "deny $B A docs/reviews/r-2026-10-02-y.md: $REV"; has "deny $B M docs/reviews/old.md: $REV"
     has "path $B A docs/a"; has "deny $B A scripts/link.sh: $NMODE"
@@ -2464,7 +2468,7 @@ NLIST="neither listed in the brief's Paths: line nor one of its own files"
 # fpok: --check passed it with no gap line. onb SHELL: SHELL run on feat/x as it
 # is (onx starts from main each time), then committed.
 GREPGAP="has no line starting \"Failure-pattern grep:\" with a value after the colon (research-plan-implement's failure-pattern lookup)"
-FPL=docs/thoughts/failure-patterns.md
+FPL=docs/failure-patterns.md
 fixgap() { echo "$1 fix(...) commits on feat/x add no new FP-NNN entry to $FPL, and its research doc has no line starting \"Failure-pattern skip:\" with a reason (pr-prep's failure-pattern advisory)"; }
 fpref() {
     local k="$1" i g; shift
@@ -2495,7 +2499,7 @@ entry() { echo "- **FP-$1** 2026-10-01 symptom:s$1 cause:c fix:f ref:r"; }
 }
 
 @test "--check: a fix(...) commit the branch adds needs a new library entry or a Failure-pattern skip: line; other subjects and fixes merged in from main need neither (Q-226 [5])" {
-    mkdir -p docs/thoughts && entry 001 > "$FPL" && commit_all library
+    mkdir -p docs && entry 001 > "$FPL" && commit_all library
     gated feat/x
     # FP-024: the pass beside the refusal, in one fixture. Subjects that are not fixes.
     onb 'git commit -q --allow-empty -m "fixture: data"; git commit -q --allow-empty -m "feat: fix it"; git commit -q --allow-empty -m "docs: x" -m "fix: in the body"'; fpok
@@ -2518,7 +2522,7 @@ entry() { echo "- **FP-$1** 2026-10-01 symptom:s$1 cause:c fix:f ref:r"; }
 }
 
 @test "--check refuses a duplicate entry number the merge adds, compared as a number, but not one main already holds; the library unreadable is a gap (Q-226 [5])" {
-    mkdir -p docs/thoughts && { entry 001; echo; entry 002; } > "$FPL" && commit_all library
+    mkdir -p docs && { entry 001; echo; entry 002; } > "$FPL" && commit_all library
     gated feat/x
     onx 'entry 001 >> "$FPL"'; fpref 1 "the merge of feat/x holds FP-001 2 times in $FPL (renumber the branch's entry)"
     onx 'entry 0002 >> "$FPL"'; fpref 1 "the merge of feat/x holds FP-002 2 times in $FPL (renumber the branch's entry)"
@@ -2537,8 +2541,48 @@ entry() { echo "- **FP-$1** 2026-10-01 symptom:s$1 cause:c fix:f ref:r"; }
     fpref 2 "$FPL in the merge of feat/x is not a regular file" "$FPL on the default branch is not a regular file"
 }
 
+# The library's path before the move; MIGGAP: the gap while main still holds it.
+FPO=docs/thoughts/failure-patterns.md
+miggap() { echo "$1 fix(...) commits on feat/x need a failure-pattern entry, but the default branch still keeps the library at $FPO, which the gate no longer reads: the owner runs migration failure-patterns-out-of-thoughts from the repo root and commits (git mv $FPO $FPL), or its research doc gets a line starting \"Failure-pattern skip:\" with a reason"; }
+
+@test "--check in a repo that has not migrated the library: a fix(...) branch gets a gap naming the remedy, whatever entry it adds; a skip line or no fix passes; after the move the new path counts (brief 2026-10-31-failure-patterns-out-of-thoughts)" {
+    mkdir -p docs/thoughts && entry 001 > "$FPO" && commit_all "old library"
+    gated feat/x
+    onb 'git commit -q --allow-empty -m "fix(a): one"'; fixes="$(git rev-parse feat/x)"
+    fpref 1 "$(miggap 1)"
+    # An entry at the old path is one the gate no longer reads; one at the new path would split the library.
+    onb 'entry 002 >> "$FPO"'; fpref 1 "$(miggap 1)"
+    git branch -q -f feat/x "$fixes"; onb 'entry 002 > "$FPL"'; fpref 1 "$(miggap 1)"
+    # A skip line clears it; a branch with no fix(...) commit never reads the library.
+    git branch -q -f feat/x "$fixes"; onb 'echo "Failure-pattern skip: a reason" >> "$RD"'; fpok
+    git branch -q -f feat/x main; onb 'echo y > other.txt'; fpok
+    # The remedy, run on main: the old path is gone and an entry at the new path counts.
+    git mv "$FPO" "$FPL" && commit_all migrate
+    git branch -q -f feat/x main; onb 'git commit -q --allow-empty -m "fix(a): one"'; fpref 1 "$(fixgap 1)"
+    onb 'entry 002 >> "$FPL"'; fpok
+}
+
+@test "the gate's remedy for an unmigrated library is the registry's (scripts/lib/migrations.sh), and the registry's old path is the gate's FP_OLD" {
+    run --separate-stderr bash -c 'source "$1"; for i in "${!MIG_ID[@]}"; do [[ "${MIG_ID[$i]}" != failure-patterns-out-of-thoughts ]] || printf "%s\n%s\n" "${MIG_PATH[$i]}" "${MIG_REMEDY[$i]}"; done' _ "$REPO_ROOT/scripts/lib/migrations.sh"
+    [ "${lines[0]}" = "$FPO" ] && [ "${lines[1]}" = "git mv $FPO $FPL" ] || { echo "$output $stderr"; return 1; }
+    grep -qxF "FP_OLD=$FPO" "$REPO_ROOT/scripts/build-loop.sh" && grep -qxF "FP_LIB=$FPL" "$REPO_ROOT/scripts/build-loop.sh"
+    grep -qxF 'FP_REMEDY="git mv $FP_OLD $FP_LIB"' "$REPO_ROOT/scripts/build-loop.sh"
+}
+
+@test "--check self-merges a docs/thoughts/ note its Paths: line lists, but never docs/failure-patterns.md (brief 2026-10-31-failure-patterns-out-of-thoughts)" {
+    smb "Paths: docs/thoughts/ docs/failure-patterns.md"
+    onx 'mkdir -p docs/thoughts && echo x > docs/thoughts/x.md'
+    chk "$B"
+    [ "$status" -eq 0 ] && [[ "${lines[0]}" == "ok $B "* ]] && [ -z "$stderr" ] || { show; return 1; }
+    has "path $B A docs/thoughts/x.md"
+    onx 'entry 001 > "$FPL"'
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "${lines[0]}" = "$(nref 1 1)" ] || { show; return 1; }
+    has "deny $B A docs/failure-patterns.md: $REC"
+}
+
 @test "--check over two briefs: one's failure-pattern gaps and files do not carry into the next (Q-226 [5])" {
-    mkdir -p docs/thoughts && entry 001 > "$FPL" && commit_all library
+    mkdir -p docs && entry 001 > "$FPL" && commit_all library
     brief y "Status: open" "Branch: feat/y"; y="$B"; work feat/y
     git checkout -q feat/y && git rm -q docs/working/research-2026-10-01-y.md && git commit -q -m "fix: y" && git checkout -q main
     gated feat/x; x="$B"

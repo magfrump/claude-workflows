@@ -148,7 +148,7 @@ files), run the same script with `--check-write '<path>'` and write only on `ok`
 only those files. An in-cycle fix (steps 1, 3, 4, and a missing doc) edits only a file that
 `--check-fix '<path>'` prints `ok` for: a tracked `.md` file under `docs/` (not the
 cycle's own files, `docs/working/`, `docs/human-author/`, `docs/reviews/`,
-`docs/decisions/`, `docs/dev-cycle.md`, `docs/constraints.md`, a dot-directory or dotfile, an instruction file, or a
+`docs/decisions/`, `docs/dev-cycle.md`, `docs/constraints.md`, `docs/failure-patterns.md`, a dot-directory or dotfile, an instruction file, or a
 file an instruction file names after an `@`, read broadly; compared ignoring case) or
 `README.md`, and refuses every path when the import walk fails; anything else (a new file, code, scripts, hooks, egress lists, decision
 records, instruction files) is filed, not written. Run `--check-fix` on each fixed path again
@@ -156,7 +156,8 @@ right before staging it, and stage only paths it, or `--check-write` for the cyc
 files, printed `ok` for: the cycle rules `build-loop.sh --cycle-diff` applies to the chore
 commit repeat only part of `--check-fix` (a `.md` under `docs/working/` or `docs/reviews/`,
 a doc an instruction file imports, and a symlink pass them; rows 764, 769, 771; a new
-file, which `--check-fix` refuses wherever it is, passes them too). Briefs in the directory are found only
+file, which `--check-fix` refuses wherever it is, passes them too; both refuse
+`docs/failure-patterns.md` and both pass `docs/thoughts/`). Briefs in the directory are found only
 through `--check-path 'docs/working/briefs/*.md'` (a done or dropped brief moves to
 `docs/working/briefs/closed/`, so the glob lists only briefs not yet moved). A brief's state
 comes only from `--check-brief '<path>'` (for a path in `briefs/` or `briefs/closed/`),
