@@ -38,3 +38,5 @@ Policy: review
 - Other floor items (instruction files, dot paths, gate code, `docs/decisions/`, `docs/human-author/`, the cycle's own files). The owner may revisit those in a separate sweep under constraint S1.
 - Moving `docs/working/questions.md`, `docs/dev-cycle.md` or `docs/constraints.md`.
 - Editing `docs/roadmap.md` or the questions files: the dev cycle moves those.
+
+Dispatched: 1
