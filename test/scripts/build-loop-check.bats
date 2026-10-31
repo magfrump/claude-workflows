@@ -1473,7 +1473,7 @@ b: -
 C: the path could not be lower-cased" ] && [ ! -e "$BATS_TEST_TMPDIR/calls" ] || { echo "$output $stderr"; cat "$BATS_TEST_TMPDIR/calls"; return 1; }
 }
 
-@test "check_fix, floor and --cycle-diff share one read-as-truth rule: all refuse docs/failure-patterns.md and pass docs/thoughts/ (U2a4; override rows 204, 322, 348; brief 2026-10-31-failure-patterns-out-of-thoughts)" {
+@test "check_fix, floor and --cycle-diff share one read-as-truth rule: all refuse docs/failure-patterns.md and its old path, and pass other docs/thoughts/ notes (U2a4; override rows 204, 322, 348; brief 2026-10-31-failure-patterns-out-of-thoughts)" {
     run --separate-stderr env LC_ALL=C bash -c 'source "$1"; shift
         for p in "$@"; do if truthrule "$p"; then echo "$p: $TRUTH_WHY"; else echo "$p: -"; fi; done' _ "$LIB" \
         claude.md docs/x/skill.md .claude/commands/c.md .envrc docs/x/.y docs/roadmap.md docs/dev-cycle.md docs/constraints.md \
@@ -2571,7 +2571,7 @@ miggap() { echo "$1 fix(...) commits on feat/x need a failure-pattern entry, but
     grep -qxF 'FP_REMEDY="git mv $FP_OLD $FP_LIB"' "$REPO_ROOT/scripts/build-loop.sh"
 }
 
-@test "--check self-merges a docs/thoughts/ note its Paths: line lists, but never docs/failure-patterns.md (brief 2026-10-31-failure-patterns-out-of-thoughts)" {
+@test "--check self-merges a docs/thoughts/ note its Paths: line lists, but never docs/failure-patterns.md or its old path (brief 2026-10-31-failure-patterns-out-of-thoughts)" {
     smb "Paths: docs/thoughts/ docs/failure-patterns.md"
     onx 'mkdir -p docs/thoughts && echo x > docs/thoughts/x.md'
     chk "$B"

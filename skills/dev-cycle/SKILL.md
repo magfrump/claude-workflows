@@ -148,7 +148,8 @@ files), run the same script with `--check-write '<path>'` and write only on `ok`
 only those files. An in-cycle fix (steps 1, 3, 4, and a missing doc) edits only a file that
 `--check-fix '<path>'` prints `ok` for: a tracked `.md` file under `docs/` (not the
 cycle's own files, `docs/working/`, `docs/human-author/`, `docs/reviews/`,
-`docs/decisions/`, `docs/dev-cycle.md`, `docs/constraints.md`, `docs/failure-patterns.md`, a dot-directory or dotfile, an instruction file, or a
+`docs/decisions/`, `docs/dev-cycle.md`, `docs/constraints.md`, `docs/failure-patterns.md` and its old path
+`docs/thoughts/failure-patterns.md`, a dot-directory or dotfile, an instruction file, or a
 file an instruction file names after an `@`, read broadly; compared ignoring case) or
 `README.md`, and refuses every path when the import walk fails; anything else (a new file, code, scripts, hooks, egress lists, decision
 records, instruction files) is filed, not written. Run `--check-fix` on each fixed path again
@@ -460,7 +461,10 @@ brief or dispatch:
   an open entry with slug `migrate-ID`, file one `you: terminal` entry with that slug. Its
   question names the migration and the line found; its paste is the remedy, run from the
   repo's root, then a commit of the files it changed (two or more filed this iteration:
-  one paste, in the first, which the others point at). Interim: the iteration goes on, and
+  one paste, in the first, which the others point at). When a remedy's destination already
+  exists (`failure-patterns-out-of-thoughts` with both `docs/thoughts/failure-patterns.md` and
+  `docs/failure-patterns.md` on main), the paste merges the old file's entries into the new
+  one and removes the old one instead. Interim: the iteration goes on, and
   every reader sees the old shape as before. The cycle does not run the remedy itself: a
   migration rewrites the questions files' entries or the roadmap's headings, which step 9's
   `--cycle-diff` refuses without the owner, and holding the iteration until the owner runs

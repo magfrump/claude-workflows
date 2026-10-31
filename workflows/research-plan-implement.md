@@ -126,6 +126,8 @@ Use a concrete extended-regex grep that combines all candidate keywords in one p
 grep -inE '<keyword1>|<keyword2>|<keyword3>' docs/failure-patterns.md
 ```
 
+If the repo has only `docs/thoughts/failure-patterns.md` (the library's path before migration `failure-patterns-out-of-thoughts`), grep that file instead and say so on the `Failure-pattern grep:` line; a missing file is never `no matches found`.
+
 The `-i` makes the match case-insensitive (the schema is lowercase but author input may not be); the `-n` surfaces line numbers so each matched FP-NNN entry is easy to cite back; the `-E` lets you alternate keywords with `|`. Pick keywords from the same three buckets every time — symptoms, paths/subsystems, cause/fix categories — so the grep is reproducible by a re-reader.
 
 **Recording requirement (mandatory).** The research doc must contain a literal line in this exact form:
