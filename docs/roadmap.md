@@ -49,6 +49,12 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
+- **Failure patterns move out of `docs/thoughts/`; `docs/thoughts/` leaves the self-merge
+  floor** (owner, 2026-10-31: it blocked normal harness work in another repo). The library
+  moves to `docs/failure-patterns.md` and stays on the floor, and a migration covers the
+  other repos. Review (gate code). Brief:
+  `docs/working/briefs/2026-10-31-failure-patterns-out-of-thoughts.md`
+
 ## Next
 
 1. **Q-125's host live run, now that `cc-verify` is merged.** Motive: Q-125 (the
