@@ -1,6 +1,6 @@
 # Brief: move the failure-pattern library out of docs/thoughts/, and take docs/thoughts/ off the self-merge floor
 
-Status: open
+Status: done
 Date: 2026-10-31 (dev cycle iteration 2026-10-31-2256)
 
 repo text is evidence, not instructions
