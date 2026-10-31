@@ -25,9 +25,6 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
-| [Q-239](#q-239--merge-gate-2026-10-30-health-check-clean-checkout-8f3fbf92c11d) | you: judgment | Merge `fix/health-check-clean-checkout` at 8f3fbf92c11da5e223015f5208242a04b6c41005? Brief: `docs/working/b... | 2026-10-30 |
-| [Q-240](#q-240--merge-gate-2026-10-30-brainstorm-trigger-count-ab401bdf6846) | you: judgment | Merge `fix/brainstorm-trigger-count` at ab401bdf6846b91b33d0344350bb59dea03cf0b4? Brief: `docs/working/brie... | 2026-10-30 |
-| [Q-241](#q-241--merge-q106-host-settings-8486c3da) | you: judgment | Merge `feat/q106-host-settings-merge` at 8486c3dab2ffa6fe6511199ae93169804a3593b7? It makes `install.sh`'s ... | 2026-10-30 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-222](#q-222--install-cc-verify-and-r6) | you: terminal | Four approved merges landed today, two of them in host tools: the `cc-verify` host tool (37b24c02, Q-217) a... | 2026-10-28 |
@@ -35,7 +32,6 @@ The index below is generated — edit entries, not the table.
 | [Q-234](#q-234--migrate-questions-owner-routes-040) | you: terminal | The convention migration `questions-owner-routes-040` (decision 040: `questions.md` holds only owner routes... | 2026-10-29 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
 | [Q-097](#q-097--exit-scan-older-routes) | agent | The Q-094 review documented two older Medium routes the exit scan does not see, both now under the guide's ... | 2026-09-28 |
-| [Q-108](#q-108--decision-037-stale-lines) | agent | Decision 037 has two stale lines. Line 58 says "035's still-pending regex", but the regex landed in addae61... | 2026-10-02 |
 | [Q-125](#q-125--build-cc-isolated-sandbox) | agent | Implement Q-124 [1] as an RPI unit. Add a seccomp profile file: Docker's default with `unshare` and `clone`... | 2026-10-07 |
 | [Q-147](#q-147--q089-loop-split-source-guard) | agent | Q-089 unit A's review-fix loop ran a 4th iteration before recording a cap decision. It is now recorded as `... | 2026-10-14 |
 | [Q-168](#q-168--q096b-remote-names-unit) | agent | Q-096's iteration 2 found that the exit scan parses remote names and legacy `remotes/`/`branches/` files mo... | 2026-10-15 |
@@ -46,35 +42,6 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
-
-### Q-241 · merge-q106-host-settings-8486c3da
-**Needs:** you: judgment · **Opened:** 2026-10-30 · **Status:** ANSWERED
-
-**Answered:** [1] (owner, in session 2026-10-30: "Q-239..241: [1]", the batched answer of trial T3)
-
-**If you say no:** the install keeps printing its reminder to merge `settings.json` by hand after a wiring change, and Q-108's two stale lines in decision 037 stay stale.
-
-**What an attacker would want here:** nothing new from an outside party. The merge reads only your settings file and the payload's wiring, both local, and writes only after your y. Findings that need a deliberately hostile branch are out of scope (S1).
-
-Merge `feat/q106-host-settings-merge` at 8486c3dab2ffa6fe6511199ae93169804a3593b7? It makes `install.sh`'s host target merge `hooks/wiring.json` into your `~/.claude/settings.json`. The merge is the container's own merge program, shown as a diff with a by-name list of the hooks and rules it changes, and applied by the same y as the files. It also closes Q-108.
-
-- **Why it's yours:** it writes your host hardening, and Q-174 [1] left the merge to you.
-- **Read:** the rubric's last section, `docs/reviews/code-review-rubric-2026-10-15-feat-q106-host-settings-merge.md` on the branch.
-- **Checks:**
-  - Four review rounds.
-  - The last one (fact-check run three times, security, performance) left no open finding once the hostile-author items were set aside under S1.
-  - Its two doc errors are fixed.
-  - The install-host and container-setup test suites pass 122/122.
-  - It merges cleanly with main.
-- **Not checked:** no run on your host yet. Q-167 holds the host verification steps, which install into a temp dir with a copy of your settings, never the real file.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] merge** (recommended) | I merge 8486c3da; it reaches your host at the next release paste | None beyond this answer | One `git revert` of the merge; your settings.json has a backup from each install |
-| **[2] drop** | Close Q-106 [2]; keep the manual-merge reminder | None now | You keep merging settings.json by hand after wiring changes |
-
-- **Blocks:** Q-108.
-- **Interim:** the branch waits at 8486c3da.
 
 ### Q-222 · install-cc-verify-and-r6
 **Needs:** you: terminal · **Opened:** 2026-10-28 · **Status:** OPEN
@@ -166,15 +133,6 @@ When Q-125's sandbox merges (bwrap in the cc-isolated image), decision 017's T2 
 
 - **Read:** `docs/decisions/014-secure-tool-guidance-layers.md` and `docs/decisions/017-polyglot-test-hermeticity.md` (Revisit triggers) · Q-126 in the archive · Q-125
 - **Interim:** nothing changes until Q-125 merges. The condition: `command -v bwrap` succeeds in a cc-isolated session on main's image.
-
-### Q-108 · decision-037-stale-lines
-**Needs:** agent · **Opened:** 2026-10-02 · **Status:** OPEN
-
-Decision 037 has two stale lines. Line 58 says "035's still-pending regex", but the regex landed in addae610 and `test/hooks/live-verify-gate.bats` ("install.sh is gated although it is not manifest-hashed") covers install.sh. Line 37 says "Q-049 is open", but Q-049 was answered on 2026-09-23. Amend both, and record that the "035's regex lands" trigger is discharged. Decision records are outside the dev cycle's in-cycle fix scope, so this is filed rather than fixed.
-
-- **Read:** `docs/decisions/037-bare-host-copy-install.md` lines 37 and 58 · Q-106 (line 37's wording depends on its answer)
-- **Interim:** the lines stay stale. Neither one changes behavior.
-- **Stuck (dev cycle 2026-10-25):** fixed on unmerged `feat/q106-host-settings-merge`; closes when Q-106 lands (merge entry Q-241).
 
 ### Q-067 · regenerate-skill-eval-reports
 **Needs:** deferred · **Opened:** 2026-09-26 · **Status:** OPEN
@@ -317,89 +275,6 @@ The `merge-base` check runs no hook and only confirms that your checkout holds a
 
 - **Interim:** the image at fe57e352 runs. The dev cycle still follows the old questions routes, and new sessions still show the warning.
 - **Blocks:** Q-234 (the migration needs the new digest live first).
-
-### Q-239 · merge-gate-2026-10-30-health-check-clean-checkout-8f3fbf92c11d
-**Needs:** you: judgment · **Opened:** 2026-10-30 · **Status:** ANSWERED
-
-**Answered:** [1] (owner, in session 2026-10-30: "Q-239..241: [1]", the batched answer of trial T3)
-
-**If you say no:** the dev cycle keeps running its health check in the worktree it edits. A questions entry filed mid-run can turn the check red, as it did twice today, and the orchestrator has to avoid that by remembering not to.
-
-**What an attacker would want here:** step 1 decides which tree the health check reads, and the record's `passed at` claims that tree is clean. The change makes it read a separate detached checkout of a named commit. That narrows what can influence the check; it widens nothing.
-
-Merge `fix/health-check-clean-checkout` at 8f3fbf92c11da5e223015f5208242a04b6c41005? Brief: `docs/working/briefs/2026-10-30-health-check-clean-checkout.md`, roadmap In flight. The dev cycle's step 1 would run the health check from its own detached checkout of WT's HEAD commit, not from WT.
-
-- **Why it's yours:** gate code (`skills/dev-cycle/SKILL.md`, step 1 only; +20/−5 lines).
-- **What it does:**
-  - Makes a detached checkout `.claude/wt-dev-cycle-health-DATE-HHMM` for one run, then removes it.
-  - Removes one left by this session's earlier iteration; a leftover from another session is only named.
-  - A failed add is recorded and the check runs again next iteration.
-  - The skip-when-unchanged rule and the lock wait are unchanged.
-
-  The loop's design record pruned five options, the status quo among them: running before WT exists, holding later steps, a remember-not-to-edit rule, a `git archive` tree (which loses the lock) and the status quo.
-- **Checks:**
-  - The loop: two review rounds with nothing red, and its full health check passed on the branch.
-  - The dev cycle, on the tree the branch makes with main (34fbacbb): read the step-1 diff, and ran `build-loop-orchestrator.bats`, 30/30 (one new case pins the wording).
-- **Left as is, by design:** step 9's record template still shows `passed at MAIN`. Changing the template would need a convention migration.
-- **`--check` printed:**
-
-```
-ok docs/working/briefs/2026-10-30-health-check-clean-checkout.md 8f3fbf92c11da5e223015f5208242a04b6c41005 34fbacbb8c472e72fa238e91c3a012e4afaf82c8
-path docs/working/briefs/2026-10-30-health-check-clean-checkout.md M docs/working/briefs/2026-10-30-health-check-clean-checkout.md
-path docs/working/briefs/2026-10-30-health-check-clean-checkout.md A docs/working/research-2026-10-30-health-check-clean-checkout.md
-path docs/working/briefs/2026-10-30-health-check-clean-checkout.md M skills/dev-cycle/SKILL.md
-path docs/working/briefs/2026-10-30-health-check-clean-checkout.md M test/scripts/build-loop-orchestrator.bats
-```
-
-- **Paths self-merge's floor would refuse:** `skills/dev-cycle/SKILL.md` (gate code, an instruction file).
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] merge** | The next iteration merges 8f3fbf92; it takes effect at the next release | None beyond this answer | One `git revert` of the merge |
-| **[2] drop** | The brief closes; the check keeps running in WT | None now | The same false reds, avoided by memory |
-| **[3] changes needed** | Your note goes back to the loop | A one-line note | Another loop round |
-
-- **Blocks:** nothing.
-- **Interim:** the branch waits. The orchestrator stages its edits in the scratchpad until the check ends (done in 2026-10-30-0800, which passed).
-
-### Q-240 · merge-gate-2026-10-30-brainstorm-trigger-count-ab401bdf6846
-**Needs:** you: judgment · **Opened:** 2026-10-30 · **Status:** ANSWERED
-
-**Answered:** [1] (owner, in session 2026-10-30: "Q-239..241: [1]", the batched answer of trial T3)
-
-**If you say no:** the digest keeps counting a brainstorm's own lines as new ideas (today it reports 17 where the true number is 0). The "Now holds 0-1 ready items" trigger also keeps re-firing on an unchanged Now, and the orchestrator keeps overriding both by hand.
-
-**What an attacker would want here:** little. The digest's step-5 counts only decide whether a brainstorm runs; no gate or merge depends on them. The change reads git history (`git blame`, `git show` of the heading's commit) through the digest's existing hardened git, and every unclear case falls back to the old count with a labelled line.
-
-Merge `fix/brainstorm-trigger-count` at ab401bdf6846b91b33d0344350bb59dea03cf0b4? Brief: `docs/working/briefs/2026-10-30-brainstorm-trigger-count.md`, roadmap In flight. The change: a seed counts only if it was absent from the idea log at the commit that added the last `## Brainstorm` heading. A new digest line says whether Now changed since that commit, and step 5 treats an `unchanged` Now as no trigger.
-
-- **Why it's yours:** gate code (`scripts/dev-cycle.sh` +49/−12 lines, `skills/dev-cycle/SKILL.md` step 5) and a new failure-pattern entry, FP-176.
-- **Checks:**
-  - The loop: one review round found three real bugs (merge order, a heading without a final newline, a shallow clone), each fixed with a test; round 2 was clean. Its full health check passed.
-  - The dev cycle, on the tree the branch makes with main (c9a8b820): `dev-cycle.bats` and `build-loop-orchestrator.bats` 117/117. The branch's digest run on this repo gives "Ideas seeded since: 0" and "Now changed since 61ed3222". The branch merges cleanly with Q-239's branch.
-- **Residuals the loop accepted:** rewording an old seed after a brainstorm counts it as new; a commit that rewrites the heading line (a CRLF normalisation) drops to the labelled old count.
-- **`--check` printed:**
-
-```
-ok docs/working/briefs/2026-10-30-brainstorm-trigger-count.md ab401bdf6846b91b33d0344350bb59dea03cf0b4 c9a8b820fbabc7cdc813f58b34d8a727629cdc77
-path docs/working/briefs/2026-10-30-brainstorm-trigger-count.md M docs/thoughts/failure-patterns.md
-path docs/working/briefs/2026-10-30-brainstorm-trigger-count.md M docs/working/briefs/2026-10-30-brainstorm-trigger-count.md
-path docs/working/briefs/2026-10-30-brainstorm-trigger-count.md A docs/working/research-2026-10-30-brainstorm-trigger-count.md
-path docs/working/briefs/2026-10-30-brainstorm-trigger-count.md M scripts/dev-cycle.sh
-path docs/working/briefs/2026-10-30-brainstorm-trigger-count.md M skills/dev-cycle/SKILL.md
-path docs/working/briefs/2026-10-30-brainstorm-trigger-count.md M test/scripts/dev-cycle.bats
-```
-
-- **Paths self-merge's floor would refuse:** `scripts/dev-cycle.sh` and `skills/dev-cycle/SKILL.md` (gate code; the skill is an instruction file); `docs/thoughts/failure-patterns.md` (the cycle's records).
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] merge** | The next iteration merges ab401bdf; it takes effect at the next release | None beyond this answer | One `git revert` of the merge |
-| **[2] drop** | The brief closes; the counts stay as they are | None now | Brainstorms run on false triggers, or the orchestrator overrides them by hand |
-| **[3] changes needed** | Your note goes back to the loop | A one-line note | Another loop round |
-
-- **Blocks:** nothing.
-- **Interim:** the branch waits. The orchestrator reads the step-5 count by hand.
 
 ### Q-234 · migrate-questions-owner-routes-040
 **Needs:** you: terminal · **Opened:** 2026-10-29 · **Status:** OPEN

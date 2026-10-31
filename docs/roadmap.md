@@ -71,13 +71,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
    settlement (no open code-review SKILL changes), then re-run one canon cell. The
    user's 2026-10-20 feedback adds re-evaluating review k and the lite review under Opus
    5.5; deferred, ask before running.
-3. **Automate the host settings.json merge (Q-106 [2]).** Built
-   (`feat/q106-host-settings-merge`, 8486c3da; it also closes Q-108). Iteration 4 ran by
-   hand on 2026-10-30 (Q-174 [1]): main merged in, S3-F1 to F3 closed. Its confirming
-   pass's security findings all needed a hostile branch, out of scope under S1 (owner,
-   2026-10-30); its doc errors are fixed and the loop exited. Merge entry Q-241. Q-175
-   answered [1]: the moved merge program stays in the `hooks/**` class.
-4. **Revisit the light pass between full cycles (C5, Q-154).** Motive: you answered C5 with a
+3. **Revisit the light pass between full cycles (C5, Q-154).** Motive: you answered C5 with a
    full cycle every iteration for now and a light pass of steps 7, 8 and 10 between full
    cycles once the costs are visible (plan D12, F53). First step: after the orchestrator's
    first day of iterations here (after Q-156's release), total each iteration's tokens and
@@ -286,6 +280,8 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- Host settings.json merge (Q-106 [2]): `install.sh`'s host target runs the container's
+  merge program inside its review; also closes Q-108. Merged 086f08c8 (Q-241 [1]).
 - Questions doc owner-only, unit 3: the digest reads `watching.md`, agent work goes to the
   roadmap, global instructions updated (decision 040; Q-235 [1]): merged 01022de2. Brief:
   `docs/working/briefs/closed/2026-10-29-questions-owner-only-unit3.md`

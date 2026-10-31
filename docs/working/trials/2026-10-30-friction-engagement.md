@@ -29,6 +29,8 @@ Write it anywhere, in any order, for example: `T2 good, T3 made me skim, T5 too 
 ## Feedback
 
 - **2026-10-30, owner:** "Merge all three", answering T3's batched block for Q-235..Q-237. This was the first batched answer. The orchestrator recorded it as `[1]` on each entry. The skill's rule counts a merge answer only when the owner's message names the ID and an option. Here the batched block named the IDs and the message named the option, so it was taken as meeting the rule. If T3 is kept, that rule should say so explicitly.
+- **2026-10-30, owner:** "Q-239..241: [1]", the second batched answer, in the `Q-NNN..NNN: [n]` form the final message offered. Recorded as `[1]` on each entry; all three merged the same hour.
+- **2026-10-30, owner, on T2's attacker lines:** "a hostile code author is out of scope for this repo. Every project is asking the agent to write and test code, which involves running the agent's code. Guarding against intentional hostility doesn't create security and does add friction." This came after Q-241's first version escalated Q-106 to a 5th review round on findings that each needed a hostile branch. That is constraint S1, and the review brief had not quoted it. For T2: "What an attacker would want here" names outside parties only, never the code's own author.
 
 ## Orchestrator notes
 
