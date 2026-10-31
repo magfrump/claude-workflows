@@ -59,16 +59,17 @@ line marked `WIRED in settings` before you answer y: that hook is referenced fro
 your `settings.json` and will stop running. Each of the seven entries it
 replaces, old links included, is moved to
 `~/.claude/.claude-workflows-backup/<UTC stamp>/`. The backups of the last 3
-installs are kept (the current run's is never removed).
-Delete them when you're satisfied. Your `settings.json`, memory, projects and
-logs are never touched.
+installs are kept (the current run's is never removed; one holding only
+`settings.json` is kept and not counted).
+Delete them when you're satisfied. Your memory, projects and logs are never
+touched.
 
 Hooks are inert until wired into `~/.claude/settings.json` (guarded,
 not repo-tracked). `hooks/wiring.json` is the canonical wiring (hooks plus the
-`permissions.deny` rules the guard depends on); the devcontainer merges it
-automatically, and on a bare host you merge it by hand —
+`permissions.deny` rules the guard depends on). The devcontainer and the
+`~/.claude` target both merge it (Q-106: shown in the review, applied by the y) —
 see [`guides/bare-host-hook-wiring.md`](guides/bare-host-hook-wiring.md) for the
-procedure, the settings hardening `wiring.json` does not carry, the WSL2
+merge, the settings hardening `wiring.json` does not carry, the WSL2
 prerequisite, and verification steps.
 
 ### Cursor, Copilot, Cline, and other AGENTS.md-compatible tools

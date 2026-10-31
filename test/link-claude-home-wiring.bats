@@ -33,8 +33,10 @@ setup() {
   TMP=$(mktemp -d)
   SRC="$TMP/src"
   DEST="$TMP/dest"
-  mkdir -p "$SRC/hooks" "$DEST"
+  mkdir -p "$SRC/hooks/lib" "$DEST"
   cp "$WIRING" "$SRC/hooks/wiring.json"
+  # The merge program the linker runs (shared with install.sh, Q-106 [2]).
+  cp "$REPO_ROOT/hooks/lib/wiring-merge.jq" "$SRC/hooks/lib/"
   # The linker only symlinks entries that exist; stubs keep its output quiet
   # without pulling the real payload into the test.
   for d in skills workflows guides patterns scripts; do mkdir -p "$SRC/$d"; done

@@ -43,9 +43,9 @@ scanner, is the mitigation for code-as-data.
 
 In cc-isolated, wiring is automatic: the hook is merged into `settings.json` at
 every container start from `hooks/wiring.json`, and the auditor ships in the
-image payload (decision 023 and its amendment A). On a bare host the wiring is
-still manual — see `guides/bare-host-hook-wiring.md`; until wired, the
-hook is inert.
+image payload (decision 023 and its amendment A). On a bare host `install.sh`
+merges the same wiring after its review (Q-106) — see
+`guides/bare-host-hook-wiring.md`; until wired, the hook is inert.
 
 Env knobs: `CLAUDE_CONFIG_AUDIT_SCRIPT` overrides the auditor path (default: the
 payload copy at `~/.claude/scripts/claude_config_audit.py`, falling back to
