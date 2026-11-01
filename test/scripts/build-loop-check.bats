@@ -2025,7 +2025,7 @@ ENVS="is set, so git can read another repository, work tree, index or object sto
     echo n > new.md; git add new.md; coref "$STAT"; git rm -q --cached new.md
     # An unmerged path (a conflicted merge, aborted by hand) shows in git status.
     git checkout -q -b side main~1 && echo s > docs/a.md && git add docs/a.md && git commit -q -m side && git checkout -q main
-    ! git merge -q side >/dev/null 2>&1; [ -n "$(git ls-files -u)" ]; rm -f .git/MERGE_HEAD .git/MERGE_MSG .git/MERGE_MODE .git/AUTO_MERGE
+    git merge -q side >/dev/null 2>&1 || true; [ -n "$(git ls-files -u)" ]; rm -f .git/MERGE_HEAD .git/MERGE_MSG .git/MERGE_MODE .git/AUTO_MERGE
     coref "$STAT"; git reset -q --hard main
     cook
     # A variable that points git elsewhere refuses; the caller's config pairs and the rest of git's do not.
