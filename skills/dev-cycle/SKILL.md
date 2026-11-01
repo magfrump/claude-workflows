@@ -73,8 +73,8 @@ one place every trigger is certain to be checked, so it checks all of them every
   replaced object; a test holds it to carry every pair of the lib's `HARDEN` list. What the
   repository's own config still names (a filter such as git-lfs, a merge driver, signature
   verification on a merge) is the owner's setup and runs as it would for any git command;
-  `--state` refuses only a shallow or partial clone, an ambiguous default branch and a
-  variable that points git at another repository or index. Run it again (through the D6
+  `--state` refuses only a shallow or partial clone, a default branch that is not exactly one
+  plain main or master, and a `GIT_DIR`-style variable in the caller's environment. Run it again (through the D6
   block, from WT) right before the iteration's commits, and treat a refusal there as step 0
   does.
   Commits set their identity on the command, as `GIT_AUTHOR_NAME`, `GIT_AUTHOR_EMAIL`,
@@ -85,7 +85,8 @@ one place every trigger is certain to be checked, so it checks all of them every
   same goes for every command that writes a commit, the merge of main into WT included,
   written as `GIT_AUTHOR_NAME="$N" … hg …` (not `env … hg`, which would run another
   program named `hg`). Never export these settings: set them per command, as `hg` does (an
-  exported `git -c` pair would outrank the gate's own `HARDEN` pairs, row 702).
+  exported `GIT_CONFIG_PARAMETERS` would outrank the gate's own `HARDEN` pairs, and `--state`
+  no longer refuses it; row 702).
 - **The only questions writer** (D11). Build loops never write the questions files or
   `docs/working/watching.md`; their questions arrive in `blocked` markers, which the
   orchestrator files.

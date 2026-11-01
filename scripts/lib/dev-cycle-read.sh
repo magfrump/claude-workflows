@@ -1483,9 +1483,10 @@ prompt_marks() {
 # is not a link and ROOT_REAL holds a plain file (rawfile) at its path below
 # its innermost root that is a start of the same kind (f or p) there: both
 # walks start at that file and pass it to root_copies, which reads this copy
-# unless reading it could add nothing (U2b3b2c; given contract item 2's clean checkout, which also keeps
-# out an untracked nested repo whose files neither walk lists; final
-# fact-check 21).
+# unless reading it could add nothing (U2b3b2c; given contract item 2's clean
+# checkout; final fact-check 21). An untracked nested repository is allowed
+# since brief 2026-11-01-relax-gate-git-state, and neither walk lists its
+# files: a residual that research doc states (the import walk is unit 6's).
 # Roots are listed with find -P (.git pruned), never git -C: a loop controls
 # its worktree's .git file, so git there could read a config the loop wrote
 # (core.fsmonitor runs a command). Only a seed holding an @ byte or reached

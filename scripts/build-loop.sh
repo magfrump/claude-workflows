@@ -295,7 +295,8 @@
 #             origin/HEAD naming another branch than the one taken;
 #             then the gate's own merge repository not set up ("refuse state
 #             gate: WHY"). Other git config (filters, merge and diff drivers,
-#             includes, hooks, signing) passes: the merge reads none of it.
+#             includes, hooks, signing) passes: the merge reads no
+#             repository config.
 #             Each finding prints "refuse state WHAT: WHY" and exits 2 before
 #             the settings or any brief is read. Then, per brief path, in
 #             argument order, one verdict line:
@@ -690,7 +691,8 @@ git_harden
 # shallow clone (a shallow file that is not absent or an empty regular file).
 # Other config (filters, merge and diff drivers, includes, hooks, fsmonitor,
 # signing) is the owner's own setup and passes: the gate's merge runs in
-# gate_repo, which reads none of it, git_harden's pairs override the hook,
+# gate_repo, which reads no repository config or attributes (the caller's own
+# git -c pairs still apply there, as callervar keeps them), git_harden's pairs override the hook,
 # fsmonitor and signing keys, and a filter runs only where the owner's own git
 # would (git status, the fast-forward in W). The default-branch rules are
 # default_gate's.
@@ -738,7 +740,7 @@ caller_gate() {
 # research doc of brief 2026-11-01-relax-gate-git-state, D2). Prints one line
 # per finding, as state_gate does; returns 1 on any.
 default_gate() {
-  local p bad=0
+  local p rc bad=0
   if git show-ref --verify --quiet refs/heads/main && git show-ref --verify --quiet refs/heads/master; then
     echo "refuse state default-branch: both main and master exist"; bad=1
   fi
@@ -753,7 +755,9 @@ default_gate() {
   # compare-and-swap, or the fast-forward in W).
   p="$(git show-ref --verify --hash "refs/heads/$MAIN" 2>/dev/null)" && [[ "$(git cat-file -t "$p" 2>/dev/null)" == commit ]] \
     || { echo "refuse state default-branch: refs/heads/$MAIN names an object that is not a commit"; bad=1; }
-  p="$(git symbolic-ref -q refs/remotes/origin/HEAD)" || true
+  # An origin/HEAD git cannot read (exit above 1) is unmodelled input (H2).
+  rc=0; p="$(git symbolic-ref -q refs/remotes/origin/HEAD 2>/dev/null)" || rc=$?
+  [[ "$rc" -le 1 ]] || { echo "refuse state default-branch: origin/HEAD could not be read"; bad=1; }
   if [[ -n "$p" && "$p" != "refs/remotes/origin/$MAIN" ]]; then
     echo "refuse state default-branch: origin/HEAD names ${p#refs/remotes/}, but the default branch taken is $MAIN"; bad=1
   fi
@@ -778,7 +782,7 @@ main_by_name || { echo "build-loop.sh needs a default branch found by name (orig
 # The reader lists both import walks take, from main's settings (the lib's
 # caller contract item 9), before any walk; --settings prints its line. Not
 # read_settings below: without this call the walks model no host reader.
-# gate_start calls it once main's objects are checked.
+# gate_start calls it once state_start has run.
 [[ -n "$GATED" ]] || reader_settings
 
 # list_entries LINE KEY WORD FORM: the list-line grammar Self-merge never: and
@@ -1071,14 +1075,15 @@ raw_records() {
     RAW_OM+=("${BASH_REMATCH[1]}"); RAW_NM+=("${BASH_REMATCH[2]}"); RAW_OO+=("${BASH_REMATCH[3]}"); RAW_NO+=("${BASH_REMATCH[4]}"); RAW_S+=("${BASH_REMATCH[5]}"); RAW_P+=("$p")
   done < "$1"
 }
-# blobs_present: every regular file in the raw_records listing just read (a
-# merge's changes against main) names a blob the object store holds.
+# blobs_present: every regular file or symlink in the raw_records listing
+# just read (a merge's changes against main) names a blob the object store
+# holds (a gitlink names another repository's commit).
 # merge-tree passes a side's unchanged blob by id without reading it, so a
 # blob the store lacks would land unseen (a missing subtree already failed
 # diff-tree). Returns 1 on a missing or non-blob object, or a failed read.
 blobs_present() {
   local i out ids=()
-  for i in "${!RAW_NM[@]}"; do [[ "${RAW_NM[i]}" != 100644 && "${RAW_NM[i]}" != 100755 ]] || ids+=("${RAW_NO[i]}"); done
+  for i in "${!RAW_NM[@]}"; do [[ "${RAW_NM[i]}" != 100644 && "${RAW_NM[i]}" != 100755 && "${RAW_NM[i]}" != 120000 ]] || ids+=("${RAW_NO[i]}"); done
   [[ ${#ids[@]} -gt 0 ]] || return 0
   out="$(printf '%s\n' "${ids[@]}" | gate_git cat-file --batch-check='%(objecttype)')" \
     && [[ "$(printf '%s\n' "$out" | grep -cx blob)" -eq ${#ids[@]} ]]

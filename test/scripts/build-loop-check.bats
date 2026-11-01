@@ -1747,6 +1747,11 @@ path $x A work-feat-x.txt" ] || { show; return 1; }
     [ "$status" -eq 2 ] && [ "$output" = "refuse state remote.origin.promisor: set in config, a partial clone, whose missing objects the gate cannot read
 refuse state extensions.partialclone: set in config, a partial clone, whose missing objects the gate cannot read" ] || { echo "$status $output $stderr"; return 1; }
     [ ! -e "$BATS_TEST_TMPDIR/fetched" ] || { echo "upload-pack ran"; return 1; }
+    # A promisor key in this worktree's config.worktree refuses too.
+    git config --unset remote.origin.promisor; git config --unset extensions.partialClone
+    git config extensions.worktreeConfig true && git config --worktree remote.origin.promisor true
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "$output" = "refuse state remote.origin.promisor: set in config.worktree, a partial clone, whose missing objects the gate cannot read" ] || { echo "$status $output $stderr"; return 1; }
 }
 
 @test "every git call --check makes carries git_harden's config pairs (core.hooksPath=/dev/null among them), no global or system config and no transport (T26, A4, U2b1a i1, i2, A17)" {
@@ -1929,6 +1934,11 @@ NBRIEF="this brief: only its first Status: line outside a fence may change, from
     tip feat/x "add" "$( (git ls-tree main; printf '100644 blob %s\tnew.txt\n' "$b") | git mktree --missing)" "$(git rev-parse main)"
     chk "$B"
     [ "$status" -eq 2 ] && [ "$output" = "refuse $B: the merge of feat/x names a blob the object store lacks" ] || { show; return 1; }
+    # A symlink's blob too (blobs_present; brief 2026-11-01-relax-gate-git-state review i1).
+    git update-ref refs/heads/feat/x "$(git rev-parse feat/x~1)"
+    tip feat/x "link" "$( (git ls-tree main; printf '120000 blob %s\tlink\n' "$b") | git mktree --missing)" "$(git rev-parse main)"
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "$output" = "refuse $B: the merge of feat/x names a blob the object store lacks" ] || { show; return 1; }
 }
 
 # loose ID: a loose copy of packed blob ID, beside the packed one (git itself writes none for an object it has).
@@ -1956,6 +1966,10 @@ refuse state default-branch: origin/HEAD names origin/master, but the default br
     git branch -q develop master; git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/develop
     chk "$B"
     [ "$status" -eq 2 ] && [ "$output" = "refuse state default-branch: the default branch taken is develop, not main or master" ] || { show; return 1; }
+    # An origin/HEAD git cannot read (symbolic-ref exits 128) refuses, though resolve_main takes master without it (H2).
+    git branch -q -D develop; echo garbage > .git/refs/remotes/origin/HEAD
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "$output" = "refuse state default-branch: origin/HEAD could not be read" ] || { show; return 1; }
 }
 
 @test "--check's merge reads no submodule repository: a gitlink fast-forward the real repository would merge is a conflict (R9, U2b1b)" {
@@ -2018,6 +2032,8 @@ ENVS="is set, so git can read another repository, work tree, index or object sto
     GIT_INDEX_FILE="$PWD/.git/index" coref "GIT_INDEX_FILE $ENVS"
     GIT_WORK_TREE="$PWD" coref "GIT_WORK_TREE $ENVS"
     GIT_DIR="$PWD/.git" coref "GIT_DIR $ENVS"
+    GIT_OBJECT_DIRECTORY="$PWD/.git/objects" coref "GIT_OBJECT_DIRECTORY $ENVS"
+    GIT_COMMON_DIR="$PWD/.git" coref "GIT_COMMON_DIR $ENVS"
     GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=x cook
     GIT_REPLACE_REF_BASE=refs/x/ cook
 }
@@ -2047,10 +2063,12 @@ honest() {
 }
 
 @test "an honest setup passes every gated mode: git-lfs's local filter config (brief 2026-11-01-relax-gate-git-state)" {
-    sm
-    git config filter.lfs.clean 'git-lfs clean -- %f'; git config filter.lfs.smudge 'git-lfs smudge -- %f'
-    git config filter.lfs.process 'git-lfs filter-process'; git config filter.lfs.required true
+    # A tracked file the filter applies to, touched so git status runs the clean filter (cat stands in for git-lfs).
+    sm; echo '*.bin filter=lfs' > .gitattributes; echo data > a.bin; commit_all lfs
+    git config filter.lfs.clean "touch '$BATS_TEST_TMPDIR/clean-ran'; cat"; git config filter.lfs.smudge cat; git config filter.lfs.required true
+    touch -d '2000-01-01' a.bin
     honest
+    [ -e "$BATS_TEST_TMPDIR/clean-ran" ] || { echo "the clean filter never ran, so the setup was not in effect"; return 1; }
 }
 
 @test "an honest setup passes every gated mode: merge.conflictStyle and a diff setting (brief 2026-11-01-relax-gate-git-state)" {
@@ -2071,10 +2089,10 @@ honest() {
 }
 
 @test "an honest setup passes every gated mode: a husky core.hooksPath, whose hooks the gate does not run (brief 2026-11-01-relax-gate-git-state)" {
-    sm; mkdir -p .husky; printf '#!/bin/sh\ntouch "%s/hook-ran"\n' "$BATS_TEST_TMPDIR" > .husky/reference-transaction; chmod +x .husky/reference-transaction
+    # Whether a hook runs is the --merge test's to check (these modes write no ref).
+    sm; mkdir -p .husky; printf '#!/bin/sh\nexit 0\n' > .husky/pre-commit; chmod +x .husky/pre-commit
     echo '.husky/' >> .git/info/exclude; git config core.hooksPath .husky
     honest
-    [ ! -e "$BATS_TEST_TMPDIR/hook-ran" ] || { echo "a hook ran"; return 1; }
 }
 
 @test "an honest setup passes every gated mode: an object both packed and loose, and in two packs (brief 2026-11-01-relax-gate-git-state)" {

@@ -93,7 +93,9 @@ safe.directory: `GIT_CONFIG_GLOBAL=/dev/null` stays (reproducibility above), so 
 ## Residual risks (stated, S1)
 
 - A hostile same-uid writer can plant config, hooks dirs, replace refs, grafts or forged objects that the gate no longer refuses. Out of scope; the D6 block's replace/graft refusal and `HARDEN` still cover part of it.
-- A caller environment with `git -c core.hooksPath=...` would now win over `HARDEN` without a refusal. Only a planted shell rc sets that.
+- A caller environment that exports `git -c` pairs (`GIT_CONFIG_PARAMETERS`) is no longer refused: `core.hooksPath=...` there would win over `HARDEN`, and `merge.renames=...` would reach `gate_repo` (callervar keeps the caller's pairs) and change the merge the gate computes. Only a planted shell rc or a deliberate export sets that; SKILL.md tells the orchestrator never to export such settings.
+- Review iteration 1 (two reviewers) restored two H2 checks the first cut lost: an origin/HEAD git cannot read refuses again (`default_gate`), and `blobs_present` covers symlink blobs as `store_check` did.
+- `docs/working/plan-build-loop-handoff.md` (F25, F51, line 436) still describes the old state gate; it is another unit's working doc, so decision-log row 79 records the amendment instead of editing it.
 - A self-merge `--check` from a case-insensitive, sparse or nested-repo checkout: the floor walk reads main's blob for main's paths, so only untracked files are read from the checkout; a nested repository's instruction files are not walked (import walk, unit 6).
 
 ## Files read

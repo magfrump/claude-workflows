@@ -52,18 +52,22 @@ Build-loop-gate: 2026-10-01-x" ]
 }
 
 @test "--merge lands under the owner's ordinary git setup: lfs filter config, merge and diff settings, an include, a husky hooksPath, SSH signing, autocrlf, a sparse checkout, duplicate objects; no hook runs (brief 2026-11-01-relax-gate-git-state)" {
-    sm; echo top > top.txt && commit_all top; M="$(git rev-parse main)"; TR="$(git merge-tree --write-tree main feat/x)"
-    git config filter.lfs.clean 'git-lfs clean -- %f'; git config filter.lfs.smudge 'git-lfs smudge -- %f'; git config filter.lfs.required true
+    sm; echo top > top.txt && echo '*.bin filter=lfs' > .gitattributes && echo data > a.bin && commit_all top
+    M="$(git rev-parse main)"; TR="$(git merge-tree --write-tree main feat/x)"
+    # cat stands in for git-lfs; the clean filter leaves a mark, so the setup is shown in effect.
+    git config filter.lfs.clean "touch '$BATS_TEST_TMPDIR/clean-ran'; cat"; git config filter.lfs.smudge cat; git config filter.lfs.required true
     git config merge.conflictStyle diff3; git config diff.algorithm histogram
     printf '[user]\n\tname = t\n' > "$BATS_TEST_TMPDIR/inc"; git config include.path "$BATS_TEST_TMPDIR/inc"
-    mkdir -p .husky; printf '#!/bin/sh\ntouch "%s/hook-ran"\n' "$BATS_TEST_TMPDIR" > .husky/post-merge; chmod +x .husky/post-merge
+    mkdir -p .husky; for h in post-merge reference-transaction; do printf '#!/bin/sh\ntouch "%s/hook-ran"\n' "$BATS_TEST_TMPDIR" > ".husky/$h"; chmod +x ".husky/$h"; done
     echo '.husky/' >> .git/info/exclude; git config core.hooksPath .husky
     git config gpg.format ssh; git config gpg.ssh.program "$BATS_TEST_TMPDIR/nowhere"; git config commit.gpgSign true
-    git config core.autocrlf true; git sparse-checkout set --no-cone /docs/ /work-feat-x.txt
+    git config core.autocrlf true; git sparse-checkout set --no-cone /docs/ /work-feat-x.txt /a.bin /.gitattributes
     git repack -adq; git rev-parse "main:$B" | git pack-objects -q .git/objects/pack/pack >/dev/null
+    touch -d '2000-01-01' a.bin; rm -f "$BATS_TEST_TMPDIR/clean-ran"
     mrg "$B" --expect "$T"; n="$(git rev-parse main)"
     [ "$status" -eq 0 ] && [ "${lines[0]}" = "merged $B $T $TR $n" ] && [ -z "$stderr" ] || { show; return 1; }
     [ "$(git rev-parse HEAD)" = "$n" ] && [ ! -e "$BATS_TEST_TMPDIR/hook-ran" ] || { echo "HEAD or a hook"; return 1; }
+    [ -e "$BATS_TEST_TMPDIR/clean-ran" ] || { echo "the clean filter never ran, so the setup was not in effect"; return 1; }
 }
 
 @test "--merge leaves main where another writer moved it between the check and the swap, and refuses git state planted after the check (T22, G17, row 494, U3a2)" {
