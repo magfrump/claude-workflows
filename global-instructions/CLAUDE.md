@@ -223,15 +223,12 @@ The user is not at their desk, or has not specified. Maximize progress within sa
 **Still require user approval (regardless of mode):**
 - Force-push, `git reset --hard`, deleting branches (except `git branch -d` of a branch already merged, which git refuses for an unmerged one), dropping database tables
 - Any destructive or irreversible operation
-- Decisions where guessing wrong would waste significant work
 
 **Stop and wait for the user when:**
-- Tests fail and the fix is not obvious
-- Merge conflicts arise
-- Requirements are ambiguous AND the wrong guess would waste significant effort
+- A merge conflict's resolution would drop either side's content
 - Anything irreversible not covered above
 
-Questions that do **not** meet the stop-and-wait bar go to the running questions doc (see below) instead of blocking or being silently dropped.
+**Defer, file and continue** when tests fail and the fix is not obvious, or when requirements are ambiguous and a wrong guess would waste significant effort: set that task aside (a WIP commit or a blocked note), file the question in the running questions doc (see below) with the options and an interim, and keep working on whatever does not depend on it. Everything below the stop-and-wait bar goes there instead of blocking or being silently dropped.
 
 Log all autonomous decisions in commit message bodies with a `Confidence` tag (high/medium/low) and a note about any choices not specified in the plan.
 
