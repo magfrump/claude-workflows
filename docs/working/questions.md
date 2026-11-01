@@ -26,6 +26,7 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-242](#q-242--merge-gate-2026-10-31-failure-patterns-out-of-thoughts-c3f3f0e49f17) | you: judgment | Merge `refactor/failure-patterns-out-of-thoughts` at c3f3f0e49f1721319de7279ddc47ec15bdac7695? It does what... | 2026-10-31 |
+| [Q-243](#q-243--merge-gate-2026-11-01-relax-dev-cycle-skill-prose-7e6f1e0e9655) | you: judgment | Merge `docs/relax-dev-cycle-skill-prose` at 7e6f1e0e96550bda192e7d8cece50a6266d76b47? This is unit 3 of you... | 2026-11-01 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-222](#q-222--install-cc-verify-and-r6) | you: terminal | Four approved merges landed today, two of them in host tools: the `cc-verify` host tool (37b24c02, Q-217) a... | 2026-10-28 |
@@ -34,6 +35,44 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
+
+### Q-243 · merge-gate-2026-11-01-relax-dev-cycle-skill-prose-7e6f1e0e9655
+**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** OPEN
+
+**If you say no:** the dev-cycle skill keeps its hardened-git wrapper, the identity routine, the repeated state checks and the main-log stop. An iteration keeps costing about 40 tool calls, most of them those rituals.
+
+**What an attacker would want here:** nothing new from an outside party. The change drops defences against planted git config and disguised commits, which S1 puts out of scope. It keeps the run-from-image gate (H1), the argument allowlist, staging named paths only, and `--cycle-diff`.
+
+Merge `docs/relax-dev-cycle-skill-prose` at 7e6f1e0e96550bda192e7d8cece50a6266d76b47? This is unit 3 of your restriction audit (`docs/working/research-2026-11-01-restriction-audit.md`). It drops the dev-cycle skill's rituals that only defend against a hostile loop.
+
+- **Why it's yours:** it changes `skills/dev-cycle/SKILL.md`, which is gate code and never self-merges.
+- **What changes:**
+  - **Git commands:** the orchestrator's own git is plain `git -C PATH` with your normal config and identity, and the `hg` wrapper and identity routine go. It checks that `user.name` and `user.email` are set before committing, and keeps three cheap pins: no signature in logs whose output is read, no commit signing, and literal pathspecs on add/mv/rm.
+  - **Fewer checks:** no extra `--state` runs before commits, merges and the gate checkout; no `--check-write` before writes; no re-check before staging; no tree-equality check. `--cycle-diff` still bounds what lands.
+  - **Main-log refusal:** a `refuse main-log:` line is reported in the record and the final message. The iteration re-anchors at the current main, with no entry and no hold.
+  - **Worktree removal:** plain `worktree remove`. `--force` is kept only where a stop leaves edits meant to be discarded.
+  - **Branch names:** a checked branch name may reach git as `refs/heads/NAME`.
+  - **Untouched:** the D6 block and step 0.1's `--state` paragraph. Unit 1 owns that paragraph, and the D6 block goes in a later unit.
+- **Checks:**
+  - The loop re-checked every audit row it acted on, with three divergent-design decisions, each with one clear winner.
+  - Two review iterations by an independent reviewer. Iteration 1 found 1 Must Fix (the `refs/heads/` wording broke `branch -d`) and 2 Must Address (a plain remove left a stopped WT behind; a false claim about git refusing commits without an identity). All were fixed. Iteration 2 found nothing at either level.
+  - A new bats case checks that the dropped rules stay gone and the kept ones remain, and it fails on the old SKILL.md. The loop's full health check passed.
+  - I read the SKILL.md diff myself.
+- **Takes effect:** for the orchestrator, at the next release (the skill is read from the image), after Q-227's.
+- **Expect a conflict:** unit 1 (`refactor/relax-gate-git-state`, still running) edits the same "Hardened git" passage. Whichever merges second merges main in first.
+- **Residual:** an outside party's repo with a symlinked `docs/working/briefs/closed/` could take one `git mv` out of the tree, because the digest does not check that directory.
+- **Follow-up, outside this unit:** `scripts/dev-cycle.sh:193`'s skip message still says "use --check-write".
+- **`--check` printed:** `ok docs/working/briefs/2026-11-01-relax-dev-cycle-skill-prose.md 7e6f1e0e96550bda192e7d8cece50a6266d76b47 35b83234a8bf0614454e8c58d550a93d3c28254e`, plus path lines for the brief, `docs/working/plan-build-loop-handoff.md`, the research doc, `skills/dev-cycle/SKILL.md` and `test/scripts/build-loop-orchestrator.bats` (5 files, +213/-115).
+- **Paths self-merge's floor would refuse:** `skills/dev-cycle/SKILL.md` (gate code).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next iteration merges 7e6f1e0e; the orchestrator follows it after the next release | None beyond this answer | One `git revert` of the merge |
+| **[2] drop** | The brief closes and the rituals stay | None now | Iterations keep their cost |
+| **[3] changes needed** | Your note goes back to the loop | A one-line note | Another loop round |
+
+- **Blocks:** nothing.
+- **Interim:** the branch waits.
 
 ### Q-242 · merge-gate-2026-10-31-failure-patterns-out-of-thoughts-c3f3f0e49f17
 **Needs:** you: judgment · **Opened:** 2026-10-31 · **Status:** ANSWERED
