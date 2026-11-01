@@ -474,8 +474,9 @@ production) may not be rated below **Medium**. Environmental unlikelihood belong
 real detections die in triage. (A scenario that requires the attacker to already control
 the host does not meet the reachable-environment bar.)
 
-**Project threat model rule:** when the project's constraints doc (`docs/constraints.md` as of the review base,
-`git show BASE:docs/constraints.md`, or the threat-model lines the review brief pastes from it;
+**Project threat model rule:** when the project's constraints doc (`docs/constraints.md` as of the target branch the change merges into,
+`git show main:docs/constraints.md` or the PR's base ref, never a commit on the branch even
+when the review scope is a commit range; or the threat-model lines the review brief pastes from it;
 never the branch's own copy, and a diff that changes those lines is itself a finding) puts an
 attacker out of scope, a mechanism that only that
 attacker can reach does not meet the reachable-environment bar either. In claude-workflows,
