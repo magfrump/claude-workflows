@@ -21,6 +21,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   image-lag item below), 6 (import walk seeds and parser) and 7 (D6 block into the image).
   Unit 5 also fixes `scripts/dev-cycle.sh:193`, whose skip message still says "use
   --check-write" (unit 3 drops that call).
+  Unit 4 also gives `skills/draft-review/SKILL.md`'s Fact-Check Gate the same unattended
+  default (unit 2's override-log C9).
 - **Agent: the cycle closes a cleared image-lag entry itself** (filed 2026-11-01, owner
   request). Motive: when the image already holds main's gate code (step 0.1's `diff --quiet`
   exits 0), the release the entry asks for has happened, yet the skill only lists the entry
@@ -88,8 +90,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 - **Restriction audit unit 1: narrow the gate's git-state checks** (owner, 2026-11-01). Review
   (gate code). Brief: `docs/working/briefs/2026-11-01-relax-gate-git-state.md`
 - **Restriction audit unit 2: narrow the stops in the referenced workflows and skills**
-  (owner, 2026-11-01). Review (`workflows/`, instruction files). Brief:
-  `docs/working/briefs/2026-11-01-relax-referenced-prose-stops.md`
+  (owner, 2026-11-01). Review (`workflows/`, instruction files). Ready at 8ca8ec2e, merge entry
+  Q-244 (2026-11-01-2237). Brief: `docs/working/briefs/2026-11-01-relax-referenced-prose-stops.md`
 - **Restriction audit unit 3: drop the dev-cycle skill's out-of-scope rituals** (owner,
   2026-11-01). Review (gate code). Ready at 7e6f1e0e, merge entry Q-243 (2026-11-01-2222).
   Brief: `docs/working/briefs/2026-11-01-relax-dev-cycle-skill-prose.md`

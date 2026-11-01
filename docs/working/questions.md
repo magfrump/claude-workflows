@@ -27,6 +27,7 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-242](#q-242--merge-gate-2026-10-31-failure-patterns-out-of-thoughts-c3f3f0e49f17) | you: judgment | Merge `refactor/failure-patterns-out-of-thoughts` at c3f3f0e49f1721319de7279ddc47ec15bdac7695? It does what... | 2026-10-31 |
 | [Q-243](#q-243--merge-gate-2026-11-01-relax-dev-cycle-skill-prose-7e6f1e0e9655) | you: judgment | Merge `docs/relax-dev-cycle-skill-prose` at 7e6f1e0e96550bda192e7d8cece50a6266d76b47? This is unit 3 of you... | 2026-11-01 |
+| [Q-244](#q-244--merge-2026-11-01-relax-referenced-prose-stops-8ca8ec2e0591) | you: judgment | Merge `docs/relax-referenced-prose-stops` at 8ca8ec2e059138d0f42e380cdcfc6476c652ea0e? This is unit 2 of yo... | 2026-11-01 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-222](#q-222--install-cc-verify-and-r6) | you: terminal | Four approved merges landed today, two of them in host tools: the `cc-verify` host tool (37b24c02, Q-217) a... | 2026-10-28 |
@@ -35,6 +36,49 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
+
+### Q-244 · merge-2026-11-01-relax-referenced-prose-stops-8ca8ec2e0591
+**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** OPEN
+
+**If you say no:** "stop and wait" keeps firing on failing tests and ambiguous requirements in /away, the plan gate stays unconditional, a long review unit waits for your waiver, and security review keeps rating hostile-loop routes as Must Address.
+
+**What an attacker would want here:** nothing new for an outside party. Outside text that turns a loop stays in scope for security review at its normal severity. Only routes that need a deliberately hostile loop, branch or planted git state drop to Informational (S1). The threat-model lines are read from main, never from the branch under review, so a branch can't scope out its own attack.
+
+Merge `docs/relax-referenced-prose-stops` at 8ca8ec2e059138d0f42e380cdcfc6476c652ea0e? This is unit 2 of your restriction audit. It narrows the stops and over-wide rules in the workflows and skills the cycle uses (prose only; 14 files, +192/-34).
+
+- **Why it's yours:** it changes `global-instructions/CLAUDE.md` and instruction files under `skills/` and `workflows/`. These are on the self-merge floor, and `workflows/` is also on your never line.
+- **What changes:**
+  - **Global instructions (/away):** failing tests with no obvious fix, and costly ambiguity, now mean set the task aside, file the question and keep working. You're still stopped for irreversible operations, and for a merge conflict only when its resolution would discard a change that can't be combined. The any-mode "guessing wrong would waste significant work" line goes. Net: 3 lines shorter.
+  - **RPI:**
+    - The plan-approval gate applies in /active only.
+    - A context overrun gets a checkpoint, not a stop.
+    - The enforcement-file pre-mortem lists bypass families within the project's threat model (H1 is always in).
+    - A clean revert range counts as the Rollback.
+  - **Review-fix loop:** in /away, a unit past ~800 lines splits automatically. It waits for your waiver only when no split exists. A re-firing finding gets the deeper fix. Only findings below Must Fix may be accepted and documented.
+  - **Security review:** a mechanism only an attacker the constraints doc puts out of scope can reach becomes Informational, `out of scope (constraints S1)`. Code review pastes those lines into the security critic's brief.
+  - **constraints-builder** may run the repo's tests, lint or build in its sandboxed scratch copy, under `timeout`.
+  - **`guides/convention-changes.md`:** migration pastes are collected into one.
+- **The loop departed from the brief on one point (K94).** The brief said the Fact-Check Gate should default to **Fix first** when no one is there to answer. The loop chose **Continue**: Incorrect findings still reach the critics and block merge at their tier, and the terminal pass needs the full panel anyway, so Fix first would cost a second full pass with no recall gain (S7). I agree, but it's your call. If you want Fix first, answer [3] with that note.
+- **Checks:**
+  - Three review iterations by a fact-check subagent and a contradiction-and-scope critic. They fixed two leftover /away contradictions, an H1 hole in the threat-model rule, a self-authorising constraints read and unattended accept-and-document of a Must Fix.
+  - Three findings were declined, each with an override-log row. One is a follow-up: `skills/draft-review/SKILL.md` has the same Fact-Check Gate and still asks unattended.
+  - The full health check passed. I read the global-instructions, security-reviewer and code-review diffs myself.
+- **Takes effect:** your host install at the next host install, and sessions in the image at the next release.
+- **`--check` printed:** `ok docs/working/briefs/2026-11-01-relax-referenced-prose-stops.md 8ca8ec2e059138d0f42e380cdcfc6476c652ea0e 6b330fd20c1373c30df5b8dc750d47b84959c2c7`, plus 14 path lines:
+  - `docs/decisions/log.md` (row 79), `docs/reviews/override-log.md`, the brief and the research doc;
+  - `global-instructions/CLAUDE.md`, `guides/convention-changes.md` and `guides/pr-prep-quick-ref.md`;
+  - `skills/code-review/SKILL.md`, `skills/constraints-builder/SKILL.md`, `skills/research-plan-implement/SKILL.md` and `skills/security-reviewer/SKILL.md`;
+  - `workflows/pr-prep.md`, `workflows/research-plan-implement.md` and `workflows/review-fix-loop.md`.
+- **Paths self-merge's floor would refuse:** the instruction files above, `workflows/` (your never glob) and `docs/decisions/log.md`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next iteration merges 8ca8ec2e | None beyond this answer | One `git revert` of the merge |
+| **[2] drop** | The brief closes and the stops stay | None now | Loops keep stopping on you |
+| **[3] changes needed** | Your note goes back to the loop (for example, Fix first for K94) | A one-line note | Another loop round |
+
+- **Blocks:** nothing.
+- **Interim:** the branch waits.
 
 ### Q-243 · merge-gate-2026-11-01-relax-dev-cycle-skill-prose-7e6f1e0e9655
 **Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** OPEN
