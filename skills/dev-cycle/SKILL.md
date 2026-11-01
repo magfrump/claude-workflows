@@ -70,12 +70,13 @@ one place every trigger is certain to be checked, so it checks all of them every
 
   A build loop can write `.git/config` and `~/.gitconfig` as easily as a file. `hg` reads
   no global or system config and runs no hook, fsmonitor command, commit signing or
-  replaced object; a test holds its pairs to the lib's `HARDEN` list. It does not switch off
-  what the repository's own config can still name (a filter, a merge driver, signature
-  verification on a merge): `--state`
-  refuses those, but only when it runs, so run it again (through the D6 block, from WT)
-  right before the iteration's commits, and treat a refusal there as step 0 does. A loop
-  that plants one between that check and the commit is a residual for Q-103's list (U5).
+  replaced object; a test holds it to carry every pair of the lib's `HARDEN` list. What the
+  repository's own config still names (a filter such as git-lfs, a merge driver, signature
+  verification on a merge) is the owner's setup and runs as it would for any git command;
+  `--state` refuses only a shallow or partial clone, an ambiguous default branch and a
+  variable that points git at another repository or index. Run it again (through the D6
+  block, from WT) right before the iteration's commits, and treat a refusal there as step 0
+  does.
   Commits set their identity on the command, as `GIT_AUTHOR_NAME`, `GIT_AUTHOR_EMAIL`,
   `GIT_COMMITTER_NAME` and `GIT_COMMITTER_EMAIL` (these outrank a planted `author.*` or
   `committer.*` key), from the environment's own values, or else from
@@ -83,8 +84,8 @@ one place every trigger is certain to be checked, so it checks all of them every
   (a read, the one plain `git` here; either empty: stop), never pasted into its text. The
   same goes for every command that writes a commit, the merge of main into WT included,
   written as `GIT_AUTHOR_NAME="$N" … hg …` (not `env … hg`, which would run another
-  program named `hg`). Never export these settings: set them per command, as `hg` does (`--state` refuses a
-  caller's config pair for a `HARDEN` key, row 702).
+  program named `hg`). Never export these settings: set them per command, as `hg` does (an
+  exported `git -c` pair would outrank the gate's own `HARDEN` pairs, row 702).
 - **The only questions writer** (D11). Build loops never write the questions files or
   `docs/working/watching.md`; their questions arrive in `blocked` markers, which the
   orchestrator files.
@@ -287,8 +288,9 @@ the iteration with no record, so the next one starts from the same `Main at:`:
 
 1. **`--state`**, run through the D6 block from the main worktree (the session's starting
    checkout, MAIN_WT, which the cycle reads but never commits in), before any other git
-   command. `ok` goes on; refuse lines (planted `.git` state: replace refs, grafts, hooks or
-   filter config, a default branch that is not one plain main or master...) are a stop,
+   command. `ok` goes on; refuse lines (a shallow or partial clone, a default branch that is
+   not exactly one plain main or master, a `GIT_DIR`-style variable in the caller's
+   environment) are a stop,
    quoted in one `you: judgment` entry unless an open one quotes the same lines. Any other
    exit is a stop as the Rules say (a `refuse d6:` naming a missing image file means an
    image older than this skill: its entry also gives the release paste below).

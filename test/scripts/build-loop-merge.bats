@@ -51,6 +51,21 @@ Build-loop-gate: 2026-10-01-x" ]
     [ "$status" -eq 2 ] && [ "$output" = "refuse $B: its branch feat/x has no commit the default branch lacks" ] && [ "$(git rev-parse main)" = "$n" ] || { show; return 1; }
 }
 
+@test "--merge lands under the owner's ordinary git setup: lfs filter config, merge and diff settings, an include, a husky hooksPath, SSH signing, autocrlf, a sparse checkout, duplicate objects; no hook runs (brief 2026-11-01-relax-gate-git-state)" {
+    sm; echo top > top.txt && commit_all top; M="$(git rev-parse main)"; TR="$(git merge-tree --write-tree main feat/x)"
+    git config filter.lfs.clean 'git-lfs clean -- %f'; git config filter.lfs.smudge 'git-lfs smudge -- %f'; git config filter.lfs.required true
+    git config merge.conflictStyle diff3; git config diff.algorithm histogram
+    printf '[user]\n\tname = t\n' > "$BATS_TEST_TMPDIR/inc"; git config include.path "$BATS_TEST_TMPDIR/inc"
+    mkdir -p .husky; printf '#!/bin/sh\ntouch "%s/hook-ran"\n' "$BATS_TEST_TMPDIR" > .husky/post-merge; chmod +x .husky/post-merge
+    echo '.husky/' >> .git/info/exclude; git config core.hooksPath .husky
+    git config gpg.format ssh; git config gpg.ssh.program "$BATS_TEST_TMPDIR/nowhere"; git config commit.gpgSign true
+    git config core.autocrlf true; git sparse-checkout set --no-cone /docs/ /work-feat-x.txt
+    git repack -adq; git rev-parse "main:$B" | git pack-objects -q .git/objects/pack/pack >/dev/null
+    mrg "$B" --expect "$T"; n="$(git rev-parse main)"
+    [ "$status" -eq 0 ] && [ "${lines[0]}" = "merged $B $T $TR $n" ] && [ -z "$stderr" ] || { show; return 1; }
+    [ "$(git rev-parse HEAD)" = "$n" ] && [ ! -e "$BATS_TEST_TMPDIR/hook-ran" ] || { echo "HEAD or a hook"; return 1; }
+}
+
 @test "--merge leaves main where another writer moved it between the check and the swap, and refuses git state planted after the check (T22, G17, row 494, U3a2)" {
     sm; git checkout -q --detach main
     o="$(git commit-tree "$(git rev-parse 'main^{tree}')" -p main -m other)"
@@ -61,10 +76,11 @@ Build-loop-gate: 2026-10-01-x" ]
     shim commit-tree "\"\$REAL\" --git-dir='$R/.git' update-ref refs/heads/main $o"
     PATH="$SHIM:$PATH" mrg "$B" --expect "$T"; M="$o" refused "the default branch moved after the check, or could not be updated; it was left as it is"
     git update-ref refs/heads/main "$M"
-    shim commit-tree "\"\$REAL\" config --file '$R/.git/config' filter.x.clean cat"  # commit-tree runs in the gate repository
-    PATH="$SHIM:$PATH" mrg "$B" --expect "$T"; refused "the git state changed after the check (refuse state filter.x.clean: set in config, it can make the gate's git run a command or change its merge)"
+    # A concurrent session that leaves a shallow clone (commit-tree runs in the gate repository).
+    shim commit-tree "echo $M > '$R/.git/shallow'"
+    PATH="$SHIM:$PATH" mrg "$B" --expect "$T"; refused "the git state changed after the check (refuse state shallow: a shallow clone, whose history the gate cannot read whole)"
     # A symbolic default branch refuses before any brief (final security F3).
-    git config --unset filter.x.clean; git update-ref refs/heads/trunk "$M" && git symbolic-ref refs/heads/main refs/heads/trunk
+    rm "$R/.git/shallow"; git update-ref refs/heads/trunk "$M" && git symbolic-ref refs/heads/main refs/heads/trunk
     mrg "$B" --expect "$T"; [ "$status" -eq 2 ] && [ "$output" = "refuse state default-branch: refs/heads/main is a symbolic ref" ] && [ "$(git rev-parse trunk)" = "$M" ] || { show; return 1; }
 }
 
@@ -98,7 +114,7 @@ Build-loop-gate: 2026-10-01-x" ]
     git reset -q --hard "$M"; orch
     mrg "$B" --expect "$T"; [ "$status" -eq 0 ] && [ "$(git -C "$R" rev-parse HEAD)" = "$(git rev-parse main)" ] && [ "$(cat "$R/work-feat-x.txt")" = feat/x ] || { show; return 1; }
     [ "$(git reflog -1 --format=%gs main)" = "build-loop: self-merge of 2026-10-01-x: Fast-forward" ]
-    # No maintenance repack of the store store_check read (i2 performance F1); then a --squash mergeOptions is cleared (i1 security F1).
+    # No maintenance repack started by the gate (i2 performance F1); then a --squash mergeOptions is cleared (i1 security F1).
     git -C "$R" reset -q --hard "$M" && git config maintenance.auto true && git config maintenance.loose-objects.enabled true && git config maintenance.loose-objects.auto 1
     np="$(find "$R/.git/objects/pack" -type f | wc -l)"
     mrg "$B" --expect "$T"; [ "$status" -eq 0 ] && [ "$(find "$R/.git/objects/pack" -type f | wc -l)" = "$np" ] || { show; return 1; }
@@ -150,11 +166,6 @@ Build-loop-gate: 2026-10-01-x" ]
     ln -s "$BATS_TEST_TMPDIR" "$R/sub"; mrg "$B" --expect "$T"; nref "$in holds sub, where the merge adds a directory"; rm "$R/sub"
     mkdir "$BATS_TEST_TMPDIR/elsewhere" && git -C "$R" config core.worktree "$BATS_TEST_TMPDIR/elsewhere"
     mrg "$B" --expect "$T"; nref "$in is missing, not its own top level, not the one whose git directory names the branch, or not on it at $M"; git -C "$R" config --unset core.worktree
-    # W's own config.worktree is gated before git status runs there: its clean filter never runs (i2 security F1).
-    git config extensions.worktreeConfig true && git -C "$R" config --worktree filter.x.clean "touch '$BATS_TEST_TMPDIR/ran'; cat"
-    echo '* filter=x' > "$R/.gitattributes"; touch -d '2000-01-01' "$R/docs/dev-cycle.md"
-    mrg "$B" --expect "$T"; nref "$in fails the state gate (refuse state filter.x.clean: set in config.worktree, it can make the gate's git run a command or change its merge)"
-    [ ! -e "$BATS_TEST_TMPDIR/ran" ]; rm "$R/.gitattributes"; git -C "$R" config --worktree --unset filter.x.clean; git config --unset extensions.worktreeConfig
     git -C "$R" checkout -q --detach && git worktree add -q "$BATS_TEST_TMPDIR/w2" main
     # w2's .git names a copy of its admin dir outside worktrees/: on main at M, but not the git dir that counted (rubric G6).
     cp -r "$R/.git/worktrees/w2" "$BATS_TEST_TMPDIR/rogue" && echo "$R/.git" > "$BATS_TEST_TMPDIR/rogue/commondir" && echo "gitdir: $BATS_TEST_TMPDIR/rogue" > "$BATS_TEST_TMPDIR/w2/.git"; mrg "$B" --expect "$T"; nref "$in is missing, not its own top level, not the one whose git directory names the branch, or not on it at $M"; echo "gitdir: $R/.git/worktrees/w2" > "$BATS_TEST_TMPDIR/w2/.git"
