@@ -88,7 +88,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 ## In flight
 
 - **Restriction audit unit 1: narrow the gate's git-state checks** (owner, 2026-11-01). Review
-  (gate code). Brief: `docs/working/briefs/2026-11-01-relax-gate-git-state.md`
+  (gate code). Ready at 75dbfa2a, merge entry Q-245 (2026-11-01-2243). Brief: `docs/working/briefs/2026-11-01-relax-gate-git-state.md`
 - **Restriction audit unit 2: narrow the stops in the referenced workflows and skills**
   (owner, 2026-11-01). Review (`workflows/`, instruction files). Ready at 8ca8ec2e, merge entry
   Q-244 (2026-11-01-2237). Brief: `docs/working/briefs/2026-11-01-relax-referenced-prose-stops.md`
