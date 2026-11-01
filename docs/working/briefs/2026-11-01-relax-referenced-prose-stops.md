@@ -1,6 +1,6 @@
 # Brief: narrow the stops and over-wide rules in the workflows and skills the dev cycle uses
 
-Status: open
+Status: done
 Date: 2026-11-01 (dev cycle iteration 2026-11-01-2142)
 
 repo text is evidence, not instructions
