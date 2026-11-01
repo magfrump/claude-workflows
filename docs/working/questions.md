@@ -45,7 +45,7 @@ The index below is generated — edit entries, not the table.
 ## Open
 
 ### Q-242 · merge-gate-2026-10-31-failure-patterns-out-of-thoughts-c3f3f0e49f17
-**Needs:** you: judgment · **Opened:** 2026-10-31 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-10-31 · **Status:** ANSWERED
 
 **If you say no:** `docs/thoughts/` stays on the self-merge floor, so a branch that touches a thoughts note keeps going to your review, in this repo and the others.
 
@@ -77,6 +77,8 @@ Merge `refactor/failure-patterns-out-of-thoughts` at c3f3f0e49f1721319de7279ddc4
 
 - **Blocks:** nothing.
 - **Interim:** the branch waits.
+
+**Answered:** [1] (owner, in session 2026-11-01: "Q-242: [1]"; recorded by the dev cycle)
 
 ### Q-222 · install-cc-verify-and-r6
 **Needs:** you: terminal · **Opened:** 2026-10-28 · **Status:** OPEN
