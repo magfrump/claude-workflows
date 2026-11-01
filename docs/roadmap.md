@@ -13,6 +13,12 @@ user's order).
 
 Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0002).
 
+- **Agent: restriction audit units 4-7** (filed 2026-11-01, owner request). Motive: the owner
+  asked to remove every restriction without a specific, in-scope threat model; plan and
+  inventories in `docs/working/research-2026-11-01-restriction-audit.md`. Units 1-3 are In
+  flight. First step: once unit 1 merges, brief unit 4 (brief, marker and path grammar, the
+  loop prompt's K24/K26), then unit 5 (the cycle runs migrations; it also absorbs the
+  image-lag item below), 6 (import walk seeds and parser) and 7 (D6 block into the image).
 - **Agent: the cycle closes a cleared image-lag entry itself** (filed 2026-11-01, owner
   request). Motive: when the image already holds main's gate code (step 0.1's `diff --quiet`
   exits 0), the release the entry asks for has happened, yet the skill only lists the entry
@@ -76,6 +82,15 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
      else open one) is an idea until v1 is used. v1 merged at a8e941a5 (Q-232 [1]).
 
 ## In flight
+
+- **Restriction audit unit 1: narrow the gate's git-state checks** (owner, 2026-11-01). Review
+  (gate code). Brief: `docs/working/briefs/2026-11-01-relax-gate-git-state.md`
+- **Restriction audit unit 2: narrow the stops in the referenced workflows and skills**
+  (owner, 2026-11-01). Review (`workflows/`, instruction files). Brief:
+  `docs/working/briefs/2026-11-01-relax-referenced-prose-stops.md`
+- **Restriction audit unit 3: drop the dev-cycle skill's out-of-scope rituals** (owner,
+  2026-11-01). Review (gate code). Brief:
+  `docs/working/briefs/2026-11-01-relax-dev-cycle-skill-prose.md`
 
 ## Next
 
