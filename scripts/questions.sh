@@ -3,7 +3,7 @@
 # open questions only) and docs/working/questions-archive.md (answered).
 #
 # Why a script and not a convention: this repo's own evidence is that an
-# unenforced instruction does not execute — docs/thoughts/failure-patterns.md
+# unenforced instruction does not execute — docs/failure-patterns.md
 # holds 0 entries against 104 eligible fix commits, and the code-review override
 # log went unwritten for nine runs, both because only prose asked for them.
 # An index that must be hand-maintained would drift the same way. Here `index`

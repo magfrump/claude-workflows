@@ -1207,17 +1207,18 @@ EOF
 @test "--check-fix refuses files an instruction file imports, and compares paths ignoring case" {
     mkdir -p docs/Working docs/guides
     printf 'Rules: see @docs/conventions.md and @README.md\n' > GEMINI.md
-    for f in docs/conventions.md README.md docs/guides/g.md docs/Working/notes.md docs/Dev-Cycle.md docs/notes.md docs/Constraints.md docs/thoughts/t.md; do
+    for f in docs/conventions.md README.md docs/guides/g.md docs/Working/notes.md docs/Dev-Cycle.md docs/notes.md docs/Constraints.md docs/thoughts/t.md docs/Failure-Patterns.md; do
         [[ "$f" != */* ]] || mkdir -p "${f%/*}"; echo x > "$f"
     done
     git add -A && git commit -qm docs
     run --separate-stderr bash "$DC" --check-fix docs/conventions.md README.md docs/guides/g.md docs/Working/notes.md docs/Dev-Cycle.md docs/notes.md \
-        docs/Constraints.md docs/thoughts/t.md
+        docs/Constraints.md docs/thoughts/t.md docs/Failure-Patterns.md
     [ "$status" -eq 0 ]
-    # docs/constraints.md is the user's (plan D2); docs/thoughts/ stays a living doc the cycle may fix.
+    # docs/constraints.md is the user's (plan D2) and docs/failure-patterns.md a record the gate reads;
+    # docs/thoughts/ stays a living doc the cycle may fix.
     for want in "skip docs/conventions.md: an instruction file names it" "skip README.md: an instruction file names it" \
                 "ok docs/guides/g.md" "skip docs/Working/notes.md: in-cycle fixes edit only" "skip docs/Dev-Cycle.md: in-cycle fixes edit only" \
-                "ok docs/notes.md" "skip docs/Constraints.md: in-cycle fixes edit only" "ok docs/thoughts/t.md"; do
+                "ok docs/notes.md" "skip docs/Constraints.md: in-cycle fixes edit only" "ok docs/thoughts/t.md" "skip docs/Failure-Patterns.md: in-cycle fixes edit only"; do
         [[ "$output" == *"$want"* ]] || { echo "missing: $want"; echo "$output"; return 1; }
     done
 }

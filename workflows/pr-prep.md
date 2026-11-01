@@ -48,20 +48,20 @@ git diff --stat main...HEAD | tail -1
 
 **If the diff stat shows 0 files changed**, verify you're on the correct branch and that main is up to date (`git fetch origin main`).
 
-**Advisory: failure-pattern coverage.** If this branch has `fix(...)` commits, check whether each one produced a corresponding entry in `docs/thoughts/failure-patterns.md`. The check is mechanical but its output is advisory — not every `fix:` commit should yield a library entry (typos, dep bumps, one-line obvious fixes don't). The point is to surface the question, not to coerce an answer.
+**Advisory: failure-pattern coverage.** If this branch has `fix(...)` commits, check whether each one produced a corresponding entry in `docs/failure-patterns.md`. The check is mechanical but its output is advisory — not every `fix:` commit should yield a library entry (typos, dep bumps, one-line obvious fixes don't). The point is to surface the question, not to coerce an answer.
 
 ```bash
 # Count fix(...) commits on this branch
 FIX_COMMITS=$(git log --oneline main..HEAD --grep='^fix' | wc -l)
 
 # Count new FP-NNN entries added to the library
-PATTERN_ADDITIONS=$(git diff main...HEAD -- docs/thoughts/failure-patterns.md \
+PATTERN_ADDITIONS=$(git diff main...HEAD -- docs/failure-patterns.md \
   | grep -cE '^\+- \*\*FP-[0-9]+\*\*' || true)
 
 if [[ "$FIX_COMMITS" -gt 0 && "$PATTERN_ADDITIONS" -eq 0 ]]; then
   echo "Advisory: $FIX_COMMITS fix(...) commit(s) on branch, 0 new failure-pattern entries."
   echo "  If any fix had a non-trivial {symptom, cause, fix} signature, append a new"
-  echo "  FP-NNN entry to docs/thoughts/failure-patterns.md describing the root cause"
+  echo "  FP-NNN entry to docs/failure-patterns.md describing the root cause"
   echo "  and the symptom that led you to it. Use the existing entries as the format"
   echo "  reference. Do not skip this step — the library's value compounds only if"
   echo "  it's appended to."
@@ -69,7 +69,7 @@ if [[ "$FIX_COMMITS" -gt 0 && "$PATTERN_ADDITIONS" -eq 0 ]]; then
 fi
 ```
 
-**Interpret the result:** A warning here is a prompt, not a block — except on a build-loop branch, where `scripts/build-loop.sh --check` refuses fix(...) commits with neither a new FP-NNN entry (a number no other entry has) nor a `Failure-pattern skip: <reason>` line in the research doc. For each `fix(...)` commit, ask: did the diagnosis surface a reusable cause-and-fix shape a future grep would want to find? If yes for any of them, append a new FP-NNN entry to `docs/thoughts/failure-patterns.md` describing the root cause and the symptom that led you to it. Use the existing entries as the format reference. Do not skip this step — the library's value compounds only if it's appended to. If no for all of them, proceed — the legitimate-skip vocabulary in the warning covers the case (on a build-loop branch, write that reason as the `Failure-pattern skip:` line; the gate counts fix(...) subjects in any case, which this snippet does not). Do not invent FP entries to silence the warning; a misleading entry pollutes the library and degrades the prior signal for the next diagnosis.
+**Interpret the result:** A warning here is a prompt, not a block — except on a build-loop branch, where `scripts/build-loop.sh --check` refuses fix(...) commits with neither a new FP-NNN entry (a number no other entry has) nor a `Failure-pattern skip: <reason>` line in the research doc. For each `fix(...)` commit, ask: did the diagnosis surface a reusable cause-and-fix shape a future grep would want to find? If yes for any of them, append a new FP-NNN entry to `docs/failure-patterns.md` describing the root cause and the symptom that led you to it. Use the existing entries as the format reference. Do not skip this step — the library's value compounds only if it's appended to. If no for all of them, proceed — the legitimate-skip vocabulary in the warning covers the case (on a build-loop branch, write that reason as the `Failure-pattern skip:` line; the gate counts fix(...) subjects in any case, which this snippet does not). Do not invent FP entries to silence the warning; a misleading entry pollutes the library and degrades the prior signal for the next diagnosis.
 
 **Completion criteria:**
 - [ ] No uncommitted changes (clean working tree)

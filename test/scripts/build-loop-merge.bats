@@ -270,7 +270,7 @@ Build-loop-approved: Q-001" ]
     T="$(git rev-parse feat/x)"
     mrg "$B" --expect "$T"
     [ "$status" -eq 2 ] && [ "$output" = "refuse $B: 1 failure-pattern gaps on feat/x (gap lines follow)
-gap $B: 1 fix(...) commits on feat/x add no new FP-NNN entry to docs/thoughts/failure-patterns.md, and its research doc has no line starting \"Failure-pattern skip:\" with a reason (pr-prep's failure-pattern advisory)
+gap $B: 1 fix(...) commits on feat/x add no new FP-NNN entry to docs/failure-patterns.md, and its research doc has no line starting \"Failure-pattern skip:\" with a reason (pr-prep's failure-pattern advisory)
 path $B A work-feat-x.txt" ] && [ "$(git rev-parse main)" = "$M" ] || { show; return 1; }
     # The skip line, on the research doc main already holds, lets it land.
     git checkout -q feat/x && echo "Failure-pattern skip: a one-line reason" >> "$RD" && commit_all skip && git checkout -q --detach main
