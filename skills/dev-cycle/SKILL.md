@@ -61,8 +61,8 @@ one place every trigger is certain to be checked, so it checks all of them every
   `~/.claude/scripts/questions.sh` (a uid-owned link; its own hints still print that path).
 - **The orchestrator's git** (worktrees, staging, its commits, merging main into WT, ancestry
   checks) is plain `git -C PATH …`, with the user's normal config and identity: before the
-  iteration's first commit, `git -C WT config user.email` must print one (none: a stop,
-  since git would otherwise make one up from the account and host). Two honest settings are pinned where they matter:
+  iteration's first commit, `git -C WT config user.email` and `… user.name` must each print
+  one (none: a stop, since git would otherwise make one up from the account and host). Two honest settings are pinned where they matter:
   `-c log.showSignature=false` on a `log` whose output is read, and `-c commit.gpgSign=false`
   on a command that writes a commit (no signing key in the sandbox). `add`, `mv` and `rm`
   run as `git --literal-pathspecs -C PATH add -- FILE…`, so a path holding `*` or
@@ -793,7 +793,7 @@ Then land WT's branch (D13; not through `pr-prep`: rows 747-759, 781), all from 
    what the land carries: `git -C WT diff --cached --no-renames --name-status BASE`, BASE
    being `git -C WT merge-base HEAD refs/heads/main` (or master), so a commit that reached
    the branch some other way shows (rows 722, 772; step 10's land lists its own).
-2. Commit the index as staged: `git -C WT -c commit.gpgSign=false commit -q --no-verify -F
+2. Commit the index as staged (after the Rules' identity check): `git -C WT -c commit.gpgSign=false commit -q --no-verify -F
    MSGFILE`, never `-a` or paths (rows 747, 749; step 3 reads the tree it made).
    Committing first leaves WT clean, so main can be merged in.
 3. Read M, the default branch's commit (`git -C WT rev-parse --verify refs/heads/main`),
