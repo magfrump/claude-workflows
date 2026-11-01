@@ -13,6 +13,34 @@ user's order).
 
 Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0002).
 
+- **Agent: the cycle closes a cleared image-lag entry itself** (filed 2026-11-01, owner
+  request). Motive: when the image already holds main's gate code (step 0.1's `diff --quiet`
+  exits 0), the release the entry asks for has happened, yet the skill only lists the entry
+  for the owner to answer (D8), which spent an owner answer on Q-227 on 2026-11-01. First
+  step: let step 0.1 close an open `image-lag` / `image-off-main-*` entry on exit 0 (status
+  ANSWERED, a `met` line naming C and M), with `--cycle-diff` accepting that one change;
+  gate code, so a merge entry. May fold into the restriction audit below.
+- **Agent: Q-168 · finish the q096b exit-scan remote-names unit** (filed 2026-11-01, step 6,
+  from Q-234's migrate). Motive: the exit scan parses remote names and legacy
+  `remotes/`/`branches/` files more loosely than git. First step: rebase
+  `fix/q096b-exit-scan-remote-names` (75d08a94) onto current main and run its review loop;
+  landing was Q-171. Full entry: `docs/working/questions.md` at b5f620ae.
+- **Agent: Q-097 · exit-scan older routes** (filed 2026-11-01, step 6, from Q-234's migrate).
+  Motive: two documented Medium routes the exit scan does not see (a symlink to a repo
+  outside the checkout; a non-standard container-form `.git`). First step: one enforcement
+  unit each, after Q-168, or record why it stays open. Full entry: as above.
+- **Agent: Q-125 · cc-isolated Bash sandbox, live run** (filed 2026-11-01, step 6, from
+  Q-234's migrate). Motive: nothing sandboxes Bash in cc-isolated. Built, unmerged
+  (`feat/q125-cc-isolated-sandbox`); waits on the host install (Q-222). First step: Next 1.
+- **Agent: Q-079 · canon-instance proposal filter** (filed 2026-11-01, step 6, from Q-234's
+  migrate). Motive: design a commit-to-canon-instance script and the heuristic for which
+  candidates get proposed, keeping the canon compact. First step: a divergent-design doc;
+  the filter choice then comes back as a `you: judgment` entry.
+- **Agent: Q-147 · q089 source-guard unit** (filed 2026-11-01, step 6, from Q-234's
+  migrate). Motive: the static source-set test was split off unit A (`feat/q089-source-guard`,
+  fa059477). First step: a fresh loop that narrows the test's claim to "plain spellings,
+  accidental drift".
+
 - **Trial week: less friction, less habituation (2026-10-30 to about 2026-11-06).** Motive:
   the owner's 2026-10-29 brainstorm request ("try things for a few days to a week").
   Every iteration writes owner entries, the image-lag entry and the final message as
@@ -272,6 +300,7 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- Q-234: `questions.sh migrate` run (owner, 2026-11-01): watches now in `docs/working/watching.md`; Q-173 (exit-scan split groups) closed, settled by Q-238 [1]. Branch `chore/q234-migrate`.
 - **Failure patterns move out of `docs/thoughts/`; `docs/thoughts/` leaves the self-merge
   floor** (owner, 2026-10-31). The library is now `docs/failure-patterns.md`, still on the
   floor; other repos get the `failure-patterns-out-of-thoughts` migration after the next
