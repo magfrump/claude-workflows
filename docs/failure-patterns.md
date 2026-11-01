@@ -127,16 +127,16 @@ three different files.
 
 ```bash
 # By symptom keyword (anywhere in the symptom field):
-grep -i 'symptom:[^ ]*null' docs/thoughts/failure-patterns.md
+grep -i 'symptom:[^ ]*null' docs/failure-patterns.md
 
 # By cause category:
-grep 'cause:n+1-query' docs/thoughts/failure-patterns.md
+grep 'cause:n+1-query' docs/failure-patterns.md
 
 # By fix shape:
-grep 'fix:invalidate-cache' docs/thoughts/failure-patterns.md
+grep 'fix:invalidate-cache' docs/failure-patterns.md
 
 # By pattern ID:
-grep -E '^- \*\*FP-007\*\*' docs/thoughts/failure-patterns.md
+grep -E '^- \*\*FP-007\*\*' docs/failure-patterns.md
 ```
 
 When citing a matched pattern in a research doc, commit message, or hypothesis, use the form `FP-NNN`. When tagging a hypothesis as derived from a prior pattern, use the source-tag form `[from prior bug FP-NNN]`.

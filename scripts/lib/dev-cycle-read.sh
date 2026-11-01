@@ -1958,11 +1958,16 @@ walk_has() {
 # TRUTH_WHY set when it refuses: instr (isstart: an instruction or prompt
 # file), dot (a .-prefixed component, a top-level one included), cycle
 # (writable), settings (docs/dev-cycle.md), user (docs/constraints.md, the
-# user's: plan D2) or record (docs/decisions/, docs/human-author/), and case
-# for a path holding an upper-case letter (a caller that did not lower it).
-# Each caller words the words and adds its own rules (docs/thoughts/ is the
-# floor's only: a living doc an in-cycle fix may edit). truthwalk then asks
-# the import walk. Run both in the caller's shell: they set TRUTH_WHY.
+# user's: plan D2) or record (docs/decisions/, docs/human-author/, and
+# docs/failure-patterns.md, the library the gate's fp_gaps compares entry
+# numbers in, and its old path docs/thoughts/failure-patterns.md, which a repo
+# not yet migrated still holds: an unreviewed edit or delete there would
+# become the library, or drop the pending migration, at the owner's git mv),
+# and case for a path holding an upper-case letter (a caller that did not
+# lower it). Each caller words the words and adds its own rules; the rest of
+# docs/thoughts/ is in none of them (a living doc an in-cycle fix may edit and
+# a self-merge may land; brief 2026-10-31-failure-patterns-out-of-thoughts).
+# truthwalk then asks the import walk. Run both in the caller's shell: they set TRUTH_WHY.
 TRUTH_WHY=""
 truthrule() {
   TRUTH_WHY=""
@@ -1972,7 +1977,7 @@ truthrule() {
   elif writable "$1"; then TRUTH_WHY="cycle"
   elif [[ "$1" == docs/dev-cycle.md ]]; then TRUTH_WHY="settings"
   elif [[ "$1" == docs/constraints.md ]]; then TRUTH_WHY="user"
-  elif [[ "$1" =~ ^docs/(decisions|human-author)/ ]]; then TRUTH_WHY="record"
+  elif [[ "$1" =~ ^docs/(decisions|human-author)/ || "$1" == docs/failure-patterns.md || "$1" == docs/thoughts/failure-patterns.md ]]; then TRUTH_WHY="record"
   else return 1; fi
 }
 # truthwalk WALK PATH: runs the import walk WALK (tree for --check-fix, main
@@ -2051,7 +2056,6 @@ floor() {
   [[ -n "$lp" ]] || lp="$(lower "$1")" || { FLOOR_WHY=case; return 0; }
   if truthrule "$lp"; then FLOOR_WHY="$TRUTH_WHY"; [[ "$FLOOR_WHY" != settings ]] || FLOOR_WHY=cycle
   elif [[ "$lp" =~ $GATE_CODE ]]; then FLOOR_WHY=gate
-  elif [[ "$lp" == docs/thoughts/* ]]; then FLOOR_WHY=record
   elif [[ "$lp" == docs/working/* ]] && ! ownfile "$lp" "$2" "$3"; then FLOOR_WHY=working
   elif [[ "$lp" == docs/reviews/* ]] && ! ownfile "$lp" "$2" "$3"; then FLOOR_WHY=review
   elif truthwalk main "$lp"; then FLOOR_WHY="$TRUTH_WHY"  # walk (TRUTH_WHERE says where) or imported

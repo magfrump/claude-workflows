@@ -7,7 +7,8 @@
 # (conv_source): questions, scripts/questions.sh's "Entry grammar" header
 # block plus the files `questions.sh init` writes; roadmap, the template in
 # skills/dev-cycle/SKILL.md step 6; brief, step 8's rules for a brief's lines;
-# record, step 9's record template. A change to one of those sources changes
+# record, step 9's record template; library, the failure-pattern library's
+# path, scripts/build-loop.sh's FP_LIB= line. A change to one of those sources changes
 # its fingerprint, and the test fails until the change adds a registry line
 # whose FP is the new one (guides/convention-changes.md).
 #
@@ -39,7 +40,7 @@
 # ROOT, absolute or relative to the current directory, defaults to the
 # checkout holding this file.
 
-CONVENTIONS=(questions roadmap brief record)
+CONVENTIONS=(questions roadmap brief record library)
 MIG_ID=(); MIG_CONV=(); MIG_FP=(); MIG_PATH=(); MIG_ERE=(); MIG_REMEDY=(); MIG_BAD=()
 mig_reset() { MIG_ID=(); MIG_CONV=(); MIG_FP=(); MIG_PATH=(); MIG_ERE=(); MIG_REMEDY=(); MIG_BAD=(); }
 
@@ -91,6 +92,10 @@ conv_source() {
       out="$(awk -v h="$f" '$0 == h { s = 1; next } s == 1 && /^### / { exit } s == 1 && /^```markdown$/ { s = 2; next } s == 2 && /^```$/ { e = 1; exit } s == 2 { print } END { exit !e }' \
         "$r/skills/dev-cycle/SKILL.md")" || return 1
       [[ -n "$out" ]] || return 1; printf '%s\n' "$out" ;;
+    library)
+      # The library's path, as the gate reads it: a move changes it.
+      out="$(grep -a '^FP_LIB=' "$r/scripts/build-loop.sh")" || return 1
+      printf '%s\n' "$out" ;;
     brief)
       out="$(awk '/^### 8\. Build briefs$/ { s = 1; next } s && /^### / { exit } s == 1 && /^For each, write `docs\/working\/briefs\// { s = 2 } s == 2 { print } s == 2 && /line a loop.s merge changes\./ { e = 1; exit } END { exit !e }' \
         "$r/skills/dev-cycle/SKILL.md")" || return 1
@@ -144,6 +149,10 @@ mig baseline-record record 7e93036efc09b7ba - - 'none: the baseline the registry
 # shellcheck disable=SC2088  # the remedy is text the owner pastes; its ~ expands there
 mig questions-owner-routes-040 questions 47e9bd8f3916be62 docs/working/questions.md '^\*\*Needs:\*\* (agent|trigger|deferred)( |$)' '~/.claude/scripts/questions.sh migrate'
 mig roadmap-watching-040 roadmap 1178ca230944fb9f - - 'none: only a new roadmap'"'"'s preamble names watching.md; an existing one stays valid, and its preamble is frozen'
+# The library left docs/thoughts/ (a self-mergeable working directory) for the
+# docs/ root, where the self-merge floor keeps it; scripts/build-loop.sh's
+# FP_REMEDY repeats this remedy in its gap line.
+mig failure-patterns-out-of-thoughts library de71e707492a0dc7 docs/thoughts/failure-patterns.md '^' 'git mv docs/thoughts/failure-patterns.md docs/failure-patterns.md'
 
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   set -uo pipefail

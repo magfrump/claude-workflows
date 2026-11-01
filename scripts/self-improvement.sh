@@ -1119,7 +1119,7 @@ You may ONLY create or modify the following files: $FILES_TOUCHED
 Files under docs/working/, docs/decisions/, docs/reviews/, and docs/thoughts/
 are also allowed — these are the process/learning artifacts this repo's own dev
 process expects you to produce (research/plan docs, decision records, review
-reports, retros). Do NOT edit docs/thoughts/failure-patterns.md directly; the
+reports, retros). Do NOT edit docs/failure-patterns.md directly; the
 loop appends failure-pattern entries after merge to avoid parallel-branch
 conflicts on that append-only file.
 You MUST NOT create or modify any other files. If during implementation you
@@ -1128,7 +1128,7 @@ docs/working/scope-exception-${TASK_ID}.md instead of making the change.
 
 Follow the research-plan-implement workflow in workflows/research-plan-implement.md.
 Proceed through research and plan without waiting for human review.
-Per RPI step 2, before planning, grep docs/thoughts/failure-patterns.md for
+Per RPI step 2, before planning, grep docs/failure-patterns.md for
 prior root-caused bugs in your area (symptom keywords, touched-file names); a
 hit is a strong prior on what can go wrong — test the recorded fix shape first.
 
@@ -1149,7 +1149,7 @@ pre-ship sequence, the same one pr-prep.md prescribes:
      steps you skipped and why, and surprises. These compound across rounds.
   4. If your change fixes a root-caused bug, add a one-line 'Failure pattern:'
      note (symptom / cause / fix) to that retro doc; the loop harvests these into
-     docs/thoughts/failure-patterns.md after merge. Do NOT edit that file yourself.
+     docs/failure-patterns.md after merge. Do NOT edit that file yourself.
 
 COMMITTING: do NOT run git add, git commit or git push. When you are done, write
 your commit message to the file ${SI_COMMIT_MSG_FILE} at the root of this worktree
@@ -1250,8 +1250,9 @@ line and a 'Notes:' line recording any judgement calls made without human input.
                     # Process/learning artifacts the repo's own dev process expects
                     # tasks to produce are always in-scope, so a task never has to
                     # trip a scope exception just to record a decision, a review, or
-                    # a retro/failure-pattern. Mirrors the FILE SCOPE CONSTRAINT in
-                    # the implement prompt below.
+                    # a retro. Mirrors the FILE SCOPE CONSTRAINT in the implement
+                    # prompt below; docs/failure-patterns.md is not among them (the
+                    # loop appends to it after merge).
                     docs/working/*|docs/decisions/*|docs/reviews/*|docs/thoughts/*) continue ;;
                 esac
                 if ! file_in_declared_scope "$FILE" "$DECLARED_FILES"; then
@@ -1843,14 +1844,14 @@ SOLVED_EOF
     # -------------------------------------------------------
     # Step 5b: Harvest failure patterns from merged fix tasks
     # -------------------------------------------------------
-    # pr-prep.md appends an FP-NNN entry to docs/thoughts/failure-patterns.md
+    # pr-prep.md appends an FP-NNN entry to docs/failure-patterns.md
     # whenever a fix(...) commit ships, and RPI step 2 greps that file. The
     # per-task agents record a one-line 'Failure pattern:' in their retro docs
     # but do NOT touch the append-only library — parallel worktrees would
     # conflict on it. Harvest sequentially here (one claude call, after all
     # merges) so the library actually accrues cross-round debugging memory
     # instead of it living only in per-round JSON reports.
-    FP_LIB="$REPO_DIR/docs/thoughts/failure-patterns.md"
+    FP_LIB="$REPO_DIR/docs/failure-patterns.md"
     FIX_RETROS=""
     for TASK_ID in $MERGED_TASKS; do
         TIP_SHA="${BRANCH_TIP_SHAS[$TASK_ID]:-}"
@@ -1863,15 +1864,18 @@ SOLVED_EOF
         RETRO="$REPO_DIR/docs/thoughts/retro-r${ROUND}-${TASK_ID}.md"
         [ -f "$RETRO" ] && FIX_RETROS="${FIX_RETROS} ${RETRO}"
     done
-    if [ -f "$FP_LIB" ] && [ -n "$FIX_RETROS" ] && command -v claude >/dev/null 2>&1; then
+    if [ ! -f "$FP_LIB" ] && [ -f "$REPO_DIR/docs/thoughts/failure-patterns.md" ] && [ -n "$FIX_RETROS" ]; then
+        # A repo not yet migrated (scripts/lib/migrations.sh, failure-patterns-out-of-thoughts).
+        echo "Failure-pattern harvest skipped: the library is still at docs/thoughts/failure-patterns.md; run 'git mv docs/thoughts/failure-patterns.md docs/failure-patterns.md' from the repo root and commit" >&2
+    elif [ -f "$FP_LIB" ] && [ -n "$FIX_RETROS" ] && command -v claude >/dev/null 2>&1; then
         echo "Harvesting failure patterns from fix tasks..."
         NEXT_FP=$(grep -oE 'FP-[0-9]+' "$FP_LIB" | sed 's/FP-//' | sort -n | tail -1 || true)
         NEXT_FP=$((10#${NEXT_FP:-0} + 1))
-        # Appends to docs/thoughts/failure-patterns.md, so headless needs
+        # Appends to docs/failure-patterns.md, so headless needs
         # acceptEdits (see claude_headless_flags()). The retro docs it reads
         # are under $REPO_DIR, which is this process's cwd, so no --add-dir.
         mapfile -t FP_FLAGS < <(claude_headless_flags)
-        claude -p "${FP_FLAGS[@]}" "Append failure-pattern entries to docs/thoughts/failure-patterns.md.
+        claude -p "${FP_FLAGS[@]}" "Append failure-pattern entries to docs/failure-patterns.md.
 
 Read the schema at the top of that file, then read each retro doc listed below.
 For any retro whose 'Failure pattern:' note describes a genuine reusable
