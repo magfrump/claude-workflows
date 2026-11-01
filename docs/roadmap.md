@@ -87,13 +87,12 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
-- **Restriction audit unit 1: narrow the gate's git-state checks** (owner, 2026-11-01). Review
-  (gate code). Ready at 75dbfa2a, merge entry Q-245 (2026-11-01-2243). Brief: `docs/working/briefs/2026-11-01-relax-gate-git-state.md`
 - **Restriction audit unit 2: narrow the stops in the referenced workflows and skills**
-  (owner, 2026-11-01). Review (`workflows/`, instruction files). Ready at 8ca8ec2e, merge entry
-  Q-244 (2026-11-01-2237). Brief: `docs/working/briefs/2026-11-01-relax-referenced-prose-stops.md`
+  (owner, 2026-11-01). Review (`workflows/`, instruction files). Q-244 [1], but the merge
+  conflicted with unit 1 (decision-log row 79): stopped entry Q-246 (2026-11-01-2347). Brief: `docs/working/briefs/2026-11-01-relax-referenced-prose-stops.md`
 - **Restriction audit unit 3: drop the dev-cycle skill's out-of-scope rituals** (owner,
-  2026-11-01). Review (gate code). Ready at 7e6f1e0e, merge entry Q-243 (2026-11-01-2222).
+  2026-11-01). Review (gate code). Q-243 [1], but the merge conflicted with unit 1 (the
+  Hardened git passage): stopped entry Q-247 (2026-11-01-2347).
   Brief: `docs/working/briefs/2026-11-01-relax-dev-cycle-skill-prose.md`
 
 ## Next
@@ -319,6 +318,9 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- **Restriction audit unit 1: the gate's git-state checks narrowed to in-scope threats**
+  (owner, 2026-11-01). Merged 63ba32e9 (Q-245 [1]); takes effect at the next release. Brief:
+  `docs/working/briefs/closed/2026-11-01-relax-gate-git-state.md`
 - Q-234: `questions.sh migrate` run (owner, 2026-11-01): watches now in `docs/working/watching.md`; Q-173 (exit-scan split groups) closed, settled by Q-238 [1]. Branch `chore/q234-migrate`.
 - **Failure patterns move out of `docs/thoughts/`; `docs/thoughts/` leaves the self-merge
   floor** (owner, 2026-10-31). The library is now `docs/failure-patterns.md`, still on the
