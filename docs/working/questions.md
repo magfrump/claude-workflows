@@ -29,6 +29,8 @@ The index below is generated — edit entries, not the table.
 | [Q-243](#q-243--merge-gate-2026-11-01-relax-dev-cycle-skill-prose-7e6f1e0e9655) | you: judgment | Merge `docs/relax-dev-cycle-skill-prose` at 7e6f1e0e96550bda192e7d8cece50a6266d76b47? This is unit 3 of you... | 2026-11-01 |
 | [Q-244](#q-244--merge-2026-11-01-relax-referenced-prose-stops-8ca8ec2e0591) | you: judgment | Merge `docs/relax-referenced-prose-stops` at 8ca8ec2e059138d0f42e380cdcfc6476c652ea0e? This is unit 2 of yo... | 2026-11-01 |
 | [Q-245](#q-245--merge-gate-2026-11-01-relax-gate-git-state-75dbfa2a6e80) | you: judgment | Merge `refactor/relax-gate-git-state` at 75dbfa2a6e80104d33ecb8aa5741f06c3444b013? This is unit 1 of your r... | 2026-11-01 |
+| [Q-246](#q-246--stopped-2026-11-01-relax-referenced-prose-stops-1) | you: judgment | Brief 2026-11-01-relax-referenced-prose-stops's build loop stopped; re-dispatch or drop? | 2026-11-01 |
+| [Q-247](#q-247--stopped-2026-11-01-relax-dev-cycle-skill-prose-1) | you: judgment | Brief 2026-11-01-relax-dev-cycle-skill-prose's build loop stopped; re-dispatch or drop? | 2026-11-01 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-222](#q-222--install-cc-verify-and-r6) | you: terminal | Four approved merges landed today, two of them in host tools: the `cc-verify` host tool (37b24c02, Q-217) a... | 2026-10-28 |
@@ -37,6 +39,46 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
+
+### Q-246 · stopped-2026-11-01-relax-referenced-prose-stops-1
+**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** OPEN
+
+Brief 2026-11-01-relax-referenced-prose-stops's build loop stopped; re-dispatch or drop?
+> Reason: your approved merge (Q-244 [1]) of 8ca8ec2e refused: "docs/relax-referenced-prose-stops conflicts with the default branch". Unit 1 merged first (63ba32e9) and also added decision-log row 79.
+
+**If you say no:** the branch stays unmerged and the workflows keep their stops.
+
+**What an attacker would want here:** nothing; this only sends the same work back to merge main in.
+
+- **What re-dispatch does:** the loop merges main into its branch, resolves the clash (renumbering its decision-log row), re-runs its tests and ends `ready` at a new tip. That comes back to you as a new merge entry, because approval pins the exact commit.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] re-dispatch** | The loop merges main in and comes back ready | One more merge answer | Nothing merges without that answer |
+| **[2] drop** | The brief closes; unit 2 is abandoned | None now | The stops stay |
+
+- **Blocks:** nothing.
+- **Interim:** the branch waits.
+
+### Q-247 · stopped-2026-11-01-relax-dev-cycle-skill-prose-1
+**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** OPEN
+
+Brief 2026-11-01-relax-dev-cycle-skill-prose's build loop stopped; re-dispatch or drop?
+> Reason: your approved merge (Q-243 [1]) of 7e6f1e0e refused: "docs/relax-dev-cycle-skill-prose conflicts with the default branch". Unit 1 merged first (63ba32e9) and edits the same Hardened git passage of `skills/dev-cycle/SKILL.md`.
+
+**If you say no:** the branch stays unmerged and the skill keeps its rituals.
+
+**What an attacker would want here:** nothing; this only sends the same work back to merge main in.
+
+- **What re-dispatch does:** the loop merges main into its branch, reconciles the passage with unit 1's text, re-runs its tests and ends `ready` at a new tip. That comes back to you as a new merge entry, because approval pins the exact commit.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] re-dispatch** | The loop merges main in and comes back ready | One more merge answer | Nothing merges without that answer |
+| **[2] drop** | The brief closes; unit 3 is abandoned | None now | The rituals stay |
+
+- **Blocks:** nothing.
+- **Interim:** the branch waits.
 
 ### Q-245 · merge-gate-2026-11-01-relax-gate-git-state-75dbfa2a6e80
 **Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** ANSWERED
