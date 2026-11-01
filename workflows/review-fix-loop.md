@@ -50,15 +50,15 @@ If neither condition holds at the end of iteration 3, you have hit the cap. Do n
 
 Do not wait for the cap to split. After triaging any iteration, count its Must Fix findings and fact-check Incorrect verdicts. If there are at least 3 and one item or one file group holds about 75% or more of them, and the unit has other parts that can merge without it, split that part off now. It moves to its own branch and loop with a fresh counter, and the rest continues toward exit on this loop's counter. Batches are already reviewed per item ([decision log 59](../docs/decisions/log.md)); this trigger covers one item that turns out to contain a hard part.
 
-In /active mode, propose the split and wait. In /away mode and autonomous loops, split without asking, unless the unit has grown past the [size re-check](#size-re-check-after-any-iteration-and-before-merge)'s limit (~800 lines, or a waiver's), where the user decides. Record the split as an interim in `docs/working/questions.md` and in the commit body's `Notes:` line. A split is cheap to reverse; a blocking question is not. In the Q-076 batch, every Incorrect in three iterations was in Q-076. Reviewers had isolated it and offered a split by 21:50, but it was put as a blocking question only at the cap (00:09) and answered at 01:10, and the other items waited on it.
+In /active mode, propose the split and wait. In /away mode and autonomous loops, split without asking, including when the unit has grown past the [size re-check](#size-re-check-after-any-iteration-and-before-merge)'s limit (~800 lines, or a waiver's). Record the split as an interim in `docs/working/questions.md` and in the commit body's `Notes:` line. A split is cheap to reverse; a blocking question is not. In the Q-076 batch, every Incorrect in three iterations was in Q-076. Reviewers had isolated it and offered a split by 21:50, but it was put as a blocking question only at the cap (00:09) and answered at 01:10, and the other items waited on it.
 
 ### Size re-check (after any iteration and before merge)
 
 [pr-prep step 1a](pr-prep.md#1-gate-checks) caps a unit at ~400 code lines before the loop starts, and fixes can grow it after that. Re-run step 1a's command after each iteration's fix commits and tests (pr-prep 3c), before the fix-commit drift check, and once more at pr-prep 6c, before the description is published (on the local-merge path, before the merge). `BASE` is set as in step 1a: the branch directly below this unit, or `main` once that branch has merged. The unit's limit is ~800 lines (twice the entry cap) until a waiver sets another. The check fires above the limit, and as in step 1a the "~" marks a round number, not a tolerance band. Note each count in the body of the commit that follows it (`Size: <count> code lines against <BASE>`).
 
-Past the limit, the loop stops on this unit: no further fix commits, drift check, re-review or merge until the user answers a waiver entry (`Needs: you: judgment`) in `docs/working/questions.md`. This holds in /away mode too, and the agent does not split the unit itself; splitting can be one of the entry's options, for the user to choose. A granted waiver sets the new limit. Record it as step 1a records its waiver, in the PR description (the merge commit message on the local-merge path), citing the `Q-NNN` entry with the user's answer quoted verbatim.
+Past the limit, the unit splits before any further fix commit, drift check, re-review or merge. In /active mode, propose the split and wait. In /away mode and autonomous loops, split without asking, as [pr-prep step 1a](pr-prep.md#1-gate-checks) and the [early split trigger](#early-split-trigger-after-any-iteration) do, into stacked units that each re-enter the loop under the limit, and record the split as an interim in `docs/working/questions.md` and in the commit body's `Notes:` line. Only when no split exists does the loop stop on this unit until the user answers a waiver entry (`Needs: you: judgment`) there. A granted waiver sets the new limit. Record it as step 1a records its waiver, in the PR description (the merge commit message on the local-merge path), citing the `Q-NNN` entry with the user's answer quoted verbatim.
 
-Q-104 [2] gives the re-measure, the ~800 tolerance and the waiver. Everything else in this section is Q-160's reading of it, for example the 6c point, /away mode, the agent not splitting the unit itself, the waiver setting the new limit and the `Size:` line (decision log 62).
+Q-104 [2] gives the re-measure, the ~800 tolerance and the waiver. The 6c point, the waiver setting the new limit and the `Size:` line are Q-160's reading of it (decision log 62). The /away split replaced Q-160's reading that the agent never splits the unit itself, which had no failure behind it: a split is one revert away, and a stopped loop waits on the user (restriction audit row K37, 2026-11-01).
 
 Why: the entry gate checks a unit once, and units then grew during review. `feat/dev-cycle-digest` went from 396 to 1861 lines over 37 passes (Q-104); U2a3b went from 102 to 842 and U2a3c from 217 to 538 (Q-160).
 
@@ -158,18 +158,20 @@ When a re-fire is detected:
 
 ### Flag only — never auto-abort
 
-This signal **flags and pivots; it does not stop the loop**. The user decides what to do:
+This signal **flags and pivots; it does not stop the loop**. In /active mode the user decides what to do:
 
 - "Continue patching" — they judge the re-fire is coincidental (e.g., two distinct bugs that happen to read alike). Resume the loop without further pivot.
 - "Apply the deeper fix" — proceed with the structural change you proposed.
 - "Accept and document" — record the finding as a known limitation in the PR description and exit the loop.
 - "Escalate" — same path as the cap-exceeded `escalate` option: hand off to human review.
 
+In /away mode and autonomous loops, do not wait: take "Apply the deeper fix", or "Accept and document" when the structural fix is out of this unit's scope, and record the re-fire, the deeper-read result and the choice in the rubric and the commit body's `Notes:` line, for the user to read with the work.
+
 The cost of flagging a false positive is one short user prompt; the cost of missing a real stuck loop is iterations of churn that compound into the wrong kind of technical debt. Bias toward flagging.
 
 **Why this exists:** Re-fires are the loop's analogue of the symptom-vs-root-cause split from the debugging defaults. Patching the same surface repeatedly produces a fix history that looks productive in the diff but leaves the underlying cause intact — and often makes the eventual structural fix harder, because each surface patch is now a constraint to preserve. Catching this on the first re-fire is much cheaper than catching it after three.
 
-**Relationship to the hard cap:** Divergence detection can fire on iteration 2 (one re-fire is enough), well before the iteration-3 cap. The cap is for *new* findings accumulating across iterations; this signal is for *old* findings recurring within them. Divergence detection is flag-only — it surfaces a pivot recommendation to the user but does not itself force a gate. The cap is non-negotiable — iteration 4 cannot begin without a written `escalate | split | abandon` decision. A single loop can hit both: divergence detection on (say) iteration 2 triggers the deeper-read pivot, and if that pivot still leaves iteration 3 ending without convergence, the cap-exceeded gate fires next.
+**Relationship to the hard cap:** Divergence detection can fire on iteration 2 (one re-fire is enough), well before the iteration-3 cap. The cap is for *new* findings accumulating across iterations; this signal is for *old* findings recurring within them. Divergence detection is flag-only — it surfaces a pivot recommendation (to the user in /active mode, to the record in /away) but does not itself force a gate. The cap is non-negotiable — iteration 4 cannot begin without a written `escalate | split | abandon` decision. A single loop can hit both: divergence detection on (say) iteration 2 triggers the deeper-read pivot, and if that pivot still leaves iteration 3 ending without convergence, the cap-exceeded gate fires next.
 
 ## Re-flagged settled decisions (override-log filter)
 
