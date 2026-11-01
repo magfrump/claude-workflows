@@ -28,6 +28,7 @@ The index below is generated — edit entries, not the table.
 | [Q-242](#q-242--merge-gate-2026-10-31-failure-patterns-out-of-thoughts-c3f3f0e49f17) | you: judgment | Merge `refactor/failure-patterns-out-of-thoughts` at c3f3f0e49f1721319de7279ddc47ec15bdac7695? It does what... | 2026-10-31 |
 | [Q-243](#q-243--merge-gate-2026-11-01-relax-dev-cycle-skill-prose-7e6f1e0e9655) | you: judgment | Merge `docs/relax-dev-cycle-skill-prose` at 7e6f1e0e96550bda192e7d8cece50a6266d76b47? This is unit 3 of you... | 2026-11-01 |
 | [Q-244](#q-244--merge-2026-11-01-relax-referenced-prose-stops-8ca8ec2e0591) | you: judgment | Merge `docs/relax-referenced-prose-stops` at 8ca8ec2e059138d0f42e380cdcfc6476c652ea0e? This is unit 2 of yo... | 2026-11-01 |
+| [Q-245](#q-245--merge-gate-2026-11-01-relax-gate-git-state-75dbfa2a6e80) | you: judgment | Merge `refactor/relax-gate-git-state` at 75dbfa2a6e80104d33ecb8aa5741f06c3444b013? This is unit 1 of your r... | 2026-11-01 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-222](#q-222--install-cc-verify-and-r6) | you: terminal | Four approved merges landed today, two of them in host tools: the `cc-verify` host tool (37b24c02, Q-217) a... | 2026-10-28 |
@@ -36,6 +37,48 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
+
+### Q-245 · merge-gate-2026-11-01-relax-gate-git-state-75dbfa2a6e80
+**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** OPEN
+
+**If you say no:** every gated mode keeps refusing ordinary honest setups (git-lfs, `merge.conflictStyle`, `include.path`, fsmonitor, SSH signing, a husky hooks path, duplicate packed and loose objects, autocrlf, sparse or case-insensitive checkouts). Each refusal still stops the iteration and files an entry for you.
+
+**What an attacker would want here:** nothing new from an outside party. The checks removed only stopped planted git state or forged objects, which S1 puts out of scope. The gate still computes the merge in its own empty repository and lands it by update-ref, so no configured merge driver or hook runs (H1). It still refuses shallow and partial clones and the variables that point git at another repository or index (H2).
+
+Merge `refactor/relax-gate-git-state` at 75dbfa2a6e80104d33ecb8aa5741f06c3444b013? This is unit 1 of your restriction audit. It narrows the gate's git-state checks to in-scope threats (10 files, +459/-526).
+
+- **Why it's yours:** it changes the gate's own code (`scripts/build-loop.sh`, `scripts/lib/`, `skills/dev-cycle/SKILL.md`), which never self-merges.
+- **What changes:**
+  - **`state_gate`** refuses only a shallow or partial clone. Merge, diff, filter, include, hook, gpg and fsmonitor config, info/attributes, grafts, alternates and replace refs all pass now.
+  - **`store_check`** (re-hashing every object, refusing duplicate copies) is removed. Its useful half, checking that every blob the merge names exists, is a shared `blobs_present` used by `--check` and `--land-cycle`.
+  - **`checkout_gate`** keeps HEAD at main, a clean status (an unmerged path still refuses), and the five variables (GIT_DIR, GIT_WORK_TREE, GIT_INDEX_FILE, GIT_OBJECT_DIRECTORY, GIT_COMMON_DIR). It drops the per-file hashing and the ignoreCase, sparse, symlinks, nested-repo and skip-worktree refusals.
+  - **`caller_gate`** refuses only those five variables.
+  - **`git_harden`** drops the commit-graph and multi-pack-index pins.
+  - **SKILL.md:** step 0.1's `--state` paragraph and the Hardened git note now describe this.
+- **Two audit verdicts the loop reversed, with reasons (research doc D2, D4):**
+  - **The default-branch rules stay** (origin/HEAD naming another branch, main and master both existing). The D6 block also requires exactly one of main and master, so relaxing only the gate would make the two disagree. This waits for unit 7.
+  - **`GIT_CONFIG_GLOBAL=/dev/null` stays in the gate,** so your global merge settings can't change the merge it computes.
+- **Checks:**
+  - 10 new cases, one per honest setup above, plus one `--merge` case with all of them at once that checks no hook runs. Each failed on the old code. The build-loop suites pass 233/233, and the loop's full health check passed.
+  - Two review iterations. Iteration 1 used two independent reviewers and found nothing High. Fixed: an unreadable origin/HEAD refuses again (H2), symlink blobs are checked, and the lfs tests now actually run the filter. Iteration 2's reviewer broke each new check on purpose and the tests caught every break.
+  - I read the `build-loop.sh` code diff myself.
+- **Residual (research doc):** an exported `GIT_CONFIG_PARAMETERS` is no longer refused and reaches the gate's merge. A nested repository's instruction files are not walked (unit 6's area).
+- **Merge order with Q-243 and Q-244:** all three were built from the same main. This one and Q-243 both edit SKILL.md's Hardened git passage, and this one and Q-244 both add decision-log row 79. Merge this first. A later one that then conflicts comes back as a `stopped` entry. Answer it `[1]` and its loop runs one round to merge main in.
+- **Takes effect:** at the next release, since the gate runs from the image.
+- **`--check` printed:** `ok docs/working/briefs/2026-11-01-relax-gate-git-state.md 75dbfa2a6e80104d33ecb8aa5741f06c3444b013 3fc2c1c141be7b0559881e8cb17fd5ec756ee060`, plus 10 path lines:
+  - `docs/decisions/log.md`, the brief and the research doc;
+  - `scripts/build-loop.sh`, `scripts/lib/dev-cycle-read.sh` and `skills/dev-cycle/SKILL.md`;
+  - four test files under `test/scripts/`.
+- **Paths self-merge's floor would refuse:** the gate code above and `docs/decisions/log.md`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next iteration merges 75dbfa2a; it takes effect at the next release | None beyond this answer | One `git revert` of the merge |
+| **[2] drop** | The brief closes; the gate keeps refusing honest setups | None now | Refusals keep reaching you |
+| **[3] changes needed** | Your note goes back to the loop | A one-line note | Another loop round |
+
+- **Blocks:** audit units 4-7 (they edit the same files).
+- **Interim:** the branch waits.
 
 ### Q-244 · merge-2026-11-01-relax-referenced-prose-stops-8ca8ec2e0591
 **Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** OPEN
