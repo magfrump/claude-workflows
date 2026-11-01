@@ -474,6 +474,17 @@ production) may not be rated below **Medium**. Environmental unlikelihood belong
 real detections die in triage. (A scenario that requires the attacker to already control
 the host does not meet the reachable-environment bar.)
 
+**Project threat model rule:** when the project's constraints doc (`docs/constraints.md`, or the threat-model lines the
+review brief pastes from it) puts an attacker out of scope, a mechanism that only that
+attacker can reach does not meet the reachable-environment bar either. In claude-workflows,
+S1 has gates defend against honest slips by a same-uid loop, not a deliberately hostile
+one: a mechanism that needs a deliberately hostile loop, branch or commit, or planted git
+config, hooks, filters or refs, is out of scope. Report it once as Informational with the
+note `out of scope (constraints S1)`, never at Medium or above, and do not count it toward
+the HALT block. An honest slip (a typo, a stale read, a wrong path), concurrency between
+sessions and outside parties' text stay in scope at their normal severity. Without such a
+doc, every attacker the diff exposes is in scope, as above.
+
 Order findings by severity (critical first), then by confidence.
 
 ### Endorsement Claims
