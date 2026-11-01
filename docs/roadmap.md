@@ -49,12 +49,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
-- **Failure patterns move out of `docs/thoughts/`; `docs/thoughts/` leaves the self-merge
-  floor** (owner, 2026-10-31: it blocked normal harness work in another repo). The library
-  moves to `docs/failure-patterns.md` and stays on the floor, and a migration covers the
-  other repos. Review (gate code). Ready at c3f3f0e4, merge entry Q-242 (2026-10-31-2325).
-  Brief: `docs/working/briefs/2026-10-31-failure-patterns-out-of-thoughts.md`
-
 ## Next
 
 1. **Q-125's host live run, now that `cc-verify` is merged.** Motive: Q-125 (the
@@ -278,6 +272,11 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- **Failure patterns move out of `docs/thoughts/`; `docs/thoughts/` leaves the self-merge
+  floor** (owner, 2026-10-31). The library is now `docs/failure-patterns.md`, still on the
+  floor; other repos get the `failure-patterns-out-of-thoughts` migration after the next
+  release (Q-227). Merged 18e9cb79 (Q-242 [1]). Brief:
+  `docs/working/briefs/closed/2026-10-31-failure-patterns-out-of-thoughts.md`
 - Bug: step 1's health check read WT while the orchestrator edited it: it now runs in a
   detached clean checkout of WT's HEAD (Q-239 [1]): merged 4c731ab7. Brief:
   `docs/working/briefs/closed/2026-10-30-health-check-clean-checkout.md`
