@@ -12,7 +12,7 @@ Exists so the default development loop competes at the skill-selection layer, wh
 
 ## When to use
 
-Any feature or bug fix that touches more than one file, needs the codebase understood first, or has an unclear root cause. Not for trivial edits (a typo, a config value, a one-line fix whose cause is known); not for a message holding several unrelated tasks (`parallel-worktrees`); not for a choice among 3+ approaches (`divergent-design`, which feeds its decision back here). Its hard gate is plan approval before implementation.
+Any feature or bug fix that touches more than one file, needs the codebase understood first, or has an unclear root cause. Not for trivial edits (a typo, a config value, a one-line fix whose cause is known); not for a message holding several unrelated tasks (`parallel-worktrees`); not for a choice among 3+ approaches (`divergent-design`, which feeds its decision back here). In /active mode its hard gate is plan approval before implementation; in /away mode the plan is committed for async review and implementation proceeds.
 
 ## Hand off to the workflow
 
