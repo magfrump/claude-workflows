@@ -225,7 +225,7 @@ The user is not at their desk, or has not specified. Maximize progress within sa
 - Any destructive or irreversible operation
 
 **Stop and wait for the user when:**
-- A merge conflict's resolution would drop either side's content
+- A merge conflict's resolution would discard a change from either side that cannot be combined with the other
 - Anything irreversible not covered above
 
 **Defer, file and continue** when tests fail and the fix is not obvious, or when requirements are ambiguous and a wrong guess would waste significant effort: set that task aside (a WIP commit or a blocked note), file the question in the running questions doc (see below) with the options and an interim, and keep working on whatever does not depend on it. Everything below the stop-and-wait bar goes there instead of blocking or being silently dropped.

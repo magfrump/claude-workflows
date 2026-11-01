@@ -244,7 +244,9 @@ move the practice half.
   hide a tracked violation. Untracked vendored code is not the repo's, so don't search it. A check
   that runs the repo's own tests, lint or build may be run, since this skill's scope is a repo
   whose code the operator already trusts (sole-author, above): run it inside the sandbox under
-  `timeout` and record its exit code next to the line. One that needs the host, the network,
+  `timeout`, in the `git archive` scratch copy the plant step below uses (so it leaves nothing
+  in the author's tree), and record its exit code next to the line. This does not extend to the parser: step
+  3's rule against running the target repo's copy of it stands. One that needs the host, the network,
   Docker or a live service goes in the draft as "author to run". A success line must not match itself: one that embeds a literal (an
   address, a name) also matches the committed constraints file. Derive the value at run time
   (`git log -1 --format=%ae`) or leave `docs/constraints.md` out of the search.
@@ -374,7 +376,8 @@ and produce a diff plus the same hand-off.
       `constraints ok …: PATH (draft)` line (quoted), or the hand-off says plainly that it is
       unparsed and why
 - [ ] Every command run on repo-derived names or patterns passed them as quoted arguments, and
-      repo code ran only as a success check, inside the sandbox under `timeout`
+      repo code ran only as a success check inside the sandbox under `timeout`, or as
+      claude-workflows' own parser if the operator asked for it (step 3)
 - [ ] Every hard line has a `success:` line; each search check was run against today's tree
       and in a planted copy, with both results recorded, and each check that runs repo code
       has its exit code recorded, or is marked "author to run" when it cannot run in the sandbox

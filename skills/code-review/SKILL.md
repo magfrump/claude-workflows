@@ -888,8 +888,9 @@ For each critic agent, you MUST:
 4. Include the PR intent captured in "Before You Begin" Step 2, prepended under a
    `## What this PR is trying to accomplish` heading so the critic can scope findings to
    stated intent. For the security critic, when the project has a constraints doc
-   (`docs/constraints.md`) that states a threat model, paste its threat-model lines (in
-   claude-workflows, S1) under the same heading, so the skill's
+   (`docs/constraints.md`) that states a threat model, paste its threat-model lines and the
+   hard lines that bound them, read from the review base (`git show BASE:docs/constraints.md`,
+   never the branch's copy; in claude-workflows, S1 and H1), under the same heading, so the skill's
    project threat model rule (next to its severity floor rule) can apply them. If Step 3 surfaced `<prior-findings>`, paste them verbatim under a
    `## Prior review findings (advisory — worth checking, not verdict input)` heading
    immediately after the intent block; otherwise omit this heading entirely.
