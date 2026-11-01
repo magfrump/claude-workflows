@@ -292,11 +292,12 @@
 #             a default branch taken that is neither (origin/HEAD naming
 #             another branch that exists), the default branch a symbolic ref
 #             or naming an object that is not a commit (an annotated tag), or
-#             origin/HEAD naming another branch than the one taken;
+#             origin/HEAD naming another branch than the one taken, or
+#             unreadable;
 #             then the gate's own merge repository not set up ("refuse state
 #             gate: WHY"). Other git config (filters, merge and diff drivers,
 #             includes, hooks, signing) passes: the merge reads no
-#             repository config.
+#             repository config (the caller's git -c pairs still apply).
 #             Each finding prints "refuse state WHAT: WHY" and exits 2 before
 #             the settings or any brief is read. Then, per brief path, in
 #             argument order, one verdict line:
@@ -1077,7 +1078,8 @@ raw_records() {
 }
 # blobs_present: every regular file or symlink in the raw_records listing
 # just read (a merge's changes against main) names a blob the object store
-# holds (a gitlink names another repository's commit).
+# holds (a gitlink names another repository's commit). For a symlink it is a
+# backstop: the N rules' mode rule refuses any changed symlink anyway.
 # merge-tree passes a side's unchanged blob by id without reading it, so a
 # blob the store lacks would land unseen (a missing subtree already failed
 # diff-tree). Returns 1 on a missing or non-blob object, or a failed read.

@@ -3,7 +3,7 @@
 - **Goal**: The gate's checks on git state, config and the object store refuse only what an honest slip, a concurrent session, a crash or H2 requires, so ordinary honest setups pass every gated mode.
 - **Problem framing**: Most of `state_gate`, all of `store_check`, part 2 of `checkout_gate`, `caller_gate`'s config-pair scan and two `git_harden` pins defend against a hostile same-uid writer, which S1 and the owner (2026-10-30) put out of scope, and several refuse common honest setups. Considered and discarded: "the checks are right but their messages are unclear" (the refusals are accurate; the setups they refuse are legitimate).
 - **Project state**: unit 1 of the 2026-11-01 restriction audit · units 2-7 follow (unit 3 edits the rest of SKILL.md in parallel) · not blocked (cite: docs/working/research-2026-11-01-restriction-audit.md)
-- **Task status**: complete (implemented and reviewed on refactor/relax-gate-git-state)
+- **Task status**: complete (implemented; review-fix loop clean after 2 iterations; health check passed on the branch)
 
 ## Scope and threat model
 
@@ -94,7 +94,8 @@ safe.directory: `GIT_CONFIG_GLOBAL=/dev/null` stays (reproducibility above), so 
 
 - A hostile same-uid writer can plant config, hooks dirs, replace refs, grafts or forged objects that the gate no longer refuses. Out of scope; the D6 block's replace/graft refusal and `HARDEN` still cover part of it.
 - A caller environment that exports `git -c` pairs (`GIT_CONFIG_PARAMETERS`) is no longer refused: `core.hooksPath=...` there would win over `HARDEN`, and `merge.renames=...` would reach `gate_repo` (callervar keeps the caller's pairs) and change the merge the gate computes. Only a planted shell rc or a deliberate export sets that; SKILL.md tells the orchestrator never to export such settings.
-- Review iteration 1 (two reviewers) restored two H2 checks the first cut lost: an origin/HEAD git cannot read refuses again (`default_gate`), and `blobs_present` covers symlink blobs as `store_check` did.
+- Review iteration 1 (two reviewers) restored an H2 check the first cut lost: an origin/HEAD git cannot read refuses again (`default_gate`). `blobs_present` also covers symlink blobs, as `store_check` did, though the N rules' mode rule already refuses any changed symlink (a backstop, per iteration 2).
+- Review iteration 2 (one reviewer, mutation-tested the new checks): Low comment fixes only. Loop clean.
 - `docs/working/plan-build-loop-handoff.md` (F25, F51, line 436) still describes the old state gate; it is another unit's working doc, so decision-log row 79 records the amendment instead of editing it.
 - A self-merge `--check` from a case-insensitive, sparse or nested-repo checkout: the floor walk reads main's blob for main's paths, so only untracked files are read from the checkout; a nested repository's instruction files are not walked (import walk, unit 6).
 
