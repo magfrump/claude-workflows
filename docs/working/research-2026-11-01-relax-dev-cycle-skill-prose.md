@@ -12,14 +12,14 @@ outside parties, H1-H4; a hostile loop or planted git state is out of scope).
 | Row | What the skill says (line at 269cef09) | Script side | Verdict here |
 |---|---|---|---|
 | R10 | Rules "Hardened git" (62-78): all orchestrator git through `hg` (7 env vars, 9 `-c` pairs) in a `bash -s <<'G'` script; ~25 `hg -C` sites. | None: `hg` is prose. The gate's own git is `git_harden` in the lib (H1), untouched. The D6 block's `G=(...)` stays (unit 7 owns it). The only coupling is `build-loop-orchestrator.bats`, which holds `hg`'s pairs equal to HARDEN. | Act. Replace with plain `git -C PATH`. Keep two honest-slip pins: `-c log.showSignature=false` where output is parsed (a user's `log.showSignature=true` adds gpg lines to `log` output) and `-c commit.gpgSign=false` where a commit is written (a signing config with no key in the sandbox fails the commit). Add one in-scope pin the audit missed: `--literal-pathspecs` on `add`, `mv` and `rm`, because the argument allowlist admits `*` and `?`, and an honest path holding one would otherwise stage every match (hg had `GIT_LITERAL_PATHSPECS=1`). |
-| R11 | 79-87: identity from `GIT_AUTHOR_*`/`GIT_COMMITTER_*` per command, or one global-config read, empty = stop. | `--merge`'s own "no identity" refusal is the gate's, unchanged. Nothing reads the orchestrator's env. | Act. The ritual existed only because `hg` set `GIT_CONFIG_GLOBAL=/dev/null`. Plain git uses the configured identity; with none, git refuses the commit, which is a stop like any failed command. |
+| R11 | 79-87: identity from `GIT_AUTHOR_*`/`GIT_COMMITTER_*` per command, or one global-config read, empty = stop. | `--merge`'s own "no identity" refusal is the gate's, unchanged. Nothing reads the orchestrator's env. | Act. The ritual existed only because `hg` set `GIT_CONFIG_GLOBAL=/dev/null`. Plain git uses the configured identity. With none set, git invents one from the account and host rather than refusing (review 1), an honest slip, so one read of `git config user.email` before the first commit stays (empty: a stop). |
 | R12 | 75-78 (re-run `--state` before commits), 818 (step 9.2), 854 (merge main in), 657 (before GT add), and the Rules' D6 bullet (36-38, "after a `--state` from MAIN_WT"). | `--state` itself unchanged; step 0.1's one run stays (R13, sibling brief). | Act on all five sites. |
 | R57/R73 | 653-662 (GT), 854-856 (merge main into WT). | `--merge` runs from GT; its floor reads GT's tree (H1, honest stale input). | Act: drop only the `--state` and identity parts; keep GT, `rerere.enabled=false`, no `-s`/`-X`, abort on conflict. Add `--no-verify` to the merge, matching the chore commit, now that hooks are not switched off. |
 | R21 | 145-148: `--check-write` before each write of a cycle file; also step 6's `closed/` move (613) and step 9.1's staging rule (812). | `check_write` stays in `dev-cycle.sh` (tests pin it); only the call goes. `--cycle-diff` refuses any path outside the cycle's files and `.md` docs, a non-100644 side (so a symlink), truth files and gate code. | Act. Residual weighed below. |
 | R23 | 155-157: `--check-fix` re-run on each fixed path right before staging. | `--check-fix` before the edit stays (R22, KEEP). | Act; R24's overlap paragraph shrinks with it. |
 | R69 | 818-821: `write-tree` T, commit, check `HEAD^{tree}` = T. | `--cycle-diff` reads HEAD's tree after the commit, and `--land-cycle` judges the merge of HEAD, so what lands is checked whatever a hook did. | Act. Keep `--no-verify`. |
 | R39 | 350-360 (refuse stop), 53-55 and 285 (Rules and step 0 cross-references), 653-654 (self-merge re-run), 706-708 (answers re-run), 860-861 (dispatch re-run), 766 (record dating exception). | `--main-log` prints `main MAIN -` then `refuse main-log: WHY` (build-loop.sh 1991-1997), so MAIN is always known. `--merge` refuses a moved main by itself; `--land-cycle` checks the land. | Act. A refusal is listed under `### Other commits on main` and in the final message, and the iteration goes on from MAIN (its `Main at:`). No entry, no hold. The re-runs at steps 7 (self-merge) and 10 go. The re-run after answers stays as a listing only (row 727: every commit an answer was read from is shown to the user, an honest-slip read, not a hold); its refusal is listed the same way. Step 1's health-check skip now also needs step 0.2 to have printed no refuse line, since an unlisted history may hold code. |
-| R8 | 58-60 (stop removes WT with `--force`), 368-371 (step 0.3, with the planted-filter reason); GT and HC remove "as step 0.3 does". | None. | Act. Plain `worktree remove` for WT and GT. After a stop, a WT that git refuses to remove (uncommitted edits) is kept and named in the final message. `--force` stays only for HC after its check was stopped by PID (a killed test run may leave files, meant to be discarded) and for an HC an earlier iteration of this session left (a crash). |
+| R8 | 58-60 (stop removes WT with `--force`), 368-371 (step 0.3, with the planted-filter reason); GT and HC remove "as step 0.3 does". | None. | Act. The planted-filter reason goes. Plain `worktree remove` for WT after a verified land (clean) and for GT. `--force` stays only where the edits are meant to be discarded: a WT after a stop (a stop before the land is redone from the same `Main at:`, and anything it committed stays on its branch for step 0.3 to merge; plain remove would refuse on the untracked record and briefs and leave a WT behind on nearly every stop, review 1), and HC after its check was stopped or an earlier iteration left it. |
 | R26 | 181-184: a brief's branch name goes only to `--check-branch`; "the cycle runs no git command with it". | `check_branch` refuses names starting with `-`, `HEAD`, `refs/...`, outside the allowlist. | Act. A name `--check-branch` printed `ok` for may be given to git as `refs/heads/NAME` (a full ref, never a bare name, so it can be neither an option nor a same-named tag). Branch deletion keeps its `--check-branch` filter (R44 KEEP; the brief names only the `refs/heads/` allowance). |
 | R43 | 409-410 parenthetical about MAIN_WT's config and `--state`. | None. | Act (text only). |
 
@@ -53,8 +53,9 @@ anything, so in a repo whose `docs/working/` is a symlink the write lands outsid
 - Briefs are found only through `--check-path`, which refuses symlinks.
 - `--cycle-diff` refuses any side that is not a regular 100644 file, so a symlink never lands.
 
-Left over: a symlinked `docs/working/briefs/`, `briefs/closed/` or `roadmap.md`, which section 8
-does not list, could take one write out of the tree. That needs an unusual layout in someone
+Left over: a symlinked `docs/working/briefs/closed/`, which the digest's probes do not cover
+(review 1 found that `blocker()` walks every ancestor of the roadmap, idea log, questions,
+watching, cycles and briefs paths), could take one `git mv` out of the tree. That needs an unusual layout in someone
 else's repo, the write stays inside what the uid can already write, and nothing lands. S1 allows
 a relaxation that states its residual; this is it.
 
@@ -80,9 +81,13 @@ choice is whether the post-answers re-run stays. Keep it as a listing only (A), 
 keep it as a hold (C, ruled out by the brief). A keeps row 727's in-scope property (the user
 sees every commit an answer was read from) at one call; B loses it. A dominates.
 
-Decision 3, R8 `--force`: plain remove everywhere (A), plain except a stopped or crashed HC (B),
-keep `--force` everywhere (C, the data-loss path). B matches the brief's "only where a crash
-left edits meant to be discarded"; A would leave a killed health run's HC behind each time. B.
+Decision 3, R8 `--force`: plain remove everywhere (A), plain except where the edits are meant
+to be discarded, a stopped WT and a stopped or crashed HC (B), keep `--force` everywhere with
+the planted-filter reason (C). A leaves a WT behind on nearly every stop (untracked record and
+briefs make git refuse) and a killed health run's HC each time; C keeps a hostile-only reason.
+B matches the brief's "only where a crash left edits that are meant to be discarded": a stop
+before the land is redone from the same `Main at:` by design. B (revised after review 1, which
+found A's leftovers).
 
 ## Tests and docs
 

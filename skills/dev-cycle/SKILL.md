@@ -53,14 +53,16 @@ one place every trigger is certain to be checked, so it checks all of them every
   `--state` refusals and its lost `Main at:` line), else the line and stderr go in
   one agent work item (below), each line as `> Output: LINE` with any HTML comment opener and carriage
   return removed; either way
-  also in the final message. A stop after step 0.3 removes WT with a plain `worktree remove`
-  (its branch stays); when git refuses because WT holds uncommitted edits, WT is kept and
-  named in the final message. A full disk reads like
+  also in the final message. A stop after step 0.3 removes WT with `worktree remove --force`
+  (its branch stays): a stop before the land is redone from the same `Main at:`, so WT's
+  uncommitted edits are meant to be discarded, and a commit it made stays on its branch
+  for step 0.3 to merge. A full disk reads like
   planted state, so a stop is not called hostile. `questions.sh` never runs as
   `~/.claude/scripts/questions.sh` (a uid-owned link; its own hints still print that path).
 - **The orchestrator's git** (worktrees, staging, its commits, merging main into WT, ancestry
-  checks) is plain `git -C PATH …`, with the user's normal config and identity (none set:
-  git refuses the commit, a stop). Two honest settings are pinned where they matter:
+  checks) is plain `git -C PATH …`, with the user's normal config and identity: before the
+  iteration's first commit, `git -C WT config user.email` must print one (none: a stop,
+  since git would otherwise make one up from the account and host). Two honest settings are pinned where they matter:
   `-c log.showSignature=false` on a `log` whose output is read, and `-c commit.gpgSign=false`
   on a command that writes a commit (no signing key in the sandbox). `add`, `mv` and `rm`
   run as `git --literal-pathspecs -C PATH add -- FILE…`, so a path holding `*` or
@@ -161,7 +163,8 @@ line names (compared as text) gets one, whatever its state, so In flight's check
 it. A brief's branch is only ever named to
 `--check-branch '<name>'`, which prints `ok <name> <commit> <n> <date>` (n: its commits
 beyond the default branch; date: its tip commit's), `absent <name>`, or a skip; a name it
-printed `ok` for reaches git only as the full ref `refs/heads/<name>`, never bare. A
+printed `ok` for may reach git as the full ref `refs/heads/<name>` (never bare; `branch -d`,
+which takes the short name, is step 1's one exception). A
 question ID from a brief is read only through `--check-answer`. A check that exits
 non-zero (no default branch, say) is recorded, and the step that needed it stops. Every mode
 takes many arguments: batch a step's values into one call per mode. Pass a value to
@@ -288,7 +291,7 @@ the iteration with no record, so the next one starts from the same `Main at:`:
    `image-lag` (an open one has its body rewritten), which is also the release entry: the
    release is your review of what it ships (F58). It holds C, M, the changed names (the same
    diff with `--name-only`), every first-parent commit after C as a list item (`git -C MAIN_WT
-   log --first-parent --format='%h %s' C..M`; flag a subject ending `(build-loop
+   -c log.showSignature=false log --first-parent --format='%h %s' C..M`; flag a subject ending `(build-loop
    self-merge)`, which no one reviewed: a hand commit with that subject reads the same, so
    the flag is a pointer, not proof), every path changed from C to M outside `docs/` on one
    line, each in backticks, comma-separated (the image carries none of `docs/`: give its
@@ -386,8 +389,8 @@ last good one.
   minute). It is made for this one run and removed
   as step 0.3 removes WT once the check exits (its log is in the orchestrator's directory,
   not HC). A stop while it runs stops the check by its PID or process group, then removes
-  HC with `worktree remove --force` (a killed run's files are meant to be discarded; the
-  one place `--force` is used). Before the add, an HC this session's earlier iteration
+  HC with `worktree remove --force` (a killed run's files are meant to be discarded).
+  Before the add, an HC this session's earlier iteration
   left is removed the same way;
   any other `wt-dev-cycle-health-*` in `worktree list` (another session's, maybe live) is
   only named in the final message, as is a removal that fails. Nothing else names HC, so
@@ -681,7 +684,7 @@ An answer starting `[1]`, or that is `1` or `keep` (any case) alone or before on
 this iteration are not read: they are not on main yet. Then run `--main-log MAIN` again,
 a listing only: record its `other` and `answers` lines after MAIN, and a `refuse` line, as
 step 0.2 does, so every commit an answer was read from is shown to the user (row 727).
-None of them holds an answer.
+An `other` or `refuse` line holds no answer.
 
 - `open`: wait; the final message lists it with its brief. A `skip`: the record and the
   final message.
@@ -878,7 +881,7 @@ residual). Then remove WT (step 0.3).
 **Final message**, then wait. List pending migrations first (step 1b), then the new `you: judgment` entries by ID and name (merge
 entries marked), each answer still `open`, skipped or `unrecognized` (with its brief; an
 answer written only in a working tree is not applied: "tell me, or commit it yourself",
-never an offer to commit it, D8), the `answers` and `other` commits step 0.2 and step 7
+never an offer to commit it, D8), the `answers` and `other` commits and any `refuse main-log:` report step 0.2 and step 7
 read, the `--answered`
 IDs (a merge entry's marked "merge approved in session: merges next iteration"), every merge and dispatch this iteration made, each In flight line naming a `closed/`
 brief that reads `open` or `new` (for the user to set its status), and every open brief

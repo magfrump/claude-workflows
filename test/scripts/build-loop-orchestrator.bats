@@ -351,7 +351,11 @@ shim() {
     grep -qF 'git --literal-pathspecs -C PATH add -- FILE' "$K" && grep -qF -- '-c commit.gpgSign=false commit -q --no-verify -F' "$K" || return 1
     # Merging main in keeps rerere off, the default strategy and abort on conflict.
     grep -qF -- '-c rerere.enabled=false -c commit.gpgSign=false merge' "$K" && grep -qF 'no `-s` or' "$K" && grep -qF 'merge --abort`, then a stop' "$K" || return 1
-    # --force only for a stopped or crashed HC.
+    # --state runs once, at step 0.1: not before GT's add, the chore commit or the merge of main into WT.
+    ! grep -nE '`--state` \(from MAIN_WT|`--state` first|`--state` \(the Rules' "$K" || return 1
+    # R39: a main-log refusal is a report that re-anchors, not a stop; R26: a checked branch may reach git as a full ref.
+    grep -qF 'is a report, not a stop' "$K" && grep -qF 'may reach git as the full ref `refs/heads/<name>`' "$K" || return 1
+    # --force only where the edits are meant to be discarded: a stopped WT and a stopped or crashed HC.
     [ "$(grep -c -- '--force' "$K")" -eq 2 ] || { grep -n -- '--force' "$K"; return 1; }
 }
 
