@@ -1703,35 +1703,20 @@ path $x A work-feat-x.txt" ] || { show; return 1; }
     [ "$status" -eq 2 ] && [ "$output" = "skip $x: another open brief on the default branch names the same branch (compared ignoring case)" ] || { show; return 1; }
 }
 
-@test "--check's state gate refuses each planted git state that can run a command or change the merge, before reading any brief (T26, U2b1a)" {
+@test "--check's state gate refuses a shallow clone, before reading any brief; other planted-looking state passes (T26, U2b1a; brief 2026-11-01-relax-gate-git-state)" {
     gated feat/x
-    for kv in filter.x.clean=true filter.x.smudge=true include.path=/dev/null includeIf.gitdir:/x/.path=/dev/null \
-              hook.x.command=true merge.x.driver=true merge.renormalize=true diff.ignoreSubmodules=all diff.x.textconv=true \
-              core.fsmonitor=true core.attributesFile=/dev/null core.hooksPath=/dev/null gpg.program=true log.showSignature=true \
-              extensions.partialClone=origin remote.origin.promisor=true; do
-        git config "${kv%%=*}" "${kv#*=}"
-        chk "$B"
-        [ "$status" -eq 2 ] && [[ "$output" == "refuse state "*": set in config, it can make the gate's git run a command or change its merge" ]] \
-            && [ "${#lines[@]}" -eq 1 ] || { echo "key: $kv"; show; return 1; }
-        git config --unset "${kv%%=*}"
-    done
-    git config extensions.worktreeConfig true && git config --worktree merge.y.driver true
-    chk "$B"
-    [ "$status" -eq 2 ] && [ "$output" = "refuse state merge.y.driver: set in config.worktree, it can make the gate's git run a command or change its merge" ] || { show; return 1; }
-    git config --worktree --unset merge.y.driver
     printf '* merge=union\n' > .git/info/attributes
     git rev-parse main > .git/info/grafts
-    git rev-parse main > .git/shallow
-    echo "$BATS_TEST_TMPDIR/elsewhere" > .git/objects/info/alternates
+    echo "$BATS_TEST_TMPDIR/elsewhere" > .git/objects/info/alternates; mkdir -p "$BATS_TEST_TMPDIR/elsewhere"
     git replace "$(git rev-parse main)" "$(git rev-parse feat/x)"
-    git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/feat/x
+    git config merge.x.driver true; git config diff.x.textconv cat; git config hook.x.command true
     chk "$B"
-    [ "$status" -eq 2 ] && [ "$output" = "refuse state info/attributes: present and not an empty file
-refuse state info/grafts: present and not an empty file
-refuse state shallow: present and not an empty file
-refuse state objects/info/alternates: present and not an empty file
-refuse state refs/replace: 1 replace ref(s)
-refuse state origin/HEAD: it names a branch other than origin/main or origin/master" ] || { show; return 1; }
+    [ "$status" -eq 0 ] && [[ "${lines[0]}" == "ok $B "* ]] || { show; return 1; }
+    git rev-parse main > .git/shallow
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "$output" = "refuse state shallow: a shallow clone, whose history the gate cannot read whole" ] || { show; return 1; }
+    # A shallow file that is empty is no shallow clone.
+    : > .git/shallow; chk "$B"; [ "$status" -eq 0 ] || { show; return 1; }
 }
 
 @test "under a broken log.* config the brief and branch reads skip instead of reading LOOP or DATE wrong (row 307, U2b1a1)" {
@@ -1759,9 +1744,14 @@ refuse state origin/HEAD: it names a branch other than origin/main or origin/mas
     # main's tip commit: resolve_main reads it, so the gate must run before resolve_main.
     o="$(git rev-parse main)"; rm ".git/objects/${o:0:2}/${o:2}"
     chk "$B"
-    [ "$status" -eq 2 ] && [ "$output" = "refuse state remote.origin.promisor: set in config, it can make the gate's git run a command or change its merge
-refuse state extensions.partialclone: set in config, it can make the gate's git run a command or change its merge" ] || { echo "$status $output $stderr"; return 1; }
+    [ "$status" -eq 2 ] && [ "$output" = "refuse state remote.origin.promisor: set in config, a partial clone, whose missing objects the gate cannot read
+refuse state extensions.partialclone: set in config, a partial clone, whose missing objects the gate cannot read" ] || { echo "$status $output $stderr"; return 1; }
     [ ! -e "$BATS_TEST_TMPDIR/fetched" ] || { echo "upload-pack ran"; return 1; }
+    # A promisor key in this worktree's config.worktree refuses too.
+    git config --unset remote.origin.promisor; git config --unset extensions.partialClone
+    git config extensions.worktreeConfig true && git config --worktree remote.origin.promisor true
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "$output" = "refuse state remote.origin.promisor: set in config.worktree, a partial clone, whose missing objects the gate cannot read" ] || { echo "$status $output $stderr"; return 1; }
 }
 
 @test "every git call --check makes carries git_harden's config pairs (core.hooksPath=/dev/null among them), no global or system config and no transport (T26, A4, U2b1a i1, i2, A17)" {
@@ -1814,10 +1804,7 @@ refuse state extensions.partialclone: set in config, it can make the gate's git 
     chk "$B" --expect "$t"
     [ "$status" -eq 0 ] && [ "$output" = "ok $B $t $(git merge-tree --write-tree main feat/x)
 path $B A work-feat-x.txt" ] && [ "${#t}" -eq 64 ] || { show; return 1; }
-    # Packed, with a second copy of the brief's blob: store_check reads SHA-256 pack indexes (U3a1).
     git repack -adq; chk "$B"; [ "$status" -eq 0 ] || { show; return 1; }
-    git rev-parse "main:$B" | git pack-objects -q .git/objects/pack/pack >/dev/null
-    chk "$B"; [ "$status" -eq 2 ] && [ "$output" = "$OBJS" ] || { show; return 1; }
 }
 
 @test "--status runs no gpg.program for a signed brief commit and prints only a full commit id (U2b1a1 final security F1)" {
@@ -1947,72 +1934,17 @@ NBRIEF="this brief: only its first Status: line outside a fence may change, from
     tip feat/x "add" "$( (git ls-tree main; printf '100644 blob %s\tnew.txt\n' "$b") | git mktree --missing)" "$(git rev-parse main)"
     chk "$B"
     [ "$status" -eq 2 ] && [ "$output" = "refuse $B: the merge of feat/x names a blob the object store lacks" ] || { show; return 1; }
+    # A symlink's blob too (blobs_present; brief 2026-11-01-relax-gate-git-state review i1).
+    git update-ref refs/heads/feat/x "$(git rev-parse feat/x~1)"
+    tip feat/x "link" "$( (git ls-tree main; printf '120000 blob %s\tlink\n' "$b") | git mktree --missing)" "$(git rev-parse main)"
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "$output" = "refuse $B: the merge of feat/x names a blob the object store lacks" ] || { show; return 1; }
 }
 
-# forge ID TEXT: rewrite loose object ID's file to hold a blob of TEXT, its id unchanged.
-forge() {
-    local f=".git/objects/${1:0:2}/${1:2}"
-    chmod u+w "$f" && printf 'blob %s\0%s' "${#2}" "$2" | perl -MCompress::Zlib -0777 -ne 'print compress($_)' > "$f"
-}
 # loose ID: a loose copy of packed blob ID, beside the packed one (git itself writes none for an object it has).
 loose() {
     mkdir -p ".git/objects/${1:0:2}" && git cat-file blob "$1" | perl -MCompress::Zlib -0777 -ne 'print compress("blob " . length($_) . "\0" . $_)' > ".git/objects/${1:0:2}/${1:2}"
 }
-OBJS="refuse state objects: the default branch's commit or an object of its tree does not hash to its id, has a second copy in the object store, or could not be read"
-@test "--check re-hashes what it reads: a rewritten, missing or second copy of an object of main's tree refuses the state before any brief; of the tip's tree, the brief; a packed store passes (rows 492, 503, U3a1, i1 security F1)" {
-    echo base > f.txt && commit_all f
-    gated feat/x; t="$(git rev-parse feat/x)"
-    git repack -adq
-    chk "$B"; [ "$status" -eq 0 ] && [ "${lines[0]}" = "ok $B $t $(git merge-tree --write-tree main feat/x)" ] || { show; return 1; }
-    # A second copy of the brief's blob, though its bytes are the same: in a second pack, then loose.
-    o="$(git rev-parse "main:$B")"; echo "$o" | git pack-objects -q .git/objects/pack/pack >/dev/null
-    chk "$B"; [ "$status" -eq 2 ] && [ "$output" = "$OBJS" ] && [ -z "$stderr" ] || { show; return 1; }
-    git repack -adq; loose "$o"
-    chk "$B"; [ "$status" -eq 2 ] && [ "$output" = "$OBJS" ] || { show; return 1; }
-    # git reads the forged bytes as the brief's (cat-file checks no hash); the gate refuses before reading it.
-    rm -rf .git && git init -q -b main && echo base > f.txt && commit_all f && gated feat/x
-    o="$(git rev-parse "main:$B")"; forge "$o" $'# Brief: x\n\nStatus: open\nBranch: feat/y\n'
-    [ "$(git cat-file blob "$o" | grep Branch)" = "Branch: feat/y" ] || { echo "the forged blob does not read back"; return 1; }
-    chk "$B"; [ "$status" -eq 2 ] && [ "$output" = "$OBJS" ] && [ -z "$stderr" ] || { show; return 1; }
-    # A tree of main's no rule reads, missing: the same refusal, and git's own error is not printed.
-    rm -rf .git && git init -q -b main && mkdir -p d && echo base > d/f.txt && commit_all f && gated feat/x
-    o="$(git rev-parse main:d)"; rm ".git/objects/${o:0:2}/${o:2}"
-    chk "$B"; [ "$status" -eq 2 ] && [ "$output" = "$OBJS" ] && [ -z "$stderr" ] || { show; return 1; }
-    # The tip's own file, rewritten, then a second copy of it: that brief refuses, with no path line.
-    rm -rf .git d && git init -q -b main && echo base > f.txt && commit_all f && gated feat/x
-    o="$(git rev-parse feat/x:work-feat-x.txt)"; forge "$o" 'other bytes'
-    chk "$B"
-    [ "$status" -eq 2 ] && [ "$output" = "refuse $B: an object of the tip of feat/x or of the merge does not hash to its id, has a second copy in the object store, or could not be read" ] || { show; return 1; }
-    rm -rf .git && git init -q -b main && echo base > f.txt && commit_all f && gated feat/x
-    o="$(git rev-parse feat/x:work-feat-x.txt)"; git repack -adq; loose "$o"
-    chk "$B"; [ "$status" -eq 2 ] && [ "$output" = "refuse $B: an object of the tip of feat/x or of the merge does not hash to its id, has a second copy in the object store, or could not be read" ] || { show; return 1; }
-    # One brief's refusal does not carry to the next in the same run (i2 architecture 1, api 1).
-    x="$B"; brief y "Status: open" "Branch: feat/y"; work feat/y; y="$B"; B="$x"
-    chk "$y" "$B"; [ "$status" -eq 2 ] && [[ "${lines[0]}" == "ok $y "* ]] && [[ "${lines[2]}" == "refuse $B: an object of the tip of feat/x "* ]] || { show; return 1; }
-    chk "$B" "$y"; [ "$status" -eq 2 ] && [[ "${lines[0]}" == "refuse $B: "* ]] && [[ "${lines[1]}" == "ok $y "* ]] || { show; return 1; }
-}
-
-@test "--check's second-copy scan lists what git opens: a pack named with a leading dot or holding a newline, and a linked fan-out directory (U3a1 i2 security F1, final security F1; the multi-pack-index pin is in the config-pairs test)" {
-    echo base > f.txt && commit_all f && gated feat/x
-    git repack -adq; o="$(git rev-parse "main:$B")"
-    echo "$o" | git pack-objects -q "$BATS_TEST_TMPDIR/p" >/dev/null
-    for f in "$BATS_TEST_TMPDIR"/p-*; do cp "$f" ".git/objects/pack/.hidden.${f##*.}"; done
-    [ "$(git cat-file -t "$o")" = blob ] || return 1
-    chk "$B"; [ "$status" -eq 2 ] && [ "$output" = "$OBJS" ] || { show; return 1; }
-    rm .git/objects/pack/.hidden.*; chk "$B"; [ "$status" -eq 0 ] || { show; return 1; }
-    # A name holding a newline, with decoys at the two halves a line-based listing would read: valid
-    # indexes of a pack holding only a blob no tree names, so such a listing finds no second copy and fails no read.
-    for f in "$BATS_TEST_TMPDIR"/p-*; do cp "$f" ".git/objects/pack/x"$'\n'"y.${f##*.}"; done
-    echo decoy | git hash-object -w --stdin | git pack-objects -q "$BATS_TEST_TMPDIR/d" >/dev/null
-    cp "$BATS_TEST_TMPDIR"/d-*.idx .git/objects/pack/x; cp "$BATS_TEST_TMPDIR"/d-*.idx .git/objects/y.idx
-    chk "$B"; [ "$status" -eq 2 ] && [ "$output" = "$OBJS" ] || { show; return 1; }
-    rm .git/objects/pack/x* .git/objects/y.idx; chk "$B"; [ "$status" -eq 0 ] || { show; return 1; }
-    # A loose copy in a fan-out directory reached through a link.
-    mkdir -p "$BATS_TEST_TMPDIR/fan"; mv ".git/objects/${o:0:2}" "$BATS_TEST_TMPDIR/fan/" 2>/dev/null || true
-    loose "$o"; mv ".git/objects/${o:0:2}" "$BATS_TEST_TMPDIR/fan/${o:0:2}"; ln -s "$BATS_TEST_TMPDIR/fan/${o:0:2}" ".git/objects/${o:0:2}"
-    chk "$B"; [ "$status" -eq 2 ] && [ "$output" = "$OBJS" ] || { show; return 1; }
-}
-
 @test "--check refuses an ambiguous default branch: both main and master, or origin/HEAD naming a branch the gate did not take (R7, U2b1b)" {
     gated feat/x
     git branch master feat/x; git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/master
@@ -2030,6 +1962,14 @@ refuse state default-branch: origin/HEAD names origin/master, but the default br
     git branch -m main master; git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/main
     chk "$B"
     [ "$status" -eq 2 ] && [ "$output" = "refuse state default-branch: origin/HEAD names origin/main, but the default branch taken is master" ] || { show; return 1; }
+    # origin/HEAD naming a branch that exists here: resolve_main takes it, and the gate names it (research D2).
+    git branch -q develop master; git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/develop
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "$output" = "refuse state default-branch: the default branch taken is develop, not main or master" ] || { show; return 1; }
+    # An origin/HEAD git cannot read (symbolic-ref exits 128) refuses, though resolve_main takes master without it (H2).
+    git branch -q -D develop; echo garbage > .git/refs/remotes/origin/HEAD
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "$output" = "refuse state default-branch: origin/HEAD could not be read" ] || { show; return 1; }
 }
 
 @test "--check's merge reads no submodule repository: a gitlink fast-forward the real repository would merge is a conflict (R9, U2b1b)" {
@@ -2048,24 +1988,16 @@ refuse state default-branch: origin/HEAD names origin/master, but the default br
     [ "$status" -eq 2 ] && [ "$output" = "refuse $B: feat/x conflicts with the default branch" ] || { show; return 1; }
 }
 
-@test "--check runs its state gate before resolve_main reads an object: every commit read follows the gate's last call, and a planted key refuses even with main's commit missing (A15, U2b1b)" {
+@test "--check runs its state gate before resolve_main reads an object: every commit read follows the gate's last call (A15, U2b1b)" {
     gated feat/x
     # A shim logs each git call in order; resolve_main's first object read is a rev-parse of SHA^{commit}.
     S="$BATS_TEST_TMPDIR/shim"; mkdir -p "$S"; real="$(command -v git)"
     printf '#!/bin/bash\necho "$*" >> "%s/calls"\nexec "%s" "$@"\n' "$BATS_TEST_TMPDIR" "$real" > "$S/git"; chmod +x "$S/git"
     PATH="$S:$PATH" chk "$B"
     [ "$status" -eq 0 ] || { show; return 1; }
-    g="$(grep -n -m1 -F 'for-each-ref --format=%(refname) refs/replace/' "$BATS_TEST_TMPDIR/calls" | cut -d: -f1)"
+    g="$(grep -n -m1 -F -- '--git-path shallow' "$BATS_TEST_TMPDIR/calls" | cut -d: -f1)"
     r="$(grep -n -m1 -F '^{commit}' "$BATS_TEST_TMPDIR/calls" | cut -d: -f1)"
     [ -n "$g" ] && [ -n "$r" ] && [ "$g" -lt "$r" ] || { echo "gate call at line $g, first commit read at line $r"; cat "$BATS_TEST_TMPDIR/calls"; return 1; }
-    # store_check re-hashes main's objects before any cat-file blob read of main (U3a1 i1 architecture 1).
-    c="$(grep -n -m1 -x 'cat-file --batch' "$BATS_TEST_TMPDIR/calls" | cut -d: -f1)"
-    f="$(grep -n -m1 '^cat-file blob ' "$BATS_TEST_TMPDIR/calls" | cut -d: -f1)"
-    [ -n "$c" ] && [ -n "$f" ] && [ "$c" -lt "$f" ] || { echo "store_check at line $c, first blob read at line $f"; cat "$BATS_TEST_TMPDIR/calls"; return 1; }
-    git config merge.x.driver true
-    o="$(git rev-parse main)"; rm ".git/objects/${o:0:2}/${o:2}"
-    chk "$B"
-    [ "$status" -eq 2 ] && [ "$output" = "refuse state merge.x.driver: set in config, it can make the gate's git run a command or change its merge" ] || { show; return 1; }
 }
 
 # sm: self-merge on, brief x (self-merge, naming feat/x) and feat/x with one commit; B is its path.
@@ -2079,11 +2011,10 @@ coref() {
         && [ -z "$stderr" ] || { echo "want: $1"; show; return 1; }
 }
 cook() { chk "$B"; [ "$status" -eq 0 ] && [[ "${lines[0]}" == "ok $B "* ]] && [ -z "$stderr" ] || { show; return 1; }; }
-IDX="the checkout's index marks entries skip-worktree, assume-unchanged or unmerged"
 STAT="the checkout's index or tracked files differ from that commit (git status)"
-ENVS="is set, so git can read another work tree, index, object store or config file"
+ENVS="is set, so git can read another repository, work tree, index or object store"
 
-@test "--check refuses a self-merge brief unless it runs from a clean checkout of main: HEAD, env, config, index bits, status, nested repositories (contract item 2, U2b2)" {
+@test "--check refuses a self-merge brief unless it runs from a clean checkout of main: HEAD, env, status, an unmerged path (contract item 2, U2b2)" {
     sm; echo a > docs/a.md && commit_all a
     # Untracked and ignored files are allowed: the walk reads them as they are.
     echo '*.local.md' > .git/info/exclude; echo x > CLAUDE.local.md; echo y > untracked.md
@@ -2092,56 +2023,19 @@ ENVS="is set, so git can read another work tree, index, object store or config f
     coref "the checkout's HEAD is $(git rev-parse HEAD), not the default branch's commit $(git rev-parse main)"; git checkout -q main
     echo b >> docs/a.md; coref "$STAT"; git checkout -q -- docs/a.md
     echo n > new.md; git add new.md; coref "$STAT"; git rm -q --cached new.md
-    # Each index flag hides the change from git status.
-    echo c >> docs/a.md; git update-index --assume-unchanged docs/a.md
-    [ -z "$(git status --porcelain --untracked-files=no)" ]; coref "$IDX"
-    git update-index --no-assume-unchanged docs/a.md; git checkout -q -- docs/a.md
-    git update-index --skip-worktree docs/a.md; echo d >> docs/a.md
-    [ -z "$(git status --porcelain --untracked-files=no)" ]; coref "$IDX"
-    git update-index --no-skip-worktree docs/a.md; git checkout -q -- docs/a.md
+    # An unmerged path (a conflicted merge, aborted by hand) shows in git status.
+    git checkout -q -b side main~1 && echo s > docs/a.md && git add docs/a.md && git commit -q -m side && git checkout -q main
+    git merge -q side >/dev/null 2>&1 || true; [ -n "$(git ls-files -u)" ]; rm -f .git/MERGE_HEAD .git/MERGE_MSG .git/MERGE_MODE .git/AUTO_MERGE
+    coref "$STAT"; git reset -q --hard main
     cook
-    git config core.symlinks false; coref "core.symlinks is false: a symlink is checked out as a file holding its text"; git config --unset core.symlinks
-    git config core.ignoreCase true; coref "core.ignoreCase is true: a case-insensitive checkout"; git config core.ignoreCase false
-    git config core.sparseCheckout true; coref "core.sparseCheckout is true: a sparse checkout"; git config --unset core.sparseCheckout
-    cook
-    # A repo-local variable refuses, GIT_CONFIG (a whole config file) too; the caller's config pairs do not.
+    # A variable that points git elsewhere refuses; the caller's config pairs and the rest of git's do not.
     GIT_INDEX_FILE="$PWD/.git/index" coref "GIT_INDEX_FILE $ENVS"
     GIT_WORK_TREE="$PWD" coref "GIT_WORK_TREE $ENVS"
-    printf '[core]\n\tsymlinks = true\n' > "$BATS_TEST_TMPDIR/cfg"; GIT_CONFIG="$BATS_TEST_TMPDIR/cfg" coref "GIT_CONFIG $ENVS"
+    GIT_DIR="$PWD/.git" coref "GIT_DIR $ENVS"
+    GIT_OBJECT_DIRECTORY="$PWD/.git/objects" coref "GIT_OBJECT_DIRECTORY $ENVS"
+    GIT_COMMON_DIR="$PWD/.git" coref "GIT_COMMON_DIR $ENVS"
     GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=x cook
-    git init -q nested; coref "the checkout holds an untracked nested repository, whose instruction files the walk does not read"; rm -rf nested
-    cook
-}
-
-@test "--check refuses a self-merge brief whose checked-out bytes are not main's blob though git status is clean: ident and eol attributes, a non-UTF-8 name under a UTF-8 locale (contract item 3, row 397, U2b2 i1 security 2)" {
-    sm; mkdir -p docs
-    WHY="a file's checked-out bytes are not the default branch's blob (a filter, working-tree-encoding, ident or eol conversion)"
-    printf 'see @docs/x$Id$\n' > docs/i.md; printf 'docs/i.md ident\n' > .gitattributes; commit_all ident
-    rm docs/i.md; git checkout -q -- docs/i.md
-    grep -q 'Id: ' docs/i.md && [ -z "$(git status --porcelain)" ] || { cat docs/i.md; git status; return 1; }
-    coref "$WHY"
-    printf 'docs/i.md eol=crlf\n' > .gitattributes; commit_all crlf
-    rm docs/i.md; git checkout -q -- docs/i.md
-    [ -z "$(git status --porcelain)" ] || { git status; return 1; }
-    coref "$WHY"
-    git rm -q .gitattributes; commit_all plain; rm docs/i.md; git checkout -q -- docs/i.md
-    cook
-    # A name that is not UTF-8, read under a UTF-8 locale: the record is still compared.
-    n=$'docs/\xff.md'; printf 'see @docs/x$Id$\n' > "$n"; printf 'docs/*.md ident\n' > .gitattributes; commit_all latin
-    rm "$n"; git checkout -q -- "$n"
-    [ -z "$(git status --porcelain)" ] || { git status; return 1; }
-    LC_ALL=C.utf8 coref "$WHY"
-}
-
-@test "--check refuses a self-merge brief when main holds a file name hash-object reads as another: a leading quote, a trailing CR (U2b2 i1 security 1)" {
-    sm
-    NAME="a file on the default branch has a name the byte comparison cannot read (a newline, a leading quote or a trailing CR)"
-    echo q > '"q"'; commit_all quote; coref "$NAME"
-    git rm -q '"q"'; commit_all unquote; cook
-    echo r > $'r\r'; commit_all cr; coref "$NAME"
-    git rm -q $'r\r'; commit_all uncr; cook
-    # A newline in a name is read as one index entry, so the name rule names it (final fact-check claim 14).
-    echo n > $'n\nl'; commit_all nl; coref "$NAME"
+    GIT_REPLACE_REF_BASE=refs/x/ cook
 }
 
 @test "--check judges a review brief without its checkout, and a self-merge brief's checkout after its paths, so a loop's advisory run from its branch still lists them (U2b2 i1 api F1, architecture F2)" {
@@ -2159,18 +2053,70 @@ ENVS="is set, so git can read another work tree, index, object store or config f
     has "deny $B A docs/roadmap.md: $NOWN"; has "path $B A work-feat-x.txt"
 }
 
-@test "--check refuses a self-merge brief when a gitlink's path holds files, is a symlink or cannot be listed (rows 366, 373, U2b2 i1 security 3)" {
-    sm; settings "Build-loop policy: self-merge" "Self-merge never: none"
-    # A gitlink on main: an empty directory there passes (git status reports an absent one).
-    git update-index --add --cacheinfo "160000,$(git rev-parse HEAD),sub"; git commit -q -m gitlink
-    mkdir sub; cook
-    echo '@../docs/x.md' > sub/CLAUDE.md
-    coref "a gitlink is checked out with files, whose instruction files the walk does not read"
-    LINK="a gitlink's path in the checkout is a symlink or cannot be listed"
-    chmod 111 sub; coref "$LINK"; chmod 755 sub
-    rm -rf sub; mkdir "$BATS_TEST_TMPDIR/elsewhere"; ln -s "$BATS_TEST_TMPDIR/elsewhere" sub
-    # git status already fails on a symlink there (exit 128), before the gitlink rule reads it.
-    coref "git status failed or warned in the checkout"
+# honest: --state prints ok, and --check passes self-merge brief x (sm) from
+# this checkout, its checkout rule included. Each setup below is an ordinary
+# one the gate refused before brief 2026-11-01-relax-gate-git-state.
+honest() {
+    run --separate-stderr bash "$BL" --state
+    [ "$status" -eq 0 ] && [ "$output" = ok ] && [ -z "$stderr" ] || { echo "--state"; show; return 1; }
+    cook
+}
+
+@test "an honest setup passes every gated mode: git-lfs's local filter config (brief 2026-11-01-relax-gate-git-state)" {
+    # A tracked file the filter applies to, touched so git status runs the clean filter (cat stands in for git-lfs).
+    sm; echo '*.bin filter=lfs' > .gitattributes; echo data > a.bin; commit_all lfs
+    git config filter.lfs.clean "touch '$BATS_TEST_TMPDIR/clean-ran'; cat"; git config filter.lfs.smudge cat; git config filter.lfs.required true
+    touch -d '2000-01-01' a.bin
+    honest
+    [ -e "$BATS_TEST_TMPDIR/clean-ran" ] || { echo "the clean filter never ran, so the setup was not in effect"; return 1; }
+}
+
+@test "an honest setup passes every gated mode: merge.conflictStyle and a diff setting (brief 2026-11-01-relax-gate-git-state)" {
+    sm; git config merge.conflictStyle diff3; git config diff.algorithm histogram; honest
+}
+
+@test "an honest setup passes every gated mode: include.path (brief 2026-11-01-relax-gate-git-state)" {
+    sm; printf '[user]\n\tname = t\n' > "$BATS_TEST_TMPDIR/inc"; git config include.path "$BATS_TEST_TMPDIR/inc"; honest
+}
+
+@test "an honest setup passes every gated mode: core.fsmonitor on (brief 2026-11-01-relax-gate-git-state)" {
+    sm; git config core.fsmonitor true; honest
+}
+
+@test "an honest setup passes every gated mode: SSH commit signing (brief 2026-11-01-relax-gate-git-state)" {
+    sm; git config gpg.format ssh; git config gpg.ssh.program "$BATS_TEST_TMPDIR/nowhere"; git config user.signingkey "$BATS_TEST_TMPDIR/key.pub"
+    git config commit.gpgSign true; git config log.showSignature true; honest
+}
+
+@test "an honest setup passes every gated mode: a husky core.hooksPath, whose hooks the gate does not run (brief 2026-11-01-relax-gate-git-state)" {
+    # Whether a hook runs is the --merge test's to check (these modes write no ref).
+    sm; mkdir -p .husky; printf '#!/bin/sh\nexit 0\n' > .husky/pre-commit; chmod +x .husky/pre-commit
+    echo '.husky/' >> .git/info/exclude; git config core.hooksPath .husky
+    honest
+}
+
+@test "an honest setup passes every gated mode: an object both packed and loose, and in two packs (brief 2026-11-01-relax-gate-git-state)" {
+    sm; git repack -adq; o="$(git rev-parse "main:$B")"
+    loose "$o"; honest
+    echo "$o" | git pack-objects -q .git/objects/pack/pack >/dev/null; honest
+}
+
+@test "an honest setup passes every gated mode: core.autocrlf, so checked-out bytes differ from main's blobs (brief 2026-11-01-relax-gate-git-state)" {
+    sm; git config core.autocrlf true; rm "$B"; git checkout -q -- "$B"
+    grep -q $'\r$' "$B" && [ -z "$(git status --porcelain --untracked-files=no)" ] || { cat -A "$B"; git status; return 1; }
+    honest
+}
+
+@test "an honest setup passes every gated mode: a sparse checkout (brief 2026-11-01-relax-gate-git-state)" {
+    sm; echo top > top.txt && commit_all top
+    git sparse-checkout set --no-cone /docs/
+    [ ! -e top.txt ] && [ "$(git ls-files -t | grep -c '^S ')" -gt 0 ] && [ -z "$(git status --porcelain --untracked-files=no)" ] || { git ls-files -t; git status; return 1; }
+    honest
+}
+
+@test "an honest setup passes every gated mode: a case-insensitive checkout, and an untracked nested repository (brief 2026-11-01-relax-gate-git-state)" {
+    sm; git config core.ignoreCase true; honest
+    git init -q nested; honest
 }
 
 # U2c1, the S rules (plan D5): a self-merge brief lands only what its Paths:
