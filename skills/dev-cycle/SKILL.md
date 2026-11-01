@@ -34,8 +34,7 @@ one place every trigger is certain to be checked, so it checks all of them every
   paths only, never `git add -A`. Commits and merges follow the Operating Modes rules in the
   global instructions (in /active mode, ask first); code fixes land through `pr-prep`.
 - **Scripts run through the D6 block** (D6). Every `build-loop.sh`, `dev-cycle.sh` and `questions.sh` call
-  runs from WT (step 0's first two from MAIN_WT; step 7's self-merge from its GT, after a
-  `--state` from MAIN_WT) as
+  runs from WT (step 0's first two from MAIN_WT; step 7's self-merge from its GT) as
   `cd WT && bash -s -- SCRIPT ARG... <<'D6'`, then the block below and a last
   line `D6`, pasted whole; never `~/.claude/scripts/`, a working-tree copy, or a `source`. In
   every repository, claude-workflows too, it runs the root-owned image copy (Q-140 [1]), so
@@ -51,40 +50,25 @@ one place every trigger is certain to be checked, so it checks all of them every
   script that the Bash tool timed out, and a `refuse d6:` line, are stops too. Each stop
   ends the iteration there (one before step 9's land lands no record, so the next starts
   from the same `Main at:`; one in step 10's land comes after it), and is filed once: in the `you: judgment` entry the step names, if it names one (step 0's
-  `--state` refusals and its lost `Main at:` line; a `refuse main-log:` line is step
-  0.2's refuse stop, which lands a record), else the line and stderr go in
+  `--state` refusals and its lost `Main at:` line), else the line and stderr go in
   one agent work item (below), each line as `> Output: LINE` with any HTML comment opener and carriage
   return removed; either way
-  also in the final message. A stop after step 0.3 removes WT as step 0.3 does (with
-  `--force`, which discards WT's uncommitted edits; its branch stays). A full disk reads like
+  also in the final message. A stop after step 0.3 removes WT with a plain `worktree remove`
+  (its branch stays); when git refuses because WT holds uncommitted edits, WT is kept and
+  named in the final message. A full disk reads like
   planted state, so a stop is not called hostile. `questions.sh` never runs as
   `~/.claude/scripts/questions.sh` (a uid-owned link; its own hints still print that path).
-- **Hardened git** (rows 704, 736). The orchestrator's own git commands (worktrees, staging,
-  its commits, merging main into WT, ancestry checks) run in a `bash -s <<'G'` script that
-  starts with this line, never as bare `git` in its shell (the Bash tool's shell is zsh, with
-  aliases):
-
-  ```bash
-  hg() { env GIT_NO_REPLACE_OBJECTS=1 GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 GIT_ALLOW_PROTOCOL=none GIT_LITERAL_PATHSPECS=1 GIT_OPTIONAL_LOCKS=0 GIT_ATTR_NOSYSTEM=1 git -c core.useReplaceRefs=false -c core.hooksPath=/dev/null -c core.fsmonitor=false -c core.attributesFile=/dev/null -c core.commitGraph=false -c core.multiPackIndex=false -c log.date=default -c log.showSignature=false -c commit.gpgSign=false "$@"; }
-  ```
-
-  A build loop can write `.git/config` and `~/.gitconfig` as easily as a file. `hg` reads
-  no global or system config and runs no hook, fsmonitor command, commit signing or
-  replaced object; a test holds its pairs to the lib's `HARDEN` list. It does not switch off
+- **The orchestrator's git** (worktrees, staging, its commits, merging main into WT, ancestry
+  checks) is plain `git -C PATH …`, with the user's normal config and identity (none set:
+  git refuses the commit, a stop). Two honest settings are pinned where they matter:
+  `-c log.showSignature=false` on a `log` whose output is read, and `-c commit.gpgSign=false`
+  on a command that writes a commit (no signing key in the sandbox). `add`, `mv` and `rm`
+  run as `git --literal-pathspecs -C PATH add -- FILE…`, so a path holding `*` or
+  `?` names one file. H1 binds the gate's own git (`git_harden` in the lib, the D6 block),
+  not these calls: what they write is input the gate checks. Plain git does not switch off
   what the repository's own config can still name (a filter, a merge driver, signature
   verification on a merge): `--state`
-  refuses those, but only when it runs, so run it again (through the D6 block, from WT)
-  right before the iteration's commits, and treat a refusal there as step 0 does. A loop
-  that plants one between that check and the commit is a residual for Q-103's list (U5).
-  Commits set their identity on the command, as `GIT_AUTHOR_NAME`, `GIT_AUTHOR_EMAIL`,
-  `GIT_COMMITTER_NAME` and `GIT_COMMITTER_EMAIL` (these outrank a planted `author.*` or
-  `committer.*` key), from the environment's own values, or else from
-  `N="$(git config --global --get user.name)"` and `E=…user.email…` read in the same script
-  (a read, the one plain `git` here; either empty: stop), never pasted into its text. The
-  same goes for every command that writes a commit, the merge of main into WT included,
-  written as `GIT_AUTHOR_NAME="$N" … hg …` (not `env … hg`, which would run another
-  program named `hg`). Never export these settings: set them per command, as `hg` does (`--state` refuses a
-  caller's config pair for a `HARDEN` key, row 702).
+  refuses those, but only when it runs.
 - **The only questions writer** (D11). Build loops never write the questions files or
   `docs/working/watching.md`; their questions arrive in `blocked` markers, which the
   orchestrator files.
@@ -142,24 +126,20 @@ read these) only after `dev-cycle.sh --check-path '<path or glob>' …` (through
 block, run in WT) prints `ok <path>` for it, and
 open exactly those paths. `--check-path` allows tracked files and gitignored files under
 `docs/working/`, at most 50 per argument (past that, narrow the glob), never a symlink, a
-directory, a `.` or `..` component, `.git*` or any other untracked file. Before writing one
-of the cycle's own files (the record, a brief, the idea log, the roadmap, the questions
-files), run the same script with `--check-write '<path>'` and write only on `ok`; it allows
-only those files. An in-cycle fix (steps 1, 3, 4, and a missing doc) edits only a file that
+directory, a `.` or `..` component, `.git*` or any other untracked file. The cycle writes
+its own files (the record, a brief, the idea log, the roadmap, the questions files) with no
+pre-write check: step 9's `build-loop.sh --cycle-diff` bounds what lands, and the digest's
+section 8 names any of their directories that is not plain. An in-cycle fix (steps 1, 3, 4, and a missing doc) edits only a file that
 `--check-fix '<path>'` prints `ok` for: a tracked `.md` file under `docs/` (not the
 cycle's own files, `docs/working/`, `docs/human-author/`, `docs/reviews/`,
 `docs/decisions/`, `docs/dev-cycle.md`, `docs/constraints.md`, `docs/failure-patterns.md` and its old path
 `docs/thoughts/failure-patterns.md`, a dot-directory or dotfile, an instruction file, or a
 file an instruction file names after an `@`, read broadly; compared ignoring case) or
 `README.md`, and refuses every path when the import walk fails; anything else (a new file, code, scripts, hooks, egress lists, decision
-records, instruction files) is filed, not written. Run `--check-fix` on each fixed path again
-right before staging it, and stage only paths it, or `--check-write` for the cycle's own
-files, printed `ok` for: the cycle rules `build-loop.sh --cycle-diff` applies to the chore
-commit repeat only part of `--check-fix` (a `.md` under `docs/working/` or `docs/reviews/`,
-a doc an instruction file imports, and a symlink pass them; rows 764, 769, 771; a new
-file, which `--check-fix` refuses wherever it is, passes them too; both refuse
-`docs/failure-patterns.md` and its old path `docs/thoughts/failure-patterns.md`, and both
-pass the rest of `docs/thoughts/`). Briefs in the directory are found only
+records, instruction files) is filed, not written. Stage only the cycle's own files and the
+paths `--check-fix` printed `ok` for: `--cycle-diff` repeats only part of `--check-fix` (a
+`.md` under `docs/working/` or `docs/reviews/`, or a doc an instruction file imports, passes
+it; rows 764, 769, 771). Briefs in the directory are found only
 through `--check-path 'docs/working/briefs/*.md'` (a done or dropped brief moves to
 `docs/working/briefs/closed/`, so the glob lists only briefs not yet moved). A brief's state
 comes only from `--check-brief '<path>'` (for a path in `briefs/` or `briefs/closed/`),
@@ -180,8 +160,8 @@ removed. A brief the glob prints `ok` for, or this cycle wrote, whose path no In
 line names (compared as text) gets one, whatever its state, so In flight's checks reach
 it. A brief's branch is only ever named to
 `--check-branch '<name>'`, which prints `ok <name> <commit> <n> <date>` (n: its commits
-beyond the default branch; date: its tip commit's), `absent <name>`, or a skip; the cycle
-runs no git command with it. A
+beyond the default branch; date: its tip commit's), `absent <name>`, or a skip; a name it
+printed `ok` for reaches git only as the full ref `refs/heads/<name>`, never bare. A
 question ID from a brief is read only through `--check-answer`. A check that exits
 non-zero (no default branch, say) is recorded, and the step that needed it stops. Every mode
 takes many arguments: batch a step's values into one call per mode. Pass a value to
@@ -282,7 +262,7 @@ the record in step order. Step 4 uses one read-only subagent per sampled merge. 
 
 ### 0. Start and digest
 
-Start every iteration in this order (D13); a stop below (but step 0.2's refuse stop) ends
+Start every iteration in this order (D13); a stop below ends
 the iteration with no record, so the next one starts from the same `Main at:`:
 
 1. **`--state`**, run through the D6 block from the main worktree (the session's starting
@@ -295,19 +275,19 @@ the iteration with no record, so the next one starts from the same `Main at:`:
    Then the image lag (Q-140 [1]; the image is the gate, built from the host checkout's HEAD).
    C and A are the `commit=` and `assembled_from=` lines of `/opt/claude-workflows/.manifest`,
    M main's commit; with no file or either line, note it in the record and skip. If
-   `hg -C MAIN_WT cat-file -e 'C^{commit}'` fails, this repository does not hold the image's
+   `git -C MAIN_WT cat-file -e 'C^{commit}'` fails, this repository does not hold the image's
    commit: skip silently. Else C is on main only when it is one of the lines of
-   `hg -C MAIN_WT rev-list --first-parent M` (the history `--main-log` reads; a merged
+   `git -C MAIN_WT rev-list --first-parent M` (the history `--main-log` reads; a merged
    branch's own commits are not on it). Not on main: the gate that runs is a commit no merge
    to main landed; file one `you: judgment` entry `image-off-main-C12` (C's first 12 hex),
    unless WT's questions files hold one: [1] rebuild from main (the paste below, which
    refuses until the host checkout is at M), [2] keep this image. On main: run
-   `hg -C MAIN_WT diff --quiet C M -- PATHS`, PATHS being GATE_CODE's (a test pins the line):
+   `git -C MAIN_WT diff --quiet C M -- PATHS`, PATHS being GATE_CODE's (a test pins the line):
    `scripts/build-loop.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/`
    Exit 1: the gate that runs differs from main's. File one `you: terminal` entry
    `image-lag` (an open one has its body rewritten), which is also the release entry: the
    release is your review of what it ships (F58). It holds C, M, the changed names (the same
-   diff with `--name-only`), every first-parent commit after C as a list item (`hg -C MAIN_WT
+   diff with `--name-only`), every first-parent commit after C as a list item (`git -C MAIN_WT
    log --first-parent --format='%h %s' C..M`; flag a subject ending `(build-loop
    self-merge)`, which no one reviewed: a hand commit with that subject reads the same, so
    the flag is a pointer, not proof), every path changed from C to M outside `docs/` on one
@@ -326,9 +306,9 @@ the iteration with no record, so the next one starts from the same `Main at:`:
 2. **`--main-log SINCE`**, also from MAIN_WT. SINCE is the last `Main at:` line of the
    newest record on the default branch (`docs/working/cycles/cycle-YYYY-MM-DD.md`, the
    latest real, not future date of a regular file, as the digest picks its window: listed
-   with `hg -C MAIN_WT ls-tree` and read with `hg -C MAIN_WT show`,
+   with `git -C MAIN_WT ls-tree` and read with `git -C MAIN_WT show`,
    never from a working tree). Only when main's history never held a `Main at:` line in a
-   record (`hg -C MAIN_WT log -1 --format=%H --first-parent --diff-merges=first-parent -s
+   record (`git -C MAIN_WT log -1 --format=%H --first-parent --diff-merges=first-parent -s
    --no-textconv --no-show-signature --no-follow -G'^Main at: ' MAIN0 -- docs/working/cycles/`,
    the lib's check_brief flags, so a merge that drops the records is seen, prints nothing;
    MAIN0 being the default branch's commit read just before), pass 40
@@ -349,26 +329,22 @@ the iteration with no record, so the next one starts from the same `Main at:`:
    commit could not pass, and it filed 25 entries in a week, all answered keep (the
    user's feedback of 2026-10-20). A `refuse main-log:` line other than the
    bootstrap's own (SINCE is off main's history: main rewritten, or a wrong `Main at:`; or
-   the history could not be listed) gets one `you: judgment` entry quoting the line (slug
-   `main-log-refused-MAIN12`), unless WT's questions files hold one (rows 720, 726), with
-   options **[1] reviewed, build on it** and **[2] not yet**. **The refuse stop**: while
-   such a line is listed, or `--check-answer` reads any entry with that slug in WT's
-   `docs/working/questions.md` or `questions-archive.md` as other than `keep`, the
-   iteration makes WT (step 0.3), files the entry, appends its block (`1.` line
-   `stopped: step 0.2`) to the newest record, the file SINCE came from (no new day's
-   file, so the digest's window stays put), lands as step 9 does and ends: no tests,
-   merges, answers or dispatch.
-3. **The worktree.** `hg -C MAIN_WT worktree add -b chore/dev-cycle-DATE-HHMM WT MAIN`, with WT at
+   the history could not be listed) is a report, not a stop: it goes, quoted, under the
+   record's `### Other commits on main` and in the final message, saying the commits since
+   SINCE were not listed, and the iteration goes on from MAIN (the `main MAIN -` line before
+   it), which its `Main at:` line re-anchors. No entry, and no hold on tests, merges,
+   answers or dispatch: the anchor exists to show the user what moved main, and the classes
+   cannot catch a disguised commit anyway (F19).
+3. **The worktree.** `git -C MAIN_WT worktree add -b chore/dev-cycle-DATE-HHMM WT MAIN`, with WT at
    `.claude/wt-dev-cycle-DATE-HHMM` in MAIN_WT (UTC time; a name taken: the next minute).
    When this session's previous iteration stopped after committing (its branch not in
    main), merge the commit the session made there (by its id, not the branch name) into WT
    first (as step 9 merges main in), so its entries and
    `Asked:` items land now and are not filed again (D13: a failed land is retried); a
    conflict is a stop. Unmerged `chore/dev-cycle-*` branches are named in the final
-   message. WT is removed (`hg -C MAIN_WT worktree remove --force WT`) once step 10's land is
-   verified: every registered worktree costs disk and joins the import walks' reader set.
-   `--force` skips the clean check, whose status run would execute a filter planted in the
-   repository's config.
+   message. WT is removed (`git -C MAIN_WT worktree remove WT`; the land left it clean) once
+   step 10's land is verified: every registered worktree costs disk and joins the import
+   walks' reader set.
 4. **The digest**: `dev-cycle.sh` through the D6 block from WT. It
 reads the window start, triggers, questions, roadmap and idea log from that working tree. Keep
 its output. It is read-only. Its sections feed the steps: 1 activity (context), 2 triggers
@@ -399,18 +375,20 @@ last good one.
   its PID or process group, never by a name or pattern. Then run the repo's health check,
   if it has one (e.g. `scripts/health-check.sh` in claude-workflows; skipped
   when the previous iteration's `1.` line reads
-  `passed at P` or `unchanged since P` and step 0.2 listed only `chore` lines (cycle lands
+  `passed at P` or `unchanged since P` and step 0.2 listed only `chore` lines and no
+  `refuse` line (cycle lands
   carry no code; this iteration's line then reads `unchanged since P`), to a file,
   in the background, and wait for it to finish before steps 2–4b start their own tests and
-  subagents. It runs from a health checkout HC, not WT: `hg -C MAIN_WT worktree add
-  --detach HC W`, W being WT's HEAD commit (`hg -C WT rev-parse HEAD`; MAIN, or step 0.3's
+  subagents. It runs from a health checkout HC, not WT: `git -C MAIN_WT worktree add
+  --detach HC W`, W being WT's HEAD commit (`git -C WT rev-parse HEAD`; MAIN, or step 0.3's
   merge of an earlier iteration's commit, which the `1.` line then names in MAIN's place),
-  HC at `.claude/wt-dev-cycle-health-DATE-HHMM` in MAIN_WT (a name taken: the next minute;
-  the add's checkout reads MAIN_WT's config, which step 0.1's `--state` passed minutes
-  before, unlike step 7's GT, which runs its own). It is made for this one run and removed
+  HC at `.claude/wt-dev-cycle-health-DATE-HHMM` in MAIN_WT (a name taken: the next
+  minute). It is made for this one run and removed
   as step 0.3 removes WT once the check exits (its log is in the orchestrator's directory,
   not HC). A stop while it runs stops the check by its PID or process group, then removes
-  HC. Before the add, an HC this session's earlier iteration left is removed the same way;
+  HC with `worktree remove --force` (a killed run's files are meant to be discarded; the
+  one place `--force` is used). Before the add, an HC this session's earlier iteration
+  left is removed the same way;
   any other `wt-dev-cycle-health-*` in `worktree list` (another session's, maybe live) is
   only named in the final message, as is a removal that fails. Nothing else names HC, so
   the check reads W's tree, the commit its `passed at` names, and the entries this
@@ -430,12 +408,12 @@ last good one.
   answered entries leave the live file. If either fails, note it in the record and go on:
   questions that cannot be read this cycle are reported, not guessed (a `refuse d6:` line
   or a timed-out call is still a stop, as the Rules say).
-- `hg -C MAIN_WT worktree list` and `hg -C MAIN_WT worktree prune` (a locked worktree, a
+- `git -C MAIN_WT worktree list` and `git -C MAIN_WT worktree prune` (a locked worktree, a
   live loop's, is never pruned). Delete merged branches without asking (handoff answer 2,
   Q-153 [1]: the global instructions exempt `git branch -d` of a merged branch): list them
-  with `hg -C MAIN_WT for-each-ref --merged refs/heads/main --format='%(refname:short)'
+  with `git -C MAIN_WT for-each-ref --merged refs/heads/main --format='%(refname:short)'
   refs/heads/`, pass the names to one `--check-branch` call, and run
-  `hg -C MAIN_WT branch -d NAME` (each name its own argument) only for a name it prints
+  `git -C MAIN_WT branch -d NAME` (each name its own argument) only for a name it prints
   `ok` for that is not `main` or `master`, not this iteration's own branch, and not named
   by a brief holding a slot (as in the Rules: work on it may be in progress). Never `-D`:
   git refuses `-d` for a branch not merged into MAIN_WT's HEAD or checked out in a
@@ -609,8 +587,8 @@ docs/working/questions.md, and the cycle's watches in docs/working/watching.md.
      default branch, by the user or a merged change; the record names its commit), or
      step 7 applies a drop answer → Ideas, with the reason, and the
      brief's status line becomes `Status: dropped`. Either way,
-     create `docs/working/briefs/closed/` if it is missing, `hg mv` the brief there (same
-     file name; the destination passes `--check-write`; a brief already under `closed/`
+     create `docs/working/briefs/closed/` if it is missing, `git mv` the brief there (same
+     file name; a brief already under `closed/`
      stays) and point the roadmap line there.
      Done never depends on the branch, so a squash, a rebase or a deleted branch does not
      matter.
@@ -621,7 +599,7 @@ docs/working/questions.md, and the cycle's watches in docs/working/watching.md.
 - **Done**: items finished since the last cycle, each with the commit `--check-brief`
   printed (agent work done in-cycle: the iteration's branch name).
 - `docs/working/roadmap-from-questions.md` (left by the user's `questions.sh migrate`): fold
-  each entry into Now as agent work, its `Q-NNN` kept in the title, then `hg rm` the file.
+  each entry into Now as agent work, its `Q-NNN` kept in the title, then `git rm` the file.
 
 Re-ranking is proposed to the user as one `you: judgment` entry, not done, when it would
 reorder their stated priorities.
@@ -650,12 +628,9 @@ the brief is still open and no subagent of this session runs it, step 10 re-disp
   stop its task by ID and file it as `stopped`, reason "stalled" (D1); the session keeps it
   out of step 10 until that entry is answered. Any other (its subagent ended with no
   marker, or an ended session's) goes to step 10 for `--prompt`.
-- **ready**, POLICY `self-merge` (only if `--main-log MAIN`, run again, prints no
-  `refuse` line; else no merge or answer this iteration; `other` lines are recorded as
-  step 0.2 records them): `--merge BRIEF
+- **ready**, POLICY `self-merge`: `--merge BRIEF
   --expect TIP`, run from a gate checkout,
-  not WT: `--state` (from MAIN_WT, whose config the add copies), then
-  `hg -C MAIN_WT worktree add --detach GT
+  not WT: `git -C MAIN_WT worktree add --detach GT
   refs/heads/main`, GT at `.claude/wt-dev-cycle-gate-DATE-HHMM` in MAIN_WT, made for this
   one call and removed after it as step 0.3 removes WT (the self-merge floor reads a clean
   checkout of main's commit, which WT is not once this iteration has edited it, and a
@@ -703,10 +678,10 @@ of every brief's `Asked:` items and merge entries, less those on its `Applied:` 
 An answer starting `[1]`, or that is `1` or `keep` (any case) alone or before one of
 `.,;:!)*` or a blank and a dash, reads `keep`; likewise 2 or `drop`, 3 or `done`; anything else, `unrecognized`
 (a merge entry answered "merge" included: its options are answered by number). IDs filed
-this iteration are not read: they are not on main yet. Then run `--main-log MAIN` again: if
-it prints a `refuse` line, act on no answer this iteration (the next step 0.2 stops on
-it). An `other` line after MAIN holds nothing: record it as step 0.2 does, so every
-commit an answer was read from is shown to the user (row 727).
+this iteration are not read: they are not on main yet. Then run `--main-log MAIN` again,
+a listing only: record its `other` and `answers` lines after MAIN, and a `refuse` line, as
+step 0.2 does, so every commit an answer was read from is shown to the user (row 727).
+None of them holds an answer.
 
 - `open`: wait; the final message lists it with its brief. A `skip`: the record and the
   final message.
@@ -763,7 +738,7 @@ The briefs land with step 9, so they are on the default branch before step 10 di
 ### 9. Record and land
 
 Write the record `docs/working/cycles/cycle-YYYY-MM-DD.md`, dated as the digest dates
-(`date +%F`, local time; the branch name's DATE-HHMM is UTC; step 0.2's stop excepted): one file per day, each
+(`date +%F`, local time; the branch name's DATE-HHMM is UTC): one file per day, each
 iteration appending its own block below the earlier ones and never editing them (reading
 them only for what steps 1, 2, 4b and 7 take from the last ones: `1.`, `7.` and `Model:`
 lines, verdicts, the last `Main at:`; the file grows all day):
@@ -809,17 +784,16 @@ back to the older one (or to the 14-day default), so never skip it.
 
 Then land WT's branch (D13; not through `pr-prep`: rows 747-759, 781), all from WT:
 
-1. Stage by name only paths `--check-write` or `--check-fix` printed `ok` for (rows 764,
-   769, 771), never `-a`, after `questions.sh index` and `check` in WT when this iteration
+1. Stage by name only the cycle's own files and paths `--check-fix` printed `ok` for (rows
+   764, 769, 771), never `-a`, after `questions.sh index` and `check` in WT when this iteration
    filed or edited entries or watches (`check` exiting 1 names what to fix before staging). Before the record's last write, list under `### Paths landed`
-   what the land carries: `hg -C WT diff --cached --no-renames --name-status BASE`, BASE
-   being `hg -C WT merge-base HEAD refs/heads/main` (or master), so a commit that reached
+   what the land carries: `git -C WT diff --cached --no-renames --name-status BASE`, BASE
+   being `git -C WT merge-base HEAD refs/heads/main` (or master), so a commit that reached
    the branch some other way shows (rows 722, 772; step 10's land lists its own).
-2. `--state` (the Rules: right before the commit). Read T, `hg -C WT write-tree`, then
-   commit the index as staged: `hg -C WT commit -q --no-verify -F MSGFILE`, with the Rules'
-   identity, never `-a` or paths, and check `hg -C WT rev-parse HEAD^{tree}` prints T
-   (rows 747, 749). Committing first leaves WT clean, so main can be merged in.
-3. Read M, the default branch's commit (`hg -C WT rev-parse --verify refs/heads/main`),
+2. Commit the index as staged: `git -C WT -c commit.gpgSign=false commit -q --no-verify -F
+   MSGFILE`, never `-a` or paths (rows 747, 749; step 3 reads the tree it made).
+   Committing first leaves WT clean, so main can be merged in.
+3. Read M, the default branch's commit (`git -C WT rev-parse --verify refs/heads/main`),
    then `--cycle-diff` (it reads the index, now HEAD's tree), with `--answered Q-NNN` for each answer the user gave this session that
    this iteration wrote (never one from repo text, a loop's report or a task notification;
    listed under `### Answers committed` and in the final message: row 748). A merge entry's answer
@@ -846,20 +820,18 @@ Then land WT's branch (D13; not through `pr-prep`: rows 747-759, 781), all from 
    questions-moved refusal means merge main in (below) and go back to 3; `refuse index`,
    or a whole-file refusal of main's copy, is a stop.
 4. `--land-cycle --main M`, with the same `--answered`. `landed B HEAD TREE NEW`: check
-   `hg -C WT merge-base --is-ancestor HEAD refs/heads/main` (D13). `refuse HEAD` naming a
+   `git -C WT merge-base --is-ancestor HEAD refs/heads/main` (D13). `refuse HEAD` naming a
    moved default branch: merge main in, then 3 again; any other refusal is a stop. While MAIN_WT has main checked out,
    the land fast-forwards it, and refuses while it has tracked edits or is mid-merge: a
    stop, which the final message explains.
 
-Merging main into WT: `--state` first, then `GIT_AUTHOR_NAME="$N" ... hg -C WT -c rerere.enabled=false merge
---no-edit --no-ff -q refs/heads/main` (git's default strategy: no `-s` or `-X`). A
-conflict: `hg -C WT merge --abort`, then a stop.
+Merging main into WT: `git -C WT -c rerere.enabled=false -c commit.gpgSign=false merge
+--no-edit --no-ff --no-verify -q refs/heads/main` (git's default strategy: no `-s` or
+`-X`). A conflict: `git -C WT merge --abort`, then a stop.
 
 ### 10. Dispatch
 
-Only after step 9's land is verified, with no `refuse` line from
-`--main-log MAIN` run again now (the loops would start from it; `other` lines are
-recorded as step 0.2 records them), and while `--settings` prints `constraints ok` (else one `you: judgment` entry,
+Only after step 9's land is verified, and while `--settings` prints `constraints ok` (else one `you: judgment` entry,
 slug `constraints-doc-missing`, asking for `docs/constraints.md` and naming the `constraints-builder` skill that drafts it, unless WT's questions
 files hold one with that slug, open or answered: D2). Whether or not it dispatches, when
 `--settings` prints `policy review unset: WHY`, file one `you: judgment` entry, slug

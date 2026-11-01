@@ -324,7 +324,7 @@ shim() {
     rm "$U/scripts/build-loop.sh"; d6_is "refuse d6: $U/scripts/build-loop.sh is missing"
 }
 
-@test "git_harden exports HARDEN's pairs after the caller's and a fixed environment, once however often it is called; the D6 snippet's git and SKILL.md's hg carry the same (rows 281, 311, 495, 704, 736, U3b3, U4b1)" {
+@test "git_harden exports HARDEN's pairs after the caller's and a fixed environment, once however often it is called; the D6 snippet's git carries the same (rows 281, 311, 495, 704, 736, U3b3, U4b1)" {
     L="$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
     run env -i PATH="$PATH" GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=c bash -c 'source "$1"; git_harden; git_harden; echo "caller $CALLER_COUNT"; printf "pair %s\n" "${HARDEN[@]}"; env | grep "^GIT_" | sort' _ "$L"
     [ "$status" -eq 0 ] || { echo "$output"; return 1; }
@@ -335,13 +335,24 @@ shim() {
     for kv in $H; do k=$((k + 1)); keys+=$'\n'"GIT_CONFIG_KEY_$k=${kv%%=*}"; vals+=$'\n'"GIT_CONFIG_VALUE_$k=${kv#*=}"; done
     want+=$'\n'"$(printf '%s\n' $E "GIT_CONFIG_COUNT=10" "$keys" "$vals" | LC_ALL=C sort)"
     [ "$output" = "$want" ] || { diff <(echo "$want") <(echo "$output"); return 1; }
-    # Neither the snippet (it runs before anything is checked) nor SKILL.md's hg, the orchestrator's own git (rows 704, 736), can source the lib: each repeats both lists, on one line.
-    [ "$(grep -c '^  hg() { env .* "\$@"; }$' "$REPO_ROOT/skills/dev-cycle/SKILL.md")" -eq 1 ] || { grep -n 'hg()' "$REPO_ROOT/skills/dev-cycle/SKILL.md"; return 1; }
+    # The snippet runs before anything is checked, so it cannot source the lib: it repeats both lists, on one line.
+    # (The orchestrator's own git is plain git since brief 2026-11-01-relax-dev-cycle-skill-prose: H1 binds the gate's git, not its caller's.)
     [ "$(grep -c '^  G=(env ' "$REPO_ROOT/skills/dev-cycle/SKILL.md")" -eq 1 ] || return 1
-    for g in "$(grep '^  G=(env ' "$REPO_ROOT/skills/dev-cycle/SKILL.md")" "$(grep '^  hg() { env ' "$REPO_ROOT/skills/dev-cycle/SKILL.md")"; do
-        [ "$(grep -o -- '-c [^ )]*' <<<"$g" | cut -c4- | tr '\n' ' ')" = "$H " ] || { echo "$g"; return 1; }
-        [ "$(grep -o 'GIT_[A-Z_]*=[^ ]*' <<<"$g" | LC_ALL=C sort | tr '\n' ' ')" = "$E " ] || { echo "$g"; return 1; }
-    done
+    g="$(grep '^  G=(env ' "$REPO_ROOT/skills/dev-cycle/SKILL.md")"
+    [ "$(grep -o -- '-c [^ )]*' <<<"$g" | cut -c4- | tr '\n' ' ')" = "$H " ] || { echo "$g"; return 1; }
+    [ "$(grep -o 'GIT_[A-Z_]*=[^ ]*' <<<"$g" | LC_ALL=C sort | tr '\n' ' ')" = "$E " ] || { echo "$g"; return 1; }
+}
+
+@test "SKILL.md's orchestrator runs plain git, with no hg wrapper, identity ritual, --state re-runs, pre-write --check-write, tree-equality check or main-log refuse stop (brief 2026-11-01-relax-dev-cycle-skill-prose)" {
+    K="$REPO_ROOT/skills/dev-cycle/SKILL.md"
+    # The removed rituals stay removed.
+    ! grep -nE '(^|[^a-z])hg( |\(\))|GIT_AUTHOR_NAME|write-tree|HEAD\^\{tree\}|main-log-refused-|refuse stop|--check-write' "$K" || return 1
+    # The orchestrator's git keeps the honest-slip pins: literal pathspecs for path commands, no signing for commits.
+    grep -qF 'git --literal-pathspecs -C PATH add -- FILE' "$K" && grep -qF -- '-c commit.gpgSign=false commit -q --no-verify -F' "$K" || return 1
+    # Merging main in keeps rerere off, the default strategy and abort on conflict.
+    grep -qF -- '-c rerere.enabled=false -c commit.gpgSign=false merge' "$K" && grep -qF 'no `-s` or' "$K" && grep -qF 'merge --abort`, then a stop' "$K" || return 1
+    # --force only for a stopped or crashed HC.
+    [ "$(grep -c -- '--force' "$K")" -eq 2 ] || { grep -n -- '--force' "$K"; return 1; }
 }
 
 @test "SKILL.md step 0.1's image-lag paths are GATE_CODE's, on one line of their own: a GATE_CODE change fails here until this test's literal is updated, and a listed path that is not gate code fails (U4c i2 architecture 1)" {
@@ -357,7 +368,7 @@ shim() {
     s="$(awk '/^### 1\. Health and cleanup$/ { on = 1; next } on && /^### / { exit } on' "$REPO_ROOT/skills/dev-cycle/SKILL.md" | tr '\n' ' ' | tr -s ' ')"
     [ -n "$s" ] || { echo "step 1 not found"; return 1; }
     q=$'\x60'
-    for f in "It runs from a health checkout HC, not WT" "${q}hg -C MAIN_WT worktree add --detach HC W${q}, W being WT's HEAD commit" \
+    for f in "It runs from a health checkout HC, not WT" "${q}git -C MAIN_WT worktree add --detach HC W${q}, W being WT's HEAD commit" \
         "${q}.claude/wt-dev-cycle-health-DATE-HHMM${q}" "removed as step 0.3 removes WT once the check exits" "${q}skipped: HC not made${q}"; do
         [[ "$s" == *"$f"* ]] || { echo "missing: $f"; echo "$s"; return 1; }
     done
