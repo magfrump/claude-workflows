@@ -143,15 +143,10 @@
 #             and it is a snapshot. Exit 1 (stderr only) when a caller's git
 #             setting stops git or the script first (a GIT_CONFIG_COUNT not
 #             plain decimal, a GIT_DIR naming no repository...). First, read only here, the
-#             caller's environment: a
-#             repo-local git variable set (GIT_REPLACE_REF_BASE, GIT_GRAFT_FILE,
-#             GIT_SHALLOW_FILE, GIT_DIR, the object directories and the like;
-#             the caller's config pairs, GIT_NO_REPLACE_OBJECTS and GIT_PREFIX
-#             aside), or a caller pair (git -c, GIT_CONFIG_COUNT) setting a key
-#             the state gate refuses or one this script's own hardening sets
-#             (any key of the lib's HARDEN list, which git_harden's comment
-#             explains; a git -c pair would win over it), whatever the value. Then --check's state gate, its
-#             default-branch rules and its object check, as listed there.
+#             caller's environment: GIT_DIR, GIT_WORK_TREE, GIT_INDEX_FILE,
+#             GIT_OBJECT_DIRECTORY or GIT_COMMON_DIR set (git would read
+#             another repository, work tree, index or object store). Then
+#             --check's state gate and its default-branch rules, as listed there.
 #   --main-log  what moved the default branch since SINCE (D13, F19, F43; the
 #             orchestrator runs it at the start of each iteration with the last
 #             record's "Main at:" commit), after --state's gate but its caller
@@ -188,8 +183,7 @@
 #                 class trusts the content, F19). Any other commit,
 #                 or one whose message, parents or changes cannot be read, is
 #                 other. The class is read from the commit's own text (and
-#                 commits before MAIN, and objects not in MAIN's tree, are
-#                 not re-hashed): it catches an honest slip, not a
+#                 objects are not re-hashed): it catches an honest slip, not a
 #                 commit made to look like one of the others (F19).
 #             or "main MAIN -" and refuse main-log: WHY, when SINCE (a full
 #             id; a short one is a usage error, exit 1) is not on that history
@@ -257,8 +251,8 @@
 #                 once). When a questions file is refused whole or unread,
 #                 only the item's form is judged. A brief with an Asked: line deleted, or
 #                 renamed to another file name, refuses.
-#                 As --main-log, BASE's objects are not re-hashed: it catches the
-#                 orchestrator's own slip, not a forged commit.
+#                 As --main-log, it catches the orchestrator's own slip, not a
+#                 forged commit.
 #   --land-cycle  lands the orchestrator's chore branch (D13; run in its
 #             worktree once --cycle-diff passed and the index is committed),
 #             after --state's gate but its caller check: HEAD must be on
@@ -287,28 +281,23 @@
 #                 Not on such a branch; the default branch moved (merge it
 #                 into HEAD, run --cycle-diff again, land with --main at its
 #                 commit); staged changes; nothing the default branch lacks; a
-#                 conflict; an object that does not hash or has two copies;
-#                 no such record; --merge's own refusals of the move; or a
+#                 conflict; a blob the merge names that the object store
+#                 lacks; no such record; --merge's own refusals of the move; or a
 #                 read that fails (HEAD's commit, the merge, its paths).
 #   --check   the gate (D7), advisory when a loop runs it. First a state gate:
-#             a git config key (common config or config.worktree, includes not
-#             followed) for a filter, include, config hook, merge or diff
-#             setting, core.fsmonitor, core.attributesFile, core.hooksPath,
-#             gpg.*, log.showSignature, extensions.partialClone or
-#             remote.*.promisor (a partial clone); an info/attributes,
-#             info/grafts, shallow or objects/info/alternates (another
-#             object store) that is not absent or an empty file; a
-#             replace ref; an origin/HEAD naming any branch but origin/main or
-#             origin/master; then (once main is found) both main and master
-#             present, the default branch a symbolic ref or naming an object
-#             that is not a commit (an annotated tag), or origin/HEAD naming
-#             another branch than the one taken;
+#             a partial clone (extensions.partialClone or a remote.*.promisor
+#             key in the common config or config.worktree, includes not
+#             followed) or a shallow file that is not absent or an empty
+#             file; then (once main is found) both main and master present,
+#             a default branch taken that is neither (origin/HEAD naming
+#             another branch that exists), the default branch a symbolic ref
+#             or naming an object that is not a commit (an annotated tag), or
+#             origin/HEAD naming another branch than the one taken, or
+#             unreadable;
 #             then the gate's own merge repository not set up ("refuse state
-#             gate: WHY"); then main's commit, or a tree or blob of its tree
-#             (gitlinks aside), that does not hash to its id, has a second copy in the object
-#             store (two packs, or loose and packed: git may read either) or
-#             cannot be read ("refuse state objects: WHY"; every file the
-#             gate reads from main is one).
+#             gate: WHY"). Other git config (filters, merge and diff drivers,
+#             includes, hooks, signing) passes: the merge reads no
+#             repository config (the caller's git -c pairs still apply).
 #             Each finding prints "refuse state WHAT: WHY" and exits 2 before
 #             the settings or any brief is read. Then, per brief path, in
 #             argument order, one verdict line:
@@ -327,14 +316,7 @@
 #                 the tree of main, TIP or a merge base is missing. Or "the
 #                 merge of BRANCH names a blob the object store lacks": a
 #                 regular file the merge adds or changes names an object that
-#                 is absent or not a blob. Or "an object of the tip of BRANCH
-#                 or of the merge does not hash to its id, has a second copy
-#                 in the object store, or could not be read": the tip's
-#                 commit, or a tree or blob of its tree or of TREE (gitlinks
-#                 aside; a second copy of one of main's objects, made after
-#                 the state check, is reported here too), read back and re-hashed (git checks no object's
-#                 hash when it reads one, so a rewritten object file would
-#                 pass for the committed one). Or "K of N changed paths refused in
+#                 is absent or not a blob. Or "K of N changed paths refused in
 #                 the merge of TIP (tree TREE)", when deny lines follow. Or,
 #                 for a brief --status reads as self-merge, "a self-merge
 #                 brief needs --check run from a clean checkout of the
@@ -343,24 +325,13 @@
 #                 checkout cures; path and deny lines follow it as they
 #                 follow a K of N refusal):
 #                 the checkout --check runs from (the self-merge floor reads
-#                 it) has its HEAD at another commit; a repo-local git
-#                 variable set (GIT_DIR, GIT_WORK_TREE, GIT_INDEX_FILE,
-#                 GIT_CONFIG and the like; the caller's GIT_CONFIG_PARAMETERS
-#                 and GIT_CONFIG_COUNT pairs, GIT_NO_REPLACE_OBJECTS and
-#                 GIT_PREFIX aside); core.symlinks false, core.ignoreCase or
-#                 core.sparseCheckout true (a value git cannot read as a
-#                 boolean stops git itself first: exit 1, no line); an
-#                 index entry marked skip-worktree, assume-unchanged or
-#                 unmerged; a change git status shows (untracked files
-#                 aside), or git status failing or warning; an untracked
-#                 nested repository, or a gitlink's path that is a symlink,
-#                 cannot be listed or holds files; a regular file main stores whose
-#                 name holds a newline, starts with a quote or ends with a
-#                 CR (the byte comparison cannot read it); or a regular file
-#                 whose bytes are not main's blob (a filter,
-#                 working-tree-encoding, ident or eol conversion); or a
-#                 listing or hash of these that fails. Untracked and ignored
-#                 files are allowed. The merge's own refusals above (a
+#                 it) has its HEAD at another commit; GIT_DIR,
+#                 GIT_WORK_TREE, GIT_INDEX_FILE, GIT_OBJECT_DIRECTORY or
+#                 GIT_COMMON_DIR set; a change git status shows (an
+#                 unmerged path among them; untracked files aside), or git
+#                 status failing or warning. Untracked and ignored files, a
+#                 sparse or case-insensitive checkout, line-ending and other
+#                 checkout conversions, and nested repositories are allowed. The merge's own refusals above (a
 #                 conflict, a missing blob...) come first; this one replaces
 #                 only the verdict line, so a loop running --check from its
 #                 own branch still gets the path lines. A review brief does
@@ -490,8 +461,7 @@
 #             cannot be written; the state gate or default_gate refuses again
 #             just before the move; the branch moved since the check, or
 #             cannot be updated. With the branch checked out in W, also when
-#             W is missing or fails the state gate (its own
-#             config.worktree), is not its own top level (or not the
+#             W is missing, is not its own top level (or not the
 #             worktree whose git directory names the branch) or not on it at
 #             the checked commit, is mid a merge, cherry-pick, revert,
 #             rebase, bisect or sequence, has a tracked change (or git status
@@ -707,96 +677,76 @@ fi
 # all a loop that writes it could change there); every other call reads none.
 CALLER_GLOBAL=(-u GIT_CONFIG_GLOBAL); [[ -z "${GIT_CONFIG_GLOBAL+set}" ]] || CALLER_GLOBAL=("GIT_CONFIG_GLOBAL=$GIT_CONFIG_GLOBAL")
 # Every git call in this process, the lib's included, runs hardened, but for
-# caller_gate's read of the caller's pairs and merge_ident's CALLER_GLOBAL (the lib's
+# merge_ident's CALLER_GLOBAL (the lib's
 # git_harden, which states the trust model; the system config is no more the
 # gate's than the user's: merge.directoryRenames there flipped a conflict, A17).
 git_harden
-# The gate's state check (D7, F25): repo-local git state that can make the
-# gate's git run a command or change what it reads, which git_harden does not
-# switch off. Prints one "refuse state WHAT: WHY" line per finding, returns 1
-# on any, and reads no object (git config --file --no-includes follows no
-# include; --git-path reads no index). Keys, in the common config and this
-# worktree's config.worktree: filter drivers, every merge.* and diff.* key (drivers run commands), config
-# hooks, includes, core.fsmonitor, core.attributesFile, core.hooksPath, gpg and
-# log.showSignature (gpg.program runs), and a partial clone (extensions.partialClone, remote.*.promisor;
-# GIT_ALLOW_PROTOCOL already stops its fetch). Files: an info/attributes,
-# info/grafts, shallow or objects/info/alternates that is not absent or an
-# empty regular file (each changes merges, history or the objects read), a ref under refs/replace/, and an origin/HEAD naming any branch but
-# origin/main or origin/master (resolve_main would take the default branch
-# from it).
-STATE_KEYS_RE='^(filter\.|include|hook\.|merge\.|diff\.|core\.fsmonitor|core\.attributesfile|core\.hookspath|gpg\.|log\.showsignature|extensions\.partialclone$|remote\..*\.promisor$)'
+# The gate's state check (D7, F25; narrowed by brief
+# 2026-11-01-relax-gate-git-state): repo-local git state that leaves the
+# gate's history or object reads incomplete (H2: a degraded primitive).
+# Prints one "refuse state WHAT: WHY" line per finding, returns 1 on any, and
+# reads no object (git config --file --no-includes follows no include;
+# --git-path reads no index). A partial clone (extensions.partialClone or a
+# remote.*.promisor key, in the common config or this worktree's
+# config.worktree; GIT_ALLOW_PROTOCOL already stops its lazy fetch), and a
+# shallow clone (a shallow file that is not absent or an empty regular file).
+# Other config (filters, merge and diff drivers, includes, hooks, fsmonitor,
+# signing) is the owner's own setup and passes: the gate's merge runs in
+# gate_repo, which reads no repository config or attributes (the caller's own
+# git -c pairs still apply there, as callervar keeps them), git_harden's pairs override the hook,
+# fsmonitor and signing keys, and a filter runs only where the owner's own git
+# would (git status, the fast-forward in W). The default-branch rules are
+# default_gate's.
+STATE_KEYS_RE='^(extensions\.partialclone$|remote\..*\.promisor$)'
 state_gate() {
-  local f p out rc line bad=0 refs
+  local f p out rc line bad=0
   for f in config config.worktree; do
     p="$(git rev-parse --path-format=absolute --git-path "$f" 2>/dev/null)" || { echo "refuse state $f: its path could not be read"; return 1; }
     [[ -f "$p" ]] || { [[ "$f" == config.worktree ]] && continue; echo "refuse state config: no git config file at $p"; return 1; }
     rc=0; out="$(git config --file "$p" --no-includes --name-only --get-regexp "$STATE_KEYS_RE")" || rc=$?
     if [[ "$rc" -gt 1 ]]; then echo "refuse state $f: it could not be read (git config exit $rc)"; bad=1; continue; fi
     while IFS= read -r line; do
-      [[ -n "$line" ]] && { echo "refuse state $line: set in $f, it can make the gate's git run a command or change its merge"; bad=1; }
+      [[ -n "$line" ]] && { echo "refuse state $line: set in $f, a partial clone, whose missing objects the gate cannot read"; bad=1; }
     done <<<"$out"
   done
-  for f in info/attributes info/grafts shallow objects/info/alternates; do
-    p="$(git rev-parse --path-format=absolute --git-path "$f" 2>/dev/null)" || { echo "refuse state $f: its path could not be read"; return 1; }
-    if [[ -s "$p" || -L "$p" || ( -e "$p" && ! -f "$p" ) ]]; then echo "refuse state $f: present and not an empty file"; bad=1; fi
-  done
-  refs="$(git for-each-ref --format='%(refname)' refs/replace/)" || { echo "refuse state refs/replace: could not be listed"; return 1; }
-  [[ -z "$refs" ]] || { echo "refuse state refs/replace: $(printf '%s\n' "$refs" | wc -l) replace ref(s)"; bad=1; }
-  rc=0; p="$(git symbolic-ref -q refs/remotes/origin/HEAD)" || rc=$?
-  if [[ "$rc" -gt 1 ]] || [[ -n "$p" && "$p" != refs/remotes/origin/main && "$p" != refs/remotes/origin/master ]]; then
-    echo "refuse state origin/HEAD: it names a branch other than origin/main or origin/master"; bad=1
-  fi
+  p="$(git rev-parse --path-format=absolute --git-path shallow 2>/dev/null)" || { echo "refuse state shallow: its path could not be read"; return 1; }
+  if [[ -s "$p" || -L "$p" || ( -e "$p" && ! -f "$p" ) ]]; then echo "refuse state shallow: a shallow clone, whose history the gate cannot read whole"; bad=1; fi
   return "$bad"
 }
 # callervar NAME: a repo-local variable (git rev-parse --local-env-vars) the
 # gate keeps: the caller's config pairs, which git_harden extends and trusts
 # (GIT_CONFIG_PARAMETERS, GIT_CONFIG_COUNT), and GIT_NO_REPLACE_OBJECTS, which
-# this script sets. GIT_CONFIG is not one: git config then reads that one file
-# instead of every scope (gate_repo unsets it; checkout_gate refuses it).
+# this script sets. gate_repo unsets every other one for the gate repository.
 callervar() { [[ "$1" == GIT_CONFIG_PARAMETERS || "$1" == GIT_CONFIG_COUNT || "$1" == GIT_NO_REPLACE_OBJECTS ]]; }
-# stray_vars: the repo-local git variables set here, one per line, but the
-# caller's (callervar) and GIT_PREFIX, which only names a subdirectory for an
-# alias (the script cds to the top level). checkout_gate and caller_gate refuse them.
-stray_vars() { local v; for v in $(git rev-parse --local-env-vars); do [[ -z "${!v+set}" || "$v" == GIT_PREFIX ]] || callervar "$v" || echo "$v"; done; }
-# --state's snapshot of the git settings in the caller's environment (rows
-# 276, 281, 666), which git_harden and the state gate trust: the orchestrator runs
-# --state at the start of each iteration, so a git variable or pair that
-# persists in its environment (a loop can write ~/.zshrc) shows there. Not
-# covered: anything else such an environment can do (BASH_ENV, PATH), and
-# what changes after the snapshot. A stray variable: GIT_REPLACE_REF_BASE,
-# GIT_SHALLOW_FILE and GIT_ALTERNATE_OBJECT_DIRECTORIES name files the state
-# gate does not read, and GIT_GRAFT_FILE or GIT_OBJECT_DIRECTORY move the ones
-# it does. A caller pair (git -c, GIT_CONFIG_COUNT; read with the caller's
-# count, so git_harden's own pairs are not listed) for a key the state gate
-# refuses or one HARDEN sets, whatever its value: git applies git -c pairs
-# after git_harden's, so they win (a GIT_CONFIG_COUNT pair comes before git_harden's
-# and loses, but is refused too). Prints one "refuse state WHAT: WHY" line per
-# finding, returns 1 on any.
+# stray_vars: the variables set here that point git at another repository,
+# work tree, index or object store, one per line (an honest slip: the gate
+# run from a git hook, or a shell that set one). checkout_gate and caller_gate
+# refuse them.
+stray_vars() { local v; for v in GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_COMMON_DIR; do [[ -z "${!v+set}" ]] || echo "$v"; done; }
+# --state's check of the caller's environment (rows 276, 281, 666): the
+# orchestrator runs --state at the start of each iteration, so such a
+# variable left set in its shell shows there. Prints one "refuse state WHAT:
+# WHY" line per finding, returns 1 on any.
 caller_gate() {
-  local v x k kv bad=0
+  local v bad=0
   for v in $(stray_vars); do
-    echo "refuse state $v: set in the caller's environment, so git can read another repository, object store, index, config, graft, shallow or replace-ref file"; bad=1
+    echo "refuse state $v: set in the caller's environment, so git can read another repository, work tree, index or object store"; bad=1
   done
-  x="$(GIT_CONFIG_COUNT="$CALLER_COUNT" git config --list --show-scope --name-only)" || { echo "refuse state caller-config: the caller's config pairs could not be read"; return 1; }
-  while IFS=$'\t' read -r v k; do
-    [[ "$v" == command ]] || continue
-    for kv in "${HARDEN[@]}"; do kv="${kv%%=*}"; [[ "$k" != "${kv,,}" ]] || k+=" "; done  # a trailing blank marks a HARDEN key
-    if [[ "$k" == *" " || "$k" =~ $STATE_KEYS_RE ]]; then
-      echo "refuse state ${k% }: set by the caller's git -c or GIT_CONFIG_COUNT pairs, a key the state gate refuses or one the gate's own hardening sets (a git -c pair wins over it)"; bad=1
-    fi
-  done <<<"$x"
   return "$bad"
 }
 # The state gate's second half, once resolve_main has run (--state calls
-# both): the default branch counts only when no other name could claim it. A
-# loop can create a local master beside main (or main beside master) and point
-# origin/HEAD at it, and resolve_main would follow (R7). Prints one line per
-# finding, as state_gate does; returns 1 on any.
+# both): the default branch counts only when no other name could claim it
+# (H2: a silent pick between two names, or a name the D6 block does not take,
+# would land on a branch the cycle does not read as its default; R7, and the
+# research doc of brief 2026-11-01-relax-gate-git-state, D2). Prints one line
+# per finding, as state_gate does; returns 1 on any.
 default_gate() {
-  local p bad=0
+  local p rc bad=0
   if git show-ref --verify --quiet refs/heads/main && git show-ref --verify --quiet refs/heads/master; then
     echo "refuse state default-branch: both main and master exist"; bad=1
   fi
+  # resolve_main follows origin/HEAD to any branch that exists here.
+  [[ "$MAIN" == main || "$MAIN" == master ]] || { echo "refuse state default-branch: the default branch taken is $MAIN, not main or master"; bad=1; }
   # A symbolic default branch: a worktree on it lists as its target's, and
   # update-ref would move the target (final security F3).
   if git symbolic-ref -q "refs/heads/$MAIN" >/dev/null; then echo "refuse state default-branch: refs/heads/$MAIN is a symbolic ref"; bad=1; fi
@@ -806,7 +756,9 @@ default_gate() {
   # compare-and-swap, or the fast-forward in W).
   p="$(git show-ref --verify --hash "refs/heads/$MAIN" 2>/dev/null)" && [[ "$(git cat-file -t "$p" 2>/dev/null)" == commit ]] \
     || { echo "refuse state default-branch: refs/heads/$MAIN names an object that is not a commit"; bad=1; }
-  p="$(git symbolic-ref -q refs/remotes/origin/HEAD)" || true
+  # An origin/HEAD git cannot read (exit above 1) is unmodelled input (H2).
+  rc=0; p="$(git symbolic-ref -q refs/remotes/origin/HEAD 2>/dev/null)" || rc=$?
+  [[ "$rc" -le 1 ]] || { echo "refuse state default-branch: origin/HEAD could not be read"; bad=1; }
   if [[ -n "$p" && "$p" != "refs/remotes/origin/$MAIN" ]]; then
     echo "refuse state default-branch: origin/HEAD names ${p#refs/remotes/}, but the default branch taken is $MAIN"; bad=1
   fi
@@ -816,13 +768,14 @@ ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || { echo "Not inside a git 
 cd "$ROOT"
 # shellcheck disable=SC2034  # read by the lib's file rules
 ROOT_REAL="$(pwd -P)"
-# --check refuses planted state before any git call reads an object (resolve_main
-# does); gate_start runs the rest of its startup.
+# --check refuses a shallow or partial clone before any git call reads an
+# object (resolve_main does; a partial clone's object may be missing);
+# gate_start runs the rest of its startup.
 # Every mode but the read modes decides or writes (a new mode is gated by
 # default). --marker reads one marker as --status reads its tip: the
 # orchestrator's --state at the start of its iteration covers both (row 690).
 GATED=""; [[ "$MODE" =~ ^(settings|status|marker)$ ]] || GATED=1  # not the gate repository's GATE_*
-# The caller's environment first: it can point the state gate's own reads elsewhere.
+# The caller's environment first: it can point the state gate's own reads at another repository.
 if [[ "$MODE" == state ]]; then caller_gate || exit 2; fi
 if [[ -n "$GATED" ]]; then state_gate || exit 2; fi
 resolve_main || true
@@ -830,7 +783,7 @@ main_by_name || { echo "build-loop.sh needs a default branch found by name (orig
 # The reader lists both import walks take, from main's settings (the lib's
 # caller contract item 9), before any walk; --settings prints its line. Not
 # read_settings below: without this call the walks model no host reader.
-# gate_start calls it once main's objects are checked.
+# gate_start calls it once state_start has run.
 [[ -n "$GATED" ]] || reader_settings
 
 # list_entries LINE KEY WORD FORM: the list-line grammar Self-merge never: and
@@ -1123,64 +1076,19 @@ raw_records() {
     RAW_OM+=("${BASH_REMATCH[1]}"); RAW_NM+=("${BASH_REMATCH[2]}"); RAW_OO+=("${BASH_REMATCH[3]}"); RAW_NO+=("${BASH_REMATCH[4]}"); RAW_S+=("${BASH_REMATCH[5]}"); RAW_P+=("$p")
   done < "$1"
 }
-# store_check [--main] REV...: the objects of REV a decision reads hash to their ids
-# and have one copy each (rows 492, 503). git checks no hash when it reads an
-# object, so a same-uid writer that rewrites an object file behind its id
-# would change what the gate reads, and only fsck would notice. Each REV (a
-# commit or a tree), its root tree, and every tree and blob below it (a gitlink
-# names another repository's commit) are read in one cat-file --batch and
-# re-hashed by one perl, for sha1 or sha256, but an id in $GATE_TMP/main (main's,
-# which gate_start's --main call leaves there; any other call fails without
-# it) is not read again. Then no id of
-# main's or of this call may have a second copy in the store: in two packs, or
-# loose and packed. git can read either copy of an id, and two reads of one id
-# (cat-file --batch here, cat-file blob MAIN:PATH in brief_fields) took
-# different ones (U3a1 i1 security F1: a second pack holding forged bytes under
-# the brief's id was read by brief_fields and passed the batch). The listing
-# follows links and takes dot-named packs, and git_harden switches off the
-# multi-pack-index, a second route to an id (i2 security F1). Only one call's
-# ids are judged, so one brief's refusal never carries to the next (i2
-# architecture 1). Returns 1 on a mismatch, a missing object, a second copy or
-# a failed read. Not checked: objects a decision reaches only through history
-# (the tip's parent, read by marker_kind; the commits check_branch counts;
-# check_brief's git log -G walk, which can only skip a brief; the merge bases,
-# whose merge result the rules judge), and a writer racing
-# between a check and a later read (R8's family, Q-103), which for main's
-# objects spans the whole run, as they are re-hashed once. Reads the real
-# repository's object store, as merge-tree writes into it. Needs GATE_TMP.
-store_check() {
-  local r alg fmt o main=""
-  [[ "$1" != --main ]] || { main=1; shift; }
-  fmt="$(git rev-parse --show-object-format)" && o="$(git rev-parse --path-format=absolute --git-path objects)" || return 1
-  case "$fmt" in sha1) alg=1 ;; sha256) alg=256 ;; *) return 1 ;; esac
-  # --main (gate_start's call) starts the skip list empty and keeps its ids
-  # there; any other call needs it, so a second main call cannot skip main.
-  if [[ -n "$main" ]]; then : > "$GATE_TMP/main" || return 1; elif [[ ! -s "$GATE_TMP/main" ]]; then return 1; fi
-  # Each object name once, never one of main's ids; git's own error for a
-  # missing tree is dropped (the missing object fails the check).
-  { for r in "$@"; do
-      printf '%s\n' "$r" "$r^{tree}"
-      git ls-tree -r -t --full-tree --format='%(objecttype) %(objectname)' "$r" 2>/dev/null | awk '$1 != "commit" { print $2 }' || exit 1
-    done; } | awk 'FILENAME != "-" { seen[$0]; next } !($0 in seen) { seen[$0]; print }' "$GATE_TMP/main" - | git cat-file --batch \
-    | env LC_ALL=C ALG="$alg" perl -e 'use Digest::SHA; binmode STDIN; my $n = 0;
-      while (defined(my $h = <STDIN>)) {
-        my ($id, $t, $s) = $h =~ /^([0-9a-f]+) ([a-z]+) ([0-9]+)\n\z/ or exit 1;  # "NAME missing" too
-        read(STDIN, my $b, $s) == $s && (getc(STDIN) // "") eq "\n" or exit 1;
-        Digest::SHA->new($ENV{ALG})->add("$t $s\0", $b)->hexdigest eq $id or exit 1;
-        print "$id\n"; $n++;
-      }
-      exit($n ? 0 : 1)' > "$GATE_TMP/call" || return 1  # REV^{tree} is never skipped, so 0 read is a fault
-  # Every copy in the store: each pack index's ids, then each loose object
-  # file. From inside the store (a -path pattern would read glob characters in
-  # its path), with find -L: git opens a linked fan-out directory or pack, and
-  # a pack whose name starts with a dot, as it opens any other.
-  # NUL-ended: a pack name holding a newline would read as two other names,
-  # and its own index would go unread (final security F1).
-  { (cd "$o" && find -L pack -mindepth 1 -maxdepth 1 -name '*.idx' ! -type d -print0) > "$GATE_TMP/idx" || exit 1
-    while IFS= read -r -d '' r; do git show-index --object-format="$fmt" < "$o/$r" | awk '{ print $2 }' || exit 1; done < "$GATE_TMP/idx"
-    (cd "$o" && find -L . -mindepth 2 -maxdepth 2 ! -type d -path './[0123456789abcdef][0123456789abcdef]/*') | awk -F/ '{ print $(NF - 1) $NF }'
-  } | awk 'FILENAME != "-" { want[$0]; next } ($0 in want) && n[$0]++ { bad = 1 } END { exit bad }' "$GATE_TMP/main" "$GATE_TMP/call" - || return 1
-  [[ -z "$main" ]] || mv "$GATE_TMP/call" "$GATE_TMP/main"
+# blobs_present: every regular file or symlink in the raw_records listing
+# just read (a merge's changes against main) names a blob the object store
+# holds (a gitlink names another repository's commit). For a symlink it is a
+# backstop: the N rules' mode rule refuses any changed symlink anyway.
+# merge-tree passes a side's unchanged blob by id without reading it, so a
+# blob the store lacks would land unseen (a missing subtree already failed
+# diff-tree). Returns 1 on a missing or non-blob object, or a failed read.
+blobs_present() {
+  local i out ids=()
+  for i in "${!RAW_NM[@]}"; do [[ "${RAW_NM[i]}" != 100644 && "${RAW_NM[i]}" != 100755 && "${RAW_NM[i]}" != 120000 ]] || ids+=("${RAW_NO[i]}"); done
+  [[ ${#ids[@]} -gt 0 ]] || return 0
+  out="$(printf '%s\n' "${ids[@]}" | gate_git cat-file --batch-check='%(objecttype)')" \
+    && [[ "$(printf '%s\n' "$out" | grep -cx blob)" -eq ${#ids[@]} ]]
 }
 # The merge of TIP into MAIN_SHA as the gate lands it (D7; --main-log's
 # clean_merge re-derives it with the same merge-tree options): prints the result
@@ -1298,99 +1206,42 @@ srules() {
   DENY="neither listed in the brief's Paths: line nor one of its own files"
 }
 # The checkout --check runs from, which a self-merge brief's floor walk (srules)
-# reads: the parts of the gate caller contract's items 2 and 3 (the lib's
-# header) a checkout can break. Item 2's fsmonitor and replace refs are git_harden's
-# and the state gate's, and its ls-files stderr rule is the walk's own. Sets
+# reads: the part of the gate caller contract's item 2 (the lib's header) a
+# checkout can break by an honest slip, a stale or dirty checkout. Sets
 # CHECKOUT_WHY to why the checkout fails, or empties it; returns 1 on a
 # failure. check_line calls it for each self-merge brief once the merge and
 # its changed paths are read, before the N rules and the floor walk run per
-# path, so it is final before that walk. Item 3 is
-# checked by its effect, not by predicting it with check-attr: every regular
-# file main stores must hash, unfiltered, to main's blob, so no conversion (a
-# filter, working-tree-encoding, ident or eol attribute from any attributes
-# source, the user's global ones included, which git_harden hides from the gate's
-# own git) changed what a session reads there. Untracked and ignored files
-# are allowed: the walk reads them as they are. A nested repository's files
-# are not walk starts (rows 366, 373), so an untracked one, or a gitlink
-# checked out with any file, fails. Needs GATE_TMP.
+# path, so it is final before that walk. A variable that points git at
+# another repository or index, HEAD at another commit, or a change git status
+# shows (an unmerged path among them). Untracked and ignored files, a sparse
+# or case-insensitive checkout, checkout conversions (autocrlf, filters) and
+# nested repositories are allowed: the walk reads main's blob for every path
+# main stores, and the checkout only where main lacks one (brief
+# 2026-11-01-relax-gate-git-state). Needs GATE_TMP.
 CHECKOUT_WHY=""
 checkout_gate() {
-  # The C locale: under UTF-8 a regex . does not match an invalid byte, so a
-  # record with such a name would fail to parse (and be refused as unreadable).
-  local -x LC_ALL=C  # exported: tr, awk and git run under it too
-  local v x rc r n p ps=() ids=() re=$'^([01234567]{6}) [a-z]+ ([0123456789abcdef]+)\t(.*)$'
+  local v x
   CHECKOUT_WHY=""
   x="$(stray_vars)"; v="${x%%$'\n'*}"
-  [[ -z "$v" ]] || { CHECKOUT_WHY="$v is set, so git can read another work tree, index, object store or config file"; return 1; }
+  [[ -z "$v" ]] || { CHECKOUT_WHY="$v is set, so git can read another repository, work tree, index or object store"; return 1; }
   x="$(git rev-parse --verify -q 'HEAD^{commit}')" || x="unreadable"
   [[ "$x" == "$MAIN_SHA" ]] || { CHECKOUT_WHY="the checkout's HEAD is $x, not the default branch's commit $MAIN_SHA"; return 1; }
-  for v in "core.symlinks false: a symlink is checked out as a file holding its text" \
-    "core.ignoreCase true: a case-insensitive checkout" "core.sparseCheckout true: a sparse checkout"; do
-    # rc above 1 is a defensive branch: git refuses a bad boolean before any command runs.
-    rc=0; x="$(git config --type=bool --get "${v%% *}" 2>/dev/null)" || rc=$?
-    r="${v#* }"
-    [[ "$rc" -le 1 ]] || { CHECKOUT_WHY="${v%% *} could not be read"; return 1; }
-    [[ "$x" != "${r%%:*}" ]] || { CHECKOUT_WHY="${v%% *} is $r"; return 1; }
-  done
-  # ls-files -v tags each entry: H is plain; S is skip-worktree, lower case is
-  # assume-unchanged (git status skips a change under either), M is unmerged.
-  # perl -0 reads NUL-ended records, so a name holding a newline is one entry.
-  n="$(git ls-files -v -z | LC_ALL=C perl -0ne '$n++ unless /^H /; END { print $n + 0 }')" \
-    || { CHECKOUT_WHY="the checkout's index could not be listed"; return 1; }
-  [[ "$n" == 0 ]] || { CHECKOUT_WHY="the checkout's index marks entries skip-worktree, assume-unchanged or unmerged"; return 1; }
   # To a file: bash would warn on stderr about the NULs a $(...) drops.
   git status --porcelain=v1 -z --untracked-files=no --ignore-submodules=none > "$GATE_TMP/status" 2>"$GATE_TMP/err" && [[ ! -s "$GATE_TMP/err" ]] \
     || { CHECKOUT_WHY="git status failed or warned in the checkout"; return 1; }
   [[ ! -s "$GATE_TMP/status" ]] || { CHECKOUT_WHY="the checkout's index or tracked files differ from that commit (git status)"; return 1; }
-  # Without --exclude-standard every untracked file is listed, ignored ones too,
-  # and a nested repository as its directory with a trailing / (no file name
-  # holds a /). Listed to a file first, so the listing's own status is
-  # checked apart from the count (a pipe's status mixes the two).
-  git ls-files -z --others > "$GATE_TMP/others" || { CHECKOUT_WHY="the checkout's untracked files could not be listed"; return 1; }
-  x="$(tr '\0' '\n' < "$GATE_TMP/others" | awk '/\/$/ { n++ } END { print n + 0 }')" || x=x
-  [[ "$x" == 0 ]] || { CHECKOUT_WHY="the checkout holds an untracked nested repository, whose instruction files the walk does not read"; return 1; }
-  git ls-tree -r -z --full-tree "$MAIN_SHA" > "$GATE_TMP/tree" || { CHECKOUT_WHY="the default branch's tree could not be listed"; return 1; }
-  while IFS= read -r -d '' r; do
-    [[ "$r" =~ $re ]] || { CHECKOUT_WHY="the default branch's tree could not be read"; return 1; }
-    p="${BASH_REMATCH[3]}"
-    case "${BASH_REMATCH[1]}" in
-      100644|100755) ;;
-      # git status compares a link's text to its blob unconverted (core.symlinks is true here).
-      120000) continue ;;
-      160000)
-        if [[ -L "$p" ]] || { [[ -e "$p" ]] && ! x="$(ls -A -- "$p" 2>/dev/null)"; }; then
-          CHECKOUT_WHY="a gitlink's path in the checkout is a symlink or cannot be listed"; return 1
-        fi
-        [[ ! -e "$p" || -z "$x" ]] || { CHECKOUT_WHY="a gitlink is checked out with files, whose instruction files the walk does not read"; return 1; }
-        continue ;;
-      *) CHECKOUT_WHY="the default branch's tree could not be read"; return 1 ;;
-    esac
-    # hash-object --stdin-paths reads a line: a newline splits a name, a
-    # leading " is unquoted and a trailing CR dropped, so another file is hashed.
-    [[ "$p" != *$'\n'* && "$p" != \"* && "$p" != *$'\r' ]] \
-      || { CHECKOUT_WHY="a file on the default branch has a name the byte comparison cannot read (a newline, a leading quote or a trailing CR)"; return 1; }
-    ids+=("${BASH_REMATCH[2]}"); ps+=("$p")
-  done < "$GATE_TMP/tree"
-  [[ ${#ps[@]} -gt 0 ]] || return 0
-  # --stdin-paths: one hash-object for every file (one per path cost a process each).
-  x="$(printf '%s\n' "${ps[@]}" | git hash-object --no-filters --stdin-paths 2>/dev/null)" \
-    || { CHECKOUT_WHY="the checkout's files could not be hashed"; return 1; }
-  [[ "$x" == "$(printf '%s\n' "${ids[@]}")" ]] \
-    || { CHECKOUT_WHY="a file's checked-out bytes are not the default branch's blob (a filter, working-tree-encoding, ident or eol conversion)"; return 1; }
 }
 # The gate's startup once the top level has run state_gate, resolve_main and
 # main_by_name, in this order, each refusal a "refuse state" line and exit 2
 # before any setting or brief is read (a failed mktemp exits 1 with no line): the default branch unambiguous
 # (default_gate); the gate's merge repository (GATE_TMP, removed at exit);
-# main's commit and tree re-hashed, each object with one copy (store_check);
 # then the reader lists both walks take, --settings' values, the never globs
 # and the open briefs (once, in this shell). The repository rule: main's files
-# and refs, the branch tips, the checkout and store_check's object reads are
-# in the real repository; the merge computations (merge-base, merge-tree,
+# and refs, the branch tips and the checkout are read in the real repository; the merge computations (merge-base, merge-tree,
 # diff-tree, the blob checks) and --merge's commit-tree run through gate_git
 # (into the real object store). --merge moves the branch in the real
 # repository (update-ref) or in W (merge --ff-only, after land's reads
-# there: the state gate, rev-parse, symbolic-ref, --git-path probes, git
+# there: rev-parse, symbolic-ref, --git-path probes, git
 # status); its worktree list, git-common-dir, each worktree's HEAD
 # (symbolic-ref with that git dir) and state files are read in the real repository, and merge_ident alone (git var) reads the caller's
 # global config.
@@ -1400,8 +1251,6 @@ state_start() {
   default_gate || exit 2
   GATE_TMP="$(mktemp -d)"; trap 'rm -rf -- "$GATE_TMP"' EXIT
   gate_repo || { echo "refuse state gate: its merge repository could not be set up"; exit 2; }
-  store_check --main "$MAIN_SHA" \
-    || { echo "refuse state objects: the default branch's commit or an object of its tree does not hash to its id, has a second copy in the object store, or could not be read"; exit 2; }
 }
 gate_start() {
   state_start
@@ -1416,8 +1265,8 @@ gate_start() {
 # an exit (need_root's) ends the run, and set -e applies to its own lines but
 # not inside a helper called in a condition (floor and its walk, brief_fields,
 # checkout_gate, nul_list) or in $(...), which refuse by their own guards.
-# Nothing but its locals, the walk caches it resets and store_check's list of
-# main's ids ($GATE_TMP/main, on purpose) may carry from one brief to the next: each helper empties its own globals before use (DENY,
+# Nothing but its locals and the walk caches it resets may carry from one
+# brief to the next: each helper empties its own globals before use (DENY,
 # PATHS and PATHS_WHY, LIST, LIST_WHY and LIST_BAD, STATUS, BRIEF, CHECKOUT_WHY, FP_GAPS, FLOOR_WHY,
 # TRUTH_WHY; VERDICT and CHANGED here).
 # The verdict as values (row 512), for --merge: VERDICT holds tip, tree,
@@ -1533,7 +1382,7 @@ fp_gaps() {
 check_line() {
   # Contract item 1 (the floor's walk); exported, so its children run under it too.
   local -x LC_ALL=C
-  local a="$1" out st pol br sha tree p shown co fv stem rc=0 i nd=0 gc="" sm="" rows=() oms=() nms=() nos=() ss=() ps=() lps=() ids=()
+  local a="$1" st pol br sha tree p shown co fv stem rc=0 i nd=0 gc="" sm="" rows=() oms=() nms=() nos=() ss=() ps=() lps=()
   VERDICT=(); CHANGED=()
   import_reset  # caller contract item 4: no walk cache outlives a decision
   status_fields "$a"
@@ -1557,18 +1406,8 @@ check_line() {
   fi
   raw_records "$GATE_TMP/diff" || { echo "refuse $a: the paths the merge of $br changes could not be read"; return; }
   oms=("${RAW_OM[@]}"); nms=("${RAW_NM[@]}"); nos=("${RAW_NO[@]}"); ss=("${RAW_S[@]}"); ps=("${RAW_P[@]}")
-  for i in "${!ps[@]}"; do [[ "${nms[i]}" != 100644 && "${nms[i]}" != 100755 ]] || ids+=("${nos[i]}"); done
-  # merge-tree passes a side's unchanged blob by id without reading it, so a
-  # blob the store lacks would land unseen: every regular file the merge adds
-  # or changes must name a blob present in the store (a missing subtree already
-  # failed diff-tree).
-  if [[ ${#ids[@]} -gt 0 ]] && { ! out="$(printf '%s\n' "${ids[@]}" | gate_git cat-file --batch-check='%(objecttype)')" \
-    || [[ "$(printf '%s\n' "$out" | grep -cx blob)" -ne ${#ids[@]} ]]; }; then
-    echo "refuse $a: the merge of $br names a blob the object store lacks"; return
-  fi
-  # The tip's objects and the merge's, re-hashed (main's were, in gate_start).
-  if ! store_check "$sha" "$tree"; then echo "refuse $a: an object of the tip of $br or of the merge does not hash to its id, has a second copy in the object store, or could not be read"; return; fi
-  # A self-merge brief's checkout (contract items 2 and 3), checked once the
+  blobs_present || { echo "refuse $a: the merge of $br names a blob the object store lacks"; return; }
+  # A self-merge brief's checkout (contract item 2), checked once the
   # merge's paths are read and before the S rules (srules), whose floor walk
   # runs per path below only when co is empty (never over a checkout refused
   # here); its refusal replaces the verdict line only, so the path and deny lines
@@ -1663,7 +1502,8 @@ gate_msg() {
 # message git merge writes, "Merge branch 'B'", which --main-log reads as chore). Decide (the
 # header's refusals but the policy's, approval's and --check's: an ignored file at an added path counts,
 # as merge --ff-only overwrites one), then write NEW in the gate repository,
-# run the state gate (here and in W) and default_gate again (row 494), and
+# run the state gate and default_gate again (row 494: a concurrent session can
+# leave a shallow clone or a second default branch name), and
 # move: by update-ref from MAIN_SHA (compare-and-swap) when no worktree has
 # the branch, else by merge --ff-only NEW in W, after which it must read NEW.
 # Sets NEW, or MERGE_WHY and returns 1 (a refusal after the write leaves NEW
@@ -1715,11 +1555,7 @@ land() {
   done
   [[ "$n" -eq "$([[ -n "$w" ]] && echo 1 || echo 0)" ]] || { MERGE_WHY="a worktree has the default branch checked out that git worktree list does not show"; return 1; }
   if [[ -n "$w" ]]; then
-    # W's own config.worktree before any git command reads its work tree or
-    # index (git status would run a filter it names; the gate's own reads run
-    # none); the startup gate read this checkout's.
     [[ -d "$w" ]] || { MERGE_WHY="$in is missing"; return 1; }
-    (cd "$w" && state_gate) > "$GATE_TMP/state" || { MERGE_WHY="$in fails the state gate ($(head -n 1 "$GATE_TMP/state"))"; return 1; }
     [[ "$(git -C "$w" rev-parse --show-toplevel)" -ef "$w" && "$(git -C "$w" rev-parse --absolute-git-dir)" -ef "$hd" \
       && "$(git -C "$w" symbolic-ref -q HEAD)" == "refs/heads/$MAIN" \
       && "$(git -C "$w" rev-parse --verify -q 'HEAD^{commit}')" == "$MAIN_SHA" ]] \
@@ -1746,7 +1582,7 @@ land() {
     && x="$(gate_git commit-tree --no-gpg-sign -p "$MAIN_SHA" -p "${VERDICT[tip]}" "${VERDICT[tree]}" < "$GATE_TMP/msg")" \
     && [[ "$x" =~ ^([0123456789abcdef]{40}|[0123456789abcdef]{64})$ ]] || { MERGE_WHY="the merge commit could not be written"; return 1; }
   NEW="$x"
-  { state_gate && default_gate && { [[ -z "$w" ]] || (cd "$w" && state_gate); }; } > "$GATE_TMP/state" \
+  { state_gate && default_gate; } > "$GATE_TMP/state" \
     || { MERGE_WHY="the git state changed after the check ($(head -n 1 "$GATE_TMP/state"))"; return 1; }
   if [[ -z "$w" ]]; then
     git update-ref --no-deref -m "$msg" "refs/heads/$MAIN" "$NEW" "$MAIN_SHA" 2>/dev/null \
@@ -1754,7 +1590,7 @@ land() {
   else
     # The branch's own mergeOptions (--squash would stage the merge in W and
     # leave the branch) cleared; no gc or maintenance task (a repack) started
-    # on the store store_check read; the reflog names the gate.
+    # by the gate; the reflog names the gate.
     GIT_REFLOG_ACTION="$msg" git -C "$w" -c gc.auto=0 -c maintenance.auto=false -c "branch.$MAIN.mergeOptions=" merge --ff-only -q "$NEW" > "$GATE_TMP/ff" 2>&1 \
       || { MERGE_WHY="the fast-forward in $in failed"; return 1; }
     [[ "$(git rev-parse --verify -q "refs/heads/$MAIN")" == "$NEW" ]] || { MERGE_WHY="the default branch is not at the merge after the fast-forward in $in"; return 1; }
@@ -2073,7 +1909,7 @@ cycle_diff() {
   if ! base="$(git merge-base --all HEAD "$MAIN_SHA" 2>/dev/null)" || [[ -z "$base" ]]; then echo "refuse HEAD: it shares no commit with the default branch's $MAIN_SHA, or could not be read"; return 1; fi
   # The land merges through a virtual base when there are several (criss-cross): judge none (final security F1).
   [[ "$base" != *$'\n'* ]] || { echo "refuse HEAD: it has more than one merge base with the default branch's $MAIN_SHA; merge the default branch into HEAD first"; return 1; }
-  # The checkout's own git, for its index (state_gate has run on it).
+  # The checkout's own git, for its index.
   if ! git diff-index --cached --raw -z --no-renames --ignore-submodules=none "$base" > "$t.raw" 2>"$GATE_TMP/err" \
     || [[ -s "$GATE_TMP/err" ]] || ! raw_records "$t.raw"; then
     echo "refuse index: the staged changes against $base could not be listed"; return 1
@@ -2263,13 +2099,12 @@ land_cycle() {
     1) echo "refuse HEAD: it conflicts with the default branch; merge the default branch into HEAD first"; return 1 ;;
     *) echo "refuse HEAD: its merge into the default branch could not be computed"; return 1 ;;
   esac
-  # Also what check_line's blob-presence check gives --merge: store_check reads
-  # every blob of R, so a blob the store lacks refuses here (i1 architecture 1).
-  store_check "$h" "$r" || { echo "refuse HEAD: an object of HEAD or of the merge does not hash to its id, has a second copy in the object store, or could not be read"; return 1; }
   # The merge as it lands, against main: rename pairing and a fence pair that
   # captures main's answer show here, not in --cycle-diff's index (row 753).
   gate_git diff-tree -r --no-renames --raw -z --ignore-submodules=none "$MAIN_SHA" "$r" > "$GATE_TMP/diff" && raw_records "$GATE_TMP/diff" \
     || { echo "refuse HEAD: the paths its merge changes could not be listed"; return 1; }
+  # check_line's blob-presence check, as --merge gets it there (i1 architecture 1).
+  blobs_present || { echo "refuse HEAD: its merge names a blob the object store lacks"; return 1; }
   # cycle_rules reads RAW_* and leaves it as raw_records filled it, for chore_record and CHANGED.
   cycle_rules "$MAIN_SHA" merge || return 1
   chore_record "$b" || { echo "refuse HEAD: the merge adds or changes no cycle record (docs/working/cycles/cycle-YYYY-MM-DD.md) holding the line \"Branch: $b\", so --main-log would read it as other"; return 1; }
