@@ -29,7 +29,7 @@ The index below is generated — edit entries, not the table.
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-222](#q-222--install-cc-verify-and-r6) | you: terminal | Four approved merges landed today, two of them in host tools: the `cc-verify` host tool (37b24c02, Q-217) a... | 2026-10-28 |
-| [Q-227](#q-227--image-lag) | you: terminal | - `8d1ae831` fix/zshrc-locale: two lines in the Dockerfile set `LANG`/`LC_ALL` to `C.UTF-8` in `~/.zshrc`. ... | 2026-10-29 |
+| [Q-227](#q-227--image-lag) | you: terminal | - The failure-pattern library is `docs/failure-patterns.md`. It stays protected (the self-merge floor, the ... | 2026-10-29 |
 | [Q-234](#q-234--migrate-questions-owner-routes-040) | you: terminal | The convention migration `questions-owner-routes-040` (decision 040: `questions.md` holds only owner routes... | 2026-10-29 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
 | [Q-097](#q-097--exit-scan-older-routes) | agent | The Q-094 review documented two older Medium routes the exit scan does not see, both now under the guide's ... | 2026-09-28 |
@@ -287,34 +287,27 @@ Q-089 unit A's review-fix loop ran a 4th iteration before recording a cap decisi
 ### Q-227 · image-lag
 **Needs:** you: terminal · **Opened:** 2026-10-29 · **Status:** OPEN
 
-**Release notes** (trial T1; rewritten 2026-10-31 for main at c7900ea3). Installed image: `fe57e352`, read from `/opt/claude-workflows/.manifest`. Main is ahead in gate code, the Dockerfile and the host installer. None of the changes below is live until you run the paste.
+**Release notes** (trial T1; rewritten 2026-11-01 for main at 18e9cb79). Installed image: `46929c81`, read from `/opt/claude-workflows/.manifest`. Main is ahead in gate code: the failure-patterns move you approved (Q-242). The image runs the gate, so the move is not live until you run the paste.
 
-**⚑ Merged without your review (read these first):**
-- `8d1ae831` fix/zshrc-locale: two lines in the Dockerfile set `LANG`/`LC_ALL` to `C.UTF-8` in `~/.zshrc`. Merged by the orchestrator (trial T7) with `Live-verified: no`. Check after this release: a fresh session's `bash -c true` prints no `setlocale` warning.
-- `431397bf` fix/flaky-vanish-test: a test fixture moved off shared `/tmp` (build-loop self-merge).
-- `49d441ec`, `57db0394`, `b4faffa7`: the brainstorm and trial docs (docs only).
+**⚑ Merged without your review:** none.
 
-**What changes for you** (approved by you, Q-235–Q-237 and Q-239–Q-241):
-- **The host install merges the hook wiring into your `~/.claude/settings.json`** (Q-106, merged at 086f08c8). From this release, `install.sh` shows a `settings.json:` diff with a by-name list of the hooks and rules it changes, then applies it with the same y as the files. The old file goes to the backup first. This is the one change here that writes your host settings, so read that list the first time it appears.
-- The dev cycle reads watches from `watching.md`, files agent work to the roadmap, and the global instructions' questions section says so (decision 040, unit 3).
-- The dev cycle's health check runs in its own clean checkout, so the cycle's own edits can't turn it red (Q-239).
-- The brainstorm trigger stops counting a brainstorm's own lines as new ideas, and stops re-firing when Now hasn't changed (Q-240).
-- `migrations.sh check .` works with a relative root.
-- The health check stops raising a false "missing field" now and then.
-- Sessions stop printing the `setlocale` warning (the image is rebuilt).
+**What changes for you** (approved by you, Q-242):
+- The failure-pattern library is `docs/failure-patterns.md`. It stays protected (the self-merge floor, the cycle's fixes and its land check refuse it, at both the old and new paths).
+- The rest of `docs/thoughts/` leaves the self-merge floor, so build-loop branches that edit thoughts notes can self-merge.
+- Your other repos: after this release, the dev cycle files a one-line migration paste in each (`git mv docs/thoughts/failure-patterns.md docs/failure-patterns.md`). Until a repo runs it, only a `fix(...)` branch there with no skip line is held.
 
-**Not listed:** 13 routine dev-cycle record lands and answer commits. Paths changed outside `docs/` (35 under `docs/` not listed): `README.md`, `devcontainer-config/Dockerfile`, `devcontainer-config/install.sh`, `devcontainer-config/link-claude-home.sh`, `global-instructions/CLAUDE.md`, `guides/bare-host-hook-wiring.md`, `guides/claude-config-security-checkup.md`, `hooks/lib/wiring-merge.jq`, `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/health-check.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/migrations.sh`, `scripts/questions.sh`, `skills/dev-cycle/SKILL.md`, and nine test files.
+**Not listed:** 2 routine dev-cycle record lands. Paths changed outside `docs/` (7 under `docs/` not listed): `guides/harness-feedback.md`, `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/migrations.sh`, `scripts/questions.sh`, `scripts/self-improvement.sh`, `skills/dev-cycle/SKILL.md`, `workflows/codebase-onboarding.md`, `workflows/pr-prep.md`, `workflows/research-plan-implement.md`, and six test files.
 
 **The paste** (host terminal in WSL, not inside a session; stop every session first):
 
 ```
-cd /home/magfrump/claude-workflows && git merge-base --is-ancestor c7900ea362e36f3e52d241ca6fe3030869514d51 HEAD && ./devcontainer-config/install.sh
+cd /home/magfrump/claude-workflows && git merge-base --is-ancestor 18e9cb7951f5a68535d1c495195afb2d38364d01 HEAD && ./devcontainer-config/install.sh
 ```
 
-The `merge-base` check runs no hook and only confirms that your checkout holds at least these changes. After the release, run Q-234 in a session, and Q-167's host checks can include the new `settings.json` merge.
+The `merge-base` check runs no hook and only confirms that your checkout holds at least these changes.
 
-- **Interim:** the image at fe57e352 runs. The dev cycle still follows the old questions routes, and new sessions still show the warning.
-- **Blocks:** Q-234 (the migration needs the new digest live first).
+- **Interim:** the image at 46929c81 runs; `docs/thoughts/` stays on the floor until then.
+- **Blocks:** nothing.
 
 ### Q-234 · migrate-questions-owner-routes-040
 **Needs:** you: terminal · **Opened:** 2026-10-29 · **Status:** OPEN
