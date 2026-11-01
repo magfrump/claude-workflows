@@ -39,7 +39,7 @@ The index below is generated — edit entries, not the table.
 ## Open
 
 ### Q-245 · merge-gate-2026-11-01-relax-gate-git-state-75dbfa2a6e80
-**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** ANSWERED
 
 **If you say no:** every gated mode keeps refusing ordinary honest setups (git-lfs, `merge.conflictStyle`, `include.path`, fsmonitor, SSH signing, a husky hooks path, duplicate packed and loose objects, autocrlf, sparse or case-insensitive checkouts). Each refusal still stops the iteration and files an entry for you.
 
@@ -80,8 +80,10 @@ Merge `refactor/relax-gate-git-state` at 75dbfa2a6e80104d33ecb8aa5741f06c3444b01
 - **Blocks:** audit units 4-7 (they edit the same files).
 - **Interim:** the branch waits.
 
+**Answered:** [1] (owner, in session 2026-11-01: "Q-243..245: [1]"; recorded by the dev cycle)
+
 ### Q-244 · merge-2026-11-01-relax-referenced-prose-stops-8ca8ec2e0591
-**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** ANSWERED
 
 **If you say no:** "stop and wait" keeps firing on failing tests and ambiguous requirements in /away, the plan gate stays unconditional, a long review unit waits for your waiver, and security review keeps rating hostile-loop routes as Must Address.
 
@@ -123,8 +125,10 @@ Merge `docs/relax-referenced-prose-stops` at 8ca8ec2e059138d0f42e380cdcfc6476c65
 - **Blocks:** nothing.
 - **Interim:** the branch waits.
 
+**Answered:** [1] (owner, in session 2026-11-01: "Q-243..245: [1]"; recorded by the dev cycle)
+
 ### Q-243 · merge-gate-2026-11-01-relax-dev-cycle-skill-prose-7e6f1e0e9655
-**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** ANSWERED
 
 **If you say no:** the dev-cycle skill keeps its hardened-git wrapper, the identity routine, the repeated state checks and the main-log stop. An iteration keeps costing about 40 tool calls, most of them those rituals.
 
@@ -160,6 +164,8 @@ Merge `docs/relax-dev-cycle-skill-prose` at 7e6f1e0e96550bda192e7d8cece50a6266d7
 
 - **Blocks:** nothing.
 - **Interim:** the branch waits.
+
+**Answered:** [1] (owner, in session 2026-11-01: "Q-243..245: [1]"; recorded by the dev cycle)
 
 ### Q-242 · merge-gate-2026-10-31-failure-patterns-out-of-thoughts-c3f3f0e49f17
 **Needs:** you: judgment · **Opened:** 2026-10-31 · **Status:** ANSWERED
