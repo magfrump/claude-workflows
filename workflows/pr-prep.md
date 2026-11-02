@@ -241,7 +241,7 @@ either fixed something silently or waived something silently.
 
 **c. Run tests.** After fixing findings, re-run the tests the fixes affect. Fixes often surface latent bugs — a tightened assertion may expose a helper bug, a scoping fix may reveal a silent false pass. Fix test breakage as separate commits. Inside the loop, run the affected suites and re-check earlier failures, not the full gate. In claude-workflows that is `scripts/run-tests.sh <files>` and `scripts/run-tests.sh --failed`. The full gate belongs to [step 5a](#5-verify-and-annotate-parallelizable), which owns how to run it and how to triage a red result.
 
-**Size re-check.** After the tests, before the drift check below and the re-review, re-run step 1a's count. Past ~800 lines (or the limit a waiver set), stop and ask the user for a waiver ([review-fix-loop.md § Size re-check](review-fix-loop.md#size-re-check-after-any-iteration-and-before-merge) owns the rule).
+**Size re-check.** After the tests, before the drift check below and the re-review, re-run step 1a's count. Past ~800 lines (or the limit a waiver set), split the unit, and ask the user for a waiver only when it cannot be split ([review-fix-loop.md § Size re-check](review-fix-loop.md#size-re-check-after-any-iteration-and-before-merge) owns the rule).
 
 **Fix-commit drift check (decision 031, L=fix-drift).** After fixes and tests, before the re-review pass, run the lite reviewer over just the fix commits:
 

@@ -672,6 +672,8 @@ After producing the merged fact-check report, check whether any merged claims ca
 
 If the user passed `--no-gate`, or if there are no high-confidence Incorrect findings, skip this gate and proceed directly to Stage 2.
 
+In /away mode or any run with no user to answer (a build loop, a headless or scheduled run), do not ask: take **Continue**, and say so in the stage banner. The Incorrect findings reach the critics and land in the rubric at their tier, so a behavioural one still blocks merge, and the full panel runs, which a terminal pass needs ([first-red short-circuit](#first-red-short-circuit-decision-032-4): the terminal pass never skips critics). Fix first would stop a terminal pass short of its amber inventory and cost a second full pass.
+
 ### First-red short-circuit (decision 032 #4)
 
 Applies **only** when `--loop-pass` was passed — i.e., this is a non-final pass of a review-fix
@@ -885,7 +887,12 @@ For each critic agent, you MUST:
    the labelling block required by Step 1's partial-scope rule
 4. Include the PR intent captured in "Before You Begin" Step 2, prepended under a
    `## What this PR is trying to accomplish` heading so the critic can scope findings to
-   stated intent. If Step 3 surfaced `<prior-findings>`, paste them verbatim under a
+   stated intent. For the security critic, when the project has a constraints doc
+   (`docs/constraints.md`) that states a threat model, paste its threat-model lines and the
+   hard lines that bound them, read from the target branch the change merges into (`git show main:docs/constraints.md`,
+   or the PR's base ref), never from a commit on the branch, even when the scope is a
+   `--range` or the loop-pass default range; in claude-workflows, S1 and H1), under the same heading, so the skill's
+   project threat model rule (next to its severity floor rule) can apply them. If Step 3 surfaced `<prior-findings>`, paste them verbatim under a
    `## Prior review findings (advisory — worth checking, not verdict input)` heading
    immediately after the intent block; otherwise omit this heading entirely.
 5. Include the fact-check results. If the fact-check report is longer than 200 lines, include

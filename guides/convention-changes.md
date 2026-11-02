@@ -54,8 +54,10 @@ change is installed.
 The digest's section 7b prints `pending ID (CONVENTION): PATH line N; remedy: REMEDY` for
 each migration whose ERE still matches. The cycle cannot run the remedy itself: migrations
 rewrite questions entries or roadmap headings, which its own commits may not change without
-the owner. So it files one `you: terminal` entry per pending migration (slug `migrate-ID`),
-lists it first in its final message, and carries on with the rest of the iteration.
+the owner. So it files a `you: terminal` entry per pending migration (slug `migrate-ID`),
+with every remedy filed in one iteration collected into a single paste, as the global
+instructions ask of terminal entries; it lists them first in its final message and carries on
+with the rest of the iteration. Step 1b of `skills/dev-cycle/SKILL.md` owns the details.
 
 Two branches that change the same convention in parallel each add a line; whichever merges
 second fails the check after merging main in, and adds a line with the combined fingerprint.
