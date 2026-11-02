@@ -33,15 +33,11 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   step: let step 0.1 close an open `image-lag` / `image-off-main-*` entry on exit 0 (status
   ANSWERED, a `met` line naming C and M), with `--cycle-diff` accepting that one change;
   gate code, so a merge entry. Folded into restriction-audit unit 5's brief (2026-11-02).
-- **Agent: Q-168 · finish the q096b exit-scan remote-names unit** (filed 2026-11-01, step 6,
-  from Q-234's migrate). Motive: the exit scan parses remote names and legacy
-  `remotes/`/`branches/` files more loosely than git. First step: rebase
-  `fix/q096b-exit-scan-remote-names` (75d08a94) onto current main and run its review loop;
-  landing was Q-171. Full entry: `docs/working/questions.md` at b5f620ae.
 - **Agent: Q-097 · exit-scan older routes** (filed 2026-11-01, step 6, from Q-234's migrate).
   Motive: two documented Medium routes the exit scan does not see (a symlink to a repo
   outside the checkout; a non-standard container-form `.git`). First step: one enforcement
-  unit each, after Q-168, or record why it stays open. Full entry: as above.
+  unit each, or record why it stays open (Q-168, which it was to follow, was dropped:
+  Ideas, Q-238 [1]). Full entry: `docs/working/questions.md` at b5f620ae.
 - **Agent: Q-125 · cc-isolated Bash sandbox, live run** (filed 2026-11-01, step 6, from
   Q-234's migrate). Motive: nothing sandboxes Bash in cc-isolated. Built, unmerged
   (`feat/q125-cc-isolated-sandbox`); waits on the host install (Q-222). First step: Next 1.
