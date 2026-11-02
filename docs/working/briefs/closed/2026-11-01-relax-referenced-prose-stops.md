@@ -45,6 +45,6 @@ Policy: review
 - Editing `docs/roadmap.md` or the questions files: the dev cycle moves those.
 
 Dispatched: 2
-Applied: Q-244=noted, Q-246=redispatch
+Applied: Q-244=noted, Q-246=redispatch, Q-248=merged
 
 Asked: Q-246@8ca8ec2e059138d0f42e380cdcfc6476c652ea0e
