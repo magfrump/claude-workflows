@@ -16,8 +16,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 - **Agent: restriction audit units 4-7** (filed 2026-11-01, owner request). Motive: the owner
   asked to remove every restriction without a specific, in-scope threat model; plan and
   inventories in `docs/working/research-2026-11-01-restriction-audit.md`. Units 1-3 merged
-  (63ba32e9, 242081af, 78dad60b). First step: brief unit 4 (brief, marker and path grammar, the
-  loop prompt's K24/K26), then unit 5 (the cycle runs migrations; it also absorbs the
+  (63ba32e9, 242081af, 78dad60b). Unit 4 (brief, marker and path grammar, the loop prompt's
+  K24/K26) is in flight (briefed 2026-11-02). First step after it merges: brief unit 5 (the cycle runs migrations; it also absorbs the
   image-lag item below), 6 (import walk seeds and parser) and 7 (D6 block into the image).
   Unit 5 also fixes `scripts/dev-cycle.sh:193`, whose skip message still says "use
   --check-write" (unit 3 drops that call).
@@ -49,6 +49,13 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   migrate). Motive: design a commit-to-canon-instance script and the heuristic for which
   candidates get proposed, keeping the canon compact. First step: a divergent-design doc;
   the filter choice then comes back as a `you: judgment` entry.
+- **Agent: health-check gate 12 fails on a DST-change day** (filed 2026-11-02, step 1).
+  Motive: iteration 2026-11-02-0718's health check failed only `test/scripts/health-check.bats`
+  "gate 12: a persona last sampled long ago is reported stale": on 2026-11-01 (a 25-hour
+  local day) a fixture dated today read "1 days since", because `check_persona_freshness`
+  divides elapsed seconds by 86400 from local midnight. First step: compute the day count from
+  dates (`date -u -d` on both sides, or a day-number difference) rather than seconds, and
+  keep the test's "0 days" claim.
 - **Agent: Q-147 · q089 source-guard unit** (filed 2026-11-01, step 6, from Q-234's
   migrate). Motive: the static source-set test was split off unit A (`feat/q089-source-guard`,
   fa059477). First step: a fresh loop that narrows the test's claim to "plain spellings,
@@ -89,6 +96,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
      else open one) is an idea until v1 is used. v1 merged at a8e941a5 (Q-232 [1]).
 
 ## In flight
+
+- **Restriction audit unit 4: brief, marker and path grammar, the loop prompt** (review policy;
+  gate code). Brief: `docs/working/briefs/2026-11-02-relax-grammar-and-loop-prompt.md`.
 
 ## Next
 
@@ -260,6 +270,9 @@ Unranked. Each names the signal that motivates it.
   RPI and onboarding edits. Best read after units 2-7 land, since they rewrite the same
   passages. No drift finding: unit 1's Path A record prunes on H1/H2 and uses S1/S3/S6 to
   rank among options that meet them.
+  Fired again 2026-11-02: units 2 and 3 merged (242081af, 78dad60b; Q-248, Q-249), changing
+  `skills/dev-cycle/SKILL.md`, code-review, security-reviewer, constraints-builder, RPI, the
+  pr-prep and review-fix-loop workflows. Still best read after units 4-7 land.
   Fired again 2026-10-29 (iteration 2026-10-30-0035): `skills/dev-cycle/SKILL.md` gained
   step 1b (6f364ba6, convention migrations), and a third drift finding (step 4, 6ee39f24):
   the watching-file loop's Path A record marks options 4 and 6 as failing on soft lines

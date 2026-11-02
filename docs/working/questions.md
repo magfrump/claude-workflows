@@ -28,7 +28,7 @@ The index below is generated — edit entries, not the table.
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-222](#q-222--install-cc-verify-and-r6) | you: terminal | Four approved merges landed today, two of them in host tools: the `cc-verify` host tool (37b24c02, Q-217) a... | 2026-10-28 |
-| [Q-227](#q-227--image-lag) | you: terminal | - The failure-pattern library is `docs/failure-patterns.md`. It stays protected (the self-merge floor, the ... | 2026-10-29 |
+| [Q-227](#q-227--image-lag) | you: terminal | - The dev cycle runs its own bookkeeping git as plain `git -C`, drops the extra `--state` re-runs and per-w... | 2026-10-29 |
 <!-- index:end -->
 
 ## Open
@@ -123,25 +123,26 @@ bats --jobs 2 test/agents-gemini-sync.bats 2>&1 | grep -iE 'cite|locale'   # exp
 ### Q-227 · image-lag
 **Needs:** you: terminal · **Opened:** 2026-10-29 · **Status:** OPEN
 
-**Release notes** (trial T1; rewritten 2026-11-01 for main at 18e9cb79). Installed image: `46929c81`, read from `/opt/claude-workflows/.manifest`. Main is ahead in gate code: the failure-patterns move you approved (Q-242). The image runs the gate, so the move is not live until you run the paste.
+**Release notes** (trial T1; rewritten 2026-11-02 for main at d9f2e42a). Installed image: `42295bd9`, read from `/opt/claude-workflows/.manifest`. Main is ahead in gate code by one file, `skills/dev-cycle/SKILL.md`: restriction-audit unit 3, which you approved (Q-249). The image carries the dev-cycle skill, so the shorter cycle is not live until you run the paste.
+
+**If you say no:** the cycle keeps running the older, longer skill. Nothing breaks.
 
 **⚑ Merged without your review:** none.
 
-**What changes for you** (approved by you, Q-242):
-- The failure-pattern library is `docs/failure-patterns.md`. It stays protected (the self-merge floor, the cycle's fixes and its land check refuse it, at both the old and new paths).
-- The rest of `docs/thoughts/` leaves the self-merge floor, so build-loop branches that edit thoughts notes can self-merge.
-- Your other repos: after this release, the dev cycle files a one-line migration paste in each (`git mv docs/thoughts/failure-patterns.md docs/failure-patterns.md`). Until a repo runs it, only a `fix(...)` branch there with no skip line is held.
+**What changes for you** (approved by you, Q-248 and Q-249):
+- The dev cycle runs its own bookkeeping git as plain `git -C`, drops the extra `--state` re-runs and per-write path checks, and reports a main-log refusal instead of stopping on it (unit 3). Iterations take fewer tool calls.
+- The workflows and skills the cycle references (pr-prep, RPI, the review-fix loop, code-review, security-reviewer, constraints-builder, and the global instructions) lose prose stops that had no in-scope threat. Unattended runs proceed on a stated default (unit 2).
 
-**Not listed:** 2 routine dev-cycle record lands. Paths changed outside `docs/` (7 under `docs/` not listed): `guides/harness-feedback.md`, `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/migrations.sh`, `scripts/questions.sh`, `scripts/self-improvement.sh`, `skills/dev-cycle/SKILL.md`, `workflows/codebase-onboarding.md`, `workflows/pr-prep.md`, `workflows/research-plan-implement.md`, and six test files.
+**Not listed:** 8 routine dev-cycle record lands. Paths changed outside `docs/` (12 under `docs/` not listed): `global-instructions/CLAUDE.md`, `guides/convention-changes.md`, `guides/pr-prep-quick-ref.md`, `skills/code-review/SKILL.md`, `skills/constraints-builder/SKILL.md`, `skills/dev-cycle/SKILL.md`, `skills/research-plan-implement/SKILL.md`, `skills/security-reviewer/SKILL.md`, `test/scripts/build-loop-orchestrator.bats`, `workflows/pr-prep.md`, `workflows/research-plan-implement.md`, `workflows/review-fix-loop.md`.
 
 **The paste** (host terminal in WSL, not inside a session; stop every session first):
 
 ```
-cd /home/magfrump/claude-workflows && git merge-base --is-ancestor 18e9cb7951f5a68535d1c495195afb2d38364d01 HEAD && ./devcontainer-config/install.sh
+cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = d9f2e42afe7e89ebee9624ac1159fa812985ac46 && ./devcontainer-config/install.sh
 ```
 
-The `merge-base` check runs no hook and only confirms that your checkout holds at least these changes.
+The `rev-parse` check runs no hook. It only confirms that your checkout is at main's commit; if it fails, bring the checkout to main first.
 
-- **Interim:** the image at 46929c81 runs; `docs/thoughts/` stays on the floor until then.
+- **Interim:** the image at 42295bd9 runs, with the older dev-cycle skill.
 - **Blocks:** nothing.
 
