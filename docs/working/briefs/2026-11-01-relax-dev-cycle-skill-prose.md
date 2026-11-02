@@ -40,7 +40,7 @@ Policy: review
 - The scripts (units 1, 4, 5 and 6), the D6 block (unit 7), and rows listed as owner calls (R19, R51, R56).
 - Editing `docs/roadmap.md` or the questions files: the dev cycle moves those.
 
-Dispatched: 1
+Dispatched: 2
 Applied: Q-243=noted, Q-247=redispatch
 
 Asked: Q-247@7e6f1e0e96550bda192e7d8cece50a6266d76b47
