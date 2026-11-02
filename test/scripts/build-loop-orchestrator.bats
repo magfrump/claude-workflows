@@ -295,7 +295,7 @@ shim() {
     # The snippet exports no config pair, so --state run through it passes caller_gate (row 702).
     d6 build-loop.sh --state; [ "$status" -eq 0 ] && [ "$output" = ok ] || { show; return 1; }
     d6 dev-cycle.sh
-    [ "$status" -eq 0 ] && [[ "$output" == *$'\n- Q-001  trigger           from-opt (legacy, in questions.md: the owner\'s `questions.sh migrate` moves it)\n'* ]] || { show; return 1; }
+    [ "$status" -eq 0 ] && [[ "$output" == *$'\n- Q-001  trigger           from-opt (legacy, in questions.md: step 1b\'s `questions.sh migrate` moves it)\n'* ]] || { show; return 1; }
     d6 questions.sh open; [ "$status" -eq 0 ] && [ "$output" = "Q-001  trigger           from-opt" ] || { show; return 1; }
 }
 
@@ -536,6 +536,135 @@ refuse docs/working/watching.md: Q-011's heading changed or is gone; a watch clo
     git reset -q --hard; sed -n '/^### Q-001/,/^| \*\*\[1\]/p' docs/working/questions.md >> docs/working/watching.md
     sed -i '/^### Q-001/,/^| \*\*\[1\]/d' docs/working/questions.md; git add -A
     cd_is "refuse docs/working/questions.md: Q-001's heading, Needs or answer lines changed or are gone, and Q-001 is not in --answered"
+}
+
+# legacy: the questions files questions.sh init writes, plus an owner entry (Q-001) and three legacy
+# routes registry line questions-owner-routes-040 matches (Q-002 an open watch, Q-003 a closed one with
+# its answer, Q-004 agent work), on main; then a chore branch. GONE ID: the gone refusal for ID.
+legacy() {
+    QS="$REPO_ROOT/scripts/questions.sh"; local o='**Opened:** 2026-10-12 · **Status:**'
+    bash "$QS" init > /dev/null
+    printf '%s\n' '' '### Q-001 · own' "**Needs:** you: judgment · $o OPEN" '' 'Which?' '' '### Q-002 · old-watch' "**Needs:** trigger · $o OPEN" '' 'Watch x.' \
+        '' '### Q-003 · done-watch' "**Needs:** deferred · $o ANSWERED" '' 'Q-003: met, seen in run 4' '' '### Q-004 · chore' "**Needs:** agent · $o OPEN" '' 'Do y.' >> docs/working/questions.md
+    bash "$QS" index > /dev/null; commit_all questions; git checkout -q -b chore/dev-cycle-2026-10-12
+}
+GONE() { echo "refuse docs/working/questions.md: $1's heading, Needs or answer lines changed or are gone, and $1 is not in --answered"; }
+MIG=questions-owner-routes-040
+
+@test "--cycle-diff --migrated takes a registry remedy's own output: questions.sh migrate's moves to watching.md and the roadmap listing land, and --land-cycle lands them (brief 2026-11-02-cycle-runs-migrations)" {
+    legacy; bash "$QS" migrate > /dev/null; git add -A
+    grep -q '^### Q-002' docs/working/watching.md && grep -q '^### Q-004' docs/working/roadmap-from-questions.md && ! grep -q '^### Q-00[234]' docs/working/questions.md
+    # Without the mode the moves are entries gone; with it they pass, a repeat ID too.
+    cd_is "$(GONE Q-002)
+$(GONE Q-003)
+$(GONE Q-004)"
+    cd_is ok --migrated "$MIG"; cd_is ok --migrated "$MIG" --migrated "$MIG" --answered Q-009
+    # The owner entry, which no pattern matched, keeps the ordinary rule.
+    sed -i 's/^### Q-001 · own$/### Q-001 · renamed/' docs/working/questions.md; git add -A; cd_is "$(GONE Q-001)" --migrated "$MIG"
+    git checkout -q HEAD -- docs/working/questions.md; bash "$QS" migrate > /dev/null; git add -A
+    # The land judges the merge with the same mode.
+    commit_all migrate; rec "Branch: chore/dev-cycle-2026-10-12"; M="$(git rev-parse main)"
+    lc_is "$(GONE Q-002)
+$(GONE Q-003)
+$(GONE Q-004)" --main "$M"
+    bl --land-cycle --main "$M" --migrated "$MIG"
+    [ "$status" -eq 0 ] && [[ "$output" == "landed chore/dev-cycle-2026-10-12 "* ]] && git show main:docs/working/watching.md | grep -q '^Q-003: met, seen in run 4$' || { show; return 1; }
+    for a in "--migrated" "--migrated Bad" "--migrated -x"; do bl --cycle-diff $a; [ "$status" -eq 1 ] && [ -z "$output" ] || { echo "[$a]"; show; return 1; }; done
+}
+
+@test "--cycle-diff --migrated refuses a remedy run that also changes an answer or Status line, an unfinished or not pending one, and an ID the rules do not relax (brief 2026-11-02-cycle-runs-migrations)" {
+    legacy; bash "$QS" migrate > /dev/null
+    # A moved entry's answer line or Status changed on the way, or one dropped instead of moved.
+    sed -i 's/^Q-003: met, seen in run 4$/Q-003: [1]/' docs/working/watching.md; git add -A; cd_is "$(GONE Q-003)" --migrated "$MIG"
+    git checkout -q HEAD -- docs/working; bash "$QS" migrate > /dev/null
+    sed -i '/^### Q-002/,/^Watch x\./s/\*\*Status:\*\* OPEN/**Status:** ANSWERED/' docs/working/watching.md; git add -A; cd_is "$(GONE Q-002)" --migrated "$MIG"
+    git checkout -q HEAD -- docs/working; bash "$QS" migrate > /dev/null
+    printf '%s\n' '- Q-004: [2]' >> docs/working/roadmap-from-questions.md; git add -A; cd_is "$(GONE Q-004)" --migrated "$MIG"
+    git checkout -q HEAD -- docs/working; bash "$QS" migrate > /dev/null
+    sed -i '/^### Q-004/,$d' docs/working/roadmap-from-questions.md; git add -A; cd_is "$(GONE Q-004)" --migrated "$MIG"
+    # Unfinished: one legacy line left behind.
+    git checkout -q HEAD -- docs/working; rm -f docs/working/roadmap-from-questions.md
+    sed -n '/^### Q-002/,/^Watch x\./p' docs/working/questions.md >> docs/working/watching.md; sed -i '/^### Q-002/,/^Watch x\./d' docs/working/questions.md; git add -A
+    cd_is "refuse docs/working/questions.md: --migrated $MIG: a line of its index copy still matches its pattern, so the remedy did not finish
+$(GONE Q-002)" --migrated "$MIG"
+    # An ID the registry lacks, one with no file, one whose file is a record (truth), and none pending on the base.
+    git checkout -q HEAD -- docs/working; bash "$QS" migrate > /dev/null; git add -A
+    cd_is "refuse HEAD: --migrated baseline-roadmap: its remedy changes no file, which these rules do not relax for a migration (the owner runs it)
+refuse HEAD: --migrated failure-patterns-out-of-thoughts: its remedy changes docs/thoughts/failure-patterns.md, which these rules do not relax for a migration (the owner runs it)
+refuse HEAD: --migrated no-such-id names no migration in the gate's registry
+$(GONE Q-002)
+$(GONE Q-003)
+$(GONE Q-004)" --migrated no-such-id --migrated failure-patterns-out-of-thoughts --migrated baseline-roadmap
+    commit_all migrated; git checkout -q -b chore/dev-cycle-2026-10-13 HEAD; echo x >> docs/working/watching.md; git add -A
+    git update-ref refs/heads/main HEAD~0; git reset -q --soft HEAD
+    cd_is "refuse docs/working/questions.md: --migrated $MIG: no line on the base matches its pattern, so the migration was not pending" --migrated "$MIG"
+}
+
+@test "--cycle-diff --migrated relaxes a roadmap's headings only for a registry line whose file is the roadmap, read from the registry beside the gate (brief 2026-11-02-cycle-runs-migrations)" {
+    O="$BATS_TEST_TMPDIR/opt"; mkdir -p "$O/scripts/lib"; cp "$REPO_ROOT/scripts/build-loop.sh" "$O/scripts/"; cp "$REPO_ROOT"/scripts/lib/{dev-cycle-read,migrations}.sh "$O/scripts/lib/"
+    perl -0pi -e 's/^(if \[\[ "\$\{BASH_SOURCE)/mig roadmap-later roadmap 0123456789abcdef docs\/roadmap.md '"'"'^## Later\$'"'"' '"'"'~\/.claude\/scripts\/x.sh'"'"'\n$1/m' "$O/scripts/lib/migrations.sh"
+    grep -q '^mig roadmap-later ' "$O/scripts/lib/migrations.sh"
+    mkdir -p docs; printf '%s\n' '# Roadmap' 'Intro.' '## Now' '## Later' '- `docs/working/briefs/2026-10-01-x.md`' '## Done' > docs/roadmap.md; commit_all roadmap
+    git checkout -q -b chore/dev-cycle-2026-10-12; sed -i 's/^## Later$/## Next/' docs/roadmap.md; git add -A
+    run --separate-stderr bash "$O/scripts/build-loop.sh" --cycle-diff
+    [ "$status" -eq 2 ] && [ "$output" = "refuse docs/roadmap.md: its ## headings changed" ] || { show; return 1; }
+    run --separate-stderr bash "$O/scripts/build-loop.sh" --cycle-diff --migrated roadmap-later
+    [ "$status" -eq 0 ] && [ "$output" = ok ] || { show; return 1; }
+    # The brief-line rule still holds; the repo's own gate, whose registry lacks the line, refuses the ID.
+    sed -i '/2026-10-01-x/d' docs/roadmap.md; git add -A
+    run --separate-stderr bash "$O/scripts/build-loop.sh" --cycle-diff --migrated roadmap-later
+    [ "$status" -eq 2 ] && [ "$output" = "refuse docs/roadmap.md: the brief 2026-10-01-x.md, named outside Done on the base, is named on no line" ] || { show; return 1; }
+    git checkout -q HEAD -- docs/roadmap.md; sed -i 's/^## Later$/## Next/' docs/roadmap.md; git add -A
+    cd_is "refuse HEAD: --migrated roadmap-later names no migration in the gate's registry
+refuse docs/roadmap.md: its ## headings changed" --migrated roadmap-later
+    # A registry the gate cannot read refuses the mode, never passes it.
+    echo 'mig (' >> "$O/scripts/lib/migrations.sh"
+    run --separate-stderr bash "$O/scripts/build-loop.sh" --cycle-diff --migrated roadmap-later
+    [ "$status" -eq 2 ] && [ "$output" = "refuse HEAD: --migrated needs the registry lib/migrations.sh beside build-loop.sh, which is missing, not a regular file or does not parse
+refuse docs/roadmap.md: its ## headings changed" ] || { show; return 1; }
+}
+
+# img: the questions files on main with an open image-lag (Q-005), image-off-main-C12 (Q-006) and merge
+# entry (Q-001), then a chore branch. C and MM are full commit ids; MET ID: step 0.1's closing line for ID.
+img() {
+    mkdir -p docs/working; local t='**Needs:** you: terminal · **Opened:** 2026-10-12 · **Status:**'
+    printf '%s\n' '# Questions' '### Q-001 · merge-x-0123456789ab' "$N OPEN" '' 'Merge?' '### Q-005 · image-lag' "$t OPEN" '' 'Release.' \
+        '### Q-006 · image-off-main-0123456789ab' "$N OPEN" '' 'Rebuild?' '### Q-007 · image-lag' "$t ANSWERED" 'Q-007: [1]' > docs/working/questions.md
+    printf '%s\n' '# Archive' > docs/working/questions-archive.md; commit_all questions; git checkout -q -b chore/dev-cycle-2026-10-12
+    C="$(git rev-parse HEAD)"; MM="$(git rev-parse HEAD~1)"
+}
+MET() { echo "$1: met — image $C holds the gate code of main $MM"; }
+# close ID LINE: ID's Status OPEN becomes ANSWERED and LINE follows its Needs line, staged.
+close() { sed -i "/^### $1 /,/^###/{s/\*\*Status:\*\* OPEN/**Status:** ANSWERED/; /^\*\*Needs:/a $2
+}" docs/working/questions.md; git add -A; }
+
+@test "--cycle-diff takes step 0.1's close of an open image-lag or image-off-main entry, and an archive move after it (brief 2026-11-02-cycle-runs-migrations)" {
+    img; close Q-005 "$(MET Q-005)"; cd_is ok
+    close Q-006 "$(MET Q-006)"; cd_is ok
+    # questions.sh archive then moves the closed entries whole.
+    sed -n '/^### Q-005/,/^Release\./p; /^### Q-006/,/^Rebuild?/p' docs/working/questions.md >> docs/working/questions-archive.md
+    sed -i '/^### Q-005/,/^Release\./d; /^### Q-006/,/^Rebuild?/d' docs/working/questions.md; git add -A; cd_is ok
+    # A 64-hex id is a full id too.
+    git reset -q --hard; C="$(printf 'a%.0s' $(seq 64))"; close Q-005 "$(MET Q-005)"; cd_is ok
+}
+
+@test "--cycle-diff refuses an image-lag close other than step 0.1's, and the closing line written on any other entry (brief 2026-11-02-cycle-runs-migrations)" {
+    img
+    # On a merge entry, an answered image-lag entry, or a slug that only starts like one.
+    close Q-001 "$(MET Q-001)"; cd_is "$(GONE Q-001)"; git reset -q --hard
+    sed -i '/^Q-007: \[1\]$/a '"$(MET Q-007)" docs/working/questions.md; git add -A; cd_is "$(GONE Q-007)"; git reset -q --hard
+    sed -i 's/^### Q-006 · image-off-main-0123456789ab$/### Q-006 · image-off-main-0123456789abc/' docs/working/questions.md; commit_all slug
+    git update-ref refs/heads/main HEAD; close Q-006 "$(MET Q-006)"; cd_is "$(GONE Q-006)"; git reset -q --hard HEAD~1; git update-ref refs/heads/main HEAD
+    # The Status flip alone, the line alone, two lines, a short id, another ID's line, a changed route, a dropped body line is free.
+    close Q-005 x; sed -i '/^x$/d' docs/working/questions.md; git add -A; cd_is "$(GONE Q-005)"; git reset -q --hard
+    sed -i '/^### Q-005/,/^Release/{/^\*\*Needs:/a '"$(MET Q-005)"'
+}' docs/working/questions.md; git add -A; cd_is "$(GONE Q-005)"; git reset -q --hard
+    close Q-005 "$(MET Q-005)"; sed -i '/^Release\./a '"$(MET Q-005)" docs/working/questions.md; git add -A; cd_is "$(GONE Q-005)"; git reset -q --hard
+    close Q-005 "Q-005: met — image ${C:0:12} holds the gate code of main $MM"; cd_is "$(GONE Q-005)"; git reset -q --hard
+    close Q-005 "$(MET Q-006)"; cd_is "$(GONE Q-005)"; git reset -q --hard
+    close Q-005 "$(MET Q-005)"; sed -i '/^### Q-005/,/^Release/s/you: terminal/you: fyi/' docs/working/questions.md
+    git add -A; cd_is "$(GONE Q-005)"; git reset -q --hard
+    close Q-005 "$(MET Q-005)"; sed -i '/^Release\./d' docs/working/questions.md; git add -A; cd_is ok
 }
 
 @test "the answer label regex is the same in the lib's ANSWER_AWK, ANSWERS_AWK and QKEYS_AWK (U3c i2 architecture 1)" {

@@ -24,13 +24,18 @@
 #            repo root ("-" when no existing file needs changing).
 #   ERE      a grep -E pattern (C locale) matching a line only the old shape
 #            has ("-" with PATH "-").
-#   REMEDY   the command the repo's owner runs from its root to migrate PATH,
-#            then commits; with PATH "-", "none: WHY" (a baseline, or a change
-#            every existing file already satisfies).
+#   REMEDY   the command that migrates PATH, run from the repo's root and
+#            then committed; with PATH "-", "none: WHY" (a baseline, or a change
+#            every existing file already satisfies). The dev cycle runs a
+#            `~/.claude/scripts/questions.sh SUB` remedy on docs/working/questions.md
+#            or docs/roadmap.md itself; the owner runs any other.
 #
 # The digest reports a migration as pending while PATH holds a line ERE
-# matches; the dev cycle files the remedy for the owner (SKILL.md step 1b),
-# because the files a migration rewrites are ones its chore commit may not.
+# matches. The dev cycle (SKILL.md step 1b) runs a questions.sh remedy whose
+# PATH is the questions file or the roadmap through its D6 block (the image
+# copy) and lands it with `build-loop.sh --cycle-diff --migrated ID`, which
+# reads this registry beside itself; any other remedy it files for the owner
+# in one terminal paste.
 #
 # Run directly: `bash scripts/lib/migrations.sh check [ROOT]` (exit 1 naming
 # each convention whose newest line's FP is not its source's, and each
@@ -154,6 +159,7 @@ mig roadmap-watching-040 roadmap 1178ca230944fb9f - - 'none: only a new roadmap'
 # FP_REMEDY repeats this remedy in its gap line.
 mig failure-patterns-out-of-thoughts library de71e707492a0dc7 docs/thoughts/failure-patterns.md '^' 'git mv docs/thoughts/failure-patterns.md docs/failure-patterns.md'
 mig brief-text-grammar-081 brief e46e5dd05e85ad95 - - 'none: the brief text rules only relaxed (decision log row 81); every brief valid before stays valid'
+mig record-1b-ran record f7ccbaa72beae11c - - 'none: the record'"'"'s 1b. line only gained a "ran ID" form; every record written before stays valid'
 
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   set -uo pipefail

@@ -689,7 +689,7 @@ EOF
     run --separate-stderr bash "$DC"
     section=$(echo "$output" | sed -n '/## 3/,/## 4/p')
     [[ "$section" == *"No docs/working/watching.md in this repo: watches are read from docs/working/questions.md only"* ]] || { echo "$section"; return 1; }
-    [[ "$section" == *"- Q-001  trigger           old-watch (legacy, in questions.md: the owner's \`questions.sh migrate\` moves it)"* ]] || { echo "$section"; return 1; }
+    [[ "$section" == *"- Q-001  trigger           old-watch (legacy, in questions.md: step 1b's \`questions.sh migrate\` moves it)"* ]] || { echo "$section"; return 1; }
     # watching.md: its open watch listed unmarked, its closed one not at all.
     { echo '# Watching'; echo; echo '## Open'; echo; e Q-003 new-watch deferred; echo '## Closed'; echo; e Q-004 met-watch trigger ANSWERED; } > docs/working/watching.md
     run --separate-stderr bash "$DC"
@@ -880,7 +880,7 @@ EOF
     [ "$status" -eq 0 ]
     [ "$(grep -c '^ok ' <<<"$output")" -eq 1 ] && [[ "$output" == *"ok docs/guides/g.md"* ]] || { echo "$output"; return 1; }
     [ "$(grep -c '^skip .*: in-cycle fixes edit only' <<<"$output")" -eq 5 ] || { echo "$output"; return 1; }
-    [[ "$output" == *"skip docs/roadmap.md: one of the cycle's own files"* ]] || { echo "$output"; return 1; }
+    [[ "$output" == *"skip docs/roadmap.md: one of the cycle's own files (the cycle writes it with no pre-write check; step 9's --cycle-diff bounds what lands)"* ]] || { echo "$output"; return 1; }
 }
 
 @test "closed briefs move out of the glob, so open ones are listed past 50 briefs" {
