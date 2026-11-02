@@ -452,7 +452,8 @@ brief or dispatch:
   `docs/working/questions.md` or `docs/roadmap.md` and REMEDY `~/.claude/scripts/questions.sh
   SUB`: the cycle runs it in WT through the D6 block as `questions.sh SUB` (the image copy,
   never a working-tree script: H1), then `questions.sh check`, unless the digest's section 8
-  lists `docs/`, `docs/working/`, a questions file, `watching.md` or the roadmap (it would
+  lists `docs/`, `docs/working/`, a questions file, `watching.md`, `roadmap-from-questions.md`
+  or the roadmap (it would
   write through that path). Skipped, or the remedy or `check` failing (its files then
   restored with `git -C WT checkout HEAD -- PATHS`, PATHS what `git -C WT status --porcelain`
   shows it changed): it goes to the owner as the next bullet says, the record naming why.

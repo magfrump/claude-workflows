@@ -2219,9 +2219,11 @@ image_cleared() {
     echo "refuse docs/working/$2: $1's closing line names $3 and $4, which are not both commits here"; return 1
   fi
   gate_git diff --name-only -z --no-renames "$3" "$4" > "$GATE_TMP/cy.ic" 2>/dev/null || { echo "refuse docs/working/$2: $1's closing line's commits could not be compared"; return 1; }
+  # Lower-cased once, as the rules compare (lower's own tr, over the whole list).
+  tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz' < "$GATE_TMP/cy.ic" > "$GATE_TMP/cy.il" || { echo "refuse docs/working/$2: $1's closing line's commits could not be compared"; return 1; }
   while IFS= read -r -d '' p; do
-    [[ ! "$(lower "$p")" =~ $GATE_CODE ]] || { echo "refuse docs/working/$2: $1's closing line says $3 holds the gate code of $4, but $p differs"; return 1; }
-  done < "$GATE_TMP/cy.ic"
+    [[ ! "$p" =~ $GATE_CODE ]] || { echo "refuse docs/working/$2: $1's closing line says $3 holds the gate code of $4, but $p differs"; return 1; }
+  done < "$GATE_TMP/cy.il"
 }
 # questions_rules BASE SIDE I...: cycle_rules' questions-file rules over the
 # RAW_* records I... (the questions files' indices); also writes

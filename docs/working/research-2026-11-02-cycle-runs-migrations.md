@@ -26,7 +26,7 @@ The audit's K105 NARROW assumes every remedy is like `questions.sh migrate`. The
 - `scripts/build-loop.sh` `cycle_diff`/`land_cycle` → `cycle_rules BASE SIDE` → `questions_rules`, with `QKEYS_AWK` (key lines per entry: h, n, a) and `QDIFF_AWK` (compares base against side; `--answered` IDs exempt) [observed].
 - The D6 block runs `/opt/claude-workflows/scripts/{build-loop,dev-cycle,questions}.sh` and the lib beside them; `build-loop.sh` sources its lib from `SCRIPT_DIR` [observed: build-loop.sh:553-557]. So a registry read from `SCRIPT_DIR/lib/migrations.sh` is the image's copy under D6 (H1): it sits in the root-owned `scripts/lib` directory whose chain D6 checks, though D6's per-file ownership list (the pinned block, out of scope) does not name it; under S1 that is acceptable. `questions.sh SUB` through the D6 block is the image's `questions.sh`.
 - Step 1's section-8 guard (SKILL.md, step 1: skip `questions.sh init`/`archive` when section 8 lists their paths) applies to step 1b's `migrate` too; a skipped or failed remedy goes to the owner's collected paste (review finding, i1).
-- Step 0.1 (SKILL.md:282-313, the exit-0 clause at 310-312): image lag; on `diff --quiet` exit 0 it listed open `image-lag`/`image-off-main-*` entries "as cleared, for the user to answer (the orchestrator never answers one: D8)".
+- Step 0.1 (SKILL.md:282-313, the exit-0 clause at 310-317): image lag; on `diff --quiet` exit 0 it listed open `image-lag`/`image-off-main-*` entries "as cleared, for the user to answer (the orchestrator never answers one: D8)".
 
 ## Invariants
 
