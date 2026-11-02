@@ -20,14 +20,16 @@ marked() { brief x "Status: open" "Branch: feat/x"; work feat/x; tip feat/x "$1"
 marker_is() { bl --marker "$B"; [ "$status" -eq 0 ] && [ "$output" = "$1" ] && [ -z "$stderr" ] || { echo "want: $1"; show; return 1; }; }
 RULE='no line that starts, after blanks, ">" and list markers ("-", "*", "+", "1." or "1)" and a blank), with "#", **Needs:**, **Status:**, **Answer, or Q- and a digit, in any case; no line holding "<!--"; strict UTF-8'
 
-@test "--state prints ok for a clean repository and refuses each planted state, exit 2 (T42, U3b1)" {
+@test "--state prints ok for a clean repository and refuses a shallow or partial clone and an ambiguous default branch, exit 2 (T42, U3b1; brief 2026-11-01-relax-gate-git-state)" {
     state_is ok
-    S="it can make the gate's git run a command or change its merge"
-    for k in core.fsmonitor filter.lfs.clean hook.pre.command; do
-        git config "$k" x; state_is "refuse state $k: set in config, $S"; git config --unset "$k"; done
+    # The owner's own config and state pass: the gate's merge reads none of it.
+    for k in core.fsmonitor filter.lfs.clean hook.pre.command merge.conflictStyle; do git config "$k" x; done
     git replace "$(git rev-parse main)" "$(git commit-tree "$(git rev-parse 'main^{tree}')" -m other)"
-    state_is "refuse state refs/replace: 1 replace ref(s)"; git replace -d "$(git rev-parse main)"
-    printf '* filter=x\n' > .git/info/attributes; state_is "refuse state info/attributes: present and not an empty file"; rm .git/info/attributes
+    printf '* filter=x\n' > .git/info/attributes
+    state_is ok
+    git config extensions.partialClone origin
+    state_is "refuse state extensions.partialclone: set in config, a partial clone, whose missing objects the gate cannot read"; git config --unset extensions.partialClone
+    git rev-parse main > .git/shallow; state_is "refuse state shallow: a shallow clone, whose history the gate cannot read whole"; rm .git/shallow
     # default_gate's half, once main is found: both names, and a default branch that names a tag (row 656).
     git branch -q master; state_is "refuse state default-branch: both main and master exist"; git branch -q -D master
     # git's update-ref refuses a branch at a non-commit: write the ref file.
@@ -35,18 +37,18 @@ RULE='no line that starts, after blanks, ">" and list markers ("-", "*", "+", "1
     state_is "refuse state default-branch: refs/heads/main names an object that is not a commit"; git rev-parse 't1^{commit}' > .git/refs/heads/main; state_is ok
 }
 
-@test "--state refuses a caller's repo-local git variable or a config pair for a state-gate or hardening key (rows 276, 281, 666, U3b1)" {
-    V="set in the caller's environment, so git can read another repository, object store, index, config, graft, shallow or replace-ref file"
-    for v in GIT_REPLACE_REF_BASE=refs/x/ GIT_GRAFT_FILE=/dev/null GIT_SHALLOW_FILE=/dev/null "GIT_ALTERNATE_OBJECT_DIRECTORIES=$PWD" GIT_INDEX_FILE=/dev/null; do
+@test "--state refuses a caller's variable that points git at another repository, work tree, index or object store; other variables and config pairs pass (rows 276, 281, 666, U3b1; brief 2026-11-01-relax-gate-git-state)" {
+    V="set in the caller's environment, so git can read another repository, work tree, index or object store"
+    for v in "GIT_DIR=$PWD/.git" "GIT_WORK_TREE=$PWD" "GIT_INDEX_FILE=$PWD/.git/index" "GIT_OBJECT_DIRECTORY=$PWD/.git/objects" "GIT_COMMON_DIR=$PWD/.git"; do
         run --separate-stderr env "$v" bash "$BL" --state
         [ "$status" -eq 2 ] && [ "$output" = "refuse state ${v%%=*}: $V" ] || { echo "$v"; show; return 1; }
     done
-    K="set by the caller's git -c or GIT_CONFIG_COUNT pairs, a key the state gate refuses or one the gate's own hardening sets (a git -c pair wins over it)"
+    for v in GIT_REPLACE_REF_BASE=refs/x/ GIT_GRAFT_FILE=/dev/null GIT_SHALLOW_FILE=/dev/null "GIT_ALTERNATE_OBJECT_DIRECTORIES=$PWD/.git/objects"; do
+        run --separate-stderr env "$v" bash "$BL" --state
+        [ "$status" -eq 0 ] && [ "$output" = ok ] || { echo "$v"; show; return 1; }
+    done
     run --separate-stderr env GIT_CONFIG_PARAMETERS="'core.useReplaceRefs'='true' 'merge.x.driver'='true' 'user.name'='caller'" bash "$BL" --state
-    [ "$status" -eq 2 ] && [ "$output" = "refuse state core.usereplacerefs: $K
-refuse state merge.x.driver: $K" ] || { show; return 1; }
-    run --separate-stderr env GIT_CONFIG_COUNT=2 GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=caller GIT_CONFIG_KEY_1=core.hooksPath GIT_CONFIG_VALUE_1=/x bash "$BL" --state
-    [ "$status" -eq 2 ] && [ "$output" = "refuse state core.hookspath: $K" ] || { show; return 1; }
+    [ "$status" -eq 0 ] && [ "$output" = ok ] || { show; return 1; }
     # A plain caller pair passes; a count git_harden would misread stops every mode (row 276).
     GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=caller state_is ok
     for c in 010 08 1x " 1"; do
@@ -54,9 +56,9 @@ refuse state merge.x.driver: $K" ] || { show; return 1; }
         [ "$status" -eq 1 ] && [ -z "$output" ] && [ "$stderr" = "build-loop.sh: GIT_CONFIG_COUNT is not a plain decimal count" ] || { echo "count [$c]"; show; return 1; }
     done
     # Only --state reads the caller's environment: neither --settings nor the gated --check refuses for it.
-    run --separate-stderr env GIT_REPLACE_REF_BASE=refs/x/ bash "$BL" --settings; [ "$status" -eq 0 ] || { show; return 1; }
+    run --separate-stderr env GIT_INDEX_FILE="$PWD/.git/index" bash "$BL" --settings; [ "$status" -eq 0 ] || { show; return 1; }
     brief x "Status: open" "Branch: feat/x"; work feat/x
-    run --separate-stderr env GIT_REPLACE_REF_BASE=refs/x/ GIT_CONFIG_PARAMETERS="'merge.x.driver'='true'" bash "$BL" --check "$B"
+    run --separate-stderr env GIT_INDEX_FILE="$PWD/.git/index" bash "$BL" --check "$B"
     [ "$status" -eq 0 ] && [[ "$output" == "ok $B "* ]] || { show; return 1; }
 }
 
@@ -328,18 +330,22 @@ shim() {
     L="$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
     run env -i PATH="$PATH" GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=c bash -c 'source "$1"; git_harden; git_harden; echo "caller $CALLER_COUNT"; printf "pair %s\n" "${HARDEN[@]}"; env | grep "^GIT_" | sort' _ "$L"
     [ "$status" -eq 0 ] || { echo "$output"; return 1; }
-    H="core.useReplaceRefs=false core.hooksPath=/dev/null core.fsmonitor=false core.attributesFile=/dev/null core.commitGraph=false core.multiPackIndex=false log.date=default log.showSignature=false commit.gpgSign=false"
+    H="core.useReplaceRefs=false core.hooksPath=/dev/null core.fsmonitor=false core.attributesFile=/dev/null log.date=default log.showSignature=false commit.gpgSign=false"
     E="GIT_ALLOW_PROTOCOL=none GIT_ATTR_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 GIT_LITERAL_PATHSPECS=1 GIT_NO_REPLACE_OBJECTS=1 GIT_OPTIONAL_LOCKS=0"
     want="caller 1"; for kv in $H; do want+=$'\n'"pair $kv"; done
     k=0; keys="GIT_CONFIG_KEY_0=user.name"; vals="GIT_CONFIG_VALUE_0=c"
     for kv in $H; do k=$((k + 1)); keys+=$'\n'"GIT_CONFIG_KEY_$k=${kv%%=*}"; vals+=$'\n'"GIT_CONFIG_VALUE_$k=${kv#*=}"; done
-    want+=$'\n'"$(printf '%s\n' $E "GIT_CONFIG_COUNT=10" "$keys" "$vals" | LC_ALL=C sort)"
+    want+=$'\n'"$(printf '%s\n' $E "GIT_CONFIG_COUNT=8" "$keys" "$vals" | LC_ALL=C sort)"
     [ "$output" = "$want" ] || { diff <(echo "$want") <(echo "$output"); return 1; }
     # The snippet runs before anything is checked, so it cannot source the lib: it repeats both lists, on one line.
     # (The orchestrator's own git is plain git since brief 2026-11-01-relax-dev-cycle-skill-prose: H1 binds the gate's git, not its caller's.)
     [ "$(grep -c '^  G=(env ' "$REPO_ROOT/skills/dev-cycle/SKILL.md")" -eq 1 ] || return 1
+    # The two pins HARDEN dropped (core.commitGraph, core.multiPackIndex: brief 2026-11-01-relax-gate-git-state,
+    # research D4) may stay in the snippet until the unit that owns the D6 block drops them.
+    X=" core.commitGraph=false core.multiPackIndex=false"
     g="$(grep '^  G=(env ' "$REPO_ROOT/skills/dev-cycle/SKILL.md")"
-    [ "$(grep -o -- '-c [^ )]*' <<<"$g" | cut -c4- | tr '\n' ' ')" = "$H " ] || { echo "$g"; return 1; }
+    c="$(grep -o -- '-c [^ )]*' <<<"$g" | cut -c4- | tr '\n' ' ')"
+    [ "${c//$X/}" = "$H " ] || { echo "$g"; return 1; }
     [ "$(grep -o 'GIT_[A-Z_]*=[^ ]*' <<<"$g" | LC_ALL=C sort | tr '\n' ' ')" = "$E " ] || { echo "$g"; return 1; }
 }
 
@@ -609,6 +615,14 @@ rec() { mkdir -p docs/working/cycles && printf '%s\n' "$@" >> docs/working/cycle
     rec "Branch: chore/dev-cycle-2026-10-13-0900"; M="$(git rev-parse main)"; bl --land-cycle --main "$M"
     [ "$status" -eq 0 ] && [[ "$output" == "landed chore/dev-cycle-2026-10-13-0900 $(git rev-parse HEAD) "* ]] && [ "$(git -C "$R" rev-parse HEAD^1)" = "$M" ] \
         && [ -z "$(git -C "$R" status --porcelain --untracked-files=no)" ] || { show; return 1; }
+}
+
+@test "--land-cycle refuses a merge that names a blob the object store lacks, which merge-tree passes by id unread (i1 architecture 1; brief 2026-11-01-relax-gate-git-state)" {
+    qa; B=chore/dev-cycle-2026-10-12; rec "Branch: $B"; M="$(git rev-parse main)"
+    b="$(echo absent | git hash-object --stdin)"
+    t="$( (git ls-tree HEAD; printf '100644 blob %s\tnew.md\n' "$b") | git mktree --missing)"
+    git update-ref "refs/heads/$B" "$(git commit-tree "$t" -p HEAD -m missing)" && git read-tree "$B"
+    lc_is "refuse HEAD: its merge names a blob the object store lacks" --main "$M"
 }
 
 # plant_hooks: every hook name git knows, executable in the hooks directory, each appending its name to $FIRED.

@@ -67,10 +67,13 @@ one place every trigger is certain to be checked, so it checks all of them every
   on a command that writes a commit (no signing key in the sandbox). `add`, `mv` and `rm`
   run as `git --literal-pathspecs -C PATH add -- FILE…`, so a path holding `*` or
   `?` names one file. H1 binds the gate's own git (`git_harden` in the lib, the D6 block),
-  not these calls: what they write is input the gate checks. Plain git does not switch off
-  what the repository's own config can still name (a filter, a merge driver, signature
-  verification on a merge): `--state`
-  refuses those, but only when it runs.
+  not these calls: what they write is input the gate checks. What the repository's own
+  config names (a filter such as git-lfs, a merge driver, signature verification on a merge)
+  is the owner's setup and runs as it would for any git command; `--state` refuses only a
+  shallow or partial clone, a default branch that is not exactly one plain main or master,
+  and a `GIT_DIR`-style variable in the caller's environment. Set the pins per command, as
+  above, never exported (an exported `GIT_CONFIG_PARAMETERS` would outrank the gate's own
+  `HARDEN` pairs, and `--state` no longer refuses it; row 702).
 - **The only questions writer** (D11). Build loops never write the questions files or
   `docs/working/watching.md`; their questions arrive in `blocked` markers, which the
   orchestrator files.
@@ -270,8 +273,9 @@ the iteration with no record, so the next one starts from the same `Main at:`:
 
 1. **`--state`**, run through the D6 block from the main worktree (the session's starting
    checkout, MAIN_WT, which the cycle reads but never commits in), before any other git
-   command. `ok` goes on; refuse lines (planted `.git` state: replace refs, grafts, hooks or
-   filter config, a default branch that is not one plain main or master...) are a stop,
+   command. `ok` goes on; refuse lines (a shallow or partial clone, a default branch that is
+   not exactly one plain main or master, a `GIT_DIR`-style variable in the caller's
+   environment) are a stop,
    quoted in one `you: judgment` entry unless an open one quotes the same lines. Any other
    exit is a stop as the Rules say (a `refuse d6:` naming a missing image file means an
    image older than this skill: its entry also gives the release paste below).

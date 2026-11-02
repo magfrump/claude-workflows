@@ -104,3 +104,23 @@ found A's leftovers).
   (`grep -inE 'dev-cycle|skill-prose|SKILL\.md|orchestrator|worktree-remove|main-log|pinned-text|prose-drift|stale-skill' docs/failure-patterns.md`)
 - The sibling brief edits the same "Hardened git" note: a textual conflict at merge is
   likely; the kept sentence is byte-identical to ease it.
+
+## Dispatch 2: merging main in (Q-247 [1])
+
+The approved merge of 7e6f1e0e conflicted with unit 1 (`2026-11-01-relax-gate-git-state`,
+merged as 63ba32e9), which rewrote the "Hardened git" note's account of what `--state`
+refuses and the export warning. Resolution, merging main at 47e3692a:
+
+- `skills/dev-cycle/SKILL.md`: this branch's plain-git bullet stays (no `hg`, no identity
+  ritual, no `--state` re-run). Its last sentence, which said `--state` refuses a planted
+  filter or merge driver, was false after unit 1; it now carries unit 1's account verbatim in
+  substance (repo config is the owner's setup; `--state` refuses only a shallow or partial
+  clone, an ambiguous default branch and a `GIT_DIR`-style caller variable) and unit 1's
+  row-702 warning, reworded for `-c` pins instead of `hg`: never export them, since an
+  exported `GIT_CONFIG_PARAMETERS` outranks the gate's `HARDEN` pairs and `--state` no longer
+  refuses it. With that refusal gone, the warning is the only guard against that honest slip,
+  so it stays.
+- `test/scripts/build-loop-orchestrator.bats`: this branch's version (no `hg` pin), with unit
+  1's allowance that the D6 `G=` line may still carry the two pins `HARDEN` dropped
+  (`core.commitGraph`, `core.multiPackIndex`) until the D6 unit drops them.
+- No design choice arose: one option (keep each side's owned text) dominates.
