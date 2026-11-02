@@ -23,6 +23,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   --check-write" (unit 3 drops that call).
   Unit 4 also gives `skills/draft-review/SKILL.md`'s Fact-Check Gate the same unattended
   default (unit 2's override-log C9).
+  Unit 3's loop left two stale lines for later units: `docs/working/plan-build-loop-handoff.md:102`
+  (D13 says `--state` refuses planted `.git` state) and the comment at
+  `scripts/lib/dev-cycle-read.sh:342-343` naming "SKILL.md's hg".
 - **Agent: the cycle closes a cleared image-lag entry itself** (filed 2026-11-01, owner
   request). Motive: when the image already holds main's gate code (step 0.1's `diff --quiet`
   exits 0), the release the entry asks for has happened, yet the skill only lists the entry
@@ -92,7 +95,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   conflicted with unit 1 (decision-log row 79): stopped entry Q-246 (2026-11-01-2347). Re-dispatched on Q-246 [1]; ready at c76fca39 (row renumbered to 80): merge entry Q-248. Brief: `docs/working/briefs/2026-11-01-relax-referenced-prose-stops.md`
 - **Restriction audit unit 3: drop the dev-cycle skill's out-of-scope rituals** (owner,
   2026-11-01). Review (gate code). Q-243 [1], but the merge conflicted with unit 1 (the
-  Hardened git passage): stopped entry Q-247 (2026-11-01-2347). Re-dispatched on Q-247 [1] (2026-11-02-0340).
+  Hardened git passage): stopped entry Q-247 (2026-11-01-2347). Re-dispatched on Q-247 [1] (2026-11-02-0340). Ready at 28f3cf1a: merge entry Q-249.
   Brief: `docs/working/briefs/2026-11-01-relax-dev-cycle-skill-prose.md`
 
 ## Next

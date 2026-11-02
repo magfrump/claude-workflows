@@ -26,6 +26,7 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-248](#q-248--merge-2026-11-01-relax-referenced-prose-stops-c76fca3930c4) | you: judgment | Merge restriction-audit unit 2 (the workflows and skills the dev cycle uses stop only on an in-scope failur... | 2026-11-01 |
+| [Q-249](#q-249--merge-gate-2026-11-01-relax-dev-cycle-skill-prose-28f3cf1afc73) | you: judgment | Merge restriction-audit unit 3 (the dev-cycle skill drops its out-of-scope rituals: the `hg` wrapper, the i... | 2026-11-01 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-222](#q-222--install-cc-verify-and-r6) | you: terminal | Four approved merges landed today, two of them in host tools: the `cc-verify` host tool (37b24c02, Q-217) a... | 2026-10-28 |
@@ -33,6 +34,32 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
+
+### Q-249 · merge-gate-2026-11-01-relax-dev-cycle-skill-prose-28f3cf1afc73
+**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** OPEN
+
+Merge restriction-audit unit 3 (the dev-cycle skill drops its out-of-scope rituals: the `hg` wrapper, the identity ritual and the `--state` re-run before commits) at its new tip?
+
+**If you say no:** the orchestrator keeps running every git command through the long `hg` wrapper and the per-command identity ritual, which defend only against a deliberately hostile loop (out of scope, S1).
+
+**What an attacker would want here:** this is gate code (`skills/dev-cycle/SKILL.md`), so it reaches the image at the next release. Its content is what you approved as Q-243 [1] at 7e6f1e0e, plus a merge of main. The orchestrator read that merge's conflict resolution (`git show --remerge-diff 0206c3dd`). In SKILL.md it keeps this unit's plain-git bullet and brings in unit 1's account of what `--state` refuses, plus the "never export the pins" warning (row 702). In the orchestrator bats file it keeps this unit's test (no `hg` pin) and unit 1's allowance for the D6 `G=` line's two extra pins. One more commit (b38a7c3b) rewords a plan-doc line that the merge made false.
+
+- **Tip:** 28f3cf1afc732f89e1ff503f1e119914c4b6c54a (merge of main: 0206c3dd)
+- **`--check` printed:**
+  - `ok docs/working/briefs/2026-11-01-relax-dev-cycle-skill-prose.md 28f3cf1afc732f89e1ff503f1e119914c4b6c54a d7e8e6ec56d4caea94241f55bb9d3ec631fc373a`
+  - 5 `path` lines: `M` the brief, `M docs/working/plan-build-loop-handoff.md`, `A docs/working/research-2026-11-01-relax-dev-cycle-skill-prose.md`, `M skills/dev-cycle/SKILL.md`, `M test/scripts/build-loop-orchestrator.bats`
+- **Paths self-merge would have refused:** `skills/dev-cycle/SKILL.md` (gate code and a prompt file).
+- **Checks:** one independent reviewer read the merge resolution (nothing at Must Fix or Must Address) and ran the 4 relevant bats cases. The full health check passed on the merged branch.
+- **Left for later units (already on the roadmap's units 4-7 item):** `docs/working/plan-build-loop-handoff.md:102` still says `--state` refuses planted `.git` state, and a comment at `scripts/lib/dev-cycle-read.sh:342-343` still mentions "SKILL.md's hg".
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next iteration merges 28f3cf1a; it takes effect at the next release | None beyond this answer | One `git revert` of the merge |
+| **[2] drop** | The brief closes; unit 3 is abandoned | None now | The rituals stay |
+| **[3] changes needed** | Your note goes back to the loop | A one-line note | Another loop round |
+
+- **Blocks:** audit units 4-7 (they edit the same files).
+- **Interim:** the branch waits.
 
 ### Q-248 · merge-2026-11-01-relax-referenced-prose-stops-c76fca3930c4
 **Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** OPEN
