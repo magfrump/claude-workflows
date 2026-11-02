@@ -1828,8 +1828,9 @@ onx() { git checkout -q -B feat/x main && eval "$1" && commit_all onx && git che
 has() { printf '%s\n' "$output" | grep -qxF -- "$1" || { echo "want: $1"; show; return 1; }; }
 NOWN="one of the dev cycle's own files"
 NUSER="the user's constraints doc, which every loop prompt carries"
-NFORM="not an allowed path form (letters, digits and . _ - / only; no leading - or /; no empty, . or .. part; no part starting .git)"
-NMODE="a symlink, gitlink or other non-file entry on one side (only modes 100644 and 100755 land)"
+NFORM="not an allowed path form for a self-merge (letters, digits and . _ - / only; no leading - or /; no empty, . or .. part; no part starting .git)"
+NMODE="a symlink, gitlink or other non-file entry on one side (a self-merge lands only modes 100644 and 100755)"
+NANY="not a path a checkout can hold (a control character, an empty, . or .. part, or a .git part)"
 # nref K N: the verdict line refusing K of N changed paths in the merge of feat/x into main.
 nref() { echo "refuse $B: $1 of $2 changed paths refused in the merge of $(git rev-parse feat/x) (tree $(git merge-tree --write-tree main feat/x))"; }
 NBRIEF="this brief: only its first Status: line outside a fence may change, from open to done"
@@ -1889,7 +1890,7 @@ NBRIEF="this brief: only its first Status: line outside a fence may change, from
     has "deny $B D docs/roadmap.md: $NOWN"; has "path $B A docs/x.md"
 }
 
-@test "--check refuses a symlink or gitlink on either side, though submodule ignore=all is set, and passes an exec bit (T12, F7, A16, U2b1b)" {
+@test "--check refuses a self-merge's symlink or gitlink on either side, though submodule ignore=all is set, and passes an exec bit; a review brief's pass (T12, F7, A16, U2b1b; brief 2026-11-02-relax-grammar-and-loop-prompt G40)" {
     mkdir -p scripts && echo a > f.txt && echo b > g.txt && echo s > scripts/x.sh
     # ignore = all in .gitmodules and the repo config: diff-tree in the real repository without
     # --ignore-submodules=none would hide gl (A16). The gate repository and the flag each suffice, so this pins them together.
@@ -1900,19 +1901,40 @@ NBRIEF="this brief: only its first Status: line outside a fence may change, from
     git update-index --add --cacheinfo "160000,$(git rev-parse main),og"; git commit -q -m old-gitlink
     onx 'git rm -q --cached og; rmdir og 2>/dev/null || true; echo f > og; ln -s f.txt link; rm g.txt; ln -s f.txt g.txt; rm was-link; echo w > was-link; chmod +x scripts/x.sh; echo n > scripts/n.sh; chmod +x scripts/n.sh'
     git checkout -q feat/x; git update-index --add --cacheinfo "160000,$(git rev-parse main),gl"; git commit -q -m gitlink; git checkout -q main
+    # Review: the owner reviews the branch, so the mode rule is off.
+    chk "$B"
+    [ "$status" -eq 0 ] && [[ "${lines[0]}" == "ok $B "* ]] && [ "${#lines[@]}" -eq 8 ] || { show; return 1; }
+    for p in "T g.txt (symlink)" "A gl (gitlink)" "A link (symlink)" "T og" "T was-link" "A scripts/n.sh" "M scripts/x.sh"; do has "path $B $p"; done
+    # Self-merge: the mode rule holds (the two plain files fall to the allowlist).
+    smb "Paths: scripts/"
     chk "$B"
     [ "$status" -eq 2 ] && [ "${lines[0]}" = "$(nref 5 7)" ] || { show; return 1; }
-    for p in "T g.txt" "A gl" "A link" "T og" "T was-link"; do has "deny $B $p: $NMODE"; done
+    for p in "T g.txt (symlink)" "A gl (gitlink)" "A link (symlink)" "T og" "T was-link"; do has "deny $B $p: $NMODE"; done
     has "path $B A scripts/n.sh"; has "path $B M scripts/x.sh"
 }
 
-@test "--check refuses a changed path pathform refuses, and prints only a name in its character set (T13, F17, U2b1b)" {
+@test "--check refuses a self-merge's changed path pathform refuses; a review brief's only a control character; it prints only a name in pathform's set (T13, F17, U2b1b; brief 2026-11-02-relax-grammar-and-loop-prompt G39)" {
     gated feat/x
-    onx 'mkdir -p .github; echo x > .github/w.yml; echo x > "a b.md"; echo x > "$(printf "caf\xc3\xa9.md")"; echo x > "$(printf "n\nl.md")"; echo x > ./-x.md'
+    onx 'mkdir -p .github; echo x > .github/w.yml; echo x > .gitignore; echo x > "a b.md"; echo x > "$(printf "caf\xc3\xa9.md")"; echo x > "$(printf "n\nl.md")"; echo x > "$(printf "t\tb.md")"; echo x > "$(printf "d\177l.md")"; echo x > ./-x.md'
+    # Review: .git* parts and other characters pass; a newline, tab or DEL is refused.
     chk "$B"
-    [ "$status" -eq 2 ] && [ "${lines[0]}" = "$(nref 5 5)" ] && [ "${#lines[@]}" -eq 6 ] || { show; return 1; }
-    has "deny $B A -x.md: $NFORM"; has "deny $B A .github/w.yml: $NFORM"
-    [ "$(printf '%s\n' "$output" | grep -cxF "deny $B A ?: $NFORM")" -eq 3 ] || { show; return 1; }
+    [ "$status" -eq 2 ] && [ "${lines[0]}" = "$(nref 3 8)" ] && [ "${#lines[@]}" -eq 9 ] || { show; return 1; }
+    has "path $B A -x.md"; has "path $B A .github/w.yml"; has "path $B A .gitignore"
+    [ "$(printf '%s\n' "$output" | grep -cxF "path $B A ?")" -eq 2 ] && [ "$(printf '%s\n' "$output" | grep -cxF "deny $B A ?: $NANY")" -eq 3 ] || { show; return 1; }
+    # Self-merge: pathform's rule holds.
+    smb "Paths: none"
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "${lines[0]}" = "$(nref 8 8)" ] && [ "${#lines[@]}" -eq 9 ] || { show; return 1; }
+    has "deny $B A -x.md: $NFORM"; has "deny $B A .github/w.yml: $NFORM"; has "deny $B A .gitignore: $NFORM"
+    [ "$(printf '%s\n' "$output" | grep -cxF "deny $B A ?: $NFORM")" -eq 5 ] || { show; return 1; }
+    # A .git part in any case, at any depth, refuses under review too (built as a tree: git's index refuses one).
+    brief x "Status: open" "Branch: feat/x"
+    b="$(printf 'x\n' | git hash-object -w --stdin)"; t="$(printf '100644 blob %s\tx\n' "$b" | git mktree)"
+    t="$(printf '040000 tree %s\t.GIT\n' "$t" | git mktree)"; t="$(printf '040000 tree %s\tsub\n' "$t" | git mktree)"
+    t="$(git ls-tree main | cat - <(printf '040000 tree %s\tdeep\n' "$t") | git mktree)"
+    git update-ref refs/heads/feat/x "$(git commit-tree "$t" -p main -m dotgit)"
+    chk "$B"
+    [ "$status" -eq 2 ] && has "deny $B A deep/sub/.GIT/x: $NANY" || { show; return 1; }
 }
 
 @test "--check refuses a merge git warned about or that names a missing object: a missing tip or merge-base tree is not read as empty, a missing blob does not land (R6, U2b1b)" {
@@ -2152,7 +2174,7 @@ NLIST="neither listed in the brief's Paths: line nor one of its own files"
     has "deny $B A docs/decisions/001-x.md: $REC"; has "deny $B A docs/failure-patterns.md: $REC"
     has "deny $B A docs/working/checkpoint-2026-10-02-y.md: $WORK"
     has "deny $B A docs/reviews/r-2026-10-02-y.md: $REV"; has "deny $B M docs/reviews/old.md: $REV"
-    has "path $B A docs/a"; has "deny $B A scripts/link.sh: $NMODE"
+    has "path $B A docs/a"; has "deny $B A scripts/link.sh (symlink): $NMODE"
     for f in docs/ab.md Hooks/x.sh scripts/x.sh; do has "deny $B A $f: $NLIST"; done
 }
 

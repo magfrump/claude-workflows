@@ -6,11 +6,7 @@ The working doc is `docs/working/constraints-draft-YYYY-MM-DD.md`. **The whole f
 - elsewhere, refer to a line as "the H2 line" mid-sentence, and never start a line (or a list
   item, or a table cell) with an ID, bold or not (`- **S1 (…)**` reads as an inexact ID);
 - put each hard line's `success:` line directly under it, before any `#` heading;
-- start no line with `<`, even after spaces or tabs (the reader takes it for raw HTML and
-  refuses the file), and open no
-  `<!--` that the same line does not close;
-- start no line, list item or quote with `[` unless that line closes it and holds no `]:`
-  (so no `[label]: url` reference links);
+- open no `<!--` that the same line does not close (the reader refuses the file);
 - put code fences only at column 0, with no backtick in the info string, and close every
   one: an indented fence, or one after a list marker, refuses the file, and a fence inside
   `>` is read as text. Quote a command inline in backticks instead;

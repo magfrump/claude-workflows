@@ -299,10 +299,11 @@ the iteration with no record, so the next one starts from the same `Main at:`:
    self-merge)`, which no one reviewed: a hand commit with that subject reads the same, so
    the flag is a pointer, not proof), every path changed from C to M outside `docs/` on one
    line, each in backticks, comma-separated (the image carries none of `docs/`: give its
-   count), each subject or path holding `<`, `>`, a backtick, a CR, another control or bidi
-   character, or bytes that are not UTF-8 written as `(withheld: see SHA)` (questions.sh
-   finds its `<!-- index:` markers anywhere in a line, and `--check-answer` refuses an
-   unclosed `<!--`), and the paste `cd A && test "$(git rev-parse HEAD)" = M &&
+   count), each subject or path holding the four characters that open an HTML comment, a
+   CR, another control or bidi character, or bytes that are not UTF-8 written as
+   `(withheld: see SHA)` (questions.sh finds its `<!-- index:` markers anywhere in a line,
+   and `--check-answer` refuses an unclosed `<!--`); a backtick, `<` or `>` is shown, a
+   path holding a backtick in a double-backtick span with spaces inside it, and the paste `cd A && test "$(git rev-parse HEAD)" = M &&
    ./devcontainer-config/install.sh` (host; then a new sandbox launch; the paste's only git
    call before install.sh's state gate is `rev-parse`, which runs no hook or fsmonitor; any
    other git command the user runs on the host here, a checkout to reach M included, can run
@@ -652,12 +653,13 @@ the brief is still open and no subagent of this session runs it, step 10 re-disp
   again next iteration.
 - **ready**, review: `--check BRIEF --expect TIP`. On `ok`, one merge entry, heading
   `### Q-NNN · merge-STEM-SHA12` (SHA12: TIP's first 12 hex digits), or
-  `merge-gate-STEM-SHA12` when a `path` or `deny` line's PATH, lower-cased, matches the lib's
+  `merge-gate-STEM-SHA12` when a `path` or `deny` line's PATH (without a trailing ` (symlink)` or
+  ` (gitlink)`), lower-cased, matches the lib's
   GATE_CODE (a test holds this copy to it; `--approved` accepts no other heading):
   `^scripts/(build-loop|dev-cycle|questions)\.sh$|^scripts/lib/|^skills/dev-cycle/`
   Its body: the full TIP (row 673), `--check`'s lines as printed, and a note on each path
   that is an instruction or prompt file, a dot path or gate code, which self-merge's floor
-  would have refused (rows 680, 683). Options **[1] merge**, **[2] drop**, **[3] changes
+  would have refused (rows 680, 683), and on each `(symlink)` or `(gitlink)` path line. Options **[1] merge**, **[2] drop**, **[3] changes
   needed** (the answer's note goes back to the loop). A `refuse` verdict is filed as
   `stopped`, the refusal its reason. (D4's `Review handoff: pull request` route is not
   built: every review brief gets a merge entry.)
@@ -665,6 +667,14 @@ the brief is still open and no subagent of this session runs it, step 10 re-disp
   (row 701) whose WHY says the tip is no such marker, that a read failed, or that
   `--status` skips the brief, is recorded and read again next iteration; any other WHY (the body breaks the marker rules or is too
   large) is filed as `stopped`, the WHY its reason.
+- **ready**, either policy, first (before `--merge` or `--check`: once merged, the tip
+  reads as working): `--marker BRIEF`, keeping its lines. A body (lines after the `ok` line)
+  is a question the loop proceeded past on a tentative pick (divergent design's Path C): a
+  review brief's merge entry quotes it under the `--check` lines, so [1] accepts the pick
+  and [3] with another names it; for a self-merge brief, the record and the final message
+  quote it under the brief's `merged` line (or its fall-through entry, as review), and a
+  different pick the user then names becomes a roadmap item. A skip is recorded, and the
+  merge goes ahead.
 
 A `refuse state` line from `--merge` or `--check` is a stop (the Rules), not a brief's
 verdict. An entry filed as blocked or stopped is `you: judgment`, slug `blocked-STEM-N` or
@@ -730,14 +740,13 @@ reads: `Policy: self-merge` only when `--settings` prints `policy self-merge set
 path the work needs is off the self-merge floor and the never globs, then with it
 `Paths: PATH ...` naming those paths (single spaces; never one under `docs/reviews/`: the
 brief's own reviews land unlisted, row 623); else `Policy: review` and no `Paths:` line.
-Any code in a brief sits in plain column-0 ``` fences (no indented or list-item fences), and outside fences a brief has no line starting with `<` (write
-placeholders as `NAME`, not `<name>`, even indented), no `<!--` left open on its line, no
-line starting with `[` (even indented, or behind `>` or list markers) that holds `]:` or leaves
-its `[` open, counting an escaped `\]` as no close (a link reference definition, or text that
-starts like one), no stray carriage return and no byte-order mark. `--check-brief` prints a
-skip, naming the line, for a brief with any line it cannot trust (a few shapes these rules
-allow are also skipped, such as a fence-like line inside a fence's content or a `]:` made by
-an escape), and a skipped brief keeps its slot until it is fixed. Later iterations add
+The readers trust only column-0 key lines (`Status:` and the rest) outside column-0 fences,
+so any code in a brief sits in plain column-0 ``` fences (no indented or list-item fences),
+and a brief has no `<!--` left open on its line, no stray carriage return and no byte-order
+mark; HTML lines, `<name>` placeholders and `[1]: URL` lines are plain text. `--check-brief`
+prints a skip, naming the line, for a brief with any line it cannot trust (also a
+fence-like line inside a fence's content), and a skipped brief keeps its slot until it is
+fixed. Later iterations add
 `Asked:`, `Applied:` and `Dispatched:` lines at its end (steps 7 and 10), never next to the
 `Status:` line a loop's merge changes. Move the item to In flight, naming the brief's path.
 The briefs land with step 9, so they are on the default branch before step 10 dispatches.

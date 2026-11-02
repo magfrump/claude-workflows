@@ -223,6 +223,25 @@ Build-loop-approved: Q-001" ]
     [ "$(git reflog -1 --format=%gs main)" = "build-loop: approved merge of 2026-10-01-x" ]
 }
 
+@test "--merge --approved lands what the owner reviewed: a .github/ file, a .gitignore and a symlink; a path with a newline still refuses (brief 2026-11-02-relax-grammar-and-loop-prompt G39/G40)" {
+    settings "Build-loop policy: review"; brief x "Status: open" "Branch: feat/x"; work feat/x
+    git checkout -q feat/x && mkdir -p .github/workflows && echo ci > .github/workflows/ci.yml && echo '*.tmp' > .gitignore \
+        && ln -s work-feat-x.txt link && commit_all owner-reviewed && git checkout -q main
+    T="$(git rev-parse feat/x)"; approve Q-001 "merge-2026-10-01-x-${T:0:12}"; M="$(git rev-parse main)"
+    mrg "$B" --expect "$T" --approved Q-001; n="$(git rev-parse main)"
+    [ "$status" -eq 0 ] && [ "${lines[0]}" = "merged $B $T $(git merge-tree --write-tree "$M" "$T") $n" ] \
+        && [ "$(git ls-tree "$n" link | cut -c1-6)" = 120000 ] && [ "$(git show "$n:.gitignore")" = '*.tmp' ] \
+        && printf '%s\n' "$output" | grep -qxF "path $B A .github/workflows/ci.yml" \
+        && printf '%s\n' "$output" | grep -qxF "path $B A link (symlink)" || { show; return 1; }
+    # A name no checkout can hold safely still refuses.
+    git update-ref refs/heads/main "$M"; git checkout -q -f main
+    git checkout -q feat/x && echo x > "$(printf 'n\nl.md')" && commit_all newline && git checkout -q main
+    T="$(git rev-parse feat/x)"; approve Q-001 "merge-2026-10-01-x-${T:0:12}"
+    mrg "$B" --expect "$T" --approved Q-001
+    [ "$status" -eq 2 ] && printf '%s\n' "$output" | grep -qxF "deny $B A ?: not a path a checkout can hold (a control character, an empty, . or .. part, or a .git part)" \
+        && [ "$(git rev-parse main)" = "$M" ] || { show; return 1; }
+}
+
 @test "--merge --approved runs the N rules only: a self-merge brief lands past its never glob, its Paths: line and the checkout rule; a cycle file still refuses (T35, row 653, U3a3)" {
     settings "Build-loop policy: self-merge" "Self-merge never: work-*"
     brief x "Status: open" "Branch: feat/x" "Policy: self-merge" "Paths: none"; work feat/x
