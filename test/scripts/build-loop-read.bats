@@ -186,7 +186,7 @@ setup() { bl_setup; }
     [[ "$(line constraints)" == "constraints unreadable: line 3 of docs/constraints.md opens an HTML comment"*", so the file is not read" ]] \
         || { echo "$output"; return 1; }
     # A line that looks like a constraint ID but is not exact: unreadable, never skipped (Q-112 [1]).
-    for c in '- [x] H2: x' '* H2: x' '1. H2: x' $'H2:\tx' '  H2: x' 'h2: x' '**H2:** x' '> H2: x' 'H10 : x' '| H2 | x |' 'H01: x'; do
+    for c in '- [x] H2: x' '* H2: x' '1. H2: x' $'H2:\tx' '  H2: x' 'h2: x' '**H2:** x' '> H2: x' 'H10 : x' '| H2 | x |' 'H01: x' '<b>H2: x</b>' '<li>S2: x'; do
         constraints '- H1: a' '  success: b' "$c"; run --separate-stderr bash "$BL" --settings
         [ "$(line constraints)" = 'constraints unreadable: line 3 looks like a constraint but is not exactly "H<n>: text" or "S<n>: text" (optionally after "- ", n without a leading 0)' ] \
             || { echo "[$c] $output"; return 1; }

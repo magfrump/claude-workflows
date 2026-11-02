@@ -1904,29 +1904,37 @@ NBRIEF="this brief: only its first Status: line outside a fence may change, from
     # Review: the owner reviews the branch, so the mode rule is off.
     chk "$B"
     [ "$status" -eq 0 ] && [[ "${lines[0]}" == "ok $B "* ]] && [ "${#lines[@]}" -eq 8 ] || { show; return 1; }
-    for p in "T g.txt" "A gl" "A link" "T og" "T was-link" "A scripts/n.sh" "M scripts/x.sh"; do has "path $B $p"; done
+    for p in "T g.txt (symlink)" "A gl (gitlink)" "A link (symlink)" "T og" "T was-link" "A scripts/n.sh" "M scripts/x.sh"; do has "path $B $p"; done
     # Self-merge: the mode rule holds (the two plain files fall to the allowlist).
     smb "Paths: scripts/"
     chk "$B"
     [ "$status" -eq 2 ] && [ "${lines[0]}" = "$(nref 5 7)" ] || { show; return 1; }
-    for p in "T g.txt" "A gl" "A link" "T og" "T was-link"; do has "deny $B $p: $NMODE"; done
+    for p in "T g.txt (symlink)" "A gl (gitlink)" "A link (symlink)" "T og" "T was-link"; do has "deny $B $p: $NMODE"; done
     has "path $B A scripts/n.sh"; has "path $B M scripts/x.sh"
 }
 
 @test "--check refuses a self-merge's changed path pathform refuses; a review brief's only a control character; it prints only a name in pathform's set (T13, F17, U2b1b; brief 2026-11-02-relax-grammar-and-loop-prompt G39)" {
     gated feat/x
-    onx 'mkdir -p .github; echo x > .github/w.yml; echo x > .gitignore; echo x > "a b.md"; echo x > "$(printf "caf\xc3\xa9.md")"; echo x > "$(printf "n\nl.md")"; echo x > "$(printf "t\tb.md")"; echo x > ./-x.md'
-    # Review: .git* parts and other characters pass; a newline or tab is refused.
+    onx 'mkdir -p .github; echo x > .github/w.yml; echo x > .gitignore; echo x > "a b.md"; echo x > "$(printf "caf\xc3\xa9.md")"; echo x > "$(printf "n\nl.md")"; echo x > "$(printf "t\tb.md")"; echo x > "$(printf "d\177l.md")"; echo x > ./-x.md'
+    # Review: .git* parts and other characters pass; a newline, tab or DEL is refused.
     chk "$B"
-    [ "$status" -eq 2 ] && [ "${lines[0]}" = "$(nref 2 7)" ] && [ "${#lines[@]}" -eq 8 ] || { show; return 1; }
+    [ "$status" -eq 2 ] && [ "${lines[0]}" = "$(nref 3 8)" ] && [ "${#lines[@]}" -eq 9 ] || { show; return 1; }
     has "path $B A -x.md"; has "path $B A .github/w.yml"; has "path $B A .gitignore"
-    [ "$(printf '%s\n' "$output" | grep -cxF "path $B A ?")" -eq 2 ] && [ "$(printf '%s\n' "$output" | grep -cxF "deny $B A ?: $NANY")" -eq 2 ] || { show; return 1; }
+    [ "$(printf '%s\n' "$output" | grep -cxF "path $B A ?")" -eq 2 ] && [ "$(printf '%s\n' "$output" | grep -cxF "deny $B A ?: $NANY")" -eq 3 ] || { show; return 1; }
     # Self-merge: pathform's rule holds.
     smb "Paths: none"
     chk "$B"
-    [ "$status" -eq 2 ] && [ "${lines[0]}" = "$(nref 7 7)" ] && [ "${#lines[@]}" -eq 8 ] || { show; return 1; }
+    [ "$status" -eq 2 ] && [ "${lines[0]}" = "$(nref 8 8)" ] && [ "${#lines[@]}" -eq 9 ] || { show; return 1; }
     has "deny $B A -x.md: $NFORM"; has "deny $B A .github/w.yml: $NFORM"; has "deny $B A .gitignore: $NFORM"
-    [ "$(printf '%s\n' "$output" | grep -cxF "deny $B A ?: $NFORM")" -eq 4 ] || { show; return 1; }
+    [ "$(printf '%s\n' "$output" | grep -cxF "deny $B A ?: $NFORM")" -eq 5 ] || { show; return 1; }
+    # A .git part in any case, at any depth, refuses under review too (built as a tree: git's index refuses one).
+    brief x "Status: open" "Branch: feat/x"
+    b="$(printf 'x\n' | git hash-object -w --stdin)"; t="$(printf '100644 blob %s\tx\n' "$b" | git mktree)"
+    t="$(printf '040000 tree %s\t.GIT\n' "$t" | git mktree)"; t="$(printf '040000 tree %s\tsub\n' "$t" | git mktree)"
+    t="$(git ls-tree main | cat - <(printf '040000 tree %s\tdeep\n' "$t") | git mktree)"
+    git update-ref refs/heads/feat/x "$(git commit-tree "$t" -p main -m dotgit)"
+    chk "$B"
+    [ "$status" -eq 2 ] && has "deny $B A deep/sub/.GIT/x: $NANY" || { show; return 1; }
 }
 
 @test "--check refuses a merge git warned about or that names a missing object: a missing tip or merge-base tree is not read as empty, a missing blob does not land (R6, U2b1b)" {
@@ -2166,7 +2174,7 @@ NLIST="neither listed in the brief's Paths: line nor one of its own files"
     has "deny $B A docs/decisions/001-x.md: $REC"; has "deny $B A docs/failure-patterns.md: $REC"
     has "deny $B A docs/working/checkpoint-2026-10-02-y.md: $WORK"
     has "deny $B A docs/reviews/r-2026-10-02-y.md: $REV"; has "deny $B M docs/reviews/old.md: $REV"
-    has "path $B A docs/a"; has "deny $B A scripts/link.sh: $NMODE"
+    has "path $B A docs/a"; has "deny $B A scripts/link.sh (symlink): $NMODE"
     for f in docs/ab.md Hooks/x.sh scripts/x.sh; do has "deny $B A $f: $NLIST"; done
 }
 

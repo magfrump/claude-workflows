@@ -658,7 +658,7 @@ the brief is still open and no subagent of this session runs it, step 10 re-disp
   `^scripts/(build-loop|dev-cycle|questions)\.sh$|^scripts/lib/|^skills/dev-cycle/`
   Its body: the full TIP (row 673), `--check`'s lines as printed, and a note on each path
   that is an instruction or prompt file, a dot path or gate code, which self-merge's floor
-  would have refused (rows 680, 683). Options **[1] merge**, **[2] drop**, **[3] changes
+  would have refused (rows 680, 683), and on each `(symlink)` or `(gitlink)` path line. Options **[1] merge**, **[2] drop**, **[3] changes
   needed** (the answer's note goes back to the loop). A `refuse` verdict is filed as
   `stopped`, the refusal its reason. (D4's `Review handoff: pull request` route is not
   built: every review brief gets a merge entry.)
@@ -666,14 +666,13 @@ the brief is still open and no subagent of this session runs it, step 10 re-disp
   (row 701) whose WHY says the tip is no such marker, that a read failed, or that
   `--status` skips the brief, is recorded and read again next iteration; any other WHY (the body breaks the marker rules or is too
   large) is filed as `stopped`, the WHY its reason.
-- **ready**, either policy, also: `--marker BRIEF`. A body (lines after the `ok` line) is a
-  question the loop proceeded past on a tentative pick (divergent design's Path C): a
+- **ready**, either policy, first (before `--merge` or `--check`: once merged, the tip
+  reads as working): `--marker BRIEF`, keeping its lines. A body (lines after the `ok` line)
+  is a question the loop proceeded past on a tentative pick (divergent design's Path C): a
   review brief's merge entry quotes it under the `--check` lines, so [1] accepts the pick
-  and [3] with another names it; a self-merge brief gets one `you: judgment` entry, slug
-  `tentative-STEM-N`, as a blocked entry below but with the question "Brief STEM's build
-  loop proceeded on a tentative pick (merged or not, as its line says); keep it, or name
-  another for a follow-up?", not added to `Asked:`; its answer goes to the record and the
-  final message, and a different pick becomes a roadmap item. A skip is recorded, and the
+  and [3] with another names it; for a self-merge brief, the record and the final message
+  quote it under the brief's `merged` line (or its fall-through entry, as review), and a
+  different pick the user then names becomes a roadmap item. A skip is recorded, and the
   merge goes ahead.
 
 A `refuse state` line from `--merge` or `--check` is a stop (the Rules), not a brief's

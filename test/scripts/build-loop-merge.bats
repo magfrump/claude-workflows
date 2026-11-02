@@ -231,7 +231,8 @@ Build-loop-approved: Q-001" ]
     mrg "$B" --expect "$T" --approved Q-001; n="$(git rev-parse main)"
     [ "$status" -eq 0 ] && [ "${lines[0]}" = "merged $B $T $(git merge-tree --write-tree "$M" "$T") $n" ] \
         && [ "$(git ls-tree "$n" link | cut -c1-6)" = 120000 ] && [ "$(git show "$n:.gitignore")" = '*.tmp' ] \
-        && printf '%s\n' "$output" | grep -qxF "path $B A .github/workflows/ci.yml" || { show; return 1; }
+        && printf '%s\n' "$output" | grep -qxF "path $B A .github/workflows/ci.yml" \
+        && printf '%s\n' "$output" | grep -qxF "path $B A link (symlink)" || { show; return 1; }
     # A name no checkout can hold safely still refuses.
     git update-ref refs/heads/main "$M"; git checkout -q -f main
     git checkout -q feat/x && echo x > "$(printf 'n\nl.md')" && commit_all newline && git checkout -q main

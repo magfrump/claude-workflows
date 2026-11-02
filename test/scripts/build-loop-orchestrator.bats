@@ -153,6 +153,9 @@ RULE='no line holding "<!--"; strict UTF-8'
 >
 > ## Options
 > | **[1] CSV** | one file |"
+    # A ready body under the same rule: an HTML comment opener skips it.
+    tip feat/x $'handoff: ready\n\nsee <!-- here'
+    marker_is "skip $B: a line of its marker's body breaks the marker-body rule ($RULE): line 1"
     tip feat/x 'handoff: sideways'; bl --marker "$B"
     [ "$status" -eq 0 ] && [[ "$output" == "skip $B: the tip of feat/x starts \"handoff:\" but is not a marker: "* ]] || { show; return 1; }
     bl --marker; [ "$status" -eq 1 ] && [[ "$stderr" == "--marker takes one brief path"* ]] || { show; return 1; }

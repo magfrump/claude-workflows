@@ -78,7 +78,7 @@ questions files).
 | Option | H2 | S3 reuse | S10 attention | Works for both policies |
 |---|---|---|---|---|
 | A. Research doc only; the owner finds it in review | ● | ● | ◐ | ○ (a self-merge is never read) |
-| B. Ready marker body, read by `--marker`; review: quoted in the merge entry; self-merge: a `tentative-STEM-N` entry | ● | ● (one condition widened) | ● (no extra entry under review) | ● |
+| B. Ready marker body, read by `--marker` before the merge; review: quoted in the merge entry; self-merge: quoted in the record and final message | ● | ● (one condition widened) | ● (no extra entry under review) | ● |
 | C. Ready marker body read by the skill with plain `git log` | ✗ (unscrubbed loop text) | ○ | ● | ● |
 | D. A new `--tentative` mode | ● | ○ (second code path) | ● | ● |
 
@@ -103,7 +103,10 @@ A self-merge branch with such a path falls through to review as today, now landa
 
 A key line inside an HTML block or a link-reference title is read though a renderer may
 hide it; only a hostile author writes that. A review merge can land a symlink or gitlink,
-which the owner sees in the merge entry's `path` lines (mode not shown; the TIP is).
+which the owner sees in the merge entry's `path` lines (marked `(symlink)` or `(gitlink)`).
+A self-merge's tentative pick reaches the owner only in the record and final message, not
+as an entry whose answer the cycle reads (review i1: an entry filed after the merge has no
+`Asked:` brief to read it through); a different pick they name becomes a roadmap item.
 
 ## Changes
 
@@ -118,3 +121,16 @@ which the owner sees in the merge entry's `path` lines (mode not shown; the TIP 
 - Tests: orchestrator (marker, quoted readers incl. questions.sh next-id and archive),
   check (path and mode rules, both authorities), merge (`--approved` lands `.github/`,
   `.gitignore`, a symlink; a newline path refuses), read (constraints), dev-cycle (grammar).
+
+## Review-fix loop
+
+Iteration 1 (one review subagent: correctness, scope, prose, tests). Fixed: ready-marker
+order (`--marker` before `--merge`, or the merged tip reads as working); the self-merge
+tentative question goes to the record and final message instead of an entry nothing reads;
+CONSTRAINTS_AWK's near-ID check strips leading HTML tags, so `<b>H2: x</b>` stays
+unreadable now that `<` lines are text (H2, Q-112); the loop prompt's "a question goes in a
+blocked marker" and its symlink stop now match; `path` lines mark `(symlink)` and
+`(gitlink)`; land's refusal text shows `?` for a path outside pathform's set; comment, T12
+row and FENCE_AWK divergence wording; tests for DEL and `.git` parts, a ready body with
+`<!--`, and an HTML-wrapped near ID. Won't fix: the release entry's double-backtick span for
+a path holding a backtick run is cosmetic (no reader is affected).

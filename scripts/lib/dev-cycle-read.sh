@@ -87,7 +87,8 @@
 #     on a path they pass, so a path pathform refuses (.github/x.yml) is
 #     denied as a path form and floor's dotfile reason serves the dot paths
 #     pathform accepts (.envrc). A review or --approved merge, which the
-#     owner reviews, lands symlinks, gitlinks and .git* parts.
+#     owner reviews, lands symlinks, gitlinks and parts starting .git other
+#     than .git itself (.github/, .gitignore).
 #  6. Read a walk only through isimported or truthwalk (or, inside the lib,
 #     walk_has once that walk succeeded): IMPORTED_MAIN=error reads as "not
 #     imported" to a raw membership test (row 419).
@@ -269,8 +270,10 @@ writable() {
 # Everything else is text: an HTML block (a line starting with <, such as
 # <details>), a complete one-line <!-- comment -->, a line that starts like a
 # link reference definition ([1]: URL). A key line inside such a construct is
-# read as a key line, though a renderer may hide it; that only matters against
-# a hostile author, which the threat model leaves out (docs/constraints.md S1).
+# read as a key line, though a renderer may hide it, and one between fence
+# lines inside an HTML block is hidden, though a renderer shows it; either
+# takes a contrived shape, which only matters against a hostile author, out of
+# the threat model (docs/constraints.md S1).
 # Accepted limit (decision log 69, kept by row 81): inline constructs that span
 # lines (an open tag attribute, link title, code span, emphasis, or a
 # processing instruction, CDATA section or declaration opened mid-line) are not

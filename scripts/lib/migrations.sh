@@ -153,6 +153,7 @@ mig roadmap-watching-040 roadmap 1178ca230944fb9f - - 'none: only a new roadmap'
 # docs/ root, where the self-merge floor keeps it; scripts/build-loop.sh's
 # FP_REMEDY repeats this remedy in its gap line.
 mig failure-patterns-out-of-thoughts library de71e707492a0dc7 docs/thoughts/failure-patterns.md '^' 'git mv docs/thoughts/failure-patterns.md docs/failure-patterns.md'
+mig brief-text-grammar-081 brief e46e5dd05e85ad95 - - 'none: the brief text rules only relaxed (decision log row 81); every brief valid before stays valid'
 
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   set -uo pipefail
