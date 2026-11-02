@@ -49,13 +49,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   migrate). Motive: design a commit-to-canon-instance script and the heuristic for which
   candidates get proposed, keeping the canon compact. First step: a divergent-design doc;
   the filter choice then comes back as a `you: judgment` entry.
-- **Agent: health-check gate 12 fails on a DST-change day** (filed 2026-11-02, step 1).
-  Motive: iteration 2026-11-02-0718's health check failed only `test/scripts/health-check.bats`
-  "gate 12: a persona last sampled long ago is reported stale": on 2026-11-01 (a 25-hour
-  local day) a fixture dated today read "1 days since", because `check_persona_freshness`
-  divides elapsed seconds by 86400 from local midnight. First step: compute the day count from
-  dates (`date -u -d` on both sides, or a day-number difference) rather than seconds, and
-  keep the test's "0 days" claim. Briefed 2026-11-02 (In flight).
 - **Agent: Q-147 · q089 source-guard unit** (filed 2026-11-01, step 6, from Q-234's
   migrate). Motive: the static source-set test was split off unit A (`feat/q089-source-guard`,
   fa059477). First step: a fresh loop that narrows the test's claim to "plain spellings,
@@ -99,8 +92,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 - Restriction audit unit 5: the cycle runs migrations, closes a cleared image-lag entry
   (`docs/working/briefs/2026-11-02-cycle-runs-migrations.md`; review policy, gate code).
-- Health-check gate 12 counts days by date (`docs/working/briefs/2026-11-02-health-check-dst-day-count.md`;
-  self-merge policy).
 
 ## Next
 
@@ -337,6 +328,9 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- **Health-check gate 12 counts days by date** (filed 2026-11-02, step 1: the DST-day
+  flake). Self-merged 686eaf57 (build-loop self-merge). Brief:
+  `docs/working/briefs/closed/2026-11-02-health-check-dst-day-count.md`.
 - **Restriction audit unit 4: brief, marker and path grammar, the loop prompt** (owner,
   2026-11-01). Merged 3019016a (Q-250 [1]; decision-log row 81). Brief:
   `docs/working/briefs/closed/2026-11-02-relax-grammar-and-loop-prompt.md`.
