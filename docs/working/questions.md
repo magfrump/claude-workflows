@@ -148,7 +148,7 @@ The `rev-parse` check runs no hook. It only confirms that your checkout is at ma
 - **Blocks:** nothing.
 
 ### Q-250 · merge-gate-2026-11-02-relax-grammar-and-loop-prompt-c1aae1b28040
-**Needs:** you: judgment · **Opened:** 2026-11-02 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-02 · **Status:** ANSWERED
 
 Merge restriction-audit unit 4 (the gate's brief, marker and path rules refuse only real ambiguity, and the loop prompt runs divergent design only for 3+ options) at c1aae1b2?
 
@@ -173,4 +173,6 @@ Merge restriction-audit unit 4 (the gate's brief, marker and path rules refuse o
 
 - **Blocks:** audit units 5 and 6 (they edit the same files).
 - **Interim:** the branch waits.
+
+**Answered:** [1] (owner, in session 2026-11-02: "Q-250: [1]"; recorded by the dev cycle)
 
