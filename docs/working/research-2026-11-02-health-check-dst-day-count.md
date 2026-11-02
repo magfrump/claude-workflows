@@ -27,7 +27,14 @@ Option 1 dominates (Path A): exact, smallest, no new dependency, keeps the 180-d
 
 ## Test
 
-The new bats case puts a `date` shim first on PATH that answers "now" as `2026-11-01 23:30` and passes every `-d`/`--date` call straight to the real `date` (so it is exactly as strict as the real tool for those), and sets `TZ='EST5EDT,M3.2.0,M11.1.0'` — a POSIX rule string, so a sandbox without tzdata cannot silently fall back to UTC and pass vacuously. Two guard assertions check the shim's today is 2026-11-01 and that "now" is 88200 s (24.5 h) after local midnight before the gate runs.
+Two bats cases share a helper, `_gate12_dst`. It puts a `date` shim first on PATH. The shim answers a call with no date argument with a pinned `@epoch`, which is the same instant whatever `-u` or TZ say. It passes every `-d`/`--date` call straight to the real `date`, so it is as strict as the real tool for those. The helper sets `TZ='EST5EDT,M3.2.0,M11.1.0'`, a POSIX rule string, so a sandbox without tzdata cannot silently fall back to UTC and pass vacuously. A guard asserts the gap between "now" and the sampled day's local midnight before the gate runs.
+
+- Fall-back day: now 2026-11-01 23:30 EST, 88200 s after local midnight, sampled 2026-11-01, expects "0 days". The old code printed "1 days".
+- Spring-forward: now 2026-03-09 00:30 EDT, 84600 s after 2026-03-08 midnight, sampled 2026-03-08, expects "1 days". The old code printed "0 days".
+
+Both cases were verified red on 9a50c75a and green on the fix. This used a scratch copy of the gate 12 tests, because the file's `setup_file` runs the full health check.
+
+Review round 1 (independent reviewer): no red findings. There were two amber findings, both applied. First, the shim had injected a local wall-clock time, which `-u` would have reread as UTC; it now uses an `@epoch`. Second, only the 25-hour day was pinned; the spring-forward case is now added. A nit about a midnight race in the pre-existing gate 12 test is out of scope, and this change does not make it worse.
 
 ## Docs
 

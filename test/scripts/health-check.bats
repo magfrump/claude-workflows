@@ -511,32 +511,43 @@ JSON
   [[ "$output" == *"Persona freshness: 2 checked, 1 fresh, 1 stale, 0 invalid"* ]]
 }
 
-@test "gate 12: a persona sampled today reads 0 days on a DST fall-back day" {
-  # 2026-11-01 is a 25-hour local day under US rules. A POSIX TZ string needs no
-  # tzdata, so the zone cannot silently fall back to UTC. The shim answers "now"
-  # as 23:30 that day (24.5 h after local midnight) and passes every -d/--date
-  # call to the real date, so it is exactly as strict as date on those.
-  local root shim real; root="$(_fixture_repo)"; shim="$BATS_TEST_TMPDIR/bin"
-  real="$(command -v date)"
-  mkdir -p "$shim" "$root/skills/today-persona"
+# _gate12_dst <now-epoch> <sampled-date> <midnight-gap-seconds> <days>: runs gate 12
+# under US DST rules with "now" pinned. A POSIX TZ string needs no tzdata, so
+# the zone cannot silently fall back to UTC. The shim answers a no-date call
+# with the pinned epoch (an @ epoch is the same instant whatever -u or TZ say)
+# and passes every -d/--date call to the real date, so it is as strict as date
+# on those. The guard checks "now" really sits <gap> seconds after the sampled
+# day's local midnight, i.e. that the zone and shim produce the DST day.
+_gate12_dst() {
+  local now="$1" sampled="$2" gap="$3" days="$4" root shim real
+  local tz='EST5EDT,M3.2.0,M11.1.0'
+  root="$(_fixture_repo)"; shim="$BATS_TEST_TMPDIR/bin"; real="$(command -v date)"
+  mkdir -p "$shim" "$root/skills/dst-persona"
   cat > "$shim/date" <<'SHIM'
 #!/usr/bin/env bash
 for a in "$@"; do
   case "$a" in -d|-d*|--date|--date=*) exec "$REAL_DATE" "$@" ;; esac
 done
-exec "$REAL_DATE" -d '2026-11-01 23:30' "$@"
+exec "$REAL_DATE" -d "@$FAKE_NOW" "$@"
 SHIM
   chmod +x "$shim/date"
-  printf -- '---\nname: today-persona\npersona-last-sampled: 2026-11-01\n---\n' \
-    > "$root/skills/today-persona/SKILL.md"
-  # Guard: the shim and zone really produce a 25-hour day here.
-  [ "$(TZ='EST5EDT,M3.2.0,M11.1.0' REAL_DATE="$real" "$shim/date" +%F)" = 2026-11-01 ]
-  [ $(( $(TZ='EST5EDT,M3.2.0,M11.1.0' REAL_DATE="$real" "$shim/date" +%s) \
-        - $(TZ='EST5EDT,M3.2.0,M11.1.0' "$real" -d 2026-11-01 +%s) )) -eq 88200 ]
-  PATH="$shim:$PATH" REAL_DATE="$real" TZ='EST5EDT,M3.2.0,M11.1.0' \
+  printf -- '---\nname: dst-persona\npersona-last-sampled: %s\n---\n' "$sampled" \
+    > "$root/skills/dst-persona/SKILL.md"
+  [ $(( now - $(TZ="$tz" "$real" -d "$sampled" +%s) )) -eq "$gap" ]
+  PATH="$shim:$PATH" REAL_DATE="$real" FAKE_NOW="$now" TZ="$tz" \
     HEALTH_CHECK_SKILLS_DIR="$root/skills" _run_gate "$root" check_persona_freshness
-  [[ "$output" == *"✓ today-persona: fresh (0 days since 2026-11-01)"* ]]
+  [[ "$output" == *"✓ dst-persona: fresh ($days days since $sampled)"* ]]
   [[ "$output" == *"Persona freshness: 1 checked, 1 fresh, 0 stale, 0 invalid"* ]]
+}
+
+@test "gate 12: a persona sampled today reads 0 days on a DST fall-back day" {
+  # Now 2026-11-01 23:30 EST: 24.5 h after that day's 00:00 EDT.
+  _gate12_dst 1793593800 2026-11-01 88200 0
+}
+
+@test "gate 12: a persona sampled yesterday reads 1 day after a DST spring-forward day" {
+  # Now 2026-03-09 00:30 EDT: 23.5 h after 2026-03-08 00:00 EST.
+  _gate12_dst 1773030600 2026-03-08 84600 1
 }
 
 @test "gate 13: AGENTS.md and GEMINI.md with different sections are flagged" {
