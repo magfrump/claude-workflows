@@ -39,3 +39,5 @@ Policy: review
 - Unit 5 (the cycle runs migrations; closing a cleared image-lag entry), unit 6 (the import walk), unit 7 (the D6 block into the image). Do not edit the D6 block; its test pins it byte for byte.
 - The owner calls in the audit (G55, R19/K79, R51/R56, K29): unchanged.
 - Editing `docs/roadmap.md` or the questions files: the dev cycle moves those.
+
+Dispatched: 1
