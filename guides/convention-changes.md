@@ -58,7 +58,7 @@ remedy itself, from the image's copy of `questions.sh`, and lands it in the same
 with `build-loop.sh --cycle-diff --migrated ID` (and `--land-cycle --migrated ID`). That mode
 reads the registry beside the gate and takes only the remedy's own moves: headings,
 **Needs:** routes and entries moved to `watching.md` or `roadmap-from-questions.md` for the
-entries the ERE matched (or, for a roadmap migration, its headings), with every answer line
+entries the ERE matched (or, for a roadmap migration, its headings and preamble), with every answer line
 and **Status:** field unchanged, the pattern gone from PATH, and the migration pending on the
 base. The record and the final message say what ran; no questions entry is filed. So a
 migration whose remedy is a `questions.sh` subcommand on those files costs the owner nothing.

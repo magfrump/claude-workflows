@@ -218,7 +218,8 @@
 #                 change exactly as step 0.1 closes it: its Status OPEN to
 #                 ANSWERED and one line "Q-NNN: met — image C holds the gate
 #                 code of main M" (its own ID; C and M full commit ids)
-#                 added. Each --migrated ID must name a line of the registry
+#                 added, C and M commits here between which no GATE_CODE
+#                 path differs. Each --migrated ID must name a line of the registry
 #                 beside this script (lib/migrations.sh, the image copy
 #                 under D6; unreadable or malformed refuses: "refuse HEAD")
 #                 whose PATH is docs/working/questions.md or docs/roadmap.md
@@ -1923,7 +1924,8 @@ NR in mark { print id "\t" f "\tm\t" $0 }
 # - an open image-lag or image-off-main-C12 entry closed as step 0.1 closes it:
 #   its one Status field OPEN becomes ANSWERED and one line
 #   "Q-NNN: met — image C holds the gate code of main M" (C, M full commit ids)
-#   is added, nothing else (cleared).
+#   is added, nothing else (cleared). Printed "ID F clear C M": questions_rules
+#   then checks C and M in the repository (image_cleared).
 # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
 QDIFF_AWK='
 function trim(g) { sub(/^[ \t]+/, "", g); sub(/[ \t]+$/, "", g); return g }
@@ -1964,7 +1966,7 @@ function cleared(id,   n, i, j, m, ln, x, y, e, c, slug, r, met, p, q) {
     x = ln[i]
     if (index(x, p) == 1) {
       q = substr(x, length(p) + 1); j = index(q, " holds the gate code of main ")
-      if (j && sha(substr(q, 1, j - 1)) && sha(substr(q, j + length(" holds the gate code of main ")))) { met++; continue }
+      if (j && sha(substr(q, 1, j - 1)) && sha(substr(q, j + length(" holds the gate code of main ")))) { met++; cc = substr(q, 1, j - 1); cm = substr(q, j + length(" holds the gate code of main ")); continue }
     }
     r = r "\n" x
   }
@@ -1979,9 +1981,11 @@ END {
   for (id in o) {
     if ((id in ok) || o[id] == nw[id]) continue
     if (id in mk) {
+      # A copy in file 3 is held to the base too, even when the entry also stays.
+      if ((id in in3) && keysig(o[id]) != keysig(mv[id])) { print id " " ((id in nf) ? nf[id] : of[id]) " gone"; continue }
       if ((id in in2) && keysig(o[id]) == keysig(nw[id])) continue
-      if (!(id in in2) && (id in in3) && keysig(o[id]) == keysig(mv[id])) continue
-    } else if (cleared(id)) continue
+      if (!(id in in2) && (id in in3)) continue
+    } else if (cleared(id)) { print id " " nf[id] " clear " cc " " cm; continue }
     print id " " ((id in nf) ? nf[id] : of[id]) " gone"
   }
   for (id in nw) if (!(id in o) && !(id in ok) && an[id]) print id " " nf[id] " new"
@@ -2092,7 +2096,7 @@ mig_rules() {
       1) echo "refuse $p: --migrated $id: no line on the base matches its pattern, so the migration was not pending"; bad=1; continue ;;
       *) echo "refuse $p: --migrated $id: its pattern could not be matched on the base copy"; bad=1; continue ;;
     esac
-    side_blob "$base" "$p" "$t.mn" || { echo "refuse $p: --migrated $id: the $2 side is not a regular file, or could not be read"; bad=1; continue; }
+    side_blob "$base" "$p" "$t.mn" && [[ -s "$t.mn" ]] || { echo "refuse $p: --migrated $id: the $2 side is empty, not a regular file, or could not be read"; bad=1; continue; }
     rc=0; LC_ALL=C grep -aqE -- "${MIG_ERE[k]}" "$t.mn" || rc=$?
     case "$rc" in
       1) ;;
@@ -2206,6 +2210,19 @@ cycle_rules() {
   done
   return "$bad"
 }
+# image_cleared ID F C M: step 0.1's close of ID is what its line says: C and M
+# name commits here and no path the gate's own code covers (GATE_CODE, the
+# list step 0.1 diffs) differs between them. Prints a refuse line and fails otherwise.
+image_cleared() {
+  local p
+  if ! gate_git cat-file -e "$3^{commit}" 2>/dev/null || ! gate_git cat-file -e "$4^{commit}" 2>/dev/null; then
+    echo "refuse docs/working/$2: $1's closing line names $3 and $4, which are not both commits here"; return 1
+  fi
+  gate_git diff --name-only -z --no-renames "$3" "$4" > "$GATE_TMP/cy.ic" 2>/dev/null || { echo "refuse docs/working/$2: $1's closing line's commits could not be compared"; return 1; }
+  while IFS= read -r -d '' p; do
+    [[ ! "$(lower "$p")" =~ $GATE_CODE ]] || { echo "refuse docs/working/$2: $1's closing line says $3 holds the gate code of $4, but $p differs"; return 1; }
+  done < "$GATE_TMP/cy.ic"
+}
 # questions_rules BASE SIDE I...: cycle_rules' questions-file rules over the
 # RAW_* records I... (the questions files' indices); also writes
 # $GATE_TMP/cy.new, the IDs of the entries the listing files (a "### Q-NNN"
@@ -2256,7 +2273,8 @@ questions_rules() {
   fi
   LC_ALL=C awk -F '\t' -v ids="${ANSWERED[*]}" "$QDIFF_AWK" "$t.qo" "$t.qn" "$t.qx" > "$t.w" \
     || { echo "refuse docs/working/questions.md: the entries could not be compared"; return 2; }
-  while read -r i f k; do
+  while read -r i f k c m; do
+    if [[ "$k" == clear ]]; then image_cleared "$i" "$f" "$c" "$m" || bad=1; continue; fi
     bad=1
     if [[ "$k" == gone ]]; then echo "refuse docs/working/$f: $i's heading, Needs or answer lines changed or are gone, and $i is not in --answered"
     else echo "refuse docs/working/$f: $i is a new entry filed answered (Status ANSWERED or an answer line), and $i is not in --answered"; fi

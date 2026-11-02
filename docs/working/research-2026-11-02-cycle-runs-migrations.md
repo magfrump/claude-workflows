@@ -3,7 +3,7 @@
 - **Goal**: The dev cycle runs a pending registry migration's remedy itself and lands it with a `--cycle-diff`/`--land-cycle` migration mode that proves answers and Status lines unchanged, and closes an open `image-lag`/`image-off-main-*` entry itself when step 0.1 finds the image current.
 - **Problem framing**: Two restrictions spend owner attention on work that is scripted and cannot forge an answer: every pending migration becomes a `you: terminal` paste, and a cleared image-lag entry waits for an owner answer. Considered and discarded: "the gate's answer rule is too strict in general" (dropping the anti-forgery rule for all entries); the rule guards an in-scope threat (R60/H4: an honest slip writing `[1]` on a merge entry), so only these two shapes are exempted.
 - **Project state**: restriction-audit unit 5 · follows units 1-4 (63ba32e9, 242081af, 78dad60b, 3019016a); units 6 and 7 are separate · not blocked (cite: docs/working/research-2026-11-01-restriction-audit.md)
-- **Task status**: complete (implemented, tested, reviewed)
+- **Task status**: complete (implemented, tested, review round i1 fixed)
 
 ## Re-verification against today's code (dispatch commit 9a50c75a)
 
@@ -24,8 +24,9 @@ The audit's K105 NARROW assumes every remedy is like `questions.sh migrate`. The
 - `scripts/lib/migrations.sh` [observed]: the registry (`mig ID CONVENTION FP PATH ERE REMEDY`), sourced by `dev-cycle.sh` for digest section 7b (pending while PATH holds an ERE match). Two remedies change files: `questions-owner-routes-040` (PATH `docs/working/questions.md`, ERE `^\*\*Needs:\*\* (agent|trigger|deferred)( |$)`, remedy `~/.claude/scripts/questions.sh migrate`) and `failure-patterns-out-of-thoughts`.
 - `scripts/questions.sh migrate` [observed, lines 494-566]: moves each non-owner entry, text unchanged, to `watching.md` (watches; ANSWERED ones under `## Closed`) or `docs/working/roadmap-from-questions.md` (agent work), then reindexes. `test/questions-doc.bats` "migrate moves every non-owner entry out without losing text" proves losslessness.
 - `scripts/build-loop.sh` `cycle_diff`/`land_cycle` → `cycle_rules BASE SIDE` → `questions_rules`, with `QKEYS_AWK` (key lines per entry: h, n, a) and `QDIFF_AWK` (compares base against side; `--answered` IDs exempt) [observed].
-- The D6 block runs `/opt/claude-workflows/scripts/{build-loop,dev-cycle,questions}.sh` and the lib beside them; `build-loop.sh` sources its lib from `SCRIPT_DIR` [observed: build-loop.sh:553-557]. So a registry read from `SCRIPT_DIR/lib/migrations.sh` is the image's copy under D6 (H1), and `questions.sh SUB` through the D6 block is the image's `questions.sh`.
-- Step 0.1 (SKILL.md:286-313): image lag; on `diff --quiet` exit 0 it listed open `image-lag`/`image-off-main-*` entries "as cleared, for the user to answer (the orchestrator never answers one: D8)".
+- The D6 block runs `/opt/claude-workflows/scripts/{build-loop,dev-cycle,questions}.sh` and the lib beside them; `build-loop.sh` sources its lib from `SCRIPT_DIR` [observed: build-loop.sh:553-557]. So a registry read from `SCRIPT_DIR/lib/migrations.sh` is the image's copy under D6 (H1): it sits in the root-owned `scripts/lib` directory whose chain D6 checks, though D6's per-file ownership list (the pinned block, out of scope) does not name it; under S1 that is acceptable. `questions.sh SUB` through the D6 block is the image's `questions.sh`.
+- Step 1's section-8 guard (SKILL.md, step 1: skip `questions.sh init`/`archive` when section 8 lists their paths) applies to step 1b's `migrate` too; a skipped or failed remedy goes to the owner's collected paste (review finding, i1).
+- Step 0.1 (SKILL.md:282-313, the exit-0 clause at 310-312): image lag; on `diff --quiet` exit 0 it listed open `image-lag`/`image-off-main-*` entries "as cleared, for the user to answer (the orchestrator never answers one: D8)".
 
 ## Invariants
 
@@ -44,6 +45,7 @@ The audit's K105 NARROW assumes every remedy is like `questions.sh migrate`. The
 
 - Failure-pattern grep: FP-021, FP-053
   - FP-021 (agent-writable file baked into the image) is about the image payload, not the cycle rules; it does confirm the gate must read the registry from its own directory (the image), never the checkout. FP-053 (inf/nan accepted as a verified answer) is unrelated numerics.
+- Failure-pattern skip: the fix(...) commits are review-round fixes to this branch's own unmerged code; no shipped bug had a symptom to record.
 - mawk has no `{n}` interval expressions: the image-off-main slug is checked by length 27 and a character class.
 - QDIFF_AWK's `o[id] != nw[id]` creates `nw[id]` as a side effect, so presence on the side is tracked in its own array (`in2`).
 - A watch the migration moves and step 3 closes in the same iteration would change its Status: the skill closes such a watch in the next iteration.
@@ -68,7 +70,7 @@ A fyi spends the owner's attention (S10; the global instructions: "keep it rare"
 
 ### D-C: how the image-lag close is checked
 
-Options: (1) shape only on those slugs: one Status field OPEN→ANSWERED and exactly one line `Q-NNN: met — image C holds the gate code of main M` (own ID, full ids), nothing else changed; (2) the gate also re-runs `git diff --quiet C M -- GATE paths`; (3) a flag `--image-cleared`. (2) adds a gate dependency on the image manifest and a new failure path for no in-scope gain: a wrong close (an honest slip) is self-correcting, since the next step 0.1 exit 1 files a new `image-lag` entry. (3) adds a flag with nothing to select: the slug and line form already pin the change. **Option 1.** Its tests refuse every other shape, including the closing line on a merge entry, an answered image-lag entry and a near-miss slug.
+Options: (1) shape only on those slugs: one Status field OPEN→ANSWERED and exactly one line `Q-NNN: met — image C holds the gate code of main M` (own ID, full ids), nothing else changed; (2) shape plus a re-check in the repository: C and M are commits and no GATE_CODE path differs between them; (3) a flag `--image-cleared`. (3) adds a flag with nothing to select: the slug and line form already pin the change. The first draft took (1), reasoning that a wrong close self-corrects at the next step 0.1. The i1 review (medium) pointed out that the `image-lag` entry is the release entry (F58), so a close on a misread diff skips the owner's release review until then. (2) costs one `git diff --name-only` in the gate, reuses GATE_CODE (no third copy of the path list: S3), and makes the close re-checkable from the artifact (H4). **Option 2.** The gate does not read the image manifest, so a wrong C that happens to match M's gate code passes. That close is still true of the gate code. Its tests refuse every other shape, including the closing line on a merge entry, an answered image-lag entry, a near-miss slug, a non-commit id and a gate-code difference.
 
 ### D-D: migrations the cycle cannot land
 
@@ -76,7 +78,7 @@ Kept with the owner (truth files: see above), as one `you: terminal` entry whose
 
 ## Plan (as implemented)
 
-1. `scripts/build-loop.sh`: `--migrated ID` on `--cycle-diff`/`--land-cycle`; `side_blob`, `mig_rules` (registry from `SCRIPT_DIR/lib`, pending/finished checks); `QKEYS_AWK` m marks from the base's ERE matches; `QDIFF_AWK` `keysig` (answer lines and Status fields) and `cleared` (image-lag close); `ROADMAP_AWK` `free` for a roadmap migration; header docs.
+1. `scripts/build-loop.sh`: `--migrated ID` on `--cycle-diff`/`--land-cycle`; `side_blob`, `mig_rules` (registry from `SCRIPT_DIR/lib`, pending/finished checks); `QKEYS_AWK` m marks from the base's ERE matches; `QDIFF_AWK` `keysig` (answer lines and Status fields; a copy in file 3 is held to the base even when the entry also stays) and `cleared` (image-lag close), with `image_cleared` re-checking C and M; an empty side refused for a `--migrated` PATH; `ROADMAP_AWK` `free` for a roadmap migration; header docs.
 2. `scripts/lib/migrations.sh`: header comments; `mig record-1b-ran` for the record template's new `ran ID` form.
 3. `scripts/dev-cycle.sh`: `--check-fix` skip message; digest legacy-watch note names step 1b.
 4. `skills/dev-cycle/SKILL.md`: steps 0.1, 1b, 3, 6, 9 and the final message.

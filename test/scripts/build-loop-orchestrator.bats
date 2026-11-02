@@ -600,6 +600,26 @@ $(GONE Q-004)" --migrated no-such-id --migrated failure-patterns-out-of-thoughts
     cd_is "refuse docs/working/questions.md: --migrated $MIG: no line on the base matches its pattern, so the migration was not pending" --migrated "$MIG"
 }
 
+@test "--cycle-diff --migrated holds every copy of a moved entry and every Status field to the base, and refuses a registry it cannot trust (brief 2026-11-02-cycle-runs-migrations, i1 review)" {
+    legacy
+    # A Status in a second field of the Needs line, and a copy left behind as well as moved with its answer changed.
+    bash "$QS" migrate > /dev/null; sed -i '/^### Q-002/,/^Watch x\./s/\*\*Status:\*\* OPEN$/**Status:** OPEN · **Status:** ANSWERED/' docs/working/watching.md; git add -A
+    cd_is "$(GONE Q-002)" --migrated "$MIG"; git checkout -q HEAD -- docs/working; rm -f docs/working/roadmap-from-questions.md
+    sed -i 's/^\*\*Needs:\*\* agent ·/**Needs:** you: judgment ·/' docs/working/questions.md
+    sed -n '/^### Q-004/,/^Do y\./p' docs/working/questions.md > docs/working/roadmap-from-questions.md; echo 'Q-004: [1]' >> docs/working/roadmap-from-questions.md
+    bash "$QS" migrate > /dev/null; git add -A; grep -q '^### Q-004' docs/working/questions.md; cd_is "$(GONE Q-004)" --migrated "$MIG"
+    # A registry with a malformed line, or a symlinked one, beside a copied gate.
+    git checkout -q HEAD -- docs/working; rm -f docs/working/roadmap-from-questions.md; bash "$QS" migrate > /dev/null; git add -A
+    O="$BATS_TEST_TMPDIR/opt"; mkdir -p "$O/scripts/lib"; cp "$REPO_ROOT/scripts/build-loop.sh" "$O/scripts/"; cp "$REPO_ROOT"/scripts/lib/{dev-cycle-read,migrations}.sh "$O/scripts/lib/"
+    run --separate-stderr bash "$O/scripts/build-loop.sh" --cycle-diff --migrated "$MIG"; [ "$status" -eq 0 ] && [ "$output" = ok ] || { show; return 1; }
+    perl -0pi -e 's/^(if \[\[ "\$\{BASH_SOURCE)/mig bad-line\n$1/m' "$O/scripts/lib/migrations.sh"
+    run --separate-stderr bash "$O/scripts/build-loop.sh" --cycle-diff --migrated "$MIG"
+    [ "$status" -eq 2 ] && [ "${lines[0]}" = "refuse HEAD: --migrated needs the registry lib/migrations.sh, which has malformed lines" ] || { show; return 1; }
+    mv "$O/scripts/lib/migrations.sh" "$O/m.sh"; cp "$REPO_ROOT/scripts/lib/migrations.sh" "$O/m.sh"; ln -s "$O/m.sh" "$O/scripts/lib/migrations.sh"
+    run --separate-stderr bash "$O/scripts/build-loop.sh" --cycle-diff --migrated "$MIG"
+    [ "$status" -eq 2 ] && [ "${lines[0]}" = "refuse HEAD: --migrated needs the registry lib/migrations.sh beside build-loop.sh, which is missing, not a regular file or does not parse" ] || { show; return 1; }
+}
+
 @test "--cycle-diff --migrated relaxes a roadmap's headings only for a registry line whose file is the roadmap, read from the registry beside the gate (brief 2026-11-02-cycle-runs-migrations)" {
     O="$BATS_TEST_TMPDIR/opt"; mkdir -p "$O/scripts/lib"; cp "$REPO_ROOT/scripts/build-loop.sh" "$O/scripts/"; cp "$REPO_ROOT"/scripts/lib/{dev-cycle-read,migrations}.sh "$O/scripts/lib/"
     perl -0pi -e 's/^(if \[\[ "\$\{BASH_SOURCE)/mig roadmap-later roadmap 0123456789abcdef docs\/roadmap.md '"'"'^## Later\$'"'"' '"'"'~\/.claude\/scripts\/x.sh'"'"'\n$1/m' "$O/scripts/lib/migrations.sh"
@@ -614,6 +634,13 @@ $(GONE Q-004)" --migrated no-such-id --migrated failure-patterns-out-of-thoughts
     sed -i '/2026-10-01-x/d' docs/roadmap.md; git add -A
     run --separate-stderr bash "$O/scripts/build-loop.sh" --cycle-diff --migrated roadmap-later
     [ "$status" -eq 2 ] && [ "$output" = "refuse docs/roadmap.md: the brief 2026-10-01-x.md, named outside Done on the base, is named on no line" ] || { show; return 1; }
+    # A remedy that empties the file is not a migration.
+    : > docs/roadmap.md; git add -A
+    run --separate-stderr bash "$O/scripts/build-loop.sh" --cycle-diff --migrated roadmap-later
+    [ "$status" -eq 2 ] && [ "$output" = "refuse docs/roadmap.md: --migrated roadmap-later: the index side is empty, not a regular file, or could not be read
+refuse docs/roadmap.md: its lines above the first ## heading changed
+refuse docs/roadmap.md: its ## headings changed
+refuse docs/roadmap.md: the brief 2026-10-01-x.md, named outside Done on the base, is named on no line" ] || { show; return 1; }
     git checkout -q HEAD -- docs/roadmap.md; sed -i 's/^## Later$/## Next/' docs/roadmap.md; git add -A
     cd_is "refuse HEAD: --migrated roadmap-later names no migration in the gate's registry
 refuse docs/roadmap.md: its ## headings changed" --migrated roadmap-later
@@ -644,8 +671,14 @@ close() { sed -i "/^### $1 /,/^###/{s/\*\*Status:\*\* OPEN/**Status:** ANSWERED/
     # questions.sh archive then moves the closed entries whole.
     sed -n '/^### Q-005/,/^Release\./p; /^### Q-006/,/^Rebuild?/p' docs/working/questions.md >> docs/working/questions-archive.md
     sed -i '/^### Q-005/,/^Release\./d; /^### Q-006/,/^Rebuild?/d' docs/working/questions.md; git add -A; cd_is ok
-    # A 64-hex id is a full id too.
-    git reset -q --hard; C="$(printf 'a%.0s' $(seq 64))"; close Q-005 "$(MET Q-005)"; cd_is ok
+    # The gate checks the line against the repository: both ids commits, no gate-code path differing between them.
+    git reset -q --hard; R0="refuse docs/working/questions.md: Q-005's closing line"
+    C="$(printf 'a%.0s' $(seq 64))"; close Q-005 "$(MET Q-005)"; cd_is "$R0 names $C and $MM, which are not both commits here"; git reset -q --hard
+    git checkout -q main; mkdir -p scripts/lib; echo g > scripts/lib/g.sh; echo d > docs/d.md; commit_all gate; G="$(git rev-parse HEAD)"; git checkout -q chore/dev-cycle-2026-10-12
+    C="$G"; close Q-005 "$(MET Q-005)"; cd_is "$R0 says $G holds the gate code of $MM, but scripts/lib/g.sh differs"; git reset -q --hard
+    # Only docs/ moved since: still the same gate code.
+    MM="$G"; git checkout -q main; echo e > docs/d.md; commit_all docs; C="$(git rev-parse HEAD)"; git checkout -q chore/dev-cycle-2026-10-12
+    close Q-005 "$(MET Q-005)"; cd_is ok
 }
 
 @test "--cycle-diff refuses an image-lag close other than step 0.1's, and the closing line written on any other entry (brief 2026-11-02-cycle-runs-migrations)" {

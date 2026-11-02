@@ -311,7 +311,8 @@ the iteration with no record, so the next one starts from the same `Main at:`:
    holds main's gate code; once WT exists, close any open `image-lag` or `image-off-main-*`
    entry in its questions files: `**Status:** ANSWERED` in its **Needs:** line and, under
    that line, `Q-NNN: met — image C holds the gate code of main M` (its own ID, C and M in
-   full), nothing else; step 9's `--cycle-diff` takes exactly that change on those slugs
+   full), nothing else; step 9's `--cycle-diff` takes exactly that change on those slugs,
+   after re-checking that C and M are commits with no gate-code path differing between them
    (D8 as amended: the user's answer would only confirm what this exit shows), and
    `questions.sh archive` moves it. The record and the final message name it.
    Any other exit: note it in the record. None of these stops the iteration.
@@ -450,10 +451,15 @@ brief or dispatch:
 - `pending ID (CONVENTION): PATH line N; remedy: REMEDY`, with PATH
   `docs/working/questions.md` or `docs/roadmap.md` and REMEDY `~/.claude/scripts/questions.sh
   SUB`: the cycle runs it in WT through the D6 block as `questions.sh SUB` (the image copy,
-  never a working-tree script: H1), then `questions.sh check`. Step 9 passes `--migrated ID`
+  never a working-tree script: H1), then `questions.sh check`, unless the digest's section 8
+  lists `docs/`, `docs/working/`, a questions file, `watching.md` or the roadmap (it would
+  write through that path). Skipped, or the remedy or `check` failing (its files then
+  restored with `git -C WT checkout HEAD -- PATHS`, PATHS what `git -C WT status --porcelain`
+  shows it changed): it goes to the owner as the next bullet says, the record naming why.
+  Step 9 passes `--migrated ID`
   to `--cycle-diff` and `--land-cycle`, which take the remedy's own moves (headings,
   **Needs:** routes, entries moved to `watching.md` or `roadmap-from-questions.md`, a
-  roadmap's headings) and refuse any answer or **Status:** line it changed, a pattern line
+  roadmap's headings and preamble) and refuse any answer or **Status:** line it changed, a pattern line
   left behind, or an ID not pending on the base. No entry: the record's `1b.` line and the
   final message name what ran, and the land is one revertable merge (a `you: fyi` would
   spend the owner's attention on a scripted, lossless move: S10). An open `migrate-ID`
@@ -851,9 +857,10 @@ Then land WT's branch (D13; not through `pr-prep`: rows 747-759, 781), all from 
    deleted, or its brief renamed; two changed brief paths with one file name; and a
    questions file `--check-answer` refuses whole. The remedy is to fix the iteration's
    own change, stage the fix as in 1 and go back to 2 (a new commit); `refuse HEAD` or the
-   questions-moved refusal means merge main in (below) and go back to 3; `refuse index`,
-   a whole-file refusal of main's copy, or a `--migrated` refusal the iteration's own change
-   did not cause, is a stop.
+   questions-moved refusal means merge main in (below) and go back to 3, but a `refuse HEAD:
+   --migrated` line never does (merging main changes no registry): like `refuse index`, a
+   whole-file refusal of main's copy, or a `refuse PATH: --migrated` line the iteration's own
+   change did not cause, it is a stop.
 4. `--land-cycle --main M`, with the same `--answered` and `--migrated`. `landed B HEAD TREE NEW`: check
    `git -C WT merge-base --is-ancestor HEAD refs/heads/main` (D13). `refuse HEAD` naming a
    moved default branch: merge main in, then 3 again; any other refusal is a stop. While MAIN_WT has main checked out,
