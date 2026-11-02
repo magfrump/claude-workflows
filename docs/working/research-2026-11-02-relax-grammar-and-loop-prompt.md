@@ -134,3 +134,10 @@ blocked marker" and its symlink stop now match; `path` lines mark `(symlink)` an
 row and FENCE_AWK divergence wording; tests for DEL and `.git` parts, a ready body with
 `<!--`, and an HTML-wrapped near ID. Won't fix: the release entry's double-backtick span for
 a path holding a backtick run is cosmetic (no reader is affected).
+
+Iteration 2 (the same reviewer on the fixes): two amber, both from the mode suffix, fixed:
+the `--check` help says the suffix shows under either policy, and step 7's GATE_CODE heading
+rule reads PATH without the suffix (pinned in build-loop-orchestrator.bats). Clean after.
+The health check's one failure in its second run (health-check.bats gate 12, persona
+freshness) was a local-versus-UTC midnight flake: it passes on rerun and this branch touches
+neither the test nor `scripts/health-check.sh`.

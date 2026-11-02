@@ -408,6 +408,8 @@ shim() {
     [[ "$g" == *dev-cycle/* ]] || { echo "GATE_CODE: $g"; return 1; }
     q=$'\x60'
     [ "$(grep -cxF "  $q$g$q" "$REPO_ROOT/skills/dev-cycle/SKILL.md")" -eq 1 ] || { grep -n 'scripts/lib/' "$REPO_ROOT/skills/dev-cycle/SKILL.md"; return 1; }
+    # A path line's mode suffix is not part of PATH, or a gate-code symlink would get merge- (brief 2026-11-02-relax-grammar-and-loop-prompt, review i2).
+    grep -qF "line's PATH (without a trailing $q (symlink)$q or" "$REPO_ROOT/skills/dev-cycle/SKILL.md" || return 1
     # Step 10 also names the dispatch cap and the steal age (i2 architecture 8).
     c="$(grep -o '^DISPATCH_CAP=[0-9]*; STEAL_AGE=[0-9]*$' "$REPO_ROOT/scripts/build-loop.sh")"
     [[ "$c" =~ ^DISPATCH_CAP=([0-9]+)\;\ STEAL_AGE=([0-9]+)$ ]] || { echo "$c"; return 1; }

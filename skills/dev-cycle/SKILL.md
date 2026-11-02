@@ -653,7 +653,8 @@ the brief is still open and no subagent of this session runs it, step 10 re-disp
   again next iteration.
 - **ready**, review: `--check BRIEF --expect TIP`. On `ok`, one merge entry, heading
   `### Q-NNN · merge-STEM-SHA12` (SHA12: TIP's first 12 hex digits), or
-  `merge-gate-STEM-SHA12` when a `path` or `deny` line's PATH, lower-cased, matches the lib's
+  `merge-gate-STEM-SHA12` when a `path` or `deny` line's PATH (without a trailing ` (symlink)` or
+  ` (gitlink)`), lower-cased, matches the lib's
   GATE_CODE (a test holds this copy to it; `--approved` accepts no other heading):
   `^scripts/(build-loop|dev-cycle|questions)\.sh$|^scripts/lib/|^skills/dev-cycle/`
   Its body: the full TIP (row 673), `--check`'s lines as printed, and a note on each path

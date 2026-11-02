@@ -370,7 +370,8 @@
 #             its D and A sides), in diff-tree's order; S is its status letter
 #             (A, M, D or T) and PATH is "?" unless every character is one
 #             pathform allows, followed by " (symlink)" or " (gitlink)" when
-#             the merge's side is one (outside a self-merge, where they pass):
+#             the merge's side is one (under either policy; outside a
+#             self-merge they pass):
 #             path BRIEF S PATH
 #             deny BRIEF S PATH: WHY
 #                 The N rules, under either policy: for a brief --status
