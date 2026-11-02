@@ -25,8 +25,7 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
-| [Q-246](#q-246--stopped-2026-11-01-relax-referenced-prose-stops-1) | you: judgment | Brief 2026-11-01-relax-referenced-prose-stops's build loop stopped; re-dispatch or drop? | 2026-11-01 |
-| [Q-247](#q-247--stopped-2026-11-01-relax-dev-cycle-skill-prose-1) | you: judgment | Brief 2026-11-01-relax-dev-cycle-skill-prose's build loop stopped; re-dispatch or drop? | 2026-11-01 |
+| [Q-248](#q-248--merge-2026-11-01-relax-referenced-prose-stops-c76fca3930c4) | you: judgment | Merge restriction-audit unit 2 (the workflows and skills the dev cycle uses stop only on an in-scope failur... | 2026-11-01 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-222](#q-222--install-cc-verify-and-r6) | you: terminal | Four approved merges landed today, two of them in host tools: the `cc-verify` host tool (37b24c02, Q-217) a... | 2026-10-28 |
@@ -35,49 +34,30 @@ The index below is generated — edit entries, not the table.
 
 ## Open
 
-### Q-246 · stopped-2026-11-01-relax-referenced-prose-stops-1
-**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** ANSWERED
+### Q-248 · merge-2026-11-01-relax-referenced-prose-stops-c76fca3930c4
+**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** OPEN
 
-Brief 2026-11-01-relax-referenced-prose-stops's build loop stopped; re-dispatch or drop?
-> Reason: your approved merge (Q-244 [1]) of 8ca8ec2e refused: "docs/relax-referenced-prose-stops conflicts with the default branch". Unit 1 merged first (63ba32e9) and also added decision-log row 79.
+Merge restriction-audit unit 2 (the workflows and skills the dev cycle uses stop only on an in-scope failure) at its new tip?
 
-**If you say no:** the branch stays unmerged and the workflows keep their stops.
+**If you say no:** "stop and wait" keeps firing on failing tests and ambiguous requirements in /away, the plan gate stays unconditional, a long review unit waits for your waiver, and security review keeps rating hostile-loop routes as Must Address.
 
-**What an attacker would want here:** nothing; this only sends the same work back to merge main in.
+**What an attacker would want here:** nothing new for an outside party. This is the same content you approved as Q-244 [1] at 8ca8ec2e, plus a merge of main. The only resolution in that merge renumbers this unit's decision-log row from 79 to 80, because unit 1 took 79 first. The orchestrator read the merge's conflict resolution (`git show --remerge-diff 2a6770e5`): that row and a dispatch note in the unit's research doc are the only changes.
 
-- **What re-dispatch does:** the loop merges main into its branch, resolves the clash (renumbering its decision-log row), re-runs its tests and ends `ready` at a new tip. That comes back to you as a new merge entry, because approval pins the exact commit.
+- **Tip:** c76fca3930c433eab7dc0d336dcfe75767daef05 (merge of main: 2a6770e5)
+- **`--check` printed:**
+  - `ok docs/working/briefs/2026-11-01-relax-referenced-prose-stops.md c76fca3930c433eab7dc0d336dcfe75767daef05 e1391f45c576fe3d012f44c1bd145096e478af6e`
+  - 14 `path` lines, all `M` except one `A`: `docs/decisions/log.md`, `docs/reviews/override-log.md`, the brief, `docs/working/research-2026-11-01-relax-referenced-prose-stops.md` (A), `global-instructions/CLAUDE.md`, `guides/convention-changes.md`, `guides/pr-prep-quick-ref.md`, `skills/code-review/SKILL.md`, `skills/constraints-builder/SKILL.md`, `skills/research-plan-implement/SKILL.md`, `skills/security-reviewer/SKILL.md`, `workflows/pr-prep.md`, `workflows/research-plan-implement.md`, `workflows/review-fix-loop.md`
+- **Paths self-merge would have refused:** `global-instructions/CLAUDE.md` (an instruction file); the five `SKILL.md` files and three `workflows/` files (prompt files). No gate code.
+- **Checks:** the loop's health check passed on the merged branch ("All checks passed"). It ran no new review round, since the only change from the reviewed tip is the row renumber.
 
 | Option | What it means | Cost to you | If it's wrong |
 |---|---|---|---|
-| **[1] re-dispatch** | The loop merges main in and comes back ready | One more merge answer | Nothing merges without that answer |
+| **[1] merge** | The next iteration merges c76fca39 | None beyond this answer | One `git revert` of the merge |
 | **[2] drop** | The brief closes; unit 2 is abandoned | None now | The stops stay |
+| **[3] changes needed** | Your note goes back to the loop | A one-line note | Another loop round |
 
 - **Blocks:** nothing.
 - **Interim:** the branch waits.
-
-**Answered:** [1] (owner, in session 2026-11-01: "Q-246: [1]; Q-247: [1]"; recorded by the dev cycle)
-
-### Q-247 · stopped-2026-11-01-relax-dev-cycle-skill-prose-1
-**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** ANSWERED
-
-Brief 2026-11-01-relax-dev-cycle-skill-prose's build loop stopped; re-dispatch or drop?
-> Reason: your approved merge (Q-243 [1]) of 7e6f1e0e refused: "docs/relax-dev-cycle-skill-prose conflicts with the default branch". Unit 1 merged first (63ba32e9) and edits the same Hardened git passage of `skills/dev-cycle/SKILL.md`.
-
-**If you say no:** the branch stays unmerged and the skill keeps its rituals.
-
-**What an attacker would want here:** nothing; this only sends the same work back to merge main in.
-
-- **What re-dispatch does:** the loop merges main into its branch, reconciles the passage with unit 1's text, re-runs its tests and ends `ready` at a new tip. That comes back to you as a new merge entry, because approval pins the exact commit.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] re-dispatch** | The loop merges main in and comes back ready | One more merge answer | Nothing merges without that answer |
-| **[2] drop** | The brief closes; unit 3 is abandoned | None now | The rituals stay |
-
-- **Blocks:** nothing.
-- **Interim:** the branch waits.
-
-**Answered:** [1] (owner, in session 2026-11-01: "Q-246: [1]; Q-247: [1]"; recorded by the dev cycle)
 
 ### Q-222 · install-cc-verify-and-r6
 **Needs:** you: terminal · **Opened:** 2026-10-28 · **Status:** OPEN

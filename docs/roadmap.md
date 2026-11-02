@@ -89,10 +89,10 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 - **Restriction audit unit 2: narrow the stops in the referenced workflows and skills**
   (owner, 2026-11-01). Review (`workflows/`, instruction files). Q-244 [1], but the merge
-  conflicted with unit 1 (decision-log row 79): stopped entry Q-246 (2026-11-01-2347). Brief: `docs/working/briefs/2026-11-01-relax-referenced-prose-stops.md`
+  conflicted with unit 1 (decision-log row 79): stopped entry Q-246 (2026-11-01-2347). Re-dispatched on Q-246 [1]; ready at c76fca39 (row renumbered to 80): merge entry Q-248. Brief: `docs/working/briefs/2026-11-01-relax-referenced-prose-stops.md`
 - **Restriction audit unit 3: drop the dev-cycle skill's out-of-scope rituals** (owner,
   2026-11-01). Review (gate code). Q-243 [1], but the merge conflicted with unit 1 (the
-  Hardened git passage): stopped entry Q-247 (2026-11-01-2347).
+  Hardened git passage): stopped entry Q-247 (2026-11-01-2347). Re-dispatched on Q-247 [1] (2026-11-02-0340).
   Brief: `docs/working/briefs/2026-11-01-relax-dev-cycle-skill-prose.md`
 
 ## Next
