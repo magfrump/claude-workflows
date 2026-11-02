@@ -123,7 +123,7 @@ bats --jobs 2 test/agents-gemini-sync.bats 2>&1 | grep -iE 'cite|locale'   # exp
 ### Q-227 · image-lag
 **Needs:** you: terminal · **Opened:** 2026-10-29 · **Status:** OPEN
 
-**Release notes** (trial T1; rewritten 2026-11-02 for main at 3019016a). Installed image: `42295bd9`, read from `/opt/claude-workflows/.manifest`. Main is ahead in gate code: restriction-audit units 3 and 4, which you approved (Q-249, Q-250). The image runs the gate and the dev-cycle skill, so neither is live until you run the paste.
+**Release notes** (trial T1; rewritten 2026-11-02 for main at d2902586, whose gate code is 3019016a's). Installed image: `42295bd9`, read from `/opt/claude-workflows/.manifest`. Main is ahead in gate code: restriction-audit units 3 and 4, which you approved (Q-249, Q-250). The image runs the gate and the dev-cycle skill, so neither is live until you run the paste.
 
 **If you say no:** the cycle keeps running the older, longer skill and the stricter text and path rules. Nothing breaks.
 
@@ -134,7 +134,7 @@ bats --jobs 2 test/agents-gemini-sync.bats 2>&1 | grep -iE 'cite|locale'   # exp
 - Briefs, questions files and loop questions are no longer rejected for HTML, angle-bracket placeholders, `[1]: URL` lines, or heading and `Q-12` lines in a loop's question; open comments, odd fences, CR and BOM still refuse. An approved review branch can land `.github/`, `.gitignore`, a symlink or a gitlink (path lines mark the last two). Loops run divergent design only for 3+ options and proceed on a tentative pick on a tie (unit 4).
 - The workflows and skills the cycle references lose prose stops that had no in-scope threat, and draft-review's fact-check gate gets the same unattended default (units 2 and 4).
 
-**Not listed:** 12 routine dev-cycle record lands. Paths changed outside `docs/` (15 under `docs/` not listed): `global-instructions/CLAUDE.md`, `guides/convention-changes.md`, `guides/pr-prep-quick-ref.md`, `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/migrations.sh`, `skills/code-review/SKILL.md`, `skills/constraints-builder/SKILL.md`, `skills/constraints-builder/references/working-doc-template.md`, `skills/dev-cycle/SKILL.md`, `skills/draft-review/SKILL.md`, `skills/research-plan-implement/SKILL.md`, `skills/security-reviewer/SKILL.md`, `workflows/pr-prep.md`, `workflows/research-plan-implement.md`, `workflows/review-fix-loop.md`, and five test files.
+**Not listed:** 13 routine dev-cycle record lands. Paths changed outside `docs/` (15 under `docs/` not listed): `global-instructions/CLAUDE.md`, `guides/convention-changes.md`, `guides/pr-prep-quick-ref.md`, `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/migrations.sh`, `skills/code-review/SKILL.md`, `skills/constraints-builder/SKILL.md`, `skills/constraints-builder/references/working-doc-template.md`, `skills/dev-cycle/SKILL.md`, `skills/draft-review/SKILL.md`, `skills/research-plan-implement/SKILL.md`, `skills/security-reviewer/SKILL.md`, `workflows/pr-prep.md`, `workflows/research-plan-implement.md`, `workflows/review-fix-loop.md`, and five test files.
 
 **The paste** (host terminal in WSL, not inside a session; stop every session first):
 
