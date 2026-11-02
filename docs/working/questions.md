@@ -36,7 +36,7 @@ The index below is generated — edit entries, not the table.
 ## Open
 
 ### Q-249 · merge-gate-2026-11-01-relax-dev-cycle-skill-prose-28f3cf1afc73
-**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** ANSWERED
 
 Merge restriction-audit unit 3 (the dev-cycle skill drops its out-of-scope rituals: the `hg` wrapper, the identity ritual and the `--state` re-run before commits) at its new tip?
 
@@ -61,8 +61,10 @@ Merge restriction-audit unit 3 (the dev-cycle skill drops its out-of-scope ritua
 - **Blocks:** audit units 4-7 (they edit the same files).
 - **Interim:** the branch waits.
 
+**Answered:** [1] (owner, in session 2026-11-01: "Q-248: [1] and Q-249: [1]"; recorded by the dev cycle)
+
 ### Q-248 · merge-2026-11-01-relax-referenced-prose-stops-c76fca3930c4
-**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** ANSWERED
 
 Merge restriction-audit unit 2 (the workflows and skills the dev cycle uses stop only on an in-scope failure) at its new tip?
 
@@ -85,6 +87,8 @@ Merge restriction-audit unit 2 (the workflows and skills the dev cycle uses stop
 
 - **Blocks:** nothing.
 - **Interim:** the branch waits.
+
+**Answered:** [1] (owner, in session 2026-11-01: "Q-248: [1] and Q-249: [1]"; recorded by the dev cycle)
 
 ### Q-222 · install-cc-verify-and-r6
 **Needs:** you: terminal · **Opened:** 2026-10-28 · **Status:** OPEN
