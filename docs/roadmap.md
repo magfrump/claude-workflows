@@ -16,8 +16,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 - **Agent: restriction audit units 4-7** (filed 2026-11-01, owner request). Motive: the owner
   asked to remove every restriction without a specific, in-scope threat model; plan and
   inventories in `docs/working/research-2026-11-01-restriction-audit.md`. Units 1-3 merged
-  (63ba32e9, 242081af, 78dad60b). Unit 4 (brief, marker and path grammar, the loop prompt's
-  K24/K26) is in flight (briefed 2026-11-02). First step after it merges: brief unit 5 (the cycle runs migrations; it also absorbs the
+  (63ba32e9, 242081af, 78dad60b); unit 4 merged (3019016a, Q-250 [1]). First step: brief unit 5 (the cycle runs migrations; it also absorbs the
   image-lag item below), 6 (import walk seeds and parser) and 7 (D6 block into the image).
   Unit 5 also fixes `scripts/dev-cycle.sh:193`, whose skip message still says "use
   --check-write" (unit 3 drops that call).
@@ -97,8 +96,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
-- **Restriction audit unit 4: brief, marker and path grammar, the loop prompt** (review policy;
-  gate code). Brief: `docs/working/briefs/2026-11-02-relax-grammar-and-loop-prompt.md`.
 
 ## Next
 
@@ -331,6 +328,9 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- **Restriction audit unit 4: brief, marker and path grammar, the loop prompt** (owner,
+  2026-11-01). Merged 3019016a (Q-250 [1]; decision-log row 81). Brief:
+  `docs/working/briefs/closed/2026-11-02-relax-grammar-and-loop-prompt.md`.
 - **Restriction audit unit 2: narrow the stops in the referenced workflows and skills**
   (owner, 2026-11-01). Merged 242081af (Q-248 [1], after a re-dispatch on Q-246 to merge
   main in; its decision-log row is 80). Brief:

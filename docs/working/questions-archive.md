@@ -242,6 +242,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-247](#q-247--stopped-2026-11-01-relax-dev-cycle-skill-prose-1) | Brief 2026-11-01-relax-dev-cycle-skill-prose's build loop stopped; re-dispatch or drop? | 2026-11-01 |
 | [Q-248](#q-248--merge-2026-11-01-relax-referenced-prose-stops-c76fca3930c4) | Merge restriction-audit unit 2 (the workflows and skills the dev cycle uses stop only on an in-scope failur... | 2026-11-01 |
 | [Q-249](#q-249--merge-gate-2026-11-01-relax-dev-cycle-skill-prose-28f3cf1afc73) | Merge restriction-audit unit 3 (the dev-cycle skill drops its out-of-scope rituals: the `hg` wrapper, the i... | 2026-11-01 |
+| [Q-250](#q-250--merge-gate-2026-11-02-relax-grammar-and-loop-prompt-c1aae1b28040) | Merge restriction-audit unit 4 (the gate's brief, marker and path rules refuse only real ambiguity, and the... | 2026-11-02 |
 <!-- index:end -->
 
 ## Answered
@@ -5486,5 +5487,35 @@ Merge restriction-audit unit 2 (the workflows and skills the dev cycle uses stop
 - **Interim:** the branch waits.
 
 **Answered:** [1] (owner, in session 2026-11-01: "Q-248: [1] and Q-249: [1]"; recorded by the dev cycle)
+
+
+### Q-250 · merge-gate-2026-11-02-relax-grammar-and-loop-prompt-c1aae1b28040
+**Needs:** you: judgment · **Opened:** 2026-11-02 · **Status:** ANSWERED
+
+Merge restriction-audit unit 4 (the gate's brief, marker and path rules refuse only real ambiguity, and the loop prompt runs divergent design only for 3+ options) at c1aae1b2?
+
+**If you say no:** a brief holding `<details>`, a `NAME` placeholder in angle brackets or a `[1]: URL` line stays unreadable; a loop's question with a `## Options` heading or a "Q-12" line is filed as stopped; an approved branch adding `.github/` or `.gitignore` can never land; and every loop keeps running divergent design on single-answer choices and blocking on ties.
+
+**What an attacker would want here:** this is gate code (`scripts/build-loop.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/dev-cycle.sh`, `skills/dev-cycle/SKILL.md`), so it reaches the image at the next release. For an outside party, the relevant question is whether text from outside (a quoted web page in a brief, a pasted issue) can now make a reader see a different `Status:` or answer line. The loop kept the rules that prevent that: indented and list-item fences, an open HTML comment, CR, NUL, a BOM and an unclosed fence still refuse the whole file, and only column-0 key lines outside column-0 fences are read. The stated residual: a key line that HTML hides from a renderer is still read, which only a deliberately contrived file produces (out of scope, S1).
+
+- **Tip:** c1aae1b2804000c8a1858211f7d8cd28c39f2fdd (5 commits past 4c410708; 17 files, +418/−180)
+- **`--check` printed:**
+  - `ok docs/working/briefs/2026-11-02-relax-grammar-and-loop-prompt.md c1aae1b2804000c8a1858211f7d8cd28c39f2fdd 54baccbcf8b141e99c86d8618168bf3adf22fa1c`
+  - 16 `path` lines, all `M` except one `A`: `docs/decisions/log.md`, the brief, `docs/working/plan-build-loop-handoff.md`, `docs/working/research-2026-11-02-relax-grammar-and-loop-prompt.md` (A), `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/migrations.sh`, `skills/constraints-builder/references/working-doc-template.md`, `skills/dev-cycle/SKILL.md`, `skills/draft-review/SKILL.md`, and five `test/scripts/` bats files
+- **Paths self-merge would have refused:** the four gate-code files above, `docs/decisions/log.md` (a decision record), and the `SKILL.md` and skill-reference files (prompt files).
+- **One departure from the brief (the loop's D2):** the brief said to relax the path rules "under `--approved`". But a review brief's `--check` refuses first, so a `.github/` change could still never reach your merge entry. The loop relaxed them for review briefs' `--check` and `--approved` alike. Self-merge keeps the strict rules (no `.git*` part, no symlink or gitlink). Path lines now mark `(symlink)` and `(gitlink)` so you see them here.
+- **Also in it:** decision-log row 81 (the grammar redefinition, superseding row 69's HTML and link-reference refusals). The draft-review Fact-Check Gate gets unit 2's unattended default. The two stale lines unit 3 left are corrected. A no-op migration `brief-text-grammar-081` is added.
+- **Checks:** two review passes; pass 1's red (a self-merge's tie question was lost) and ambers are fixed, and pass 2 was clean after two small fixes. The full health check passed on the branch ("All checks passed"). Won't-fix: a run of backticks in a release-entry path can break its code span (cosmetic).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next iteration merges c1aae1b2; it takes effect at the next release | None beyond this answer | One `git revert` of the merge |
+| **[2] drop** | The brief closes; unit 4 is abandoned | None now | The rules stay as strict as today |
+| **[3] changes needed** | Your note goes back to the loop (for example, keep the path rules strict outside `--approved`) | A one-line note | Another loop round |
+
+- **Blocks:** audit units 5 and 6 (they edit the same files).
+- **Interim:** the branch waits.
+
+**Answered:** [1] (owner, in session 2026-11-02: "Q-250: [1]"; recorded by the dev cycle)
 
 
