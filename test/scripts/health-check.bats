@@ -511,6 +511,34 @@ JSON
   [[ "$output" == *"Persona freshness: 2 checked, 1 fresh, 1 stale, 0 invalid"* ]]
 }
 
+@test "gate 12: a persona sampled today reads 0 days on a DST fall-back day" {
+  # 2026-11-01 is a 25-hour local day under US rules. A POSIX TZ string needs no
+  # tzdata, so the zone cannot silently fall back to UTC. The shim answers "now"
+  # as 23:30 that day (24.5 h after local midnight) and passes every -d/--date
+  # call to the real date, so it is exactly as strict as date on those.
+  local root shim real; root="$(_fixture_repo)"; shim="$BATS_TEST_TMPDIR/bin"
+  real="$(command -v date)"
+  mkdir -p "$shim" "$root/skills/today-persona"
+  cat > "$shim/date" <<'SHIM'
+#!/usr/bin/env bash
+for a in "$@"; do
+  case "$a" in -d|-d*|--date|--date=*) exec "$REAL_DATE" "$@" ;; esac
+done
+exec "$REAL_DATE" -d '2026-11-01 23:30' "$@"
+SHIM
+  chmod +x "$shim/date"
+  printf -- '---\nname: today-persona\npersona-last-sampled: 2026-11-01\n---\n' \
+    > "$root/skills/today-persona/SKILL.md"
+  # Guard: the shim and zone really produce a 25-hour day here.
+  [ "$(TZ='EST5EDT,M3.2.0,M11.1.0' REAL_DATE="$real" "$shim/date" +%F)" = 2026-11-01 ]
+  [ $(( $(TZ='EST5EDT,M3.2.0,M11.1.0' REAL_DATE="$real" "$shim/date" +%s) \
+        - $(TZ='EST5EDT,M3.2.0,M11.1.0' "$real" -d 2026-11-01 +%s) )) -eq 88200 ]
+  PATH="$shim:$PATH" REAL_DATE="$real" TZ='EST5EDT,M3.2.0,M11.1.0' \
+    HEALTH_CHECK_SKILLS_DIR="$root/skills" _run_gate "$root" check_persona_freshness
+  [[ "$output" == *"✓ today-persona: fresh (0 days since 2026-11-01)"* ]]
+  [[ "$output" == *"Persona freshness: 1 checked, 1 fresh, 0 stale, 0 invalid"* ]]
+}
+
 @test "gate 13: AGENTS.md and GEMINI.md with different sections are flagged" {
   local root; root="$(_fixture_repo)"
   printf '## Skills\n## Only in agents\n' >> "$root/AGENTS.md"
