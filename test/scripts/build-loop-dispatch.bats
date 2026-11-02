@@ -79,9 +79,9 @@ lock() { git worktree unlock "$1" 2>/dev/null; git worktree lock --reason "$2" "
     chmod +x "$BATS_TEST_TMPDIR/bin/git"
     PATH="$BATS_TEST_TMPDIR/bin:$PATH" dsp --start "$B"; refused "its branch feat/x could not be created"
     [ "$(git rev-parse feat/x)" = "$o" ] && git update-ref -d refs/heads/feat/x && none
-    git config filter.x.clean cat
-    dsp --start "$B"; [ "$status" -eq 2 ] && [ "$output" = "refuse state filter.x.clean: set in config, it can make the gate's git run a command or change its merge" ] || { show; return 1; }; none
-    git config --unset filter.x.clean
+    git rev-parse main > .git/shallow
+    dsp --start "$B"; [ "$status" -eq 2 ] && [ "$output" = "refuse state shallow: a shallow clone, whose history the gate cannot read whole" ] || { show; return 1; }; none
+    rm .git/shallow; git config filter.x.clean cat
     dsp --start "$B"; [ "$status" -eq 0 ] && [ "${lines[1]}" = "dispatched 4" ] || { show; return 1; }
 }
 

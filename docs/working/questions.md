@@ -25,51 +25,59 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
-| [Q-242](#q-242--merge-gate-2026-10-31-failure-patterns-out-of-thoughts-c3f3f0e49f17) | you: judgment | Merge `refactor/failure-patterns-out-of-thoughts` at c3f3f0e49f1721319de7279ddc47ec15bdac7695? It does what... | 2026-10-31 |
+| [Q-246](#q-246--stopped-2026-11-01-relax-referenced-prose-stops-1) | you: judgment | Brief 2026-11-01-relax-referenced-prose-stops's build loop stopped; re-dispatch or drop? | 2026-11-01 |
+| [Q-247](#q-247--stopped-2026-11-01-relax-dev-cycle-skill-prose-1) | you: judgment | Brief 2026-11-01-relax-dev-cycle-skill-prose's build loop stopped; re-dispatch or drop? | 2026-11-01 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-222](#q-222--install-cc-verify-and-r6) | you: terminal | Four approved merges landed today, two of them in host tools: the `cc-verify` host tool (37b24c02, Q-217) a... | 2026-10-28 |
 | [Q-227](#q-227--image-lag) | you: terminal | - The failure-pattern library is `docs/failure-patterns.md`. It stays protected (the self-merge floor, the ... | 2026-10-29 |
-| [Q-234](#q-234--migrate-questions-owner-routes-040) | you: terminal | The convention migration `questions-owner-routes-040` (decision 040: `questions.md` holds only owner routes... | 2026-10-29 |
 <!-- index:end -->
 
 ## Open
 
-### Q-242 · merge-gate-2026-10-31-failure-patterns-out-of-thoughts-c3f3f0e49f17
-**Needs:** you: judgment · **Opened:** 2026-10-31 · **Status:** ANSWERED
+### Q-246 · stopped-2026-11-01-relax-referenced-prose-stops-1
+**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** ANSWERED
 
-**If you say no:** `docs/thoughts/` stays on the self-merge floor, so a branch that touches a thoughts note keeps going to your review, in this repo and the others.
+Brief 2026-11-01-relax-referenced-prose-stops's build loop stopped; re-dispatch or drop?
+> Reason: your approved merge (Q-244 [1]) of 8ca8ec2e refused: "docs/relax-referenced-prose-stops conflicts with the default branch". Unit 1 merged first (63ba32e9) and also added decision-log row 79.
 
-**What an attacker would want here:** nothing new from an outside party. The change moves one file and narrows what the floor refuses. It reads and writes nothing outside the repo.
+**If you say no:** the branch stays unmerged and the workflows keep their stops.
 
-Merge `refactor/failure-patterns-out-of-thoughts` at c3f3f0e49f1721319de7279ddc47ec15bdac7695? It does what you asked on 2026-10-31. The failure-pattern library moves to `docs/failure-patterns.md`, next to `dev-cycle.md` and `constraints.md`. `docs/thoughts/` leaves the self-merge floor, so branches that edit thoughts notes can self-merge.
+**What an attacker would want here:** nothing; this only sends the same work back to merge main in.
 
-- **Why it's yours:** it changes the gate's own code (`scripts/build-loop.sh`, `scripts/lib/`, `skills/dev-cycle/SKILL.md`), which never self-merges.
-- **What changes:**
-  - **The library stays protected at its new path.** The floor, the cycle's in-cycle fixes and the cycle's land check all refuse it, and the old path too, so a repo that hasn't migrated can't lose its library unreviewed.
-  - **The rest of `docs/thoughts/` is open** to all three.
-  - **About 40 references now name the new path:** the gate, `self-improvement.sh`, `questions.sh`, three workflows, a guide and the tests.
-  - **Your other repos:** a migration, `failure-patterns-out-of-thoughts` (`git mv docs/thoughts/failure-patterns.md docs/failure-patterns.md`). The dev cycle files it as a paste for you in each repo after the release. Until a repo runs it, only a `fix(...)` branch there with no skip line is held, with a message naming the remedy; every other branch passes.
-- **Checks:**
-  - The loop ran two review rounds. Both Mediums in round 1 were fixed: the old path had been unguarded, and two lists of truth files were stale. Round 2 found only Lows, fixed but one: a new stderr line in `self-improvement.sh` has no test.
-  - Every new or changed test fails on the code before the change.
-  - The loop's full health check passed.
-  - On the tree the branch makes with main (a1310a3f), the six touched suites pass 308/308.
-  - I read the floor, migration and gate diffs myself.
-- **Takes effect:** at the next release (Q-227), since the gate runs from the image; then once per repo, its migration.
-- **`--check` printed:** `ok docs/working/briefs/2026-10-31-failure-patterns-out-of-thoughts.md c3f3f0e49f1721319de7279ddc47ec15bdac7695 a1310a3f3f4f5a8e4dad436cf92060124d662b9d`, plus 23 path lines. The code paths are `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/migrations.sh`, `scripts/questions.sh`, `scripts/self-improvement.sh`, `skills/dev-cycle/SKILL.md`, three workflows, `guides/harness-feedback.md` and six test files. The docs are `docs/decisions/log.md`, the moved library, the plan, the brief and its research doc.
-- **Paths self-merge's floor would refuse:** the gate code and `SKILL.md` above; `docs/decisions/log.md`; the library at both paths.
+- **What re-dispatch does:** the loop merges main into its branch, resolves the clash (renumbering its decision-log row), re-runs its tests and ends `ready` at a new tip. That comes back to you as a new merge entry, because approval pins the exact commit.
 
 | Option | What it means | Cost to you | If it's wrong |
 |---|---|---|---|
-| **[1] merge** | The next iteration merges c3f3f0e4; it takes effect at the next release | None beyond this answer | One `git revert` of the merge, plus moving the file back in any repo that already migrated |
-| **[2] drop** | The brief closes; `docs/thoughts/` stays on the floor | None now | Thoughts edits keep coming to your review |
-| **[3] changes needed** | Your note goes back to the loop (for example, take the library off the floor too) | A one-line note | Another loop round |
+| **[1] re-dispatch** | The loop merges main in and comes back ready | One more merge answer | Nothing merges without that answer |
+| **[2] drop** | The brief closes; unit 2 is abandoned | None now | The stops stay |
 
 - **Blocks:** nothing.
 - **Interim:** the branch waits.
 
-**Answered:** [1] (owner, in session 2026-11-01: "Q-242: [1]"; recorded by the dev cycle)
+**Answered:** [1] (owner, in session 2026-11-01: "Q-246: [1]; Q-247: [1]"; recorded by the dev cycle)
+
+### Q-247 · stopped-2026-11-01-relax-dev-cycle-skill-prose-1
+**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** ANSWERED
+
+Brief 2026-11-01-relax-dev-cycle-skill-prose's build loop stopped; re-dispatch or drop?
+> Reason: your approved merge (Q-243 [1]) of 7e6f1e0e refused: "docs/relax-dev-cycle-skill-prose conflicts with the default branch". Unit 1 merged first (63ba32e9) and edits the same Hardened git passage of `skills/dev-cycle/SKILL.md`.
+
+**If you say no:** the branch stays unmerged and the skill keeps its rituals.
+
+**What an attacker would want here:** nothing; this only sends the same work back to merge main in.
+
+- **What re-dispatch does:** the loop merges main into its branch, reconciles the passage with unit 1's text, re-runs its tests and ends `ready` at a new tip. That comes back to you as a new merge entry, because approval pins the exact commit.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] re-dispatch** | The loop merges main in and comes back ready | One more merge answer | Nothing merges without that answer |
+| **[2] drop** | The brief closes; unit 3 is abandoned | None now | The rituals stay |
+
+- **Blocks:** nothing.
+- **Interim:** the branch waits.
+
+**Answered:** [1] (owner, in session 2026-11-01: "Q-246: [1]; Q-247: [1]"; recorded by the dev cycle)
 
 ### Q-222 · install-cc-verify-and-r6
 **Needs:** you: terminal · **Opened:** 2026-10-28 · **Status:** OPEN
@@ -183,18 +191,3 @@ The `merge-base` check runs no hook and only confirms that your checkout holds a
 - **Interim:** the image at 46929c81 runs; `docs/thoughts/` stays on the floor until then.
 - **Blocks:** nothing.
 
-### Q-234 · migrate-questions-owner-routes-040
-**Needs:** you: terminal · **Opened:** 2026-10-29 · **Status:** ANSWERED
-
-The convention migration `questions-owner-routes-040` (decision 040: `questions.md` holds only owner routes) is pending here. The digest found an old-shape line in `docs/working/questions.md` (line 103 when filed: `**Needs:** agent`, Q-168's entry), and 11 open entries still carry an `agent`, `trigger` or `deferred` route. `questions.sh migrate` moves them, without loss, to `docs/working/watching.md` (watches) and `docs/working/roadmap-from-questions.md` (agent work, which the next dev cycle folds into the roadmap). Run this from the repo's root in a session (not the host), then commit the files it changed:
-
-```
-cd /workspace && ~/.claude/scripts/questions.sh migrate && git add docs/working/questions.md docs/working/watching.md docs/working/roadmap-from-questions.md && git commit -m "docs(questions): run questions.sh migrate (Q-234, migration questions-owner-routes-040)"
-```
-
-- **Read:** `scripts/lib/migrations.sh` (the registry line) · `docs/decisions/040-questions-doc-owner-only.md` · Q-229 in the archive (the unit that added `migrate`)
-- **Blocks:** nothing.
-- **Now (2026-10-30):** unit 3 merged (01022de2, Q-235 [1]). Run this after the Q-227 release, because the digest reads `watching.md` only from the image.
-- **Interim:** the iteration goes on; every reader still reads the old routes in `questions.md`. The cycle cannot run it itself: `--cycle-diff` refuses a chore commit that rewrites entries' **Needs:** lines. Run it only after unit 3 (`feat/questions-owner-only-unit3`, roadmap In flight; sent back to its loop this cycle) has merged: until then the digest reads watches only from `questions.md`, so migrating first drops them from the cycle's view (the unit 3 brief's motive).
-
-**Answered:** done (owner, in session 2026-11-01: "Q-234: do it"). Run in session from the image copy (`questions.sh migrate`): 9 entries moved, Q-161, Q-067, Q-098 to `watching.md`, six agent entries folded into roadmap Now (Q-173 dropped: settled by Q-238 [1]).

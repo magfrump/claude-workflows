@@ -19,6 +19,10 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   flight. First step: once unit 1 merges, brief unit 4 (brief, marker and path grammar, the
   loop prompt's K24/K26), then unit 5 (the cycle runs migrations; it also absorbs the
   image-lag item below), 6 (import walk seeds and parser) and 7 (D6 block into the image).
+  Unit 5 also fixes `scripts/dev-cycle.sh:193`, whose skip message still says "use
+  --check-write" (unit 3 drops that call).
+  Unit 4 also gives `skills/draft-review/SKILL.md`'s Fact-Check Gate the same unattended
+  default (unit 2's override-log C9).
 - **Agent: the cycle closes a cleared image-lag entry itself** (filed 2026-11-01, owner
   request). Motive: when the image already holds main's gate code (step 0.1's `diff --quiet`
   exits 0), the release the entry asks for has happened, yet the skill only lists the entry
@@ -83,14 +87,13 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
-- **Restriction audit unit 1: narrow the gate's git-state checks** (owner, 2026-11-01). Review
-  (gate code). Brief: `docs/working/briefs/2026-11-01-relax-gate-git-state.md`
 - **Restriction audit unit 2: narrow the stops in the referenced workflows and skills**
-  (owner, 2026-11-01). Review (`workflows/`, instruction files). Brief:
-  `docs/working/briefs/2026-11-01-relax-referenced-prose-stops.md`
+  (owner, 2026-11-01). Review (`workflows/`, instruction files). Q-244 [1], but the merge
+  conflicted with unit 1 (decision-log row 79): stopped entry Q-246 (2026-11-01-2347). Brief: `docs/working/briefs/2026-11-01-relax-referenced-prose-stops.md`
 - **Restriction audit unit 3: drop the dev-cycle skill's out-of-scope rituals** (owner,
-  2026-11-01). Review (gate code). Brief:
-  `docs/working/briefs/2026-11-01-relax-dev-cycle-skill-prose.md`
+  2026-11-01). Review (gate code). Q-243 [1], but the merge conflicted with unit 1 (the
+  Hardened git passage): stopped entry Q-247 (2026-11-01-2347).
+  Brief: `docs/working/briefs/2026-11-01-relax-dev-cycle-skill-prose.md`
 
 ## Next
 
@@ -257,6 +260,11 @@ Unranked. Each names the signal that motivates it.
   fix-drift loop's Path A record pruned option D on S8/S1 (soft) beside a trust-boundary
   reason, and E on S2 beside the brief's own rule; the pick (C) stands. Same class as
   43762305: the audit should check that loops rank with S lines rather than prune.
+  Fired again 2026-11-01: `skills/dev-cycle/SKILL.md` and the gate scripts changed by
+  restriction-audit unit 1 (63ba32e9, Q-245 [1]; 23 SKILL.md lines), plus small pr-prep,
+  RPI and onboarding edits. Best read after units 2-7 land, since they rewrite the same
+  passages. No drift finding: unit 1's Path A record prunes on H1/H2 and uses S1/S3/S6 to
+  rank among options that meet them.
   Fired again 2026-10-29 (iteration 2026-10-30-0035): `skills/dev-cycle/SKILL.md` gained
   step 1b (6f364ba6, convention migrations), and a third drift finding (step 4, 6ee39f24):
   the watching-file loop's Path A record marks options 4 and 6 as failing on soft lines
@@ -315,6 +323,9 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- **Restriction audit unit 1: the gate's git-state checks narrowed to in-scope threats**
+  (owner, 2026-11-01). Merged 63ba32e9 (Q-245 [1]); takes effect at the next release. Brief:
+  `docs/working/briefs/closed/2026-11-01-relax-gate-git-state.md`
 - Q-234: `questions.sh migrate` run (owner, 2026-11-01): watches now in `docs/working/watching.md`; Q-173 (exit-scan split groups) closed, settled by Q-238 [1]. Branch `chore/q234-migrate`.
 - **Failure patterns move out of `docs/thoughts/`; `docs/thoughts/` leaves the self-merge
   floor** (owner, 2026-10-31). The library is now `docs/failure-patterns.md`, still on the

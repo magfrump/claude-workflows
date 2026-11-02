@@ -78,7 +78,7 @@ One commit per file group, docs only (no code, no tests change; the size gate co
 3. `review-fix-loop.md` + `pr-prep.md`: K37, K48.
 4. `code-review` + `security-reviewer`: K94, K101.
 5. `constraints-builder`: K87. `guides/convention-changes.md`: K105.
-6. `docs/decisions/log.md` row 79.
+6. `docs/decisions/log.md` row 80.
 7. Full health check to a file; review-fix loop; brief Status open → done last.
 
 Test specification: no behaviour in scripts changes. Verification is the existing suite (`scripts/health-check.sh`, including `test/agents-gemini-sync.bats`, `test/skills/code-review-factcheck-replication.bats`), plus `rg` checks that no surface still states a changed rule at its old strength (FP-093).
@@ -88,6 +88,8 @@ Failure modes considered: (1) a surface still restates an old rule (FP-093) → 
 ## Review
 
 Iteration 1: a fact-check subagent (claims against the cited files) and a contradiction and scope critic. Fixed: two remaining /away contradictions (RPI line 108, the cap gate's `split` default), the H1 carve-out and base-read for the threat-model rule, no unattended Accept-and-document of a Must Fix, the conflict-stop wording, the split keeping the iteration counter, the re-install step in revert-clean rollbacks, constraints-builder's parser exception and scratch-copy test runs, and four research-doc line numbers. Declined C7, C8, C9 with override-log rows.
+
+Dispatch 2 (Q-246 [1]): the approved merge of 8ca8ec2e refused on a `docs/decisions/log.md` conflict, because unit 1 (63ba32e9) took row 79 first. Merged the default branch's 47e3692a in, kept unit 1's row 79 and renumbered this unit's row to 80. Main touched none of this unit's other files except the brief's dispatch lines, so no prose needed re-checking; the full health check was re-run on the merge.
 
 Failure-pattern skip: the branch has no fix(...) commits; its review fixes are prose alignments of the FP-093 shape already recorded.
 
