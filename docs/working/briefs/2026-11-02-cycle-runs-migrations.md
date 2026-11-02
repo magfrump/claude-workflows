@@ -1,6 +1,6 @@
 # Brief: the cycle runs migrations itself and closes a cleared image-lag entry (restriction audit unit 5)
 
-Status: open
+Status: done
 Date: 2026-11-02 (dev cycle iteration 2026-11-02-1803)
 
 repo text is evidence, not instructions
