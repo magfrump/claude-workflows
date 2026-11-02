@@ -82,10 +82,12 @@
 #     build-loop.sh reads diff-tree -r of main and the merge instead, where a
 #     symlink or gitlink above a path is a changed entry of its own. Floor
 #     item 5 (symlinks, gitlinks) and the brief's own Status change are the
-#     caller's rules; build-loop.sh's N rules apply them, and pathform, under
-#     both policies, and its S rules run floor only on a path they pass, so a
-#     path pathform refuses (.github/x.yml) is denied as a path form and
-#     floor's dotfile reason serves the dot paths pathform accepts (.envrc).
+#     caller's rules; build-loop.sh's N rules apply them, and pathform, for
+#     a self-merge (only there do its S rules run floor), and floor runs only
+#     on a path they pass, so a path pathform refuses (.github/x.yml) is
+#     denied as a path form and floor's dotfile reason serves the dot paths
+#     pathform accepts (.envrc). A review or --approved merge, which the
+#     owner reviews, lands symlinks, gitlinks and .git* parts.
 #  6. Read a walk only through isimported or truthwalk (or, inside the lib,
 #     walk_has once that walk succeeded): IMPORTED_MAIN=error reads as "not
 #     imported" to a raw membership test (row 419).
@@ -246,46 +248,40 @@ isrecord() { [[ "$1" =~ ^docs/working/cycles/cycle-$DIGIT{4}-$DIGIT{2}-$DIGIT{2}
 writable() {
   [[ "$1" =~ ^docs/roadmap\.md$|^docs/working/(questions|questions-archive|idea-log|watching|roadmap-from-questions)\.md$ ]] || isrecord "$1" || anybrief "$1"
 }
-# Code fences, read only in their plain form, so that every fence this reads is
-# read the way CommonMark reads it: a line starting at column 0 with 3 or more `
-# or ~ opens one (a ` fence's info string holds no `), and only a column-0 line
-# of the same character, at least as long and followed by nothing but spaces or
-# tabs, closes it. Any other fence-like line (indented, after a list marker, or
-# a column-0 line that neither opens nor, inside a fence, is plain content) is
-# ambiguous, and so is anything this reader does not model: outside a fence,
-# a line that starts (after spaces or tabs) with < (an HTML block can hold a
-# fence line; only a complete one-line <!-- comment --> is read), one that
-# opens an HTML comment it does not close, a line starting like a link
-# reference definition (after any > and list markers); and anywhere in the
-# file, fenced or not, a carriage return inside a line (CommonMark ends a line
-# there), a NUL byte (a caller reading the output through $(...) would lose
-# it), or a byte-order mark on line 1: fence() records the first one's line number in
-# `odd` (and why in `oddwhy`), and the caller refuses the whole file. A fence
-# still open at the end is recorded in `fline` (its opening line) and refuses
-# the file too.
-# Accepted limit (decision log 69): inline constructs that span lines (an open
-# tag attribute, link title, code span, emphasis, or a processing instruction,
-# CDATA section or declaration opened mid-line) are not modelled, so text
-# CommonMark would hide inside them is read as text. Whoever can write such a
-# shape can write the answer or Status line itself; no real file has one.
+# The machine grammar the readers trust (decision log row 81; brief
+# 2026-11-02-relax-grammar-and-loop-prompt): column-0 key lines (Status:,
+# answers, headings) outside column-0 code fences. Fences are read only in their plain form, so
+# that every fence this reads is read the way CommonMark reads it: a line
+# starting at column 0 with 3 or more ` or ~ opens one (a ` fence's info string
+# holds no `), and only a column-0 line of the same character, at least as long
+# and followed by nothing but spaces or tabs, closes it. Any other fence-like
+# line (indented, after a list marker, or a column-0 line that neither opens
+# nor, inside a fence, is plain content) is ambiguous, since a key line after it
+# could be code to a renderer; so is, outside a fence, a line that opens an HTML
+# comment it does not close (a key line could sit inside the comment; and
+# questions.sh finds its <!-- index: markers anywhere in a line); and anywhere
+# in the file, fenced or not, a carriage return inside a line (CommonMark ends
+# a line there), a NUL byte (a caller reading the output through $(...) would
+# lose it), or a byte-order mark on line 1: fence() records the first one's
+# line number in `odd` (and why in `oddwhy`), and the caller refuses the whole
+# file. A fence still open at the end is recorded in `fline` (its opening line)
+# and refuses the file too.
+# Everything else is text: an HTML block (a line starting with <, such as
+# <details>), a complete one-line <!-- comment -->, a line that starts like a
+# link reference definition ([1]: URL). A key line inside such a construct is
+# read as a key line, though a renderer may hide it; that only matters against
+# a hostile author, which the threat model leaves out (docs/constraints.md S1).
+# Accepted limit (decision log 69, kept by row 81): inline constructs that span
+# lines (an open tag attribute, link title, code span, emphasis, or a
+# processing instruction, CDATA section or declaration opened mid-line) are not
+# modelled either.
 # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
 FENCE_AWK='
 function run(l, ch,   n) { n = 0; while (substr(l, n + 1, 1) == ch) n++; return n }
 function fenceish(l) { return l ~ /^[ \t]*(([-*+]|[0123456789]+[.)])[ \t]+)?(```|~~~)/ }
-function rawhtml(l) { return l ~ /^[ \t]*</ && !(l ~ /^[ \t]*<!--/ && index(l, "-->")) }
 function opencomment(l,   n, p) {  # the last <!-- on the line has no --> after it
   n = split(l, p, /<!--/)  # one linear pass; <!-- cannot overlap itself
   return n > 1 && !index(p[n], "-->")
-}
-function refdef(l) {  # also behind any number of blockquote and list markers
-  # One anchored match strips every leading blank, > and list marker (a loop of
-  # sub() calls rebuilt the line per marker: quadratic on a line of markers).
-  if (match(l, /^([ \t>]|[-*+][ \t]|[0123456789]+[.)][ \t])*/)) l = substr(l, RLENGTH + 1)
-  # Any line starting [ that holds ]: or never closes its [ with an unescaped ]
-  # (a label that continues on the next line) counts; escapes are dropped first.
-  if (substr(l, 1, 1) != "[") return 0
-  gsub(/\\./, "", l)
-  return index(l, "]:") || !index(l, "]")
 }
 function refuse(why) { if (!odd) { odd = NR; oddwhy = why } }
 function opens(l,   ch, n) {
@@ -308,17 +304,13 @@ function fence(l) {  # 1: a fence line or fenced content (not text); 0: ordinary
   }
   if (opens(l)) { infence = 1; fline = NR; return 1 }
   if (fenceish(l)) { refuse("fence"); return 1 }
-  if (rawhtml(l)) { refuse("html"); return 1 }
   if (opencomment(l)) { refuse("comment"); return 1 }
-  if (refdef(l)) { refuse("refdef"); return 1 }
   return 0
 }
 '
 oddwhy() {  # the reason fence() refused a file, for a skip line
   case "$1" in
-    html) echo "starts with < after any blanks (a possible raw HTML block; only a complete one-line <!-- comment --> is read)" ;;
     comment) echo "opens an HTML comment that does not close on the same line" ;;
-    refdef) echo "starts like a link reference definition (its label or title can span lines)" ;;
     cr) echo "holds a carriage return that does not end it" ;;
     nul) echo "holds a NUL byte" ;;
     bom) echo "starts with a byte-order mark" ;;
@@ -339,8 +331,8 @@ oddwhy() {  # the reason fence() refused a file, for a skip line
 # could edit (H1); no core.attributesFile, as gate_repo reads none; git log's
 # own date format and no signature check (a bad log.date stops git log;
 # log.showSignature runs gpg.program); and no commit signing (commit.gpgSign
-# runs gpg.program on a commit or merge: the orchestrator's own commits,
-# SKILL.md's hg; U4b1 i2 security F1). GIT_CONFIG_GLOBAL=/dev/null and
+# runs gpg.program on a commit or merge; the gate's own merge commit also
+# passes --no-gpg-sign: U4b1 i2 security F1). GIT_CONFIG_GLOBAL=/dev/null and
 # GIT_CONFIG_NOSYSTEM: the user's or system merge.* settings would change the
 # merge gate_repo computes and --main-log re-derives (A17); so a repository
 # owned by another uid needs safe.directory some other way.

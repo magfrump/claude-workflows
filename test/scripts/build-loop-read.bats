@@ -177,9 +177,13 @@ setup() { bl_setup; }
     constraints '- H1: a' '  success: b' '- H1: c' '  success: d'
     run --separate-stderr bash "$BL" --settings
     [ "$(line constraints)" = "constraints unreadable: constraint H1 is listed twice (lines 1 and 3)" ] || { echo "$output"; return 1; }
-    constraints '- H1: a' '  success: b' '[x]: http://e.invalid'
+    # A link reference definition and an HTML line are text (brief 2026-11-02-relax-grammar-and-loop-prompt G22); an open comment is not.
+    constraints '- H1: a' '  success: b' '[x]: http://e.invalid' '<details>'
     run --separate-stderr bash "$BL" --settings
-    [[ "$(line constraints)" == "constraints unreadable: line 3 of docs/constraints.md starts like a link reference definition"*", so the file is not read" ]] \
+    [ "$(line constraints)" = "constraints ok 1-hard 0-soft: docs/constraints.md on the default branch" ] || { echo "$output"; return 1; }
+    constraints '- H1: a' '  success: b' '<!-- open'
+    run --separate-stderr bash "$BL" --settings
+    [[ "$(line constraints)" == "constraints unreadable: line 3 of docs/constraints.md opens an HTML comment"*", so the file is not read" ]] \
         || { echo "$output"; return 1; }
     # A line that looks like a constraint ID but is not exact: unreadable, never skipped (Q-112 [1]).
     for c in '- [x] H2: x' '* H2: x' '1. H2: x' $'H2:\tx' '  H2: x' 'h2: x' '**H2:** x' '> H2: x' 'H10 : x' '| H2 | x |' 'H01: x'; do

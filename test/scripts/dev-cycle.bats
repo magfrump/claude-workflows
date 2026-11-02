@@ -1141,7 +1141,7 @@ EOF
     [[ "$output" == *"skip docs/working/briefs/2026-01-01-i.md: line 3 is a fence-like line"* && "$output" == *"skip docs/working/briefs/2026-01-02-l.md: line 3 is a fence-like line"* ]] || { echo "$output"; return 1; }
 }
 
-@test "lines starting with <, open comments, reference definitions, stray CRs and a BOM refuse the file; one-line comments and code spans are read" {
+@test "open comments, stray CRs and a BOM refuse the file; HTML lines, one-line comments, code spans and link-reference-like lines are read as text (brief 2026-11-02-relax-grammar-and-loop-prompt G22)" {
     mkdir -p docs/working/briefs
     local f=$'\x60\x60\x60'  # a ``` fence line
     q() { printf '### %s · keep-or-drop-x-1\n**Needs:** you: judgment · **Status:** ANSWERED\n\n%s\n\n' "$1" "$2"; }
@@ -1149,14 +1149,16 @@ EOF
     git add -A && git commit -qm ok
     run --separate-stderr bash "$DC" --check-answer Q-1
     [[ "$output" == "keep Q-1" ]] || { echo "$output"; return 1; }
-    { echo '# Questions'; echo; printf '<details>\n%s\n' "$f"; q Q-1 'Q-1: [1]'; printf '%s\n**Answer:** [2]\n</details>\n' "$f"; } > docs/working/questions.md
+    # An HTML block is text: the answer inside <details> is read.
+    { echo '# Questions'; echo; printf '<details>\n<summary>more</summary>\n\n'; q Q-1 'Q-1: [1]'; printf '</details>\n'; } > docs/working/questions.md
     git commit -qam details
     run --separate-stderr bash "$DC" --check-answer Q-1
-    [[ "$output" == "skip Q-1: line 3 of docs/working/questions.md starts with <"* ]] || { echo "$output"; return 1; }
+    [[ "$output" == "keep Q-1" ]] || { echo "$output"; return 1; }
+    # Kept (H2): a comment left open on its line, which could hold a key line.
     { echo '# Questions'; echo; printf '<!--\n%s\n-->\n' "$f"; q Q-1 'Q-1: [1]'; } > docs/working/questions.md
     git commit -qam comment
     run --separate-stderr bash "$DC" --check-answer Q-1
-    [[ "$output" == "skip Q-1: line 3 of docs/working/questions.md starts with <"* ]] || { echo "$output"; return 1; }
+    [[ "$output" == "skip Q-1: line 3 of docs/working/questions.md opens an HTML comment"* ]] || { echo "$output"; return 1; }
     { echo '# Questions'; printf 'x\r%s\n' "$f"; q Q-1 'Q-1: [1]'; printf '%s\n' "$f"; } > docs/working/questions.md
     git commit -qam cr
     run --separate-stderr bash "$DC" --check-answer Q-1
@@ -1165,8 +1167,7 @@ EOF
     git commit -qam bom
     run --separate-stderr bash "$DC" --check-answer Q-1
     [[ "$output" == "skip Q-1: line 1 of docs/working/questions.md starts with a byte-order mark"* ]] || { echo "$output"; return 1; }
-    # An inline comment left open, and a link reference definition, refuse too;
-    # a < inside a code span mid-line (as the real files have) does not.
+    # An inline comment left open refuses too; a < inside a code span mid-line (as the real files have) does not.
     local bt=$'\x60'
     { echo '# Questions'; echo; echo "Answer as ${bt}Q-0NN: <your answer>${bt}."; q Q-1 'Q-1: [1]'; } > docs/working/questions.md
     git commit -qam codespan
@@ -1180,28 +1181,22 @@ EOF
     git commit -qam second-comment
     run --separate-stderr bash "$DC" --check-answer Q-1
     [[ "$output" == "skip Q-1: line 2 of docs/working/questions.md opens an HTML comment"* ]] || { echo "$output"; return 1; }
-    for shape in '[a\]b]: /u' '[a' '[a\]' ; do
+    # Link-reference-like lines, bare or behind list and quote markers, are text.
+    for shape in '[a\]b]: /u' '[a' '[a\]' "[x]: /u 'title" "- [x]: /u 'title" "> - - [1]: https://example.invalid" '<br>'; do
         { echo '# Questions'; echo "$shape"; q Q-1 'Q-1: [2]'; } > docs/working/questions.md
-        git commit -qam "refdef shape"
+        git commit -qam "text shape"
         run --separate-stderr bash "$DC" --check-answer Q-1
-        [[ "$output" == "skip Q-1: line 2 of docs/working/questions.md starts like a link reference definition"* ]] || { echo "$shape: $output"; return 1; }
+        [[ "$output" == "drop Q-1" ]] || { echo "$shape: $output"; return 1; }
     done
-    for pre in '- ' '> ' '1. ' '- - ' '1. - ' '> - - '; do
-        { echo '# Questions'; echo "${pre}[x]: /u 'title"; q Q-1 'Q-1: [2]'; } > docs/working/questions.md
-        git commit -qam "refdef $pre"
-        run --separate-stderr bash "$DC" --check-answer Q-1
-        [[ "$output" == "skip Q-1: line 2 of docs/working/questions.md starts like a link reference definition"* ]] || { echo "$pre: $output"; return 1; }
-    done
-    { echo '# Questions'; echo "[x]: /u 'title"; q Q-1 'Q-1: [2]'; } > docs/working/questions.md
-    git commit -qam refdef
-    run --separate-stderr bash "$DC" --check-answer Q-1
-    [[ "$output" == "skip Q-1: line 2 of docs/working/questions.md starts like a link reference definition"* ]] || { echo "$output"; return 1; }
+    # A brief: an HTML block and a fenced Status line around it; the column-0 Status line outside the fence is read.
     printf '# Brief\n<div>\n%s\nStatus: done\n%s\n</div>\nStatus: open\n' "$f" "$f" > docs/working/briefs/2026-01-01-h.md
     printf '# Brief\n%s\nStatus: open\n' "$f" > docs/working/briefs/2026-01-02-u.md
+    printf '# Brief\n\nStatus: open\n\nUse <name> for the NAME.\n  <details>\n[1]: https://example.invalid\n' > docs/working/briefs/2026-01-03-p.md
     git add -A && git commit -qm briefs
-    run --separate-stderr bash "$DC" --check-brief docs/working/briefs/2026-01-01-h.md docs/working/briefs/2026-01-02-u.md
-    [[ "$output" == *"skip docs/working/briefs/2026-01-01-h.md: line 2 starts with <"* ]] || { echo "$output"; return 1; }
+    run --separate-stderr bash "$DC" --check-brief docs/working/briefs/2026-01-01-h.md docs/working/briefs/2026-01-02-u.md docs/working/briefs/2026-01-03-p.md
+    [[ "$output" == *"ok docs/working/briefs/2026-01-01-h.md open "* ]] || { echo "$output"; return 1; }
     [[ "$output" == *"skip docs/working/briefs/2026-01-02-u.md: the code fence opened at line 2 is never closed"* ]] || { echo "$output"; return 1; }
+    [[ "$output" == *"ok docs/working/briefs/2026-01-03-p.md open "* ]] || { echo "$output"; return 1; }
 }
 
 @test "--check-fix refuses files an instruction file imports, and compares paths ignoring case" {

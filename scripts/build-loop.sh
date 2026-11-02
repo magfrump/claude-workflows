@@ -112,8 +112,9 @@
 #                 an open brief only, another open brief on main (in briefs/ or
 #                 closed/) names the same branch (ignoring case) or the open
 #                 briefs on main could not be listed.
-#   --marker  the body of BRIEF's blocked or stopped marker (D4, D11), for an
-#             entry the orchestrator heads itself:
+#   --marker  the body of BRIEF's blocked, stopped or ready marker (D4, D11),
+#             for an entry the orchestrator heads itself (a ready marker's
+#             body is a question the loop proceeded past on a tentative pick):
 #             ok BRIEF SHA
 #                 SHA: the marker (the branch tip, as --status reads it). Then
 #                 the body (the message after the subject and the blank line
@@ -122,16 +123,14 @@
 #                 most 100 lines of 300 bytes (a character is never split),
 #                 with a last line "> (build-loop.sh --marker cut this body:
 #                 K of N lines shown, M cut at 300 bytes)" when cut. A stopped
-#                 marker's body may be empty.
+#                 or ready marker's body may be empty.
 #             skip BRIEF: WHY
-#                 As --status skips it; the tip is no blocked or stopped
-#                 marker (WHY names --status' LOOP); the marker commit is over
-#                 64 KiB (its body is not processed); a body line starts, after blanks, ">" and list
-#                 markers ("-", "*", "+", "1." or "1)" and a blank), with "#",
-#                 "**Needs:**", "**Status:**", "**Answer" or "Q-" and a digit,
-#                 in any case, holds "<!--" (questions.sh's index markers) or
-#                 is not strict UTF-8 (no surrogate or code point past
-#                 U+10FFFF, as questions.sh check reads it; the loop prompt's rule); a line of the
+#                 As --status skips it; the tip is no blocked, stopped or
+#                 ready marker (WHY names --status' LOOP); the marker commit
+#                 is over 64 KiB (its body is not processed); a body line
+#                 holds "<!--" (questions.sh's index markers) or is not
+#                 strict UTF-8 (no surrogate or code point past U+10FFFF, as
+#                 questions.sh check reads it; the loop prompt's rule); a line of the
 #                 body as printed, bare or quoted, that FENCE_AWK refuses, or a
 #                 fence it leaves open; a blocked marker with no body; or a
 #                 read that fails.
@@ -373,10 +372,13 @@
 #             pathform allows:
 #             path BRIEF S PATH
 #             deny BRIEF S PATH: WHY
-#                 The N rules, under either policy: a path pathform refuses
-#                 (a part starting .git, any case: .github/); a mode other
-#                 than 100644 or 100755 on either side (a symlink or
-#                 gitlink); the brief's own file, unless only its first
+#                 The N rules, under either policy: for a brief --status
+#                 reads as self-merge (not under --approved), a path
+#                 pathform refuses (a part starting .git, any case:
+#                 .github/) and a mode other than 100644 or 100755 on either
+#                 side (a symlink or gitlink); otherwise only a path holding
+#                 a control character (a newline included), an empty, . or ..
+#                 part, or a .git part (any case); the brief's own file, unless only its first
 #                 Status: line outside a fence changes,
 #                 from open to done (mode kept); and, compared lower-cased, the
 #                 dev cycle's own files (the roadmap, the questions files, the
@@ -965,9 +967,12 @@ status_fields() {
 }
 status_line() { status_fields "$1"; echo "${STATUS[line]}"; }
 
-# A blocked marker's body rule (D3, D11), as the loop prompt states it and
-# --marker enforces it (row 689: one string), with BODY_LINES and BODY_BYTES.
-BODY_RULE='no line that starts, after blanks, ">" and list markers ("-", "*", "+", "1." or "1)" and a blank), with "#", **Needs:**, **Status:**, **Answer, or Q- and a digit, in any case; no line holding "<!--"; strict UTF-8'
+# A marker's body rule (D3, D11), as the loop prompt states it and --marker
+# enforces it (row 689: one string), with BODY_LINES and BODY_BYTES. Headings,
+# **Needs:** lines, answers and Q- IDs are allowed: every line is filed quoted
+# with "> ", and the questions readers anchor at column 0 (brief
+# 2026-11-02-relax-grammar-and-loop-prompt, G31).
+BODY_RULE='no line holding "<!--"; strict UTF-8'
 # The marker commit's size cap in bytes: over it, the body is not processed
 # (marker_kind has still read the commit, in --status' own reads).
 BODY_LINES=100; BODY_BYTES=300; MARKER_MAX=65536
@@ -981,13 +986,15 @@ BODY_LINES=100; BODY_BYTES=300; MARKER_MAX=65536
 # heading, a Needs line or an answer (E2, E3). A body line breaking BODY_RULE
 # skips the marker, as does any line FENCE_AWK refuses in the body or in its
 # quoted form (the questions file is read whole by FENCE_AWK: one refused line
-# there would stop every answer in it), or a blocked body with no text.
+# there would stop every answer in it), or a blocked body with no text. A
+# ready marker's body (a tentative pick's question, D2 as amended) is read the
+# same way and may be empty.
 marker() {
   local a="$1" m body r n why
   status_fields "$a"
   [[ "${STATUS[line]}" == "ok "* ]] || { echo "${STATUS[line]}"; return; }
-  [[ "${STATUS[loop]}" == blocked || "${STATUS[loop]}" == stopped ]] \
-    || { echo "skip $a: the tip of ${STATUS[branch]} is not a blocked or stopped marker (${STATUS[loop]})"; return; }
+  [[ "${STATUS[loop]}" =~ ^(blocked|stopped|ready)$ ]] \
+    || { echo "skip $a: the tip of ${STATUS[branch]} is not a blocked, stopped or ready marker (${STATUS[loop]})"; return; }
   # marker_kind has refused a NUL and a second subject line; the headers end at the first empty line.
   n="$(git cat-file -s "${STATUS[sha]}")" || { echo "skip $a: its marker could not be read"; return; }
   [[ "$n" -le "$MARKER_MAX" ]] || { echo "skip $a: its marker is $n bytes, over the $MARKER_MAX-byte cap"; return; }
@@ -999,9 +1006,8 @@ marker() {
   body="$(printf '%s\n' "$body" | scrub | env LC_ALL=C N="$BODY_LINES" B="$BODY_BYTES" perl -e '
     my @l = map { s/\n\z//r } <STDIN>; pop @l while @l && $l[-1] =~ /^[ \t]*\z/;
     for my $i (0 .. $#l) {
-      (my $s = $l[$i]) =~ s/^(?:[ \t>]|[-*+][ \t]|[0-9]+[.)][ \t])*//;
       # "<!--" anywhere: questions.sh finds its index markers anywhere in a line (security i1 F1).
-      if ($s =~ /^(?:#|\*\*needs:\*\*|\*\*status:\*\*|\*\*answer|q-[0-9])/i || index($l[$i], "<!--") >= 0
+      if (index($l[$i], "<!--") >= 0
         || $l[$i] !~ /\A(?:[\x00-\x7F]|[\xC2-\xDF][\x80-\xBF]|\xE0[\xA0-\xBF][\x80-\xBF]|[\xE1-\xEC\xEE\xEF][\x80-\xBF]{2}|\xED[\x80-\x9F][\x80-\xBF]|\xF0[\x90-\xBF][\x80-\xBF]{2}|[\xF1-\xF3][\x80-\xBF]{3}|\xF4[\x80-\x8F][\x80-\xBF]{2})*\z/) { print "rule ", $i + 1, "\n"; exit 0 }
     }
     my ($k, $cut) = (@l > $ENV{N} ? $ENV{N} : scalar @l, 0);
@@ -1015,8 +1021,8 @@ marker() {
     }
     print "> (build-loop.sh --marker cut this body: $k of ", scalar @l, " lines shown, $cut cut at $ENV{B} bytes)\n" if $k < @l || $cut')" \
     || { echo "skip $a: its marker's body could not be read"; return; }
-  if [[ "$body" == "rule "* ]]; then echo "skip $a: a line of its marker's body breaks the blocked-body rule ($BODY_RULE): line ${body#rule }"; return; fi
-  [[ -n "$body" || "${STATUS[loop]}" == stopped ]] || { echo "skip $a: its blocked marker holds no question (the body is empty)"; return; }
+  if [[ "$body" == "rule "* ]]; then echo "skip $a: a line of its marker's body breaks the marker-body rule ($BODY_RULE): line ${body#rule }"; return; fi
+  [[ -n "$body" || "${STATUS[loop]}" != blocked ]] || { echo "skip $a: its blocked marker holds no question (the body is empty)"; return; }
   # FENCE_AWK over the body as written, then as quoted; line N is the body's line N either way.
   # shellcheck disable=SC2016  # awk code, not shell
   for m in "$(printf '%s\n' "$body" | sed -E 's/^> ?//')" "$body"; do
@@ -1079,7 +1085,8 @@ raw_records() {
 # blobs_present: every regular file or symlink in the raw_records listing
 # just read (a merge's changes against main) names a blob the object store
 # holds (a gitlink names another repository's commit). For a symlink it is a
-# backstop: the N rules' mode rule refuses any changed symlink anyway.
+# backstop under a self-merge, whose mode rule refuses any changed symlink;
+# under review or --approved a symlink can land, and this checks its blob.
 # merge-tree passes a side's unchanged blob by id without reading it, so a
 # blob the store lacks would land unseen (a missing subtree already failed
 # diff-tree). Returns 1 on a missing or non-blob object, or a failed read.
@@ -1120,9 +1127,16 @@ own_blob() {
   git cat-file blob "$MAIN_SHA:$1" | N="$n" perl -pe 's/^Status: open(\r?)$/Status: done$1/ if $. == $ENV{N}' | gate_git hash-object --no-filters --stdin
 }
 # The N rules (plan D5; both policies) for one changed path of brief $1:
-# diff-tree's old and new modes $2 $3, new blob $4, status $5, path $6 and
-# its lower-cased spelling $7. Sets DENY to why the path is refused, or
-# empties it. The brief's own file is matched exactly; the cycle's files
+# diff-tree's old and new modes $2 $3, new blob $4, status $5, path $6, its
+# lower-cased spelling $7, and $8 "strict" when the S rules apply (a self-merge
+# under its own authority). Sets DENY to why the path is refused, or empties
+# it. Strict, the path must pass pathform and both modes be a regular file's;
+# otherwise (a review brief's --check, or --merge --approved, where the owner
+# reviews the branch) only a path no file can safely be checked out at is
+# refused: a control byte (a newline included), an empty, . or .. part, or a
+# .git part in any case (git refuses one itself); a .git* part such as
+# .github/ or .gitignore, other characters, a symlink and a gitlink pass
+# (brief 2026-11-02-relax-grammar-and-loop-prompt, G39/G40). The brief's own file is matched exactly; the cycle's files
 # (truthrule's cycle and settings words: writable() and docs/dev-cycle.md,
 # plus docs/working/briefs and docs/working/cycles, as files or anything under them) and the
 # constraints doc (its user word) compare lower-cased, as a case-insensitive
@@ -1133,8 +1147,9 @@ DENY=""
 nrules() {
   local ob d="$7"
   DENY=""
-  if ! pathform "$6"; then DENY="not an allowed path form (letters, digits and . _ - / only; no leading - or /; no empty, . or .. part; no part starting .git)"
-  elif [[ ! "$2 $3" =~ ^(000000|100644|100755)\ (000000|100644|100755)$ ]]; then DENY="a symlink, gitlink or other non-file entry on one side (only modes 100644 and 100755 land)"
+  if [[ "$8" == strict ]] && ! pathform "$6"; then DENY="not an allowed path form for a self-merge (letters, digits and . _ - / only; no leading - or /; no empty, . or .. part; no part starting .git)"
+  elif [[ "$8" != strict ]] && ! anyform "$7"; then DENY="not a path a checkout can hold (a control character, an empty, . or .. part, or a .git part)"
+  elif [[ "$8" == strict && ! "$2 $3" =~ ^(000000|100644|100755)\ (000000|100644|100755)$ ]]; then DENY="a symlink, gitlink or other non-file entry on one side (a self-merge lands only modes 100644 and 100755)"
   elif [[ "$6" == "$1" ]]; then
     { [[ "$5" == M && "$2" == "$3" ]] && ob="$(own_blob "$1")" && [[ "$4" == "$ob" ]]; } \
       || DENY="this brief: only its first Status: line outside a fence may change, from open to done"
@@ -1154,6 +1169,16 @@ nrules() {
       [[ ! "$TRUTH_WHY" =~ ^(cycle|settings|user)$ ]] || DENY="a path below the name of one of the dev cycle's own files or the constraints doc"
     done
   fi
+}
+# anyform LOWERPATH: nrules' path rule outside a strict self-merge. The
+# characters are listed as bytes, so no locale changes what counts.
+anyform() {
+  local rest="$1/" c
+  [[ -n "$1" && ! "$1" =~ [$'\001'-$'\037'$'\177'] ]] || return 1
+  while [[ -n "$rest" ]]; do
+    c="${rest%%/*}"; rest="${rest#*/}"
+    [[ -n "$c" && "$c" != "." && "$c" != ".." && "$c" != ".git" ]] || return 1
+  done
 }
 # The brief's Paths: line (plan D5's allowlist), from BRIEF[paths]: as
 # list_entries reads "Paths: PATH ...", each entry pathform's, a trailing /
@@ -1437,7 +1462,7 @@ check_line() {
   if ! nul_list lps lower_all "${ps[@]}" || [[ ${#lps[@]} -ne ${#ps[@]} ]]; then echo "refuse $a: the paths the merge of $br changes could not be lower-cased"; return; fi
   for i in "${!ps[@]}"; do
     p="${ps[$i]}"; shown="?"; [[ ! "$p" =~ ^[$NAMECHARS]+$ ]] || shown="$p"
-    nrules "$a" "${oms[$i]}" "${nms[$i]}" "${nos[$i]}" "${ss[$i]}" "$p" "${lps[$i]}"
+    nrules "$a" "${oms[$i]}" "${nms[$i]}" "${nos[$i]}" "${ss[$i]}" "$p" "${lps[$i]}" "${sm:+strict}"
     [[ ! "${lps[$i]}" =~ $GATE_CODE ]] || gc=1
     [[ -n "$DENY" || -z "$sm" || "$p" == "$a" ]] || srules "$stem" "$p" "${lps[$i]}" "${ss[$i]}" "$co"
     if [[ -n "$DENY" ]]; then nd=$((nd + 1)); rows+=("deny $a ${ss[$i]} $shown: $DENY"); else rows+=("path $a ${ss[$i]} $shown"); fi
@@ -1709,10 +1734,10 @@ The project's constraints (docs/constraints.md at $MAIN_SHA), quoted:
 PROMPT
   printf '%s\n' "$3" | sed 's/\r$//; s/^/> /'
   cat <<PROMPT
-Run every design choice through divergent design seeded with these constraints and your brief's own. One option dominates (Path A): decide and continue. No clear winner, no option surviving the hard constraints, or a fact only the user has: end with a blocked marker.
+Run divergent design, seeded with these constraints and your brief's own, for each design choice with 3 or more viable options; give any other choice a one-line note in your research doc. One option dominates (Path A): decide and continue. No clear winner: proceed on divergent design's Path C tentative pick, and write the question (plain prose and an options table, naming the pick and its tiebreaker) in your research doc and in your ready marker's body, for the cycle to file. No option surviving the hard constraints, or a fact only the user has: end with a blocked marker.
 Force-add your research doc (git add -f docs/working/research-$s.md), so your design records land with your work. Only add commits: never reset, rebase or otherwise move your branch below $5, the commit you were dispatched at.
 End with one marker, an empty commit at your branch tip whose first line is exactly one of:
-- "handoff: ready", once the review-fix loop is clean and your final change sets your brief's Status line from open to done;
+- "handoff: ready", once the review-fix loop is clean and your final change sets your brief's Status line from open to done; a tentative pick's question goes after a blank line, under the blocked body's rules;
 - "handoff: blocked", with the question after a blank line as plain prose and an options table, at most $BODY_LINES lines of $BODY_BYTES bytes (longer is cut; a commit over $MARKER_MAX bytes is skipped): $BODY_RULE;
 - "handoff: stopped: REASON" (1 to 120 printable ASCII characters, no blank at either end), on a stop condition: adding a dependency or a symlink, an edit these rules forbid, or a --check refusal you cannot fix within Paths:.
 Start subagents only for research and review, each with its own scratch directory under $s/ in your scratchpad directory. Never start build loops, background agents or schedules; never send your branch to a remote, merge, open a pull request or publish.

@@ -18,7 +18,7 @@ state_is() { bl --state; local s=2; [[ "$1" != ok ]] || s=0; [ "$status" -eq "$s
 marked() { brief x "Status: open" "Branch: feat/x"; work feat/x; tip feat/x "$1"; T="$(git rev-parse feat/x)"; }
 # marker_is WANT: --marker printed exactly WANT (lines joined by newlines), exit 0.
 marker_is() { bl --marker "$B"; [ "$status" -eq 0 ] && [ "$output" = "$1" ] && [ -z "$stderr" ] || { echo "want: $1"; show; return 1; }; }
-RULE='no line that starts, after blanks, ">" and list markers ("-", "*", "+", "1." or "1)" and a blank), with "#", **Needs:**, **Status:**, **Answer, or Q- and a digit, in any case; no line holding "<!--"; strict UTF-8'
+RULE='no line holding "<!--"; strict UTF-8'
 
 @test "--state prints ok for a clean repository and refuses a shallow or partial clone and an ambiguous default branch, exit 2 (T42, U3b1; brief 2026-11-01-relax-gate-git-state)" {
     state_is ok
@@ -81,11 +81,18 @@ RULE='no line that starts, after blanks, ">" and list markers ("-", "*", "+", "1
     marker_is "ok $B $T"
 }
 
-@test "--marker skips a body line in entry grammar, after blanks, quotes and list markers (T32 E2/E3, D11, U3b1)" {
+@test "--marker quotes a body's headings, Needs, Status and answer lines and Q- IDs, and skips only an HTML comment opener or bytes that are not UTF-8 (T32 E2/E3, D11, U3b1; brief 2026-11-02-relax-grammar-and-loop-prompt G31)" {
     marked $'handoff: blocked\n\nplain'
-    W="skip $B: a line of its marker's body breaks the blocked-body rule ($RULE): line"
-    for l in '**Needs:** you: judgment · **Status:** OPEN' '**Answer:** [1]' '**Status:** ANSWERED' '### Q-001 · x' '# Heading' \
-        'Q-1: [1]' '  > - Q-2: [2]' '1. **answer (recommended):** [1]' '> > **needs:** agent' 'see <!-- index:start --> here'; do
+    # The entry grammar an honest loop writes is quoted, not refused: the readers anchor at column 0.
+    for l in '**Needs:** you: judgment · **Status:** OPEN' '**Answer:** [1]' '**Status:** ANSWERED' '### Q-001 · x' '## Options' \
+        'Q-12 is related' '  > - Q-2: [2]' '1. **answer (recommended):** [1]' '> > **needs:** agent'; do
+        tip feat/x "$(printf 'handoff: blocked\n\nfirst\n%s' "$l")"; T="$(git rev-parse feat/x)"
+        marker_is "ok $B $T
+> first
+> $l" || { echo "line: $l"; return 1; }; done
+    W="skip $B: a line of its marker's body breaks the marker-body rule ($RULE): line"
+    # Kept (H2): an HTML comment opener anywhere (questions.sh finds its index markers anywhere in a line).
+    for l in 'see <!-- index:start --> here' '<!-- open'; do
         tip feat/x "$(printf 'handoff: blocked\n\nfirst\n%s' "$l")"; marker_is "$W 2" || { echo "line: $l"; return 1; }; done
     # Not strict UTF-8 as questions.sh check (Python) reads it: a stray byte, a surrogate Perl's own
     # decoder takes, past U+10FFFF (i2 fact-check 7b). Written raw: git commit-tree re-encodes a message.
@@ -93,24 +100,24 @@ RULE='no line that starts, after blanks, ">" and list markers ("-", "*", "+", "1
         c="$(printf "tree %s\nparent %s\nauthor t <t@x> 1 +0000\ncommitter t <t@x> 1 +0000\n\nhandoff: blocked\n\nfirst\nbad $b byte\n" \
             "$(git rev-parse 'feat/x^{tree}')" "$(git rev-parse feat/x)" | git hash-object -t commit -w --stdin)"
         git update-ref refs/heads/feat/x "$c"; marker_is "$W 2" || { echo "bytes: $b"; return 1; }; done
-    # E2's whole body (rev 3 pre-mortem): skipped at its first grammar line.
-    tip feat/x $'handoff: blocked\n\n**Needs:** you: judgment · **Opened:** 2026-10-04 · **Status:** OPEN\n\n| Option | x |\n|---|---|\n\n**Answer:** [1]'; marker_is "$W 1"
-    # Prose that only mentions the grammar mid-line is quoted.
-    tip feat/x $'handoff: blocked\n\nthe entry gets a **Needs:** line and a Q-1 ID from you'; T="$(git rev-parse feat/x)"
-    marker_is "ok $B $T
-> the entry gets a **Needs:** line and a Q-1 ID from you"
 }
 
 @test "--marker skips a body FENCE_AWK refuses, raw or quoted, and an empty blocked body (T32, U3b1)" {
     marked $'handoff: blocked\n\nplain\n```\ncode'
     marker_is "skip $B: the code fence opened at line 2 of its marker's body is never closed"
-    tip feat/x $'handoff: blocked\n\nplain\n[a]: https://example.invalid'
-    marker_is "skip $B: line 2 of its marker's body starts like a link reference definition (its label or title can span lines)"
-    tip feat/x $'handoff: blocked\n\n<div>x</div>'; marker_is "skip $B: line 1 of its marker's body starts with < after any blanks (a possible raw HTML block; only a complete one-line <!-- comment --> is read)"
-    tip feat/x $'handoff: blocked\n\n- [x]: y'; marker_is "skip $B: line 1 of its marker's body starts like a link reference definition (its label or title can span lines)"
+    tip feat/x $'handoff: blocked\n\n  ```\ncode\n```'
+    marker_is "skip $B: line 1 of its marker's body is a fence-like line that is not a plain column-0 fence"
+    # HTML lines and link-reference-like lines are text (G22): quoted as written.
+    tip feat/x $'handoff: blocked\n\nplain\n[a]: https://example.invalid\n<details>\n- [x]: y\n```\n[a]: b\n```'; T="$(git rev-parse feat/x)"
+    marker_is "ok $B $T
+> plain
+> [a]: https://example.invalid
+> <details>
+> - [x]: y
+> \`\`\`
+> [a]: b
+> \`\`\`"
     for m in $'handoff: blocked\n\n\n  \n' 'handoff: blocked'; do tip feat/x "$m"; marker_is "skip $B: its blocked marker holds no question (the body is empty)"; done
-    # Inside a balanced fence the raw pass reads nothing; quoted, the line is a link reference definition.
-    tip feat/x $'handoff: blocked\n\n```\n[a]: b\n```'; marker_is "skip $B: line 2 of its marker's body starts like a link reference definition (its label or title can span lines)"
     # A marker commit over the cap is skipped before its body is processed (performance i1 F1).
     tip feat/x "$(printf 'handoff: blocked\n\n'; head -c 70000 /dev/zero | tr '\0' 'x')"
     bl --marker "$B"; [ "$status" -eq 0 ] && [[ "$output" =~ ^"skip $B: its marker is "[0-9]+" bytes, over the 65536-byte cap"$ ]] || { show; return 1; }
@@ -135,11 +142,17 @@ RULE='no line that starts, after blanks, ">" and list markers ("-", "*", "+", "1
         && [ "${lines[101]}" = "> (build-loop.sh --marker cut this body: 100 of 101 lines shown, 0 cut at 300 bytes)" ] || { show; return 1; }
 }
 
-@test "--marker skips a tip that is no blocked or stopped marker, and takes one brief (T32, U3b1)" {
+@test "--marker skips a tip that is no blocked, stopped or ready marker, and takes one brief; a ready marker's body is quoted, and may be empty (T32, U3b1; brief 2026-11-02-relax-grammar-and-loop-prompt K24)" {
     brief x "Status: open" "Branch: feat/x"
-    marker_is "skip $B: the tip of feat/x is not a blocked or stopped marker (absent)"
-    work feat/x; marker_is "skip $B: the tip of feat/x is not a blocked or stopped marker (working)"
-    tip feat/x 'handoff: ready'; marker_is "skip $B: the tip of feat/x is not a blocked or stopped marker (ready)"
+    marker_is "skip $B: the tip of feat/x is not a blocked, stopped or ready marker (absent)"
+    work feat/x; marker_is "skip $B: the tip of feat/x is not a blocked, stopped or ready marker (working)"
+    tip feat/x 'handoff: ready'; T="$(git rev-parse feat/x)"; marker_is "ok $B $T"
+    tip feat/x $'handoff: ready\n\nTentative pick: [1] CSV, by the smaller diff.\n\n## Options\n| **[1] CSV** | one file |'; T="$(git rev-parse feat/x)"
+    marker_is "ok $B $T
+> Tentative pick: [1] CSV, by the smaller diff.
+>
+> ## Options
+> | **[1] CSV** | one file |"
     tip feat/x 'handoff: sideways'; bl --marker "$B"
     [ "$status" -eq 0 ] && [[ "$output" == "skip $B: the tip of feat/x starts \"handoff:\" but is not a marker: "* ]] || { show; return 1; }
     bl --marker; [ "$status" -eq 1 ] && [[ "$stderr" == "--marker takes one brief path"* ]] || { show; return 1; }
@@ -149,16 +162,18 @@ RULE='no line that starts, after blanks, ">" and list markers ("-", "*", "+", "1
 @test "a body --marker quoted leaves both questions readers on the orchestrator's own lines (T34 E2, U3b1)" {
     QS="$REPO_ROOT/scripts/questions.sh"
     bash "$QS" init > /dev/null
-    # E2: the loop's grammar lines, quoted as --marker quotes a body (which it would refuse); the user's answer is [2].
+    # E2: the loop's grammar lines, quoted as --marker quotes a body (it now passes them: G31); the user's answer is [2].
     { printf '\n### Q-120 · export-format\n**Needs:** you: judgment · **Opened:** 2026-10-04 · **Status:** ANSWERED\n\n'
-      printf '> %s\n' '**Needs:** you: judgment · **Opened:** 2026-10-04 · **Status:** OPEN' '' '| Option | x |' '|---|---|' '' '**Answer:** [1]'
+      printf '> %s\n' '**Needs:** you: judgment · **Opened:** 2026-10-04 · **Status:** OPEN' '' '### Q-121 · fake' '## Options' '| Option | x |' '|---|---|' '' '**Answer:** [1]'
       printf '\nQ-120: [2]\n'; } >> docs/working/questions.md
     commit_all questions
     run --separate-stderr bash "$REPO_ROOT/scripts/dev-cycle.sh" --check-answer Q-120
     [ "$output" = "drop Q-120" ] || { show; return 1; }
     # questions.sh reads the orchestrator's ANSWERED (the last Needs line won in E2): archive moves the entry out.
     run --separate-stderr bash "$QS" archive
-    [ "$status" -eq 0 ] && grep -q '^### Q-120 ' docs/working/questions-archive.md && ! grep -q '^### Q-120 ' docs/working/questions.md || { show; cat docs/working/questions.md; return 1; }
+    [ "$status" -eq 0 ] && grep -q '^### Q-120 ' docs/working/questions-archive.md && ! grep -q '^### Q-120 ' docs/working/questions.md \
+        && grep -q '^> ### Q-121 · fake' docs/working/questions-archive.md && ! grep -q 'Q-121' docs/working/questions.md || { show; cat docs/working/questions.md; return 1; }
+    run --separate-stderr bash "$QS" next-id; [ "$output" = Q-121 ] || { show; return 1; }
 }
 
 # ml SINCE STATUS WANT: --main-log SINCE printed exactly WANT with exit STATUS. qs: docs/working/questions.md
@@ -301,14 +316,14 @@ shim() {
 @test "a gate copy patched in the loop's worktree prints ok for its tip; the D6 snippet's image copy refuses the same tip (T27, U3b3)" {
     d6_setup; brief x "Status: open" "Branch: feat/x"
     W="$BATS_TEST_TMPDIR/wt"; git worktree add -q -b feat/x "$W" main; cd "$W"
-    # The loop drops the mode rule from its own copy and adds a symlink.
-    sed -i 's/elif \[\[ ! "\$2 \$3" =~/elif false \&\& [[ ! "$2 $3" =~/' scripts/build-loop.sh; grep -q 'elif false && ' scripts/build-loop.sh
-    ln -s x link; commit_all loop
+    # The loop drops the path rule from its own copy and adds a file whose name holds a tab.
+    sed -i 's/&& ! anyform "\$7"; then/\&\& false; then/' scripts/build-loop.sh; grep -q '&& false; then' scripts/build-loop.sh
+    : > "$(printf 'a\tb')"; commit_all loop
     run --separate-stderr bash scripts/build-loop.sh --check "$B"
     [ "$status" -eq 0 ] && [[ "$output" == "ok $B "* ]] || { show; return 1; }
     d6 build-loop.sh --check "$B"
     [ "$status" -eq 2 ] && [[ "$output" == "refuse $B: 1 of 2 changed paths refused in the merge of $(git rev-parse feat/x) "* ]] \
-        && [[ "$output" == *$'\n'"deny $B A link: a symlink, gitlink or other non-file entry on one side "* ]] || { show; return 1; }
+        && [[ "$output" == *$'\n'"deny $B A ?: not a path a checkout can hold "* ]] || { show; return 1; }
 }
 
 @test "the D6 snippet runs the root-owned image copy at /opt by absolute path, not main's copy (T37, U3b3)" {

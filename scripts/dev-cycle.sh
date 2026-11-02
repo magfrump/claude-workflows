@@ -37,10 +37,9 @@
 #             move or quoted Status line); "skip <path>: <reason>" otherwise,
 #             including a brief the reader cannot trust, naming the line and
 #             the reason: a code fence never closed or not in plain column-0
-#             form, a line starting (after blanks) with < other than a
-#             complete one-line <!-- comment -->, a line leaving a <!-- open,
-#             a line starting like a link reference definition (behind any >
-#             and list markers too), a stray carriage return, a NUL byte, or a byte-order mark on line 1.
+#             form, a line leaving a <!-- open, a stray carriage return, a
+#             NUL byte, or a byte-order mark on line 1 (an HTML line or a
+#             link-reference-like line is text).
 #   --check-branch  "ok <name> <commit> <n> <YYYY-MM-DD>" for a brief's branch
 #             that exists (n: its commits not on the default branch; the date
 #             of its tip commit), "absent <name>" for
@@ -69,10 +68,8 @@
 #             with one of the options); "skip Q-NNN:
 #             <reason>" when it cannot be read (not a question ID, no such
 #             entry, a heading twice in one file or in both files, a code fence never closed or not in plain column-0
-#             form, a line starting (after blanks) with < other than a
-#             complete one-line <!-- comment -->, a line leaving a <!-- open,
-#             a line starting like a link reference definition (behind any >
-#             and list markers too), a stray carriage return, a NUL byte, a byte-order mark on line 1, a question heading
+#             form, a line leaving a <!-- open, a stray carriage return, a
+#             NUL byte, a byte-order mark on line 1, a question heading
 #             inside a fence, a questions file that is not a regular file
 #             under plain directories on the default branch, or a default
 #             branch whose tree or file could not be read).

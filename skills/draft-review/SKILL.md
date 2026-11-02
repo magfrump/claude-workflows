@@ -214,6 +214,8 @@ This gate mirrors the plan-approval pattern from RPI: expensive downstream work 
 
 If the user passed `--no-gate` or explicitly said to run without stopping, skip this gate and proceed directly to Stage 2. If no claims were rated Inaccurate at high confidence, also skip and proceed directly.
 
+In /away mode or any run with no user to answer (a build loop, a headless or scheduled run), do not ask: take **Continue**, and say so in the stage banner. The critics see the Inaccurate findings, and the rubric carries them at their tier, so nothing is lost; Revise first would stop the review with no critique at all.
+
 ### Stage 2: Critic Agents
 
 Now — and ONLY now — spawn critic sub-agents using the Agent tool.
