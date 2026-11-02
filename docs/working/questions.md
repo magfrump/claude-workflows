@@ -36,7 +36,7 @@ The index below is generated — edit entries, not the table.
 ## Open
 
 ### Q-246 · stopped-2026-11-01-relax-referenced-prose-stops-1
-**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** ANSWERED
 
 Brief 2026-11-01-relax-referenced-prose-stops's build loop stopped; re-dispatch or drop?
 > Reason: your approved merge (Q-244 [1]) of 8ca8ec2e refused: "docs/relax-referenced-prose-stops conflicts with the default branch". Unit 1 merged first (63ba32e9) and also added decision-log row 79.
@@ -55,8 +55,10 @@ Brief 2026-11-01-relax-referenced-prose-stops's build loop stopped; re-dispatch 
 - **Blocks:** nothing.
 - **Interim:** the branch waits.
 
+**Answered:** [1] (owner, in session 2026-11-01: "Q-246: [1]; Q-247: [1]"; recorded by the dev cycle)
+
 ### Q-247 · stopped-2026-11-01-relax-dev-cycle-skill-prose-1
-**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** ANSWERED
 
 Brief 2026-11-01-relax-dev-cycle-skill-prose's build loop stopped; re-dispatch or drop?
 > Reason: your approved merge (Q-243 [1]) of 7e6f1e0e refused: "docs/relax-dev-cycle-skill-prose conflicts with the default branch". Unit 1 merged first (63ba32e9) and edits the same Hardened git passage of `skills/dev-cycle/SKILL.md`.
@@ -74,6 +76,8 @@ Brief 2026-11-01-relax-dev-cycle-skill-prose's build loop stopped; re-dispatch o
 
 - **Blocks:** nothing.
 - **Interim:** the branch waits.
+
+**Answered:** [1] (owner, in session 2026-11-01: "Q-246: [1]; Q-247: [1]"; recorded by the dev cycle)
 
 ### Q-222 · install-cc-verify-and-r6
 **Needs:** you: terminal · **Opened:** 2026-10-28 · **Status:** OPEN
