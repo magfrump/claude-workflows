@@ -260,6 +260,11 @@ Unranked. Each names the signal that motivates it.
   fix-drift loop's Path A record pruned option D on S8/S1 (soft) beside a trust-boundary
   reason, and E on S2 beside the brief's own rule; the pick (C) stands. Same class as
   43762305: the audit should check that loops rank with S lines rather than prune.
+  Fired again 2026-11-01: `skills/dev-cycle/SKILL.md` and the gate scripts changed by
+  restriction-audit unit 1 (63ba32e9, Q-245 [1]; 23 SKILL.md lines), plus small pr-prep,
+  RPI and onboarding edits. Best read after units 2-7 land, since they rewrite the same
+  passages. No drift finding: unit 1's Path A record prunes on H1/H2 and uses S1/S3/S6 to
+  rank among options that meet them.
   Fired again 2026-10-29 (iteration 2026-10-30-0035): `skills/dev-cycle/SKILL.md` gained
   step 1b (6f364ba6, convention migrations), and a third drift finding (step 4, 6ee39f24):
   the watching-file loop's Path A record marks options 4 and 6 as failing on soft lines
