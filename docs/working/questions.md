@@ -25,7 +25,6 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
-| [Q-250](#q-250--merge-gate-2026-11-02-relax-grammar-and-loop-prompt-c1aae1b28040) | you: judgment | Merge restriction-audit unit 4 (the gate's brief, marker and path rules refuse only real ambiguity, and the... | 2026-11-02 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-222](#q-222--install-cc-verify-and-r6) | you: terminal | Four approved merges landed today, two of them in host tools: the `cc-verify` host tool (37b24c02, Q-217) a... | 2026-10-28 |
@@ -124,55 +123,27 @@ bats --jobs 2 test/agents-gemini-sync.bats 2>&1 | grep -iE 'cite|locale'   # exp
 ### Q-227 · image-lag
 **Needs:** you: terminal · **Opened:** 2026-10-29 · **Status:** OPEN
 
-**Release notes** (trial T1; rewritten 2026-11-02 for main at d9f2e42a). Installed image: `42295bd9`, read from `/opt/claude-workflows/.manifest`. Main is ahead in gate code by one file, `skills/dev-cycle/SKILL.md`: restriction-audit unit 3, which you approved (Q-249). The image carries the dev-cycle skill, so the shorter cycle is not live until you run the paste.
+**Release notes** (trial T1; rewritten 2026-11-02 for main at 3019016a). Installed image: `42295bd9`, read from `/opt/claude-workflows/.manifest`. Main is ahead in gate code: restriction-audit units 3 and 4, which you approved (Q-249, Q-250). The image runs the gate and the dev-cycle skill, so neither is live until you run the paste.
 
-**If you say no:** the cycle keeps running the older, longer skill. Nothing breaks.
+**If you say no:** the cycle keeps running the older, longer skill and the stricter text and path rules. Nothing breaks.
 
 **⚑ Merged without your review:** none.
 
-**What changes for you** (approved by you, Q-248 and Q-249):
+**What changes for you** (approved by you, Q-248, Q-249 and Q-250):
 - The dev cycle runs its own bookkeeping git as plain `git -C`, drops the extra `--state` re-runs and per-write path checks, and reports a main-log refusal instead of stopping on it (unit 3). Iterations take fewer tool calls.
-- The workflows and skills the cycle references (pr-prep, RPI, the review-fix loop, code-review, security-reviewer, constraints-builder, and the global instructions) lose prose stops that had no in-scope threat. Unattended runs proceed on a stated default (unit 2).
+- Briefs, questions files and loop questions are no longer rejected for HTML, angle-bracket placeholders, `[1]: URL` lines, or heading and `Q-12` lines in a loop's question; open comments, odd fences, CR and BOM still refuse. An approved review branch can land `.github/`, `.gitignore`, a symlink or a gitlink (path lines mark the last two). Loops run divergent design only for 3+ options and proceed on a tentative pick on a tie (unit 4).
+- The workflows and skills the cycle references lose prose stops that had no in-scope threat, and draft-review's fact-check gate gets the same unattended default (units 2 and 4).
 
-**Not listed:** 8 routine dev-cycle record lands. Paths changed outside `docs/` (12 under `docs/` not listed): `global-instructions/CLAUDE.md`, `guides/convention-changes.md`, `guides/pr-prep-quick-ref.md`, `skills/code-review/SKILL.md`, `skills/constraints-builder/SKILL.md`, `skills/dev-cycle/SKILL.md`, `skills/research-plan-implement/SKILL.md`, `skills/security-reviewer/SKILL.md`, `test/scripts/build-loop-orchestrator.bats`, `workflows/pr-prep.md`, `workflows/research-plan-implement.md`, `workflows/review-fix-loop.md`.
+**Not listed:** 12 routine dev-cycle record lands. Paths changed outside `docs/` (15 under `docs/` not listed): `global-instructions/CLAUDE.md`, `guides/convention-changes.md`, `guides/pr-prep-quick-ref.md`, `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/migrations.sh`, `skills/code-review/SKILL.md`, `skills/constraints-builder/SKILL.md`, `skills/constraints-builder/references/working-doc-template.md`, `skills/dev-cycle/SKILL.md`, `skills/draft-review/SKILL.md`, `skills/research-plan-implement/SKILL.md`, `skills/security-reviewer/SKILL.md`, `workflows/pr-prep.md`, `workflows/research-plan-implement.md`, `workflows/review-fix-loop.md`, and five test files.
 
 **The paste** (host terminal in WSL, not inside a session; stop every session first):
 
 ```
-cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = d9f2e42afe7e89ebee9624ac1159fa812985ac46 && ./devcontainer-config/install.sh
+cd /home/magfrump/claude-workflows && git merge-base --is-ancestor 3019016a7e199195c85b907062445c8497f6ea41 HEAD && ./devcontainer-config/install.sh
 ```
 
-The `rev-parse` check runs no hook. It only confirms that your checkout is at main's commit; if it fails, bring the checkout to main first.
+The `merge-base` check runs no hook. It only confirms that your checkout holds at least these changes; if it fails, bring the checkout up to main first.
 
-- **Interim:** the image at 42295bd9 runs, with the older dev-cycle skill.
+- **Interim:** the image at 42295bd9 runs, with the older dev-cycle skill and gate rules.
 - **Blocks:** nothing.
-
-### Q-250 · merge-gate-2026-11-02-relax-grammar-and-loop-prompt-c1aae1b28040
-**Needs:** you: judgment · **Opened:** 2026-11-02 · **Status:** ANSWERED
-
-Merge restriction-audit unit 4 (the gate's brief, marker and path rules refuse only real ambiguity, and the loop prompt runs divergent design only for 3+ options) at c1aae1b2?
-
-**If you say no:** a brief holding `<details>`, a `NAME` placeholder in angle brackets or a `[1]: URL` line stays unreadable; a loop's question with a `## Options` heading or a "Q-12" line is filed as stopped; an approved branch adding `.github/` or `.gitignore` can never land; and every loop keeps running divergent design on single-answer choices and blocking on ties.
-
-**What an attacker would want here:** this is gate code (`scripts/build-loop.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/dev-cycle.sh`, `skills/dev-cycle/SKILL.md`), so it reaches the image at the next release. For an outside party, the relevant question is whether text from outside (a quoted web page in a brief, a pasted issue) can now make a reader see a different `Status:` or answer line. The loop kept the rules that prevent that: indented and list-item fences, an open HTML comment, CR, NUL, a BOM and an unclosed fence still refuse the whole file, and only column-0 key lines outside column-0 fences are read. The stated residual: a key line that HTML hides from a renderer is still read, which only a deliberately contrived file produces (out of scope, S1).
-
-- **Tip:** c1aae1b2804000c8a1858211f7d8cd28c39f2fdd (5 commits past 4c410708; 17 files, +418/−180)
-- **`--check` printed:**
-  - `ok docs/working/briefs/2026-11-02-relax-grammar-and-loop-prompt.md c1aae1b2804000c8a1858211f7d8cd28c39f2fdd 54baccbcf8b141e99c86d8618168bf3adf22fa1c`
-  - 16 `path` lines, all `M` except one `A`: `docs/decisions/log.md`, the brief, `docs/working/plan-build-loop-handoff.md`, `docs/working/research-2026-11-02-relax-grammar-and-loop-prompt.md` (A), `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/migrations.sh`, `skills/constraints-builder/references/working-doc-template.md`, `skills/dev-cycle/SKILL.md`, `skills/draft-review/SKILL.md`, and five `test/scripts/` bats files
-- **Paths self-merge would have refused:** the four gate-code files above, `docs/decisions/log.md` (a decision record), and the `SKILL.md` and skill-reference files (prompt files).
-- **One departure from the brief (the loop's D2):** the brief said to relax the path rules "under `--approved`". But a review brief's `--check` refuses first, so a `.github/` change could still never reach your merge entry. The loop relaxed them for review briefs' `--check` and `--approved` alike. Self-merge keeps the strict rules (no `.git*` part, no symlink or gitlink). Path lines now mark `(symlink)` and `(gitlink)` so you see them here.
-- **Also in it:** decision-log row 81 (the grammar redefinition, superseding row 69's HTML and link-reference refusals). The draft-review Fact-Check Gate gets unit 2's unattended default. The two stale lines unit 3 left are corrected. A no-op migration `brief-text-grammar-081` is added.
-- **Checks:** two review passes; pass 1's red (a self-merge's tie question was lost) and ambers are fixed, and pass 2 was clean after two small fixes. The full health check passed on the branch ("All checks passed"). Won't-fix: a run of backticks in a release-entry path can break its code span (cosmetic).
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] merge** | The next iteration merges c1aae1b2; it takes effect at the next release | None beyond this answer | One `git revert` of the merge |
-| **[2] drop** | The brief closes; unit 4 is abandoned | None now | The rules stay as strict as today |
-| **[3] changes needed** | Your note goes back to the loop (for example, keep the path rules strict outside `--approved`) | A one-line note | Another loop round |
-
-- **Blocks:** audit units 5 and 6 (they edit the same files).
-- **Interim:** the branch waits.
-
-**Answered:** [1] (owner, in session 2026-11-02: "Q-250: [1]"; recorded by the dev cycle)
 
