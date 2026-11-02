@@ -16,8 +16,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 - **Agent: restriction audit units 4-7** (filed 2026-11-01, owner request). Motive: the owner
   asked to remove every restriction without a specific, in-scope threat model; plan and
   inventories in `docs/working/research-2026-11-01-restriction-audit.md`. Units 1-3 merged
-  (63ba32e9, 242081af, 78dad60b); unit 4 merged (3019016a, Q-250 [1]). First step: brief unit 5 (the cycle runs migrations; it also absorbs the
-  image-lag item below), 6 (import walk seeds and parser) and 7 (D6 block into the image).
+  (63ba32e9, 242081af, 78dad60b); unit 4 merged (3019016a, Q-250 [1]). Unit 5 (the cycle runs migrations; it also absorbs the
+  image-lag item below) briefed 2026-11-02 (In flight). Next: brief 6 (import walk seeds and parser; shares
+  `scripts/build-loop.sh` with unit 5, so after it) and 7 (D6 block into the image).
   Unit 5 also fixes `scripts/dev-cycle.sh:193`, whose skip message still says "use
   --check-write" (unit 3 drops that call).
   Unit 4 also gives `skills/draft-review/SKILL.md`'s Fact-Check Gate the same unattended
@@ -31,7 +32,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   for the owner to answer (D8), which spent an owner answer on Q-227 on 2026-11-01. First
   step: let step 0.1 close an open `image-lag` / `image-off-main-*` entry on exit 0 (status
   ANSWERED, a `met` line naming C and M), with `--cycle-diff` accepting that one change;
-  gate code, so a merge entry. May fold into the restriction audit below.
+  gate code, so a merge entry. Folded into restriction-audit unit 5's brief (2026-11-02).
 - **Agent: Q-168 · finish the q096b exit-scan remote-names unit** (filed 2026-11-01, step 6,
   from Q-234's migrate). Motive: the exit scan parses remote names and legacy
   `remotes/`/`branches/` files more loosely than git. First step: rebase
@@ -54,7 +55,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   local day) a fixture dated today read "1 days since", because `check_persona_freshness`
   divides elapsed seconds by 86400 from local midnight. First step: compute the day count from
   dates (`date -u -d` on both sides, or a day-number difference) rather than seconds, and
-  keep the test's "0 days" claim.
+  keep the test's "0 days" claim. Briefed 2026-11-02 (In flight).
 - **Agent: Q-147 · q089 source-guard unit** (filed 2026-11-01, step 6, from Q-234's
   migrate). Motive: the static source-set test was split off unit A (`feat/q089-source-guard`,
   fa059477). First step: a fresh loop that narrows the test's claim to "plain spellings,
@@ -96,6 +97,10 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
+- Restriction audit unit 5: the cycle runs migrations, closes a cleared image-lag entry
+  (`docs/working/briefs/2026-11-02-cycle-runs-migrations.md`; review policy, gate code).
+- Health-check gate 12 counts days by date (`docs/working/briefs/2026-11-02-health-check-dst-day-count.md`;
+  self-merge policy).
 
 ## Next
 
@@ -270,6 +275,10 @@ Unranked. Each names the signal that motivates it.
   Fired again 2026-11-02: units 2 and 3 merged (242081af, 78dad60b; Q-248, Q-249), changing
   `skills/dev-cycle/SKILL.md`, code-review, security-reviewer, constraints-builder, RPI, the
   pr-prep and review-fix-loop workflows. Still best read after units 4-7 land.
+  Fired again 2026-11-02 (iteration 1803): unit 4 merged (3019016a, Q-250 [1]), changing
+  `skills/dev-cycle/SKILL.md`, draft-review and a constraints-builder reference. No drift
+  finding: its Path A record prunes on H2 and on the brief's own motive. Still best read
+  after units 5-7 land.
   Fired again 2026-10-29 (iteration 2026-10-30-0035): `skills/dev-cycle/SKILL.md` gained
   step 1b (6f364ba6, convention migrations), and a third drift finding (step 4, 6ee39f24):
   the watching-file loop's Path A record marks options 4 and 6 as failing on soft lines
