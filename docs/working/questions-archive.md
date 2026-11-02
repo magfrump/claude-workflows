@@ -238,6 +238,8 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-243](#q-243--merge-gate-2026-11-01-relax-dev-cycle-skill-prose-7e6f1e0e9655) | Merge `docs/relax-dev-cycle-skill-prose` at 7e6f1e0e96550bda192e7d8cece50a6266d76b47? This is unit 3 of you... | 2026-11-01 |
 | [Q-244](#q-244--merge-2026-11-01-relax-referenced-prose-stops-8ca8ec2e0591) | Merge `docs/relax-referenced-prose-stops` at 8ca8ec2e059138d0f42e380cdcfc6476c652ea0e? This is unit 2 of yo... | 2026-11-01 |
 | [Q-245](#q-245--merge-gate-2026-11-01-relax-gate-git-state-75dbfa2a6e80) | Merge `refactor/relax-gate-git-state` at 75dbfa2a6e80104d33ecb8aa5741f06c3444b013? This is unit 1 of your r... | 2026-11-01 |
+| [Q-246](#q-246--stopped-2026-11-01-relax-referenced-prose-stops-1) | Brief 2026-11-01-relax-referenced-prose-stops's build loop stopped; re-dispatch or drop? | 2026-11-01 |
+| [Q-247](#q-247--stopped-2026-11-01-relax-dev-cycle-skill-prose-1) | Brief 2026-11-01-relax-dev-cycle-skill-prose's build loop stopped; re-dispatch or drop? | 2026-11-01 |
 <!-- index:end -->
 
 ## Answered
@@ -5380,4 +5382,50 @@ cd /workspace && ~/.claude/scripts/questions.sh migrate && git add docs/working/
 - **Interim:** the iteration goes on; every reader still reads the old routes in `questions.md`. The cycle cannot run it itself: `--cycle-diff` refuses a chore commit that rewrites entries' **Needs:** lines. Run it only after unit 3 (`feat/questions-owner-only-unit3`, roadmap In flight; sent back to its loop this cycle) has merged: until then the digest reads watches only from `questions.md`, so migrating first drops them from the cycle's view (the unit 3 brief's motive).
 
 **Answered:** done (owner, in session 2026-11-01: "Q-234: do it"). Run in session from the image copy (`questions.sh migrate`): 9 entries moved, Q-161, Q-067, Q-098 to `watching.md`, six agent entries folded into roadmap Now (Q-173 dropped: settled by Q-238 [1]).
+
+### Q-246 · stopped-2026-11-01-relax-referenced-prose-stops-1
+**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** ANSWERED
+
+Brief 2026-11-01-relax-referenced-prose-stops's build loop stopped; re-dispatch or drop?
+> Reason: your approved merge (Q-244 [1]) of 8ca8ec2e refused: "docs/relax-referenced-prose-stops conflicts with the default branch". Unit 1 merged first (63ba32e9) and also added decision-log row 79.
+
+**If you say no:** the branch stays unmerged and the workflows keep their stops.
+
+**What an attacker would want here:** nothing; this only sends the same work back to merge main in.
+
+- **What re-dispatch does:** the loop merges main into its branch, resolves the clash (renumbering its decision-log row), re-runs its tests and ends `ready` at a new tip. That comes back to you as a new merge entry, because approval pins the exact commit.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] re-dispatch** | The loop merges main in and comes back ready | One more merge answer | Nothing merges without that answer |
+| **[2] drop** | The brief closes; unit 2 is abandoned | None now | The stops stay |
+
+- **Blocks:** nothing.
+- **Interim:** the branch waits.
+
+**Answered:** [1] (owner, in session 2026-11-01: "Q-246: [1]; Q-247: [1]"; recorded by the dev cycle)
+
+
+### Q-247 · stopped-2026-11-01-relax-dev-cycle-skill-prose-1
+**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** ANSWERED
+
+Brief 2026-11-01-relax-dev-cycle-skill-prose's build loop stopped; re-dispatch or drop?
+> Reason: your approved merge (Q-243 [1]) of 7e6f1e0e refused: "docs/relax-dev-cycle-skill-prose conflicts with the default branch". Unit 1 merged first (63ba32e9) and edits the same Hardened git passage of `skills/dev-cycle/SKILL.md`.
+
+**If you say no:** the branch stays unmerged and the skill keeps its rituals.
+
+**What an attacker would want here:** nothing; this only sends the same work back to merge main in.
+
+- **What re-dispatch does:** the loop merges main into its branch, reconciles the passage with unit 1's text, re-runs its tests and ends `ready` at a new tip. That comes back to you as a new merge entry, because approval pins the exact commit.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] re-dispatch** | The loop merges main in and comes back ready | One more merge answer | Nothing merges without that answer |
+| **[2] drop** | The brief closes; unit 3 is abandoned | None now | The rituals stay |
+
+- **Blocks:** nothing.
+- **Interim:** the branch waits.
+
+**Answered:** [1] (owner, in session 2026-11-01: "Q-246: [1]; Q-247: [1]"; recorded by the dev cycle)
+
 
