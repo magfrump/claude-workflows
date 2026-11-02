@@ -15,8 +15,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 - **Agent: restriction audit units 4-7** (filed 2026-11-01, owner request). Motive: the owner
   asked to remove every restriction without a specific, in-scope threat model; plan and
-  inventories in `docs/working/research-2026-11-01-restriction-audit.md`. Units 1-3 are In
-  flight. First step: once unit 1 merges, brief unit 4 (brief, marker and path grammar, the
+  inventories in `docs/working/research-2026-11-01-restriction-audit.md`. Units 1-3 merged
+  (63ba32e9, 242081af, 78dad60b). First step: brief unit 4 (brief, marker and path grammar, the
   loop prompt's K24/K26), then unit 5 (the cycle runs migrations; it also absorbs the
   image-lag item below), 6 (import walk seeds and parser) and 7 (D6 block into the image).
   Unit 5 also fixes `scripts/dev-cycle.sh:193`, whose skip message still says "use
@@ -89,14 +89,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
      else open one) is an idea until v1 is used. v1 merged at a8e941a5 (Q-232 [1]).
 
 ## In flight
-
-- **Restriction audit unit 2: narrow the stops in the referenced workflows and skills**
-  (owner, 2026-11-01). Review (`workflows/`, instruction files). Q-244 [1], but the merge
-  conflicted with unit 1 (decision-log row 79): stopped entry Q-246 (2026-11-01-2347). Re-dispatched on Q-246 [1]; ready at c76fca39 (row renumbered to 80): merge entry Q-248. Brief: `docs/working/briefs/2026-11-01-relax-referenced-prose-stops.md`
-- **Restriction audit unit 3: drop the dev-cycle skill's out-of-scope rituals** (owner,
-  2026-11-01). Review (gate code). Q-243 [1], but the merge conflicted with unit 1 (the
-  Hardened git passage): stopped entry Q-247 (2026-11-01-2347). Re-dispatched on Q-247 [1] (2026-11-02-0340). Ready at 28f3cf1a: merge entry Q-249.
-  Brief: `docs/working/briefs/2026-11-01-relax-dev-cycle-skill-prose.md`
 
 ## Next
 
@@ -326,6 +318,14 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- **Restriction audit unit 2: narrow the stops in the referenced workflows and skills**
+  (owner, 2026-11-01). Merged 242081af (Q-248 [1], after a re-dispatch on Q-246 to merge
+  main in; its decision-log row is 80). Brief:
+  `docs/working/briefs/closed/2026-11-01-relax-referenced-prose-stops.md`
+- **Restriction audit unit 3: drop the dev-cycle skill's out-of-scope rituals** (owner,
+  2026-11-01). Merged 78dad60b (Q-249 [1], after a re-dispatch on Q-247); gate code, takes
+  effect at the next release. Brief:
+  `docs/working/briefs/closed/2026-11-01-relax-dev-cycle-skill-prose.md`
 - **Restriction audit unit 1: the gate's git-state checks narrowed to in-scope threats**
   (owner, 2026-11-01). Merged 63ba32e9 (Q-245 [1]); takes effect at the next release. Brief:
   `docs/working/briefs/closed/2026-11-01-relax-gate-git-state.md`
