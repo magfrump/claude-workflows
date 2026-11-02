@@ -906,9 +906,12 @@ check_persona_freshness() {
     # Skills carrying a 'persona-last-sampled: YYYY-MM-DD' frontmatter field
     # encode when their persona model was last calibrated against current
     # writings. Beyond ~6 months, the model may drift from the real persona.
+    # Days are counted between dates, not elapsed local seconds: both sides are
+    # read as UTC midnights, which are always a whole multiple of 86400 apart,
+    # so a 23- or 25-hour DST day cannot shift the count.
     local stale_threshold_days=180
-    local now_seconds
-    now_seconds="$(date +%s)"
+    local today_seconds
+    today_seconds="$(date -u -d "$(date +%F)" +%s)"
 
     local checked=0
     local fresh=0
@@ -933,14 +936,14 @@ check_persona_freshness() {
         fi
 
         local sampled_seconds
-        if ! sampled_seconds="$(date -d "$last_sampled" +%s 2>/dev/null)"; then
+        if ! sampled_seconds="$(date -u -d "$last_sampled" +%s 2>/dev/null)"; then
             warn "$basename: could not parse persona-last-sampled date: $last_sampled"
             invalid=$((invalid + 1))
             continue
         fi
 
         checked=$((checked + 1))
-        local diff_days=$(( (now_seconds - sampled_seconds) / 86400 ))
+        local diff_days=$(( (today_seconds - sampled_seconds) / 86400 ))
 
         if (( diff_days > stale_threshold_days )); then
             warn "$basename: STALE — persona last sampled $diff_days days ago ($last_sampled, threshold $stale_threshold_days)"
