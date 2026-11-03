@@ -245,6 +245,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-248](#q-248--merge-2026-11-01-relax-referenced-prose-stops-c76fca3930c4) | Merge restriction-audit unit 2 (the workflows and skills the dev cycle uses stop only on an in-scope failur... | 2026-11-01 |
 | [Q-249](#q-249--merge-gate-2026-11-01-relax-dev-cycle-skill-prose-28f3cf1afc73) | Merge restriction-audit unit 3 (the dev-cycle skill drops its out-of-scope rituals: the `hg` wrapper, the i... | 2026-11-01 |
 | [Q-250](#q-250--merge-gate-2026-11-02-relax-grammar-and-loop-prompt-c1aae1b28040) | Merge restriction-audit unit 4 (the gate's brief, marker and path rules refuse only real ambiguity, and the... | 2026-11-02 |
+| [Q-251](#q-251--merge-gate-2026-11-02-cycle-runs-migrations-fa77134b1255) | Merge restriction-audit unit 5 (the dev cycle runs convention migrations itself, and closes a cleared image... | 2026-11-02 |
 <!-- index:end -->
 
 ## Answered
@@ -5537,7 +5538,7 @@ The first git call only checks that your checkout already holds the cc-verify me
 - **Interim:** both merges are bats-verified only; your installed exit scan does not yet see R6, and `cc-verify` is not on your PATH.
 - **2026-10-28 (owner, in session):** waiting: the install needs every active session stopped first. Q-225, once merged, rides on the same paste.
 
-**Answered:** done (owner, `docs/human-author/answers-11-3-2026.txt`, 2026-11-03: releases have been run since this entry was filed). `cc-verify --help` prints its usage, so it is on the host PATH. `cc-isolated --list` prints `Blessed config 3c5dd7853cf7a3f9 — verified live: yes` and `Host tools — match the bless (cc-exit-scan.sh cc-gitdir.sh cc-push.sh cc-verify.sh)`. The installed image manifest reads `commit=c214970a`, which contains both 37b24c02 (cc-verify) and 7a5b4f4a (R6). Not reported: whether `~/cc-verify` is in the agents' sandbox `denyWrite`. That step comes before the first real `cc-verify --check`, so it is carried into roadmap Next 1's paste. Recorded by a session on 2026-11-03.
+**Answered:** done (owner, `docs/human-author/answers-11-3-2026.txt`, 2026-11-03: releases have been run since this entry was filed). `cc-verify --help` prints its usage, so it is on the host PATH. `cc-isolated --list` prints `Blessed config 3c5dd7853cf7a3f9 — verified live: yes` and `Host tools — match the bless (cc-exit-scan.sh cc-gitdir.sh cc-push.sh cc-verify.sh)`. The installed image manifest reads `commit=c214970a`, which contains both 37b24c02 (cc-verify) and 7a5b4f4a (R6). Not reported: whether `~/cc-verify` is in the agents' sandbox `denyWrite`. That step comes before the first real `cc-verify --check`, so it is carried into roadmap Next 1's paste. Recorded by a session on 2026-11-03. **Follow-up, 2026-11-03 (owner, in session):** "I've added the sandbox denyWrite", so `~/cc-verify` is denied, and the step has been taken out of roadmap Next 1's paste.
 
 
 ### Q-227 · image-lag
@@ -5568,5 +5569,35 @@ The `merge-base` check runs no hook. It only confirms that your checkout holds a
 - **Blocks:** nothing.
 
 **Answered:** released (2026-11-03). The owner reports running releases since this entry was filed (`answers-11-3-2026.txt`, under Q-222). `/opt/claude-workflows/.manifest` reads `commit=c214970ac27333eed891cf3c4999f1f4b4096627 dirty=no`, which contains 3019016a. `git diff --stat c214970a main` over `scripts skills hooks devcontainer-config workflows global-instructions` is empty, so the image holds main's gate code. Recorded by a session on 2026-11-03.
+
+
+### Q-251 · merge-gate-2026-11-02-cycle-runs-migrations-fa77134b1255
+**Needs:** you: judgment · **Opened:** 2026-11-02 · **Status:** ANSWERED
+
+Merge restriction-audit unit 5 (the dev cycle runs convention migrations itself, and closes a cleared image-lag entry without asking you) at fa77134b?
+
+**If you say no:** every pending migration keeps arriving as a `you: terminal` paste you have to run, and an image-lag entry whose release already happened still waits for your answer, as Q-227 did on 2026-11-01.
+
+**What an attacker would want here:** this is gate code (`scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`), so it reaches the image at the next release. The one thing an outside party would want is a way to change an answer line or a `**Status:**` without you. The new `--migrated ID` mode does not open one: the gate looks the ID up in its own registry, accepts changes only to the entries that migration's pattern matched, and refuses if any answer line or `**Status:**` field changed. The image-lag close is accepted only on the `image-lag` / `image-off-main-*` slugs, and only after the gate checks in the repository that the image commit and main hold the same gate code. Stated residual: the D6 block checks that the registry's directory is root-owned, not the registry file itself; under S1 the loop judged that acceptable.
+
+- **Tip:** fa77134b1255e1488aa7639b8ed513c7e7659404 (5 commits past 9a50c75a; 11 files, +573/−74)
+- **`--check` printed:**
+  - `ok docs/working/briefs/2026-11-02-cycle-runs-migrations.md fa77134b1255e1488aa7639b8ed513c7e7659404 9d0afb7361782d77674f76ce3a6c12db368e9a42`
+  - 11 `path` lines, all `M` except one `A`: `docs/decisions/log.md`, the brief, `docs/working/plan-build-loop-handoff.md`, `docs/working/research-2026-11-02-cycle-runs-migrations.md` (A), `guides/convention-changes.md`, `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`, `test/scripts/build-loop-orchestrator.bats`, `test/scripts/dev-cycle.bats`
+- **Paths self-merge would have refused:** the four gate-code files above, `docs/decisions/log.md` (a decision record) and `skills/dev-cycle/SKILL.md` (a prompt file).
+- **What changes for you:** step 1b runs a `questions.sh` remedy itself and files no entry. The record and the final message say what ran. Any other remedy, or one that fails, still comes to you, as one collected `you: terminal` paste, not one per migration. The loop kept one restriction the audit missed: a remedy that writes a truth file (such as the `failure-patterns-out-of-thoughts` move) still goes to you.
+- **Also in it:** decision-log row 82; plan amendments to D8 and D13; the stale `--check-fix` message fixed; `guides/convention-changes.md` rewritten to match; a registry line `record-1b-ran`. Seven new or updated bats cases, one of them passing the real `questions.sh migrate` output through the new mode.
+- **Checks:** two review rounds. Round 1's medium (the image-lag close checked only the line's shape) is fixed; round 2 found nothing high or medium. The full health check passed on the branch.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next iteration merges fa77134b; it takes effect at the next release | None beyond this answer | One `git revert` of the merge |
+| **[2] drop** | The brief closes; unit 5 is abandoned | None now | Migrations and cleared image-lag entries keep coming to you |
+| **[3] changes needed** | Your note goes back to the loop | A one-line note | Another loop round |
+
+- **Blocks:** audit unit 6 (it edits `scripts/build-loop.sh` too).
+- **Interim:** the branch waits.
+
+**Answered:** [1] (owner, in session 2026-11-03: "Q-251: [1]"). The next dev-cycle iteration merges fa77134b.
 
 
