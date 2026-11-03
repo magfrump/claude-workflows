@@ -187,7 +187,7 @@ check_fix() {
   if ! pathform "$a"; then echo "skip ${a//$'\n'/ }: not an allowed path form"; return; fi
   # Compared lower-cased: on a case-insensitive filesystem docs/Working/ is docs/working/.
   if ! lp="$(lower "$a")"; then echo "skip $a: the path could not be lower-cased; file it instead"; return; fi
-  if truthrule "$lp" && [[ "$TRUTH_WHY" == cycle ]]; then echo "skip $a: one of the cycle's own files (use --check-write)"
+  if truthrule "$lp" && [[ "$TRUTH_WHY" == cycle ]]; then echo "skip $a: one of the cycle's own files (the cycle writes it with no pre-write check; step 9's --cycle-diff bounds what lands)"
   elif [[ -n "$TRUTH_WHY" || ! "$lp" =~ ^docs/.*\.md$|^readme\.md$ || "$lp" =~ ^docs/(working|reviews)/ ]]; then
     echo "skip $a: in-cycle fixes edit only tracked .md documentation under docs/ (not working/, human-author/, reviews/, decisions/, dev-cycle.md, constraints.md, failure-patterns.md, dot-directories or dotfiles, or instruction files) and README.md; file it instead"
   elif truthwalk tree "$lp"; then
@@ -431,7 +431,7 @@ else
       while IFS= read -r line; do
         k="${line:0:1}"; line="${line:1}"
         if [[ "$k" == m ]]; then echo "- $line (malformed route: \`questions.sh check\` names it)"
-        elif [[ "$legacy" == *" ${line%%  *} "* ]]; then echo "- $line (legacy, in questions.md: the owner's \`questions.sh migrate\` moves it)"
+        elif [[ "$legacy" == *" ${line%%  *} "* ]]; then echo "- $line (legacy, in questions.md: step 1b's \`questions.sh migrate\` moves it)"
         else echo "- $line"; fi
       done <<< "$watched"
     else

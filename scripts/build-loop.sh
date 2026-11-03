@@ -9,8 +9,8 @@
 #        scripts/build-loop.sh --marker BRIEF
 #        scripts/build-loop.sh --state
 #        scripts/build-loop.sh --main-log SINCE
-#        scripts/build-loop.sh --cycle-diff [--answered Q-NNN]...
-#        scripts/build-loop.sh --land-cycle --main SHA [--answered Q-NNN]...
+#        scripts/build-loop.sh --cycle-diff [--answered Q-NNN]... [--migrated ID]...
+#        scripts/build-loop.sh --land-cycle --main SHA [--answered Q-NNN]... [--migrated ID]...
 #        scripts/build-loop.sh --check BRIEF... [--expect SHA]
 #        scripts/build-loop.sh --merge BRIEF --expect SHA [--approved Q-NNN]
 #        scripts/build-loop.sh --start BRIEF [--dir DIR]
@@ -206,7 +206,27 @@
 #                 Except IDs given with --answered (answers the user gave the
 #                 orchestrator in-session; exact IDs, Q-14 is not Q-014; a
 #                 repeat or an unused one is ignored). Other entry lines are
-#                 free. A questions change while main has changed those files
+#                 free. Two changes pass without --answered, as neither
+#                 writes an answer the user did not give (D8): with
+#                 --migrated ID (repeatable; the dev cycle ran that registry
+#                 line's remedy, skill step 1b), an entry holding a line of
+#                 BASE's questions.md the ID's ERE matches may change its
+#                 heading and **Needs:** lines or move to the side's
+#                 docs/working/watching.md or roadmap-from-questions.md, its
+#                 answer lines and **Status:** fields kept, in order; and an
+#                 open entry headed image-lag or image-off-main-C12 may
+#                 change exactly as step 0.1 closes it: its Status OPEN to
+#                 ANSWERED and one line "Q-NNN: met — image C holds the gate
+#                 code of main M" (its own ID; C and M full commit ids)
+#                 added, C and M commits here between which no GATE_CODE
+#                 path differs. Each --migrated ID must name a line of the registry
+#                 beside this script (lib/migrations.sh, the image copy
+#                 under D6; unreadable or malformed refuses: "refuse HEAD")
+#                 whose PATH is docs/working/questions.md or docs/roadmap.md
+#                 (any other refuses: the owner runs it), whose ERE matches
+#                 a line of PATH on BASE and none on the listing's side
+#                 ("refuse PATH" otherwise). A roadmap one frees the
+#                 roadmap's preamble and ## heading rule below. A questions change while main has changed those files
 #                 since BASE refuses (--check-answer reads the merge, where a
 #                 free fence pair can capture main's newer answer): merge main
 #                 into HEAD first. That refusal is printed alone. docs/working/idea-log.md other than appended
@@ -260,7 +280,8 @@
 #             --cycle-diff checked; --merge's --expect is a branch tip
 #             instead). The merge of HEAD into main, as --check's
 #             (merge-tree, no repo config), is judged against main by
-#             --cycle-diff's rules with these --answered IDs (what lands: a
+#             --cycle-diff's rules with these --answered and --migrated
+#             IDs (what lands: a
 #             rename git pairs into a questions file, or a fence pair that
 #             captures main's answer, shows here) and must add or change a
 #             cycle record holding "Branch: B" (--main-log's chore). Then it
@@ -599,8 +620,8 @@ constraints_line() {
     *) echo "constraints unreadable: line $c looks like a constraint but is not exactly \"H<n>: text\" or \"S<n>: text\" (optionally after \"- \", n without a leading 0)" ;;
   esac
 }
-usage() { echo "$1 (usage: build-loop.sh --settings | --check-constraints FILE | --status BRIEF... | --marker BRIEF | --state | --main-log SINCE | --cycle-diff [--answered Q-NNN]... | --land-cycle --main SHA [--answered Q-NNN]... | --check BRIEF... [--expect SHA] | --merge BRIEF --expect SHA [--approved Q-NNN] | --start BRIEF [--dir DIR] | --prompt BRIEF [--dir DIR] [--steal])" >&2; exit 1; }
-MODE=""; ARGS=(); EXPECT=""; APPROVED=""; DIR=""; STEAL=""; ANSWERED=(); LAND_MAIN=""
+usage() { echo "$1 (usage: build-loop.sh --settings | --check-constraints FILE | --status BRIEF... | --marker BRIEF | --state | --main-log SINCE | --cycle-diff [--answered Q-NNN]... [--migrated ID]... | --land-cycle --main SHA [--answered Q-NNN]... [--migrated ID]... | --check BRIEF... [--expect SHA] | --merge BRIEF --expect SHA [--approved Q-NNN] | --start BRIEF [--dir DIR] | --prompt BRIEF [--dir DIR] [--steal])" >&2; exit 1; }
+MODE=""; ARGS=(); EXPECT=""; APPROVED=""; DIR=""; STEAL=""; ANSWERED=(); MIGRATED=(); LAND_MAIN=""
 case "${1:-}" in
   --settings) MODE=settings; [[ $# -eq 1 ]] || usage "--settings takes no arguments" ;;
   --check-constraints)
@@ -618,8 +639,9 @@ case "${1:-}" in
     while [[ $# -gt 0 ]]; do
       if [[ "$1" == --main && "$MODE" == land-cycle && $# -ge 2 && -z "$LAND_MAIN" && "$2" =~ ^([0123456789abcdef]{40}|[0123456789abcdef]{64})$ ]]; then LAND_MAIN="$2"
       elif [[ "$1" == --answered && $# -ge 2 && "$2" =~ ^Q-[0123456789]+$ ]]; then ANSWERED+=("$2")
-      elif [[ "$MODE" == cycle-diff ]]; then usage "--cycle-diff takes only --answered Q-NNN, one ID each"
-      else usage "--land-cycle takes --main SHA (the default branch's full commit id), once, and --answered Q-NNN, one ID each"; fi
+      elif [[ "$1" == --migrated && $# -ge 2 && "$2" =~ ^[abcdefghijklmnopqrstuvwxyz0123456789][abcdefghijklmnopqrstuvwxyz0123456789-]*$ ]]; then MIGRATED+=("$2")
+      elif [[ "$MODE" == cycle-diff ]]; then usage "--cycle-diff takes only --answered Q-NNN and --migrated ID, one ID each"
+      else usage "--land-cycle takes --main SHA (the default branch's full commit id), once, and --answered Q-NNN and --migrated ID, one ID each"; fi
       shift 2
     done
     [[ "$MODE" == cycle-diff || -n "$LAND_MAIN" ]] || usage "--land-cycle needs --main SHA, the default branch's commit --cycle-diff checked" ;;
@@ -1875,13 +1897,17 @@ main_log() {
 # is h for its heading, n for a **Needs:** line, a for an answer line
 # (ANSWERS_AWK's labels, any ID); F names the file. A file --check-answer
 # skips whole is refused first, by ANSWER_AWK itself (final architecture 1).
+# With mk, a file of line numbers (a --migrated ERE's matches), K is also m,
+# once per such line inside an entry: the entries the migration may move.
 # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
 QKEYS_AWK='
+BEGIN { if (mk != "") while ((getline mkl < mk) > 0) mark[mkl] = 1 }
 { sub(/\r$/, "") }
 fence($0) { next }
-/^### Q-[0123456789]+([ \t]|$)/ { id = substr($0, 5); sub(/[ \t].*/, "", id); print id "\t" f "\th\t" $0; next }
+/^### Q-[0123456789]+([ \t]|$)/ { id = substr($0, 5); sub(/[ \t].*/, "", id); print id "\t" f "\th\t" $0; if (NR in mark) print id "\t" f "\tm\t" $0; next }
 /^(#|##|###) / { id = ""; next }
 id == "" { next }
+NR in mark { print id "\t" f "\tm\t" $0 }
 /^\*\*Needs:\*\*/ { print id "\t" f "\tn\t" $0; next }
 { t = $0; sub(/^- /, "", t); if (t ~ /^Q-[0123456789]+:/ || tolower(t) ~ /^\*\*answer(:|ed| \()/) print id "\t" f "\ta\t" $0 }
 '
@@ -1889,26 +1915,85 @@ id == "" { next }
 # questions.md's then the archive's, ok the --answered IDs: "ID F gone|new" per
 # refused entry. An entry's key lines are compared in file order (--check-answer
 # reads the first Needs and the first answer line, so a reorder can change its
-# result: i1 A1) and without F, so an archive move is no change.
+# result: i1 A1) and without F, so an archive move is no change. Two changes
+# pass without --answered, neither writing an answer the user did not give:
+# - an entry a --migrated ERE matched on the base (an m line) may change its
+#   heading and Needs lines, or move to file 3 (the side's watching.md and
+#   roadmap-from-questions.md), as long as its answer lines and Status fields
+#   (keysig) stay as they were, in order;
+# - an open image-lag or image-off-main-C12 entry closed as step 0.1 closes it:
+#   its one Status field OPEN becomes ANSWERED and one line
+#   "Q-NNN: met — image C holds the gate code of main M" (C, M full commit ids)
+#   is added, nothing else (cleared). Printed "ID F clear C M": questions_rules
+#   then checks C and M in the repository (image_cleared).
 # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
 QDIFF_AWK='
-function answered(k, l,   n, i, g) {
+function trim(g) { sub(/^[ \t]+/, "", g); sub(/[ \t]+$/, "", g); return g }
+function answered(k, l,   n, i) {
   if (k == "a") return 1
   n = split(l, fld, " · ")
-  for (i = 1; i <= n; i++) { g = fld[i]; sub(/^[ \t]+/, "", g); sub(/[ \t]+$/, "", g); if (k == "n" && g == "**Status:** ANSWERED") return 1 }
+  for (i = 1; i <= n; i++) if (k == "n" && trim(fld[i]) == "**Status:** ANSWERED") return 1
   return 0
+}
+function keysig(s,   n, i, j, m, ln, out, g) {
+  n = split(s, ln, "\n"); out = ""
+  for (i = 2; i <= n; i++) {
+    if (substr(ln[i], 1, 1) == "a") out = out "\n" ln[i]
+    else if (substr(ln[i], 1, 1) == "n") {
+      m = split(substr(ln[i], 2), fld, " · ")
+      for (j = 1; j <= m; j++) { g = trim(fld[j]); if (index(g, "**Status:**") == 1) out = out "\ns" g }
+    }
+  }
+  return out
+}
+function sha(x) { return (length(x) == 40 || length(x) == 64) && x !~ /[^0123456789abcdef]/ }
+function cleared(id,   n, i, j, m, ln, x, y, e, c, slug, r, met, p, q) {
+  if (!(id in in2)) return 0
+  n = split(o[id], ln, "\n"); e = ""; c = 0; slug = ""
+  for (i = 2; i <= n; i++) {
+    x = ln[i]
+    if (substr(x, 1, 1) == "h") { p = index(x, " · "); if (p) slug = substr(x, p + length(" · ")) }
+    if (substr(x, 1, 1) == "n") {
+      m = split(substr(x, 2), fld, " · "); y = ""
+      for (j = 1; j <= m; j++) { if (trim(fld[j]) == "**Status:** OPEN") { c++; sub(/OPEN/, "ANSWERED", fld[j]) } y = y (j > 1 ? " · " : "") fld[j] }
+      x = "n" y
+    }
+    e = e "\n" x
+  }
+  if (c != 1 || !(slug == "image-lag" || (length(slug) == 27 && slug ~ /^image-off-main-[0123456789abcdef]+$/))) return 0
+  n = split(nw[id], ln, "\n"); r = ""; met = 0; p = "a" id ": met — image "
+  for (i = 2; i <= n; i++) {
+    x = ln[i]
+    if (index(x, p) == 1) {
+      q = substr(x, length(p) + 1); j = index(q, " holds the gate code of main ")
+      if (j && sha(substr(q, 1, j - 1)) && sha(substr(q, j + length(" holds the gate code of main ")))) { met++; cc = substr(q, 1, j - 1); cm = substr(q, j + length(" holds the gate code of main ")); continue }
+    }
+    r = r "\n" x
+  }
+  return met == 1 && r == e
 }
 BEGIN { n = split(ids, x, " "); for (i = 1; i <= n; i++) ok[x[i]] = 1 }
 { id = $1; k = $3; l = $0; sub(/^[^\t]*\t[^\t]*\t[^\t]*\t/, "", l) }
-FILENAME == ARGV[1] { o[id] = o[id] "\n" k l; of[id] = $2; next }
-{ nw[id] = nw[id] "\n" k l; nf[id] = $2; if (answered(k, l)) an[id] = 1 }
+FILENAME == ARGV[1] { if (k == "m") mk[id] = 1; else { o[id] = o[id] "\n" k l; of[id] = $2 } next }
+FILENAME == ARGV[2] { nw[id] = nw[id] "\n" k l; nf[id] = $2; in2[id] = 1; if (answered(k, l)) an[id] = 1; next }
+{ mv[id] = mv[id] "\n" k l; in3[id] = 1 }
 END {
-  for (id in o) if (!(id in ok) && o[id] != nw[id]) print id " " ((id in nf) ? nf[id] : of[id]) " gone"
+  for (id in o) {
+    if ((id in ok) || o[id] == nw[id]) continue
+    if (id in mk) {
+      # A copy in file 3 is held to the base too, even when the entry also stays.
+      if ((id in in3) && keysig(o[id]) != keysig(mv[id])) { print id " " ((id in nf) ? nf[id] : of[id]) " gone"; continue }
+      if ((id in in2) && keysig(o[id]) == keysig(nw[id])) continue
+      if (!(id in in2) && (id in in3)) continue
+    } else if (cleared(id)) { print id " " nf[id] " clear " cc " " cm; continue }
+    print id " " ((id in nf) ? nf[id] : of[id]) " gone"
+  }
   for (id in nw) if (!(id in o) && !(id in ok) && an[id]) print id " " nf[id] " new"
 }'
 # The cycle rules' roadmap rule over the base (file 1) and the listing's side (file 2):
 # one WHY per line. The lines above the first "## " heading and the heading
-# lines stay; a brief file a line outside "## Done" names on the base is named
+# lines stay (not judged with free=1: a --migrated roadmap remedy changes them);
+# a brief file a line outside "## Done" names on the base is named
 # on some line of the index. A heading is Done as dev-cycle.sh reads its
 # sections ("## Done", any case, alone or before a space or "(").
 # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
@@ -1924,8 +2009,8 @@ ROADMAP_AWK='
   }
 }
 END {
-  if (p[1] != p[2]) print "its lines above the first ## heading changed"
-  if (h[1] != h[2]) print "its ## headings changed"
+  if (!free && p[1] != p[2]) print "its lines above the first ## heading changed"
+  if (!free && h[1] != h[2]) print "its ## headings changed"
   for (b in need) if (!(b in named)) print "the brief " b ", named outside Done on the base, is named on no line"
 }'
 # cyc_blob MODE ID OUT: the blob ID into OUT, read in the gate repository; an
@@ -1965,6 +2050,63 @@ cycle_diff() {
 # refuses after that line, which brief_fields does not read at all.
 # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
 asked() { LC_ALL=C awk "$FENCE_AWK"'{ sub(/\r$/, "") } fence($0) { next } /^Asked:/ { print; exit }' "$1"; }
+# side_blob BASE PATH OUT: PATH on the listing's side into OUT (its RAW_*
+# record when the listing changes it, else BASE's copy); an absent PATH is an
+# empty file. Returns non-zero when a side is not a regular file or a read fails.
+side_blob() {
+  local i md id
+  for i in "${!RAW_P[@]}"; do [[ "${RAW_P[i]}" != "$2" ]] || { cyc_blob "${RAW_NM[i]}" "${RAW_NO[i]}" "$3"; return; }; done
+  gate_git ls-tree -z "$1" -- "$2" > "$3.lt" || return 1
+  [[ -s "$3.lt" ]] || { : > "$3"; return 0; }
+  IFS=$' \t' read -r -d '' md _ id _ < "$3.lt" && cyc_blob "$md" "$id" "$3"
+}
+# mig_rules BASE SIDE: the --migrated IDs against the gate's own registry
+# (lib/migrations.sh beside this script, the image copy under D6: H1). Each ID
+# must name a registry line whose PATH is docs/working/questions.md or
+# docs/roadmap.md (the files these rules relax for a remedy; any other, a
+# truth file such as the failure-pattern library included, stays refused),
+# whose ERE matches a line of PATH on BASE (pending there) and none on the
+# listing's side (the remedy ran; SIDE names it). Sets MIG_QERE (the questions EREs) and
+# MIG_ROADMAP (1 for a roadmap one) for the IDs that pass; prints a refuse
+# line per finding and returns 1 on any.
+MIG_QERE=(); MIG_ROADMAP=""
+mig_rules() {
+  local base="$1" id i k p rc md ob bad=0 t="$GATE_TMP/cy"
+  MIG_QERE=(); MIG_ROADMAP=""
+  [[ ${#MIGRATED[@]} -gt 0 ]] || return 0
+  if [[ ! -f "$SCRIPT_DIR/lib/migrations.sh" || -L "$SCRIPT_DIR/lib/migrations.sh" ]] || ! bash -n -- "$SCRIPT_DIR/lib/migrations.sh" 2>/dev/null; then
+    echo "refuse HEAD: --migrated needs the registry lib/migrations.sh beside build-loop.sh, which is missing, not a regular file or does not parse"; return 1
+  fi
+  # shellcheck source=lib/migrations.sh
+  source "$SCRIPT_DIR/lib/migrations.sh"
+  [[ ${#MIG_BAD[@]} -eq 0 ]] || { echo "refuse HEAD: --migrated needs the registry lib/migrations.sh, which has malformed lines"; return 1; }
+  for id in $(printf '%s\n' "${MIGRATED[@]}" | LC_ALL=C sort -u); do
+    k=""; for i in "${!MIG_ID[@]}"; do [[ "${MIG_ID[i]}" != "$id" ]] || k="$i"; done
+    [[ -n "$k" ]] || { echo "refuse HEAD: --migrated $id names no migration in the gate's registry"; bad=1; continue; }
+    p="${MIG_PATH[k]}"
+    if [[ "$p" != docs/working/questions.md && "$p" != docs/roadmap.md ]]; then
+      echo "refuse HEAD: --migrated $id: its remedy changes ${p/#-/no file}, which these rules do not relax for a migration (the owner runs it)"; bad=1; continue
+    fi
+    if ! gate_git ls-tree -z "$base" -- "$p" > "$t.ml" || [[ ! -s "$t.ml" ]] || ! IFS=$' \t' read -r -d '' md _ ob _ < "$t.ml" || ! cyc_blob "$md" "$ob" "$t.mo"; then
+      echo "refuse $p: --migrated $id: not a regular file on the base, or could not be read, so the migration was not pending there"; bad=1; continue
+    fi
+    rc=0; LC_ALL=C grep -aqE -- "${MIG_ERE[k]}" "$t.mo" || rc=$?
+    case "$rc" in
+      0) ;;
+      1) echo "refuse $p: --migrated $id: no line on the base matches its pattern, so the migration was not pending"; bad=1; continue ;;
+      *) echo "refuse $p: --migrated $id: its pattern could not be matched on the base copy"; bad=1; continue ;;
+    esac
+    side_blob "$base" "$p" "$t.mn" && [[ -s "$t.mn" ]] || { echo "refuse $p: --migrated $id: the $2 side is empty, not a regular file, or could not be read"; bad=1; continue; }
+    rc=0; LC_ALL=C grep -aqE -- "${MIG_ERE[k]}" "$t.mn" || rc=$?
+    case "$rc" in
+      1) ;;
+      0) echo "refuse $p: --migrated $id: a line of its $2 copy still matches its pattern, so the remedy did not finish"; bad=1; continue ;;
+      *) echo "refuse $p: --migrated $id: its pattern could not be matched on the $2 copy"; bad=1; continue ;;
+    esac
+    if [[ "$p" == docs/roadmap.md ]]; then MIG_ROADMAP=1; else MIG_QERE+=(-e "${MIG_ERE[k]}"); fi
+  done
+  return "$bad"
+}
 # cycle_rules BASE SIDE: the cycle's rules over RAW_* (raw_records of a
 # listing against BASE): --cycle-diff's (BASE the merge base, SIDE "index")
 # and --land-cycle's (BASE main's commit, SIDE "merge", the merge it writes),
@@ -1973,6 +2115,7 @@ asked() { LC_ALL=C awk "$FENCE_AWK"'{ sub(/\r$/, "") } fence($0) { next } /^Aske
 cycle_rules() {
   local base="$1" side="$2" i p lp w f o n a x id k qrc=0 bad=0 qi=() t="$GATE_TMP/cy"
   local -A ao=() an=() ap=() aop=() used=() newh=()
+  mig_rules "$base" "$side" || bad=1
   for i in "${!RAW_P[@]}"; do
     p="${RAW_P[i]}"; lp="$(lower "$p")"
     # An in-cycle fix never edits the gate's code, which decides what an
@@ -2029,7 +2172,7 @@ cycle_rules() {
       while IFS= read -r k; do echo "refuse $p: ${k%% *}'s heading changed or is gone; a watch closes by moving under ## Closed, never by deletion"; bad=1
       done < "$t.w"
     else
-      LC_ALL=C awk "$ROADMAP_AWK" "$t.o" "$t.n" > "$t.w" || { echo "refuse $p: it could not be compared"; bad=1; continue; }
+      LC_ALL=C awk -v free="$MIG_ROADMAP" "$ROADMAP_AWK" "$t.o" "$t.n" > "$t.w" || { echo "refuse $p: it could not be compared"; bad=1; continue; }
       while IFS= read -r k; do echo "refuse $p: $k"; bad=1; done < "$t.w"
     fi
   done
@@ -2067,6 +2210,21 @@ cycle_rules() {
   done
   return "$bad"
 }
+# image_cleared ID F C M: step 0.1's close of ID is what its line says: C and M
+# name commits here and no path the gate's own code covers (GATE_CODE, the
+# list step 0.1 diffs) differs between them. Prints a refuse line and fails otherwise.
+image_cleared() {
+  local p
+  if ! gate_git cat-file -e "$3^{commit}" 2>/dev/null || ! gate_git cat-file -e "$4^{commit}" 2>/dev/null; then
+    echo "refuse docs/working/$2: $1's closing line names $3 and $4, which are not both commits here"; return 1
+  fi
+  gate_git diff --name-only -z --no-renames "$3" "$4" > "$GATE_TMP/cy.ic" 2>/dev/null || { echo "refuse docs/working/$2: $1's closing line's commits could not be compared"; return 1; }
+  # Lower-cased once, as the rules compare (lower's own tr, over the whole list).
+  tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz' < "$GATE_TMP/cy.ic" > "$GATE_TMP/cy.il" || { echo "refuse docs/working/$2: $1's closing line's commits could not be compared"; return 1; }
+  while IFS= read -r -d '' p; do
+    [[ ! "$p" =~ $GATE_CODE ]] || { echo "refuse docs/working/$2: $1's closing line says $3 holds the gate code of $4, but $p differs"; return 1; }
+  done < "$GATE_TMP/cy.il"
+}
 # questions_rules BASE SIDE I...: cycle_rules' questions-file rules over the
 # RAW_* records I... (the questions files' indices); also writes
 # $GATE_TMP/cy.new, the IDs of the entries the listing files (a "### Q-NNN"
@@ -2096,12 +2254,29 @@ questions_rules() {
       # The whole-file verdict from --check-answer's own reader (id Q- names no Q-digits entry; a bare "### Q-" heading only refuses): FENCE_AWK's refusals and a fenced question heading.
       k=base; [[ "$p" == o ]] || k="$side"; md="$(LC_ALL=C awk -v id=Q- "$FENCE_AWK$ANSWER_AWK" "$t.$p")" || md="unread"
       [[ -z "$md" ]] || { echo "refuse $f: --check-answer refuses its $k copy whole ($md)"; return 2; }
-      LC_ALL=C awk -v f="${f##*/}" "$FENCE_AWK$QKEYS_AWK" "$t.$p" >> "$t.q$p" || { echo "refuse $f: it could not be read"; return 2; }
+      # The base's lines a --migrated questions ERE matches mark their entries (QKEYS_AWK's m).
+      : > "$t.mk"; k=""
+      if [[ "$p" == o && "$f" == docs/working/questions.md && ${#MIG_QERE[@]} -gt 0 ]]; then
+        md=0; LC_ALL=C grep -anE "${MIG_QERE[@]}" -- "$t.o" > "$t.mg" || md=$?
+        [[ "$md" -le 1 ]] && cut -d: -f1 "$t.mg" > "$t.mk" || { echo "refuse $f: the --migrated patterns could not be matched on it"; return 2; }
+        k="$t.mk"
+      fi
+      LC_ALL=C awk -v f="${f##*/}" -v mk="$k" "$FENCE_AWK$QKEYS_AWK" "$t.$p" >> "$t.q$p" || { echo "refuse $f: it could not be read"; return 2; }
     done
   done
-  LC_ALL=C awk -F '\t' -v ids="${ANSWERED[*]}" "$QDIFF_AWK" "$t.qo" "$t.qn" > "$t.w" \
+  # Where a questions migration moves entries: the side's watching.md and
+  # roadmap-from-questions.md (questions.sh migrate's destinations).
+  : > "$t.qx"
+  if [[ ${#MIG_QERE[@]} -gt 0 ]]; then
+    for f in docs/working/watching.md docs/working/roadmap-from-questions.md; do
+      side_blob "$base" "$f" "$t.x" || { echo "refuse $f: its $side side is not a regular file (mode 100644), or could not be read"; return 2; }
+      LC_ALL=C awk -v f="${f##*/}" "$FENCE_AWK$QKEYS_AWK" "$t.x" >> "$t.qx" || { echo "refuse $f: it could not be read"; return 2; }
+    done
+  fi
+  LC_ALL=C awk -F '\t' -v ids="${ANSWERED[*]}" "$QDIFF_AWK" "$t.qo" "$t.qn" "$t.qx" > "$t.w" \
     || { echo "refuse docs/working/questions.md: the entries could not be compared"; return 2; }
-  while read -r i f k; do
+  while read -r i f k c m; do
+    if [[ "$k" == clear ]]; then image_cleared "$i" "$f" "$c" "$m" || bad=1; continue; fi
     bad=1
     if [[ "$k" == gone ]]; then echo "refuse docs/working/$f: $i's heading, Needs or answer lines changed or are gone, and $i is not in --answered"
     else echo "refuse docs/working/$f: $i is a new entry filed answered (Status ANSWERED or an answer line), and $i is not in --answered"; fi

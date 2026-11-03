@@ -35,7 +35,7 @@ mig ID CONVENTION FP PATH ERE 'REMEDY'
 
 - **Existing files need changing**: PATH is the repo file that can hold the old shape, ERE
   a `grep -E` pattern that matches a line only the old shape has, and REMEDY the command
-  the repo's owner runs from its root (then commits). Example, for a route that left the
+  that migrates it, run from the repo's root (then committed). Example, for a route that left the
   questions file: `mig questions-x questions FP docs/working/questions.md
   '^\*\*Needs:\*\* x( |$)' '~/.claude/scripts/questions.sh migrate'`.
 - **No existing file needs changing** (a new optional section, a wording change): `mig ID
@@ -46,18 +46,28 @@ mig ID CONVENTION FP PATH ERE 'REMEDY'
 line: a repo that has not migrated yet still needs it. The bats check holds the registry
 append-only against the default branch's copy, and allows only `mig` lines and comments
 in it (a branch's change; a commit made directly on the default branch is not compared). The remedy must exist in the same
-change (or already be on main), since the dev cycle hands it to the owner as soon as the
-change is installed.
+change (or already be on main), since the dev cycle runs it, or hands it to the owner, as
+soon as the change is installed.
 
 ## What the dev cycle does with it
 
 The digest's section 7b prints `pending ID (CONVENTION): PATH line N; remedy: REMEDY` for
-each migration whose ERE still matches. The cycle cannot run the remedy itself: migrations
-rewrite questions entries or roadmap headings, which its own commits may not change without
-the owner. So it files a `you: terminal` entry per pending migration (slug `migrate-ID`),
-with every remedy filed in one iteration collected into a single paste, as the global
-instructions ask of terminal entries; it lists them first in its final message and carries on
-with the rest of the iteration. Step 1b of `skills/dev-cycle/SKILL.md` owns the details.
+each migration whose ERE still matches. When PATH is `docs/working/questions.md` or
+`docs/roadmap.md` and REMEDY is `~/.claude/scripts/questions.sh SUB`, the cycle runs the
+remedy itself, from the image's copy of `questions.sh`, and lands it in the same iteration
+with `build-loop.sh --cycle-diff --migrated ID` (and `--land-cycle --migrated ID`). That mode
+reads the registry beside the gate and takes only the remedy's own moves: headings,
+**Needs:** routes and entries moved to `watching.md` or `roadmap-from-questions.md` for the
+entries the ERE matched (or, for a roadmap migration, its headings and preamble), with every answer line
+and **Status:** field unchanged, the pattern gone from PATH, and the migration pending on the
+base. The record and the final message say what ran; no questions entry is filed. So a
+migration whose remedy is a `questions.sh` subcommand on those files costs the owner nothing.
+
+Any other migration (a remedy that is not a `questions.sh` subcommand, or a PATH the cycle's
+rules refuse, such as the failure-pattern library, a record) stays with the owner: the cycle
+files one `you: terminal` entry whose single paste runs every such remedy pending that
+iteration, lists it first in its final message, and carries on with the rest of the
+iteration. Step 1b of `skills/dev-cycle/SKILL.md` owns the details.
 
 Two branches that change the same convention in parallel each add a line; whichever merges
 second fails the check after merging main in, and adds a line with the combined fingerprint.
