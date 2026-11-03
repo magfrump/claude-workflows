@@ -28,27 +28,9 @@ The index below is generated — edit entries, not the table.
 | [Q-251](#q-251--merge-gate-2026-11-02-cycle-runs-migrations-fa77134b1255) | you: judgment | Merge restriction-audit unit 5 (the dev cycle runs convention migrations itself, and closes a cleared image... | 2026-11-02 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
-| [Q-222](#q-222--install-cc-verify-and-r6) | you: terminal | Four approved merges landed today, two of them in host tools: the `cc-verify` host tool (37b24c02, Q-217) a... | 2026-10-28 |
-| [Q-227](#q-227--image-lag) | you: terminal | - The dev cycle runs its own bookkeeping git as plain `git -C`, drops the extra `--state` re-runs and per-w... | 2026-10-29 |
 <!-- index:end -->
 
 ## Open
-
-### Q-222 · install-cc-verify-and-r6
-**Needs:** you: terminal · **Opened:** 2026-10-28 · **Status:** OPEN
-
-Four approved merges landed today, two of them in host tools: the `cc-verify` host tool (37b24c02, Q-217) and the exit scan's R6 fix for a relative `core.hooksPath` in a linked worktree (7a5b4f4a, Q-220). Neither runs on your machine until `install.sh` re-installs the host tools. Run this in your host terminal (WSL, not inside a session):
-
-```
-cd /home/magfrump/claude-workflows && git merge-base --is-ancestor 37b24c026eed64b12b1c6f9849e31cedba7a5329 HEAD && ./devcontainer-config/install.sh && cc-verify --help | head -5 && cc-isolated --list
-```
-
-The first git call only checks that your checkout already holds the cc-verify merge (it runs no hook); if it prints nothing and stops, your checkout is behind main. Before your first real `cc-verify --check`, add `~/cc-verify` to your agents' sandbox `denyWrite` (the guide's cc-verify section says why).
-
-- **Read:** `guides/cc-isolated-usage.md`, section "Verify a branch without installing it: cc-verify" · Q-167 (its probes can run in the same sitting)
-- **Blocks:** roadmap Next 1 (Q-125's host live run through `cc-verify`), and behind it Q-098 and Q-161.
-- **Interim:** both merges are bats-verified only; your installed exit scan does not yet see R6, and `cc-verify` is not on your PATH.
-- **2026-10-28 (owner, in session):** waiting: the install needs every active session stopped first. Q-225, once merged, rides on the same paste.
 
 ### Q-167 · post-install-host-probes
 **Needs:** you: terminal · **Opened:** 2026-10-15 · **Status:** OPEN
@@ -89,6 +71,8 @@ Step 2, inside the session at Claude's prompt, then exit the session:
 - **Interim:** bats-only verification (193/193), as the commits' `Host-tool-tested: no` trailers say.
 - **If the answer differs:** any exit but 3, or a warning that does not name the hook, is a bug in Q-096; paste the output.
 
+**2026-11-03 (answers-11-3-2026.txt):** **(c) passed.** `cc-isolated exit=3`. The WARNING named `+ hook /tmp/…/proj/mirror-repo/hooks/pre-receive  file 755` and pointed to `cc-push`, so Q-096's exit scan is live-verified on bless 3c5dd7853cf7a3f9. **(a), second half:** `cc-isolated --list | grep -i 'verified live'` prints `Blessed config 3c5dd7853cf7a3f9 — verified live: yes`, so a probe-only run marks the bless as verified (`Live-verified: 3c5dd7853cf7a3f9`). **Still not reported:** (a)'s first half, the hint text that a fresh bless prints before any probe (`Verified live:  NO …` and `Next: cc-isolated --probe-only <repo>` on its own line, plus `--list` showing `verified live: NO (run: …)`). Any later `install.sh` that re-blesses will show it. **(b)** is also not reported: the four one-workspace-rule lines. Q-167 stays open for those two items only.
+
 ### Q-084 · q076-live-checks
 **Needs:** you: terminal · **Opened:** 2026-09-27 · **Status:** OPEN
 
@@ -120,33 +104,6 @@ bats --jobs 2 test/agents-gemini-sync.bats 2>&1 | grep -iE 'cite|locale'   # exp
 
 - **Interim:** every enforcement-file commit on Q-076 carries `Live-verified: no`.
 - **If the answer differs:** a refusal on step 3, a warning on step 1, or a version refused that git's release notes list as fixed means a follow-up fix. Also check git's May 2024 security release notes against the version list in the `cc-push.sh` header, which was written from memory.
-
-### Q-227 · image-lag
-**Needs:** you: terminal · **Opened:** 2026-10-29 · **Status:** OPEN
-
-**Release notes** (trial T1; rewritten 2026-11-02 for main at 686eaf57; its gate code is 3019016a's). Installed image: `42295bd9`, read from `/opt/claude-workflows/.manifest`. Main is ahead in gate code: restriction-audit units 3 and 4, which you approved (Q-249, Q-250). The image runs the gate and the dev-cycle skill, so neither is live until you run the paste.
-
-**If you say no:** the cycle keeps running the older, longer skill and the stricter text and path rules. Nothing breaks.
-
-**⚑ Merged without your review:** 686eaf57, the health-check day-count fix (`scripts/health-check.sh` and its test; build-loop self-merge). The persona-freshness check now counts calendar days in UTC, so it no longer fails on a clock-change day.
-
-**What changes for you** (approved by you, Q-248, Q-249 and Q-250):
-- The dev cycle runs its own bookkeeping git as plain `git -C`, drops the extra `--state` re-runs and per-write path checks, and reports a main-log refusal instead of stopping on it (unit 3). Iterations take fewer tool calls.
-- Briefs, questions files and loop questions are no longer rejected for HTML, angle-bracket placeholders, `[1]: URL` lines, or heading and `Q-12` lines in a loop's question; open comments, odd fences, CR and BOM still refuse. An approved review branch can land `.github/`, `.gitignore`, a symlink or a gitlink (path lines mark the last two). Loops run divergent design only for 3+ options and proceed on a tentative pick on a tie (unit 4).
-- The workflows and skills the cycle references lose prose stops that had no in-scope threat, and draft-review's fact-check gate gets the same unattended default (units 2 and 4).
-
-**Not listed:** 15 routine dev-cycle record lands. Paths changed outside `docs/` (17 under `docs/` not listed): `global-instructions/CLAUDE.md`, `guides/convention-changes.md`, `guides/pr-prep-quick-ref.md`, `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/health-check.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/migrations.sh`, `skills/code-review/SKILL.md`, `skills/constraints-builder/SKILL.md`, `skills/constraints-builder/references/working-doc-template.md`, `skills/dev-cycle/SKILL.md`, `skills/draft-review/SKILL.md`, `skills/research-plan-implement/SKILL.md`, `skills/security-reviewer/SKILL.md`, `workflows/pr-prep.md`, `workflows/research-plan-implement.md`, `workflows/review-fix-loop.md`, and six test files.
-
-**The paste** (host terminal in WSL, not inside a session; stop every session first):
-
-```
-cd /home/magfrump/claude-workflows && git merge-base --is-ancestor 3019016a7e199195c85b907062445c8497f6ea41 HEAD && ./devcontainer-config/install.sh
-```
-
-The `merge-base` check runs no hook. It only confirms that your checkout holds at least these changes; if it fails, bring the checkout up to main first.
-
-- **Interim:** the image at 42295bd9 runs, with the older dev-cycle skill and gate rules.
-- **Blocks:** nothing.
 
 ### Q-251 · merge-gate-2026-11-02-cycle-runs-migrations-fa77134b1255
 **Needs:** you: judgment · **Opened:** 2026-11-02 · **Status:** OPEN
