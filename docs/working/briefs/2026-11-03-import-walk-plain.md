@@ -34,3 +34,5 @@ Policy: review
 - Unit 7 (the D6 block into the image).
 - The owner call G55 itself (whether to keep a walk at all): the interim stands.
 - Editing `docs/roadmap.md`, `docs/dev-cycle.md` or the questions files: the dev cycle and the owner move those.
+
+Dispatched: 1
