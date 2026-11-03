@@ -40,7 +40,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   Ideas, Q-238 [1]). Full entry: `docs/working/questions.md` at b5f620ae.
 - **Agent: Q-125 · cc-isolated Bash sandbox, live run** (filed 2026-11-01, step 6, from
   Q-234's migrate). Motive: nothing sandboxes Bash in cc-isolated. Built, unmerged
-  (`feat/q125-cc-isolated-sandbox`); waits on the host install (Q-222). First step: Next 1.
+  (`feat/q125-cc-isolated-sandbox`); the host install is done (Q-222, answered 2026-11-03). First step: Next 1.
 - **Agent: Q-079 · canon-instance proposal filter** (filed 2026-11-01, step 6, from Q-234's
   migrate). Motive: design a commit-to-canon-instance script and the heuristic for which
   candidates get proposed, keeping the canon compact. First step: a divergent-design doc;
@@ -93,10 +93,11 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 1. **Q-125's host live run, now that `cc-verify` is merged.** Motive: Q-125 (the
    cc-isolated Bash sandbox), and behind it Q-098 (global allowlist) and Q-161 (hermeticity
-   layer 2), waited on `cc-verify` (merged at 37b24c02, Q-217 [1]). First step: once the host
-   install has `cc-verify` (Q-222), write the probe FILE for Q-125's live check (a sandboxed
+   layer 2), waited on `cc-verify` (merged at 37b24c02, Q-217 [1]). The host install has
+   `cc-verify` (Q-222, answered 2026-11-03). First step: write the probe FILE for Q-125's live check (a sandboxed
    `cat ~/.claude/.credentials.json` refused, Q-098's leak list re-run, `gh`/`git push` not
-   prompting) and file it as one `you: terminal` paste.
+   prompting) and file it as one `you: terminal` paste. The paste must first add `~/cc-verify`
+   to the agents' sandbox `denyWrite`, because Q-222's answer did not confirm that step.
 2. **A8 post-restructure token measurement.** Motive: the user deferred big compute until
    code and prompts settle; it validates code-review lever #3 (rubric row A8 in
    `docs/reviews/code-review-rubric-2026-08-07-main.md`). First step: confirm

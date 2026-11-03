@@ -216,10 +216,12 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-219](#q-219--merge-2026-10-25-widen-fix-drift-check-4695470b98b1) | Merge `feat/widen-fix-drift-check` at 4695470b98b1d76642233f1bc1d90d5d40a20bba (brief `docs/working/briefs/... | 2026-10-25 |
 | [Q-220](#q-220--merge-2026-10-25-exit-scan-r6-hookspath-792c549e6d1c) | Merge `fix/exit-scan-r6-hookspath` at 792c549e6d1c620308d0f63c44b067047ad437ee (brief `docs/working/briefs/... | 2026-10-25 |
 | [Q-221](#q-221--questions-doc-owner-only) | This file is meant to be your one place for things waiting on you. Today most of it isn't: of 17 open entri... | 2026-10-28 |
+| [Q-222](#q-222--install-cc-verify-and-r6) | Four approved merges landed today, two of them in host tools: the `cc-verify` host tool (37b24c02, Q-217) a... | 2026-10-28 |
 | [Q-223](#q-223--failure-pattern-harvest-or-drop) | Q-074's watch fired: since the 2026-09-26 backfill, `docs/thoughts/failure-patterns.md` (the one-line log o... | 2026-10-28 |
 | [Q-224](#q-224--merge-gate-2026-10-28-questions-owner-routes-0fb2ad5ff0f3) | Merge `feat/questions-owner-routes` at 0fb2ad5ff0f3c24a675a16f643bcca44fcbcb3e3 (brief `docs/working/briefs... | 2026-10-28 |
 | [Q-225](#q-225--merge-2026-10-28-exit-scan-group1-remainder-19027abb7593) | Merge `fix/exit-scan-group1-remainder` at 19027abb75934fa515dc9f124be5c4b4d5b457e7 (brief `docs/working/bri... | 2026-10-28 |
 | [Q-226](#q-226--failure-pattern-library-future) | You asked (Q-223) for a closer look at whether and how the failure-pattern library (`docs/thoughts/failure-... | 2026-10-28 |
+| [Q-227](#q-227--image-lag) | - The dev cycle runs its own bookkeeping git as plain `git -C`, drops the extra `--state` re-runs and per-w... | 2026-10-29 |
 | [Q-228](#q-228--merge-gate-2026-10-29-failure-pattern-loop-wiring-8f09da3b3003) | Merge `feat/failure-pattern-loop-wiring` at 8f09da3b3003b314a81df1866d2f4129c88728d9 (brief `docs/working/b... | 2026-10-29 |
 | [Q-229](#q-229--merge-gate-2026-10-29-questions-watching-file-ef1022d7c8aa) | Merge `feat/questions-watching-file` at ef1022d7c8aa47b723b8ef05c4059db6d923b766 (brief `docs/working/brief... | 2026-10-29 |
 | [Q-230](#q-230--merge-gate-2026-10-29-session-answers-for-merge-entries-7fe7107cbdcb) | Merge `feat/session-answers-for-merge-entries` at 7fe7107cbdcbec46a3eb0a1214e638be9bd02ff5 (brief `docs/wor... | 2026-10-29 |
@@ -5517,5 +5519,54 @@ Merge restriction-audit unit 4 (the gate's brief, marker and path rules refuse o
 - **Interim:** the branch waits.
 
 **Answered:** [1] (owner, in session 2026-11-02: "Q-250: [1]"; recorded by the dev cycle)
+
+
+### Q-222 · install-cc-verify-and-r6
+**Needs:** you: terminal · **Opened:** 2026-10-28 · **Status:** ANSWERED
+
+Four approved merges landed today, two of them in host tools: the `cc-verify` host tool (37b24c02, Q-217) and the exit scan's R6 fix for a relative `core.hooksPath` in a linked worktree (7a5b4f4a, Q-220). Neither runs on your machine until `install.sh` re-installs the host tools. Run this in your host terminal (WSL, not inside a session):
+
+```
+cd /home/magfrump/claude-workflows && git merge-base --is-ancestor 37b24c026eed64b12b1c6f9849e31cedba7a5329 HEAD && ./devcontainer-config/install.sh && cc-verify --help | head -5 && cc-isolated --list
+```
+
+The first git call only checks that your checkout already holds the cc-verify merge (it runs no hook); if it prints nothing and stops, your checkout is behind main. Before your first real `cc-verify --check`, add `~/cc-verify` to your agents' sandbox `denyWrite` (the guide's cc-verify section says why).
+
+- **Read:** `guides/cc-isolated-usage.md`, section "Verify a branch without installing it: cc-verify" · Q-167 (its probes can run in the same sitting)
+- **Blocks:** roadmap Next 1 (Q-125's host live run through `cc-verify`), and behind it Q-098 and Q-161.
+- **Interim:** both merges are bats-verified only; your installed exit scan does not yet see R6, and `cc-verify` is not on your PATH.
+- **2026-10-28 (owner, in session):** waiting: the install needs every active session stopped first. Q-225, once merged, rides on the same paste.
+
+**Answered:** done (owner, `docs/human-author/answers-11-3-2026.txt`, 2026-11-03: releases have been run since this entry was filed). `cc-verify --help` prints its usage, so it is on the host PATH. `cc-isolated --list` prints `Blessed config 3c5dd7853cf7a3f9 — verified live: yes` and `Host tools — match the bless (cc-exit-scan.sh cc-gitdir.sh cc-push.sh cc-verify.sh)`. The installed image manifest reads `commit=c214970a`, which contains both 37b24c02 (cc-verify) and 7a5b4f4a (R6). Not reported: whether `~/cc-verify` is in the agents' sandbox `denyWrite`. That step comes before the first real `cc-verify --check`, so it is carried into roadmap Next 1's paste. Recorded by a session on 2026-11-03.
+
+
+### Q-227 · image-lag
+**Needs:** you: terminal · **Opened:** 2026-10-29 · **Status:** ANSWERED
+
+**Release notes** (trial T1; rewritten 2026-11-02 for main at 686eaf57; its gate code is 3019016a's). Installed image: `42295bd9`, read from `/opt/claude-workflows/.manifest`. Main is ahead in gate code: restriction-audit units 3 and 4, which you approved (Q-249, Q-250). The image runs the gate and the dev-cycle skill, so neither is live until you run the paste.
+
+**If you say no:** the cycle keeps running the older, longer skill and the stricter text and path rules. Nothing breaks.
+
+**⚑ Merged without your review:** 686eaf57, the health-check day-count fix (`scripts/health-check.sh` and its test; build-loop self-merge). The persona-freshness check now counts calendar days in UTC, so it no longer fails on a clock-change day.
+
+**What changes for you** (approved by you, Q-248, Q-249 and Q-250):
+- The dev cycle runs its own bookkeeping git as plain `git -C`, drops the extra `--state` re-runs and per-write path checks, and reports a main-log refusal instead of stopping on it (unit 3). Iterations take fewer tool calls.
+- Briefs, questions files and loop questions are no longer rejected for HTML, angle-bracket placeholders, `[1]: URL` lines, or heading and `Q-12` lines in a loop's question; open comments, odd fences, CR and BOM still refuse. An approved review branch can land `.github/`, `.gitignore`, a symlink or a gitlink (path lines mark the last two). Loops run divergent design only for 3+ options and proceed on a tentative pick on a tie (unit 4).
+- The workflows and skills the cycle references lose prose stops that had no in-scope threat, and draft-review's fact-check gate gets the same unattended default (units 2 and 4).
+
+**Not listed:** 15 routine dev-cycle record lands. Paths changed outside `docs/` (17 under `docs/` not listed): `global-instructions/CLAUDE.md`, `guides/convention-changes.md`, `guides/pr-prep-quick-ref.md`, `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/health-check.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/migrations.sh`, `skills/code-review/SKILL.md`, `skills/constraints-builder/SKILL.md`, `skills/constraints-builder/references/working-doc-template.md`, `skills/dev-cycle/SKILL.md`, `skills/draft-review/SKILL.md`, `skills/research-plan-implement/SKILL.md`, `skills/security-reviewer/SKILL.md`, `workflows/pr-prep.md`, `workflows/research-plan-implement.md`, `workflows/review-fix-loop.md`, and six test files.
+
+**The paste** (host terminal in WSL, not inside a session; stop every session first):
+
+```
+cd /home/magfrump/claude-workflows && git merge-base --is-ancestor 3019016a7e199195c85b907062445c8497f6ea41 HEAD && ./devcontainer-config/install.sh
+```
+
+The `merge-base` check runs no hook. It only confirms that your checkout holds at least these changes; if it fails, bring the checkout up to main first.
+
+- **Interim:** the image at 42295bd9 runs, with the older dev-cycle skill and gate rules.
+- **Blocks:** nothing.
+
+**Answered:** released (2026-11-03). The owner reports running releases since this entry was filed (`answers-11-3-2026.txt`, under Q-222). `/opt/claude-workflows/.manifest` reads `commit=c214970ac27333eed891cf3c4999f1f4b4096627 dirty=no`, which contains 3019016a. `git diff --stat c214970a main` over `scripts skills hooks devcontainer-config workflows global-instructions` is empty, so the image holds main's gate code. Recorded by a session on 2026-11-03.
 
 
