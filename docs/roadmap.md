@@ -96,8 +96,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
    layer 2), waited on `cc-verify` (merged at 37b24c02, Q-217 [1]). The host install has
    `cc-verify` (Q-222, answered 2026-11-03). First step: write the probe FILE for Q-125's live check (a sandboxed
    `cat ~/.claude/.credentials.json` refused, Q-098's leak list re-run, `gh`/`git push` not
-   prompting) and file it as one `you: terminal` paste. The paste must first add `~/cc-verify`
-   to the agents' sandbox `denyWrite`, because Q-222's answer did not confirm that step.
+   prompting) and file it as one `you: terminal` paste. `~/cc-verify` is already in the agents'
+   sandbox `denyWrite` (owner, 2026-11-03).
 2. **A8 post-restructure token measurement.** Motive: the user deferred big compute until
    code and prompts settle; it validates code-review lever #3 (rubric row A8 in
    `docs/reviews/code-review-rubric-2026-08-07-main.md`). First step: confirm

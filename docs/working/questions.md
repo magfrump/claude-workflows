@@ -25,7 +25,6 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
-| [Q-251](#q-251--merge-gate-2026-11-02-cycle-runs-migrations-fa77134b1255) | you: judgment | Merge restriction-audit unit 5 (the dev cycle runs convention migrations itself, and closes a cleared image... | 2026-11-02 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 <!-- index:end -->
@@ -104,31 +103,4 @@ bats --jobs 2 test/agents-gemini-sync.bats 2>&1 | grep -iE 'cite|locale'   # exp
 
 - **Interim:** every enforcement-file commit on Q-076 carries `Live-verified: no`.
 - **If the answer differs:** a refusal on step 3, a warning on step 1, or a version refused that git's release notes list as fixed means a follow-up fix. Also check git's May 2024 security release notes against the version list in the `cc-push.sh` header, which was written from memory.
-
-### Q-251 · merge-gate-2026-11-02-cycle-runs-migrations-fa77134b1255
-**Needs:** you: judgment · **Opened:** 2026-11-02 · **Status:** OPEN
-
-Merge restriction-audit unit 5 (the dev cycle runs convention migrations itself, and closes a cleared image-lag entry without asking you) at fa77134b?
-
-**If you say no:** every pending migration keeps arriving as a `you: terminal` paste you have to run, and an image-lag entry whose release already happened still waits for your answer, as Q-227 did on 2026-11-01.
-
-**What an attacker would want here:** this is gate code (`scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`), so it reaches the image at the next release. The one thing an outside party would want is a way to change an answer line or a `**Status:**` without you. The new `--migrated ID` mode does not open one: the gate looks the ID up in its own registry, accepts changes only to the entries that migration's pattern matched, and refuses if any answer line or `**Status:**` field changed. The image-lag close is accepted only on the `image-lag` / `image-off-main-*` slugs, and only after the gate checks in the repository that the image commit and main hold the same gate code. Stated residual: the D6 block checks that the registry's directory is root-owned, not the registry file itself; under S1 the loop judged that acceptable.
-
-- **Tip:** fa77134b1255e1488aa7639b8ed513c7e7659404 (5 commits past 9a50c75a; 11 files, +573/−74)
-- **`--check` printed:**
-  - `ok docs/working/briefs/2026-11-02-cycle-runs-migrations.md fa77134b1255e1488aa7639b8ed513c7e7659404 9d0afb7361782d77674f76ce3a6c12db368e9a42`
-  - 11 `path` lines, all `M` except one `A`: `docs/decisions/log.md`, the brief, `docs/working/plan-build-loop-handoff.md`, `docs/working/research-2026-11-02-cycle-runs-migrations.md` (A), `guides/convention-changes.md`, `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`, `test/scripts/build-loop-orchestrator.bats`, `test/scripts/dev-cycle.bats`
-- **Paths self-merge would have refused:** the four gate-code files above, `docs/decisions/log.md` (a decision record) and `skills/dev-cycle/SKILL.md` (a prompt file).
-- **What changes for you:** step 1b runs a `questions.sh` remedy itself and files no entry. The record and the final message say what ran. Any other remedy, or one that fails, still comes to you, as one collected `you: terminal` paste, not one per migration. The loop kept one restriction the audit missed: a remedy that writes a truth file (such as the `failure-patterns-out-of-thoughts` move) still goes to you.
-- **Also in it:** decision-log row 82; plan amendments to D8 and D13; the stale `--check-fix` message fixed; `guides/convention-changes.md` rewritten to match; a registry line `record-1b-ran`. Seven new or updated bats cases, one of them passing the real `questions.sh migrate` output through the new mode.
-- **Checks:** two review rounds. Round 1's medium (the image-lag close checked only the line's shape) is fixed; round 2 found nothing high or medium. The full health check passed on the branch.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] merge** | The next iteration merges fa77134b; it takes effect at the next release | None beyond this answer | One `git revert` of the merge |
-| **[2] drop** | The brief closes; unit 5 is abandoned | None now | Migrations and cleared image-lag entries keep coming to you |
-| **[3] changes needed** | Your note goes back to the loop | A one-line note | Another loop round |
-
-- **Blocks:** audit unit 6 (it edits `scripts/build-loop.sh` too).
-- **Interim:** the branch waits.
 
