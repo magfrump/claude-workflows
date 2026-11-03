@@ -32,3 +32,5 @@ Policy: review
 - Any change to `feat/q125-cc-isolated-sandbox` or to a boundary file (`devcontainer-config/`, `hooks/`): a fix the research finds needed goes in the final marker as a question.
 - Running `cc-verify` or any container: the host run is the owner's.
 - Editing `docs/roadmap.md` or the questions files: the dev cycle moves those.
+
+Dispatched: 1
