@@ -151,3 +151,4 @@ Full text: `docs/working/brainstorm-2026-10-29-friction-and-engagement.md`.
 - Owner entries name in line one what would differ on "no", and for gate merges what an attacker would want from the code (signal: owner-entry clarity memory)
 - Quarterly threat-model walk-through of Q-103's residuals (signal: owner awareness request)
 - A brief split checks shared append-only ledgers (decision-log rows) and shared SKILL.md passages, not just file ownership, before calling units parallel (signal: units 2 and 3 both conflicted with unit 1 at merge, Q-246, Q-247)
+- Re-sample the three critic personas, or loosen the 180-day threshold (signal: health check 2026-11-03: ai-personas, cowen and yglesias personas 184 days since sampled)

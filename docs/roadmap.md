@@ -16,23 +16,13 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 - **Agent: restriction audit units 4-7** (filed 2026-11-01, owner request). Motive: the owner
   asked to remove every restriction without a specific, in-scope threat model; plan and
   inventories in `docs/working/research-2026-11-01-restriction-audit.md`. Units 1-3 merged
-  (63ba32e9, 242081af, 78dad60b); unit 4 merged (3019016a, Q-250 [1]). Unit 5 (the cycle runs migrations; it also absorbs the
-  image-lag item below) briefed 2026-11-02 (In flight). Next: brief 6 (import walk seeds and parser; shares
-  `scripts/build-loop.sh` with unit 5, so after it) and 7 (D6 block into the image).
-  Unit 5 also fixes `scripts/dev-cycle.sh:193`, whose skip message still says "use
-  --check-write" (unit 3 drops that call).
+  (63ba32e9, 242081af, 78dad60b); unit 4 merged (3019016a, Q-250 [1]); unit 5 merged (89ed0db4, Q-251 [1]). Unit 6 (import
+  walk seeds and parser) briefed 2026-11-03 (In flight). Next: brief 7 (D6 block into the
+  image) once unit 6 lands, since both edit `skills/dev-cycle/SKILL.md`.
   Unit 4 also gives `skills/draft-review/SKILL.md`'s Fact-Check Gate the same unattended
   default (unit 2's override-log C9).
-  Unit 3's loop left two stale lines for later units: `docs/working/plan-build-loop-handoff.md:102`
-  (D13 says `--state` refuses planted `.git` state) and the comment at
-  `scripts/lib/dev-cycle-read.sh:342-343` naming "SKILL.md's hg".
-- **Agent: the cycle closes a cleared image-lag entry itself** (filed 2026-11-01, owner
-  request). Motive: when the image already holds main's gate code (step 0.1's `diff --quiet`
-  exits 0), the release the entry asks for has happened, yet the skill only lists the entry
-  for the owner to answer (D8), which spent an owner answer on Q-227 on 2026-11-01. First
-  step: let step 0.1 close an open `image-lag` / `image-off-main-*` entry on exit 0 (status
-  ANSWERED, a `met` line naming C and M), with `--cycle-diff` accepting that one change;
-  gate code, so a merge entry. Folded into restriction-audit unit 5's brief (2026-11-02).
+  Unit 3's loop left two stale lines for later units (`plan-build-loop-handoff.md` D13 and
+  the "SKILL.md's hg" comment in `scripts/lib/dev-cycle-read.sh`): both are in unit 6's brief.
 - **Agent: Q-097 · exit-scan older routes** (filed 2026-11-01, step 6, from Q-234's migrate).
   Motive: two documented Medium routes the exit scan does not see (a symlink to a repo
   outside the checkout; a non-standard container-form `.git`). First step: one enforcement
@@ -40,7 +30,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   Ideas, Q-238 [1]). Full entry: `docs/working/questions.md` at b5f620ae.
 - **Agent: Q-125 · cc-isolated Bash sandbox, live run** (filed 2026-11-01, step 6, from
   Q-234's migrate). Motive: nothing sandboxes Bash in cc-isolated. Built, unmerged
-  (`feat/q125-cc-isolated-sandbox`); the host install is done (Q-222, answered 2026-11-03). First step: Next 1.
+  (`feat/q125-cc-isolated-sandbox`); the host install is done (Q-222, answered 2026-11-03). First step
+  (Next 1): the `cc-verify --check` file, briefed 2026-11-03 (In flight).
 - **Agent: Q-079 · canon-instance proposal filter** (filed 2026-11-01, step 6, from Q-234's
   migrate). Motive: design a commit-to-canon-instance script and the heuristic for which
   candidates get proposed, keeping the canon compact. First step: a divergent-design doc;
@@ -86,15 +77,17 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
-- Restriction audit unit 5: the cycle runs migrations, closes a cleared image-lag entry
-  (`docs/working/briefs/2026-11-02-cycle-runs-migrations.md`; review policy, gate code).
+- Restriction audit unit 6: the import walk reads plain `@path` imports only
+  (`docs/working/briefs/2026-11-03-import-walk-plain.md`; review policy, gate code).
+- Q-125's `cc-verify --check` file for the sandbox live run
+  (`docs/working/briefs/2026-11-03-q125-verify-check.md`; review policy).
 
 ## Next
 
 1. **Q-125's host live run, now that `cc-verify` is merged.** Motive: Q-125 (the
    cc-isolated Bash sandbox), and behind it Q-098 (global allowlist) and Q-161 (hermeticity
    layer 2), waited on `cc-verify` (merged at 37b24c02, Q-217 [1]). The host install has
-   `cc-verify` (Q-222, answered 2026-11-03). First step: write the probe FILE for Q-125's live check (a sandboxed
+   `cc-verify` (Q-222, answered 2026-11-03). First step, briefed 2026-11-03 (In flight): write the probe FILE for Q-125's live check (a sandboxed
    `cat ~/.claude/.credentials.json` refused, Q-098's leak list re-run, `gh`/`git push` not
    prompting) and file it as one `you: terminal` paste. `~/cc-verify` is already in the agents'
    sandbox `denyWrite` (owner, 2026-11-03).
@@ -325,6 +318,11 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- **Restriction audit unit 5: the cycle runs migrations itself, and closes a cleared
+  image-lag entry** (owner, 2026-11-01; the Now item "the cycle closes a cleared image-lag
+  entry itself" was folded into it). Merged 89ed0db4 (Q-251 [1]; decision-log row 82). It
+  takes effect from the next image release. Brief:
+  `docs/working/briefs/closed/2026-11-02-cycle-runs-migrations.md`.
 - **Health-check gate 12 counts days by date** (filed 2026-11-02, step 1: the DST-day
   flake). Self-merged 686eaf57 (build-loop self-merge). Brief:
   `docs/working/briefs/closed/2026-11-02-health-check-dst-day-count.md`.
