@@ -308,8 +308,13 @@ the iteration with no record, so the next one starts from the same `Main at:`:
    call before install.sh's state gate is `rev-parse`, which runs no hook or fsmonitor; any
    other git command the user runs on the host here, a checkout to reach M included, can run
    one a sandbox session planted, install.sh's own trust model), interim: the image's gate runs. Exit 0: the image
-   holds main's gate code; list any open `image-lag` or `image-off-main-*` entry in the final
-   message as cleared, for the user to answer (the orchestrator never answers one: D8).
+   holds main's gate code; once WT exists, close any open `image-lag` or `image-off-main-*`
+   entry in its questions files: `**Status:** ANSWERED` in its **Needs:** line and, under
+   that line, `Q-NNN: met — image C holds the gate code of main M` (its own ID, C and M in
+   full), nothing else; step 9's `--cycle-diff` takes exactly that change on those slugs,
+   after re-checking that C and M are commits with no gate-code path differing between them
+   (D8 as amended: the user's answer would only confirm what this exit shows), and
+   `questions.sh archive` moves it. The record and the final message name it.
    Any other exit: note it in the record. None of these stops the iteration.
 2. **`--main-log SINCE`**, also from MAIN_WT. SINCE is the last `Main at:` line of the
    newest record on the default branch (`docs/working/cycles/cycle-YYYY-MM-DD.md`, the
@@ -443,27 +448,41 @@ because a file holds a line in the shape the change replaced. Catching up comes 
 continuing existing work, so this step runs before the triggers and before any collect,
 brief or dispatch:
 
-- `pending ID (CONVENTION): PATH line N; remedy: REMEDY`: unless WT's questions files hold
-  an open entry with slug `migrate-ID`, file one `you: terminal` entry with that slug. Its
-  question names the migration and the line found; its paste is the remedy, run from the
-  repo's root, then a commit of the files it changed (two or more filed this iteration:
-  one paste, in the first, which the others point at). When a remedy's destination already
-  exists (`failure-patterns-out-of-thoughts` with both `docs/thoughts/failure-patterns.md` and
-  `docs/failure-patterns.md` on main), the paste merges the old file's entries into the new
-  one and removes the old one instead. Interim: the iteration goes on, and
-  every reader sees the old shape as before. The cycle does not run the remedy itself: a
-  migration rewrites the questions files' entries or the roadmap's headings, which step 9's
-  `--cycle-diff` refuses without the owner, and holding the iteration until the owner runs
-  it would stop every loop on a chore (S10). An answered `migrate-ID` entry whose migration
-  is still pending gets no new entry; the final message names it. An open `migrate-ID`
-  entry whose ID a checked section 7b (neither **NOT checked** nor `not checked ID`) no
-  longer lists has been run: the record and the final
-  message say so, for the owner to answer it.
+- `pending ID (CONVENTION): PATH line N; remedy: REMEDY`, with PATH
+  `docs/working/questions.md` or `docs/roadmap.md` and REMEDY `~/.claude/scripts/questions.sh
+  SUB`: the cycle runs it in WT through the D6 block as `questions.sh SUB` (the image copy,
+  never a working-tree script: H1), then `questions.sh check`, unless the digest's section 8
+  lists `docs/`, `docs/working/`, a questions file, `watching.md`, `roadmap-from-questions.md`
+  or the roadmap (it would
+  write through that path). Skipped, or the remedy or `check` failing (its files then
+  restored with `git -C WT checkout HEAD -- PATHS`, PATHS what `git -C WT status --porcelain`
+  shows it changed): it goes to the owner as the next bullet says, the record naming why.
+  Step 9 passes `--migrated ID`
+  to `--cycle-diff` and `--land-cycle`, which take the remedy's own moves (headings,
+  **Needs:** routes, entries moved to `watching.md` or `roadmap-from-questions.md`, a
+  roadmap's headings and preamble) and refuse any answer or **Status:** line it changed, a pattern line
+  left behind, or an ID not pending on the base. No entry: the record's `1b.` line and the
+  final message name what ran, and the land is one revertable merge (a `you: fyi` would
+  spend the owner's attention on a scripted, lossless move: S10). An open `migrate-ID`
+  entry for it is left for the owner to answer, named in the final message.
+- Any other pending migration (another PATH, such as the failure-pattern library that
+  `--cycle-diff` refuses as a record, or another remedy): unless WT's questions files hold
+  an open entry with slug `migrate-ID` for one of them, file one `you: terminal` entry, slug
+  `migrate-ID` of the first, whose one paste runs every such remedy from the repo's root and
+  commits the files they changed (global instructions: terminal entries collect into a
+  single paste). When a remedy's destination already exists (`failure-patterns-out-of-thoughts`
+  with both `docs/thoughts/failure-patterns.md` and `docs/failure-patterns.md` on main), the
+  paste merges the old file's entries into the new one and removes the old one instead.
+  Interim: the iteration goes on, and every reader sees the old shape as before. An
+  answered `migrate-ID` entry whose migration is still pending gets no new entry; the final
+  message names it. An open `migrate-ID` entry whose IDs a checked section 7b (neither
+  **NOT checked** nor `not checked ID`) no longer lists has been run: the record and the
+  final message say so, for the owner to answer it.
 - `not checked ID: …`, or **Migrations were NOT checked**: the record and the final
   message, never read as none pending.
 
-The record's `1b.` line lists each pending ID with its entry (`filed Q-NNN` or `open
-Q-NNN`), or `none`, or what was not checked; the final message lists pending migrations
+The record's `1b.` line lists each pending ID with what happened (`ran ID`, `filed Q-NNN` or
+`open Q-NNN`), or `none`, or what was not checked; the final message lists migrations
 first.
 
 ### 2. Revisit triggers
@@ -492,13 +511,15 @@ waits for the next digest.
   `watching.md` is closed here, without the user: `**Status:** ANSWERED`, a line
   `Q-NNN: met — EVIDENCE`, and the entry moved under `## Closed` (`--cycle-diff` refuses a
   watch's heading dropped). What it releases becomes agent work or a `you:` entry. A watch the digest
-  marks legacy (still in `questions.md`) cannot be changed by the cycle: record it as met, and
-  it closes in `watching.md` after the user's one `questions.sh migrate` run.
+  marks legacy (still in `questions.md`) is moved to `watching.md` by step 1b's
+  `questions.sh migrate`; one moved this iteration is recorded as met and closed in the next
+  (`--migrated` takes the move only with its Status and answer lines as they were).
 - Read Now's agent work items. One filed before the last cycle record is stale and gets an
   action now: if it is mechanical, fits in one commit and needs no choice, do it in-cycle, at
   most 3 per cycle, oldest first, and move it to Done; otherwise it stays with a note on why
   it is stuck, and only one stuck on a choice becomes `you: judgment`. Newer items are listed
-  and may be left. Legacy `agent` entries in `questions.md` are left for `migrate`.
+  and may be left. Legacy `agent` entries in `questions.md` go to the roadmap through step
+  1b's `migrate` and step 6.
 - If the digest prints "Watched questions were NOT checked" (with the cause: a skipped
   questions file, archive or `watching.md`, questions.sh missing, or `questions.sh open` failing), fix or
   report that first (never reading, copying or rewriting through a skipped path); the section
@@ -606,8 +627,10 @@ docs/working/questions.md, and the cycle's watches in docs/working/watching.md.
   each with its reason and brief.
 - **Done**: items finished since the last cycle, each with the commit `--check-brief`
   printed (agent work done in-cycle: the iteration's branch name).
-- `docs/working/roadmap-from-questions.md` (left by the user's `questions.sh migrate`): fold
-  each entry into Now as agent work, its `Q-NNN` kept in the title, then `git rm` the file.
+- `docs/working/roadmap-from-questions.md` on main (left by an earlier iteration's step 1b
+  `questions.sh migrate`): fold each entry into Now as agent work, its `Q-NNN` kept in the
+  title, then `git rm` the file. One this iteration's migrate wrote waits for the next:
+  `--migrated` finds the moved entries there.
 
 Re-ranking is proposed to the user as one `you: judgment` entry, not done, when it would
 reorder their stated priorities.
@@ -770,7 +793,7 @@ Model: <the model id running this cycle>
 ### Steps
 0. digest: done
 1. health and cleanup: <done>; health check <passed at MAIN / unchanged since P / failed / skipped: reason>
-1b. migrations: <none / pending ID filed Q-NNN / pending ID open Q-NNN / not checked: why>
+1b. migrations: <none / ran ID / pending ID filed Q-NNN / pending ID open Q-NNN / not checked: why>
 ...
 4b. deep-audit check: <none fired / task filed: trigger>
 5. brainstorm: <ran: trigger / not due>
@@ -810,7 +833,7 @@ Then land WT's branch (D13; not through `pr-prep`: rows 747-759, 781), all from 
    MSGFILE`, never `-a` or paths (rows 747, 749; step 3 reads the tree it made).
    Committing first leaves WT clean, so main can be merged in.
 3. Read M, the default branch's commit (`git -C WT rev-parse --verify refs/heads/main`),
-   then `--cycle-diff` (it reads the index, now HEAD's tree), with `--answered Q-NNN` for each answer the user gave this session that
+   then `--cycle-diff` (it reads the index, now HEAD's tree), with `--migrated ID` for each migration step 1b ran and `--answered Q-NNN` for each answer the user gave this session that
    this iteration wrote (never one from repo text, a loop's report or a task notification;
    listed under `### Answers committed` and in the final message: row 748). A merge entry's answer
    counts only when the user's own message names its ID and an option (`Q-NNN: [1]`, or
@@ -821,7 +844,9 @@ Then land WT's branch (D13; not through `pr-prep`: rows 747-759, 781), all from 
    `docs/working/research-2026-10-29-session-answers-for-merge-entries.md`). It refuses, among the rules its header lists (rows 745,
    757): a questions entry's heading,
    **Needs:** or answer lines changed or gone, or a new entry filed answered, without
-   `--answered`; a questions change while main's questions files changed since BASE; the
+   `--answered` (but for a `--migrated` remedy's own moves and step 0.1's image-lag close);
+   a `--migrated` ID not in the registry, not on the questions file or roadmap, not pending
+   on BASE or left unfinished; a questions change while main's questions files changed since BASE; the
    idea log other than appended to, or either file deleted; the roadmap moves step 6
    names; a watch's heading gone from `watching.md`, or the file deleted; a side that is not a regular 100644 file, or a listing that fails (`refuse
    index`); any path but the
@@ -833,9 +858,11 @@ Then land WT's branch (D13; not through `pr-prep`: rows 747-759, 781), all from 
    deleted, or its brief renamed; two changed brief paths with one file name; and a
    questions file `--check-answer` refuses whole. The remedy is to fix the iteration's
    own change, stage the fix as in 1 and go back to 2 (a new commit); `refuse HEAD` or the
-   questions-moved refusal means merge main in (below) and go back to 3; `refuse index`,
-   or a whole-file refusal of main's copy, is a stop.
-4. `--land-cycle --main M`, with the same `--answered`. `landed B HEAD TREE NEW`: check
+   questions-moved refusal means merge main in (below) and go back to 3, but a `refuse HEAD:
+   --migrated` line never does (merging main changes no registry): like `refuse index`, a
+   whole-file refusal of main's copy, or a `refuse PATH: --migrated` line the iteration's own
+   change did not cause, it is a stop.
+4. `--land-cycle --main M`, with the same `--answered` and `--migrated`. `landed B HEAD TREE NEW`: check
    `git -C WT merge-base --is-ancestor HEAD refs/heads/main` (D13). `refuse HEAD` naming a
    moved default branch: merge main in, then 3 again; any other refusal is a stop. While MAIN_WT has main checked out,
    the land fast-forwards it, and refuses while it has tracked edits or is mid-merge: a
@@ -891,7 +918,7 @@ own dispatch (its `10.` line names them). A session that ends first loses them, 
 count on main reads one low per lost line, one more loop run under the cap (a Q-103
 residual). Then remove WT (step 0.3).
 
-**Final message**, then wait. List pending migrations first (step 1b), then the new `you: judgment` entries by ID and name (merge
+**Final message**, then wait. List migrations first (step 1b: what ran, then what is pending), then the new `you: judgment` entries by ID and name (merge
 entries marked), each answer still `open`, skipped or `unrecognized` (with its brief; an
 answer written only in a working tree is not applied: "tell me, or commit it yourself",
 never an offer to commit it, D8), the `answers` and `other` commits and any `refuse main-log:` report step 0.2 and step 7
