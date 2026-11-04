@@ -72,9 +72,9 @@ Bypass families an honest slip could take, and what catches each:
 
 1. An import written `@path` after punctuation (`(@docs/a.md)`): option [1] reads every `@`.
 2. An import with trailing punctuation: the stripped form is read too.
-3. An import through `..` or an absolute path into the repo: resolved lexically against `ROOT_REAL`.
+3. An import through `..` or an absolute path into the repo: resolved lexically against `ROOT_REAL`, and an absolute one also against the main worktree's path.
 4. A transitive import: the queue follows every reached file.
-5. An imported file the walk cannot read (permissions, non-UTF-8, over 4 MiB): refuses every path (H2).
+5. An imported file the walk cannot read (permissions, a directory it cannot search, non-UTF-8, over 4 MiB): refuses every path (H2).
 6. A symlinked start or target: refuses (H2), never followed.
 7. An untracked `CLAUDE.local.md`: read when it is a plain file.
 8. Out of scope (S1, residuals stated): an import obfuscated on purpose (escaped space, quoted mention, Unicode space, comment splice), an instruction file outside the checkout (`~/.claude/CLAUDE.md`, an ancestor's, another worktree's, a plugin's) importing a repo doc, and a host session spelling the repo another way.
@@ -86,7 +86,9 @@ Bypass families an honest slip could take, and what catches each:
 3. Tests: drop the removed rules' cases (`build-loop-check.bats`, `build-loop-read.bats`, `dev-cycle.bats`); add plain-walk cases (direct and transitive import refused, unreadable and non-UTF-8 import refusing every path, symlinked target refusing, legacy Reader line ignored).
 4. Docs: SKILL.md (Project settings, `--check-fix`'s text, step 0.3's reader-set note), plan D5 amendment (and F11, U2b3 and `--settings` pointers), decision-log row 83, a supersession note on known issue A5 (`docs/working/known-issues-dev-cycle.md`).
 
-As built, one change from the design above: a token is also cut before its first `#` or `]` (an anchor, the text of a Markdown link), and `_` joins the stripped punctuation, so `@docs/a.md#intro`, `[@docs/a.md](x)` and `_@docs/a.md_` each read `docs/a.md` (the existing `--check-fix` case for these honest spellings).
+Review iteration 1 (a general-purpose review of afa1c15a) found two in-scope gaps, both fixed: an imported name below a directory the walk cannot search read as absent (a fail-open, H2), and now fails the walk; and an absolute import spelled under the main worktree (`@/workspace/docs/x.md`, read by every session in the main checkout) was dropped by a gate running in its own worktree, and is now a repo path (the main worktree's real path, the parent of the common `.git`; one `git rev-parse`, no registry). Its stale contract item 2 and known issue C2 were reworded.
+
+As built, one more change from the design above: a token is also cut before its first `#` or `]` (an anchor, the text of a Markdown link), and `_` joins the stripped punctuation, so `@docs/a.md#intro`, `[@docs/a.md](x)` and `_@docs/a.md_` each read `docs/a.md` (the existing `--check-fix` case for these honest spellings).
 
 ## Verification
 

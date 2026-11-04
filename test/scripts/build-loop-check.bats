@@ -107,7 +107,25 @@ LINKWHY="is a symlink or lies below one, which the walk does not follow"
         printf '@docs/u.md\n' > CLAUDE.local.md; printf 'x\n' > docs/u.md; chmod 000 docs/u.md
         imps main docs/other.md; chmod 644 docs/u.md
         want walk failed; want why "read docs/u.md"; want docs/other.md imported
+        rm CLAUDE.local.md docs/u.md
+        # A name below a directory the walk cannot search (review i1 finding 1): a file there may load.
+        printf '@docs/a.md @docs/locked/x.md\n' > CLAUDE.md; mkdir docs/locked; printf '@../y.md\n' > docs/locked/x.md; commit_all locked
+        chmod 000 docs/locked; imps tree docs/other.md; chmod 755 docs/locked
+        want walk failed; want why "read docs/locked/x.md"; want docs/other.md imported
+        git rm -q --cached docs/locked/x.md && git commit -qm untrack && chmod 000 docs/locked
+        imps main docs/other.md; chmod 755 docs/locked
+        want walk failed; want why "read docs/locked/x.md"; want docs/other.md imported
     fi
+    # A name below a plain file, or below nothing, is skipped: nothing there loads.
+    printf '@docs/a.md/x.md @none/x.md\n' > CLAUDE.md; commit_all below-file
+    for w in main tree; do imps "$w" docs/other.md; want walk ok; want docs/other.md -; done
+}
+
+@test "the gate's own worktree reads an absolute import spelled under the main worktree as a repo path (review i1 finding 2; brief 2026-11-03-import-walk-plain)" {
+    mkdir -p docs && printf '@%s/docs/a.md and @%s/docs/b.md\n' "$(pwd -P)" "$(cd .. && pwd -P)/wt" > CLAUDE.md && echo x > docs/a.md && commit_all abs
+    git worktree add -q ../wt main 2>/dev/null || git worktree add -q --detach ../wt main
+    cd ../wt
+    for w in main tree; do imps "$w" docs/a.md docs/b.md docs/x.md; want walk ok; want docs/a.md imported; want docs/b.md imported; want docs/x.md -; done
 }
 
 @test "no symlink is followed: a start or an import main stores as a symlink, a checkout link at a name main lacks and a name below a linked directory fail the walk; an untracked start that is a link is skipped (brief 2026-11-03-import-walk-plain; G61; H2)" {
@@ -178,7 +196,7 @@ LINKWHY="is a symlink or lies below one, which the walk does not follow"
     imps main docs/x.md; want walk failed; want why main; want docs/x.md imported
 }
 
-@test "the walks read no instruction file outside the checkout, and an unreadable directory skips only what lies below it: the user's ~/.claude, an ancestor's CLAUDE.md and another worktree's start files import nothing (restriction audit G57, G58; S1)" {
+@test "the walks read no instruction file outside the checkout, and skip the untracked start files of a directory git cannot read: the user's ~/.claude, an ancestor's CLAUDE.md and another worktree's start files import nothing (restriction audit G57, G58; S1)" {
     mkdir -p docs "$HOME/.claude/rules"
     printf '@%s/docs/a.md\n' "$(pwd -P)" > "$HOME/.claude/CLAUDE.md"; cp "$HOME/.claude/CLAUDE.md" "$HOME/.claude/rules/r.md"
     printf '@repo/docs/b.md\n' > ../CLAUDE.md

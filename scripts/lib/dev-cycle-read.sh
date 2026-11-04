@@ -53,12 +53,13 @@
 #     locale a non-UTF-8 name on main fails the walk).
 #  2. Walk a clean worktree at MAIN_SHA, final before the walk (the walk reads
 #     main's blob for every path main stores, and the checkout only where main
-#     lacks a path), where git ls-files prints nothing on stderr (any fails the
-#     walk), with no GIT_DIR, GIT_WORK_TREE, GIT_INDEX_FILE,
+#     lacks a path), with no GIT_DIR, GIT_WORK_TREE, GIT_INDEX_FILE,
 #     GIT_OBJECT_DIRECTORY or GIT_COMMON_DIR pointing git elsewhere. The walk
-#     checks only the ls-files stderr rule; build-loop.sh --check checks the
-#     rest for each self-merge brief before the walk (checkout_gate; its
-#     check_line runs the walk under item 1's LC_ALL=C).
+#     checks none of this: a failed listing fails it, and git's warnings (a
+#     directory it cannot read, whose untracked starts are skipped) do not;
+#     build-loop.sh --check checks the rest for each self-merge brief before
+#     the walk (checkout_gate; its check_line runs the walk under item 1's
+#     LC_ALL=C).
 #  3. (Dropped by brief 2026-11-01-relax-gate-git-state: a checkout's
 #     conversions, core.symlinks, sparse or case-insensitive checkout and
 #     nested repositories are allowed, as the walk reads main's blob for
@@ -674,8 +675,10 @@ isstart() { [[ "${1##*/}" =~ $INSTRUCTION_FILE ]] || [[ "$1" == *.md && ( "$1" =
 #    each read docs/a.md. A name led by ~/ joins HOME, one led
 #    by / is absolute, and any other joins the importing file's directory
 #    (a prompt start's also joins the repo root); each is resolved lexically
-#    (.. stops at /) and kept only when it lands below ROOT_REAL, as a repo
-#    path. Escaped spaces, quoted @"..." mentions, Unicode spaces and HTML
+#    (.. stops at /) and kept only when it lands below ROOT_REAL or below the
+#    main worktree (WALK_MAIN_WT: the gate runs in a worktree of its own, and
+#    @/workspace/docs/x.md names a repo path for every session in the main
+#    one), as a repo path. Escaped spaces, quoted @"..." mentions, Unicode spaces and HTML
 #    comments are not modelled.
 #  - Every name a walk reaches joins its list (lower-cased), whether or not a
 #    file is there, so a self-merge cannot create an imported file either; a
@@ -683,7 +686,8 @@ isstart() { [[ "${1##*/}" =~ $INSTRUCTION_FILE ]] || [[ "$1" == *.md && ( "$1" =
 #  - No symlink is followed: a start or name main stores as a symlink, or a
 #    checkout path that is a link or lies below one (rawfile), fails the walk
 #    (H2). A gitlink, a directory, a FIFO or nothing at a name is skipped:
-#    nothing there loads.
+#    nothing there loads; but a name below a directory the walk cannot search
+#    fails it, since a file there may load (H2).
 #  - A file over IMPORT_MAX_BYTES (Claude Code's own 4 MiB limit), one that is
 #    not valid UTF-8 (a NUL byte included), one that cannot be read, or a ~/
 #    name while HOME is not an absolute path fails the walk (H2).
@@ -748,8 +752,9 @@ function put(c,   n, i, k, part, st, out) {
     st[++k] = part[i]
   }
   out = ""; for (i = 1; i <= k; i++) out = out "/" st[i]
-  if (index(out, pre) != 1 || length(out) <= length(pre)) return
-  out = substr(out, length(pre) + 1)
+  if (index(out, pre) == 1 && length(out) > length(pre)) out = substr(out, length(pre) + 1)
+  else if (alt != "" && index(out, alt) == 1 && length(out) > length(alt)) out = substr(out, length(alt) + 1)
+  else return
   if (!(out in seen)) { seen[out] = 1; print out }
 }
 # names T: the names of token T: T, T cut before its first # or ] (an anchor,
@@ -768,6 +773,7 @@ function name(c) {
 BEGIN {
   root = ENVIRON["IT_ROOT"]; if (substr(root, 1, 1) != "/" || root == "/") exit 2
   pre = root "/"; dir = ENVIRON["IT_DIR"]; top = (ENVIRON["IT_TOP"] != ""); home = ENVIRON["IT_HOME"]
+  alt = ENVIRON["IT_MAIN_WT"]; if (alt != "") alt = alt "/"
   strip = "[" ENVIRON["IT_PUNCT"] "]+$"
 }
 $0 !~ ok { exit 3 }
@@ -781,18 +787,30 @@ $0 !~ ok { exit 3 }
 # import_targets DIR [TOP]: the names in the text on stdin, by the rules above,
 # for a file in the repo directory DIR ("" at the top level); with TOP not
 # empty, a relative name also joins the repo root (a prompt start). One repo
-# path per line, case kept, each once. It reads ROOT_REAL and IMPORT_HOME
-# (import_home), and returns 1 when the text is not well-formed UTF-8, a ~/
+# path per line, case kept, each once. It reads ROOT_REAL, WALK_MAIN_WT and
+# IMPORT_HOME (import_home), and returns 1 when the text is not well-formed UTF-8, a ~/
 # name appears while IMPORT_HOME is not absolute, ROOT_REAL is empty or /, or
 # awk fails.
 import_targets() {
-  env LC_ALL=C IT_ROOT="${ROOT_REAL:-}" IT_DIR="$1" IT_TOP="${2:-}" IT_HOME="$IMPORT_HOME" IT_PUNCT="$WALK_PUNCT" \
+  env LC_ALL=C IT_ROOT="${ROOT_REAL:-}" IT_DIR="$1" IT_TOP="${2:-}" IT_HOME="$IMPORT_HOME" IT_MAIN_WT="$WALK_MAIN_WT" IT_PUNCT="$WALK_PUNCT" \
     awk -v ok="$UTF8_WELL_FORMED" "$IMPORT_AWK"
 }
 # import_home: IMPORT_HOME, HOME's real path (ROOT_REAL is real too, so the two
 # compare), or empty when HOME is unset, empty or not absolute. Each walk
 # calls it first.
-IMPORT_HOME=""
+IMPORT_HOME=""; WALK_MAIN_WT=""
+# walk_main_wt: WALK_MAIN_WT, the main worktree's real path (the parent of the
+# common .git directory) when it is not ROOT_REAL, else empty; it returns 1
+# when git cannot say (the walk then fails: H2). A common directory not named
+# .git (a bare repository) has no main worktree.
+walk_main_wt() {
+  local c
+  WALK_MAIN_WT=""
+  c="$(git rev-parse --path-format=absolute --git-common-dir)" && [[ "$c" == /* ]] || return 1
+  [[ "${c##*/}" == .git ]] || return 0
+  c="$(realpath -m -- "${c%/*}")" || return 1
+  [[ "$c" == / || "$c" == "${ROOT_REAL:-}" ]] || WALK_MAIN_WT="$c"
+}
 import_home() {
   IMPORT_HOME=""
   [[ "${HOME:-}" == /* ]] || return 0
@@ -831,6 +849,14 @@ walk_file() {
     160000) return 2 ;;
     checkout)
       if [[ -L "$p" ]]; then WALK_WHY="link $p"; return 1; fi
+      if [[ ! -e "$p" ]]; then
+        # Absent, or below a directory the walk cannot search: the nearest
+        # ancestor that exists decides (a plain file there: nothing loads).
+        n="$p"; while [[ "$n" == */* ]]; do n="${n%/*}"; [[ ! -e "$n" ]] || break; done
+        [[ "$n" == */* || -e "$n" ]] || n=.
+        [[ ! -d "$n" || -x "$n" ]] || return 1
+        return 2
+      fi
       [[ -f "$p" ]] || return 2
       rawfile "$p" || { WALK_WHY="link $p"; return 1; }
       [[ -r "$p" ]] && n="$(stat -c %s -- "$p")" && [[ "$n" =~ ^[0123456789]+$ && "$n" -le $IMPORT_MAX_BYTES ]] || return 1
@@ -847,6 +873,7 @@ walk_core() {
   set -o pipefail
   WALK_LIST=error; WALK_WHY=list
   import_home
+  walk_main_wt || return 1
   if [[ "$mode" == main ]]; then
     WALK_WHY=main; main_by_name || return 1
     WALK_WHY=tree; nul_list recs git ls-tree -r -z --full-tree "$MAIN_SHA" || return 1
