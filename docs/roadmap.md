@@ -78,7 +78,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 ## In flight
 
 - Restriction audit unit 6: the import walk reads plain `@path` imports only
-  (`docs/working/briefs/2026-11-03-import-walk-plain.md`; review policy, gate code).
+  (`docs/working/briefs/2026-11-03-import-walk-plain.md`; review policy, gate code). Ready at
+  4d6880b7; merge entry Q-253.
 - Q-125's `cc-verify --check` file for the sandbox live run
   (`docs/working/briefs/2026-11-03-q125-verify-check.md`; review policy).
 

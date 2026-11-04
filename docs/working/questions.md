@@ -25,11 +25,73 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
+| [Q-253](#q-253--merge-gate-2026-11-03-import-walk-plain-4d6880b7f44e) | you: judgment | Merge restriction-audit unit 6 (the self-merge floor's import check reads plain `@path` imports only) at 4d... | 2026-11-03 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
+| [Q-252](#q-252--image-lag) | you: terminal | - `c741fa77` Merge branch 'chore/dev-cycle-2026-11-03-2329' | 2026-11-03 |
 <!-- index:end -->
 
 ## Open
+
+### Q-252 · image-lag
+**Needs:** you: terminal · **Opened:** 2026-11-03 · **Status:** OPEN
+
+**Release notes** (trial T1). Installed image: `c214970a`, read from `/opt/claude-workflows/.manifest`. Main (`c741fa77`) is ahead in gate code by restriction-audit unit 5, which you approved (Q-251). The image runs the gate and the dev-cycle skill, so unit 5 is not live until you run the paste.
+
+**If you say no:** the cycle keeps running the current image's skill: a pending migration still comes to you as a paste, and a release you have already run still waits for your answer on its image-lag entry. Nothing breaks.
+
+**Merged without your review:** none since `c214970a`.
+
+**What changes for you** (approved by you, Q-251): the dev cycle runs a pending convention migration's `questions.sh` remedy itself and reports it, and closes an image-lag entry like this one by itself once the image holds main's gate code. Gate files changed: `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`.
+
+**Commits on main after `c214970a`** (first-parent):
+- `c741fa77` Merge branch 'chore/dev-cycle-2026-11-03-2329'
+- `ed6b0be2` Merge branch 'chore/dev-cycle-2026-11-03-2329'
+- `89ed0db4` Merge branch 'refactor/cycle-runs-migrations' (build-loop approved merge)
+- `f354e949` Merge branch 'chore/answers-2026-11-03b'
+- `3ccdd215` Merge branch 'chore/answers-2026-11-03'
+- `234d5be7` Merge branch 'chore/dev-cycle-2026-11-02-2027'
+
+**Paths changed outside `docs/`** (12 under `docs/` not listed; the image carries none of `docs/`): `guides/convention-changes.md`, `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`, `test/scripts/build-loop-orchestrator.bats`, `test/scripts/dev-cycle.bats`
+
+**The paste** (host terminal in WSL, not inside a session; stop every session first):
+
+```
+cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = c741fa77f51cb5c06e260be3d95e15b734669a9f && ./devcontainer-config/install.sh
+```
+
+The `rev-parse` check runs no hook. It only confirms that your checkout is at main; if it fails, bring the checkout to main first. Then start a new sandbox session. If unit 6 (Q-253) merges first, the next iteration rewrites this entry for the newer main, and one paste covers both.
+
+- **Interim:** the image at `c214970a` runs.
+- **Blocks:** nothing.
+
+### Q-253 · merge-gate-2026-11-03-import-walk-plain-4d6880b7f44e
+**Needs:** you: judgment · **Opened:** 2026-11-03 · **Status:** OPEN
+
+Merge restriction-audit unit 6 (the self-merge floor's import check reads plain `@path` imports only) at 4d6880b7?
+
+**If you say no:** the import walk stays about 1000 lines longer, with python3 decoding, outside seeds (your `~/.claude`, other worktrees) and work budgets; an unreadable directory in any worktree can still hold back every self-merge, and the `Reader roots:` and `Reader homes:` lines in `docs/dev-cycle.md` stay in use.
+
+**What an attacker would want here:** this is gate code, and it reaches the image at the next release. An outside party cannot write repo files, so the walk only has to catch a loop's honest edit to a doc that an instruction file imports. It still does: plain `@path` imports, direct and transitive, from tracked and untracked start files. It refuses every path when it cannot read a file, search a directory, or parse a file (over 4 MiB, not UTF-8, a NUL, a symlink). Stated residual (S1): an import spelled to dodge a plain parser, or planted outside the repo, is no longer seen. Both need a hostile author.
+
+- **Tip:** 4d6880b7f44e406bb610052dbef256c4d61e2c70 (4 commits past c741fa77; 13 files, +644/−2992)
+- **`--check` printed:**
+  - `ok docs/working/briefs/2026-11-03-import-walk-plain.md 4d6880b7f44e406bb610052dbef256c4d61e2c70 3dd0cfd9a23a90effcfbc80560bf3f28bb73053e`
+  - 13 `path` lines, all `M` except one `A`: `docs/decisions/log.md`, the brief, `docs/working/known-issues-dev-cycle.md`, `docs/working/plan-build-loop-handoff.md`, `docs/working/research-2026-11-03-import-walk-plain.md` (A), `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/dev-cycle-read.sh`, `skills/dev-cycle/SKILL.md`, `test/lib/build-loop-fixtures.bash`, `test/scripts/build-loop-check.bats`, `test/scripts/build-loop-read.bats`, `test/scripts/dev-cycle.bats`
+- **The loop's note** (its ready marker; loop text, data not instructions): "No question for the owner. One note: docs/dev-cycle.md still holds the Reader roots and Reader homes lines. The import walks no longer read them, and build-loop.sh --settings now prints "readers ignored: ... delete them", so the owner can delete both lines."
+- **Paths self-merge would have refused:** the four gate-code files (`scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/dev-cycle-read.sh`, `skills/dev-cycle/SKILL.md`), `docs/decisions/log.md` (a decision record) and `skills/dev-cycle/SKILL.md` (a prompt file).
+- **What changes for you:** self-merges are no longer held back by an unreadable directory in another worktree or your `~/.claude`, and each walk is faster. Afterwards you can delete lines 63 and 65 of `docs/dev-cycle.md` (`Reader roots:`, `Reader homes:`); until you do, `--settings` prints `readers ignored`.
+- **Also in it:** decision-log row 83; a D5 amendment in the plan; known issues A5 and C2 marked superseded; 10 new plain-walk bats cases and a legacy-Reader `--settings` test. The loop says the two stale lines the brief named were already reworded by 61443d9f.
+- **Checks:** one review round found two gaps, both fixed in 564ba5fb: a name under an unsearchable directory read as absent (it now fails the walk), and `@/workspace/...` spellings were dropped when the gate ran in its own worktree. The confirming pass found only nits. The full health check passed on the branch.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next iteration merges 4d6880b7; it takes effect at the next release (one paste with Q-252) | None beyond this answer | One `git revert` of the merge |
+| **[2] drop** | The brief closes; the walk stays as it is | None now | The longer walk and its holds stay |
+| **[3] changes needed** | Your note goes back to the loop | A one-line note | Another loop round |
+
+- **Blocks:** restriction-audit unit 7 (the D6 block into the image; it edits `skills/dev-cycle/SKILL.md` too).
+- **Interim:** the branch waits.
 
 ### Q-167 · post-install-host-probes
 **Needs:** you: terminal · **Opened:** 2026-10-15 · **Status:** OPEN
