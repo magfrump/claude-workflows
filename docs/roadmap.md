@@ -81,7 +81,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   (`docs/working/briefs/2026-11-03-import-walk-plain.md`; review policy, gate code). Ready at
   4d6880b7; merge entry Q-253.
 - Q-125's `cc-verify --check` file for the sandbox live run
-  (`docs/working/briefs/2026-11-03-q125-verify-check.md`; review policy).
+  (`docs/working/briefs/2026-11-03-q125-verify-check.md`; review policy). Blocked at
+  502296b7: the Q-125 branch's own C1 check cannot pass on a working sandbox; Q-254.
 
 ## Next
 
