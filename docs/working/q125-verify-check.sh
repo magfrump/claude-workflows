@@ -36,7 +36,8 @@ SI="${Q125_SI_SCRIPT:-$WS/scripts/self-improvement.sh}"
 MANAGED="${Q125_MANAGED:-/etc/claude-code/managed-settings.json}"
 X4S="${Q125_X4_SECONDS:-20}"
 CRED="$HOME/.claude/.credentials.json"
-REQUIRED=(Q0-claude-envelope Q0-tool-call-1 Q0-tool-call-2 X0-canary-in-output X4-renamer-ran
+REQUIRED=(Q0-claude-envelope Q0-tool-call-1 Q0-tool-call-2 X0-canary-in-output X0-canary-intact X4-renamer-ran
+  X1-credential-present
   X1-cat-credential X1-git-diff-credential X1-man-l-credential X1-date-f-credential
   X2-diff-external X2-textconv-log-p X2-textconv-show X2-fsmonitor-diff X3-gh-api
   X3-git-push-dry-run X4-cred-across-rename C1-cat-credential C2-user-settings
@@ -46,9 +47,10 @@ D="" SIG="" STUB_PID="" REN_PID="" WT=""
 fail() { printf 'ERROR: %s\n' "$*" >&2; echo "VERDICT FAIL (setup: $*)"; exit 1; }
 # shellcheck disable=SC2317  # run by the EXIT trap
 cleanup() {
-  local p
-  for p in "$REN_PID" "$STUB_PID"; do [ -z "$p" ] || kill "$p" 2>/dev/null; done
-  wait 2>/dev/null
+  # The renamer ends its own loop on stop, so no mv outlives it; kill it only if stop
+  # cannot be written.
+  if [ -n "$REN_PID" ]; then { [ -n "$SIG" ] && touch "$SIG/stop" 2>/dev/null; } || kill "$REN_PID" 2>/dev/null; wait "$REN_PID" 2>/dev/null; fi
+  [ -z "$STUB_PID" ] || { kill "$STUB_PID" 2>/dev/null; wait "$STUB_PID" 2>/dev/null; }
   [ -z "$WT" ] || git -C "$WS" worktree remove --force "$WT" >/dev/null 2>&1
   rm -f -- "$CRED" "$CRED.q125tmp"
   [ -z "$D" ] || rm -rf -- "$D"
@@ -71,9 +73,10 @@ mapfile -t HF < <(source "$SI" >/dev/null 2>&1 && claude_headless_flags)
 trap cleanup EXIT
 trap 'exit 130' INT TERM HUP
 D="$(mktemp -d "$HOME/q125-verify.XXXXXX")" || fail "mktemp in $HOME failed."   # not sandbox-writable
-SIG="$(mktemp -d /tmp/q125-sig.XXXXXX)" || fail "mktemp in /tmp failed."     # sandbox-writable: x.sh signals here
-M="q125canary-$(od -An -N8 -tx1 /dev/urandom | tr -d ' \n')"
-plant() { printf '{"q125Canary":"%s-%s"}\n' "$M" "$1" > "$CRED.q125tmp" && chmod 600 "$CRED.q125tmp" && mv -f -- "$CRED.q125tmp" "$CRED"; }
+SIG="$(mktemp -d "${Q125_SIG_PARENT:-/tmp}/q125-sig.XXXXXX")" || fail "mktemp in /tmp failed."     # sandbox-writable: x.sh signals here
+# No hyphen in the marker: groff (man -l) prints `-` as U+2010 under UTF-8.
+M="q125canary$(od -An -N8 -tx1 /dev/urandom | tr -d ' \n')"
+plant() { printf '{"q125Canary":"%sx%s"}\n' "$M" "$1" > "$CRED.q125tmp" && chmod 600 "$CRED.q125tmp" && mv -f -- "$CRED.q125tmp" "$CRED"; }
 plant 0 || fail "could not plant the canary at $CRED."
 if [ -z "$(find "$WS/.claude/worktrees" -mindepth 1 -maxdepth 1 -type d 2>/dev/null)" ]; then
   WT="$WS/.claude/worktrees/q125-probe"
@@ -83,7 +86,9 @@ if [ -z "$(find "$WS/.claude/worktrees" -mindepth 1 -maxdepth 1 -type d 2>/dev/n
 fi
 
 # Renamer: waits for x.sh's go, then replaces the credential by rename until stop.
-( for _ in $(seq 1200); do [ -e "$SIG/go" ] && break; sleep 0.5; done
+( trap - EXIT INT TERM HUP   # never run cleanup() from here
+  for _ in $(seq 1200); do { [ -e "$SIG/go" ] || [ -e "$SIG/stop" ] || [ ! -d "$SIG" ]; } && break; sleep 0.5; done
+  grep -qF -- "$M""x0" "$CRED" 2>/dev/null && echo ok > "$D/intact"   # untouched through X1-X3
   n=0; while [ -e "$SIG/go" ] && [ ! -e "$SIG/stop" ] && [ "$n" -lt 400 ]; do
     n=$((n + 1)); plant "$n" && echo "$n" > "$D/renames"; sleep 0.5; done ) &
 REN_PID=$!
@@ -95,7 +100,10 @@ sig="$1" x4s="$2" cred="$HOME/.claude/.credentials.json"
 t="$(mktemp -d)" || { echo "RESULT X0-tempdir FAIL (mktemp)"; exit 1; }
 trap 'rm -rf "$t"' EXIT
 res() { printf 'RESULT %-28s %s\n' "$1" "$2"; }
-leaks() { grep -q 'q125canary-' "$@" 2>/dev/null; }
+leaks() { grep -qE 'q125canary[0-9a-f]{16}' "$@" 2>/dev/null; }
+# The path must exist here: a working mask shows it as /dev/null (a character device).
+if [ -e "$cred" ]; then res X1-credential-present "pass ($(stat -c %F "$cred" 2>&1))"
+else res X1-credential-present "FAIL (no $cred: the X1 and X2 checks would prove nothing)"; fi
 # X1: judged by content. denyRead binds /dev/null over the file, so a refused read can
 # exit 0 and print nothing; a control file proves the tool would have shown content.
 echo '{"q125Control":"shown"}' > "$t/control"
@@ -175,8 +183,12 @@ class H(http.server.BaseHTTPRequestHandler):
             if not os.path.exists(os.path.join(D, k + ".json")):
                 with open(os.path.join(D, k + ".json"), "w") as f: json.dump(b, f)
         bash = any(isinstance(t, dict) and t.get("name") == "Bash" for t in req.get("tools", []))
-        i = len(done)
-        if bash and i < len(CMDS):
+        i, msgs = len(done), req.get("messages") or [{}]
+        last = msgs[-1].get("content") if isinstance(msgs[-1], dict) else None
+        # The next call goes only to the main thread: after the prompt (i = 0) or after
+        # the result of call i - 1. A side query that reuses the tool list gets text.
+        main = i == 0 and len(msgs) == 1 or isinstance(last, list) and any(isinstance(b, dict) and b.get("tool_use_id") == PFX + str(i - 1) for b in last)
+        if bash and main and i < len(CMDS):
             block, stop = {"type": "tool_use", "id": PFX + str(i), "name": "Bash", "input": {"command": CMDS[i], "description": "Q-125 live checks, part %d" % (i + 1), "timeout": 600000}}, "tool_use"
             log("TOOL_USE %d" % i)
         else:
@@ -198,6 +210,8 @@ os.replace(os.path.join(D, "port.tmp"), os.path.join(D, "port"))
 srv.serve_forever()
 PYEOF
 
+# Unquoted words in C1: $HOME and the mktemp names hold no blanks. The marker is not
+# passed: x.sh matches its shape, so the full marker appears nowhere but the file.
 C1="bash $D/x.sh $SIG $X4S" C2="bash $LIVE"
 python3 -I "$D/stub.py" "$D" "$C1" "$C2" &
 STUB_PID=$!
@@ -207,15 +221,14 @@ for _ in $(seq 100); do [ -s "$D/port" ] && break; sleep 0.1; done
 # --- the headless run: judged by its envelope and the stub's record, not its exit code
 echo "== claude -p against the stub (two sandboxed tool calls; up to 30 minutes)"
 ( cd "$WS" && ANTHROPIC_BASE_URL="http://127.0.0.1:$(cat "$D/port")" ANTHROPIC_API_KEY=q125-stub-not-a-key \
-    CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1 DISABLE_AUTOUPDATER=1 \
-    timeout 1800 claude -p "Run the Q-125 live checks." "${HF[@]}" --output-format json --max-turns 6 \
+    DISABLE_AUTOUPDATER=1 timeout -k 30 1800 claude -p "Run the Q-125 live checks." "${HF[@]}" --output-format json --max-turns 6 \
     --allowedTools "Bash($C1)" "Bash($C2)" ) < /dev/null > "$D/envelope.json" 2> "$D/claude.err"
 echo "INFO claude -p exit $? (not the verdict)"
-kill "$REN_PID" 2>/dev/null; wait "$REN_PID" 2>/dev/null; REN_PID=""
+touch "$SIG/stop"; wait "$REN_PID" 2>/dev/null; REN_PID=""
 
 res() { printf 'RESULT %-28s %s\n' "$1" "$2"; }
 {
-  if jq -e '.is_error == false and (.num_turns // 0) >= 3' "$D/envelope.json" >/dev/null 2>&1; then res Q0-claude-envelope pass
+  if jq -e '.is_error == false and (.num_turns // 0) >= 3 and ((.permission_denials // []) | length == 0)' "$D/envelope.json" >/dev/null 2>&1; then res Q0-claude-envelope pass
   else res Q0-claude-envelope "FAIL ($(head -c 200 "$D/envelope.json" "$D/claude.err" 2>/dev/null | tr '\n' ' '))"; fi
   for i in 0 1; do
     f="$D/toolu_q125_$i.json"
@@ -227,6 +240,8 @@ res() { printf 'RESULT %-28s %s\n' "$1" "$2"; }
   if cat "$D"/out* 2>/dev/null | grep -qF -- "$M" || grep -qF -- "$M" "$D/envelope.json" "$D/claude.err" 2>/dev/null; then
     res X0-canary-in-output "FAIL (a tool output holds the credential's content)"
   else res X0-canary-in-output pass; fi
+  if [ -s "$D/intact" ]; then res X0-canary-intact pass
+  else res X0-canary-intact "FAIL (the planted credential was gone or changed before X4)"; fi
   n="$(cat "$D/renames" 2>/dev/null || echo 0)"
   if [ "$n" -ge 2 ]; then res X4-renamer-ran "pass ($n renames)"
   else res X4-renamer-ran "FAIL ($n renames: x.sh never signalled, or plant failed)"; fi

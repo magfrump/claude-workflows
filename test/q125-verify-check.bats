@@ -76,6 +76,7 @@ while turns < 6:
     else:
         argv = cmd.split()
         if len(argv) == 4:   # x.sh SIG SECONDS: act out its go/stop signal
+            if mode == "eat": os.remove(os.path.expanduser("~/.claude/.credentials.json"))
             open(argv[2] + "/go", "w").close(); subprocess.run(["sleep", "1.5"]); open(argv[2] + "/stop", "w").close()
         out, err = open(os.path.join(fake, str(n))).read(), False
         if mode == "leak" and n == 0: out += open(os.path.expanduser("~/.claude/.credentials.json")).read()
@@ -89,8 +90,8 @@ EOF
   printf '#!/bin/sh\ncat "%s/live-out"\n' "$FAKE" > "$T/live.sh"
   echo '{"sandbox":{"enabled":true}}' > "$T/managed.json"
   export Q125_WORKSPACE="$T/ws" Q125_LIVE_CHECK="$T/live.sh" Q125_MANAGED="$T/managed.json" \
-    Q125_SI_SCRIPT="$BATS_TEST_DIRNAME/../scripts/self-improvement.sh" Q125_X4_SECONDS=2
-  for id in X1-cat-credential X1-git-diff-credential X1-man-l-credential X1-date-f-credential X2-diff-external \
+    Q125_SI_SCRIPT="$BATS_TEST_DIRNAME/../scripts/self-improvement.sh" Q125_X4_SECONDS=2 Q125_SIG_PARENT="$T"
+  for id in X1-credential-present X1-cat-credential X1-git-diff-credential X1-man-l-credential X1-date-f-credential X2-diff-external \
     X2-textconv-log-p X2-textconv-show X2-fsmonitor-diff X3-gh-api X3-git-push-dry-run X4-cred-across-rename; do
     printf 'RESULT %-28s pass\n' "$id"; done > "$FAKE/0"
   for id in C1-cat-credential C2-user-settings C2-git-log-output C3-elan-bin C3-project-settings C3-git-config \
@@ -150,6 +151,13 @@ assert_clean() {   # nothing planted is left behind
   assert_clean
 }
 
+@test "a credential gone before the rename loop fails X0-canary-intact" {
+  FAKE_MODE=eat run_file
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"$(rl X0-canary-intact "FAIL")"* ]]
+  assert_clean
+}
+
 @test "an envelope with is_error fails Q0-claude-envelope" {
   FAKE_MODE=error run_file
   [ "$status" -eq 1 ]
@@ -167,7 +175,7 @@ assert_clean() {   # nothing planted is left behind
 @test "unsandboxed, the X checks catch the readable credential and the rename" {
   FAKE_MODE="exec" run_file
   [ "$status" -eq 1 ]
-  for id in X1-cat-credential X1-git-diff-credential X1-date-f-credential X2-diff-external \
+  for id in X1-cat-credential X1-git-diff-credential X1-man-l-credential X1-date-f-credential X2-diff-external \
     X2-textconv-log-p X2-textconv-show X2-fsmonitor-diff X4-cred-across-rename; do
     [[ "$output" == *"$(rl "$id" FAIL)"* ]] || { echo "not FAIL: $id"; return 1; }
   done

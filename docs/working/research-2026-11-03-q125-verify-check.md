@@ -19,11 +19,11 @@ Run (host, from the claude-workflows checkout at main, once this branch is merge
 - Plan step 6 (branch `docs/working/plan-q125-cc-isolated-sandbox.md`): credential refused, settings and `.git/config` writes refused, Q-098 leak list, `gh api user` / `git push --dry-run` without a network prompt, `example.com` denied, the listed denyWrite paths, a looping credential read across a refresh, one build per toolchain.
 - `docs/working/research-branch-verify-without-install.md` §4 Q5/Q9: the checks need a Claude Code session and a credential in the verify volume; a fresh volume has none.
 - `scripts/self-improvement.sh` `claude_headless_flags()` prints `--permission-mode acceptEdits` (plus `--add-dir`s); the file can be sourced (main guard at :381).
-- `hooks/wiring.json`: `permissions.deny` holds `Bash(*.credentials.json*)`; PreToolUse Bash hooks are `guard-trusted-writes.py` (denies a Bash command whose text names `.claude` with a policy file) and `auto-approve-allowed-commands.sh` (never asks or denies).
+- `hooks/wiring.json`: `permissions.deny` holds `Bash(*.credentials.json*)`; PreToolUse Bash hooks are `guard-trusted-writes.py` (denies a Bash command whose text names `.claude` with a policy file) `auto-approve-allowed-commands.sh` (never asks or denies) and `live-verify-gate.sh` (acts only on `git commit`).
 
 ## Findings from the binary (Claude Code in this sandbox, `bin/claude.exe`)
 
-- **denyRead masks a file with `--ro-bind /dev/null <file>`** (string in the binary's Linux sandbox code: `O.push("--ro-bind","/dev/null",Pr)` and `R.push("--ro-bind","/dev/null",Tn)`). A refused read therefore *succeeds* and prints nothing. The branch script's C1 (`cat`, `git diff --no-index`, `man -l`, `date -f`, all by exit status) will print FAIL on a working sandbox, and its abort then skips C2 to C6. FILE's X1 checks judge by content instead. This is a branch fix, out of scope here: it is the question in the final marker.
+- **denyRead masks a file with `--ro-bind /dev/null <file>`** (the regular-file read-deny path in the binary's Linux sandbox code: `R.push("--ro-bind","/dev/null",Tn)`). A refused read therefore *succeeds* and prints nothing. The branch script judges C1 by exit status, so `C1-cat-credential` will print FAIL on a working sandbox, and the abort right after it skips the other C1 lines and C2 to C6: a VERDICT pass is impossible until the branch is fixed. FILE's X1 checks judge by content instead. This is a branch fix, out of scope here: it is the question in the final marker.
 - `ANTHROPIC_BASE_URL` is read by the binary (also under the gateway mode), which is what the stub design uses.
 
 ## Design choice 1: how FILE reaches the sandboxed Bash path (divergent design)
@@ -46,9 +46,15 @@ B dominates (Path A of divergent design): decided.
 - Rename check (plan's C10, `--watch` needs `/login`): FILE's unsandboxed renamer replaces the canary by `mv` every 0.5 s between x.sh's `go` and `stop` signals in a `/tmp` dir; `X4-renamer-ran` fails if fewer than 2 renames happened, so the loop cannot pass vacuously.
 - `gh`/`git push` "not prompting": in `-p` mode a network prompt cannot be answered, so a reply from GitHub (401 for a dummy token, a username refusal for push) is the pass.
 - C3 nested worktree: FILE adds one, so `C3-nested-settings-1` runs instead of SKIP.
+- The marker has no hyphen: groff (`man -l`) prints `-` as U+2010 under the container's UTF-8 locale, which hid a readable credential from the first version's grep (review finding). x.sh matches the marker's shape (`q125canary` + 16 hex), so the full marker is on no command line.
+- Non-vacuity: `X1-credential-present` (the path exists in the sandbox; a mask shows a character device) and `X0-canary-intact` (the first canary was still in place when x.sh reached X4).
+- Stub sequencing: the next tool call goes only to the main thread (after the prompt, or after the previous call's result); a side query carrying the tool list gets text.
+- Envelope: `is_error` false, `num_turns` at least 3, no `permission_denials`. `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` is not set, so the run keeps daily sessions' feature flags.
 - Required ids: a fixed list; a branch rename of an id fails the verdict naming it (fail closed).
 - FILE's private state lives in `$HOME/q125-verify.*` (not sandbox-writable, name free of `.claude` so `guard-trusted-writes.py` ignores the command text).
 - Paths: no `Paths:` line in the brief; changes are FILE, its test and this doc, off `devcontainer-config/`, `hooks/` and the Q-125 branch.
+
+- Failure-pattern skip: the fix commit corrects review findings in this branch's own unmerged file; no shipped code failed, and the groff-hyphen mechanism is recorded above.
 
 ## Invariants
 
@@ -73,7 +79,7 @@ B dominates (Path A of divergent design): decided.
 
 ## Verification
 
-- `bats test/q125-verify-check.bats`: 9 cases (pass, FAIL line, SKIP line, missing id, canary leak, envelope `is_error`, denied tool call, unsandboxed exec detecting every X1/X2/X4 leak, refusals before planting). The fake `claude` refuses wrong argv/env and runs only commands matching an allow rule.
+- `bats test/q125-verify-check.bats`: 10 cases (pass, FAIL line, SKIP line, missing id, canary leak, canary removed before X4, envelope `is_error`, denied tool call, unsandboxed exec detecting every X1/X2/X4 leak including `man -l`, refusals before planting). The fake `claude` refuses wrong argv/env and runs only commands matching an allow rule.
 - The live run is the owner's paste (final marker).
 
 ## Files read
