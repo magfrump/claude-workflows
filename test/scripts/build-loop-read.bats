@@ -74,8 +74,8 @@ setup() { bl_setup; }
     [ "$status" -eq 0 ] || { echo "$output $stderr"; return 1; }
     [[ "$(line policy)" == "policy self-merge set: line "*" of docs/dev-cycle.md on the default branch" ]] \
         || { echo "$output"; return 1; }
-    # Both spellings of the checkout and both HOMEs (Q-121, Q-123), and no prose line read as a copy.
-    [ "$(line readers)" = "readers 2-roots 2-homes set: docs/dev-cycle.md on the default branch" ] || { echo "$output"; return 1; }
+    # The two legacy reader lines are named as ignored (brief 2026-11-03-import-walk-plain), and no prose line is read as a copy.
+    [[ "$(line readers)" == "readers ignored: the Reader roots line (line "*") and the Reader homes line (line "*") of docs/dev-cycle.md on the default branch are no longer read (the import walks read only this checkout and the default branch); delete them" ]] || { echo "$output"; return 1; }
     # The never line (workflows/ only: plan D5's interim, chosen as Q-149 [2]) and the slots line (U5).
     [[ "$(line never)" == "never workflows/ set: line "*" of docs/dev-cycle.md on the default branch" ]] || { echo "$output"; return 1; }
     [[ "$(line slots)" == "slots 3 set: line "*" of docs/dev-cycle.md on the default branch" ]] || { echo "$output"; return 1; }
@@ -546,39 +546,30 @@ setup() { bl_setup; }
     [ "$output" = "skip $B: line 2 holds a NUL byte, so the brief is not read" ] || { echo "$output"; return 1; }
 }
 
-@test "--settings: Reader roots and Reader homes give the readers line; any other form is malformed and never echoed (U2b3b1)" {
-    W='docs/dev-cycle.md on the default branch'
-    settings 'Build-loop policy: review'
+@test "--settings: legacy Reader roots and Reader homes lines are named as ignored, in any form, never echoed and never turning self-merge off (U2b3b1; brief 2026-11-03-import-walk-plain)" {
+    W='of docs/dev-cycle.md on the default branch'
+    T='no longer read (the import walks read only this checkout and the default branch)'
+    settings 'Build-loop policy: self-merge'
     settings_is readers 'readers none: no line starts "Reader roots:" or "Reader homes:"'
     git rm -q docs/dev-cycle.md && commit_all gone
     settings_is readers "readers none: no docs/dev-cycle.md on the default branch"
-    settings 'Reader roots: /host/cw /host/cw-2' '' 'Reader homes: none'; settings_is readers "readers 2-roots 0-homes set: $W"
-    settings 'Reader homes: /home/u_1/x.y'; settings_is readers "readers 0-roots 1-homes set: $W"
-    # One trailing CR is dropped, as on the policy line; a fenced copy is not read.
-    printf 'Reader roots: /host/cw\r\n\n```\nReader roots: rel\n```\n' > docs/dev-cycle.md && commit_all cr
-    settings_is readers "readers 1-roots 0-homes set: $W"
-    M='readers malformed: line 1 lists entry 1, which is not an absolute path of letters, digits and . _ - / with no empty, . or .. part; both import walks fail'
-    for v in 'Reader roots: rel' 'Reader roots: /' 'Reader roots: //a' 'Reader roots: /a/' 'Reader roots: /a//b' 'Reader roots: /a/../b' \
-             'Reader roots: /a/./b' 'Reader roots: /..' 'Reader homes: ~/x' 'Reader roots: none /a' $'Reader roots: /caf\xc3\xa9' 'Reader roots: /a*b' \
-             'Reader roots: /a:b' $'Reader roots: /a\t/b'; do
-        settings "$v"; settings_is readers "$M"
-        [[ "$output" != *caf* && "$output" != *'/a'* && "$output" != *'~/x'* && "$output" != *rel* ]] || { echo "echoed [$v]: $output"; return 1; }
+    settings 'Build-loop policy: self-merge' '' 'Self-merge never: none' '' 'Reader roots: /host/cw /host/cw-2' '' 'Reader homes: none'
+    settings_is readers "readers ignored: the Reader roots line (line 5) and the Reader homes line (line 7) $W are $T; delete them"
+    settings_like policy 'policy self-merge set'
+    # Any form, a malformed one included, is ignored the same way, and no value is echoed.
+    for v in 'Reader roots: rel' $'Reader roots: /caf\xc3\xa9' 'Reader roots: /a /b /a' 'reader roots: /a' '- **Reader roots:** /g'; do
+        settings "$v"; settings_is readers "readers ignored: the Reader roots line (line 1) $W is $T; delete it"
+        [[ "$output" != *caf* && "$output" != *'/a'* && "$output" != *rel* && "$output" != */g* ]] || { echo "echoed [$v]: $output"; return 1; }
     done
-    settings 'Reader roots: /a /b /a'; settings_is readers 'readers malformed: line 1 lists entry 3 twice; both import walks fail'
-    N='readers malformed: line 1 is not exactly "Reader roots: PATH ..." with single spaces; both import walks fail'
-    for v in 'Reader roots:' 'Reader roots: ' 'Reader roots: /a  /b' 'Reader roots:  /a' 'Reader roots: /a ' \
-             'Reader roots : /a' 'reader roots: /a'; do
-        settings "$v"; settings_is readers "$N"
-    done
-    # A copy in markup, a continued line, or a file FENCE_AWK refuses: malformed too.
-    settings 'Reader homes: /h' '' '- **Reader homes:** /g'
-    settings_is readers 'readers malformed: more than one line starts "Reader homes:" (lines 1 and 3); both import walks fail'
-    settings 'Reader roots: /a' '/b'; settings_is readers 'readers malformed: line 1 is followed by a non-blank line outside a fence (it may continue the list); both import walks fail'
+    settings 'Reader homes: /h'; settings_is readers "readers ignored: the Reader homes line (line 1) $W is $T; delete it"
+    # A fenced copy is not counted; an unclosed fence is named, and still turns nothing off here.
+    printf '```\nReader roots: rel\n```\n' > docs/dev-cycle.md && commit_all fenced
+    settings_is readers 'readers none: no line starts "Reader roots:" or "Reader homes:"'
     settings 'Reader roots: /a' '' $'\x60\x60\x60'
-    settings_is readers 'readers malformed: the code fence opened at line 3 of docs/dev-cycle.md is never closed, so the file is not read; both import walks fail'
+    settings_is readers 'readers ignored: the code fence opened at line 3 of docs/dev-cycle.md is never closed, so the file is not read; Reader roots and Reader homes lines are no longer read either way'
     # Only main's commit decides: a loop's branch and the working tree are ignored.
-    settings 'Reader roots: /host/cw'
+    settings 'Policy note'
     git checkout -q -b loop && printf 'Reader roots: rel\n' > docs/dev-cycle.md && commit_all loop
     printf 'Reader roots: /a /b\n' > docs/dev-cycle.md
-    settings_is readers "readers 1-roots 0-homes set: $W"
+    settings_is readers 'readers none: no line starts "Reader roots:" or "Reader homes:"'
 }

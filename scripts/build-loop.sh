@@ -49,17 +49,12 @@
 #                 A line starting like "h1"/"s1" in letters and digits (after
 #                 marks and a task box) but not exact makes the file unreadable
 #                 (best effort). Only "ok" lets the orchestrator dispatch.
-#             readers N-roots M-homes set|none|malformed: WHY
-#                 The extra readers both import walks model (the lib's
-#                 reader_settings): "Reader roots: PATH ..." (host spellings
-#                 of the main worktree) and "Reader homes: PATH ..." (host
-#                 homes), or "...: none". Each is one line, single spaces,
-#                 the next line outside a fence blank or the end; a PATH is
-#                 absolute, not / alone, of letters, digits and . _ - / with
-#                 no empty, . or .. part, listed once. none: no file or no
-#                 such line. malformed (a second copy, a bad line, or a file
-#                 not read) fails both walks, so the floor refuses every path;
-#                 its WHY ends "; both import walks fail".
+#             readers none|ignored: WHY
+#                 The legacy "Reader roots:" and "Reader homes:" lines (the
+#                 lib's reader_settings), which the import walks no longer
+#                 read (brief 2026-11-03-import-walk-plain): ignored names
+#                 the lines found, which can be deleted; none, that there are
+#                 none. Neither turns anything off.
 #             Copies are found best effort: a line counts as one when its
 #             letters alone, case folded, start with the key's
 #             ("buildlooppolicy"). Markup that adds letters (a checked task
@@ -806,11 +801,6 @@ if [[ "$MODE" == state ]]; then caller_gate || exit 2; fi
 if [[ -n "$GATED" ]]; then state_gate || exit 2; fi
 resolve_main || true
 main_by_name || { echo "build-loop.sh needs a default branch found by name (origin/HEAD, main or master); found none" >&2; exit 1; }
-# The reader lists both import walks take, from main's settings (the lib's
-# caller contract item 9), before any walk; --settings prints its line. Not
-# read_settings below: without this call the walks model no host reader.
-# gate_start calls it once state_start has run.
-[[ -n "$GATED" ]] || reader_settings
 
 # list_entries LINE KEY WORD FORM: the list-line grammar Self-merge never: and
 # a brief's Paths: share. LINE is exactly "KEY: none" or "KEY: E ..." with
@@ -1287,7 +1277,7 @@ checkout_gate() {
 # main_by_name, in this order, each refusal a "refuse state" line and exit 2
 # before any setting or brief is read (a failed mktemp exits 1 with no line): the default branch unambiguous
 # (default_gate); the gate's merge repository (GATE_TMP, removed at exit);
-# then the reader lists both walks take, --settings' values, the never globs
+# then --settings' values, the never globs
 # and the open briefs (once, in this shell). The repository rule: main's files
 # and refs, the branch tips and the checkout are read in the real repository; the merge computations (merge-base, merge-tree,
 # diff-tree, the blob checks) and --merge's commit-tree run through gate_git
@@ -1306,7 +1296,7 @@ state_start() {
 }
 gate_start() {
   state_start
-  reader_settings; read_settings; never_res; open_shared
+  read_settings; never_res; open_shared
 }
 # --check for one brief: "ok BRIEF TIP TREE" or "refuse BRIEF: K of N changed
 # paths refused in the merge of TIP (tree TREE)", then a "path BRIEF S PATH" or
@@ -2349,7 +2339,7 @@ case "$MODE" in
     for a in "${ARGS[@]}"; do status_line "$a"; done
     ;;
   settings)
-    read_settings
+    read_settings; reader_settings
     printf '%s\n' "$POLICY_LINE" "$SLOTS_LINE" "$NEVER_LINE" "$CONSTRAINTS_LINE" "$READERS_LINE"
     ;;
   check)
