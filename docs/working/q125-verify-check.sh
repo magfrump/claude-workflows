@@ -88,7 +88,7 @@ fi
 # Renamer: waits for x.sh's go, then replaces the credential by rename until stop.
 ( trap - EXIT INT TERM HUP   # never run cleanup() from here
   for _ in $(seq 1200); do { [ -e "$SIG/go" ] || [ -e "$SIG/stop" ] || [ ! -d "$SIG" ]; } && break; sleep 0.5; done
-  grep -qF -- "$M""x0" "$CRED" 2>/dev/null && echo ok > "$D/intact"   # untouched through X1-X3
+  [ -e "$SIG/go" ] && grep -qF -- "$M""x0" "$CRED" 2>/dev/null && echo ok > "$D/intact"   # untouched through X1-X3
   n=0; while [ -e "$SIG/go" ] && [ ! -e "$SIG/stop" ] && [ "$n" -lt 400 ]; do
     n=$((n + 1)); plant "$n" && echo "$n" > "$D/renames"; sleep 0.5; done ) &
 REN_PID=$!
@@ -103,6 +103,7 @@ res() { printf 'RESULT %-28s %s\n' "$1" "$2"; }
 leaks() { grep -qE 'q125canary[0-9a-f]{16}' "$@" 2>/dev/null; }
 # The path must exist here: a working mask shows it as /dev/null (a character device).
 if [ -e "$cred" ]; then res X1-credential-present "pass ($(stat -c %F "$cred" 2>&1))"
+  [ "$(stat -c %F "$cred" 2>&1)" = "character special file" ] || echo "INFO the credential is not masked by a device here"
 else res X1-credential-present "FAIL (no $cred: the X1 and X2 checks would prove nothing)"; fi
 # X1: judged by content. denyRead binds /dev/null over the file, so a refused read can
 # exit 0 and print nothing; a control file proves the tool would have shown content.
@@ -187,7 +188,9 @@ class H(http.server.BaseHTTPRequestHandler):
         last = msgs[-1].get("content") if isinstance(msgs[-1], dict) else None
         # The next call goes only to the main thread: after the prompt (i = 0) or after
         # the result of call i - 1. A side query that reuses the tool list gets text.
-        main = i == 0 and len(msgs) == 1 or isinstance(last, list) and any(isinstance(b, dict) and b.get("tool_use_id") == PFX + str(i - 1) for b in last)
+        # The first request may carry several user messages (context, then the prompt).
+        first = i == 0 and not any(isinstance(m, dict) and m.get("role") == "assistant" for m in msgs)
+        main = first or isinstance(last, list) and any(isinstance(b, dict) and b.get("tool_use_id") == PFX + str(i - 1) for b in last)
         if bash and main and i < len(CMDS):
             block, stop = {"type": "tool_use", "id": PFX + str(i), "name": "Bash", "input": {"command": CMDS[i], "description": "Q-125 live checks, part %d" % (i + 1), "timeout": 600000}}, "tool_use"
             log("TOOL_USE %d" % i)

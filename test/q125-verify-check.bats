@@ -54,7 +54,7 @@ def post(body):
     return r.read().decode()
 side = json.loads(post({"model": "haiku", "max_tokens": 8, "messages": [{"role": "user", "content": "title?"}]}))
 if side["content"][0]["type"] != "text": die("side call got a tool call")
-msgs, turns, text = [{"role": "user", "content": a[1]}], 0, ""
+msgs, turns, text = [{"role": "user", "content": "<system-reminder>context</system-reminder>"}, {"role": "user", "content": a[1]}], 0, ""
 while turns < 6:
     turns += 1
     blocks, stop = {}, None
