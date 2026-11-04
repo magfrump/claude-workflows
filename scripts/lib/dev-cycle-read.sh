@@ -802,7 +802,12 @@ IMPORT_HOME=""; WALK_MAIN_WT=""
 # walk_main_wt: WALK_MAIN_WT, the main worktree's real path (the parent of the
 # common .git directory) when it is not ROOT_REAL, else empty; it returns 1
 # when git cannot say (the walk then fails: H2). A common directory not named
-# .git (a bare repository) has no main worktree.
+# .git (a bare repository) has no main worktree. Not covered: a repository
+# made with --separate-git-dir, whose .git directory lies elsewhere, so its
+# parent is no worktree (a main-worktree spelling stays dropped there). A
+# relative name that leaves a linked worktree nested in the main one (..
+# out of /workspace/.claude/wt-x) lands under the main worktree too, and is
+# read as this checkout's path, an over-read only.
 walk_main_wt() {
   local c
   WALK_MAIN_WT=""
