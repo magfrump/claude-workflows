@@ -1,7 +1,7 @@
 # 039 — The filtering resolver answers each exact name from the addresses the firewall admitted
 
 - **Goal**: stop tcp/443 names with rotating address pools (`dl.google.com`) from going unreachable between firewall runs, without widening which names or addresses are reachable.
-- **Project state**: implemented on `fix/egress-pin-resolver` · takes effect at the next `install.sh` + re-bless · live check queued (questions.md, `egress-pin-resolver-release`).
+- **Project state**: merged at 9fa8bbd0 · released (Q-214, recorded 2026-10-28) · live result not on record, tracked in Q-255 (`herald-egress-fix-unconfirmed`).
 - **Task status**: decided 2026-10-20 by the implementing agent (DD Path A, confidence ~85%). Full diverge/diagnose/match: `docs/working/dd-egress-pin-resolver.md`.
 
 ## Context
