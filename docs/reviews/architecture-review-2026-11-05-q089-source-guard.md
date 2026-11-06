@@ -1,4 +1,6 @@
-Commit: cb59c2bb
+Commit: 2174b7af
+
+> Pass 2 is at the end of this file. Everything above it is pass 1 at cb59c2bb, and its line numbers refer to that commit.
 
 # Architecture Review — test/q089-source-guard-narrow
 
@@ -141,9 +143,85 @@ A change that breaks the contract goes red, which is the right outcome. A change
 
 The change keeps the system's structure intact. It adds one test-to-shipped-code dependency in the right direction, and that dependency fails loudly under every mutation tried. Against fa059477 it trades some reach for S3 compliance, and that trade is right for a guard that claims only plain spellings. The most important structural concern is the rename, because it is where a launcher-specific grammar is stretched over a second entry point. It is fixable in place with one line and a comment. Findings 1 and 2 can both be fixed on this branch without touching a host tool.
 
-## Goal-Alignment Note
+## Pass 1 Goal-Alignment Note
 - Success criterion (restated verbatim): a critique at docs/reviews/architecture-review-2026-11-05-q089-source-guard.md with a `Commit:` line, ending in a Goal-Alignment Note. Findings carry Severity, Location, verbatim Evidence, Confidence, Legibility-target. Do not commit or edit anything else.
 - Answered: yes; the coupling and rename are judged better than fa059477's restated grammar, and the new file is judged right.
 - Out of scope: the runtime safety of `cc-verify.sh`'s preflight, including its shared case-arm gap, which is documented in its comment; test correctness beyond the coupling.
 - Escalate: nothing
 - Decisions I made: rated the coupling Minor rather than Coupling because every probed contract break failed loudly, though a strict reading of "content coupling" would rate it higher; ran the full review despite the skill's test-only skip, as dispatched.
+
+## Pass 2: final confirming pass at 2174b7af
+
+**Scope:** `git diff db31db8b..2174b7af -- test/cc-host-tool-sources.bats docs/working/research-2026-11-05-q089-source-guard-narrow.md`. Also read: `source_lines_ok` whole (`devcontainer-config/cc-verify.sh:41-74`), the `CC_PUSH_DIR` and `verify_host_tools` lines in the entry points, `docs/reviews/override-log.md` rows 894-896.
+**Based on:** the k=3 fact-check at cb428e81 (`docs/reviews/code-fact-check-report-q089-source-guard-r1.md` to `-r3.md`), 0 Incorrect by the dispatch's account; I did not re-verify it. F3 is deferred in the override log and is not re-raised.
+
+**Verdict:** both pass-1 fixes work and hold under mutation. No Structural or Coupling findings. One Informational item below, a comment edit. Nothing blocks landing.
+
+### Do the fixes work?
+
+**F1 (rename in every copy): fixed.** `check_entry` now renames across `"$dir"/cc-*.sh` (lines 48-51). Restoring the old one-file rename in a scratch copy fails case 4, and case 3 as well, because case 3's second leg also uses `$CC_PUSH_DIR` in a reached file. The false red on a helper is gone and is now pinned. The message that shows `$CC_ISOLATED_DIR` for a line in `cc-push.sh` remains, and the comment at lines 40-41 now states it, which is what pass 1 asked. The recommendation's other comment clause, on the `eval` and reassignment refusals, was not taken (finding P2-1).
+
+**F2 (research sentence): fixed.** The sentence calling none of the forms plain is gone. Line 58 of the research doc now says "The real loss is the one-line case arm, which is these files' own idiom" and that the fix belongs in `source_lines_ok`.
+
+**The newline adjustment, as a structural change.** It is a second adapter between the test and the grammar, so the test now knows two facts about `source_lines_ok`, not one. It does no harm if the deferred fix lands in `cc-verify.sh` (override log row 896): the extra `echo` then only adds a blank line, which the read loop passes over. The adapters are in one loop and the comment names both, so there is still one place to look. No regex for `source` was added, so S3 holds.
+
+**Mutation results at 2174b7af, each in a scratch copy:**
+
+| Change to `check_entry` | Result |
+|---|---|
+| Rename `cc-push.sh` only | Cases 3 and 4 fail |
+| No final newline | Case 3 fails |
+| Final newline on the entry point only | Case 3 fails (its second leg) |
+| Drop the `host_tool_files` check | Case 6 fails |
+| Drop the positive control | Case 8 fails |
+| Drop the list check | Cases 2, 3, 4 and 5 fail |
+
+### Does the structure still read well with nine cases?
+
+Yes. The file runs from the green check, through one case per way the check can go red, to the missing-file case, and each title names what it pins. All nine cases go through `check_entry` and none reaches around it. The header still matches what the code does. One no-action note: `check_entry` edits the directory it is given, so the three two-leg cases (3, 7, 8) save and restore `cc-push.sh` by hand. In case 3 that restore is load-bearing without showing it: with line 85 deleted, all 9 still pass, because leg 2 then sees leg 1's line. That only matters to someone editing that case, and moving the copy into `setup` would save only a few lines, so I would leave it.
+
+### Findings
+
+Trust-boundary cross-reference: no module-boundary finding, so the section is a no-op.
+
+#### P2-1. `check_entry`'s comment omits the launcher rules the rename brings along
+
+**Severity:** Informational
+**Location:** `test/cc-host-tool-sources.bats:36-42`
+**Move:** 7 (coupling surface)
+**Confidence:** High
+**Legibility-target:** for-author
+
+**Evidence:**
+```bash
+# check_entry DIR ENTRY: what ENTRY plainly sources, directly or through what those
+# files source, is in its first verify_host_tools call on $CC_ISOLATED_DIR or
+# $CC_PUSH_DIR and in host_tool_files. Prints
+# the first problem. It works on copies, which it adjusts for the shared grammar:
+# CC_PUSH_DIR, which the grammar does not know, becomes the launcher's variable (so a
+# refused line shows that name), and each copy gets a final newline, because the
+# grammar's read loop never sees an unterminated last line.
+```
+
+Pass 1's F1 also asked the comment to say the grammar's `eval` and reassignment refusals come along with the rename. They do, and over the whole closure now. Probed: `eval "true"` appended to `cc-push.sh` fails with `not a plain source line: .../cc-push.sh: eval "true"`, and `CC_PUSH_DIR=/x` fails with `not a plain source line: .../cc-push.sh: CC_ISOLATED_DIR=/x`. Both are loud and print the line, so the cost is a developer briefly puzzled by "source line" on a line that has none. Line 38 also breaks early after "Prints", a leftover from an edit.
+
+**Recommendation:** optional, and not a reason to hold the branch: add "so the grammar's `eval` and reassignment refusals apply to `cc-push.sh` too" and rewrap. Comment only.
+
+### Summary Table
+
+| # | Finding | Severity | Location | Confidence |
+|---|---------|----------|----------|------------|
+| F1 | Rename covered one file (pass 1) | Fixed | `test/cc-host-tool-sources.bats:48-51` | High |
+| F2 | Research sentence on the case arm (pass 1) | Fixed | `docs/working/research-2026-11-05-q089-source-guard-narrow.md:58` | High |
+| P2-1 | Comment omits the `eval` and reassignment refusals | Informational | `test/cc-host-tool-sources.bats:36-42` | High |
+
+### Overall Assessment
+
+The branch keeps the structure pass 1 approved, with one more small adapter in the same place, and that adapter stays correct if the shipped gap is closed later. Every mutation of `check_entry` tried failed the suite. The single remaining item is a comment clause. The branch is clean from the architecture side.
+
+## Goal-Alignment Note
+- Success criterion (restated verbatim): "update docs/reviews/architecture-review-2026-11-05-q089-source-guard.md and docs/reviews/performance-review-2026-11-05-q089-source-guard.md in place, each with `Commit: 2174b7af`, a section for this pass, ending in a Goal-Alignment Note. Findings carry Severity, Location, verbatim Evidence, Confidence, Legibility-target. Commit nothing, edit nothing else."
+- Answered: yes. The fixes work, the structure reads well at nine cases, and this file carries the pass; the `fast` tag is answered in the performance review.
+- Out of scope: the F3 comment in `cc-verify.sh` (deferred), the forms the header lists as missed, security and performance.
+- Escalate: nothing
+- Decisions I made: filed the untaken half of pass 1's recommendation as Informational rather than calling F1 incomplete, since the behaviour is fixed and only a comment clause remains. Kept the save-and-restore pattern as a note, not a finding, because I recommend no change. Ran the full review despite the skill's test-only skip, as in pass 1.

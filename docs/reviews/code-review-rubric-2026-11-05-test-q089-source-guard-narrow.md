@@ -1,10 +1,13 @@
-Commit: cb59c2bb
+Commit: 2174b7af
+Loop closed at 2174b7af
 
 # Code Review Rubric
 
-**Scope:** test/q089-source-guard-narrow, `db31db8b..cb59c2bb` (2 commits, 209+ lines) | **Reviewed:** 2026-11-05 | **Status: 🟡 pass 1 findings fixed, pending the final confirming pass**
+**Scope:** test/q089-source-guard-narrow, `db31db8b..2174b7af` (full branch) | **Reviewed:** 2026-11-05 | **Status: 🟢 PASSES** — 0 red, 0 open amber; single-sample review; absence of findings is not an attestation
 
-Loop pass 1 (`--loop-pass`, k=1 fact-check). Delivery mode: self-read. Critics: security, performance, and architecture (forced, for the coupling to `cc-verify.sh`). Iteration 1 of 3, full scope.
+Pass 1 (`--loop-pass`, k=1 fact-check at 8880c925, critics at cb59c2bb), then the final confirming pass (iteration 2 of 3: k=3 fact-check at cb428e81, critics at 2174b7af). Delivery mode: self-read. Critics: security, performance, and architecture (forced, for the coupling to `cc-verify.sh`).
+
+Final fact-check, k=3, reports `code-fact-check-report-q089-source-guard-r{1,2,3}.md`: 61, 53 and 51 claims; 0 Incorrect and 0 Unverifiable in every replicate. All three found the same stale research-doc lines left by cb428e81 (rename scope, case count, seeded block, case number) and the same Mostly-accurate citations; all fixed in 2174b7af. Replicates were not merged claim by claim: with no Incorrect, the merge could not change a tier. Final critics: security none; performance none; architecture one Informational (C8).
 
 ---
 
@@ -35,6 +38,7 @@ None.
 | C5 | `source_lines_ok` runs twice per passing `check_entry`, about 0.45 s of 1.3 s | performance-reviewer F1 | Info | for-author | — | 🟢 Won't-Fix: override-log row |
 | C6 | Nothing at `cc-verify.sh:41-47` names the test as a second consumer | architecture-review F3 | Info | for-author | — | 🟢 Defer: override-log row |
 | C7 | The shipped `source_lines_ok` has the same last-line gap | security-reviewer escalation | Info | for-orchestrator-synthesis | — | 🟢 Defer: override-log row; a host-tool change, out of this unit |
+| C8 | (final pass) `check_entry`'s comment left out that the grammar's eval and reassignment refusals now reach cc-push.sh | architecture-review P2-1 | Info | for-author | — | 🟢 Fixed, comment only |
 
 The 8 Mostly-accurate fact-check claims were fixed in cb59c2bb. Claim 33 sits in the message of 8880c925, which stays; that commit's successor says what the run covered.
 
@@ -48,7 +52,7 @@ No prior overrides matched this diff.
 
 ## ✅ Confirmed Good
 
-Terminal-pass output; none claimed on this pass.
+No rows claimed. The executed results are in the critics' reports: each mutation of `check_entry` tried failed the suite.
 
 ---
 

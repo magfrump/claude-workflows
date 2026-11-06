@@ -35,11 +35,12 @@ teardown() {
 
 # check_entry DIR ENTRY: what ENTRY plainly sources, directly or through what those
 # files source, is in its first verify_host_tools call on $CC_ISOLATED_DIR or
-# $CC_PUSH_DIR and in host_tool_files. Prints
-# the first problem. It works on copies, which it adjusts for the shared grammar:
-# CC_PUSH_DIR, which the grammar does not know, becomes the launcher's variable (so a
-# refused line shows that name), and each copy gets a final newline, because the
-# grammar's read loop never sees an unterminated last line.
+# $CC_PUSH_DIR and in host_tool_files. Prints the first problem. It works on copies,
+# which it adjusts for the shared grammar: CC_PUSH_DIR, which the grammar does not
+# know, becomes the launcher's variable (so a refused line shows that name, and the
+# grammar's eval and reassignment refusals apply to cc-push.sh too), and each copy
+# gets a final newline, because the grammar's read loop never sees an unterminated
+# last line.
 check_entry() {
   local dir="$1" entry="$2" args hosts why f SOURCED=()
   args="$(grep -vE '^[[:space:]]*#' "$dir/$entry" \
