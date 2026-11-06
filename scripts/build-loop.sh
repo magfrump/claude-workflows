@@ -540,8 +540,9 @@
 #             be deleted (`git branch -d` refuses one checked out). It deletes
 #             no branch, and looks only at a worktree whose lock reason is
 #             exactly --start's or --prompt's ("build-loop dispatch of STEM at
-#             TIP, UTC TIME"); any other, locked or not, it never names. For
-#             each, in git's order, one line:
+#             TIP, UTC TIME"); any other, locked or not, gets no line of its
+#             own (a kept line can name one inside DIR). For each, in git's
+#             order, one line:
 #             freed BRANCH DIR
 #                 Removed: the brief STEM (docs/working/briefs/, else closed/)
 #                 reads done or dropped on the default branch and names BRANCH,
@@ -555,7 +556,8 @@
 #                 with the worktree.
 #             hold BRANCH DIR: WHY
 #                 Not finished: the brief is open, or it is closed and BRANCH
-#                 has not merged (a dropped brief's). The lock stays.
+#                 has not merged (a dropped brief's, or a done one's landed by
+#                 squash). The lock stays.
 #             kept BRANCH DIR: WHY
 #                 For a person to read: on no branch (BRANCH "-"), the
 #                 checkout this run started in, the brief skipped by --status
@@ -570,8 +572,9 @@
 #             or one refuse worktrees: WHY, with nothing removed, when another
 #             run holds the dispatch lock (as --start's refusal; retry), that
 #             file is not a plain file or cannot be opened, or the worktrees
-#             could not be listed; or, as for --state, a refuse state line when
-#             a GIT_DIR-style variable is set in the caller's environment.
+#             could not be listed; or, as for --state, a refuse state line
+#             from the state gate, default_gate or a GIT_DIR-style variable set
+#             in the caller's environment.
 #
 # Acts on $PWD's git repo, like dev-cycle.sh, and needs its default branch
 # found by name (origin/HEAD, main or master), but for --check-constraints,

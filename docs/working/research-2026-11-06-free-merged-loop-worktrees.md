@@ -3,7 +3,7 @@
 - **Goal**: Once a build loop's branch has merged, its locked worktree goes away so step 1's `git branch -d` can delete the branch, and the existing backlog clears the same way.
 - **Problem framing**: `--start` locks a worktree and nothing ever unlocks it, so every finished loop leaves about 90 MB, a registered worktree and an undeletable branch behind. Considered and discarded: "the branch cleanup in step 1 is broken": `branch -d` is right to refuse a checked-out branch, and loosening it would be the wrong fix.
 - **Project state**: delivers a `--free-worktrees` mode and step 1's call to it · standalone (dev cycle iteration 2026-11-06-0851) · not blocked (cite: docs/working/briefs/2026-11-06-free-merged-loop-worktrees.md)
-- **Task status**: in-progress (implemented; review-fix loop next)
+- **Task status**: complete (implemented; review-fix loop closed, see docs/reviews/code-review-rubric-2026-11-06-refactor-free-merged-loop-worktrees.md)
 
 ## Motive, measured (S5)
 
@@ -11,7 +11,7 @@ On 2026-11-06, read from `git worktree list --porcelain` and `du` on `/workspace
 
 - 38 registered worktrees; 35 carry `--start`'s lock reason, 3 do not (`/workspace`, `wt-q096b`, the q125 one).
 - Of the 35: 32 have a merged branch and a closed `done` brief, and all 32 are clean (`git status --porcelain` empty). They hold 2.85 GiB. The other 3 are live or unmerged: `2026-11-03-q125-verify-check` (blocked), `2026-11-05-d6-block-into-image` (ready, unmerged), and this loop's own.
-- The disk is 86% full, so 2.85 GiB alone is not urgent. The real cost is the merged branches `branch -d` refuses every cycle and the worktree list every import walk reads. The motive holds; it is housekeeping, not an emergency.
+- The disk is 86% full, so 2.85 GiB alone is not urgent. The real cost is the merged branches `branch -d` refuses every cycle. The brief also names the import walks' reader set, but brief 2026-11-03-import-walk-plain ended that: no walk reads the worktree list now, only `--merge` and dispatch do. The motive holds; it is housekeeping, not an emergency.
 
 ## What exists
 
@@ -23,7 +23,7 @@ On 2026-11-06, read from `git worktree list --porcelain` and `du` on `/workspace
 
 ## Invariants
 
-- A live loop is never touched. **The brief's rule alone does not give this**: `--start` puts the branch at main's commit, so a just-dispatched worktree has a tip that *is* an ancestor of main and is clean [observed: this loop's own worktree on the survey]. Ancestor plus clean would delete a loop in its first minutes. The brief's second clause (a brief holding a slot) and the lock's TIP are what stop it.
+- A live loop is never touched. **The brief's rule alone does not give this**: `--start` puts the branch at main's commit, so a just-dispatched worktree has a tip that *is* an ancestor of main and is clean [observed: this loop's own worktree on the survey]. Ancestor plus clean would delete a loop in its first minutes. An open brief, the lock's TIP and a handoff marker at the tip are what stop it; the plan's pre-mortem names the one residual, a loop that goes on past its own marker.
 - Only `--start`'s and `--prompt`'s lock reason qualifies; the match is the whole reason, anchored at both ends.
 - `git worktree remove` without `--force`; never `-D`. Git refuses a locked worktree without a double `--force`, so a lock has to come off first, and goes back on if the remove refuses.
 - A new mode is gated by default (`GATED`), and exit 1 means nothing decided under the D6 rules.
@@ -42,7 +42,7 @@ Failure-pattern grep: FP-011, FP-013, FP-014, FP-068, FP-141 (see Prior failures
 - A worktree with a missing directory: `git worktree remove` would drop the entry, but a missing directory may be an unmounted disk, which is what a lock is for. It stays, reported, as `dispatch` treats it.
 
 - Failure-pattern skip: the branch's fix(...) commits correct its own unreleased code in review; no shipped failure to record.
-- A dropped brief with an unmerged branch reads `hold` every iteration and no one is told: its worktree stays, by the brief's rule that an unmerged branch stays locked. That is a smaller, separate leak; this brief does not cover it.
+- A dropped brief with an unmerged branch reads `hold` every iteration and no one is told: its worktree stays, by the brief's rule that an unmerged branch stays locked. So does a done brief landed by squash, whose tip is no ancestor of main. Those are smaller, separate leaks; this brief does not cover them.
 
 ## Prior failures
 
@@ -74,7 +74,7 @@ The same mode's first run after a release: the 32 above all pass the rule. No on
 ### Other choices (one line each)
 
 - Branch deletion stays in step 1's existing `branch -d` bullet: the mode deletes no branch, so slot and `--check-branch` rules stay in one place (S3).
-- A worktree qualifies only if its brief reads done or dropped, its branch has merged and its tip is past the lock's TIP: three independent signals, each from main's commit or the lock, none from the worktree (H1).
+- A worktree qualifies only if its brief reads done or dropped and names the branch (main's commit), and the branch tip has merged, is past the lock's TIP and is a handoff marker: none of these is read from the worktree's files (H1).
 - `hold` and `kept` are two words so a cycle can record `kept` for the user without reading every live loop every iteration (S10).
 - `kept` is exit 0: a worktree git refused is the expected report, not a failed run. Only a run that decided nothing exits 2.
 - The mode takes the dispatch lock, so a `--prompt` cannot take a worktree mid-removal.
