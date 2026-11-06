@@ -42,6 +42,17 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   Q-258. First step: one change with `Host-tool-tested:` and a re-bless,
   which needs a host run, so it is not briefed for a loop yet.
 
+- **Agent: the `Harness feedback` section warning** (filed 2026-11-06, step 3, trial T7).
+  Motive: every health check warns that this H2 of the global instructions is missing from
+  `AGENTS.md` and `GEMINI.md`, and T7 files any warning printed every run as a bug. First step:
+  add the section to both files or exempt it in the check, depending on whether other agents
+  need it. Those are instruction files, so it is a review merge; not briefed, since a full
+  build loop outweighs a few lines while it would add another owner entry.
+- **Agent: Q-241's settings merge was never confirmed on the host** (filed 2026-11-06, step 3).
+  Motive: the weekly digest found Q-241 pointing at Q-167 for this check, but Q-167's text has
+  no settings step, and no record shows it run. First step: add the step to Q-167, or to Q-252's
+  next rewrite, so the owner sees it with the next release.
+
 - **Trial week: less friction, less habituation (2026-10-30 to about 2026-11-06).** Motive:
   the owner's 2026-10-29 brainstorm request ("try things for a few days to a week").
   Every iteration writes owner entries, the image-lag entry and the final message as
@@ -80,6 +91,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 - Free a finished loop's worktree and branch
   (`docs/working/briefs/2026-11-06-free-merged-loop-worktrees.md`; review policy, gate code).
+  Ready at 0ed2fc85; merge entry Q-260.
 - Restriction audit unit 7: the D6 block becomes one root-owned image script
   (`docs/working/briefs/2026-11-05-d6-block-into-image.md`; review policy, gate code). Ready at
   5e2b96d3; merge entry Q-259. After it merges, no brief touching `scripts/d6.sh` is dispatched

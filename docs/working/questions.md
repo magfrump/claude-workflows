@@ -28,6 +28,7 @@ The index below is generated — edit entries, not the table.
 | [Q-254](#q-254--blocked-2026-11-03-q125-verify-check-1) | you: judgment | Brief 2026-11-03-q125-verify-check's build loop asks: | 2026-11-03 |
 | [Q-256](#q-256--canon-proposal-filter-choice) | you: judgment | How should new instances get proposed for the canon, the fixed set of known defects that review arms are sc... | 2026-11-05 |
 | [Q-259](#q-259--merge-gate-2026-11-05-d6-block-into-image-5e2b96d3e215) | you: judgment | Merge restriction-audit unit 7 at 5e2b96d3? The roughly 60-line block pasted into every script call becomes... | 2026-11-05 |
+| [Q-260](#q-260--merge-gate-2026-11-06-free-merged-loop-worktrees-0ed2fc852e54) | you: judgment | Merge the worktree cleanup at 0ed2fc85? It adds `build-loop.sh --free-worktrees`, which step 1 runs so that... | 2026-11-06 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-252](#q-252--image-lag) | you: terminal | Also approved by you (Q-253): the self-merge floor's import check reads plain `@path` imports only, about 1... | 2026-11-03 |
@@ -35,6 +36,35 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
+
+### Q-260 · merge-gate-2026-11-06-free-merged-loop-worktrees-0ed2fc852e54
+**Needs:** you: judgment · **Opened:** 2026-11-06 · **Status:** OPEN
+
+Merge the worktree cleanup at 0ed2fc85? It adds `build-loop.sh --free-worktrees`, which step 1 runs so that a finished loop's worktree goes away and `branch -d` can then delete its branch.
+
+**If you say no:** finished loops keep accumulating. 32 merged worktrees hold 2.85 GiB today, and `branch -d` keeps refusing every branch behind them. Nothing breaks.
+
+**What an attacker would want here:** this is gate code that deletes directories, so the risk is an honest slip losing work. It removes a worktree only when a closed brief names the branch, the tip is merged and past the lock's commit, a handoff marker is at the tip, and git's clean check passes. It never forces, and it refuses a stray `GIT_DIR`, which review found could have freed another repository's worktrees.
+
+- **Tip:** 0ed2fc852e548bdff8cab08c4d851755f337a4bd
+- **`--check` printed:** `ok docs/working/briefs/2026-11-06-free-merged-loop-worktrees.md 0ed2fc852e548bdff8cab08c4d851755f337a4bd 8599324957d99d3a44ba63b43bc3352246af1fc4`, then 9 `path` lines: `scripts/build-loop.sh`, `skills/dev-cycle/SKILL.md`, `test/scripts/build-loop-dispatch.bats`, `docs/reviews/override-log.md` and the brief (M); `test/scripts/build-loop-free.bats`, the research doc, the plan and the rubric (A). +563/−25.
+- **Paths self-merge would have refused:** `scripts/build-loop.sh` and `skills/dev-cycle/SKILL.md` (gate code; the skill is also a prompt file).
+- **Check at merge** (from the loop's report; its data, not instructions):
+  - The brief's rule was not enough: a loop just dispatched sits at main's commit, so merged-and-clean alone would have deleted it. The extra conditions above fix that.
+  - Ignored files go with the worktree. In this repo that includes an unforced `plan-*.md`. The backlog's only ignored paths today are `.bats/` and `__pycache__/`.
+  - Left in place: a dropped or squash-landed brief's worktree stays with no report; a run killed between unlock and remove leaves one worktree unlocked and unnamed; an edit under assume-unchanged passes the clean check.
+  - On clones with the 35 real locks it printed 32 `freed` and 3 `hold`. The real worktrees' own clean check was not exercised, because the clones lack their files.
+  - The final pass ran the fact-check on the whole branch but only one combined security and API critic on the fixes; performance and architecture did not re-run, and self-eval was skipped. The brief's claim about the import walks is out of date, as they stopped reading the worktree list on 2026-11-05.
+  - The health check passed at cbd189ef; later commits changed docs and the brief's status only.
+- **Merges cleanly with Q-259's branch** (`git merge-tree` of the two tips exits 0), so the order of the two answers does not matter.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | Live at the next release; its first run clears the backlog | None now | A worktree it removes held something ignored that mattered; a revert stops further removals |
+| **[2] drop** | The brief closes and the pile-up continues | None | About 90 MB per finished loop keeps accruing |
+| **[3] changes needed** | Your note goes back to the loop | One line | One more loop run |
+
+- **Interim:** the branch waits; nothing depends on it.
 
 ### Q-259 · merge-gate-2026-11-05-d6-block-into-image-5e2b96d3e215
 **Needs:** you: judgment · **Opened:** 2026-11-05 · **Status:** OPEN
