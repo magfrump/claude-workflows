@@ -22,8 +22,8 @@
 # and master, or a git read that fails (git may add a line on stderr); 1 for
 # another first argument. An image with no d6.sh at all prints nothing of this:
 # bash exits 127 naming the path, which the skill's Rules read as this refusal.
-# Its git is the image lib's git_harden, in a subshell, so no pair reaches the
-# script, whose caller_gate would refuse one (row 702). These checks come
+# Its git is the image lib's git_harden, in a subshell, so the script starts
+# from the caller's environment, not with d6.sh's pairs. These checks come
 # before, not instead of, build-loop.sh's own state and default-branch gates in
 # its gated modes, which also refuse a symbolic or non-commit default branch
 # (dev-cycle.sh, questions.sh and the read modes have none; row 548 for
@@ -39,10 +39,11 @@ s="${1:-}"
 shift
 # The four files the scripts run (build-loop.sh and dev-cycle.sh source the
 # lib from their own directory; dev-cycle.sh runs questions.sh beside it).
+# lib/migrations.sh is left out: both scripts check it themselves before use.
 for f in build-loop.sh dev-cycle.sh questions.sh lib/dev-cycle-read.sh; do
   x="$D6_OPT/scripts/$f"
   [[ -e "$x" || -L "$x" ]] || no "$x is missing"
-  [[ -f "$x" ]] || no "$x is not a regular file"
+  [[ -f "$x" && ! -L "$x" ]] || no "$x is not a regular file"
 done
 have=""
 for n in main master; do

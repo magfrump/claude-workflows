@@ -10,6 +10,8 @@
 # sources it from its own directory (never from the repo it acts on), so a copy
 # of scripts/ with its lib/ is self-contained. A change here must pass
 # test/scripts/dev-cycle.bats and build-loop.sh's suites (build-loop-*.bats).
+# scripts/d6.sh is the exception to what follows: it sources the image copy in
+# a subshell for git_harden alone, with no -e and no ROOT_REAL.
 # The caller sets -euo pipefail (check_answer, brief_fields and the import
 # walks also set pipefail for themselves), cds to the repo root and sets ROOT_REAL (that root,
 # symlinks resolved) before calling any file check. inrepo, dirok, skipped,

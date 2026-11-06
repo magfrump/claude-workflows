@@ -19,7 +19,7 @@ Seeded with `docs/constraints.md` at 5b20d4bd.
 
 - R6a/H1: each call runs the root-owned image copy by absolute path, never a working-tree copy, and nothing in the repository or environment chooses which [observed: audit R6a KEEP].
 - The skill's Rules key on a `refuse d6: WHY` first line with exit 2, and on exit 1 for a bad first argument [observed: SKILL Rules, step 0.1, step 1b].
-- `--state` through d6 must see no exported config pair: `caller_gate` refuses one (row 702) [observed: the "exports no config pair" test].
+- The script must start from the caller's environment, with no pair of d6's exported: its own `git_harden` would count them as the caller's, and SKILL's Rules forbid exporting pins (`--state` no longer refuses one; row 702) [observed].
 - R6f: the six variables stay unset for the child, and stdin stays closed (`</dev/null`) [observed].
 - H1's success line: a new gate path joins GATE_CODE.
 
@@ -56,15 +56,15 @@ D6_OPT stays a literal. Reading it from the environment would let a caller choos
 
 ### 2. Which of R6c, R6d and R6e keep their checks (divergent design, Path C)
 
-Options: (A) keep every check, a pure move; (B) apply the audit's verdicts, each re-checked against the code; (C) remove every check and keep only the exec. C fails H2 (R6d's exactly-one, R6e's presence). A and B both pass the hard lines. S1 and the brief's motive ("remove every restriction without a specific, in-scope threat model") rank B first, and the audit's rule for units is to apply a verdict and record any row kept after all. But the brief's Goal sentence says "the block's checks keep running", while its criteria ask which rows keep theirs, so B is a tentative pick put to the owner below. The move and the narrowing are separate commits: reverting the second restores A exactly.
+Options: (A) keep every check, a pure move; (B) apply the audit's verdicts, each re-checked against the code; (C) remove every check and keep only the exec. C fails H2 (R6d's exactly-one, R6e's presence). A and B both pass the hard lines. S1 and the brief's motive ("remove every restriction without a specific, in-scope threat model") rank B first, and the audit's rule for units is to apply a verdict and record any row kept after all. But the brief's Goal sentence says "the block's checks keep running", while its criteria ask which rows keep theirs, so B is a tentative pick put to the owner below. The move is commit da07a77c, with every check kept: restoring `scripts/d6.sh` and its tests from there gives A. (Later commits touch the same lines, so a plain revert of the narrowing commit no longer applies alone, as its message says it would.)
 
 | Row | Check | Re-check | Decision |
 |---|---|---|---|
 | R6c | replace ref | The gate's git ignores it (the probe above); `git_harden` sets both pins. The refusal stopped a repo for a ref nothing reads. | **drop** |
-| R6c | `info/grafts` | The audit's reason does not cover this: hardened git does follow grafts. Still dropped: `--state` dropped it (unit 1, G6) and that research accepts the residual; git has deprecated the file and prints a hint on reading one; honest use is a deliberate history splice that everything then reads consistently; a planted one is hostile, out of scope by S1. | **drop**, residual stated |
+| R6c | `info/grafts` | The audit's reason does not cover this: hardened git does follow grafts. Still dropped: `--state` dropped it (unit 1, G5) and that research accepts the residual; git has deprecated the file and prints a hint on reading one; honest use is a deliberate history splice that everything then reads consistently; a planted one is hostile, out of scope by S1. | **drop**, residual stated |
 | R6d | exactly one of main/master | H2: an ambiguous default, and the only such check `dev-cycle.sh` and `questions.sh` have. | **keep** |
 | R6d | symbolic ref, non-commit ref | `default_gate` refuses both in `--state` [observed: `scripts/build-loop.sh`; a new test pins it through d6], and `--state` opens every iteration. | **drop** |
-| R6e | file present, regular | H2: the stale or partial image. | **keep** |
+| R6e | file present, regular, not a symlink | H2: the stale or partial image. | **keep** |
 | R6e | ownership walk to `/` | Now self-referential: a uid able to write `/opt` rewrites d6.sh too, so a check inside the image cannot vouch for it. The Dockerfile's chown and chmod hold H1 (pinned in `test/cc-isolated-functions.bats`). It also refused a run as root. | **drop** |
 
 Dropping the walk also lets the tests run the shipped file with one literal changed and no `own()` substitution (rule: test a check in its real position).
@@ -101,7 +101,7 @@ Assume this shipped and an enforcement path failed.
 2. **The environment chooses.** `D6_OPT`, `BASH_ENV`, `ENV`, or a PATH `bash` or `git`. D6_OPT is assigned, never read. BASH_ENV applies to `bash d6.sh` as it did to `bash -s`: the same-uid residual Q-103 accepts, unchanged. The scrub is pinned by a new test.
 3. **The release gap.** After the merge and before the release, the image's floor does not list `scripts/d6.sh`, so a self-merge naming it in `Paths:` would pass unflagged. Bounded: it reaches a session only through the release, and the `image-lag` entry this merge opens lists every changed path. The new image's GATE_CODE closes it. Step 0.1's old PATHS line also omits the file, but `skills/dev-cycle/` differs from the same merge until the release.
 4. **A refusal read as a pass.** The 127 path has empty stdout, so a reader of "the first line" sees nothing. The Rules state it, step 1b's "if either fails, go on" names it as still a stop, and a test pins those phrases. Step 0.1 comes first in every iteration, so the stop lands there anyway.
-5. **A regression through sourcing.** The lib is sourced in a subshell. A lib that fails to source reads as "absent" for both names, which is still a refusal. A test proves no pair reaches the script and every git call carries the pins.
+5. **A regression through sourcing.** The lib is sourced in a subshell. A lib that fails to source refuses either way: exit 1 reads as absent for both names, and any other exit as "could not be read", so the line can name the wrong cause, but it never runs the script. A test proves no pair reaches the script and every git call carries the pins.
 6. **Planted history.** A planted `info/grafts` now reaches `--main-log`. Hostile-only (S1); `--state` already accepted it in unit 1.
 
 ### Test plan
@@ -115,7 +115,7 @@ The brief's Goal says the block's checks keep running; its criteria ask which of
 | Option | What it means | Cost to you | If it's wrong |
 |---|---|---|---|
 | **[1] Apply the audit (picked)** | d6.sh keeps exactly-one default and file presence; the replace, grafts, symbolic, non-commit and ownership checks go | none | a planted graft reaches `--main-log`: hostile-only, S1 |
-| **[2] Keep every check** | revert the narrowing commit; the move stands | one line in the review | the refusals stay: a replace ref stops a repo for a ref nothing reads |
+| **[2] Keep every check** | restore `scripts/d6.sh` and its tests from da07a77c, the move with every check kept | one line in the review, then one small branch | the refusals stay: a replace ref stops a repo for a ref nothing reads |
 
 ## Files read
 

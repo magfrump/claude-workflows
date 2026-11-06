@@ -304,9 +304,9 @@ shim() {
 
 @test "d6.sh scrubs the caller's variables and closes stdin before it runs the image's script; a caller's stdin never reaches it (R6f, brief 2026-11-05-d6-block-into-image)" {
     d6_setup
-    sed -i '2i [[ "${1:-}" != --probe ]] || { echo "live=${QUESTIONS_LIVE-unset} scrub=${DEV_CYCLE_SCRUBBED-unset} env=${ENV-unset} in=$(cat)"; exit 7; }' "$U/scripts/questions.sh"
-    run --separate-stderr bash -c 'echo piped | QUESTIONS_LIVE=x QUESTIONS_ARCHIVE=x QUESTIONS_WATCHING=x DEV_CYCLE_SCRUBBED=1 ENV=x bash "$1" questions.sh --probe' _ "$D6"
-    [ "$status" -eq 7 ] && [ "$output" = "live=unset scrub=unset env=unset in=" ] || { show; return 1; }
+    sed -i '2i [[ "${1:-}" != --probe ]] || { echo "live=${QUESTIONS_LIVE-unset} arch=${QUESTIONS_ARCHIVE-unset} watch=${QUESTIONS_WATCHING-unset} scrub=${DEV_CYCLE_SCRUBBED-unset} env=${ENV-unset} benv=${BASH_ENV-unset} in=$(cat)"; exit 7; }' "$U/scripts/questions.sh"
+    run --separate-stderr bash -c 'echo piped | QUESTIONS_LIVE=x QUESTIONS_ARCHIVE=x QUESTIONS_WATCHING=x DEV_CYCLE_SCRUBBED=1 ENV=x BASH_ENV=/dev/null bash "$1" questions.sh --probe' _ "$D6"
+    [ "$status" -eq 7 ] && [ "$output" = "live=unset arch=unset watch=unset scrub=unset env=unset benv=unset in=" ] || { show; return 1; }
 }
 
 @test "d6.sh runs the image copy's scripts by absolute path, with the image's own lib and questions.sh, never main's or the working tree's (T33, U3b3, U4c)" {
@@ -321,7 +321,7 @@ shim() {
     d6 build-loop.sh --settings
     [ "$status" -eq 0 ] && [[ "$output" == *"slots 3 default: "* ]] && [ -n "$stderr" ] || { show; return 1; }
     while IFS= read -r l; do [ "$l" = "lib at $U/scripts/lib/dev-cycle-read.sh" ] || { echo "[$l]"; show; return 1; }; done <<<"$stderr"
-    # d6.sh exports no config pair, so --state run through it passes caller_gate (row 702).
+    # --state through d6.sh passes.
     d6 build-loop.sh --state; [ "$status" -eq 0 ] && [ "$output" = ok ] || { show; return 1; }
     d6 dev-cycle.sh
     [ "$status" -eq 0 ] && [[ "$output" == *$'\n- Q-001  trigger           from-opt (legacy, in questions.md: step 1b\'s `questions.sh migrate` moves it)\n'* ]] || { show; return 1; }
@@ -338,6 +338,7 @@ shim() {
     rm "$U/scripts/questions.sh"; d6_is "refuse d6: $U/scripts/questions.sh is missing"; cp "$REPO_ROOT/scripts/questions.sh" "$U/scripts/"
     mv "$U/scripts/lib/dev-cycle-read.sh" "$U/x"; mkdir "$U/scripts/lib/dev-cycle-read.sh"; d6_is "refuse d6: $U/scripts/lib/dev-cycle-read.sh is not a regular file"
     rmdir "$U/scripts/lib/dev-cycle-read.sh"; ln -s "$U/gone" "$U/scripts/lib/dev-cycle-read.sh"; d6_is "refuse d6: $U/scripts/lib/dev-cycle-read.sh is not a regular file"
+    rm "$U/scripts/lib/dev-cycle-read.sh"; ln -s "$U/x" "$U/scripts/lib/dev-cycle-read.sh"; d6_is "refuse d6: $U/scripts/lib/dev-cycle-read.sh is not a regular file"
     rm "$U/scripts/lib/dev-cycle-read.sh"; mv "$U/x" "$U/scripts/lib/dev-cycle-read.sh"
     run --separate-stderr bash "$D6" x; [ "$status" -eq 1 ] && [ -z "$output" ] && [ "$stderr" = "d6: the first argument is build-loop.sh, dev-cycle.sh or questions.sh" ] || { show; return 1; }
     run --separate-stderr bash "$D6"; [ "$status" -eq 1 ] && [ -z "$output" ] || { show; return 1; }
@@ -345,7 +346,7 @@ shim() {
 
 @test "d6.sh runs the script past what audit rows R6c to R6e dropped: a replace ref, info/grafts, a symbolic or tag default branch, a uid-owned image; --state still refuses the two default-branch shapes (brief 2026-11-05-d6-block-into-image)" {
     d6_setup
-    # A replace ref: the image's script runs and its hardened git does not follow it.
+    # A replace ref: no refusal, and the image's script runs.
     id="$(git rev-parse main:scripts/build-loop.sh)"; git replace "$id" "$(printf 'echo replaced\n' | git hash-object -w --stdin)"
     d6 build-loop.sh --settings; [ "$status" -eq 0 ] || { show; return 1; }
     git replace -d "$id"
