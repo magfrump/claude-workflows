@@ -536,10 +536,11 @@ in the checkout, whatever the scan says.
   different git dir (it goes by the worktree's name), and a git dir the scan
   never walked (one outside `.git/`, say) then runs its hooks. A `.git` added
   during the session is either git's exact form, which maps to its own private
-  dir, or a finding; the gap is one left by an earlier session. Delete such
-  files rather than repairing them: `git worktree repair` is host git in the
-  repository behind the file, whose hooks were never walked, and a new session
-  takes whatever is there as its baseline.
+  dir, or a finding; the gap is one left by an earlier session. Delete a
+  non-standard one (not a standard agent worktree's, whose git dir the scan
+  walks) rather than repairing it: `git worktree repair` is host git in the
+  repository behind the file, which the scan may never have walked, and a new
+  session takes whatever is there as its baseline.
   This stays open by design (Q-097): it needs that leftover at launch, which a
   session usually warns about (not one whose scan never ran, or one launched
   on a different repo of a nested pair), and then host git run in a repository
