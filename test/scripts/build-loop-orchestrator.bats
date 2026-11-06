@@ -251,7 +251,7 @@ refuse main-log: $X is not on the default branch's first-parent history at $T"
 # d6_setup: main holds this branch's four scripts, and so does a stand-in at $U.
 d6_copy() {
     # In its real place beside the scripts, where the stand-in can hold it.
-    D6="$BATS_TEST_TMPDIR/d6.bash"; [[ ! -w "$1/scripts" ]] || D6="$1/scripts/d6.sh"
+    D6="$BATS_TEST_TMPDIR/d6.bash"; [[ "$1" == /opt/claude-workflows ]] || D6="$1/scripts/d6.sh"
     cp "$REPO_ROOT/scripts/d6.sh" "$D6"
     grep -qxF 'D6_OPT=/opt/claude-workflows' "$D6" && sed -i "s|^D6_OPT=/opt/claude-workflows\$|D6_OPT=$1|" "$D6" && grep -qxF "D6_OPT=$1" "$D6" || return 1
 }
@@ -329,7 +329,7 @@ shim() {
     d6 questions.sh open; [ "$status" -eq 0 ] && [ "$output" = "Q-001  trigger           from-opt" ] || { show; return 1; }
 }
 
-@test "d6.sh refuses before running anything: not exactly one of main and master, a repository git cannot read, an image file missing or not a regular file, another first argument (T36, U3b3, brief 2026-11-05-d6-block-into-image)" {
+@test "d6.sh refuses before running anything: not exactly one of main and master, a repository git cannot read, an image file missing or not a regular file, a lib that does not load, another first argument (T36, U3b3, brief 2026-11-05-d6-block-into-image)" {
     d6_setup
     git branch -q master; d6_is "refuse d6: the default branch is not exactly one of main and master"; git branch -q -D master
     git branch -q -m main trunk; d6_is "refuse d6: the default branch is not exactly one of main and master"; git branch -q -m trunk main

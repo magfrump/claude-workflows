@@ -3,7 +3,7 @@
 - **Goal**: The orchestrator runs `build-loop.sh`, `dev-cycle.sh` and `questions.sh` through one short call to a root-owned image script, in place of the ~60-line block the skill has it paste into every call.
 - **Problem framing**: The paste costs context on every call and invites copy slips while guarding nothing the image copy does not already guard. Considered and discarded: "the call should run `bash /opt/.../scripts/SCRIPT` with no wrapper" (the audit's other wording), which would lose the variable scrub (R6f, KEEP) and the exactly-one-default check for `dev-cycle.sh` and `questions.sh`.
 - **Project state**: Moves the D6 block into `scripts/d6.sh` · restriction audit unit 7 (row R6b, with R6c-R6e's block side) · not blocked (cite: docs/working/research-2026-11-01-restriction-audit.md)
-- **Task status**: in-progress (design and plan done, implemented; review next)
+- **Task status**: complete (implemented; review-fix loop closed at iteration 3, health check green)
 
 Seeded with `docs/constraints.md` at 5b20d4bd.
 
@@ -106,7 +106,7 @@ Assume this shipped and an enforcement path failed.
 
 ### Test plan
 
-Each refusal and the pass path in `build-loop-orchestrator.bats`, against the shipped file with D6_OPT changed: both or neither default branch, a non-repository, missing and non-regular files (a directory and a dangling link), a bad first argument; the 127 path through the skill's own call line; the variable scrub and closed stdin; hardening through the T26 shim; the dropped checks pinned as passing, and `--state` still refusing the two default-branch shapes.
+Each refusal and the pass path in `build-loop-orchestrator.bats`, against the shipped file with D6_OPT changed: both or neither default branch, a non-repository, missing and non-regular files (a directory and two links), a lib that does not load, a bad first argument; the 127 path through the skill's own call line; the variable scrub and closed stdin; hardening through the T26 shim; the dropped checks pinned as passing, and `--state` still refusing the two default-branch shapes.
 
 ## Question for the owner
 

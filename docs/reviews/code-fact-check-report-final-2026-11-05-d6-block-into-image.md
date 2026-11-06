@@ -45,4 +45,4 @@ Merged most-severe-wins from `code-fact-check-report-final-r1`, `-r2` and `-r3` 
 
 ## Verdict stability
 
-Two of the clusters above disagree, on Claim 1 (r3 verified the sentence by the mode answering, as the first pass did; r1 and r2 traced the read path) and on Claim 3's plan rows (Stale against Mostly Accurate). Verified clusters agreed. The agreement rate over all clusters was not computed.
+Two of the clusters above disagree, on Claim 1 (r3 verified the sentence by the mode answering, as the first pass did; r1 and r2 traced the read path) and on Claim 3's plan rows (Stale against Mostly Accurate). Agreement across the remaining clusters was not tallied, so no rate is reported.
