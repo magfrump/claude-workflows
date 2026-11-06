@@ -35,3 +35,5 @@ Policy: review
 - Removing any worktree or branch from this loop's own session: the cycle runs the new behaviour after a release.
 - The other idea-log items from 2026-11-05 (identity check, image-lag paste, health rerun, free-slot reason).
 - Editing `docs/roadmap.md`, `docs/dev-cycle.md` or the questions files: the dev cycle and the owner move those.
+
+Dispatched: 1
