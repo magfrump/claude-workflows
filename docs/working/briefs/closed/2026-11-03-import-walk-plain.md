@@ -36,3 +36,5 @@ Policy: review
 - Editing `docs/roadmap.md`, `docs/dev-cycle.md` or the questions files: the dev cycle and the owner move those.
 
 Dispatched: 1
+
+Applied: Q-253=merged
