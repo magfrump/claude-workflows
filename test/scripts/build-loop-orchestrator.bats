@@ -293,8 +293,8 @@ shim() {
     [ -n "$l" ] || return 1
     U="$BATS_TEST_TMPDIR/opt"; opt_copy "$U"; printf 'touch "%s/ran"\n' "$BATS_TEST_TMPDIR" >> "$U/scripts/build-loop.sh"
     l="${l//\/opt\/claude-workflows/$U}"; l="${l/SCRIPT ARG.../build-loop.sh --settings}"
-    run --separate-stderr bash -c "$l"
-    [ "$status" -eq 127 ] && [ -z "$output" ] && [[ "$stderr" == *"$U/scripts/d6.sh: No such file or directory"* ]] && [ ! -e "$BATS_TEST_TMPDIR/ran" ] || { show; return 1; }
+    read -r -a w <<<"$l"; run -127 --separate-stderr "${w[@]}"
+    [ -z "$output" ] && [[ "$stderr" == *"$U/scripts/d6.sh: No such file or directory"* ]] && [ ! -e "$BATS_TEST_TMPDIR/ran" ] || { show; return 1; }
     s="$(tr '\n' ' ' < "$K" | tr -s ' ')"
     for f in "So does exit 127 with ${q}bash${q}'s ${q}No such file or directory${q} line naming d6.sh" "a ${q}refuse d6:${q} line or that exit 127, are stops too" \
         "a ${q}refuse d6:${q} naming a missing image file, or the exit 127 above, means an image older than this skill" "a ${q}refuse d6:${q} line, its exit 127 or a timed-out call is still a stop"; do

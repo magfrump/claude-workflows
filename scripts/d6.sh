@@ -32,6 +32,7 @@
 set -u -o pipefail
 D6_OPT=/opt/claude-workflows
 no() { echo "refuse d6: $*"; exit 2; }
+# shellcheck source=lib/dev-cycle-read.sh
 g() { ( source "$D6_OPT/scripts/lib/dev-cycle-read.sh" && git_harden && git "$@" ); }
 s="${1:-}"
 [[ "$s" == build-loop.sh || "$s" == dev-cycle.sh || "$s" == questions.sh ]] || { echo "d6: the first argument is build-loop.sh, dev-cycle.sh or questions.sh" >&2; exit 1; }
@@ -43,11 +44,11 @@ for f in build-loop.sh dev-cycle.sh questions.sh lib/dev-cycle-read.sh; do
   [[ -e "$x" || -L "$x" ]] || no "$x is missing"
   [[ -f "$x" ]] || no "$x is not a regular file"
 done
-m=""
+have=""
 for n in main master; do
   rc=0; g show-ref --verify -q "refs/heads/$n" || rc=$?
   [[ "$rc" -le 1 ]] || no "refs/heads/$n could not be read"
-  [[ "$rc" -ne 0 ]] || m+="$n "
+  [[ "$rc" -ne 0 ]] || have+="$n "
 done
-m="${m% }"; [[ "$m" == main || "$m" == master ]] || no "the default branch is not exactly one of main and master"
+have="${have% }"; [[ "$have" == main || "$have" == master ]] || no "the default branch is not exactly one of main and master"
 exec env -u BASH_ENV -u ENV -u DEV_CYCLE_SCRUBBED -u QUESTIONS_LIVE -u QUESTIONS_ARCHIVE -u QUESTIONS_WATCHING bash "$D6_OPT/scripts/$s" "$@" </dev/null
