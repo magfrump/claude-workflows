@@ -152,3 +152,14 @@ Full text: `docs/working/brainstorm-2026-10-29-friction-and-engagement.md`.
 - Quarterly threat-model walk-through of Q-103's residuals (signal: owner awareness request)
 - A brief split checks shared append-only ledgers (decision-log rows) and shared SKILL.md passages, not just file ownership, before calling units parallel (signal: units 2 and 3 both conflicted with unit 1 at merge, Q-246, Q-247)
 - Re-sample the three critic personas, or loosen the 180-day threshold (signal: health check 2026-11-03: ai-personas, cowen and yglesias personas 184 days since sampled)
+
+## Brainstorm 2026-11-05
+
+Ran because the last brainstorm was 7 days ago (2026-10-29). Sources: this cycle's signals, this log, roadmap Ideas, and `docs/working/feature-ideas.md` (the one idea source `docs/dev-cycle.md` lists; its entries are old and none matched a current signal).
+
+- The skill's identity check reads `git config` only, so it reports none in a session whose identity comes from `GIT_AUTHOR_*` and `GIT_COMMITTER_*`, which the gate's own check accepts; `git var GIT_AUTHOR_IDENT` would answer both (signal: iteration 2026-11-05-2347, config empty, identity real)
+- The image-lag paste pins M, but the cycle's land moves main past M in the same iteration, so its check always fails on a checkout at main's tip; pin the last gate-code commit, or have the paste accept any first-parent descendant with the same gate code (signal: Q-252's text said "bring the checkout to main", which could not pass)
+- Skip the health rerun when every `other` commit touches only `docs/` (signal: adb22f4d, a docs and questions commit, cost a full health run)
+- Record why a free slot stays empty: three iterations wrote "not briefed this iteration" with the queue under its slots and no reason (signal: cycle-2026-11-03 steps 8)
+- Free a merged loop's worktree, now 28 merged branches held (signal: `branch -d` refused 28 of 28 this iteration; seeded 2026-10-29 at 15)
+- Do nothing more on merge friction until the trial's feedback is in: T1-T7 end about 2026-11-06 (signal: Q-252 and Q-253 both wait on the owner, and A1/A3/A10 are held for that feedback)

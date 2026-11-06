@@ -29,7 +29,7 @@ The index below is generated — edit entries, not the table.
 | [Q-254](#q-254--blocked-2026-11-03-q125-verify-check-1) | you: judgment | Brief 2026-11-03-q125-verify-check's build loop asks: | 2026-11-03 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
-| [Q-252](#q-252--image-lag) | you: terminal | - `8d16b1d5` Merge branch 'chore/dev-cycle-2026-11-04-0017' | 2026-11-03 |
+| [Q-252](#q-252--image-lag) | you: terminal | - `adb22f4d` docs(questions): track herald's unconfirmed egress fix as Q-255 | 2026-11-03 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | The fix for herald's `dl.google.com` build failures was released on 2026-10-28 (Q-214), but no output was k... | 2026-11-05 |
 <!-- index:end -->
 
@@ -105,7 +105,7 @@ ok docs/working/briefs/2026-11-03-q125-verify-check.md 502296b7ac4f5e299011286f8
 ### Q-252 · image-lag
 **Needs:** you: terminal · **Opened:** 2026-11-03 · **Status:** OPEN
 
-**Release notes** (trial T1). Installed image: `c214970a`, read from `/opt/claude-workflows/.manifest`. Main (`8d16b1d5`) is ahead in gate code by restriction-audit unit 5, which you approved (Q-251). The image runs the gate and the dev-cycle skill, so unit 5 is not live until you run the paste.
+**Release notes** (trial T1). Installed image: `c214970a`, read from `/opt/claude-workflows/.manifest`. Main (`adb22f4d`) is ahead in gate code by restriction-audit unit 5, which you approved (Q-251). The image runs the gate and the dev-cycle skill, so unit 5 is not live until you run the paste.
 
 **If you say no:** the cycle keeps running the current image's skill: a pending migration still comes to you as a paste, and a release you have already run still waits for your answer on its image-lag entry. Nothing breaks.
 
@@ -113,7 +113,9 @@ ok docs/working/briefs/2026-11-03-q125-verify-check.md 502296b7ac4f5e299011286f8
 
 **What changes for you** (approved by you, Q-251): the dev cycle runs a pending convention migration's `questions.sh` remedy itself and reports it, and closes an image-lag entry like this one by itself once the image holds main's gate code. Gate files changed: `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`.
 
-**Commits on main after `c214970a`** (first-parent; rewritten 2026-11-03 for main at 8d16b1d5):
+**Commits on main after `c214970a`** (first-parent; rewritten 2026-11-05 for main at adb22f4d):
+- `adb22f4d` docs(questions): track herald's unconfirmed egress fix as Q-255
+- `dcbfeb8d` Merge branch 'chore/dev-cycle-2026-11-04-0031'
 - `8d16b1d5` Merge branch 'chore/dev-cycle-2026-11-04-0017'
 - `c741fa77` Merge branch 'chore/dev-cycle-2026-11-03-2329'
 - `ed6b0be2` Merge branch 'chore/dev-cycle-2026-11-03-2329'
@@ -122,15 +124,15 @@ ok docs/working/briefs/2026-11-03-q125-verify-check.md 502296b7ac4f5e299011286f8
 - `3ccdd215` Merge branch 'chore/answers-2026-11-03'
 - `234d5be7` Merge branch 'chore/dev-cycle-2026-11-02-2027'
 
-**Paths changed outside `docs/`** (12 under `docs/` not listed; the image carries none of `docs/`): `guides/convention-changes.md`, `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`, `test/scripts/build-loop-orchestrator.bats`, `test/scripts/dev-cycle.bats`
+**Paths changed outside `docs/`** (13 under `docs/` not listed; the image carries none of `docs/`): `guides/convention-changes.md`, `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`, `test/scripts/build-loop-orchestrator.bats`, `test/scripts/dev-cycle.bats`
 
 **The paste** (host terminal in WSL, not inside a session; stop every session first):
 
 ```
-cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = 8d16b1d51804715a3189d94a027d09c693c865a9 && ./devcontainer-config/install.sh
+cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = adb22f4d412148e172a901caf318198213c2e4ee && ./devcontainer-config/install.sh
 ```
 
-The `rev-parse` check runs no hook. It only confirms that your checkout is at main; if it fails, bring the checkout to main first. Then start a new sandbox session. If unit 6 (Q-253) merges first, the next iteration rewrites this entry for the newer main, and one paste covers both.
+The `rev-parse` check runs no hook. It only confirms that your checkout is at `adb22f4d`. Main will be past that commit by the time you read this, because the cycle's own land moves it, so the check fails on a checkout at main's tip: check out `adb22f4d` first (it holds all the gate code; what comes after it is cycle records). Then start a new sandbox session. If unit 6 (Q-253) merges first, the next iteration rewrites this entry for the newer main, and one paste covers both.
 
 - **Interim:** the image at `c214970a` runs.
 - **Blocks:** nothing.

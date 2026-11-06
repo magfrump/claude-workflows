@@ -23,23 +23,10 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   default (unit 2's override-log C9).
   Unit 3's loop left two stale lines for later units (`plan-build-loop-handoff.md` D13 and
   the "SKILL.md's hg" comment in `scripts/lib/dev-cycle-read.sh`): both are in unit 6's brief.
-- **Agent: Q-097 · exit-scan older routes** (filed 2026-11-01, step 6, from Q-234's migrate).
-  Motive: two documented Medium routes the exit scan does not see (a symlink to a repo
-  outside the checkout; a non-standard container-form `.git`). First step: one enforcement
-  unit each, or record why it stays open (Q-168, which it was to follow, was dropped:
-  Ideas, Q-238 [1]). Full entry: `docs/working/questions.md` at b5f620ae.
 - **Agent: Q-125 · cc-isolated Bash sandbox, live run** (filed 2026-11-01, step 6, from
   Q-234's migrate). Motive: nothing sandboxes Bash in cc-isolated. Built, unmerged
   (`feat/q125-cc-isolated-sandbox`); the host install is done (Q-222, answered 2026-11-03). First step
   (Next 1): the `cc-verify --check` file, briefed 2026-11-03 (In flight).
-- **Agent: Q-079 · canon-instance proposal filter** (filed 2026-11-01, step 6, from Q-234's
-  migrate). Motive: design a commit-to-canon-instance script and the heuristic for which
-  candidates get proposed, keeping the canon compact. First step: a divergent-design doc;
-  the filter choice then comes back as a `you: judgment` entry.
-- **Agent: Q-147 · q089 source-guard unit** (filed 2026-11-01, step 6, from Q-234's
-  migrate). Motive: the static source-set test was split off unit A (`feat/q089-source-guard`,
-  fa059477). First step: a fresh loop that narrows the test's claim to "plain spellings,
-  accidental drift".
 
 - **Trial week: less friction, less habituation (2026-10-30 to about 2026-11-06).** Motive:
   the owner's 2026-10-29 brainstorm request ("try things for a few days to a week").
@@ -83,6 +70,16 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 - Q-125's `cc-verify --check` file for the sandbox live run
   (`docs/working/briefs/2026-11-03-q125-verify-check.md`; review policy). Blocked at
   502296b7: the Q-125 branch's own C1 check cannot pass on a working sandbox; Q-254.
+- Q-079: design the canon-instance proposal filter
+  (`docs/working/briefs/2026-11-05-canon-proposal-filter.md`; self-merge, research doc only;
+  the filter choice comes back in its final marker). Full entry:
+  `docs/working/questions.md` at b5f620ae.
+- Q-097: close or record the exit scan's two older routes
+  (`docs/working/briefs/2026-11-05-exit-scan-older-routes.md`; review). Full entry:
+  `docs/working/questions.md` at b5f620ae.
+- Q-147: land or retire the Q-089 static source-set test
+  (`docs/working/briefs/2026-11-05-q089-source-guard-narrow.md`; review). Full entry:
+  `docs/working/questions.md` at b5f620ae.
 
 ## Next
 
@@ -108,6 +105,15 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 ## Ideas
 
 Unranked. Each names the signal that motivates it.
+
+- **The skill's identity check should accept an environment identity.** Signal: iteration
+  2026-11-05-2347, where `git config` was empty and `GIT_AUTHOR_*` held the real identity,
+  which the gate accepts. `git var GIT_AUTHOR_IDENT` answers both. Gate code (the skill).
+- **The image-lag paste should survive the cycle's own land.** Signal: Q-252's paste pins M,
+  which the same iteration's land leaves behind, so the check fails at main's tip. Gate code.
+- **Skip the health rerun for docs-only `other` commits.** Signal: adb22f4d cost a full run.
+- **Say why a free slot stays empty.** Signal: three iterations of 2026-11-03 left the queue
+  under its slots with no reason given.
 
 - **Dropped 2026-10-30: Q-168's remote-name parsing branch** (`fix/q096b-exit-scan-remote-names`,
   75d08a94). Reason: Q-238 [1]. Every route it closes needs launch-time state, outside Q-172
