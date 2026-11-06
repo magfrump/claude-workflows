@@ -163,3 +163,4 @@ Ran because the last brainstorm was 7 days ago (2026-10-29). Sources: this cycle
 - Record why a free slot stays empty: three iterations wrote "not briefed this iteration" with the queue under its slots and no reason (signal: cycle-2026-11-03 steps 8)
 - Free a merged loop's worktree, now 28 merged branches held (signal: `branch -d` refused 28 of 28 this iteration; seeded 2026-10-29 at 15)
 - Do nothing more on merge friction until the trial's feedback is in: T1-T7 end about 2026-11-06 (signal: Q-252 and Q-253 both wait on the owner, and A1/A3/A10 are held for that feedback)
+- Name the running trials in every final message while a trial is on, since the trial doc is the only surface and nothing brings it to the owner (signal: owner asked on 2026-11-05 how to see which trials are running)

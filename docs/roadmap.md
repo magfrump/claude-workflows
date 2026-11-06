@@ -70,10 +70,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 - Q-125's `cc-verify --check` file for the sandbox live run
   (`docs/working/briefs/2026-11-03-q125-verify-check.md`; review policy). Blocked at
   502296b7: the Q-125 branch's own C1 check cannot pass on a working sandbox; Q-254.
-- Q-079: design the canon-instance proposal filter
-  (`docs/working/briefs/2026-11-05-canon-proposal-filter.md`; self-merge, research doc only;
-  the filter choice comes back in its final marker). Full entry:
-  `docs/working/questions.md` at b5f620ae.
 - Q-097: close or record the exit scan's two older routes
   (`docs/working/briefs/2026-11-05-exit-scan-older-routes.md`; review). Full entry:
   `docs/working/questions.md` at b5f620ae.
@@ -326,6 +322,9 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- **Q-079's design: the canon-instance proposal filter.** Self-merged 605d4c18. Design in
+  `docs/working/research-2026-11-05-canon-proposal-filter.md`; the filter choice is Q-256.
+  Brief: `docs/working/briefs/closed/2026-11-05-canon-proposal-filter.md`.
 - **Restriction audit unit 5: the cycle runs migrations itself, and closes a cleared
   image-lag entry** (owner, 2026-11-01; the Now item "the cycle closes a cleared image-lag
   entry itself" was folded into it). Merged 89ed0db4 (Q-251 [1]; decision-log row 82). It
