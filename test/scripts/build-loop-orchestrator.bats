@@ -250,7 +250,8 @@ refuse main-log: $X is not on the default branch's first-parent history at $T"
 # OPT stands in for the root-owned image, as d6.sh checks presence, not owner.
 # d6_setup: main holds this branch's four scripts, and so does a stand-in at $U.
 d6_copy() {
-    D6="$BATS_TEST_TMPDIR/d6.bash"
+    # In its real place beside the scripts, where the stand-in can hold it.
+    D6="$BATS_TEST_TMPDIR/d6.bash"; [[ ! -w "$1/scripts" ]] || D6="$1/scripts/d6.sh"
     cp "$REPO_ROOT/scripts/d6.sh" "$D6"
     grep -qxF 'D6_OPT=/opt/claude-workflows' "$D6" && sed -i "s|^D6_OPT=/opt/claude-workflows\$|D6_OPT=$1|" "$D6" && grep -qxF "D6_OPT=$1" "$D6" || return 1
 }
@@ -297,7 +298,7 @@ shim() {
     [ -z "$output" ] && [[ "$stderr" == *"$U/scripts/d6.sh: No such file or directory"* ]] && [ ! -e "$BATS_TEST_TMPDIR/ran" ] || { show; return 1; }
     s="$(tr '\n' ' ' < "$K" | tr -s ' ')"
     for f in "So does exit 127 with ${q}bash${q}'s ${q}No such file or directory${q} line naming d6.sh" "a ${q}refuse d6:${q} line or that exit 127, are stops too" \
-        "a ${q}refuse d6:${q} naming a missing image file, or the exit 127 above, means an image older than this skill" "a ${q}refuse d6:${q} line, its exit 127 or a timed-out call is still a stop"; do
+        "the exit 127 above means an image older than this skill, and a ${q}refuse d6:${q} naming a missing image file a partial image" "a ${q}refuse d6:${q} line, its exit 127 or a timed-out call is still a stop"; do
         [[ "$s" == *"$f"* ]] || { echo "missing: $f"; return 1; }
     done
 }
@@ -340,6 +341,10 @@ shim() {
     rmdir "$U/scripts/lib/dev-cycle-read.sh"; ln -s "$U/gone" "$U/scripts/lib/dev-cycle-read.sh"; d6_is "refuse d6: $U/scripts/lib/dev-cycle-read.sh is not a regular file"
     rm "$U/scripts/lib/dev-cycle-read.sh"; ln -s "$U/x" "$U/scripts/lib/dev-cycle-read.sh"; d6_is "refuse d6: $U/scripts/lib/dev-cycle-read.sh is not a regular file"
     rm "$U/scripts/lib/dev-cycle-read.sh"; mv "$U/x" "$U/scripts/lib/dev-cycle-read.sh"
+    # A lib that does not load, or a git_harden that refuses, is named as that, never as an absent branch.
+    L="refuse d6: $U/scripts/lib/dev-cycle-read.sh did not load, or its git_harden refused this environment"
+    cp "$U/scripts/lib/dev-cycle-read.sh" "$U/keep"; echo 'return 1' >> "$U/scripts/lib/dev-cycle-read.sh"; d6_is "$L"; cp "$U/keep" "$U/scripts/lib/dev-cycle-read.sh"
+    GIT_CONFIG_COUNT=010 d6 build-loop.sh --settings; [ "$status" -eq 2 ] && [ "$output" = "$L" ] || { show; return 1; }
     run --separate-stderr bash "$D6" x; [ "$status" -eq 1 ] && [ -z "$output" ] && [ "$stderr" = "d6: the first argument is build-loop.sh, dev-cycle.sh or questions.sh" ] || { show; return 1; }
     run --separate-stderr bash "$D6"; [ "$status" -eq 1 ] && [ -z "$output" ] || { show; return 1; }
 }
@@ -388,11 +393,11 @@ shim() {
     O=/opt/claude-workflows
     [[ -f "$O/scripts/build-loop.sh" && "$(stat -c %u "$O/scripts")" == 0 ]] || skip "no root-owned image copy at $O here"
     mkdir -p scripts; printf 'echo main copy\n' > scripts/build-loop.sh; commit_all scripts
-    d6_copy "$O"; d6 build-loop.sh --help
+    d6_copy "$O"; [[ ! -f "$O/scripts/d6.sh" ]] || D6="$O/scripts/d6.sh"; d6 build-loop.sh --help
     [ "$status" -eq 0 ] && [ "$output" = "$(bash "$O/scripts/build-loop.sh" --help)" ] || { show; return 1; }
 }
 
-@test "d6.sh refuses an image copy missing a file (an older image), and never runs main's (T37, U3b3, U4c)" {
+@test "d6.sh refuses an image copy missing a file (a partial image), and never runs main's (T37, U3b3, U4c)" {
     mkdir -p scripts; printf 'echo main copy\n' > scripts/build-loop.sh; commit_all scripts
     U="$BATS_TEST_TMPDIR/opt"; opt_copy "$U"; d6_copy "$U"
     rm "$U/scripts/build-loop.sh"; d6_is "refuse d6: $U/scripts/build-loop.sh is missing"

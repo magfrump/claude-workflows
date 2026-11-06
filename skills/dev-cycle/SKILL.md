@@ -43,7 +43,8 @@ one place every trigger is certain to be checked, so it checks all of them every
   hostile process of this uid still reaches the shell itself, through PATH, exported
   functions or the session's settings: the residual the plan and Q-103 accept), and a gate
   change merged here runs from the next image release (step 0.1 checks the lag). Read a call's first line before its mode's
-  output: `refuse d6: WHY` (exit 2) means nothing ran. So does exit 127 with `bash`'s `No such
+  output: `refuse d6: WHY` (exit 2; d6.sh's header lists them) or a usage line on stderr (exit 1, a first
+  argument that is none of the three) means nothing ran. So does exit 127 with `bash`'s `No such
   file or directory` line naming d6.sh: that is the same refusal from an image older than
   this skill, which has no d6.sh to print it. A `build-loop.sh` answer is exit 0,
   or exit 2 with the lines its mode documents for it (refuse lines, `--main-log`'s `other`
@@ -213,8 +214,8 @@ the iteration with no record, so the next one starts from the same `Main at:`:
    not exactly one plain main or master, a `GIT_DIR`-style variable in the caller's
    environment) are a stop,
    quoted in one `you: judgment` entry unless an open one quotes the same lines. Any other
-   exit is a stop as the Rules say (a `refuse d6:` naming a missing image file, or the
-   exit 127 above, means an image older than this skill: its entry also gives the release paste below).
+   exit is a stop as the Rules say (the exit 127 above means an image older than this
+   skill, and a `refuse d6:` naming a missing image file a partial image: either entry also gives the release paste below).
    Then the image lag (Q-140 [1]; the image is the gate, built from the host checkout's HEAD).
    C and A are the `commit=` and `assembled_from=` lines of `/opt/claude-workflows/.manifest`,
    M main's commit; with no file or either line, note it in the record and skip. If

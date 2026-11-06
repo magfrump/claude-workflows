@@ -17,9 +17,10 @@
 # is to read (each step names MAIN_WT, WT or GT). Arguments: build-loop.sh,
 # dev-cycle.sh or questions.sh, then that script's own.
 # Exit: the script's own status; 2 and one "refuse d6: WHY" line on stdout, with
-# nothing run, for an image-copy file that is missing (an image older than the
-# skill) or not a regular file, a default branch that is not exactly one of main
-# and master, or a git read that fails (git may add a line on stderr); 1 for
+# nothing run, for an image-copy file that is missing or not a regular file (a
+# partial image), an image lib that does not load or whose git_harden refuses
+# the caller's environment, a default branch that is not exactly one of main and
+# master, or a git read that exits above 1 (git may add a line on stderr); 1 for
 # another first argument. An image with no d6.sh at all prints nothing of this:
 # bash exits 127 naming the path, which the skill's Rules read as this refusal.
 # Its git is the image lib's git_harden, in a subshell, so the script starts
@@ -33,7 +34,8 @@ set -u -o pipefail
 D6_OPT=/opt/claude-workflows
 no() { echo "refuse d6: $*"; exit 2; }
 # shellcheck source=lib/dev-cycle-read.sh
-g() { ( source "$D6_OPT/scripts/lib/dev-cycle-read.sh" && git_harden && git "$@" ); }
+harden() { source "$D6_OPT/scripts/lib/dev-cycle-read.sh" && git_harden; }
+g() { ( harden && git "$@" ); }
 s="${1:-}"
 [[ "$s" == build-loop.sh || "$s" == dev-cycle.sh || "$s" == questions.sh ]] || { echo "d6: the first argument is build-loop.sh, dev-cycle.sh or questions.sh" >&2; exit 1; }
 shift
@@ -45,6 +47,8 @@ for f in build-loop.sh dev-cycle.sh questions.sh lib/dev-cycle-read.sh; do
   [[ -e "$x" || -L "$x" ]] || no "$x is missing"
   [[ -f "$x" && ! -L "$x" ]] || no "$x is not a regular file"
 done
+# Tried alone first, so that exit 1 below can only be git's "no such ref".
+( harden ) || no "$D6_OPT/scripts/lib/dev-cycle-read.sh did not load, or its git_harden refused this environment"
 have=""
 for n in main master; do
   rc=0; g show-ref --verify -q "refs/heads/$n" || rc=$?

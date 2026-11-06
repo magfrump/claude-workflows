@@ -308,7 +308,8 @@ oddwhy() {  # the reason fence() refused a file, for a skip line
 # hardened, but where a caller hands back its own setting on purpose
 # (merge_ident reads the caller's global config); build-loop.sh and
 # dev-cycle.sh call it once, after scrub_reexec and before their first git
-# call (D6 runs both as gate code: rows 281, 495). Each pin keeps the gate's
+# call (D6 runs both as gate code: rows 281, 495; d6.sh calls it in a subshell
+# for its own git). Each pin keeps the gate's
 # reads stable and its own (narrowed to these by brief
 # 2026-11-01-relax-gate-git-state, research D4; the anti-forgery pins for the
 # commit-graph and multi-pack-index went with it). HARDEN's config pairs

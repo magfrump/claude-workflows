@@ -18,7 +18,7 @@ Seeded with `docs/constraints.md` at 5b20d4bd.
 ## Invariants
 
 - R6a/H1: each call runs the root-owned image copy by absolute path, never a working-tree copy, and nothing in the repository or environment chooses which [observed: audit R6a KEEP].
-- The skill's Rules key on a `refuse d6: WHY` first line with exit 2, and on exit 1 for a bad first argument [observed: SKILL Rules, step 0.1, step 1b].
+- The skill's Rules key on a `refuse d6: WHY` first line with exit 2 [observed: SKILL Rules, step 0.1, step 1b]; exit 1 for a bad first argument stays, and the Rules now state it.
 - The script must start from the caller's environment, with no pair of d6's exported: its own `git_harden` would count them as the caller's, and SKILL's Rules forbid exporting pins (`--state` no longer refuses one; row 702) [observed].
 - R6f: the six variables stay unset for the child, and stdin stays closed (`</dev/null`) [observed].
 - H1's success line: a new gate path joins GATE_CODE.
@@ -99,9 +99,9 @@ Assume this shipped and an enforcement path failed.
 
 1. **A working-tree copy runs as the gate.** A session calls `bash scripts/d6.sh` from a checkout. The root is a literal, so it still runs the image's scripts; the reach is that copy's own pre-checks. Guard: the literal and its test, and T33's "never main's or the working tree's".
 2. **The environment chooses.** `D6_OPT`, `BASH_ENV`, `ENV`, or a PATH `bash` or `git`. D6_OPT is assigned, never read. BASH_ENV applies to `bash d6.sh` as it did to `bash -s`: the same-uid residual Q-103 accepts, unchanged. The scrub is pinned by a new test.
-3. **The release gap.** After the merge and before the release, the image's floor does not list `scripts/d6.sh`, so a self-merge naming it in `Paths:` would pass unflagged. Bounded: it reaches a session only through the release, and the `image-lag` entry this merge opens lists every changed path. The new image's GATE_CODE closes it. Step 0.1's old PATHS line also omits the file, but `skills/dev-cycle/` differs from the same merge until the release.
+3. **The release gap.** After the merge and before the release, the image's floor does not list `scripts/d6.sh`, so a self-merge naming it in `Paths:` would pass unflagged. Bounded: it reaches a session only through the release, and the `image-lag` entry this merge opens lists every changed path. The new image's GATE_CODE closes it. Step 0.1's old PATHS line also omits the file, but `skills/dev-cycle/` differs from the same merge until the release. To close the window sooner, the cycle can add `scripts/d6.sh` to `Self-merge never:` in `docs/dev-cycle.md`, which the old image reads from main, or dispatch no brief touching the file before the release; this branch may not edit that file. The security review rated the window Medium.
 4. **A refusal read as a pass.** The 127 path has empty stdout, so a reader of "the first line" sees nothing. The Rules state it, step 1b's "if either fails, go on" names it as still a stop, and a test pins those phrases. Step 0.1 comes first in every iteration, so the stop lands there anyway.
-5. **A regression through sourcing.** The lib is sourced in a subshell. A lib that fails to source refuses either way: exit 1 reads as absent for both names, and any other exit as "could not be read", so the line can name the wrong cause, but it never runs the script. A test proves no pair reaches the script and every git call carries the pins.
+5. **A regression through sourcing.** The lib is sourced in a subshell. A lib that fails to load, or a `git_harden` that refuses the environment, is tried alone before the loop and named as such (review i1), so exit 1 in the loop can only be git's "no such ref". A test proves no pair reaches the script and every git call carries the pins.
 6. **Planted history.** A planted `info/grafts` now reaches `--main-log`. Hostile-only (S1); `--state` already accepted it in unit 1.
 
 ### Test plan
