@@ -1,8 +1,8 @@
-Commit: 4dd68cdc
+Commit: b8722aba
 
 # Code Review Rubric
 
-**Scope:** refactor/d6-block-into-image, 5b20d4bd..4dd68cdc | **Reviewed:** 2026-11-05 | **Status: 🟡 CONDITIONAL PASS** — iteration 1 of 3; no red items; amber items resolved in the commit after this stamp, pending re-review
+**Scope:** refactor/d6-block-into-image, 5b20d4bd..b8722aba | **Reviewed:** 2026-11-05 | **Status: 🟡 CONDITIONAL PASS** — iteration 2 of 3 ran the fact-check on the delta only, its Incorrect being a comment; the critics run on iteration 3's full pass
 
 ---
 
@@ -21,6 +21,7 @@ Commit: 4dd68cdc
 | A1 | `g()` folded a lib or `git_harden` failure into git's "no such ref", so a refusal named a false cause, and H2 wants a bats case for the path | Architecture | Coupling | architecture-review, api-consistency-reviewer | `scripts/d6.sh:36` | for-author | — | Fixed: tried alone before the loop, two T36 cases |
 | A2 | Between the merge and the release, the image's GATE_CODE does not list `scripts/d6.sh`, so an honest brief naming it could self-merge | Security | Medium | security-reviewer | `scripts/lib/dev-cycle-read.sh:1032` | for-author | — | Accepted, stated in pre-mortem 3; the remedy is in `docs/dev-cycle.md`, which this branch may not edit, so it is in the ready marker |
 | A3 | Comment and research claims about `caller_gate` were false; a lib failure was not always "absent"; a commit message's revert claim stopped holding | Docs | Incorrect | Fact-check | `scripts/d6.sh`, research doc | for-author | — | Fixed; the commit message is immutable history, corrected in the research doc |
+| A5 | "Exit 1 can only be git's no such ref" was false: show-ref exits 1 for a ref it cannot use. Behaviour matches the block | Docs | Incorrect | Fact-check i2 | `scripts/d6.sh:50`, research pre-mortem 5 | for-author | — | Fixed |
 | A4 | Plan rows F38, F39, T33, T36, T37 and the line-63 file list described the removed block | Docs | Stale | Fact-check, security-reviewer, api-consistency-reviewer | `docs/working/plan-build-loop-handoff.md` | for-author | — | Fixed |
 
 ---

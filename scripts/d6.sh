@@ -47,7 +47,8 @@ for f in build-loop.sh dev-cycle.sh questions.sh lib/dev-cycle-read.sh; do
   [[ -e "$x" || -L "$x" ]] || no "$x is missing"
   [[ -f "$x" && ! -L "$x" ]] || no "$x is not a regular file"
 done
-# Tried alone first, so that exit 1 below can only be git's "no such ref".
+# Tried alone first, so that exit 1 below comes from show-ref, which counts as
+# absent a ref it cannot use (a junk or dangling one), as the block did.
 ( harden ) || no "$D6_OPT/scripts/lib/dev-cycle-read.sh did not load, or its git_harden refused this environment"
 have=""
 for n in main master; do
