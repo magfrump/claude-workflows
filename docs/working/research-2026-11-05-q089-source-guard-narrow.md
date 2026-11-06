@@ -55,10 +55,11 @@ Option 2 over option 1: `cc-verify.sh` shipped a grammar for the same rule after
 - Seen by both: the plain forms, `if source`, `&& source`, `; source`, `builtin source`, `command .`, `\source`, `eval "source x"`, and a trailing comment.
 - Seen by neither: `FOO=1 . f`, `a) . f ;;`, `'.' f`, `$c f`, `so""urce f`.
 
-Neither is complete, and the file header says so, listing only what this grammar misses. Giving up those forms for one grammar is acceptable for a guard that claims only plain spellings: none of them is a plain line.
+Neither is complete, and the file header says so, listing only what this grammar misses. The real loss is the one-line case arm, which is these files' own idiom: an unchecked `--x) source ...` in `cc-push.sh` leaves the test green. It is accepted and the file header names it. The fix belongs in `source_lines_ok`, a host-tool change, and adding `)` to its detector alone refuses today's launcher on prose. The architecture review compared the two and rated the reuse better by a modest margin.
 
 Other choices, one line each:
 
+- The test adds a final newline to its copies: `source_lines_ok`'s read loop never sees an unterminated last line (security review F1). The shipped function has the same gap; fixing it is a host-tool change, left as a follow-up.
 - New file rather than the 3325-line `test/cc-isolated-functions.bats`: it has no use for that file's setup, and one revert removes it.
 - Full-line comments are dropped before reading the check list, so such a comment quoting a call cannot stand in for it. An end-of-line comment still can.
 - A permanent seeded-drift case per failure path of `check_entry` (H2), not only a one-off run: assertions that could not fail are a large family in `docs/failure-patterns.md` (17 `vacuous-assertion` entries).

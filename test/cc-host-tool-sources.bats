@@ -10,8 +10,9 @@
 # `FOO=1 source f`, one-line case arms, a quoted or obfuscated `source`, and `$c f`.
 # It also does not see a tool run by name, cc-verify.sh (no verify_host_tools call;
 # it sources nothing today), the lists `--list` passes, or whether the check comes
-# before the source. It is hardening against a refactor, and the runtime checks do
-# not depend on it.
+# before the source or gates it. An end-of-line comment or string quoting a check
+# call above the real one is read as the list. It is hardening against a refactor,
+# and the runtime checks do not depend on it.
 #
 # The spelling rule is cc-verify.sh's own source_lines_ok, read from that file
 # rather than restated here, so there is one grammar to keep.
@@ -34,14 +35,19 @@ teardown() {
 
 # check_entry DIR ENTRY: what ENTRY plainly sources, directly or through what those
 # files source, is in its first verify_host_tools call and in host_tool_files. Prints
-# the first problem. cc-push.sh names its directory CC_PUSH_DIR, which the shared
-# grammar does not know, so its copy is renamed to the launcher's variable.
+# the first problem. It works on copies, which it adjusts for the shared grammar:
+# CC_PUSH_DIR, which the grammar does not know, becomes the launcher's variable (so a
+# refused line shows that name), and each copy gets a final newline, because the
+# grammar's read loop never sees an unterminated last line.
 check_entry() {
   local dir="$1" entry="$2" args hosts why f SOURCED=()
   args="$(grep -vE '^[[:space:]]*#' "$dir/$entry" \
     | grep -oE 'verify_host_tools "\$CC_(ISOLATED|PUSH)_DIR"( [a-z-]+\.sh)+' | head -1 | cut -d' ' -f3-)" || true
   [ -n "$args" ] || { echo "no verify_host_tools call in $entry"; return 1; }
-  sed -i 's/CC_PUSH_DIR/CC_ISOLATED_DIR/g' "$dir/cc-push.sh"
+  for f in "$dir"/cc-*.sh; do
+    sed -i 's/CC_PUSH_DIR/CC_ISOLATED_DIR/g' "$f"
+    echo >> "$f"
+  done
   why="$(source_lines_ok "$dir" "$entry")" || { echo "not a plain source line: $why"; return 1; }
   source_lines_ok "$dir" "$entry"
   # Positive control: both entry points reach cc-gitdir.sh (the launcher through the scan).
@@ -65,6 +71,21 @@ check_entry() {
   run check_entry "$T/cfg" cc-push.sh
   [ "$status" -eq 1 ]
   [[ "$output" == *"cc-push.sh sources cc-exit-scan.sh unchecked"* ]]
+}
+
+@test "a plain source on a last line with no newline is still read" {
+  printf 'source "$CC_PUSH_DIR/cc-exit-scan.sh"' >> "$T/cfg/cc-push.sh"
+  run check_entry "$T/cfg" cc-push.sh
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"cc-push.sh sources cc-exit-scan.sh unchecked"* ]]
+}
+
+@test "a helper that names its directory CC_PUSH_DIR is read like cc-push.sh itself" {
+  echo 'source "$CC_PUSH_DIR/cc-gitdir.sh"' > "$T/cfg/cc-helper.sh"
+  echo 'source "$CC_PUSH_DIR/cc-helper.sh"' >> "$T/cfg/cc-push.sh"
+  run check_entry "$T/cfg" cc-push.sh
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"cc-push.sh sources cc-helper.sh unchecked"* ]]
 }
 
 @test "a name dropped from the launcher's list is named, through the file that sources it" {
