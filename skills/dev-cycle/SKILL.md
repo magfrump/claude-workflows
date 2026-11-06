@@ -113,10 +113,10 @@ Self-merge never: none
 
 - **Build-loop policy** (`self-merge` or `review`; codebase onboarding's step 13 asks the user
   for it), **Build-loop slots** (live loops at once, 1-9; else 3: D9), **Self-merge never**
-  (globs self-merge never lands, or `none`) and the optional **Reader roots** and **Reader
-  homes** lines: read only through `build-loop.sh --settings`, from the default branch's
-  commit, never from a working tree; its header gives each line's exact form. A malformed
-  never line turns self-merge off.
+  (globs self-merge never lands, or `none`): read only through `build-loop.sh --settings`,
+  from the default branch's commit, never from a working tree; its header gives each line's
+  exact form. A malformed never line turns self-merge off. Old **Reader roots** and **Reader
+  homes** lines are ignored (`--settings` prints `readers ignored`): the owner can delete them.
 - **Idea sources** (read by step 5, kept by hand).
 
 **Constraints.** `docs/constraints.md` holds the project's hard constraints (`H1: …`, each
@@ -139,7 +139,7 @@ section 8 names any of their directories that is not plain. An in-cycle fix (ste
 cycle's own files, `docs/working/`, `docs/human-author/`, `docs/reviews/`,
 `docs/decisions/`, `docs/dev-cycle.md`, `docs/constraints.md`, `docs/failure-patterns.md` and its old path
 `docs/thoughts/failure-patterns.md`, a dot-directory or dotfile, an instruction file, or a
-file an instruction file names after an `@`, read broadly; compared ignoring case) or
+file an instruction or prompt file imports with a plain `@path`, directly or through other imports; compared ignoring case) or
 `README.md`, and refuses every path when the import walk fails; anything else (a new file, code, scripts, hooks, egress lists, decision
 records, instruction files) is filed, not written. Stage only the cycle's own files and the
 paths `--check-fix` printed `ok` for: `--cycle-diff` repeats only part of `--check-fix` (a
@@ -356,8 +356,7 @@ the iteration with no record, so the next one starts from the same `Main at:`:
    `Asked:` items land now and are not filed again (D13: a failed land is retried); a
    conflict is a stop. Unmerged `chore/dev-cycle-*` branches are named in the final
    message. WT is removed (`git -C MAIN_WT worktree remove WT`; the land left it clean) once
-   step 10's land is verified: every registered worktree costs disk and joins the import
-   walks' reader set.
+   step 10's land is verified: every registered worktree costs disk.
 4. **The digest**: `dev-cycle.sh` through the D6 block from WT. It
 reads the window start, triggers, questions, roadmap and idea log from that working tree. Keep
 its output. It is read-only. Its sections feed the steps: 1 activity (context), 2 triggers
