@@ -138,6 +138,31 @@ merged() { finished "$1" && git merge -q --no-ff -m "merge $1" "feat/$1"; }
     stays "$W"
 }
 
+@test "status.showUntrackedFiles=no does not hide an untracked file from the check" {
+    merged x
+    git config status.showUntrackedFiles no
+    echo new > "$W/untracked.txt"
+    fr; [[ "$output" == "kept feat/x $W: git refused"* ]] || { show; return 1; }
+    stays "$W"; [ -f "$W/untracked.txt" ]
+}
+
+@test "a worktree inside a finished one keeps it, whatever the inner one reads" {
+    merged x; A="$W"
+    brief y "Status: open" "Branch: feat/y"
+    bash "$BL" --start "$B" --dir "$A/.claude/inner" > /dev/null
+    fr; said "kept feat/x $A: the worktree $A/.claude/inner is inside it" "hold feat/y $A/.claude/inner: its brief is open"
+    stays "$A"; stays "$A/.claude/inner"
+}
+
+@test "a loop past its lock with no marker stays, even merged under a closed brief" {
+    dispatched x; L="$(lock_of "$W")"
+    # It fast-forwards to main before its first commit, as a live loop can.
+    sed -i 's/^Status: open/Status: done/' "$B"; commit_all "closed on main"
+    git -C "$W" merge -q --ff-only main
+    fr; said "kept feat/x $W: its tip is no handoff marker, so a live loop may hold it"; stays "$W"
+    [ "$(lock_of "$W")" = "$L" ]
+}
+
 @test "an ignored file goes with the worktree: git does not call it dirty" {
     echo 'scratch.txt' >> .gitignore; commit_all ignore
     merged x

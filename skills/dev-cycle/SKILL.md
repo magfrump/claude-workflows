@@ -426,8 +426,8 @@ last good one.
   branch merged (its header gives the rule). The record's `1.` line gives the count of `freed`
   lines; `hold` is a brief still open, or a closed one whose branch has not merged; each
   `kept` line goes in the record and the final message for the user, and is left as it is (no
-  forced removal, no unlock by hand). Any `refuse` line is recorded and the step goes on: the
-  next iteration runs it again.
+  forced removal, no unlock by hand). A `refuse worktrees:` line goes there too and the step
+  goes on, the next iteration running it again; any other refusal stops as the Rules say.
   Delete merged branches without asking (handoff answer 2,
   Q-153 [1]: the global instructions exempt `git branch -d` of a merged branch): list them
   with `git -C MAIN_WT for-each-ref --merged refs/heads/main --format='%(refname:short)'

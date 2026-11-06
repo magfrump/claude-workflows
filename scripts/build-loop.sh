@@ -545,12 +545,14 @@
 #             freed BRANCH DIR
 #                 Removed: the brief STEM (docs/working/briefs/, else closed/)
 #                 reads done or dropped on the default branch and names BRANCH,
-#                 BRANCH's tip is an ancestor of the default branch and past
-#                 the lock's TIP (a loop --start just dispatched sits at TIP,
-#                 itself an ancestor: only the tip having moved says it ran), and
-#                 unlocking and `git worktree remove`, never --force, passed.
-#                 Git does not count an ignored file as dirty: one goes with
-#                 the worktree.
+#                 BRANCH's tip is an ancestor of the default branch, past the
+#                 lock's TIP and a handoff marker (a loop --start just dispatched
+#                 sits at TIP, itself an ancestor, and may fast-forward to main:
+#                 only a marker says it ended), no other worktree is inside DIR,
+#                 and unlocking and `git worktree remove`, never --force, passed
+#                 (untracked files count, whatever status.showUntrackedFiles
+#                 says). Git does not count an ignored file as dirty: one goes
+#                 with the worktree.
 #             hold BRANCH DIR: WHY
 #                 Not finished: the brief is open, or it is closed and BRANCH
 #                 has not merged (a dropped brief's). The lock stays.
@@ -558,9 +560,10 @@
 #                 For a person to read: on no branch (BRANCH "-"), the
 #                 checkout this run started in, the brief skipped by --status
 #                 or not on the default branch, naming another branch, BRANCH's
-#                 history unreadable, the lock at or not behind the tip (a live
-#                 loop may hold it), DIR missing or a symbolic link, or git
-#                 refused (a change or an untracked file, say). A lock it took
+#                 history unreadable, the lock at or not behind the tip or the
+#                 tip no marker (a live loop may hold it), another worktree
+#                 inside DIR, DIR missing or a symbolic link, or git refused (a
+#                 change or an untracked file, say). A lock it took
 #                 off is put back, and the line says when that failed: a remove
 #                 that fails part way (a read-only directory) can leave DIR part
 #                 removed and no longer registered, which no later run names.
@@ -588,8 +591,8 @@
 # for --merge merged, for --start and --prompt ok, for --free-worktrees any
 # line but refuse; 2 any other --check,
 # --merge, --start or --prompt verdict line, --free-worktrees' refuse line, --main-log's other or refuse
-# line, a --cycle-diff refuse line, a --check-constraints line other than ok, or the state gate (--state's included) not ok. A --check or
-# --merge can also stop part way, after the lines of the briefs before, with 1
+# line, a --cycle-diff refuse line, a --check-constraints line other than ok, or the state gate (--state's included) not ok. A --check,
+# --merge or --free-worktrees can also stop part way, after the lines before, with 1
 # (need_root) or a failed command's own status: a caller reads any exit but 0
 # as nothing decided. 1 bad usage, a GIT_CONFIG_COUNT that is not plain
 # decimal, not a git repo, no perl or lib/dev-cycle-read.sh, a failed mktemp
@@ -935,7 +938,8 @@ read_settings() {
 
 # The tip SHA of a brief's branch, read as a handoff marker: prints ready,
 # blocked, "stopped REASON", working (no "handoff:" subject), or "bad WHY".
-# The caller has checked that the branch is at least one commit ahead of main.
+# --status calls it only on a branch at least one commit ahead of main;
+# free_one on a merged one.
 marker_kind() {
   local msg subj rest p r
   # git parses the parents; the message is the raw object's text after its
@@ -1680,6 +1684,10 @@ land() {
   fi
 }
 
+# A lock reason as dispatch writes it, up to its time (groups: STEM, TIP), and
+# that time. lock_behind reads the first alone, free_one both, whole.
+LOCK_RE='^locked build-loop dispatch of ([^ ]+) at ([0123456789abcdef]{40}|[0123456789abcdef]{64}), UTC '
+LOCK_TIME="$DIGIT{4}-$DIGIT{2}-$DIGIT{2}T$DIGIT{2}:$DIGIT{2}:$DIGIT{2}Z"
 # wt_of BRANCH: the worktrees git lists. MAINWT is the first (the main
 # worktree; empty when bare); WT_N counts those with BRANCH checked out, and
 # WT, WT_LOCK ("locked", or "locked REASON") and WT_PRUNE (set when git calls
@@ -1732,8 +1740,8 @@ ended() {
 # lock_behind LOCK TIP: LOCK (as wt_of's WT_LOCK) names the tip a dispatch
 # started from, and that is another commit than TIP and an ancestor of it.
 lock_behind() {
-  [[ "$1" =~ ^locked\ build-loop\ dispatch\ of\ [^\ ]+\ at\ ([0123456789abcdef]{40}|[0123456789abcdef]{64}),\ UTC\  ]] || return 1
-  [[ "${BASH_REMATCH[1]}" != "$2" ]] && git merge-base --is-ancestor "${BASH_REMATCH[1]}" "$2" 2>/dev/null
+  [[ "$1" =~ $LOCK_RE ]] || return 1
+  [[ "${BASH_REMATCH[2]}" != "$2" ]] && git merge-base --is-ancestor "${BASH_REMATCH[2]}" "$2" 2>/dev/null
 }
 # dispatch BRIEF: --start or --prompt (D1) for one brief, under the dispatch
 # lock its caller holds. Prints "ok BRIEF BRANCH DIR", "dispatched N" and the
@@ -1785,8 +1793,8 @@ dispatch() {
 # test leaves the lock in place until the last step, which needs it off: git
 # refuses to remove a locked worktree without a double --force.
 free_one() {
-  local p="$1" b="$2" lk="$3" stem a rc=0 why
-  [[ "$lk" =~ ^locked\ build-loop\ dispatch\ of\ ([^\ ]+)\ at\ ([0123456789abcdef]{40}|[0123456789abcdef]{64}),\ UTC\ $DIGIT{4}-$DIGIT{2}-$DIGIT{2}T$DIGIT{2}:$DIGIT{2}:$DIGIT{2}Z$ ]] || return 0
+  local p="$1" b="$2" lk="$3" stem a rc=0 why q
+  [[ "$lk" =~ $LOCK_RE$LOCK_TIME$ ]] || return 0
   stem="${BASH_REMATCH[1]}"
   [[ -n "$b" ]] || { echo "kept - $p: it is on no branch"; return 0; }
   [[ "$p" != "$ROOT" && "$p" != "$ROOT_REAL" ]] || { echo "kept $b $p: this run started in it"; return 0; }
@@ -1802,9 +1810,16 @@ free_one() {
   [[ "$rc" -ne 1 ]] || { echo "hold $b $p: its branch has not merged"; return 0; }
   [[ "$rc" -eq 0 ]] || { echo "kept $b $p: its branch's history could not be read"; return 0; }
   lock_behind "$lk" "${STATUS[sha]}" || { echo "kept $b $p: its tip is not past the commit its lock names, so a live loop may hold it"; return 0; }
+  case "$(marker_kind "${STATUS[sha]}")" in
+    ready|blocked|"stopped "*) ;;
+    *) echo "kept $b $p: its tip is no handoff marker, so a live loop may hold it"; return 0 ;;
+  esac
   [[ -d "$p" && ! -L "$p" ]] || { echo "kept $b $p: it is missing or a symbolic link"; return 0; }
+  # Git would delete a worktree nested inside this one with its ignored files.
+  for q in "${WT_PATHS[@]}"; do [[ "$q" != "$p/"* ]] || { echo "kept $b $p: the worktree $q is inside it"; return 0; }; done
   git worktree unlock "$p" 2>"$GATE_TMP/err" || { echo "kept $b $p: it could not be unlocked ($(head -n 1 "$GATE_TMP/err"))"; return 0; }
-  if git worktree remove -- "$p" 2>"$GATE_TMP/err"; then echo "freed $b $p"; return 0; fi
+  # The -c: the status behind remove's clean check reads this key, and "no" hides untracked files.
+  if git -c status.showUntrackedFiles=normal worktree remove -- "$p" 2>"$GATE_TMP/err"; then echo "freed $b $p"; return 0; fi
   why="$(head -n 1 "$GATE_TMP/err")"
   git worktree lock --reason "${lk#locked }" "$p" 2>/dev/null || why+="; its lock could not be put back"
   echo "kept $b $p: git refused ($why)"
@@ -1815,6 +1830,8 @@ free_worktrees() {
   local x p="" b="" lk="" f=()
   git worktree list --porcelain -z > "$GATE_TMP/wts" || { echo "refuse worktrees: the worktrees could not be listed"; exit 2; }
   mapfile -d '' -t f < "$GATE_TMP/wts"
+  WT_PATHS=()
+  for x in "${f[@]}"; do [[ "$x" != "worktree "* ]] || WT_PATHS+=("${x#worktree }"); done
   # NUL-ended fields; an empty field ends each record.
   for x in "${f[@]}"; do
     case "$x" in
