@@ -17,8 +17,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   asked to remove every restriction without a specific, in-scope threat model; plan and
   inventories in `docs/working/research-2026-11-01-restriction-audit.md`. Units 1-3 merged
   (63ba32e9, 242081af, 78dad60b); unit 4 merged (3019016a, Q-250 [1]); unit 5 merged (89ed0db4, Q-251 [1]). Unit 6 (import
-  walk seeds and parser) briefed 2026-11-03 (In flight). Next: brief 7 (D6 block into the
-  image) once unit 6 lands, since both edit `skills/dev-cycle/SKILL.md`.
+  walk seeds and parser) merged (68a05afe, Q-253 [1]). Unit 7 (D6 block into the image)
+  briefed 2026-11-05 (In flight).
   Unit 4 also gives `skills/draft-review/SKILL.md`'s Fact-Check Gate the same unattended
   default (unit 2's override-log C9).
   Unit 3's loop left two stale lines for later units (`plan-build-loop-handoff.md` D13 and
@@ -38,8 +38,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 - **Agent: `source_lines_ok` misses an unterminated last line** (filed 2026-11-05, step 7).
   Motive: the Q-147 review found the shipped self-check in `devcontainer-config/cc-verify.sh`
   can miss a final line with no newline; every file ends in one today, so nothing is exposed
-  now. It lives otherwise only as a Defer row in `docs/reviews/override-log.md`, on Q-258's
-  branch. First step: after Q-258 merges, one change with `Host-tool-tested:` and a re-bless,
+  now. It lives otherwise only as a Defer row in `docs/reviews/override-log.md`, merged with
+  Q-258. First step: one change with `Host-tool-tested:` and a re-bless,
   which needs a host run, so it is not briefed for a loop yet.
 
 - **Trial week: less friction, less habituation (2026-10-30 to about 2026-11-06).** Motive:
@@ -78,20 +78,11 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
-- Restriction audit unit 6: the import walk reads plain `@path` imports only
-  (`docs/working/briefs/2026-11-03-import-walk-plain.md`; review policy, gate code). Ready at
-  4d6880b7; merge entry Q-253.
+- Restriction audit unit 7: the D6 block becomes one root-owned image script
+  (`docs/working/briefs/2026-11-05-d6-block-into-image.md`; review policy, gate code).
 - Q-125's `cc-verify --check` file for the sandbox live run
   (`docs/working/briefs/2026-11-03-q125-verify-check.md`; review policy). Blocked at
   502296b7: the Q-125 branch's own C1 check cannot pass on a working sandbox; Q-254.
-- Q-097: close or record the exit scan's two older routes
-  (`docs/working/briefs/2026-11-05-exit-scan-older-routes.md`; review). Ready at 6a2a4dce:
-  both routes stay open, reasons in the guide; merge entry Q-257. Full entry:
-  `docs/working/questions.md` at b5f620ae.
-- Q-147: land or retire the Q-089 static source-set test
-  (`docs/working/briefs/2026-11-05-q089-source-guard-narrow.md`; review). Ready at c9786a27:
-  a narrowed test landed, not retired; merge entry Q-258. Full entry:
-  `docs/working/questions.md` at b5f620ae.
 
 ## Next
 
@@ -338,6 +329,13 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- **Restriction audit unit 6: the import walk reads plain `@path` imports only.** Merged
+  68a05afe (Q-253 [1]). It takes effect from the next image release. Brief:
+  `docs/working/briefs/closed/2026-11-03-import-walk-plain.md`.
+- **Q-097: the exit scan's two older routes stay open, with reasons in the guide.** Merged
+  3424799f (Q-257 [1]). Brief: `docs/working/briefs/closed/2026-11-05-exit-scan-older-routes.md`.
+- **Q-147: the Q-089 source-set test landed, narrowed.** Merged 3a663f88 (Q-258 [1]). Brief:
+  `docs/working/briefs/closed/2026-11-05-q089-source-guard-narrow.md`.
 - **Q-079's design: the canon-instance proposal filter.** Self-merged 605d4c18. Design in
   `docs/working/research-2026-11-05-canon-proposal-filter.md`; the filter choice is Q-256.
   Brief: `docs/working/briefs/closed/2026-11-05-canon-proposal-filter.md`.
