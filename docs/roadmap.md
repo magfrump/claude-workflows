@@ -78,6 +78,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
+- Free a finished loop's worktree and branch
+  (`docs/working/briefs/2026-11-06-free-merged-loop-worktrees.md`; review policy, gate code).
 - Restriction audit unit 7: the D6 block becomes one root-owned image script
   (`docs/working/briefs/2026-11-05-d6-block-into-image.md`; review policy, gate code). Ready at
   5e2b96d3; merge entry Q-259. After it merges, no brief touching `scripts/d6.sh` is dispatched
