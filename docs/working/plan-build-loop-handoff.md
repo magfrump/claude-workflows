@@ -148,7 +148,7 @@ Assume the handoff shipped and an autonomous loop landed something you never rev
 | F23 | Review artifacts as a write channel | covered | S: only *added* `docs/reviews/*` whose name contains the full brief stem (T10) |
 | F24 | Gitignored working docs | covered | Only the diff lands (T9) |
 | F25 | Shared `.git` state: config, hooks, attributes, replace refs | covered for the gate's git calls | D7 hardening and state gate (T26). The orchestrator's own git: F51 |
-| F26 | The loop edits the gate | covered (with F38–F40) | D6: only the orchestrator's run of the hardened snippet can move main (T27, T33, T36, T37) |
+| F26 | The loop edits the gate | covered (with F38–F40) | D6: only the orchestrator's run of d6.sh can move main (T27, T33, T36, T37) |
 | F27 | Slug collision between briefs | covered | Own files keyed on the full brief stem (T10) |
 | F28 | Forged answers or roadmap edits in a working tree | covered (with F42) | D8 reads answers from main's commit (T34). D13: the orchestrator reads from main and `--cycle-diff` stops it from committing edits it did not make (T38). A forged commit on main is F19 |
 | F29 | Main checked out, under rebase or bisect, or switched mid-merge | partly | As revision 2 (T22, T23); residual recorded |
@@ -403,7 +403,7 @@ The hermetic throwaway-repo setup is the same as `test/scripts/dev-cycle.bats`. 
 | T7 | Spoofed markers: with content, a merge commit, a suffixed subject (`handoff: blocked!`), control/bidi in the reason, an orphan commit, a marker at main's tip with 0 ahead | working / `unreadable` | unit |
 | T19 | `--start`: the prompt holds every required line (the `cd ABS-PATH &&` rule, the scratch-dir line with the stem, no blanket "never start agents", "no plan-approval gate", "`--check` is advisory"); worktree HEAD = MAIN_SHA; worktree locked; `dispatched 1`; default dir; `--dir` rules | as listed | integration |
 | T23 | As rev 2, plus: an untracked unrelated file in W → merge; an untracked file at a path the merge adds → refuse | as listed | integration |
-| T27 | A gate copy with a patched rule, run from the loop's worktree, prints ok; the D6 snippet's copy refuses the same tip | refuse from the image copy (U4c) | integration |
+| T27 | A gate copy with a patched rule, run from the loop's worktree, prints ok; d6.sh's image copy refuses the same tip | refuse from the image copy (U4c) | integration |
 | T32 | `--marker`: a plain 3-question body → printed, every line `> `-prefixed; E2's body, E3's line, `### Q-001 · x`, `Q-1: [1]` → skip; 101 lines or a 301-byte line → capped with a note; control/bidi scrubbed; an open fence → skip; a `ready` marker → skip | as listed | unit |
 | T33 | d6.sh (as built, U4c; a file since 2026-11-05, D6): runs the image copy's four files (build-loop.sh and dev-cycle.sh with their own lib, dev-cycle.sh with its own `questions.sh`); main's and the working tree's copies have no effect; SKILL.md states the one-line call once | as listed | integration |
 | T34 | `--check-answer` (both scripts): an answer only in the working tree → `open`; committed on main → read; committed only on another branch → `open`; the E2 fixture with the body quoted by `--marker` → option 2, and `questions.sh open` omits the ID | as listed | unit |
@@ -428,7 +428,7 @@ Dropped from revision 2: none of the T-ids. T19 and T24 now test the orchestrato
 | The extraction changes dev-cycle.sh's behaviour | U0 is its own unit; T25, T29, T30 |
 | A self-merge lands a denied path through an unlisted family | The allowlist is primary (D5); F1–F53 |
 | A review merge can never complete after a cycle lands | D7; T16 |
-| The gate runs a loop's bytes | D6 snippet; T27, T33, T36, T37 |
+| The gate runs a loop's bytes | d6.sh; T27, T33, T36, T37 |
 | An honest loop commits to main from the wrong directory | D13; T39 |
 | The user's answer is read as something else | D3 body grammar, D11 quoting; T32, T34 |
 | A loop waits on you | D2: `blocked` marker, slot freed |

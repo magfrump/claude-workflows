@@ -1028,7 +1028,7 @@ ownfile() {
 # review entry, never a self-merge. The scripts because the image copy, built
 # from the host checkout's HEAD, runs every merge after the next release (plan D6, D5
 # item 3; Q-140 [1]); scripts/d6.sh because it runs the gate; skills/dev-cycle/ because its
-# SKILL.md states the call (U4c; plan D4, F52). Both reach a session only from a release, so
+# SKILL.md states the call (U4c; plan D4, F52). All reach a session only from a release, so
 # here the floor is stricter than D5.
 # One list for floor and build-loop.sh's --approved, which tests it on its
 # own (floor does not run there); build-loop.sh's header repeats it.

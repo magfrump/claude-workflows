@@ -50,7 +50,7 @@ Constraints applied: H1, H2, H3, S1, S3, S4, S8 (no growth of `install.sh`), S10
 | `/usr/local/bin/d6` by `COPY` | Dockerfile edit, outside the commit-pinned payload, so skill and script could differ | enforcement file; a PATH lookup would let PATH choose (H1) | pruned |
 | No wrapper: `bash /opt/.../scripts/SCRIPT` | nothing new | loses R6f's scrub (KEEP) and the default-branch check on two scripts | pruned |
 
-One option dominates: it alone needs no enforcement-file change, and it ships in the same payload as the skill. Its call is `bash PATH`, not a bare `PATH`: the same message under zsh and bash, and independent of the mode bit.
+One option dominates: of the options that keep R6f's scrub, it alone needs no enforcement-file change, and it ships in the same payload as the skill. Its call is `bash PATH`, not a bare `PATH`: the same message under zsh and bash, and independent of the mode bit.
 
 D6_OPT stays a literal. Reading it from the environment would let a caller choose the gate (H1); deriving it from the file's own path would make a working-tree `bash scripts/d6.sh` run the working tree's gate. A test pins the literal and forbids `BASH_SOURCE`, `$0` and `dirname`.
 
@@ -60,8 +60,8 @@ Options: (A) keep every check, a pure move; (B) apply the audit's verdicts, each
 
 | Row | Check | Re-check | Decision |
 |---|---|---|---|
-| R6c | replace ref | The gate's git ignores it (the probe above); `git_harden` sets both pins. The refusal stopped a repo for a ref nothing reads. | **drop** |
-| R6c | `info/grafts` | The audit's reason does not cover this: hardened git does follow grafts. Still dropped: `--state` dropped it (unit 1, G5) and that research accepts the residual; git has deprecated the file and prints a hint on reading one; honest use is a deliberate history splice that everything then reads consistently; a planted one is hostile, out of scope by S1. | **drop**, residual stated |
+| R6c | replace ref | The gate's git ignores it (the probe above); `git_harden` sets both pins. The refusal stopped a repo for a ref none of the three scripts reads (the orchestrator's plain git does follow one). | **drop** |
+| R6c | `info/grafts` | The audit's reason does not cover this: hardened git does follow grafts. Still dropped: `--state` dropped it (unit 1, G5) and that research accepts the residual; git has deprecated the file and prints a hint on reading one; honest use is a deliberate history splice; a planted one is hostile, out of scope by S1. | **drop**, residual stated |
 | R6d | exactly one of main/master | H2: an ambiguous default, and the only such check `dev-cycle.sh` and `questions.sh` have. | **keep** |
 | R6d | symbolic ref, non-commit ref | `default_gate` refuses both in `--state` [observed: `scripts/build-loop.sh`; a new test pins it through d6], and `--state` opens every iteration. | **drop** |
 | R6e | file present, regular, not a symlink | H2: the stale or partial image. | **keep** |
@@ -84,7 +84,7 @@ The skill and d6.sh are items of one payload, extracted from one commit into one
 | old (a pasted block, for instance in a resumed session's context) | new | Works: the block's four files stay in the image, root-owned. No flag day. |
 | new (read from a checkout, not the image) | old | `bash` prints `/opt/claude-workflows/scripts/d6.sh: No such file or directory`, exit 127, empty stdout, nothing ran. The Rules read that as the refusal: a stop, and at step 0.1 its entry gives the release paste. |
 
-H2's "a missing script refuses and names the gap" is met by that line and the Rules. An inline guard in the call line would print a `refuse d6:` line, but it is a paste again, on every call, for a state the payload makes unreachable through the installed skill.
+The brief's "a missing script refuses and names the gap" (H2) is met by that line and the Rules. An inline guard in the call line would print a `refuse d6:` line, but it is a paste again, on every call, for a state the payload makes unreachable through the installed skill.
 
 ## Plan
 
@@ -100,9 +100,9 @@ Assume this shipped and an enforcement path failed.
 1. **A working-tree copy runs as the gate.** A session calls `bash scripts/d6.sh` from a checkout. The root is a literal, so it still runs the image's scripts; the reach is that copy's own pre-checks. Guard: the literal and its test, and T33's "never main's or the working tree's".
 2. **The environment chooses.** `D6_OPT`, `BASH_ENV`, `ENV`, or a PATH `bash` or `git`. D6_OPT is assigned, never read. BASH_ENV applies to `bash d6.sh` as it did to `bash -s`: the same-uid residual Q-103 accepts, unchanged. The scrub is pinned by a new test.
 3. **The release gap.** After the merge and before the release, the image's floor does not list `scripts/d6.sh`, so a self-merge naming it in `Paths:` would pass unflagged. Bounded: it reaches a session only through the release, and the `image-lag` entry this merge opens lists every changed path outside `docs/`, this file among them. The new image's GATE_CODE closes it. Step 0.1's old PATHS line also omits the file, but `skills/dev-cycle/` differs from the same merge until the release. To close the window sooner, the cycle can add `scripts/d6.sh` to `Self-merge never:` in `docs/dev-cycle.md`, which the old image reads from main, or dispatch no brief touching the file before the release; this branch may not edit that file. The security review rated the window Medium.
-4. **A refusal read as a pass.** The 127 path has empty stdout, so a reader of "the first line" sees nothing. The Rules state it, step 1b's "if either fails, go on" names it as still a stop, and a test pins those phrases. Step 0.1 comes first in every iteration, so the stop lands there anyway.
+4. **A refusal read as a pass.** The 127 path has empty stdout, so a reader of "the first line" sees nothing. The Rules state it, step 1's "if either fails, go on" names it as still a stop, and a test pins those phrases. Step 0.1 comes first in every iteration, so the stop lands there anyway.
 5. **A regression through sourcing.** The lib is sourced in a subshell. A lib that fails to load, or a `git_harden` that refuses the environment, is tried alone before the loop and named as such (review i1), so exit 1 in the loop comes from `show-ref`. That exit also covers a ref git cannot use (a junk file, a dangling symbolic ref, an unreadable file): it counts as absent, as it did in the block. Beside a good name that passes; alone it refuses as "not exactly one". A test proves no pair reaches the script and every git call carries the pins.
-6. **Planted history.** A planted `info/grafts` now reaches `--main-log`. Hostile-only (S1); `--state` already accepted it in unit 1.
+6. **Planted history.** A planted `info/grafts` no longer refuses. It does not reach `--main-log`, which reads through `gate_git`, a repository with no `info/` (review probe), but it does reach `dev-cycle.sh`'s `git log`, real-repo reads such as `merge-base` in `build-loop.sh`, and the orchestrator's plain git. Hostile-only (S1); `--state` already accepted it in unit 1.
 
 ### Test plan
 
@@ -114,8 +114,8 @@ The brief's Goal says the block's checks keep running; its criteria ask which of
 
 | Option | What it means | Cost to you | If it's wrong |
 |---|---|---|---|
-| **[1] Apply the audit (picked)** | d6.sh keeps exactly-one default and file presence; the replace, grafts, symbolic, non-commit and ownership checks go | none | a planted graft reaches `--main-log`: hostile-only, S1 |
-| **[2] Keep every check** | restore `scripts/d6.sh` and the D6 tests from da07a77c, the move with every check kept, plus one test phrase and two lib comments | one line in the review, then one small branch | the refusals stay: a replace ref stops a repo for a ref nothing reads |
+| **[1] Apply the audit (picked)** | d6.sh keeps exactly-one default and file presence; the replace, grafts, symbolic, non-commit and ownership checks go | none | a planted graft reaches the digest's `git log` and some real-repo reads, not `--main-log`: hostile-only, S1 |
+| **[2] Keep every check** | restore `scripts/d6.sh` and the D6 tests from da07a77c, the move with every check kept, plus one test phrase, two lib comments and the plan's amendment and rows F38, F39, T36, T37 | one line in the review, then one small branch | the refusals stay: a replace ref stops a repo for a ref none of the three scripts reads |
 
 ## Files read
 

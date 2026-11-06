@@ -215,7 +215,7 @@ the iteration with no record, so the next one starts from the same `Main at:`:
    environment) are a stop,
    quoted in one `you: judgment` entry unless an open one quotes the same lines. Any other
    exit is a stop as the Rules say (the exit 127 above means an image older than this
-   skill, and a `refuse d6:` naming a missing image file a partial image: either entry also gives the release paste below).
+   skill, and a `refuse d6:` naming a missing image file a partial image: wherever either is filed, it also gives the release paste below).
    Then the image lag (Q-140 [1]; the image is the gate, built from the host checkout's HEAD).
    C and A are the `commit=` and `assembled_from=` lines of `/opt/claude-workflows/.manifest`,
    M main's commit; with no file or either line, note it in the record and skip. If
