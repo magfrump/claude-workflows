@@ -1,7 +1,9 @@
 #!/usr/bin/env bats
 # @category fast
 # Contract tests for the build-loop gate: the reader lib's import walks
-# (scripts/lib/dev-cycle-read.sh isimported, import_targets, main_imports) and, from U2a4 and U2b, the self-merge floor and build-loop.sh --check.
+# (scripts/lib/dev-cycle-read.sh isimported, import_targets, main_imports,
+# imported_names: plain @path imports since brief 2026-11-03-import-walk-plain)
+# and, from U2a4 and U2b, the self-merge floor and build-loop.sh --check.
 # Each test builds a throwaway repo under $BATS_TEST_TMPDIR
 # (test/lib/build-loop-fixtures.bash); this repo is untouched.
 
@@ -11,29 +13,24 @@ load ../lib/build-loop-fixtures
 setup() { bl_setup; LIB="$REPO_ROOT/scripts/lib/dev-cycle-read.sh"; }
 
 # imps WALK PATH...: in the fixture repo with main resolved and ROOT_REAL set,
-# "walk: ok" or "walk: failed" (main_imports' or imported_names' return),
-# then "PATH: imported" or "PATH: -" from isimported WALK for each path.
-# T_READER_ROOTS and T_READER_HOMES, when set, become the caller's
-# IMPORT_READER_ROOTS and IMPORT_READER_HOMES after the lib is sourced (it clears them);
-# T_SETTINGS=1 sets them as the scripts do, with reader_settings. T_MANAGED
-# becomes IMPORT_MANAGED_DIR (by default a path that does not exist).
+# "walk: ok" or "walk: failed" (main_imports' or imported_names' return) and
+# "why: WORD" (the walk's IMPORTED_MAIN_WHY or IMPORTED_WHY), then
+# "PATH: imported" or "PATH: -" from isimported WALK for each path.
 imps() {
     # timeout: a walk that never ends (an import cycle it does not stop) fails the test.
     run --separate-stderr timeout 60 env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; shift
-        [[ -z "${T_READER_ROOTS+set}" ]] || IMPORT_READER_ROOTS="$T_READER_ROOTS"
-        [[ -z "${T_READER_HOMES+set}" ]] || IMPORT_READER_HOMES="$T_READER_HOMES"
-        IMPORT_MANAGED_DIR="${T_MANAGED:-/nonexistent/managed}"  # the real /etc/claude-code stays out
-        resolve_main || true; [[ -z "${T_SETTINGS:-}" ]] || reader_settings; ROOT_REAL="$(pwd -P)"; w="$1"; shift
+        resolve_main || true; ROOT_REAL="$(pwd -P)"; w="$1"; shift
         if { [[ "$w" == main ]] && main_imports; } || { [[ "$w" == tree ]] && imported_names; }; then echo "walk: ok"; else echo "walk: failed"; fi
+        if [[ "$w" == main ]]; then echo "why: $IMPORTED_MAIN_WHY"; else echo "why: $IMPORTED_WHY"; fi
         for p in "$@"; do if isimported "$w" "$p"; then echo "$p: imported"; else echo "$p: -"; fi; done' _ "$LIB" "$@"
 }
-# want PATH WORD: the imps output holds exactly "PATH: WORD" (want walk ok|failed).
+# want PATH WORD: the imps output holds exactly "PATH: WORD" (want walk ok|failed, want why WORD).
 want() { printf '%s\n' "$output" | grep -qxF "$1: $2" || { echo "want: $1: $2"; echo "$output $stderr"; return 1; }; }
 # floors STEM STATUS PATH...: the lib's floor for each path, as imps runs the
 # walks; one "PATH: WHY" or "PATH: -" line each, read with want.
 floors() {
     run --separate-stderr timeout 60 env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; shift
-        resolve_main || true; [[ -z "${T_SETTINGS:-}" ]] || reader_settings; ROOT_REAL="$(pwd -P)"; s="$1"; st="$2"; shift 2
+        resolve_main || true; ROOT_REAL="$(pwd -P)"; s="$1"; st="$2"; shift 2
         for p in "$@"; do if floor "$p" "$s" "$st"; then echo "$p: $(floor_why "$FLOOR_WHY")"; else echo "$p: -"; fi; done' _ "$LIB" "$@"
 }
 INSTR="an instruction or prompt file, which sessions load from the checkout"
@@ -46,1316 +43,205 @@ USER="the user's constraints doc, which every loop prompt carries"
 REC="a record later runs read as truth"
 WORK="a working file that is not this brief's own (they carry its full stem)"
 REV="a review record (only an added review named STEM.md or NAME-STEM.md lands)"
+READWHY="could not be read, is larger than 4 MiB or not valid UTF-8, or names ~/ while HOME is not an absolute path"
+LINKWHY="is a symlink or lies below one, which the walk does not follow"
 
-@test "tree walk shares the token rules: Unicode spaces end a token, punctuation is read kept and stripped, a ..x name is followed, a NUL hides no import, a cycle ends (U2a2)" {
-    mkdir -p docs
-    # Two NBSPs in one run: the token ends at the first. docs/z.md is imported only after the NUL;
-    # gone/ does not exist, and the path is still resolved as written.
-    printf 'See @docs/nb.md\xc2\xa0for\xc2\xa0you, @docs/bom.md\xef\xbb\xbfnow, @docs/st.md. @..x.md @gone/../docs/m.md and @docs/a.md\0 then @docs/z.md\n' > CLAUDE.md
-    printf 'hid @docs/hid.md\n' > ..x.md
-    printf 'back @../CLAUDE.md, @c.md and @b.md\n' > docs/c.md
-    printf 'see @docs/c.md\n' > AGENTS.md
-    commit_all tree
-    # Docs/NB.MD and CLAUDE.md: isimported takes a path in any case.
-    ps=(docs/nb.md docs/bom.md docs/st.md docs/st.md. ..x.md docs/hid.md docs/b.md docs/c.md claude.md docs/z.md docs/m.md Docs/NB.MD CLAUDE.md)
-    imps tree "${ps[@]}" docs/other.md docs/nb.md. $'docs/nb.md\xc2\xa0for'
-    [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output $stderr"; return 1; }
-    for p in "${ps[@]}"; do want "$p" imported; done
-    # The NBSP ends the token: no name runs on past it (precision; a superset may over-read it).
-    want docs/other.md -; want docs/nb.md. -; want $'docs/nb.md\xc2\xa0for' -
-}
-
-@test "isimported answers imported under if for a walk name it does not know (U2a2)" {
-    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main; ROOT_REAL="$(pwd -P)"
-        if isimported bogus docs/z.md; then echo "bogus: imported"; fi' _ "$LIB"
-    [ "$output" = "bogus: imported" ] || { echo "$output $stderr"; return 1; }
-    # Without ROOT_REAL it stops (need_root) for any walk name, before answering.
-    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main
-        if isimported bogus docs/z.md; then echo "bogus: imported"; fi' _ "$LIB"
-    [ "$status" -eq 1 ] && [ -z "$output" ] && [[ "$stderr" == *"ROOT_REAL is not set"* ]] || { echo "$status $output $stderr"; return 1; }
-}
-
-@test "both walks: every Unicode space JavaScript's \\s holds ends a token; SKILL.md starts them; an untracked upper-case .MD starts the tree walk (U2a3b)" {
-    mkdir -p docs sub
-    # U+00A0, U+1680, U+2000-200A, U+2028, U+2029, U+202F, U+205F, U+3000, U+FEFF as UTF-8.
-    sp=('\xc2\xa0' '\xe1\x9a\x80' '\xe2\x80\x80' '\xe2\x80\x81' '\xe2\x80\x82' '\xe2\x80\x83' '\xe2\x80\x84'
-        '\xe2\x80\x85' '\xe2\x80\x86' '\xe2\x80\x87' '\xe2\x80\x88' '\xe2\x80\x89' '\xe2\x80\x8a' '\xe2\x80\xa8'
-        '\xe2\x80\xa9' '\xe2\x80\xaf' '\xe2\x81\x9f' '\xe3\x80\x80' '\xef\xbb\xbf')
-    ps=() ns=()
-    for i in "${!sp[@]}"; do printf "@../docs/u$i.md${sp[$i]}x\\n"; ps+=("docs/u$i.md"); ns+=("docs/u$i.md$(printf "${sp[$i]}")x"); done > sub/SKILL.md
-    commit_all spaces
-    # ns: the names run on past each space. Neither walk reads one (precision, as the
-    # title states; a parser that is still a superset may over-read them on purpose).
-    imps main "${ps[@]}" docs/other.md "${ns[@]}"
-    [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "main: $output $stderr"; return 1; }
-    want walk ok; for p in "${ps[@]}"; do want "$p" imported; done; want docs/other.md -
-    for p in "${ns[@]}"; do want "$p" -; done
-    # An untracked start: the tree walk reads it (the main walk's checkout phase does too; the next test pins it).
-    printf 'See @k.md\n' > docs/AGENTS.MD
-    imps tree "${ps[@]}" docs/k.md docs/other.md "${ns[@]}"
-    [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "tree: $output $stderr"; return 1; }
-    want walk ok; for p in "${ps[@]}" docs/k.md; do want "$p" imported; done; want docs/other.md -
-    for p in "${ns[@]}"; do want "$p" -; done
-}
-
-@test "main walk: main's instruction files start it; a working-tree edit does not count; phase 2 walks an untracked, ignored or index-only start and a checkout file at a path main lacks (U2a2, U2a3, U2a3c)" {
-    mkdir -p docs skills/x
-    printf 'Rules: @docs/imported.md and @docs/new.md\n' > CLAUDE.md
-    printf 'More: @deep.md.\n' > docs/imported.md
-    printf 'deep\n' > docs/deep.md
-    printf 'See **@ref.md**\n' > skills/x/SKILL.md
+@test "both walks read plain @path imports, direct and transitive: a token ends at a blank, trailing punctuation is also stripped, and .. or absolute names that land in the repo count; a name outside it is dropped (brief 2026-11-03-import-walk-plain)" {
+    mkdir -p docs/sub
+    printf 'Rules: @docs/a.md, and (see @docs/sub/b.md).\nmail t@example.invalid\n' > CLAUDE.md
+    printf 'Next:\t@c.md\r\n' > docs/a.md
+    printf 'Up: @../../docs/d.md and @%s/docs/e.md and @/etc/passwd and @../../../outside.md\n' "$(pwd -P)" > docs/sub/b.md
+    for f in c d e other; do printf 'leaf\n' > "docs/$f.md"; done
     commit_all imports
-    printf 'Rules: @docs/wt-only.md\n' > CLAUDE.md
-    imps main docs/imported.md Docs/Imported.md docs/deep.md skills/x/ref.md docs/new.md docs/wt-only.md CLAUDE.md docs/guide.md
-    [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output $stderr"; return 1; }
-    want walk ok
-    for p in docs/imported.md Docs/Imported.md docs/deep.md skills/x/ref.md docs/new.md; do want "$p" imported; done
-    for p in docs/wt-only.md CLAUDE.md docs/guide.md; do want "$p" -; done
-    printf 'see @guide.md\n' > docs/new.md; imps main docs/guide.md docs/other.md; want walk ok; want docs/guide.md imported; want docs/other.md -; rm docs/new.md
-    printf 'Mine: @docs/private.md\n' > CLAUDE.local.md; imps main docs/private.md docs/guide.md; want walk ok; want docs/private.md imported; want docs/guide.md -
-    printf 'CLAUDE.local.md\n' > .gitignore; imps main docs/private.md; want walk ok; want docs/private.md imported
-    git add -f CLAUDE.local.md; imps main docs/private.md; want walk ok; want docs/private.md imported
-    rm CLAUDE.local.md; imps main docs/private.md; want walk ok; want docs/private.md -  # an index-only start deleted from the checkout loads nothing
-}
-
-@test "main walk fails closed when an instruction blob cannot be read or main is not found by name (U2a2)" {
-    printf 'Rules: @docs/a.md\n' > CLAUDE.md && commit_all claude
-    imps main docs/a.md scripts/other.sh; want walk ok; want docs/a.md imported; want scripts/other.sh -
-    # The instruction file's blob is missing from the object store.
-    o="$(git rev-parse main:CLAUDE.md)"
-    rm ".git/objects/${o:0:2}/${o:2}"
-    imps main scripts/other.sh; want walk failed; want scripts/other.sh imported
-    # The blob is back: the walk reads again, so the next failure is the name alone.
-    printf 'Rules: @docs/a.md\n' | git hash-object -w --stdin >/dev/null
-    imps main scripts/other.sh; want walk ok; want scripts/other.sh -
-    # No default branch found by name: nothing is read, every path is imported.
-    git checkout -q -b trunk && git branch -q -D main
-    imps main scripts/other.sh; want walk failed; want scripts/other.sh imported
-}
-
-@test "main walk: a name the tree lists twice, or any name holding a newline, fails the walk (U2a2)" {
-    # CLAUDE.md imports docs/a.md, and main's docs/ tree lists a.md twice.
-    printf 'Rules: @docs/a.md\n' > CLAUDE.md && commit_all claude
-    a="$(printf 'a\n' | git hash-object -w --stdin)"
-    d="$(printf '100644 blob %s\ta.md\n100644 blob %s\ta.md\n' "$a" "$a" | git mktree)"
-    t="$(printf '100644 blob %s\tCLAUDE.md\n040000 tree %s\tdocs\n' "$(git rev-parse main:CLAUDE.md)" "$d" | git mktree)"
-    git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m dup)"
-    imps main scripts/other.sh; want walk failed; want scripts/other.sh imported
-    # A start file listed twice (a symlink first, which git reads), and a plain
-    # file listed twice: each fails the walk rather than reading one copy.
-    l="$(printf 'x' | git hash-object -w --stdin)" && b="$(printf '@docs/b.md\n' | git hash-object -w --stdin)"
-    t="$(printf '120000 blob %s\tAGENTS.md\n100644 blob %s\tAGENTS.md\n' "$l" "$b" | git mktree)"
-    git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m dup-start)"
-    imps main docs/b.md; want walk failed; want docs/b.md imported
-    t="$(printf '100644 blob %s\tAGENTS.md\n100644 blob %s\tz.txt\n100644 blob %s\tz.txt\n' "$a" "$a" "$a" | git mktree)"
-    git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m dup-other)"
-    imps main scripts/other.sh; want walk failed; want scripts/other.sh imported
-    # A name holding a newline is not modelled, so it fails the walk: a plain one,
-    # and one shaped so each half looks like an ls-tree record (a forged symlink line).
-    n="$(printf '@../docs/d.md\n' | git hash-object -w --stdin)"
-    q="$(printf '@../docs/p.md\n' | git hash-object -w --stdin)"
-    w="$(printf '100644 blob %s\tAGENTS.md\0' "$n" | git mktree -z)"
-    v="$(printf '100644 blob %s\tAGENTS.md\0' "$q" | git mktree -z)"
-    t="$({ printf '040000 tree %s\twe\nird\0' "$w"; printf '040000 tree %s\tx\n120000 blob %s\tdocs\0' "$v" "$a"; } | git mktree -z)"
-    git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m newline)"
-    [ "$(git ls-tree -r -z --name-only main | tr -cd '\0' | wc -c)" -eq 2 ]
-    imps main docs/d.md docs/p.md; want walk failed; want docs/d.md imported; want docs/p.md imported
-}
-
-@test "main walk follows what Claude Code loads: symlinks, any name main stores, the checkout's files, .claude/rules/ at any depth, a token ended by a Unicode space (U2a2, U2a3, U2a3c)" {
-    mkdir -p docs .github .claude/rules pkg/.claude/rules
-    printf 'imports @docs/b.md\n' > real.md
-    ln -s real.md CLAUDE.md
-    printf 'See @.github/instr.md and @docs/a+b.md and @docs/nb.md\xc2\xa0for and @docs/link.md\n' > AGENTS.md
-    printf 'More: @../docs/g.md\n' > .github/instr.md
-    printf 'More: @deep.md\n' > docs/a+b.md
-    printf 'tgt @t2.md\n' > docs/target.md
-    ln -s target.md docs/link.md
-    printf 'Style: @../../docs/r.md\n' > .claude/rules/style.md
-    printf 'Nested: @../../../docs/nested.md and @docs/bom.md\xef\xbb\xbfnow\n' > pkg/.claude/rules/style.md
-    printf 'tracked\n' > docs/t.md
-    # An executable instruction file and import (100755), and a chain of two links on main.
-    chmod +x real.md docs/a+b.md && printf 'c @c3.md\n' > docs/c2.md && ln -s docs/c1.md GEMINI.md && ln -s c2.md docs/c1.md
-    commit_all walks
-    # Untracked .claude/rules starts, top level and nested; a local instruction file importing an untracked note, which imports a tracked file; a checkout edit of a tracked import does not count.
-    printf 'U: @../../docs/u.md\n' > .claude/rules/mine.md && printf 'U: @../../u2.md\n' > pkg/.claude/rules/x.md && printf 'gone\n' > docs/a+b.md
-    printf 'Mine: @docs/local-notes.md\n' > CLAUDE.local.md && printf 'Notes: @t.md\n' > docs/local-notes.md
-    ps=(docs/u.md pkg/u2.md docs/local-notes.md docs/t.md docs/c3.md real.md docs/b.md docs/g.md docs/deep.md docs/nb.md docs/target.md docs/t2.md docs/r.md docs/nested.md pkg/.claude/rules/docs/bom.md)
-    imps main "${ps[@]}" docs/other.md
-    want walk ok
-    for p in "${ps[@]}"; do want "$p" imported; done
-    want docs/other.md -
-}
-
-@test "main walk refuses the link and name shapes it does not model; a ..x name is followed (U2a2)" {
-    mkdir -p docs
-    printf 'see @..x.md\n' > AGENTS.md
-    printf 'hid @hid.md\n' > ..x.md
-    commit_all dotdot
-    imps main hid.md ..x.md; want walk ok; want hid.md imported
-    want ..x.md imported
-    # An untracked name holding a newline fails the walk.
-    printf 'x\n' > "zz"$'\n'"CLAUDE.md"
-    imps main docs/x.md; want walk failed; want docs/x.md imported
-    rm "zz"$'\n'"CLAUDE.md"
-    imps main docs/x.md; want docs/x.md -
-    # Symlink text with a trailing newline, an absolute one, none, or one leaving the repo: the walk fails.
-    for text in $'notes.md\n' /etc/hosts '' ../outside/AGENTS.md; do
-        a="$(printf 'x\n' | git hash-object -w --stdin)"
-        l="$(printf '%s' "$text" | git hash-object -w --stdin)"
-        t="$(printf '120000 blob %s\tAGENTS.md\n100644 blob %s\tnotes.md\n' "$l" "$a" | git mktree)"
-        git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m "link $text")"
-        imps main docs/x.md; want walk failed; want docs/x.md imported
+    for w in main tree; do
+        imps "$w" docs/a.md docs/sub/b.md docs/c.md docs/d.md docs/e.md example.invalid DOCS/A.MD docs/other.md CLAUDE.md outside.md
+        want walk ok; want why ""
+        for p in docs/a.md docs/sub/b.md docs/c.md docs/d.md docs/e.md example.invalid DOCS/A.MD; do want "$p" imported; done
+        # A start answers imported only when an import reaches it; ../../../outside.md lands outside the repo.
+        want docs/other.md -; want CLAUDE.md -; want outside.md -
     done
 }
 
-@test "isimported answers imported under if when the walk fails; a NUL in an instruction file hides no import (U2a3)" {
-    mkdir -p docs
-    printf 'see @docs/a.md\0 and @docs/b.md\n' > AGENTS.md
-    commit_all nul
-    imps main docs/b.md; want walk ok; want docs/b.md imported
-    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main; ROOT_REAL="$(pwd -P)"
-        o="$(git rev-parse main:AGENTS.md)"; rm ".git/objects/${o:0:2}/${o:2}"
-        if isimported main docs/z.md; then echo "failed walk: imported"; fi' _ "$LIB"
-    [ "$output" = "failed walk: imported" ] || { echo "$output $stderr"; return 1; }
+@test "main walk: main's start files decide, untracked and ignored start files at any depth add imports, and the checkout is read only where main lacks a path (brief 2026-11-03-import-walk-plain; G55, G56)" {
+    mkdir -p docs sub
+    printf '@docs/a.md @docs/new.md\n' > CLAUDE.md
+    printf '@b.md\n' > docs/a.md
+    printf 'CLAUDE.local.md\n' > .gitignore
+    commit_all base
+    # Working-tree edits of files main stores do not count; untracked files do.
+    printf '@docs/wt.md\n' > CLAUDE.md; printf '@wt2.md\n' > docs/a.md
+    printf '@docs/local.md\n' > CLAUDE.local.md; printf '@deep.md\n' > sub/AGENTS.md
+    printf '@more.md\n' > docs/new.md
+    imps main docs/a.md docs/b.md docs/new.md docs/more.md docs/local.md sub/deep.md docs/wt.md docs/wt2.md
+    want walk ok
+    for p in docs/a.md docs/b.md docs/new.md docs/more.md docs/local.md sub/deep.md; do want "$p" imported; done
+    want docs/wt.md -; want docs/wt2.md -
+    # The tree walk reads the checkout as it is.
+    imps tree docs/wt.md docs/wt2.md docs/a.md docs/local.md sub/deep.md
+    want walk ok
+    for p in docs/wt.md docs/local.md sub/deep.md; do want "$p" imported; done
+    want docs/wt2.md -; want docs/a.md -
 }
 
-@test "main walk fails on symlink text holding a NUL, on a checkout symlink at a path main lacks, and on an untracked start that is a symlink or unreadable (U2a2 iteration 1 A1, U2a3c)" {
+@test "both walks fail closed, so every path reads as imported, on an imported file that is not valid UTF-8, holds a NUL, is larger than 4 MiB or cannot be read; a file of exactly 4 MiB is read (brief 2026-11-03-import-walk-plain; G59, G60; H2)" {
+    mkdir -p docs
+    printf '@docs/a.md\n' > CLAUDE.md; printf 'ok\n' > docs/a.md; commit_all base
+    for c in latin nul big; do
+        case "$c" in
+            latin) printf 'caf\xe9 @docs/z.md\n' > docs/a.md ;;
+            nul) printf 'a\0b\n' > docs/a.md ;;
+            big) yes aaaaaaaaa | head -c 4194305 > docs/a.md ;;
+        esac
+        commit_all "$c"
+        for w in main tree; do imps "$w" docs/other.md; want walk failed; want why "read docs/a.md"; want docs/other.md imported; done
+    done
+    yes aaaaaaaaa | head -c 4194304 > docs/a.md; commit_all exact
+    for w in main tree; do imps "$w" docs/other.md; want walk ok; want docs/other.md -; done
+    # Well-formed UTF-8 beyond ASCII is read.
+    printf 'caf\xc3\xa9 @z.md\n' > docs/a.md; commit_all utf8
+    for w in main tree; do imps "$w" docs/z.md; want walk ok; want docs/z.md imported; done
+    if [ "$(id -u)" -ne 0 ]; then
+        # A file the walk reads from the checkout but cannot open: the tree walk's import, the main walk's untracked one.
+        chmod 000 docs/a.md; imps tree docs/other.md; chmod 644 docs/a.md
+        want walk failed; want why "read docs/a.md"; want docs/other.md imported
+        printf '@docs/u.md\n' > CLAUDE.local.md; printf 'x\n' > docs/u.md; chmod 000 docs/u.md
+        imps main docs/other.md; chmod 644 docs/u.md
+        want walk failed; want why "read docs/u.md"; want docs/other.md imported
+        rm CLAUDE.local.md docs/u.md
+        # A name below a directory the walk cannot search (review i1 finding 1): a file there may load.
+        printf '@docs/a.md @docs/locked/x.md\n' > CLAUDE.md; mkdir docs/locked; printf '@../y.md\n' > docs/locked/x.md; commit_all locked
+        chmod 000 docs/locked; imps tree docs/other.md; chmod 755 docs/locked
+        want walk failed; want why "read docs/locked/x.md"; want docs/other.md imported
+        git rm -q --cached docs/locked/x.md && git commit -qm untrack && chmod 000 docs/locked
+        imps main docs/other.md; chmod 755 docs/locked
+        want walk failed; want why "read docs/locked/x.md"; want docs/other.md imported
+    fi
+    # A name below a plain file, or below nothing, is skipped: nothing there loads.
+    printf '@docs/a.md/x.md @none/x.md\n' > CLAUDE.md; commit_all below-file
+    for w in main tree; do imps "$w" docs/other.md; want walk ok; want docs/other.md -; done
+}
+
+@test "the gate's own worktree reads an absolute import spelled under the main worktree as a repo path (review i1 finding 2; brief 2026-11-03-import-walk-plain)" {
+    mkdir -p docs && printf '@%s/docs/a.md and @%s/docs/b.md\n' "$(pwd -P)" "$(cd .. && pwd -P)/wt" > CLAUDE.md && echo x > docs/a.md && commit_all abs
+    git worktree add -q ../wt main 2>/dev/null || git worktree add -q --detach ../wt main
+    cd ../wt
+    for w in main tree; do imps "$w" docs/a.md docs/b.md docs/x.md; want walk ok; want docs/a.md imported; want docs/b.md imported; want docs/x.md -; done
+}
+
+@test "no symlink is followed: a start or an import main stores as a symlink, a checkout link at a name main lacks and a name below a linked directory fail the walk; an untracked start that is a link is skipped (brief 2026-11-03-import-walk-plain; G61; H2)" {
     mkdir -p docs real
-    printf 'r\n' > docs/rules.md && printf 'x @docs/y.md\n' > real/x.md
-    printf 'see @docs/lt.md and @docs-link/x.md\n' > CLAUDE.md
-    ln -s real docs-link
-    commit_all base
-    # An import through a directory link main stores: the parent-link refusal, and the checkout's docs-link fails the plain-directory check too; tests 12 and 15 pin each alone.
-    imps main docs/rules.md; want walk failed
-    git rm -q docs-link && printf 'see @docs/lt.md\n' > CLAUDE.md && commit_all nolink
-    imps main docs/rules.md; want walk ok
-    # An untracked symlink at a target main lacks; then an untracked symlinked start file.
-    ln -s rules.md docs/lt.md
-    imps main docs/rules.md; want walk failed; want docs/rules.md imported
-    rm docs/lt.md && ln -s docs/rules.md CLAUDE.local.md
-    imps main docs/x.md; want walk failed
-    # An untracked start file, unreadable too.
-    rm CLAUDE.local.md && printf 'Mine: @docs/x.md\n' > CLAUDE.local.md && chmod 000 CLAUDE.local.md
-    imps main docs/x.md; want walk failed; want docs/x.md imported
-    # An import of a plain directory reads nothing and is no failure.
-    rm -f CLAUDE.local.md && mkdir docs/lt.md
-    imps main docs/x.md; want walk ok; want docs/x.md -; rmdir docs/lt.md
-    # Symlink text holding a NUL: $(...) would drop it and follow another name.
-    l="$(printf 'docs/rules.md\0zzz' | git hash-object -w --stdin)"
-    t="$(printf '120000 blob %s\tAGENTS.md\n100644 blob %s\tdocs-rules.md\n' "$l" "$(git rev-parse main:docs/rules.md)" | git mktree)"
-    git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m nul-link)"
-    imps main docs/rules.md; want walk failed; want docs/rules.md imported
-}
-
-@test "main walk returns, not exits, when main's tree or the checkout's .md list cannot be listed (U2a2 iteration 1 A2); reads a list past 64 KiB under ulimit -f 0" {
-    mkdir -p docs && printf 'see @a.md\n' > docs/CLAUDE.md && commit_all base
-    imps main docs/a.md; want walk ok; want docs/a.md imported
-    # The docs/ tree object is missing: ls-tree -r fails part-way.
-    o="$(git rev-parse main:docs)"; rm ".git/objects/${o:0:2}/${o:2}"
-    imps main docs/b.md; [ "$status" -eq 0 ] || return 1; want walk failed; want docs/b.md imported
-    # A corrupt index: git ls-files --cached --others fails.
-    git update-ref refs/heads/main "$(git commit-tree "$(printf '' | git mktree)" -m empty)"
-    printf 'junk' > .git/index
-    imps main docs/b.md; [ "$status" -eq 0 ] || return 1; want walk failed; want docs/b.md imported
-    # A tr that fails (docs/CLAUDE.md is a tracked start again): the lower-cased list comes back short.
-    rm .git/index && commit_all again
-    mkdir -p "$BATS_TEST_TMPDIR/bin" && printf '#!/bin/sh\nexit 1\n' > "$BATS_TEST_TMPDIR/bin/tr" && chmod +x "$BATS_TEST_TMPDIR/bin/tr"
-    PATH="$BATS_TEST_TMPDIR/bin:$PATH" imps main docs/b.md; [ "$status" -eq 0 ] || return 1; want walk failed; rm "$BATS_TEST_TMPDIR/bin/tr" && printf '#!/bin/sh\ncase " $* " in *" --cached "*) exit 1;; esac\nexec %s "$@"\n' "$(command -v git)" > "$BATS_TEST_TMPDIR/bin/git" && chmod +x "$BATS_TEST_TMPDIR/bin/git"; PATH="$BATS_TEST_TMPDIR/bin:$PATH" imps main docs/b.md; [ "$status" -eq 0 ] || return 1; want walk failed; rm "$BATS_TEST_TMPDIR/bin/git"  # and a git whose ls-files --cached fails
-    # An import list past 64 KiB with no room for a temp file is read whole (U2a3b I2-C4).
-    { for i in $(seq 320); do printf '@docs/%0200d.md\n' "$i"; done; printf '@docs/last.md\n'; } > AGENTS.md && commit_all big
-    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; ulimit -f 0; source "$1"; resolve_main; ROOT_REAL="$(pwd -P)"
-        main_imports && isimported main docs/last.md && echo ok' _ "$LIB"
-    [ "$output" = ok ] || { echo "$status $output $stderr"; return 1; }
-    # Link text past 64 KiB with a .. after main's link l, under ulimit -f 0: the .. check reads it whole (loop 1 C4; XFSZ ignored, so a failed temp write returns, as a full disk does).
-    x="$(for i in $(seq 270); do printf '%0250d/../' 0; done)l/../t.md"
-    t="$(printf '120000 blob %s\tAGENTS.md\n120000 blob %s\tl\n' "$(printf '%s' "$x" | git hash-object -w --stdin)" "$(printf docs | git hash-object -w --stdin)" | git mktree)"; git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m big-link)"; rm -r docs; git read-tree main
-    run --separate-stderr env LC_ALL=C bash -c 'trap "" XFSZ; ulimit -f 0; source "$1"; resolve_main; ROOT_REAL="$(pwd -P)"; main_imports || echo failed' _ "$LIB"
-    [ "$output" = failed ] || { echo "$status $output $stderr"; return 1; }
-}
-
-@test "main walk: an upper-case .MD instruction file starts it, tracked or untracked; an upper-case token matches any case (U2a3, U2a3c)" {
-    mkdir -p docs
-    printf 'Rules: @docs/up.md and @Docs/Mixed.md\n' > CLAUDE.MD
-    commit_all upper
-    imps main docs/up.md docs/other.md docs/mixed.md; [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output $stderr"; return 1; }
-    want walk ok; want docs/up.md imported; want docs/mixed.md imported; want docs/other.md -
-    printf 'Mine: @mine.md\n' > docs/AGENTS.MD
-    imps main docs/mine.md docs/other.md; want walk ok; want docs/mine.md imported; want docs/other.md -
-}
-
-@test "main walk fails on a dangling checkout link at a target, a directory under a checkout link, empty link text below the top level, and a path under a gitlink; a gitlink at a start name is skipped (U2a3)" {
-    mkdir -p docs sub real/sub.md
-    printf 'see @docs/gone.md and @lnk/sub.md\n' > CLAUDE.md
-    commit_all base
+    printf 'x\n' > docs/t.md; printf '@docs/a.md\n' > CLAUDE.md; ln -s t.md docs/a.md; commit_all link-target
+    for w in main tree; do imps "$w" docs/x.md; want walk failed; want why "link docs/a.md"; want docs/x.md imported; done
+    rm docs/a.md && printf 'ok\n' > docs/a.md && ln -s docs/t.md AGENTS.md && commit_all link-start
+    for w in main tree; do imps "$w" docs/x.md; want walk failed; want why "link AGENTS.md"; want docs/x.md imported; done
+    git rm -q AGENTS.md && printf '@docs/a.md @docs/n.md @lnk/f.md\n' > CLAUDE.md && commit_all names
     imps main docs/x.md; want walk ok; want docs/x.md -
-    ln -s missing.md docs/gone.md
-    imps main docs/x.md; want walk failed; want docs/x.md imported
-    rm docs/gone.md && ln -s real lnk
-    imps main docs/x.md; want walk failed; want docs/x.md imported
+    ln -s t.md docs/n.md
+    imps main docs/x.md; want walk failed; want why "link docs/n.md"; want docs/x.md imported
+    rm docs/n.md && ln -s real lnk && printf 'y\n' > real/f.md
+    imps main docs/x.md; want walk failed; want why "link lnk/f.md"; want docs/x.md imported
     rm lnk
-    # Empty symlink text in sub/ would name sub/ itself, a plain directory here.
-    e="$(printf '' | git hash-object -w --stdin)"
-    s="$(printf '120000 blob %s\tAGENTS.md\n' "$e" | git mktree)"
-    git update-ref refs/heads/main "$(git commit-tree "$(printf '040000 tree %s\tsub\n' "$s" | git mktree)" -p main -m empty-link)"
-    imps main docs/x.md; want walk failed; want docs/x.md imported
-    # An import into a path main stores as a gitlink (sub/ is an empty directory here).
-    t="$(printf '100644 blob %s\tCLAUDE.md\n160000 commit %s\tsub\n' "$(printf 'see @sub/x.md\n' | git hash-object -w --stdin)" "$(git rev-parse main)" | git mktree)"
-    git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m gitlink)"; imps main docs/x.md; want walk failed; want docs/x.md imported; t="$(printf '160000 commit %s\tCLAUDE.md\n100644 blob %s\tAGENTS.md\n' "$(git rev-parse main)" "$(printf 'see @docs/x.md\n' | git hash-object -w --stdin)" | git mktree)"; git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m gitlink-start)"; imps main docs/x.md; want walk ok; want docs/x.md imported
+    # An untracked start that is a link is skipped, not refused (G56: other shapes skipped).
+    ln -s docs/t.md CLAUDE.local.md
+    for w in main tree; do imps "$w" docs/x.md; want walk ok; want docs/x.md -; done
 }
 
-@test "main walk ends on an import cycle, a self-import and a cycle through an untracked file (U2a3, U2a3c)" {
-    mkdir -p docs
-    printf 'see @docs/a.md and @CLAUDE.md\n' > CLAUDE.md
-    printf 'back @../CLAUDE.md, @a.md and @b.md\n' > docs/a.md
-    printf 'again @a.md\n' > docs/b.md
-    commit_all cycle
-    printf 'Mine: @docs/u.md\n' > CLAUDE.local.md && printf 'loop @../CLAUDE.local.md and @w.md\n' > docs/u.md && printf 'last @u.md\n' > docs/w.md
-    imps main docs/a.md docs/b.md docs/u.md docs/w.md docs/other.md
-    [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$status $output $stderr"; return 1; }
-    want walk ok; for p in docs/a.md docs/b.md docs/u.md docs/w.md; do want "$p" imported; done; want docs/other.md -
-}
-
-@test "main walk fails on an unreadable blob when the caller did not set pipefail; a main and checkout with no .md file walk ok (U2a3)" {
-    imps main docs/a.md; want walk ok; want docs/a.md -; printf 'Rules: @docs/a.md\n' > CLAUDE.md && commit_all claude  # first, with no .md on main or in the checkout: an empty start list is no failure
-    o="$(git rev-parse main:CLAUDE.md)"; rm ".git/objects/${o:0:2}/${o:2}"
-    run --separate-stderr env LC_ALL=C bash -c 'set -eu; source "$1"; resolve_main; ROOT_REAL="$(pwd -P)"
-        if main_imports; then echo "walk: ok"; else echo "walk: failed"; fi
-        if isimported main scripts/x.sh; then echo "scripts/x.sh: imported"; fi' _ "$LIB"
-    [ "$status" -eq 0 ] && [ "$output" = "walk: failed
-scripts/x.sh: imported" ] || { echo "$output $stderr"; return 1; }
-}
-
-@test "main walk fails on link text with a .. after a symlink on main or only in the checkout, and on a path main lacks under a link main stores (U2a3 i1 fact-check 11b, i2 security F1)" {
-    mkdir -p deep/inner docs
-    printf 'evil @secret.md\n' > deep/evil.md && printf 'top\n' > evil.md && printf 'i\n' > deep/inner/i.md
-    printf 'see @../hid.md\n' > docs/n.md && printf 'h\n' > hid.md
-    ln -s deep/inner ld && ln -s ld/../evil.md CLAUDE.md && ln -s docs/../docs/n.md AGENTS.md
-    commit_all dotdot-link
-    # The kernel reads deep/evil.md through ld; realpath -s would read evil.md.
-    imps main deep/secret.md; want walk failed; want deep/secret.md imported
-    rm ld; imps main deep/secret.md; want walk failed; want deep/secret.md imported
-    # Link text, then an @ token, through main's ld when the checkout lacks it.
-    for how in link token; do
-        rm CLAUDE.md && ln -s deep/inner ld
-        if [ "$how" = link ]; then ln -s ld/i.md CLAUDE.md; else printf 'see @ld/i.md\n' > CLAUDE.md; fi
-        commit_all "$how" && rm ld
-        imps main deep/inner/i.md; want walk failed; want deep/inner/i.md imported
+@test "both walks start at instruction files (SKILL.md, GEMINI.md, an upper-case .MD) and at .md files under .claude/rules/, commands/, agents/, output-styles/ and skills/ at any depth, tracked or not; a prompt's names also resolve against the repo root, and its imports' only against their own directory (U2a4; brief 2026-11-03-import-walk-plain; G62)" {
+    mkdir -p a/.claude/commands docs/.claude/rules/deep x/y .claude/skills/s .claude/agents .claude/output-styles docs
+    printf '@p.md @docs/p2.md\n' > a/.claude/commands/c.md
+    printf '@q.md\n' > p.md; printf '@q2.md\n' > docs/p2.md
+    printf '@r.md\n' > docs/.claude/rules/deep/m.md
+    printf '@g.md\n' > x/y/GEMINI.md; printf '@k.md\n' > x/SKILL.MD
+    printf '@s2.md\n' > .claude/skills/s/SKILL.md; printf '@o.md\n' > .claude/output-styles/o1.md
+    commit_all prompts
+    printf '@u2.md\n' > .claude/agents/u.md
+    for w in main tree; do
+        imps "$w" a/.claude/commands/p.md p.md q.md docs/p2.md docs/q2.md q2.md docs/.claude/rules/deep/r.md r.md \
+            x/y/g.md x/k.md s2.md .claude/skills/s/s2.md o.md u2.md .claude/agents/u2.md
+        want walk ok
+        for p in a/.claude/commands/p.md p.md q.md docs/p2.md docs/q2.md docs/.claude/rules/deep/r.md x/y/g.md x/k.md \
+                 s2.md .claude/skills/s/s2.md o.md u2.md .claude/agents/u2.md; do want "$p" imported; done
+        want q2.md -; want r.md -
     done
-    # Two levels below a one-letter link main stores.
-    rm CLAUDE.md && ln -s deep l && printf 'see @l/inner/i.md\n' > CLAUDE.md && commit_all one-letter && rm l
-    imps main deep/inner/i.md; want walk failed; want deep/inner/i.md imported
-    # A .. after a plain directory is followed; then a link only the checkout has.
-    rm CLAUDE.md && ln -s ld/../evil.md CLAUDE.md && commit_all no-ld
-    imps main hid.md docs/n.md deep/secret.md; want walk ok; want hid.md imported; want docs/n.md imported; want deep/secret.md -
-    ln -s deep/inner ld; imps main deep/secret.md; want walk failed; want deep/secret.md imported
 }
 
-@test "main walk cache: a new main commit or main not found by name walks again; a failed walk stays failed; a checkout change is not seen until IMPORTED_MAIN_DONE is cleared (U2a3 i2 test-strategy G6, G9)" {
-    printf 'Rules: @docs/a.md\n' > CLAUDE.md && commit_all one
+@test "both walks skip a gitlink, a directory or nothing at a name, and end on an import cycle and a self-import (brief 2026-11-03-import-walk-plain)" {
+    mkdir -p docs/dir
+    printf '@docs/a.md @docs/dir @docs/none.md @CLAUDE.md @docs/gl.md\n' > CLAUDE.md
+    printf '@../CLAUDE.md @a.md\n' > docs/a.md; printf 'x\n' > docs/dir/f.txt
+    git add -A && git update-index --add --cacheinfo "160000,$(git rev-parse HEAD),docs/gl.md" && git commit -qm gitlink
+    for w in main tree; do
+        imps "$w" docs/a.md docs/dir docs/none.md CLAUDE.md docs/gl.md docs/dir/f.txt
+        want walk ok
+        for p in docs/a.md docs/dir docs/none.md CLAUDE.md docs/gl.md; do want "$p" imported; done
+        want docs/dir/f.txt -
+    done
+}
+
+@test "a failed walk answers imported for every path and says where: main not found by name, main's tree unreadable, a ~/ name while HOME is not absolute; a ~/ name into the repo is read; an unknown walk name answers imported (brief 2026-11-03-import-walk-plain; H2)" {
+    mkdir -p docs
+    printf '@~/repo/docs/n.md\n' > CLAUDE.md && commit_all home
+    for w in main tree; do
+        HOME="$BATS_TEST_TMPDIR" imps "$w" docs/n.md docs/x.md; want walk ok; want docs/n.md imported; want docs/x.md -
+        HOME=rel imps "$w" docs/x.md; want walk failed; want why "read CLAUDE.md"; want docs/x.md imported
+        HOME="" imps "$w" docs/x.md; want walk failed; want why "read CLAUDE.md"
+    done
     run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main; ROOT_REAL="$(pwd -P)"
-        w() { if isimported main "$1"; then echo "$1"; else echo -; fi; }
-        w docs/b.md; printf "Rules: @docs/b.md\n" > CLAUDE.md; git commit -qam two; resolve_main; w docs/b.md; g="$MAIN_SHA"
-        a="$(printf "x\n" | git hash-object -w --stdin)"; t="$(printf "100644 blob %s\tA.md\n100644 blob %s\tA.md\n" "$a" "$a" | git mktree)"
-        git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m dup)"; resolve_main; w x.sh; w x.sh
-        git update-ref refs/heads/main "$g"; resolve_main; w x.sh; MAIN_BY_NAME=""; w y.sh; resolve_main; w z.sh; printf "Mine: @z.sh\n" > CLAUDE.local.md; w z.sh; IMPORTED_MAIN_DONE=""; w z.sh' _ "$LIB"
-    [ "$status" -eq 0 ] && [ "$output" = "$(printf '%s\n' - docs/b.md x.sh x.sh - y.sh - - z.sh)" ] || { echo "$output $stderr"; return 1; }
+        if isimported other docs/x.md; then echo imported; else echo -; fi' _ "$LIB"
+    [ "$output" = imported ] || { echo "$output $stderr"; return 1; }
+    t="$(git rev-parse 'main^{tree}')"; mv ".git/objects/${t:0:2}/${t:2}" "$BATS_TEST_TMPDIR/tree"
+    imps main docs/x.md; want walk failed; want why tree; want docs/x.md imported
+    mv "$BATS_TEST_TMPDIR/tree" ".git/objects/${t:0:2}/${t:2}"
+    git checkout -q -b trunk && git branch -q -D main
+    imps main docs/x.md; want walk failed; want why main; want docs/x.md imported
 }
 
-@test "main walk fails on a name main stores as both a directory and a link (U2a3 L2 final fact-check r3 13b)" {
-    commit_all base && x() { printf '%s' "$1" | sed 's/../\\x&/g'; }; c="$(printf 'see @l/x.md\n' | git hash-object -w --stdin)"; k="$(printf docs | git hash-object -w --stdin)"
-    lt="$(printf '100644 blob %s\tx.md\n' "$(printf 'plain\n' | git hash-object -w --stdin)" | git mktree)"; dt="$(printf '100644 blob %s\tx.md\n' "$(printf '@secret.md\n' | git hash-object -w --stdin)" | git mktree)"
-    t="$(printf "100644 CLAUDE.md\0$(x "$c")40000 docs\0$(x "$dt")40000 l\0$(x "$lt")120000 l\0$(x "$k")" | git hash-object -t tree -w --literally --stdin)"
-    git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m tree-and-link)"; git checkout -qf main; imps main docs/secret.md; want walk failed; want docs/secret.md imported
+@test "the walks read no instruction file outside the checkout, and skip the untracked start files of a directory git cannot read: the user's ~/.claude, an ancestor's CLAUDE.md and another worktree's start files import nothing (restriction audit G57, G58; S1)" {
+    mkdir -p docs "$HOME/.claude/rules"
+    printf '@%s/docs/a.md\n' "$(pwd -P)" > "$HOME/.claude/CLAUDE.md"; cp "$HOME/.claude/CLAUDE.md" "$HOME/.claude/rules/r.md"
+    printf '@repo/docs/b.md\n' > ../CLAUDE.md
+    printf 'x\n' > docs/x.md && commit_all base
+    git worktree add -q ../wt -b other && printf '@docs/c.md\n' > ../wt/CLAUDE.md && mkdir ../wt/locked && chmod 000 ../wt/locked
+    mkdir locked && printf '@docs/d.md\n' > locked/CLAUDE.md && chmod 000 locked
+    for w in main tree; do
+        imps "$w" docs/a.md docs/b.md docs/c.md docs/d.md
+        want walk ok
+        for p in docs/a.md docs/b.md docs/c.md; do want "$p" -; done
+        # As root, a mode-000 directory is still read; elsewhere its untracked start is skipped.
+        [ "$(id -u)" -eq 0 ] || want docs/d.md -
+    done
+    chmod 755 locked ../wt/locked
 }
 
-@test "both walks read everything Claude Code reads (a superset): an @ after a Unicode space, Markdown and a code span around a token, ( ) in a name; ~x is over-read, a ~/ name outside the repo dropped; an @ after a link or code span starts another import; a stray <!-- elsewhere does not shift a splice (U2a3b)" {
+@test "each walk caches its result, a failure included, until import_reset or a new main commit (contract item 4; brief 2026-11-03-import-walk-plain)" {
     mkdir -p docs
-    # \x60: a backtick (a code span that closes right after the name). A name
-    # holding _ before a code span, <br> or emphasis is still read (my_notes); two
-    # NBSPs on a line both become blanks; an HTML block's comment splices a name
-    # (sec+ret); an escaped space and an absolute path inside the repo are imports.
-    { printf 'See @docs/a.md\xc2\xa0@docs/b.md, | @docs/c.md<br> |, **@docs/d.md**x, @docs/e(f).md, @~g.md and @docs/h.md\0@docs/i.md, @docs/j.md\x60x\x60 and @~/x.md\n'
-      printf 'More: @docs/my_notes.md\x60c\x60, | @docs/s_g.md<br> |, @docs/k_l.md**b**, @docs/p.md\xc2\xa0@docs/q.md\xc2\xa0@docs/r.md\n'
-      printf '<!-- note --> See @docs/sec<!-- x -->ret.md\n'
-      # A link or code span between two @s does not hide the second (Claude Code reads both).
-      printf 'Read [@docs/la.md](u)/[@docs/lb.md](v) and @docs/ca.md\x60x\x60@docs/cb.md\n'
-      # A stray <!-- in a fence earlier must not pair with a later comment.
-      printf '\x60\x60\x60html\nx<!--\n\x60\x60\x60\n<!-- n -->@docs/hid<!-- y -->den.md\n'
-      printf 'See @docs/my\\ notes.md and @%s/docs/abs.md\n' "$(pwd -P)"; } > AGENTS.md
-    printf 'x\n' > 'docs/my notes.md' && printf 'x\n' > docs/abs.md
-    commit_all parser
-    ps=(docs/a.md docs/b.md docs/c.md docs/d.md 'docs/e(f).md' '~g.md' docs/h.md docs/i.md docs/j.md
-        docs/my_notes.md docs/s_g.md docs/k_l.md docs/p.md docs/q.md docs/r.md docs/secret.md
-        docs/la.md docs/lb.md docs/ca.md docs/cb.md docs/hidden.md 'docs/my notes.md' docs/abs.md)
-    # shellcheck disable=SC2088  # '~/x.md' is a literal path name, not the home
-    for w in tree main; do
-        imps "$w" "${ps[@]}" docs/other.md '~/x.md'
-        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; for p in "${ps[@]}"; do want "$p" imported; done; want docs/other.md -; want '~/x.md' -
-    done
-}
-
-@test "the superset over-reads, pinned: an @ after a letter, a prefix that is a file, a name led by an escaped space; a run that prints past IMPORT_OUT_MAX fails the parser (U2a3b)" {
-    # These record the 2026-10-06 over-approximation decision (U2a3b iteration-4
-    # gate): Claude Code 2.1.292 reads none of docs/mail.md, docs/pre.md and
-    # docs/lead.md (its path filter rejects a name led by a space; emit's trim
-    # reads it, L2-i2 fact-check Claim 31b). A parser that is more precise and
-    # still a superset may delete these lines on purpose.
-    # The code-span and fence cases were already read before the decision.
-    mkdir -p docs
-    { printf 'Code \x60@docs/span.md\x60 and user@docs/mail.md and @docs/pre.md.bak\n'
-      printf '\x60\x60\x60\n@docs/fence.md\n\x60\x60\x60\n'; printf 'See @\\ docs/lead.md\n'; } > AGENTS.md
-    for f in span mail pre fence lead; do printf 'x\n' > "docs/$f.md"; done
-    commit_all superset
-    ps=(docs/span.md docs/mail.md docs/pre.md docs/fence.md docs/lead.md)
-    for w in tree main; do
-        imps "$w" "${ps[@]}" docs/other.md
-        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; for p in "${ps[@]}"; do want "$p" imported; done; want docs/other.md -
-    done
-    # Seven 4200-byte runs after an @: the first run's prefixes alone print past
-    # IMPORT_OUT_MAX, so the parser returns 1 (the candidate-work bound, which
-    # prints nothing, has its own test).
-    for i in 1 2 3 4 5 6 7; do printf '@'; head -c 4200 /dev/zero | tr '\0' x; printf '\n'; done > "$BATS_TEST_TMPDIR/heavy.txt"
-    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
-        import_targets "" < "$2" >/dev/null && echo rc=0 || echo "rc=$?"' _ "$LIB" "$BATS_TEST_TMPDIR/heavy.txt"
-    [ "$output" = rc=1 ] || { echo "$output $stderr"; return 1; }
-}
-
-@test "the main walk reads a linked worktree whose instruction file names @.gitignore: a .git prefix candidate is skipped (U2a3b L2 architecture 1)" {
-    mkdir -p notes && printf 'See @.gitignore and @notes/x.md\n' > GEMINI.md && printf 'x\n' > .gitignore && printf 'x\n' > notes/x.md
-    commit_all gitprefix
-    git worktree add -q --detach "$BATS_TEST_TMPDIR/wt" main && cd "$BATS_TEST_TMPDIR/wt"
-    imps main notes/x.md .gitignore docs/other.md
-    [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output $stderr"; return 1; }
-    want walk ok; want notes/x.md imported; want .gitignore imported; want docs/other.md -
-}
-
-@test "the main walk reads a linked worktree's gitfile as a checkout file, and follows an @ its gitdir path holds, as Claude Code does when an instruction file names @.git (U2a3b L2-confirm security F1, U2a3c)" {
-    mkdir -p docs && printf 'see @.git\n' > CLAUDE.md && printf 'x\n' > docs/x.md && commit_all gitfile
-    # The gitfile names the main checkout's path, so a checkout path holding
-    # " @docs/x.md " puts that import in it.
-    m="$BATS_TEST_TMPDIR/a @docs/x.md /m"; mkdir -p "${m%/m}" && mv "$PWD" "$m" && cd "$m"
-    git worktree add -q --detach "$BATS_TEST_TMPDIR/wt" main && cd "$BATS_TEST_TMPDIR/wt"
-    imps main docs/x.md docs/other.md; want walk ok; want docs/x.md imported; want docs/other.md -
-    # A gitfile with no @ imports nothing.
-    cd "$m" && git worktree remove "$BATS_TEST_TMPDIR/wt" && cd .. && mv "$m" "$BATS_TEST_TMPDIR/m2" && cd "$BATS_TEST_TMPDIR/m2"
-    git worktree add -q --detach "$BATS_TEST_TMPDIR/wt2" main && cd "$BATS_TEST_TMPDIR/wt2"
-    imps main docs/x.md docs/other.md; want walk ok; want docs/x.md -; want docs/other.md -
-}
-
-@test "both walks fail once the parser has printed more than IMPORT_OUT_MAX characters in all (U2a3b L2 performance F2)" {
-    mkdir -p docs && printf 'see @docs/a.md\n' > AGENTS.md && commit_all base
-    run --separate-stderr timeout 60 env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main || true; ROOT_REAL="$(pwd -P)"
-        IMPORT_OUT_MAX=10; imported_names && echo tree ok || echo tree failed; main_imports && echo main ok || echo main failed
-        IMPORT_OUT_MAX=4000000; IMPORTED_DONE=""; IMPORTED_MAIN_DONE=""; imported_names && echo tree ok || echo tree failed; main_imports && echo main ok || echo main failed' _ "$LIB"
-    [ "$output" = $'tree failed\nmain failed\ntree ok\nmain ok' ] || { echo "$output $stderr"; return 1; }
-}
-
-@test "both walks fail closed when tr fails; the tree walk fails closed when its start listing fails or a start name holds a newline; the parser returns 1 when it cannot read its input (U2a3b)" {
-    mkdir -p docs && printf 'see @docs/a.md\n' > AGENTS.md && commit_all base
-    mkdir -p "$BATS_TEST_TMPDIR/bin" && printf '#!/bin/sh\nexit 1\n' > "$BATS_TEST_TMPDIR/bin/tr" && chmod +x "$BATS_TEST_TMPDIR/bin/tr"
-    for w in tree main; do
-        PATH="$BATS_TEST_TMPDIR/bin:$PATH" imps "$w" docs/z.md; [ "$status" -eq 0 ] || return 1; want walk failed; want docs/z.md imported
-    done
-    # A grep that fails on the start listing (instruction_names, grep -z) only.
-    g="$(command -v grep)" && mkdir -p "$BATS_TEST_TMPDIR/gbin"
-    # The shim drains its input first, so the writer never sees a closed pipe (a race that hid a mutant).
-    printf '#!/bin/sh\ncase "$1" in -z*) cat >/dev/null; exit 2 ;; esac\nexec %s "$@"\n' "$g" > "$BATS_TEST_TMPDIR/gbin/grep" && chmod +x "$BATS_TEST_TMPDIR/gbin/grep"
-    PATH="$BATS_TEST_TMPDIR/gbin:$PATH" imps tree docs/a.md docs/z.md; want walk failed; want docs/z.md imported
-    imps tree docs/a.md docs/z.md; want walk ok; want docs/z.md -
-    # An untracked start under a directory whose name holds a newline: b/X.md would read as seen.
-    s=CLAUDE.md; mkdir -p "a"$'\n'"b" b && printf 'x\n' > "a"$'\n'"b/$s" && printf 'see @../docs/z.md\n' > "b/$s"
-    imps tree docs/z.md; want walk failed; want docs/z.md imported
-    rm -r "a"$'\n'"b" b
-    # The tree walk itself, called twice: the second call returns its cached error.
-    # The second call runs with a working tr, so only the cache can fail it.
-    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"; p="$PATH"
-        if import_targets "" < docs; then echo read; else echo failed; fi
-        PATH="$2:$p"; if imported_names; then echo walked; else echo "walk failed"; fi
-        PATH="$p"; if imported_names; then echo walked; else echo "walk failed"; fi' _ "$LIB" "$BATS_TEST_TMPDIR/bin"
-    [ "$output" = "failed
-walk failed
-walk failed" ] || { echo "$output $stderr"; return 1; }
-    # A file past bash's here-string pipe size (64 KiB) with no room for a temp file
-    # (ulimit -f 0): the import at its end is still read.
-    { head -c 70000 /dev/zero | tr '\0' x; printf '\nsee @docs/big.md\n'; } > "$BATS_TEST_TMPDIR/big.txt"
-    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; ulimit -f 0; source "$1"; ROOT_REAL="$(pwd -P)"
-        import_targets "" < "$2"' _ "$LIB" "$BATS_TEST_TMPDIR/big.txt"
-    [ "$status" -eq 0 ] && printf '%s\n' "$output" | grep -qxF docs/big.md || { echo "$status $output $stderr"; return 1; }
-    # A corrupt index: git ls-files fails, so the tree walk has no start list.
-    printf 'junk' > .git/index
-    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
-        if imported_names; then echo walked; else echo "walk failed"; fi
-        if isimported tree docs/z.md; then echo "docs/z.md: imported"; fi' _ "$LIB"
-    [ "$output" = "walk failed
-docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
-}
-
-@test "the walks fail closed past the start list: a parser failure on a file read, a failed lower of an imported or asked path, a failed tracked listing alone (U2a3b)" {
-    mkdir -p docs && printf 'see @docs/a.md\n' > AGENTS.md && printf 'x\n' > docs/a.md && commit_all base
-    tb="$BATS_TEST_TMPDIR/tb" sb="$BATS_TEST_TMPDIR/sb" gb="$BATS_TEST_TMPDIR/gb" && mkdir -p "$tb" "$sb" "$gb"
-    # A tr that fails only when its input holds "trfail", so the start names still lower;
-    # a sed that always fails; a git whose bare "ls-files -z" (the tracked half) fails.
-    t="$(command -v tr)" && printf '#!/bin/sh\nf="$(mktemp)" || exit 1\ncat > "$f"\nif grep -qa trfail "$f"; then rm -f "$f"; exit 1; fi\n%s "$@" < "$f"; r=$?; rm -f "$f"; exit $r\n' "$t" > "$tb/tr"
-    printf '#!/bin/sh\nexit 1\n' > "$sb/sed"
-    g="$(command -v git)" && printf '#!/bin/sh\n[ "$#" -eq 2 ] && [ "$1 $2" = "ls-files -z" ] && exit 128\nexec %s "$@"\n' "$g" > "$gb/git"
-    chmod +x "$tb/tr" "$sb/sed" "$gb/git"
-    # The asked path does not lower: either walk answers imported.
-    for w in tree main; do
-        PATH="$tb:$PATH" imps "$w" docs/trfail.md docs/z.md
-        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; want docs/trfail.md imported; want docs/z.md -
-    done
-    # An imported path does not lower: both walks fail (isimported's second call reads the cache).
-    printf 'see @docs/trfail.md and @docs/a.md\n' > AGENTS.md && commit_all trfail
-    for w in tree main; do
-        PATH="$tb:$PATH" imps "$w" docs/z.md; [ "$status" -eq 0 ] || return 1; want walk failed; want docs/z.md imported
-    done
-    # The parser fails on a file the tree walk reads; the error stays cached.
-    run --separate-stderr env PATH="$sb:$PATH" LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
-        if imported_names; then echo walked; else echo "walk failed"; fi
-        if imported_names; then echo walked; else echo "walk failed"; fi
-        if isimported tree docs/z.md; then echo "docs/z.md: imported"; fi' _ "$LIB"
-    [ "$output" = "walk failed
-walk failed
-docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
-    # The tracked listing fails while the untracked listing works.
-    PATH="$gb:$PATH" imps tree docs/a.md docs/z.md; want walk failed; want docs/a.md imported; want docs/z.md imported
-}
-
-# The four superset holes the L2 fact-check executed against the Claude Code 2.1.292
-# harness (Claim 1). Each FAILS at be94c871 and passes once its hole is closed; a
-# deferred hole gets `skip "<its row>"` as its first line, not a deleted assertion.
-@test "both walks read an import that leaves the repo and re-enters it through its parent (FAILS at be94c871: L2 fact-check Claim 1 class 1)" {
-    mkdir -p docs sub && n="$(basename "$(pwd -P)")"
-    # A sibling whose path is as long as the repo's: its docs/sib.md is not the repo's.
-    s="${n%?}x"; [[ "$s" != "$n" ]] || s="${n%?}y"
-    printf 'See @../%s/docs/re.md and @../%s/docs/sib.md\n' "$n" "$s" > AGENTS.md
-    printf 'See @../../%s/docs/sub.md\n' "$n" > sub/CLAUDE.md
-    commit_all reentry
-    for w in tree main; do
-        imps "$w" docs/re.md docs/sub.md docs/other.md docs/sib.md
-        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; want docs/re.md imported; want docs/sub.md imported; want docs/other.md -; want docs/sib.md -
-    done
-}
-
-@test "both walks read an absolute import into the repo however it is spelled: //root, /./root, root/../<name> (FAILS at be94c871: L2 fact-check Claim 1 class 2)" {
-    mkdir -p docs && r="$(pwd -P)"
-    printf 'See @/%s/docs/a1.md, @/.%s/docs/a2.md and @%s/../%s/docs/a3.md\n' "$r" "$r" "$r" "${r##*/}" > AGENTS.md
-    commit_all abs
-    for w in tree main; do
-        imps "$w" docs/a1.md docs/a2.md docs/a3.md docs/other.md
-        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; for p in docs/a1.md docs/a2.md docs/a3.md; do want "$p" imported; done; want docs/other.md -
-    done
-}
-
-@test "both walks resolve an import against a directory whose name holds a backslash, taken literally (FAILS at be94c871: L2 fact-check Claim 1 class 3)" {
-    # mawk reads escape sequences in a -v value: dir a\tb became a<TAB>b.
-    d='docs/a\tb' && mkdir -p "$d" && printf 'See @z.md\n' > "$d/AGENTS.md"
-    commit_all backslash
-    for w in tree main; do
-        imps "$w" "$d/z.md" docs/other.md
-        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; want "$d/z.md" imported; want docs/other.md -
-    done
-}
-
-@test "both walks read a name over 4096 bytes that resolves to a short path (FAILS at be94c871: L2 fact-check Claim 1 class 4)" {
-    mkdir -p docs
-    { printf 'See @'; for i in $(seq 2100); do printf './'; done; printf 'docs/long.md\n'; } > AGENTS.md
-    commit_all long
-    for w in tree main; do
-        imps "$w" docs/long.md docs/other.md
-        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; want docs/long.md imported; want docs/other.md -
-    done
-}
-
-@test "both walks read a name an HTML comment block splices from three pieces, an @ between code spans that hold <!-- and -->, and an @./ name; a blank ends every name (U2a3b L2 test-strategy)" {
-    # Claude Code 2.1.292 (harness) reads docs/abc.md (HTML block, comments removed),
-    # docs/cs.md (text between two code spans) and docs/dot.md; it never reads "docs/a.md x".
-    mkdir -p docs
-    { printf '<!-- 0 --> @docs/a<!-- 1 -->b<!-- 2 -->c.md\n'; printf 'See \x60<!--\x60 @docs/cs.md \x60-->\x60\n'
-      printf 'See @./docs/dot.md and @docs/a.md x, @docs/t.md\tx and @docs/r.md\r\n'; } > AGENTS.md
-    printf 'x\n' > 'docs/a.md x'
-    commit_all splice3
-    for w in tree main; do
-        imps "$w" docs/abc.md docs/cs.md docs/dot.md docs/a.md docs/t.md docs/r.md docs/other.md 'docs/a.md x' $'docs/t.md\tx' $'docs/r.md\r'
-        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; for p in docs/abc.md docs/cs.md docs/dot.md docs/a.md docs/t.md docs/r.md; do want "$p" imported; done
-        # Precision, not superset: the false-positive cost the design states (to the first
-        # blank; a tab and a CR are blanks too, as in JavaScript's \s).
-        want docs/other.md -; want 'docs/a.md x' -; want $'docs/t.md\tx' -; want $'docs/r.md\r' -
-    done
-}
-
-@test "the parser fails, not stalls, on one line of many HTML comments (FAILS at be94c871: L2 fact-check Claim 18b; a 10 s timeout)" {
-    # 320,000 comments in one 2.24 MB line took 27 s with status 0 at be94c871: splice's
-    # copying is quadratic and outside the work bound. 124 is timeout's status, not a failure the parser chose.
-    { head -c 320000 /dev/zero | sed 's/\x0/<!---->/g'; printf '\n'; } > "$BATS_TEST_TMPDIR/comments.txt"
-    run --separate-stderr env LC_ALL=C bash -c 'set -uo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
-        timeout 10 bash -c "source \"\$1\"; ROOT_REAL=\"\$2\"; import_targets \"\" < \"\$3\" >/dev/null" _ "$1" "$ROOT_REAL" "$2"; echo "rc=$?"' _ "$LIB" "$BATS_TEST_TMPDIR/comments.txt"
-    [[ "$output" == rc=* && "$output" != rc=0 && "$output" != rc=124 ]] || { echo "$output $stderr"; return 1; }
-}
-
-@test "both walks read a name as Claude Code decodes it: an invalid UTF-8 byte is U+FFFD (U2a3b L2 security F1)" {
-    mkdir -p docs && printf 'See @docs/\xff.md\n' > AGENTS.md && printf 'see @c.md\n' > docs/$'\xef\xbf\xbd'.md
-    commit_all fffd
-    for w in tree main; do
-        imps "$w" docs/$'\xef\xbf\xbd'.md docs/c.md docs/other.md
-        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; want docs/$'\xef\xbf\xbd'.md imported; want docs/c.md imported; want docs/other.md -
-    done
-}
-
-@test "the tree walk reads only the first 4 MiB of a file a candidate names, as Claude Code skips larger files (U2a3b L2 security F2)" {
-    mkdir -p docs && printf 'See @big/x.md\n' > AGENTS.md && commit_all base
-    # An untracked sparse 300 MB file at the prefix "big": read whole, the walk stalls.
-    printf '@docs/early.md\n' > big && truncate -s 300M big
-    run --separate-stderr timeout 20 env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
-        imported_names && echo ok || echo failed; isimported tree docs/early.md && echo early' _ "$LIB"
-    [ "$output" = $'ok\nearly' ] || { echo "$status $output $stderr"; return 1; }
-}
-
-@test "both walks fail closed when python3 fails on text holding a byte above 0x7f (U2a3b L2-i2 test-strategy)" {
-    mkdir -p docs && printf 'See @docs/\xff.md and @docs/a.md\n' > AGENTS.md && commit_all py
-    S="$BATS_TEST_TMPDIR/py" && mkdir -p "$S" && printf '#!/bin/sh\nexit 1\n' > "$S/python3" && chmod +x "$S/python3"
-    for w in tree main; do
-        PATH="$S:$PATH" imps "$w" docs/a.md docs/other.md
-        want walk failed; want docs/a.md imported; want docs/other.md imported
-    done
-}
-
-@test "the parser prints a name below no reader root as //PATH, joins a relative name to an absolute directory alone, reads IMPORT_WHOLE lines whole, takes import_readers' roots outside a walk, and fails for a ROOT_REAL of / or empty (U2a3b L2-i2 test-strategy, U2b3b2a)" {
-    git worktree add -q --detach ../side && git worktree add -q --detach .claude/wt-b
-    run --separate-stderr env LC_ALL=C bash -c 'set -uo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"; s="$(cd ../side && pwd -P)"
-        printf "See @/etc/x.md and @a.md and @%s/docs/in.md and @%s/docs/w.md and @%s/.claude/wt-b/n.md\n" "$ROOT_REAL" "$s" "$ROOT_REAL" | import_targets /opt/d; echo "rc=$?"
-        printf "%s\n" "$ROOT_REAL/docs/a b.md" "/etc/x y" | IMPORT_WHOLE=1 import_targets / | sed "s/^/whole /"
-        for ROOT_REAL in / ""; do printf "See @docs/a.md\n" | import_targets "" >/dev/null; echo "rc=$?"; done' _ "$LIB"
-    for l in //etc/x.md //opt/d/a.md docs/in.md docs/w.md n.md rc=0 'whole docs/a b.md' 'whole //etc/x y'; do printf '%s\n' "$output" | grep -qxF "$l" || { echo "missing $l: $output $stderr"; return 1; }; done
-    [ "$(printf '%s\n' "$output" | grep -c '^whole ')" -eq 2 ] && [ "$(printf '%s\n' "$output" | grep -c '^rc=1$')" -eq 2 ] || { echo "$output"; return 1; }
-    # A relative name stays in its absolute directory; a dot-nested root's outer spelling is not printed (import_readers' IMPORT_DOTNEST).
-    ! printf '%s\n' "$output" | grep -qxE 'a\.md|docs/a\.md|\.claude/wt-b/n\.md' || { echo "$output"; return 1; }
-}
-
-@test "both walks follow an import below no reader root, read where it lies against its own directory, through outside chains and back into the repo; a cycle ends (U2b3b2a; U2b3a i1 architecture F5)" {
-    o="$BATS_TEST_TMPDIR/out" && mkdir -p docs "$o/sub" && r="$(pwd -P)"
-    printf 'See @%s/o1.md and @~/h.md\n' "$o" > AGENTS.md
-    printf 'o1: @sub/o2.md\n' > "$o/o1.md"
-    # Back in by an absolute and a relative name, and a cycle to o1.
-    printf 'o2: @%s/docs/x.md, @../o1.md and @../../repo/docs/y.md\n' "$r" > "$o/sub/o2.md"
-    printf 'h: @docs/z.md\n' > "$HOME/h.md"  # against the home's directory, not the repo
-    echo x > docs/x.md; echo y > docs/y.md; echo z > docs/z.md; mkdir sub && echo s > sub/o2.md; commit_all out
-    for w in tree main; do
-        imps "$w" docs/x.md docs/y.md docs/z.md sub/o2.md docs/other.md
-        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; want docs/x.md imported; want docs/y.md imported; want docs/z.md -; want sub/o2.md -; want docs/other.md -
-        # An inherited IMPORT_WHOLE is cleared when the lib is sourced, so text is still read as text (i1 architecture A1).
-        IMPORT_WHOLE=1 imps "$w" docs/x.md; want walk ok; want docs/x.md imported
-    done
-}
-
-@test "an outside link whose real path holds a newline fails the tree walk (the main walk already fails on the newline-named checkout file); import_file reads an outside file against its own directory and the DIRS it is given (U2b3b2a i1 fact-check, architecture A2)" {
-    o="$BATS_TEST_TMPDIR/out" && mkdir -p docs "$o" && r="$(pwd -P)"
-    printf 'See @%s/nl.md\n' "$o" > AGENTS.md; commit_all nl
-    printf 'q: @docs/q.md\n' > "$r/docs/a"$'\n'"b.md" && ln -s "$r/docs/a"$'\n'"b.md" "$o/nl.md"
-    for w in tree main; do imps "$w" docs/q.md; want walk failed; want docs/q.md imported; done
-    printf 'p: @docs/n.md\n' > "$o/p.md"
-    run --separate-stderr env LC_ALL=C bash -c 'set -uo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
-        IMPORT_WORK_LEFT=100000 import_file "$2" ignored ""' _ "$LIB" "$o/p.md"
-    for l in docs/n.md "/$o/docs/n.md"; do printf '%s\n' "$output" | grep -qxF "$l" || { echo "missing $l: $output $stderr"; return 1; }; done
-}
-
-@test "an outside name whose real path lies in the repo reads as that repo path; an unreadable, missing or non-regular outside name is skipped, as a session cannot load it (U2b3b2a)" {
-    [ "$(id -u)" -ne 0 ] || skip "root reads a mode-000 file"
-    o="$BATS_TEST_TMPDIR/out" && mkdir -p docs "$o/dir" && r="$(pwd -P)"
-    ln -s "$r/docs" "$o/dl" && ln -s "$r/docs/t.md" "$o/tl.md"
-    printf 'See @%s/dl/s.md, @%s/tl.md, @%s/no.md, @%s/dir and @%s/locked.md\n' "$o" "$o" "$o" "$o" "$o" > AGENTS.md
-    # Read as the repo's docs/t.md, so @u.md resolves against docs/.
-    printf 't: @u.md\n' > docs/t.md; echo s > docs/s.md; echo u > docs/u.md; commit_all links
-    printf 'l: @docs/q.md\n' > "$o/locked.md" && chmod 000 "$o/locked.md"
-    for w in tree main; do
-        imps "$w" docs/s.md docs/t.md docs/u.md docs/q.md
-        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; want docs/s.md imported; want docs/t.md imported; want docs/u.md imported; want docs/q.md -
-    done
-}
-
-@test "both walks start at each config dir's memory, rules, prompts, auto memory and installed plugins, and at the managed policy (U2b3b2b)" {
-    r="$(pwd -P)" && c="$HOME/.claude" && g="$BATS_TEST_TMPDIR/cfg" && m="$BATS_TEST_TMPDIR/managed" && pc="$c/plugins/cache/mk/pl"
-    mkdir -p docs "$c/rules/sub" "$c/commands" "$c/projects/p/memory" "$g" "$m" "$pc/1/skills/s" "$pc/0/skills/s"
-    printf 'm: @%s/docs/a.md\n' "$r" > "$c/CLAUDE.md"; printf 'r: @%s/docs/b.md and @docs/h.md\n' "$r" > "$c/rules/sub/r.md"
-    printf 'c: @docs/c.md\n' > "$c/commands/c.md"  # a prompt: its names also resolve against the session's top level
-    printf 'a: @%s/docs/d.md\n' "$r" > "$c/projects/p/memory/MEMORY.md"; printf 'n: @%s/docs/n.md\n' "$r" > "$c/projects/p/memory/other.md"
-    printf 'g: @%s/docs/e.md\n' "$r" > "$g/AGENTS.md"; printf 'p: @%s/docs/p.md\n' "$r" > "$m/CLAUDE.md"
-    printf 'f: @docs/f.md\n' > "$pc/1/skills/s/SKILL.md"; printf 'o: @docs/o.md\n' > "$pc/0/skills/s/SKILL.md"
-    j="$(printf '{"version": 2, "plugins": {"pl@mk": [{"scope": "user", "installPath": "%s/1"}]}}' "$pc")" && echo "$j" > "$c/plugins/installed_plugins.json"
-    for f in a b c d e f h n o p; do echo "$f" > "docs/$f.md"; done; commit_all seeds
-    for w in tree main; do
-        CLAUDE_CONFIG_DIR="$g" T_MANAGED="$m" imps "$w" docs/{a,b,c,d,e,f,p,h,n,o}.md
-        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; for f in a b c d e f p; do want "docs/$f.md" imported; done
-        # A rule's relative name stays in its directory; other memory files and uninstalled plugin versions are not loaded.
-        for f in h n o; do want "docs/$f.md" -; done
-        # An installed list python3 cannot read gives every cached version.
-        echo '{' > "$c/plugins/installed_plugins.json"; imps "$w" docs/o.md; want walk ok; want docs/o.md imported; [ -z "$stderr" ] || return 1
-        # A relative CLAUDE_CONFIG_DIR is not modelled: the walk fails (i1 api F5).
-        CLAUDE_CONFIG_DIR=rel imps "$w" docs/o.md; want walk failed
-        echo "$j" > "$c/plugins/installed_plugins.json"
-    done
-}
-
-@test "both walks start at the instruction files of an ancestor below no reader root and at its .claude (U2b3b2b)" {
-    mkdir -p docs "$BATS_TEST_TMPDIR/.claude/rules" && r="$(pwd -P)"
-    printf 'x: @repo/docs/a.md\n' > "$BATS_TEST_TMPDIR/CLAUDE.local.md"  # against the ancestor's own directory
-    printf 'y: @%s/docs/b.md\n' "$r" > "$BATS_TEST_TMPDIR/.claude/rules/y.md"
-    echo a > docs/a.md; echo b > docs/b.md; commit_all anc
-    for w in tree main; do
-        imps "$w" docs/a.md docs/b.md docs/other.md
-        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; want docs/a.md imported; want docs/b.md imported; want docs/other.md -
-    done
-}
-
-@test "the ancestor listing skips a file that vanishes between find's readdir and its stat, retries one for a vanished directory, and still fails closed on a permission error or a vanished top (Q-145)" {
-    # The race, made deterministic with the real find: a shim adds, to the -H top-level
-    # listing only, a clause that runs at each entry under the fixture's ancestor; the first
-    # run deletes every other vic* there. find read all their names before that first visit,
-    # so it stats each deleted one later and gets ENOENT. The shim logs each listing's
-    # exit status. With SHIM_ONCE it races only on the first listing of a walk. With SHIM_RMTOP
-    # it instead removes the ancestor's .claude, a top config_seeds already found to be a
-    # directory, first; SHIM_RMTOP=drop also drops it from the start points, as a find that
-    # skipped a missing start point silently would, which leaves top_files' -d recheck to
-    # catch it. (SHIM_*, not T_*: the shim reads them, not imps.)
-    # The shim also drops every start point outside the fixture's ancestor (/tmp, /, bats' run
-    # directories): the walk lists them too, and another process's short-lived directory there
-    # (a parallel bats file's or a session's mktemp -d) failed a listing the asserted log
-    # expected to be clean, a flake under load (research-2026-10-29-flaky-vanish-test). The
-    # lib still computes and rechecks every top; only find's reading of the shared ones is cut.
-    a="$BATS_TEST_TMPDIR" && mkdir -p docs "$a/.claude" "$a/shim" && real="$(command -v find)"
-    printf 'x: @repo/docs/a.md\n' > "$a/CLAUDE.local.md"; echo a > docs/a.md; commit_all anc
-    cat > "$a/shim/find" <<EOF
-#!/usr/bin/env bash
-[[ "\${1:-}" == -H ]] || exec "$real" "\$@"
-[[ -z "\${SHIM_RMTOP:-}" || ! -d "$a/.claude" ]] || rmdir "$a/.claude" || exit 9
-args=(); while [[ \$# -gt 0 && "\$1" != '(' ]]; do
-  case "\$1" in "$a"|"$a"/*) [[ "\${SHIM_RMTOP:-}" == drop && "\$1" == "$a/.claude" ]] || args+=("\$1") ;; /*) ;; *) args+=("\$1") ;; esac; shift
-done
-[[ " \${args[*]} " == *" $a "* ]] || exit 8  # the fixture's ancestor is always a top
-if [[ -n "\${SHIM_ONCE:-}" && -e "$a/shim/fired" ]]; then "$real" "\${args[@]}" "\$@"
-else touch "$a/shim/fired"; "$real" "\${args[@]}" '(' -path "$a/*" -exec sh -c 'for f in "\$1"/vic*; do [ "\$f" = "\$2" ] || rm -rf "\$f"; done' sh "$a" {} ';' -false ')' -o "\$@"; fi
-rc=\$?; echo "\$rc" >> "$a/shim/log"; exit "\$rc"
-EOF
-    chmod +x "$a/shim/find"
-    for w in tree main; do
-        # Files: -ignore_readdir_race skips each, so no listing fails and none is retried.
-        for i in 1 2 3 4; do echo > "$a/vic$i"; done; rm -f "$a/shim/log" "$a/shim/fired"
-        PATH="$a/shim:$PATH" imps "$w" docs/a.md docs/other.md
-        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; want docs/a.md imported; want docs/other.md -
-        # The race ran: at most the first-visited victim is left.
-        [ "$(compgen -G "$a/vic*" | wc -l)" -le 1 ] || { echo "no race: $(ls "$a")"; return 1; }
-        ! grep -qvx 0 "$a/shim/log" || { echo "a listing failed: $(cat "$a/shim/log")"; return 1; }
-        rm -rf "$a"/vic*
-        # Directories: findutils still reports one, so the first listing fails and the retry,
-        # without the race, completes; the failed try's message is dropped.
-        for i in 1 2 3; do mkdir "$a/vic$i"; done; echo > "$a/vic4"; rm -f "$a/shim/log" "$a/shim/fired"
-        PATH="$a/shim:$PATH" SHIM_ONCE=1 imps "$w" docs/a.md docs/other.md
-        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; want docs/a.md imported; want docs/other.md -
-        [ "$(head -2 "$a/shim/log" | tr '\n' ' ')" = "1 0 " ] || { echo "want a failed try, then a clean one: $(cat "$a/shim/log")"; return 1; }
-        rm -rf "$a"/vic*
-    done
-    # Any other error in the same listing fails closed, after three tries: an unreadable top,
-    # and a top that vanished.
-    for w in tree main; do
-        mkdir -p "$a/.claude" && chmod 000 "$a/.claude"; rm -f "$a/shim/log"; PATH="$a/shim:$PATH" imps "$w" docs/a.md; chmod 755 "$a/.claude"; want walk failed
-        [ "$(head -3 "$a/shim/log" | tr '\n' ' ')" = "1 1 1 " ] || { echo "want three failed tries: $(cat "$a/shim/log")"; return 1; }
-        for m in 1 drop; do
-            mkdir -p "$a/.claude"; rm -f "$a/shim/log"; PATH="$a/shim:$PATH" SHIM_RMTOP="$m" imps "$w" docs/a.md; want walk failed
-            [ ! -e "$a/.claude" ] || { echo "the top was not removed"; return 1; }
-            # find reports the missing top (1); with it dropped, find succeeds (0) and the recheck fails each try.
-            [ "$(head -3 "$a/shim/log" | tr '\n' ' ')" = "$( [ "$m" = drop ] && echo "0 0 0 " || echo "1 1 1 ")" ] || { echo "$m: want three failed tries: $(cat "$a/shim/log")"; return 1; }
-        done
-    done
-}
-
-@test "top_files lists a directory's files, links and a linked DIR itself, and fails with its array empty when a DIR is no longer a directory (Q-145 final fact-check r3)" {
-    d="$BATS_TEST_TMPDIR/tf" && mkdir -p "$d/real/sub" && echo > "$d/real/f" && ln -s nowhere "$d/real/dangle" && ln -s real "$d/link" && ln -s gone "$d/dead"
-    run --separate-stderr env LC_ALL=C bash -c 'set -uo pipefail; source "$1"; d="$2"
-        fl=(stale); top_files fl "$d/real" && printf "ok:%s\n" "${fl[@]#"$d/"}" | sort
-        fl=(stale); top_files fl "$d/link" && printf "ok:%s\n" "${fl[@]#"$d/"}" | sort
-        # A linked DIR whose target is gone: find lists the link and exits 0; the -d recheck fails it.
-        fl=(stale); if top_files fl "$d/real" "$d/dead"; then echo "dead: passed"; else echo "dead: failed, ${#fl[@]} left"; fi' _ "$LIB" "$d"
-    [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output $stderr"; return 1; }
-    [ "$output" = $'ok:real/dangle\nok:real/f\nok:link\nok:link/dangle\nok:link/f\ndead: failed, 0 left' ] || { echo "$output"; return 1; }
-}
-
-@test "C1: both walks start at the start files another worktree holds, listed from the file system, skipping one this checkout holds as a plain start of the same kind (root_copies compares the bytes, or reads a prompt copy that has bases of its own) or that holds no @ (U2b3b2b; U2b3a final security 1; i1 fact-check 19b, api F1, performance F1)" {
-    mkdir -p docs && printf 'same @docs/s.md\n' > AGENTS.md; printf 'l: @docs/v.md\n' > docs/l.md; ln -s docs/l.md CLAUDE.md
-    for f in s u k t v; do echo "$f" > "docs/$f.md"; done; commit_all c1
-    git worktree add -q --detach ../side && sd="$(cd ../side && pwd -P)" && mkdir -p "$sd/.claude/commands" "$sd/sub/.CLAUDE/commands"
-    printf 'u: @docs/u.md\n' > "$sd/CLAUDE.local.md"; printf 'k: @docs/k.md\n' > "$sd/.claude/commands/k.md"; echo none > "$sd/GEMINI.md"
-    # A prompt under .CLAUDE also resolves against the directory holding it (contract item 8's lower-cased path).
-    printf 'p: @docs/up.md\n' > "$sd/sub/.CLAUDE/commands/p.md"
-    # A worktree nested in side's .claude/skills/: its README.md is a prompt by the whole path (i2 fact-check).
-    mkdir -p "$sd/.claude/skills" && git worktree add -q --detach "$sd/.claude/skills/wt" && printf 'w: @docs/w.md\n' > "$sd/.claude/skills/wt/README.md"
-    # One nested in side's sub/.claude/skills/ checks out the committed AGENTS.md, this checkout's bytes: a prompt
-    # there (its @docs/s.md also resolves against side's sub/), a plain start here, so not skipped (final fact-check 21).
-    mkdir -p "$sd/sub/.claude/skills" && git worktree add -q --detach "$sd/sub/.claude/skills/wn"
-    printf 't: @../docs/t.md\n' > "$sd/sub/CLAUDE.md"; printf 'x: @docs/x.md\n' > "$sd/sub/notes.md"
-    # git is never run in another root: its .git file is the loop's to write.
-    S="$BATS_TEST_TMPDIR/gitlog" && mkdir -p "$S" && printf '#!/bin/sh\necho "$PWD $*" >> "%s/log"\nexec %s "$@"\n' "$S" "$(command -v git)" > "$S/git" && chmod +x "$S/git"
-    for w in tree main; do
-        PATH="$S:$PATH" T_READER_ROOTS=/nonexistent/host imps "$w" docs/u.md docs/k.md docs/t.md docs/x.md docs/s.md docs/v.md sub/docs/up.md docs/w.md sub/docs/s.md
-        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; for f in u k t s v w; do want "docs/$f.md" imported; done; want docs/x.md -; want sub/docs/up.md imported; want sub/docs/s.md imported
-    done
-    ! grep -e "^$sd" -e ' -C ' "$S/log" || return 1
-    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; IMPORT_MANAGED_DIR=/nonexistent; ROOT_REAL="$(pwd -P)"; import_readers; outside_seeds a; printf "%s\n" "${a[@]}"' _ "$LIB"
-    for l in "f$sd/CLAUDE.local.md" "p$sd/.claude/commands/k.md" "f$sd/sub/CLAUDE.md"; do printf '%s\n' "$output" | grep -qxF "$l" || { echo "missing $l: $output $stderr"; return 1; }; done
-    ! printf '%s\n' "$output" | grep -qF -e "$sd/AGENTS.md" -e "$sd/GEMINI.md" || { echo "$output"; return 1; }
-}
-
-@test "a // name outside_ok rejects is projected through its realpath -m: a dangling link, or a linked directory, into another worktree reads as the repo path (U2b3b2b; U2b3b2a final security F1)" {
-    git worktree add -q --detach ../side && sd="$(cd ../side && pwd -P)" && o="$BATS_TEST_TMPDIR/out" && mkdir -p docs "$o"
-    ln -s "$sd/docs/n.md" "$o/l.md" && ln -s "$sd/docs" "$o/dl"  # side lacks docs/ (it is at the first commit)
-    printf 'See @%s/l.md and @%s/dl/m.md\n' "$o" "$o" > AGENTS.md; printf 'n: @deep.md\n' > docs/n.md; echo m > docs/m.md; echo d > docs/deep.md; commit_all proj
-    for w in tree main; do
-        imps "$w" docs/n.md docs/m.md docs/deep.md docs/other.md
-        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; want docs/n.md imported; want docs/m.md imported; want docs/deep.md imported; want docs/other.md -
-    done
-}
-
-@test "both walks read another worktree's copy of a name they reach when this checkout lacks it or its bytes differ, through chains there; a prompt's copy reads as a prompt; a dangling one is projected (U2b3b2c; U2b3b2b i1 security F1)" {
-    mkdir -p docs .claude/commands && printf 'see @docs/a.md\n' > AGENTS.md && printf 'k: @docs/k.md\n' > .claude/commands/k.md
-    for f in a b c k k2 e gone; do echo "$f" > "docs/$f.md"; done; commit_all rc
-    git worktree add -q --detach ../side && sd="$(cd ../side && pwd -P)"
-    # side's docs/a.md differs; side alone holds docs/n.md; its docs/b.md is a link to a file side lacks (dangling).
-    printf 'a: @b.md and @n.md\n' > "$sd/docs/a.md"; printf 'n: @c.md\n' > "$sd/docs/n.md"; rm "$sd/docs/gone.md"; ln -sf gone.md "$sd/docs/b.md"
-    # This checkout holds the prompt as a plain start, so C1 leaves side's copy to root_copies, which reads it
-    # (its bytes differ): its @docs/k2.md resolves against side's top level only as a prompt.
-    printf 'k: @docs/k2.md\n' > "$sd/.claude/commands/k.md"
-    for w in tree main; do
-        imps "$w" docs/b.md docs/n.md docs/c.md docs/k2.md docs/gone.md docs/e.md
-        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; for f in b n c k2 gone; do want "docs/$f.md" imported; done; want docs/e.md -
-    done
-}
-
-@test "a copy with this checkout's bytes under a linked directory is read, so its real path is projected (U2b3b2c; i1 security F2)" {
-    # (A plain copy of a non-prompt name with equal bytes is skipped as a cost: the parser already
-    # resolves this checkout's relative names against every root, so reading it could add nothing.)
-    mkdir -p docs && printf 'see @docs/x.md\n' > AGENTS.md && echo x > docs/x.md && commit_all eq
-    git worktree add -q --detach ../side && sd="$(cd ../side && pwd -P)"
-    for k in tree main; do imps "$k" real/x.md; [ -z "$stderr" ] || return 1; want walk ok; want real/x.md -; done
-    mv "$sd/docs" "$sd/real" && ln -s real "$sd/docs"
-    for k in tree main; do imps "$k" real/x.md; [ -z "$stderr" ] || return 1; want walk ok; want real/x.md imported; done
-    # A copy the linked directory lacks is projected all the same (final security F2).
-    rm "$sd/real/x.md"; for k in tree main; do imps "$k" real/x.md; [ -z "$stderr" ] || return 1; want walk ok; want real/x.md imported; done
-}
-
-@test "a dangling prompt link in another worktree reads its target as a prompt (U2b3b2c i1 security F1)" {
-    git worktree add -q --detach ../side && sd="$(cd ../side && pwd -P)" && mkdir -p docs "$sd/.claude/commands"  # side lacks docs/
-    ln -s ../../docs/t.md "$sd/.claude/commands/k.md"; printf 't: @top.md\n' > docs/t.md; echo top > top.md; echo x > AGENTS.md
-    # Under a nested .claude/, the link's own bases (side/sub) apply to its target's names too (i2 fact-check 9b).
-    mkdir -p "$sd/sub/.claude/commands" sub && ln -s ../../../docs/u.md "$sd/sub/.claude/commands/k.md"; printf 'u: @top2.md\n' > docs/u.md; echo t2 > sub/top2.md; commit_all pk
-    for w in tree main; do
-        imps "$w" docs/t.md top.md sub/top2.md
-        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; want docs/t.md imported; want top.md imported; want sub/top2.md imported
-    done
-}
-
-@test "a name a dangling prompt link projects is read again as a prompt when the walk read it before: plain, as a start, or with other bases (U2b3b2c final security F1)" {
-    git worktree add -q --detach ../side && sd="$(cd ../side && pwd -P)" && mkdir -p docs/d .claude/commands "$sd/.claude/commands" "$sd/sub/.claude/commands" sub  # side lacks all three targets
-    # PA: the main walk reads docs/t.md plainly first (the tree walk queues the link before it); PB: the target is a start; PG: the target is a prompt here, linked under side's sub/.claude/.
-    printf 'see @docs/t.md\n' > AGENTS.md; printf 't: @top.md\n' > docs/t.md; printf 'c: @topc.md\n' > docs/d/CLAUDE.md; printf 'x: @top2.md\n' > .claude/commands/x.md
-    echo a > top.md; echo b > topc.md; echo c > sub/top2.md; commit_all pr
-    ln -s ../../docs/t.md "$sd/.claude/commands/k.md"; ln -s ../../docs/d/CLAUDE.md "$sd/.claude/commands/c.md"; ln -s ../../../.claude/commands/x.md "$sd/sub/.claude/commands/k.md"
-    for w in tree main; do
-        imps "$w" top.md topc.md sub/top2.md
-        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; want top.md imported; want topc.md imported; want sub/top2.md imported
-    done
-}
-
-@test "a live prompt link in another worktree whose target there holds older bytes reads this checkout's copy as a prompt too (U2b3b2c final security F3, row 602)" {
-    mkdir -p docs && echo old > docs/t.md && echo x > AGENTS.md && commit_all old
-    git worktree add -q --detach ../side && sd="$(cd ../side && pwd -P)" && mkdir -p "$sd/.claude/commands" && ln -s ../../docs/t.md "$sd/.claude/commands/k.md"
-    printf 't: @top.md\n' > docs/t.md; echo top > top.md; commit_all new
-    for w in tree main; do
-        imps "$w" top.md
-        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; want top.md imported
-    done
-}
-
-@test "prompt_marks marks a live prompt link's names only when its real path lies below a reader root (U2c2 i1 performance 1, i2 fact-check 12a)" {
-    r="$(pwd -P)" && o="$BATS_TEST_TMPDIR/opt" && mkdir -p "$o" docs && echo a > "$o/k.md" && echo a > docs/k.md && ln -s "$o/k.md" "$BATS_TEST_TMPDIR/out.md" && ln -s "$r/docs/k.md" "$BATS_TEST_TMPDIR/in.md"
-    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"; import_readers
-        for f in "$2" "$3"; do declare -A pd=(["$f"]="$f") px=(); rq=(); out="docs/a.md"; prompt_marks pd px out "$f" rq; echo "${f##*/}: ${rq[*]:-none}"; unset pd px; done' _ "$LIB" "$BATS_TEST_TMPDIR/out.md" "$BATS_TEST_TMPDIR/in.md"
-    [ "$output" = "out.md: none
-in.md: docs/a.md" ] || { echo "$output $stderr"; return 1; }
-}
-
-@test "both walks key on the config dirs: a CLAUDE_CONFIG_DIR set after a walk walks again without import_reset; one holding a newline fails (override row 581)" {
-    r="$(pwd -P)" && g="$BATS_TEST_TMPDIR/cfg" && mkdir -p "$g" docs && printf 'g: @%s/docs/e.md\n' "$r" > "$g/CLAUDE.md" && echo e > docs/e.md && echo x > AGENTS.md && commit_all c
-    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main; ROOT_REAL="$(pwd -P)"; IMPORT_MANAGED_DIR=/nonexistent/managed
+    printf '@docs/a.md\n' > CLAUDE.md && commit_all base
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main; ROOT_REAL="$(pwd -P)"
         for w in main tree; do
-            unset CLAUDE_CONFIG_DIR; isimported "$w" docs/e.md && echo "$w unset: imported" || echo "$w unset: -"
-            CLAUDE_CONFIG_DIR="$2"; isimported "$w" docs/e.md && echo "$w set: imported" || echo "$w set: -"
-            CLAUDE_CONFIG_DIR="$3"; if import_readers; then echo "$w newline: read"; else echo "$w newline: refused"; fi
-        done' _ "$LIB" "$g" "$g"$'\n'x
-    [ "$output" = "main unset: -
-main set: imported
-main newline: refused
-tree unset: -
-tree set: imported
-tree newline: refused" ] || { echo "$output $stderr"; return 1; }
-}
-
-@test "a prompt copy with this checkout's bytes is still read: a worktree under a .claude/ adds prompt bases (U2b3b2c i2 fact-check 16)" {
-    r="$(pwd -P)" && h="$BATS_TEST_TMPDIR/h" && mkdir -p docs .claude/commands "$h/.claude" && printf 'k: @z.md\n' > .claude/commands/k.md && echo x > AGENTS.md && commit_all pc
-    git worktree add -q --detach "$h/.claude/wt" && printf 'z: @%s/docs/z2.md\n' "$r" > "$h/z.md"
-    for w in tree main; do imps "$w" docs/z2.md; [ -z "$stderr" ] || return 1; want walk ok; want docs/z2.md imported; done
-}
-
-@test "a seed that is a dangling link into another worktree reads as the repo path it names (U2b3b2c; U2b3b2b final security F1)" {
-    git worktree add -q --detach ../side && sd="$(cd ../side && pwd -P)" && mkdir -p docs "$HOME/.claude/rules"  # side lacks docs/
-    ln -s "$sd/docs/n.md" "$HOME/.claude/CLAUDE.md" && ln -s "$sd/docs/r.md" "$HOME/.claude/rules/r.md" && ln -s /nonexistent/x.md "$HOME/.claude/rules/x.md"
-    printf 'n: @deep.md\n' > docs/n.md; echo r > docs/r.md; echo d > docs/deep.md; echo x > AGENTS.md; commit_all dg
-    for w in tree main; do
-        imps "$w" docs/n.md docs/r.md docs/deep.md docs/other.md
-        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; want docs/n.md imported; want docs/r.md imported; want docs/deep.md imported; want docs/other.md -
-    done
-}
-
-@test "both walks fail closed when another worktree's copy cannot be compared with this checkout's (U2b3b2c)" {
-    [ "$(id -u)" -ne 0 ] || skip "root reads a mode-000 file"
-    mkdir -p docs && printf 'see @docs/a.md\n' > AGENTS.md && echo a > docs/a.md && commit_all cmp
-    git worktree add -q --detach ../side && sd="$(cd ../side && pwd -P)" && echo other > "$sd/docs/a.md"
-    # The main walk reads main's blob, so only the comparison reads the unreadable checkout file.
-    chmod 000 docs/a.md; for w in tree main; do imps "$w" docs/a.md; want walk failed; want docs/a.md imported; done; chmod 644 docs/a.md
-    S="$BATS_TEST_TMPDIR/s1" && mkdir -p "$S" && printf '#!/bin/sh\nexit 1\n' > "$S/sha1sum" && chmod +x "$S/sha1sum"
-    for w in tree main; do PATH="$S:$PATH" imps "$w" docs/a.md; want walk failed; done
-}
-
-@test "both walks fail closed when a seed directory cannot be listed or a seed's name holds a newline (U2b3b2b)" {
-    [ "$(id -u)" -ne 0 ] || skip "root lists a mode-000 directory"
-    printf 'x\n' > AGENTS.md && commit_all f && mkdir -p "$HOME/.claude/rules/locked"
-    chmod 000 "$HOME/.claude/rules/locked"
-    for w in tree main; do imps "$w" docs/a.md; want walk failed; want docs/a.md imported; done
-    chmod 755 "$HOME/.claude/rules/locked" && printf '@x\n' > "$HOME/.claude/rules/a"$'\n'"b.md"
-    for w in tree main; do imps "$w" docs/a.md; want walk failed; want docs/a.md imported; done
-    # A grep error in the @ filter (not only an unreadable file: memory exhausted) fails the walk (i2 security N1, api F1).
-    rm "$HOME/.claude/rules/a"$'\n'"b.md" && printf '@x\n' > "$HOME/.claude/rules/r.md" && S="$BATS_TEST_TMPDIR/g2" && mkdir -p "$S"
-    printf '#!/bin/sh\n[ "$1" = -lZF ] && exit 2\nexec %s "$@"\n' "$(command -v grep)" > "$S/grep" && chmod +x "$S/grep"
-    for w in tree main; do PATH="$S:$PATH" imps "$w" docs/a.md; want walk failed; want docs/a.md imported; done
-}
-
-@test "both walks read an import whose .. runs past / and re-enters the repo, as Node's path.resolve stops at / (U2a3b L2-i2 test-strategy)" {
-    mkdir -p docs && r="$(pwd -P)"
-    { printf 'See @'; for i in $(seq 40); do printf '../'; done; printf '%s/docs/up.md\n' "${r#/}"; } > AGENTS.md
-    commit_all clamp
-    for w in tree main; do
-        imps "$w" docs/up.md docs/other.md
-        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; want docs/up.md imported; want docs/other.md -
-    done
-}
-
-@test "IMPORT_OUT_MAX bounds what the whole walk prints, not each file, and a walk that prints exactly the limit passes (U2a3b L2-i2 test-strategy)" {
-    # import_targets prints 13 bytes for each file (a, a., a.m, a.md; 39 in all). Three
-    # files, not two: the parser gets what is left (IMPORT_LEFT), and a budget that
-    # restarted at each file would look walk-wide until the third.
-    printf 'see @a.md\n' > AGENTS.md && printf 'see @b.md\n' > GEMINI.md && printf 'see @c.md\n' > CLAUDE.md && commit_all three
-    run --separate-stderr timeout 60 env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main || true; ROOT_REAL="$(pwd -P)"
-        for m in 20 38 39; do IMPORT_OUT_MAX=$m; IMPORTED_DONE=""; IMPORTED_MAIN_DONE=""
-            imported_names && echo "$m tree ok" || echo "$m tree failed"; main_imports && echo "$m main ok" || echo "$m main failed"; done' _ "$LIB"
-    [ "$output" = $'20 tree failed\n20 main failed\n38 tree failed\n38 main failed\n39 tree ok\n39 main ok' ] || { echo "$output $stderr"; return 1; }
-}
-
-@test "the tree walk reads a file of exactly 4 MiB to its last byte, as Claude Code loads it (U2a3b L2-i2 test-strategy)" {
-    mkdir -p docs && printf 'See @big/x.md\n' > AGENTS.md && commit_all base
-    # 4194304 bytes in all, the last 14 an import with no newline after it.
-    truncate -s $((4194304 - 14)) big && printf '\n@docs/late.md' >> big && [ "$(wc -c < big)" -eq 4194304 ]
-    run --separate-stderr timeout 20 env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
-        imported_names && echo ok || echo failed; isimported tree docs/late.md && echo late' _ "$LIB"
-    [ "$output" = $'ok\nlate' ] || { echo "$status $output $stderr"; return 1; }
-}
-
-@test "both walks read an @~/ import into a repo under HOME, as Claude Code joins ~/ to the home directory (FAILS at 98e3b1df: L2-i2 fact-check Claim 9)" {
-    mkdir -p docs && printf 'See @~/%s/docs/home.md\n' "$(basename "$(pwd -P)")" > AGENTS.md && commit_all home
-    h="$(cd .. && pwd -P)"
-    for w in tree main; do
-        HOME="$h" imps "$w" docs/home.md docs/other.md
-        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; want docs/home.md imported; want docs/other.md -
-    done
-}
-
-@test "the main walk reads an imported file under .git as a checkout file and follows its imports (U2a3b L2-i2 security F2, U2a3c)" {
-    # .git/notes.md is a checkout file main lacks: phase 2 reads it, so docs/t.md, which it imports, counts.
-    mkdir -p docs && printf 'See @.git/notes.md and @sub/../.git/info/n.md\n' > CLAUDE.md && commit_all gitdir
-    printf 'see @../docs/t.md\n' > .git/notes.md
-    imps main docs/t.md docs/other.md
-    [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output $stderr"; return 1; }
-    want walk ok; want docs/t.md imported; want docs/other.md -
-}
-
-@test "both walks read an @~/ import when HOME is a symlink to the repo's parent: its real spelling is read too (U2a3b L2-i2 security F1)" {
-    mkdir -p docs && printf 'See @~/%s/docs/home.md\n' "$(basename "$(pwd -P)")" > AGENTS.md && commit_all home
-    ln -s "$(cd .. && pwd -P)" "$BATS_TEST_TMPDIR/homelink"
-    for w in tree main; do
-        HOME="$BATS_TEST_TMPDIR/homelink" imps "$w" docs/home.md docs/other.md
-        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; want docs/home.md imported; want docs/other.md -
-    done
-}
-
-@test "the parser fails on a ~/ name when the home is relative, and reads other names without one (U2a3b L2-i2 security F1)" {
-    run --separate-stderr env LC_ALL=C HOME=rel bash -c 'set -uo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
-        printf "see @docs/a.md\n" | import_targets "" >/dev/null && echo plain=0 || echo "plain=$?"
-        printf "see @~/x/docs/a.md\n" | import_targets "" >/dev/null && echo tilde=0 || echo "tilde=$?"' _ "$LIB"
-    [ "$output" = $'plain=0\ntilde=1' ] || { echo "$output $stderr"; return 1; }
-}
-
-@test "the parser itself stops once it has printed more than IMPORT_LEFT allows (U2a3b L2-i2 performance F2)" {
-    # see @a.md prints a, a., a.m, a.md: 13 with the newlines between them.
-    run --separate-stderr env LC_ALL=C bash -c 'set -uo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
-        for n in 12 13; do printf "see @a.md\n" | IMPORT_LEFT=$n import_targets "" >/dev/null && echo "$n=0" || echo "$n=$?"; done' _ "$LIB"
-    [ "$output" = $'12=1\n13=0' ] || { echo "$output $stderr"; return 1; }
-}
-
-@test "the parser fails, not stalls, when one name's candidates pass its work bound though it prints nothing (U2a3b L2-final test-strategy)" {
-    # 10,100 escaped spaces after one @: every candidate trims to nothing, so the
-    # print budget (IMPORT_LEFT) never runs, while the candidates' lengths sum to
-    # about 51 million. About 0.5 s.
-    { printf 'See @'; for i in $(seq 10100); do printf '\\ '; done; printf '\n'; } > "$BATS_TEST_TMPDIR/blank.txt"
-    run --separate-stderr env LC_ALL=C bash -c 'set -uo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
-        import_targets "" < "$2"; echo "rc=$?"' _ "$LIB" "$BATS_TEST_TMPDIR/blank.txt"
-    [ "$output" = rc=1 ] || { echo "$output $stderr"; return 1; }
-}
-
-@test "the main walk passes a nested .git directory as a plain directory, and reads a nested .git file, as Claude Code does (U2a3b L2-final security F2, test-strategy F2, U2a3c)" {
-    # A nested repository's .git directory names no file: a prefix of @n/.github/x.md passes the plain-directory check.
-    mkdir -p notes n && printf 'See @n/.github/x.md and @notes/x.md\n' > GEMINI.md && printf 'x\n' > notes/x.md && printf 'x\n' > n/keep
-    commit_all nested
-    mkdir n/.git
-    imps main notes/x.md n/.github/x.md docs/other.md
-    [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output $stderr"; return 1; }
-    want walk ok; want notes/x.md imported; want n/.github/x.md imported; want docs/other.md -
-    # A .git file (a nested worktree's gitfile, or any file so named) is a checkout file main lacks:
-    # Claude Code follows its imports, and so does phase 2.
-    rmdir n/.git && printf 'see @../docs/e.md\n' > n/.git
-    imps main docs/e.md docs/other.md; want walk ok; want docs/e.md imported; want docs/other.md -
-    # The tree walk reads that file as Claude Code does, and follows its import.
-    imps tree docs/e.md docs/other.md; want walk ok; want docs/e.md imported; want docs/other.md -
-}
-
-@test "both walks read ~/ against the passwd entry's home when HOME is empty or unset (U2a3b L2-final test-strategy)" {
-    # Claude Code's runtime (Bun) falls back to the passwd entry for an empty HOME as
-    # for an unset one (L2-final fact-check r1 22a). A getent shim makes the repo's
-    # parent that entry's home.
-    mkdir -p docs && printf 'See @~/%s/docs/home.md\n' "$(basename "$(pwd -P)")" > AGENTS.md && commit_all home
-    G="$BATS_TEST_TMPDIR/getent" && mkdir -p "$G" && printf '#!/bin/sh\necho "u:x:0:0::%s:/bin/sh"\n' "$(cd .. && pwd -P)" > "$G/getent" && chmod +x "$G/getent"
-    oh="$HOME"
-    for w in tree main; do
-        HOME="" PATH="$G:$PATH" imps "$w" docs/home.md docs/other.md
-        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w empty: $output $stderr"; return 1; }
-        want walk ok; want docs/home.md imported; want docs/other.md -
-        unset HOME; PATH="$G:$PATH" imps "$w" docs/home.md docs/other.md; export HOME="$oh"
-        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w unset: $output $stderr"; return 1; }
-        want walk ok; want docs/home.md imported; want docs/other.md -
-    done
-}
-
-@test "both walks read well-formed UTF-8 without python3, which only text holding an invalid sequence needs (U2a3b L2-final test-strategy)" {
-    mkdir -p docs && printf 'Voil\xc3\xa0: @docs/caf\xc3\xa9.md and @docs/a.md\n' > AGENTS.md && commit_all utf8
-    S="$BATS_TEST_TMPDIR/py" && mkdir -p "$S" && printf '#!/bin/sh\nexit 1\n' > "$S/python3" && chmod +x "$S/python3"
-    for w in tree main; do
-        PATH="$S:$PATH" imps "$w" $'docs/caf\xc3\xa9.md' docs/a.md docs/other.md
-        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; want $'docs/caf\xc3\xa9.md' imported; want docs/a.md imported; want docs/other.md -
-    done
-}
-
-@test "the tree walk fails closed on an imported file it cannot read, when the caller did not set pipefail (U2a3b L2-final test-strategy)" {
-    # As the main walk's unreadable-blob test: head fails, and the walk must not read that as no imports.
-    mkdir -p docs && printf 'see @docs/a.md\n' > AGENTS.md && printf 'see @b.md\n' > docs/a.md && commit_all base
-    chmod 000 docs/a.md
-    run --separate-stderr env LC_ALL=C bash -c 'set -eu; source "$1"; ROOT_REAL="$(pwd -P)"
-        if imported_names; then echo "walk: ok"; else echo "walk: failed"; fi
-        if isimported tree docs/b.md; then echo "docs/b.md: imported"; fi' _ "$LIB"
-    chmod 644 docs/a.md
-    [ "$status" -eq 0 ] && [ "$output" = $'walk: failed\ndocs/b.md: imported' ] || { echo "$status $output $stderr"; return 1; }
-}
-
-@test "the parser charges each resolved spelling to its work bound, so a deep file of many short names fails, not stalls (U2a3b L2-final performance F1)" {
-    # 400,000 copies of @a, from a file 50 directories down: each resolves to a path of
-    # about 135 characters under bats' temp root (more under a longer one), past the
-    # 50,000,000 bound in all, though the name itself is one character (performance
-    # L2-final F1 measured 22 s and success on a 4 MiB file of @a before the charge).
-    d="$(printf 'd/%.0s' $(seq 50))" && d="${d%/}"
-    { head -c 400000 /dev/zero | sed 's/\x0/@a /g'; printf '\n'; } > "$BATS_TEST_TMPDIR/many.txt"
-    run --separate-stderr env LC_ALL=C bash -c 'set -uo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
-        timeout 60 bash -c "source \"\$1\"; ROOT_REAL=\"\$2\"; import_targets \"\$3\" < \"\$4\" >/dev/null" _ "$1" "$ROOT_REAL" "$2" "$3"; echo "rc=$?"' _ "$LIB" "$d" "$BATS_TEST_TMPDIR/many.txt"
-    [ "$output" = rc=1 ] || { echo "$output $stderr"; return 1; }
-}
-
-@test "the parser reads the U+FFFD spelling of each ill-formed class the UTF-8 gate must send to python3: overlongs, a surrogate, past U+10FFFF (U2a3b L2-confirm test-strategy)" {
-    # One line per call: the gate forks python3 for the whole text when any line is
-    # ill-formed, so each class must be the only one in its text to pin UTF8_WELL_FORMED's
-    # range for it. Counts are python3's "replace" decoding (one U+FFFD per maximal
-    # subpart, as WHATWG decoders also do).
-    seqs=($'\xc0\x80' $'\xc1\xbf' $'\xe0\x80\x80' $'\xed\xa0\x80' $'\xf0\x80\x80\x80' $'\xf4\x90\x80\x80') ns=(2 2 3 3 4 4)
-    for i in "${!seqs[@]}"; do printf '@d%s%s.md\n' "$i" "${seqs[$i]}"; done > "$BATS_TEST_TMPDIR/ill.txt"
-    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
-        while IFS= read -r l; do printf "%s\n" "$l" | import_targets ""; done < "$2"' _ "$LIB" "$BATS_TEST_TMPDIR/ill.txt"
-    [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$status $stderr"; return 1; }
-    for i in "${!seqs[@]}"; do
-        w="d$i"; for ((k = 0; k < ns[i]; k++)); do w+=$'\xef\xbf\xbd'; done
-        printf '%s\n' "$output" | grep -qxF "$w.md" || { echo "missing: $w.md"; return 1; }
-    done
-}
-
-@test "checkout phase: a start or import main lacks under a directory main stores as a link, or under an unsearchable checkout directory, fails the walk (U2a3c; U2a3 loop 1 C1, C3)" {
-    mkdir -p deep docs && printf 'evil @secret.md\n' > deep/CLAUDE.md && ln -s deep ld && printf 'see @ld/CLAUDE.md\n' > CLAUDE.md && commit_all link
-    imps main deep/secret.md; want walk failed; want deep/secret.md imported
-    # The checkout makes ld a plain directory holding an untracked start: still failed, as main alone.
-    rm ld && mkdir ld && cp deep/CLAUDE.md ld/; imps main deep/secret.md x.sh; want walk failed; want x.sh imported
-    # main stores .claude/rules as a link; the checkout holds a plain directory with an untracked rule that imports nothing (the start's own check, fact-check 22a).
-    rm -r ld && git rm -q CLAUDE.md; mkdir -p .claude && ln -s ../docs .claude/rules && printf 'see @bar.md\n' > docs/foo.md && commit_all rules-link
-    rm .claude/rules && mkdir .claude/rules && printf 'harmless\n' > .claude/rules/foo.md; imps main docs/bar.md; want walk failed; want docs/bar.md imported
-    # A readable but unsearchable directory holding an import main lacks, then a start; then an unreadable one only git's listing meets.
-    rm -r .claude && git rm -q -r --cached .claude && printf 'see @priv/x.md\n' > AGENTS.md && commit_all priv && mkdir priv && printf 'p @q.md\n' > priv/x.md && chmod 644 priv
-    imps main docs/q.md; chmod 755 priv; want walk failed; want docs/q.md imported
-    mkdir pv && printf 'harmless\n' > pv/CLAUDE.md && chmod 644 pv; imps main docs/q.md; chmod 755 pv; want walk failed; want docs/q.md imported; rm -r pv
-    rm -r priv && mkdir hid && printf 'h @q.md\n' > hid/CLAUDE.md && chmod 000 hid; imps main docs/q.md; chmod 755 hid; want walk failed; want docs/q.md imported
-    # main stores sm as a gitlink; the checkout holds a plain directory with an untracked start that imports nothing.
-    t="$(printf '100644 blob %s\tAGENTS.md\n160000 commit %s\tsm\n' "$(git rev-parse main:AGENTS.md)" "$(git rev-parse main)" | git mktree)"; git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m gitlink)"
-    mkdir sm && printf 'harmless\n' > sm/CLAUDE.md; imps main docs/q.md; want walk failed; want docs/q.md imported
-}
-
-@test "main walk fails when the batch tr dies after a partial flush, rather than truncating the last start's name (U2a3b final N1, U2a3c)" {
-    # The untracked AGENTS.md is the last candidate; a tr that drops the last
-    # three bytes ("md" and the NUL) and exits 1 would leave the count whole and
-    # the name "agents.", which is no start. Only input holding a NUL (the batch)
-    # is cut, so the per-file lower still works.
-    mkdir -p docs && printf 'x\n' > docs/keep.md && commit_all base && printf 'see @docs/x.md\n' > AGENTS.md
-    mkdir -p "$BATS_TEST_TMPDIR/bin" && printf '#!/bin/bash\nt="$(mktemp)"; %s "$@" > "$t"; if grep -qaP "\\\\x00" "$t"; then head -c $(( $(wc -c < "$t") - 3 )) "$t"; rm -f "$t"; exit 1; fi; cat "$t"; rm -f "$t"\n' "$(command -v tr)" > "$BATS_TEST_TMPDIR/bin/tr" && chmod +x "$BATS_TEST_TMPDIR/bin/tr"
-    imps main docs/x.md; want walk ok; want docs/x.md imported
-    PATH="$BATS_TEST_TMPDIR/bin:$PATH" imps main docs/x.md; [ "$status" -eq 0 ] || return 1; want walk failed; want docs/x.md imported
-}
-
-@test "main walk reads only the first 4 MiB + 1 of a blob or checkout file over 4 MiB, and a blob that long does not fail the walk under pipefail (U2a3b L2-C5, U2a3c)" {
-    # Main's CLAUDE.md and the untracked AGENTS.md: 5 MiB each, an import in the first line and another past 4 MiB.
-    mkdir -p docs
-    for f in CLAUDE.md AGENTS.md; do n="${f%%.*}"; { printf 'see @docs/%s-early.md\n' "$n"; head -c $((5 * 1048576)) /dev/zero | tr '\0' x; printf '\n@docs/%s-late.md\n' "$n"; } > "$f"; done
-    git add CLAUDE.md && git commit -qm big
-    imps main docs/CLAUDE-early.md docs/AGENTS-early.md docs/CLAUDE-late.md docs/AGENTS-late.md
-    [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output $stderr"; return 1; }
-    want walk ok; want docs/CLAUDE-early.md imported; want docs/AGENTS-early.md imported; want docs/CLAUDE-late.md -; want docs/AGENTS-late.md -
-}
-
-@test "the checkout phase checks each directory an import passes through once per walk, not once per prefix candidate (U2a3b L2-C6, U2a3c)" {
-    # @a/b/c/d/e/f/g/h/x.md yields about 20 prefix candidates through eight plain
-    # directories main lacks; a realpath shim counts the checks. Unmemoized, each
-    # candidate re-checks every ancestor (102 calls; 74 at 3e58eb9c); memoized,
-    # each directory once, plus each candidate's own check (10 at 2fbd929b; 18
-    # without its memo of a prefix candidate's own directory).
-    mkdir -p a/b/c/d/e/f/g/h && printf 'x @y.md\n' > a/b/c/d/e/f/g/h/x.md && printf 'see @a/b/c/d/e/f/g/h/x.md\n' > CLAUDE.md && git add CLAUDE.md && git commit -qm base
-    mkdir -p "$BATS_TEST_TMPDIR/bin" && printf '#!/bin/sh\necho x >> "%s/calls"\nexec %s "$@"\n' "$BATS_TEST_TMPDIR" "$(command -v realpath)" > "$BATS_TEST_TMPDIR/bin/realpath" && chmod +x "$BATS_TEST_TMPDIR/bin/realpath"
-    PATH="$BATS_TEST_TMPDIR/bin:$PATH" imps main a/b/c/d/e/f/g/h/y.md
-    [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output $stderr"; return 1; }
-    want walk ok; want a/b/c/d/e/f/g/h/y.md imported
-    n="$(wc -l < "$BATS_TEST_TMPDIR/calls")"; [ "$n" -le 14 ] || { echo "realpath calls: $n"; return 1; }
-}
-
-@test "the checkout phase walks an untracked start when main's tree is empty (U2a3c)" {
-    git update-ref refs/heads/main "$(git commit-tree "$(printf '' | git mktree)" -m empty)" && git checkout -qf main
-    mkdir -p docs && printf 'see @docs/x.md\n' > CLAUDE.md
-    imps main docs/x.md docs/other.md
-    [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$status $output $stderr"; return 1; }
-    want walk ok; want docs/x.md imported; want docs/other.md -
-}
-
-@test "import_work strips the parser's work trailer and charges it; a missing trailer or a spent IMPORT_WORK_MAX fails (U2a3c)" {
-    run --separate-stderr env LC_ALL=C bash -c 'set -uo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"; t=5
-        o=$'"'"'a.md\n/12'"'"'; import_work o t && echo "1 ok [$o] $t" || echo "1 failed"
-        o=/7; import_work o t && echo "2 ok [$o] $t" || echo "2 failed"
-        o=$'"'"'docs/12'"'"'; import_work o t && echo "3 ok" || echo "3 failed"
-        o=$'"'"'a.md\nb/12x'"'"'; import_work o t && echo "4 ok" || echo "4 failed"
-        IMPORT_WORK_MAX=30; o=/7; import_work o t && echo "5 ok $t" || echo "5 failed $t"
-        out="$(printf "no imports here\n" | IMPORT_WORK_LEFT=10 import_targets "")"; echo "6 [$out]"' _ "$LIB"
-    [ "$output" = $'1 ok [a.md] 17\n2 ok [] 24\n3 failed\n4 failed\n5 failed 31\n6 [/0]' ] || { echo "$output $stderr"; return 1; }
-}
-
-@test "main_checkout answers each checkout shape: 0 for a readable plain file, 2 where nothing loads, 1 for anything it does not model, and memoizes plain searchable directories as d and absent or plain-file ancestors as 2 (U2a3c)" {
-    mkdir -p d u sdt && printf 'r\n' > d/r.md && printf 'n\n' > d/n.md && printf 'f\n' > f.md && chmod 000 d/n.md && chmod 644 u
-    ln -s d/r.md sf.md && ln -s missing.md dg.md && ln -s missing dgd && ln -s sdt sd && mkfifo ff.md
-    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
-        declare -A E=([lnk]=120000 [gl]=160000 [nd2/m/l]=120000 [f.md]=100644) M=()
-        for p in d/r.md nx.md nd/x.md f.md/x.md d u d/n.md sf.md dg.md sd ff.md u/x.md sd/nx.md dgd/x.md lnk/x.md gl/x.md nd2/m/l/x.md; do
-            c=0; main_checkout E M "$p" || c=$?; echo "$p $c"; done
-        echo "memo $(for k in "${!M[@]}"; do echo "$k=${M[$k]}"; done | sort | tr "\n" " ")"; declare -a A=(); c=0; main_checkout A M d/r.md || c=$?; echo "ent-indexed $c"; c=0; main_checkout E A d/r.md || c=$?; echo "memo-indexed $c"' _ "$LIB"
-    chmod 755 u && chmod 644 d/n.md
-    [ "$status" -eq 0 ] && [ -z "$stderr" ] && [ "$output" = "d/r.md 0
-nx.md 2
-nd/x.md 2
-f.md/x.md 2
-d 2
-u 2
-d/n.md 1
-sf.md 1
-dg.md 1
-sd 1
-ff.md 1
-u/x.md 1
-sd/nx.md 1
-dgd/x.md 1
-lnk/x.md 1
-gl/x.md 1
-nd2/m/l/x.md 1
-memo d=d f.md=2 nd2/m=2 nd2=2 nd=2 
-ent-indexed 1
-memo-indexed 1" ] || { echo "$status $output $stderr"; return 1; }
-}
-
-@test "main walk fails on a path under a link main stores below a directory the checkout lacks, and walks a path under a plain file (U2a3c)" {
-    mkdir -p a/b real docs && ln -s ../../real a/b/l && printf 'evil @../docs/s.md\n' > real/x.md && printf 'n\n' > docs/n.md
-    printf 'see @a/b/l/x.md and @docs/n.md/x.md\n' > CLAUDE.md && commit_all deep-link
-    # The checkout keeps a/b/l: the parent-link refusal.
-    imps main docs/s.md; want walk failed; want docs/s.md imported
-    # The checkout lacks a: main still stores a/b/l as a link, two levels below it, which the walk does not follow.
-    rm -r a; imps main docs/s.md; want walk failed; want docs/s.md imported
-    # A path under a plain file loads nothing and is no failure.
-    git rm -q -r a && printf 'see @docs/n.md/x.md\n' > CLAUDE.md && commit_all under-file
-    imps main docs/s.md docs/n.md; [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output $stderr"; return 1; }
-    want walk ok; want docs/n.md imported; want docs/s.md -
-}
-
-@test "each walk caps every file's parser at what IMPORT_WORK_MAX has left, in every arm, and charges every arm (U2a3b L2-confirm performance P2, U2a3c)" {
-    # Four top-level files alike but for one letter cost w each: two on main, two
-    # only in the checkout, so each main_imports arm runs twice. An awk shim logs
-    # the cap each parser call is given (IT_WORK).
-    printf 'see @a.md\n' > AGENTS.md && printf 'see @b.md\n' > GEMINI.md && commit_all two && printf 'see @c.md\n' > CLAUDE.md && printf 'see @d.md\n' > CLAUDE.local.md
-    mkdir -p "$BATS_TEST_TMPDIR/bin" && printf '#!/bin/sh\n[ -z "${IT_WORK+x}" ] || echo "$IT_WORK" >> "%s/cap"\nexec %s "$@"\n' "$BATS_TEST_TMPDIR" "$(command -v awk)" > "$BATS_TEST_TMPDIR/bin/awk" && chmod +x "$BATS_TEST_TMPDIR/bin/awk"
-    run --separate-stderr timeout 60 env LC_ALL=C PATH="$BATS_TEST_TMPDIR/bin:$PATH" C="$BATS_TEST_TMPDIR/cap" bash -c 'set -euo pipefail; source "$1"; resolve_main || true; ROOT_REAL="$(pwd -P)"
-        out="$(printf "see @a.md\n" | IMPORT_WORK_LEFT=1000000 import_targets "")"; w=0; import_work out w
-        for m in $((4 * w - 1)) $((4 * w)); do IMPORT_WORK_MAX=$m; IMPORTED_DONE=""; IMPORTED_MAIN_DONE=""
-            imported_names && echo "$((m - 4 * w)) tree ok" || echo "$((m - 4 * w)) tree failed"; main_imports && echo "$((m - 4 * w)) main ok" || echo "$((m - 4 * w)) main failed"; done
-        # The caps derive from w: each candidate is charged its resolved spelling, so w grows with the fixture root.
-        m=$((10 * w)); IMPORT_WORK_MAX=$m; want="$(printf "%s\n" $m $((m - w)) $((m - 2 * w)) $((m - 3 * w)) | sort -n | tr "\n" " ")"
-        for k in tree main; do IMPORTED_DONE=""; IMPORTED_MAIN_DONE=""; rm -f "$C"
-            if [[ $k == tree ]]; then imported_names; else main_imports; fi
-            got="$(sort -n "$C" | tr "\n" " ")"; [[ "$got" == "$want" ]] && echo "$k caps ok" || echo "$k caps [$got] want [$want]"; done' _ "$LIB"
-    [ "$output" = $'-1 tree failed\n-1 main failed\n0 tree ok\n0 main ok\ntree caps ok\nmain caps ok' ] || { echo "$output $stderr"; return 1; }
-}
-
-@test "the parser stops once its work passes IMPORT_WORK_LEFT, below its per-file bound (U2a3c)" {
-    run --separate-stderr env LC_ALL=C bash -c 'set -uo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
-        out="$(printf "see @abcdefgh.md\n" | IMPORT_WORK_LEFT=1000000 import_targets "")"; w=0; import_work out w
-        for l in $((w - 1)) $w; do out="$(printf "see @abcdefgh.md\n" | IMPORT_WORK_LEFT=$l import_targets "")" && echo "$((l - w)) ok" || echo "$((l - w)) failed"; done' _ "$LIB"
-    [ "$output" = $'-1 failed\n0 ok' ] || { echo "$output $stderr"; return 1; }
-}
-
-@test "main walk reads an untracked start that a main file also imports once, through the checkout (U2a3c; override row 446)" {
-    mkdir -p docs && printf 'see @docs/AGENTS.md\n' > CLAUDE.md && commit_all base
-    printf 'see @x.md\n' > docs/AGENTS.md
-    imps main docs/AGENTS.md docs/x.md docs/other.md
-    [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output $stderr"; return 1; }
-    want walk ok; want docs/AGENTS.md imported; want docs/x.md imported; want docs/other.md -
-    # The same path as a checkout symlink: refused at the start, before the import meets it.
-    rm docs/AGENTS.md && printf 'see @x.md\n' > docs/real.md && ln -s real.md docs/AGENTS.md
-    imps main docs/x.md; want walk failed; want docs/x.md imported
-}
-
-@test "the checkout phase stays linear in a deep import token whose ancestors the checkout lacks (U2a3c i2 performance F1)" {
-    # @a/a/.../x.md, 1,000 levels deep, none in the checkout: about 0.6 s; 21b35ebf's
-    # top-down loop rescanned every absent ancestor per prefix candidate (10.7 s).
-    p=""; for ((i = 0; i < 1000; i++)); do p+="a/"; done
-    printf 'see @%sx.md\n' "$p" > CLAUDE.md && commit_all deep
-    run --separate-stderr timeout 6 env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main || true; ROOT_REAL="$(pwd -P)"
-        main_imports && echo ok || echo failed' _ "$LIB"
-    [ "$output" = ok ] || { echo "$status $output $stderr"; return 1; }
-}
-
-@test "main walk fails on link text main stores longer than 4096 bytes before reading it whole (U2a3c i2 performance F2)" {
-    printf 'r\n' > r.md && commit_all base
-    l="$(head -c 4097 /dev/zero | tr '\0' a | git hash-object -w --stdin)"; k="$(printf 'r.md' | git hash-object -w --stdin)"
-    # A git shim logs each `git cat-file blob` object name: the long link must fail with no read of its blob.
-    mkdir -p "$BATS_TEST_TMPDIR/bin" && printf '#!/bin/sh\n[ "$1 $2" != "cat-file blob" ] || echo "$3" >> "%s/blobs"\nexec %s "$@"\n' "$BATS_TEST_TMPDIR" "$(command -v git)" > "$BATS_TEST_TMPDIR/bin/git" && chmod +x "$BATS_TEST_TMPDIR/bin/git"
-    for b in "$l" "$k"; do
-        t="$(printf '100644 blob %s\tr.md\n120000 blob %s\tCLAUDE.md\n' "$(git rev-parse main:r.md)" "$b" | git mktree)"
-        git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m link)"; rm -f "$BATS_TEST_TMPDIR/blobs"
-        PATH="$BATS_TEST_TMPDIR/bin:$PATH" imps main r.md; echo "$output" | head -1
-        if grep -q ':CLAUDE\.md$' "$BATS_TEST_TMPDIR/blobs" 2>/dev/null; then echo "link blob read"; else echo "link blob unread"; fi
-    done > "$BATS_TEST_TMPDIR/got"
-    [ "$(cat "$BATS_TEST_TMPDIR/got")" = $'walk: failed\nlink blob unread\nwalk: ok\nlink blob read' ] || { cat "$BATS_TEST_TMPDIR/got"; return 1; }
-}
-
-@test "main_checkout's work over a deep token's prefix candidates grows linearly with depth, counted, not timed (U2a3c i2 performance F1)" {
-    # xtrace counts the commands main_checkout runs for every prefix of a token
-    # 100 and 400 levels deep, none in the checkout. Linear work gives a ratio of
-    # about 4 (4.0 at 3a35c8b9); 21b35ebf's top-down rescan of every absent
-    # ancestor gives about 16 (15.6). A count, so no host is fast enough to hide it.
-    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"; t="$2"
-        for n in 100 400; do unset E M; declare -A E=() M=(); p=""
-            exec 3> "$t"; BASH_XTRACEFD=3; set -x
-            for ((i = 0; i < n; i++)); do p+="a/"; main_checkout E M "${p%/}" || true; main_checkout E M "${p}x.md" || true; done
-            set +x; exec 3>&-; echo "$(wc -l < "$t")"; done' _ "$LIB" "$BATS_TEST_TMPDIR/xtrace"
-    [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$status $output $stderr"; return 1; }
-    a="$(sed -n 1p <<< "$output")"; b="$(sed -n 2p <<< "$output")"
-    [ "$a" -gt 0 ] && [ "$b" -le $((6 * a)) ] || { echo "commands at 100: $a, at 400: $b"; return 1; }
-}
-
-@test "main_checkout refuses a PATH main stores as a link or gitlink, so a plain checkout directory there never passes a path below it (U2a3c final)" {
-    # The checkout holds plain searchable directories where main stores a link and a gitlink;
-    # lx and gx, a link and a gitlink main stores, are absent there and answer 1 too.
-    mkdir -p l g && printf 'x\n' > l/f.md && printf 'x\n' > g/f.md
-    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
-        declare -A E=([l]=120000 [g]=160000 [lx]=120000 [gx]=160000) M=()
-        for p in l l/f.md g g/f.md lx gx; do c=0; main_checkout E M "$p" || c=$?; echo "$p $c"; done' _ "$LIB"
-    [ "$status" -eq 0 ] && [ -z "$stderr" ] && [ "$output" = $'l 1\nl/f.md 1\ng 1\ng/f.md 1\nlx 1\ngx 1' ] || { echo "$status $output $stderr"; return 1; }
-}
-
-@test "the checkout phase stays near linear in the number of import tokens main lacks (U2a3c final performance F1)" {
-    # 4,000 tokens @nI/a/b/c/d/x.md, none in the checkout: about 2.5 s here (6.5 s
-    # with the CPUs oversubscribed 1.5x). A hang guard only: the ${x@a} cost class
-    # (44.6 s at 3a35c8b9) is pinned host-independently by the ratio test below.
-    { printf 'see'; for ((i = 0; i < 4000; i++)); do printf ' @n%d/a/b/c/d/x.md' "$i"; done; printf '\n'; } > CLAUDE.md && commit_all many
-    run --separate-stderr timeout 60 env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main || true; ROOT_REAL="$(pwd -P)"
-        main_imports && echo ok || echo failed' _ "$LIB"
-    [ "$output" = ok ] || { echo "$status $output $stderr"; return 1; }
-}
-
-@test "main_checkout's cost per call does not grow with ENT's or MEMO's size, a ratio of two timings in one process so no host is fast or slow enough to hide it (U2a3c final performance F1)" {
-    # 400 calls with ENT and MEMO of 30,000 entries each, against 400 with both
-    # empty, timed in the same shell. Constant-time type checks give a ratio near
-    # 1 (0.4-1.0 here, idle or with 24 busy loops on 16 CPUs); a check linear in
-    # either array (${x@a}, as at 3a35c8b9) gives 59-141. Best of three rounds
-    # against a bound of 10, so a stall in one round cannot fail it.
-    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
-        declare -A E=() M=() BE=() BM=(); for ((i = 0; i < 30000; i++)); do BE["z$i"]=100644; BM["y$i"]=2; done
-        t() { local s=$EPOCHREALTIME e k; for ((k = 0; k < 400; k++)); do main_checkout "$1" "$2" "q$k/x.md" || true; done; e=$EPOCHREALTIME; echo $(( ${e/./} - ${s/./} )); }
-        best=""; for r in 1 2 3; do a=$(t E M); b=$(t BE BM); x=$(( b * 100 / a )); [[ -n "$best" && $best -le $x ]] || best=$x; done; echo "$best"' _ "$LIB"
-    [ "$status" -eq 0 ] && [ -z "$stderr" ] && [ "$output" -le 1000 ] || { echo "ratio x100: $status $output $stderr"; return 1; }
-}
-
-@test "main_checkout answers a PATH main stores as a blob by the checkout's plain file there, pinned though U2b's precondition passes only paths main lacks (U2a3c final)" {
-    printf 'x\n' > b.md && printf 'x\n' > e.md
-    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
-        declare -A E=([b.md]=100644 [e.md]=100755) M=()
-        for p in b.md e.md; do c=0; main_checkout E M "$p" || c=$?; echo "$p $c"; done' _ "$LIB"
-    [ "$status" -eq 0 ] && [ -z "$stderr" ] && [ "$output" = $'b.md 0\ne.md 0' ] || { echo "$status $output $stderr"; return 1; }
+            import_reset; rm -f GEMINI.md
+            isimported "$w" docs/a.md && echo "$w a: imported"
+            printf "@docs/b.md\n" > GEMINI.md
+            isimported "$w" docs/b.md || echo "$w b cached: -"
+            import_reset; isimported "$w" docs/b.md && echo "$w b: imported"
+            ln -sf x.md docs/b.md; import_reset; if [[ $w == main ]]; then main_imports || echo "main failed"; else imported_names || echo "tree failed"; fi
+            rm docs/b.md; if [[ $w == main ]]; then main_imports || echo "main still failed"; else imported_names || echo "tree still failed"; fi
+        done' _ "$LIB"
+    [ "$output" = "main a: imported
+main b cached: -
+main b: imported
+main failed
+main still failed
+tree a: imported
+tree b cached: -
+tree b: imported
+tree failed
+tree still failed" ] || { echo "$output $stderr"; return 1; }
+    # A new main commit walks again without import_reset.
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main; ROOT_REAL="$(pwd -P)"
+        isimported main docs/c.md || echo "c: -"
+        printf "@docs/c.md\n" > CLAUDE.md; git add CLAUDE.md; git commit -qm c; resolve_main
+        isimported main docs/c.md && echo "c: imported"' _ "$LIB"
+    [ "$output" = $'c: -\nc: imported' ] || { echo "$output $stderr"; return 1; }
 }
 
 @test "floor: instruction and prompt files, dotfiles, gate code, imports, cycle files, records and other briefs' files refuse; the rest pass (T10, U2a4)" {
@@ -1413,17 +299,14 @@ memo-indexed 1" ] || { echo "$status $output $stderr"; return 1; }
     printf 'Rules: @docs/a.md\n' > CLAUDE.md && commit_all claude
     floors 2026-10-01-x M scripts/other.sh
     want scripts/other.sh -
-    # IMPORTED_MAIN_WHY, worded: a checkout path the walk reads that is not plain (an untracked start that is a link; an import below an unsearchable directory), a seed listing.
-    ln -s CLAUDE.md AGENTS.md; floors 2026-10-01-x M scripts/other.sh; rm AGENTS.md
-    want scripts/other.sh "$WALKFAIL: AGENTS.md, which the walk reads from the checkout, is not a readable plain file below plain searchable directories, or lies below a link or gitlink the default branch stores"
-    mkdir docs && echo x > docs/a.md && chmod 644 docs; floors 2026-10-01-x M scripts/other.sh; chmod 755 docs; rm -r docs
-    [[ "${lines[0]}" == "scripts/other.sh: $WALKFAIL: docs/a"*", which the walk reads from the checkout, is not a readable plain file below plain searchable directories, or lies below a link or gitlink the default branch stores" ]] || { echo "$output"; return 1; }
-    CLAUDE_CONFIG_DIR=rel floors 2026-10-01-x M scripts/other.sh
-    want scripts/other.sh "$WALKFAIL: the worktree registry could not be read, or a reader root, home or CLAUDE_CONFIG_DIR is not a usable absolute path"
+    # IMPORTED_MAIN_WHY, worded: a checkout link at a name main lacks; a checkout file it cannot read.
+    mkdir docs && ln -s ../CLAUDE.md docs/a.md; floors 2026-10-01-x M scripts/other.sh; rm docs/a.md
+    want scripts/other.sh "$WALKFAIL: docs/a.md $LINKWHY"
     if [ "$(id -u)" -ne 0 ]; then
-        mkdir -p "$HOME/.claude/rules/locked" && chmod 000 "$HOME/.claude/rules/locked"; floors 2026-10-01-x M scripts/other.sh; chmod 755 "$HOME/.claude/rules/locked"
-        want scripts/other.sh "$WALKFAIL: the instruction files outside the checkout (config dirs, ancestors, other worktrees) could not be listed, or one's path holds a newline or could not be lower-cased"
+        echo x > docs/a.md && chmod 000 docs/a.md; floors 2026-10-01-x M scripts/other.sh; chmod 644 docs/a.md
+        want scripts/other.sh "$WALKFAIL: docs/a.md $READWHY"
     fi
+    rm -r docs
     # A failing tr: floor and --check-fix each refuse, and say why.
     mkdir -p "$BATS_TEST_TMPDIR/bin" docs && printf '#!/bin/sh\nexit 1\n' > "$BATS_TEST_TMPDIR/bin/tr" && chmod +x "$BATS_TEST_TMPDIR/bin/tr"
     PATH="$BATS_TEST_TMPDIR/bin:$PATH" floors 2026-10-01-x M scripts/other.sh
@@ -1435,16 +318,12 @@ memo-indexed 1" ] || { echo "$status $output $stderr"; return 1; }
     o="$(git rev-parse main:CLAUDE.md)"
     rm ".git/objects/${o:0:2}/${o:2}"
     floors 2026-10-01-x M scripts/other.sh docs/b.md
-    for p in scripts/other.sh docs/b.md; do want "$p" "$WALKFAIL: CLAUDE.md could not be read, or its imports parsed within the walk's budgets (IMPORT_WORK_MAX, IMPORT_OUT_MAX), or it is a link the walk does not model"; done
-    # main stores .claude/rules as a link (START_LINK).
-    git hash-object -w CLAUDE.md > /dev/null; mkdir -p .claude && ln -s ../docs .claude/rules && commit_all rules-link
-    floors 2026-10-01-x M scripts/other.sh
-    want scripts/other.sh "$WALKFAIL: the default branch stores a link or gitlink at .claude or at or below a .claude/ start directory, at .claude/rules"
+    for p in scripts/other.sh docs/b.md; do want "$p" "$WALKFAIL: CLAUDE.md $READWHY"; done
     # A name outside pathform's characters prints as ? (i1 security 1): a start whose blob is missing.
-    git rm -q -r --cached .claude && rm -r .claude && mkdir 'a b' && printf 'y\n' > 'a b/CLAUDE.md' && commit_all crafted
+    git hash-object -w CLAUDE.md > /dev/null; mkdir 'a b' && printf 'y\n' > 'a b/CLAUDE.md' && commit_all crafted
     o="$(git rev-parse 'main:a b/CLAUDE.md')"; rm ".git/objects/${o:0:2}/${o:2}"
     floors 2026-10-01-x M scripts/other.sh
-    want scripts/other.sh "$WALKFAIL: ? could not be read, or its imports parsed within the walk's budgets (IMPORT_WORK_MAX, IMPORT_OUT_MAX), or it is a link the walk does not model"
+    want scripts/other.sh "$WALKFAIL: ? $READWHY"
     # No default branch found by name: nothing is read, everything refuses.
     git checkout -q -b trunk && git branch -q -D main
     floors 2026-10-01-x M scripts/other.sh
@@ -1458,7 +337,7 @@ memo-indexed 1" ] || { echo "$status $output $stderr"; return 1; }
     printf 'see @docs/new.md\n' > AGENTS.md && commit_all imp
     floors 2026-10-01-x A src/CLAUDE.md/n.txt docs/Agents.local.md/a/b skills/x/skill.md/y src/claude.mdx/n.txt docs/new.md/n.txt docs/x.txt docs/ne/x.txt
     for p in src/CLAUDE.md/n.txt docs/Agents.local.md/a/b skills/x/skill.md/y docs/new.md/n.txt; do want "$p" "a path below the name of an instruction or prompt file, or of a .md file one imports with @"; done
-    # docs and docs/ne are import names too (the parser's prefixes), but no .md name.
+    # A path below an imported name that is no .md name is not refused (docs/x.txt, docs/ne/x.txt).
     for p in src/claude.mdx/n.txt docs/x.txt docs/ne/x.txt; do want "$p" -; done
 }
 
@@ -1503,119 +382,14 @@ Docs/Constraints.md: case" ] || { echo "$output $stderr"; return 1; }
     want docs/thoughts/t.md -; want docs/failure-patterns.md "$REC"
 }
 
-@test "both walks start at .md files under .claude/rules/, commands/, agents/ and output-styles/ at any depth, tracked or not; a prompt's names also resolve against its .claude/'s directory and the top level (U2a4; override rows 370, 435)" {
-    mkdir -p .claude/commands/ns .claude/agents .claude/output-styles .claude/rules/a sub/.claude/commands docs
-    printf 'run @docs/c1.md\n' > .claude/commands/ns/go.md
-    printf 'as @docs/a1.md\n' > .claude/agents/rev.md
-    printf 'as @docs/o1.md\n' > .claude/output-styles/terse.md
-    printf 'rule @r1.md\n' > .claude/rules/a/r.md
-    printf 'run @docs/s1.md\n' > sub/.claude/commands/x.md
-    printf 'not a start @docs/n1.md\n' > .claude/notes.md
-    printf 'x\n' > docs/c1.md
-    commit_all prompts
-    printf 'run @docs/u1.md\n' > .claude/commands/u.md
-    for w in tree main; do
-        imps "$w" docs/c1.md docs/a1.md docs/o1.md .claude/rules/a/r1.md sub/docs/s1.md docs/s1.md \
-            sub/.claude/commands/docs/s1.md docs/u1.md docs/n1.md .claude/rules/a/docs/r1.md
-        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output $stderr"; return 1; }
-        want walk ok
-        for p in docs/c1.md docs/a1.md docs/o1.md .claude/rules/a/r1.md sub/docs/s1.md docs/s1.md sub/.claude/commands/docs/s1.md docs/u1.md; do
-            want "$p" imported
-        done
-        want docs/n1.md -; want .claude/rules/a/docs/r1.md -
-    done
-    # Override row 435's case: a doc a command names is refused by both callers.
-    floors 2026-10-01-x M docs/c1.md
-    want docs/c1.md "$IMP"
-    run --separate-stderr bash "$REPO_ROOT/scripts/dev-cycle.sh" --check-fix docs/c1.md
-    [[ "$output" == "skip docs/c1.md: an instruction file names it after an @"* ]] || { echo "$output $stderr"; return 1; }
-}
-
-@test "main walk fails on a prompt start main stores as a symlink, since its names resolve against the session, not the link's target (U2a4)" {
-    mkdir -p .claude/commands .claude/rules docs && printf 'see @x.md\n' > docs/t.md
-    ln -s ../../docs/t.md .claude/rules/t.md && commit_all rule-link
-    imps main docs/x.md; want walk ok; want docs/x.md imported
-    ln -s ../../docs/t.md .claude/commands/t.md && commit_all command-link
-    imps main docs/x.md; want walk failed; want docs/x.md imported
-    # A start directory, or .claude itself, stored as a link lists its prompts under
-    # the target's path, which isstart does not know: the walk fails (U2a4 final security F1).
-    git rm -rq .claude && mkdir -p prompts && printf 'run @docs/q.md\n' > prompts/c.md && commit_all unlink
-    imps main docs/q.md; want walk ok; want docs/q.md -
-    for l in .claude/commands .claude/Skills .claude; do
-        mkdir -p "$(dirname "$l")" && ln -s "$(realpath -m --relative-to="$(dirname "$l")" prompts)" "$l" && commit_all "link $l"
-        imps main docs/q.md; want walk failed; want docs/q.md imported
-        git rm -rq "${l%%/*}" && commit_all "unlink $l"
-    done
-    # A start-named link to a directory, and a gitlink start, fail too (confirming security F3).
-    mkdir -p .claude/rules && ln -s ../../prompts .claude/rules/r.md && commit_all dir-link
-    imps main docs/q.md; want walk failed; want docs/q.md imported
-    git rm -rq .claude && commit_all unlink-dir
-    t="$(printf '160000 commit %s\tg.md\n' "$(git rev-parse main)" | git mktree)"; t="$(printf '040000 tree %s\trules\n' "$t" | git mktree)"
-    t="$(printf '040000 tree %s\t.claude\n040000 tree %s\tprompts\n' "$t" "$(git rev-parse main:prompts)" | git mktree)"
-    git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m gitlink-rule)"
-    imps main docs/q.md; want walk failed; want docs/q.md imported
-}
-
-@test "the parser resolves each relative name against every directory it is given (U2a4)" {
-    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
-        printf "@a.md @/x/b.md\n" | import_targets docs sub/ ""' _ "$LIB"
-    [ "$status" -eq 0 ] || { echo "$output $stderr"; return 1; }
-    for p in docs/a.md sub/a.md a.md; do printf '%s\n' "$output" | grep -qxF "$p" || { echo "want $p: $output"; return 1; }; done
-}
-
-@test "instruction_names, the tree walk's prefilter, keeps exactly the names isstart accepts (U2a4 i1 architecture F6)" {
-    run --separate-stderr env LC_ALL=C bash -c 'source "$1"; ps=()
-        for d in "" a/ a/b/; do for n in CLAUDE.md claude.local.md Agents.MD agent.md GEMINI.md SKILL.md skills.md x.md x.txt claude.md.bak; do ps+=("$d$n"); done
-            for c in rules commands agents output-styles skills notes; do for t in x.md sub/X.MD x.txt; do ps+=("$d.claude/$c/$t" "$d.Claude/$c/$t"); done; done; done
-        want=$(for p in "${ps[@]}"; do l=$(lower "$p"); isstart "$l" && printf "%s\n" "$p"; done)
-        got=$(printf "%s\0" "${ps[@]}" | instruction_names | tr "\0" "\n")
-        [[ "$want" == "$got" ]] && echo same || { echo "isstart:"; echo "$want"; echo "prefilter:"; echo "$got"; }' _ "$LIB"
-    [ "$output" = same ] || { echo "$output $stderr"; return 1; }
-}
-
-@test "both walks read a quoted prompt mention (blanks included), a skill's names against the session, and the directory holding every enclosing .claude/ (U2a4 i1 security F1-F3, i2 fact-check 1, 19b, 27)" {
-    mkdir -p .claude/commands .claude/skills/k a/.claude/commands/b/.claude/commands c/.claude/.claude/commands docs
-    printf 'run @"docs/q.md" and @"docs/a b.md"\n' > .claude/commands/q.md
-    printf 'use @docs/k.md\n' > .claude/skills/k/SKILL.md
-    printf 'run @docs/n.md\n' > a/.claude/commands/b/.claude/commands/x.md
-    printf 'run @d.md\n' > c/.claude/.claude/commands/y.md
-    # A quoted text that spans lines resolves across the break (U2a4 final security F2); a
-    # .claudex component is no session base (final fact-check 31).
-    printf 'run @"x\n/../docs/m.md" now\n' > .claude/commands/m.md
-    mkdir -p e/.claudex/.claude/commands && printf 'run @f.md\n' > e/.claudex/.claude/commands/z.md
-    # Claude Code drops a #L5 or #section suffix, and an @" may end its line or open in a
-    # spliced comment; a quoted name is also read untrimmed (confirming security F1, F2, notes).
-    printf 'review @"docs/h b.md#L5" and @"docs/s.md#sec"\nrun @"\n/../docs/e.md" now\n' > .claude/commands/h.md
-    printf 'run @<!-- c -->"x\n/../docs/c.md" and @"docs/z.md "\n' > .claude/commands/c.md
-    # Lines of 2,000 quotes after an @, and an unclosed @" before 3 KB of prose, in an
-    # instruction file and a prompt, stay within the work bound (the quote line costs about
-    # 8M of its 50M per read): the walk passes (final performance F1).
-    { printf 'see @'; for ((i = 0; i < 2000; i++)); do printf '"'; done; printf '\n'; } > CLAUDE.md
-    { printf 'say @"'; for ((i = 0; i < 600; i++)); do printf 'word '; done; printf '\n'; } | tee -a CLAUDE.md >> .claude/commands/q.md
-    commit_all prompts
-    imps main e/f.md; want e/f.md -
-    ps=(docs/q.md "docs/a b.md" docs/k.md docs/n.md a/docs/n.md a/.claude/commands/b/docs/n.md c/d.md c/.claude/d.md docs/m.md e/.claudex/f.md
-        "docs/h b.md" docs/s.md docs/e.md docs/c.md "docs/z.md ")
-    for w in tree main; do
-        imps "$w" "${ps[@]}"
-        want walk ok; for p in "${ps[@]}"; do want "$p" imported; done
-    done
-}
-
-@test "a quote left open over many lines fails both walks within the work bound, not after quadratic time (U2a4 confirming fact-check 15a, security F4)" {
-    mkdir -p .claude/commands
-    { printf 'run @"x\n'; for ((i = 0; i < 20000; i++)); do printf 'word word\n'; done; } > .claude/commands/o.md
-    commit_all open-quote
-    for w in tree main; do imps "$w" docs/x.md; want walk failed; want docs/x.md imported; done
-}
 
 @test "floor sets a word, which floor_why words; a failed walk's TRUTH_WHERE says where, for both walks (rows 472, 630, 634, U3a3)" {
+    ln -s missing.md AGENTS.md && commit_all link-start
     run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main; ROOT_REAL="$(pwd -P)"
         floor scripts/build-loop.sh x M && echo "[$FLOOR_WHY] $(floor_why "$FLOOR_WHY")"
-        IMPORT_READER_WHY="planted"; import_reset
         floor docs/a.md x M && echo "[$FLOOR_WHY] $(floor_why "$FLOOR_WHY")"
         truthwalk tree docs/a.md && echo "tree [$TRUTH_WHY] $TRUTH_WHERE"' _ "$LIB"
-    R="the reader settings of docs/dev-cycle.md cannot be used: planted"
+    R="AGENTS.md $LINKWHY"
     [ "$output" = "[gate] $GATE
 [walk] $WALKFAIL: $R
 tree [walk] $R" ] || { echo "$output $stderr"; return 1; }
@@ -2223,215 +997,12 @@ NLIST="neither listed in the brief's Paths: line nor one of its own files"
     printf '#!/bin/bash\necho "$*" >> "%s/calls"\nexec "%s" "$@"\n' "$BATS_TEST_TMPDIR" "$real" > "$S/git"; chmod +x "$S/git"
     PATH="$S:$PATH" chk "$x" "$B"
     [ "$status" -eq 0 ] && [[ "${lines[0]}" == "ok $x "* && "${lines[2]}" == "ok $B "* ]] || { show; return 1; }
-    [ "$(grep -c '^worktree list' "$BATS_TEST_TMPDIR/calls")" -eq 2 ] || { cat "$BATS_TEST_TMPDIR/calls"; return 1; }
+    [ "$(grep -c '^ls-tree -r -z --full-tree' "$BATS_TEST_TMPDIR/calls")" -eq 2 ] || { cat "$BATS_TEST_TMPDIR/calls"; return 1; }
     # A name that is not UTF-8 on main fails a walk run under a UTF-8 locale; the gate walks under C.
     printf 'x\n' > $'docs/\xff.md'; commit_all latin
     LC_ALL=C.utf8 chk "$x"
     [ "$status" -eq 0 ] && [ "${lines[1]}" = "path $x A work-feat-x.txt" ] && [ -z "$stderr" ] || { show; return 1; }
 }
-
-# U2b3a, the reader model's roots and homes (plan step 5): a session reading the
-# repo from another checkout or HOME resolves names the gate's own root does not.
-
-@test "both walks read an absolute name into another worktree of the repo as that repo path, as the gate runs from its own worktree (U2b3a)" {
-    mkdir -p docs && r="$(pwd -P)"
-    printf 'See @%s/docs/abs.md\n' "$r" > AGENTS.md; echo x > docs/abs.md; commit_all abs
-    git worktree add -q --detach ../gate && cd ../gate
-    for w in tree main; do
-        imps "$w" docs/abs.md docs/other.md
-        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; want docs/abs.md imported; want docs/other.md -
-    done
-}
-
-@test "both walks resolve a relative name against every worktree's directory, so it can re-enter a nested or sibling worktree (U2b3a; rows 425, 432)" {
-    mkdir -p docs && echo n > docs/n.md && echo s > docs/s.md
-    # From the main checkout, .claude/wt-b/ is a nested worktree; from wt-b, ../side/ is its sibling.
-    printf 'See @.claude/wt-b/docs/n.md and @../side/docs/s.md\n' > AGENTS.md; commit_all rel
-    git worktree add -q --detach .claude/wt-b; git worktree add -q --detach .claude/side
-    git worktree add -q --detach ../gate && cd ../gate
-    for w in tree main; do
-        imps "$w" docs/n.md docs/s.md docs/other.md
-        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; want docs/n.md imported; want docs/s.md imported; want docs/other.md -
-    done
-}
-
-@test "the caller's reader roots and homes add the host checkout's spellings, and the environment does not set them (U2b3a; rows 425, 437; Q-121, Q-123; i1 architecture F2)" {
-    mkdir -p docs
-    printf 'See @~/cw/docs/h.md and @/host/cw/docs/a.md\n' > AGENTS.md; commit_all host
-    for w in tree main; do
-        imps "$w" docs/h.md docs/a.md
-        want walk ok; want docs/h.md -; want docs/a.md -
-        T_READER_ROOTS=/host/cw T_READER_HOMES=/host imps "$w" docs/h.md docs/a.md
-        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; want docs/h.md imported; want docs/a.md imported
-        # Inherited, they are cleared when the lib is sourced (contract item 9).
-        IMPORT_READER_ROOTS=/host/cw IMPORT_READER_HOMES=/host imps "$w" docs/h.md docs/a.md
-        want walk ok; want docs/h.md -; want docs/a.md -
-    done
-}
-
-@test "a root nested in another at a non-dot path keeps the outer path's names: a stale registry entry or a caller root inside the repo (U2b3a i1 security 1, architecture F1)" {
-    mkdir -p docs && r="$(pwd -P)"
-    printf 'See @%s/sub/x.md\n' "$r" > AGENTS.md; commit_all nest
-    # A worktree at sub/ whose directory was then removed: git lists it as prunable.
-    git worktree add -q --detach sub && rm -rf sub
-    git worktree list --porcelain | grep -qxF "worktree $r/sub" || { git worktree list --porcelain; return 1; }
-    for w in tree main; do
-        imps "$w" sub/x.md x.md docs/other.md
-        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; want sub/x.md imported; want x.md imported; want docs/other.md -
-    done
-    # The same nesting from a caller root, as written and through a symlink, with the stale entry pruned.
-    git worktree prune; ! git worktree list --porcelain | grep -qxF "worktree $r/sub" || return 1
-    ln -s "$r/sub" "$BATS_TEST_TMPDIR/lnk"
-    for w in tree main; do
-        imps "$w" sub/x.md x.md; want walk ok; want sub/x.md imported; want x.md -
-        for c in "$r/sub" "$BATS_TEST_TMPDIR/lnk"; do
-            T_READER_ROOTS="$c" imps "$w" sub/x.md x.md
-            want walk ok; want sub/x.md imported; want x.md imported
-        done
-    done
-    # dotnest omits only paths truthrule refuses as dot paths (security i2 2): a dot-nested spelling is one.
-    run --separate-stderr bash -c 'source "$1"; for p in .claude/wt-a/sub/y.md docs/.wt/a/q.md; do truthrule "$p"; echo "$p $TRUTH_WHY"; done' _ "$LIB"
-    [ "${lines[0]}" = ".claude/wt-a/sub/y.md dot" ] && [ "${lines[1]}" = "docs/.wt/a/q.md dot" ] || { echo "$output $stderr"; return 1; }
-}
-
-@test "both walks fail closed on a reader root or home they cannot model, and when git worktree list fails (U2b3a; i1 fact-check 18)" {
-    mkdir -p docs && printf 'See @docs/a.md\n' > AGENTS.md && commit_all bad
-    for w in tree main; do
-        for v in "T_READER_ROOTS=rel/cw" "T_READER_ROOTS=/" "T_READER_ROOTS=//" "T_READER_ROOTS=/x/.." "T_READER_HOMES=rel" \
-                 "T_READER_HOMES=/x/.." "T_READER_ROOTS=/a"$'\n'"rel" "T_READER_HOMES=/h"$'\n'"rel"; do
-            export "${v?}"; imps "$w" docs/a.md docs/other.md; unset T_READER_ROOTS T_READER_HOMES
-            want walk failed; want docs/other.md imported
-        done
-        # Blank lines between entries are skipped, not refused.
-        T_READER_ROOTS=$'/a\n\n/b\n' imps "$w" docs/a.md; want walk ok
-    done
-    # An empty ROOT_REAL is refused, not skipped, so a registered worktree never leads the roots (final fact-check 1).
-    run --separate-stderr bash -c 'source "$1"; ROOT_REAL=""; import_readers; echo "rc=$? [$IMPORT_ROOTS]"' _ "$LIB"
-    [ "$output" = "rc=1 []" ] || { echo "$output $stderr"; return 1; }
-    S="$BATS_TEST_TMPDIR/wt" && mkdir -p "$S"
-    printf '#!/bin/sh\n[ "$1" = worktree ] && exit 1\nexec %s "$@"\n' "$(command -v git)" > "$S/git" && chmod +x "$S/git"
-    for w in tree main; do
-        PATH="$S:$PATH" imps "$w" docs/a.md docs/other.md
-        want walk failed; want docs/other.md imported
-    done
-}
-
-@test "a HOME holding a newline fails a walk only when a ~/ name needs it, as a relative HOME does (U2b3a i1 fact-check E1, api F3)" {
-    mkdir -p docs && printf 'See @docs/a.md\n' > AGENTS.md && commit_all plain
-    for w in tree main; do
-        HOME="$BATS_TEST_TMPDIR/h"$'\n'"x" imps "$w" docs/a.md docs/other.md
-        want walk ok; want docs/a.md imported; want docs/other.md -
-    done
-    printf 'See @~/x.md and @docs/a.md\n' > AGENTS.md && commit_all tilde
-    # The walk fails, and a failed walk answers imported for every path (fail closed).
-    for w in tree main; do
-        HOME="$BATS_TEST_TMPDIR/h"$'\n'"x" imps "$w" docs/a.md docs/other.md
-        want walk failed; want docs/other.md imported
-    done
-}
-
-@test "a worktree path holding a newline fails both walks (U2b3a)" {
-    mkdir -p docs && printf 'See @docs/a.md\n' > AGENTS.md && commit_all nl
-    git worktree add -q --detach "$BATS_TEST_TMPDIR/a"$'\n'"b" || skip "git refused a worktree path holding a newline"
-    for w in tree main; do
-        imps "$w" docs/a.md docs/other.md
-        want walk failed; want docs/other.md imported
-    done
-}
-
-@test "both walk caches key on the reader set, which is read once until import_reset (U2b3a; row 437; i1 performance F1, architecture F6)" {
-    mkdir -p docs && printf 'See @/host/cw/docs/a.md and @~/cw/docs/h.md and @%s/docs/w.md\n' "$BATS_TEST_TMPDIR/late" > AGENTS.md && commit_all key
-    run --separate-stderr timeout 60 env LC_ALL=C bash -c 'set -euo pipefail; source "$1"
-        resolve_main || true; ROOT_REAL="$(pwd -P)"
-        for w in tree main; do
-            import_reset; IMPORT_READER_ROOTS=""; IMPORT_READER_HOMES=""
-            isimported "$w" docs/a.md && echo "$w a0: imported" || echo "$w a0: -"
-            IMPORT_READER_ROOTS=/host/cw
-            isimported "$w" docs/a.md && echo "$w a1: imported" || echo "$w a1: -"
-            isimported "$w" docs/h.md && echo "$w h1: imported" || echo "$w h1: -"
-            IMPORT_READER_HOMES=/host
-            isimported "$w" docs/h.md && echo "$w h2: imported" || echo "$w h2: -"
-            # A worktree added mid-decision is seen only after import_reset.
-            [[ $w == main ]] || git worktree add -q --detach "$2/late"
-            isimported "$w" docs/w.md && echo "$w w1: imported" || echo "$w w1: -"
-            import_reset
-            isimported "$w" docs/w.md && echo "$w w2: imported" || echo "$w w2: -"
-        done' _ "$LIB" "$BATS_TEST_TMPDIR"
-    [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output $stderr"; return 1; }
-    for w in tree main; do want "$w a0" -; want "$w a1" imported; want "$w h1" -; want "$w h2" imported; want "$w w2" imported; done
-    want "tree w1" -
-}
-
-# U2b3b1, the reader settings (plan step 5): main's docs/dev-cycle.md names the
-# host readers, and both walks take them through reader_settings.
-
-@test "both walks take the reader lists from main's docs/dev-cycle.md, never the working tree, and a malformed line fails them (U2b3b1; H4)" {
-    mkdir -p docs
-    printf 'See @~/cw/docs/h.md and @/host/cw/docs/a.md and @/wt/docs/w.md\n' > AGENTS.md; commit_all host
-    for w in tree main; do
-        T_SETTINGS=1 imps "$w" docs/h.md docs/a.md; want walk ok; want docs/h.md -; want docs/a.md -
-    done
-    settings 'Reader roots: /host/cw' '' 'Reader homes: /host'
-    # A root only the working tree's copy names is not read.
-    printf 'Reader roots: /host/cw /wt\n\nReader homes: /host\n' > docs/dev-cycle.md
-    for w in tree main; do
-        T_SETTINGS=1 imps "$w" docs/h.md docs/a.md docs/w.md docs/other.md
-        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; want docs/h.md imported; want docs/a.md imported; want docs/w.md -; want docs/other.md -
-    done
-    git checkout -q docs/dev-cycle.md
-    # A malformed line (or a second copy) fails both walks, which then answer imported for every path.
-    for v in 'Reader roots: host/cw' $'Reader roots: /host/cw\n\n**Reader roots:** /wt'; do
-        settings "$v"
-        for w in tree main; do
-            T_SETTINGS=1 imps "$w" docs/a.md docs/other.md
-            want walk failed; want docs/other.md imported
-        done
-    done
-    # The floor names the cause (U2b3b1 i1 api-consistency F1).
-    T_SETTINGS=1 floors 2026-10-01-x A docs/other.md
-    want docs/other.md "the default branch's instruction files could not be walked for @ imports: the reader settings of docs/dev-cycle.md cannot be used: more than one line starts \"Reader roots:\" (lines 1 and 3)"
-    # Refused settings fail import_targets outside a walk too, which reads no memo (i1 security F2).
-    run --separate-stderr bash -c 'source "$1"; ROOT_REAL="$(pwd -P)"; IMPORT_READER_WHY=x; printf "@docs/a.md\n" | import_targets ""; echo "rc=$?"' _ "$LIB"
-    [ "$output" = "rc=1" ] || { echo "$output $stderr"; return 1; }
-}
-
-@test "a caller root re-spells the worktrees registered beneath the main worktree (U2b3b1; U2b3a i1 architecture F4)" {
-    mkdir -p docs && echo n > docs/n.md
-    printf 'See @/host/cw/.claude/wt-b/docs/n.md\n' > AGENTS.md; commit_all respell
-    git worktree add -q --detach .claude/wt-b
-    git worktree add -q --detach ../gate && cd ../gate
-    for w in tree main; do
-        imps "$w" docs/n.md; want walk ok; want docs/n.md -
-        T_READER_ROOTS=/host/cw imps "$w" docs/n.md docs/other.md
-        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; want docs/n.md imported; want docs/other.md -
-    done
-    # The other way: a worktree registered beneath a caller root (a host session's) is spelled beneath main's (final security F2).
-    m="$(cd ../repo && pwd -P)"; printf 'See @%s/.claude/wt-h/docs/n.md\n' "$m" > ../repo/AGENTS.md
-    git -C ../repo commit -qam back && git worktree add -q --detach "$BATS_TEST_TMPDIR/host/cw/.claude/wt-h" && git checkout -q --detach main
-    for w in tree main; do
-        T_READER_ROOTS="$BATS_TEST_TMPDIR/host/cw" imps "$w" docs/n.md; want walk ok; want docs/n.md imported
-    done
-}
-
-@test "a refused reader set is memoized, so a decision lists the worktree registry once (U2b3b1; U2b3a final performance F1)" {
-    mkdir -p docs && printf 'See @docs/a.md\n' > AGENTS.md && commit_all memo
-    S="$BATS_TEST_TMPDIR/stub" && mkdir -p "$S"
-    printf '#!/bin/sh\n[ "$1" = worktree ] && echo x >> %s/log\nexec %s "$@"\n' "$S" "$(command -v git)" > "$S/git" && chmod +x "$S/git"
-    for w in tree main; do
-        : > "$S/log"
-        # The walk, then isimported for each path: three calls of the walk in one decision.
-        PATH="$S:$PATH" T_READER_ROOTS=rel imps "$w" docs/a.md docs/other.md
-        want walk failed; want docs/other.md imported
-        [ "$(wc -l < "$S/log")" -eq 1 ] || { echo "$w: $(wc -l < "$S/log") listings"; return 1; }
-    done
-}
-
 # The failure-pattern steps (Q-226 [5]). fpref K WHY...: --check refused brief x
 # for K gaps, then printed exactly the gap lines WHY..., then no other gap line.
 # fpok: --check passed it with no gap line. onb SHELL: SHELL run on feat/x as it

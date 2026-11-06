@@ -15,7 +15,6 @@ setup() {
     export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@example.invalid
     export GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@example.invalid
     # HOME in the temp dir: the ~/.claude/scripts fallback can't reach the real one.
-    # The walks also read the config dir it names (outside_seeds): the fixture's home only.
     export HOME="$BATS_TEST_TMPDIR/home"; unset CLAUDE_CONFIG_DIR
     mkdir -p "$HOME"
     R="$BATS_TEST_TMPDIR/repo"
@@ -1241,10 +1240,10 @@ EOF
     printf 'junk' > .git/index
     run --separate-stderr bash "$DC" --check-fix docs/notes.md
     [[ "$output" == "skip docs/notes.md: the instruction-file import walk failed"* ]] || { echo "$output $stderr"; return 1; }
-    # The reader set refused with no settings reason: the lib's TRUTH_WHERE says where (rows 630, 634; U3a3 final architecture 2).
-    rm .git/index && git reset -q
-    run --separate-stderr env CLAUDE_CONFIG_DIR=relative bash "$DC" --check-fix docs/notes.md
-    [ "$output" = "skip docs/notes.md: the instruction-file import walk failed, so an import of it cannot be ruled out: the worktree registry could not be read, or a reader root, home or CLAUDE_CONFIG_DIR is not a usable absolute path; file it instead" ] || { echo "$output $stderr"; return 1; }
+    # A start file that is a symlink: the lib's TRUTH_WHERE says where (rows 630, 634; U3a3 final architecture 2).
+    rm .git/index && git reset -q && ln -s GEMINI.md AGENTS.md && git add AGENTS.md && git commit -qm link
+    run --separate-stderr bash "$DC" --check-fix docs/notes.md
+    [ "$output" = "skip docs/notes.md: the instruction-file import walk failed, so an import of it cannot be ruled out: AGENTS.md is a symlink or lies below one, which the walk does not follow; file it instead" ] || { echo "$output $stderr"; return 1; }
 }
 
 @test "--check-fix refuses a doc imported through the repo's parent directory, as main did (FAILS at be94c871: L2 fact-check Claim 1 class 1)" {
@@ -1254,18 +1253,18 @@ EOF
     [[ "$output" == "skip docs/notes.md: an instruction file names it"* ]] || { echo "$output $stderr"; return 1; }
 }
 
-@test "--check-fix refuses a doc imported through a name Claude Code decodes with U+FFFD (U2a3b L2 security F1)" {
-    mkdir -p docs && printf 'See @docs/\xff.md\n' > CLAUDE.md && printf 'see @c.md\n' > docs/$'\xef\xbf\xbd'.md && echo x > docs/c.md
+@test "--check-fix refuses every path when an instruction file is not valid UTF-8, rather than decoding it (brief 2026-11-03-import-walk-plain; G59)" {
+    mkdir -p docs && printf 'See @docs/\xff.md\n' > CLAUDE.md && echo x > docs/c.md
     git add -A && git commit -qm docs
     run --separate-stderr bash "$DC" --check-fix docs/c.md
-    [[ "$output" == "skip docs/c.md: an instruction file names it"* ]] || { echo "$output $stderr"; return 1; }
+    [ "$output" = "skip docs/c.md: the instruction-file import walk failed, so an import of it cannot be ruled out: CLAUDE.md could not be read, is larger than 4 MiB or not valid UTF-8, or names ~/ while HOME is not an absolute path; file it instead" ] || { echo "$output $stderr"; return 1; }
 }
 
-@test "--check-fix reads an import token whole: underscores, emphasis, #fragments, link text; an email-shaped token is over-read (superset)" {
+@test "--check-fix reads an import token whole and stripped: underscores, emphasis, #fragments, link text; every @ starts a token, so an email-shaped one is read too" {
     mkdir -p docs
     { echo 'See @docs/my_notes.md and **@docs/bold.md** and _@docs/em_one.md_ and *@docs/star.md*.'
       echo 'Also @docs/frag.md#intro, [@docs/link.md](docs/link.md) and (@docs/paren.md).'
-      echo 'Mail user@docs/email.md is no import for Claude Code, but the superset reads it.'; } > GEMINI.md
+      echo 'Mail user@docs/email.md is no import for Claude Code, but the walk reads it.'; } > GEMINI.md
     for f in my_notes bold em_one star frag link paren email; do echo x > "docs/$f.md"; done
     git add -A && git commit -qm docs
     run --separate-stderr bash "$DC" --check-fix docs/my_notes.md docs/bold.md docs/em_one.md docs/star.md \
@@ -1298,11 +1297,11 @@ EOF
     run --separate-stderr env LC_ALL=C PATH="$S:$PATH" bash -c 'set -euo pipefail; source "$1"
         for f in scrub scrub_reexec rawfile plaindir blocker inrepo dirok skipped pathform isbrief writable need_root \
                  oddwhy check_brief check_branch resolve_main main_by_name main_entry brief_fields lower imported_names check_answer \
-                 isclosed entry_why isimported inrepo_here main_imports nul_list import_targets instruction_names untracked_md tree_starts md_ls checkout_md main_checkout lower_all capped_read import_work import_readers import_readers_key import_outside import_file outside_ok outside_proj outside_seeds config_seeds top_files c1_seeds root_starts with_at root_copies prompt_marks walk_why walk_has readers_root; do
+                 isclosed entry_why isimported inrepo_here main_imports nul_list import_targets untracked_md lower_all import_home walk_file walk_core walk_why walk_has import_reset reader_settings readerform; do
             declare -F "$f" >/dev/null || echo "missing $f"
         done
-        for v in FENCE_AWK ANSWER_AWK INSTRUCTION_FILE IMPORT_AWK UNI_SPACES; do [[ -n "${!v}" ]] || echo "no $v"; done
-        for v in SKIPPED SKIP_AT MAIN MAIN_SHA MAIN_BY_NAME IMPORTED IMPORTED_DONE IMPORTED_MAIN IMPORTED_MAIN_DONE IMPORT_ROOTS IMPORT_HOMES IMPORT_READERS_DONE IMPORT_READERS_KEY IMPORT_READER_ROOTS IMPORT_READER_HOMES IMPORT_DOTNEST IMPORT_OTHER IMPORT_WHOLE IMPORT_MANAGED_DIR IMPORT_CONFIGS IMPORTED_MAIN_WHY BRIEF BRIEF_ODD; do declare -p "$v" >/dev/null 2>&1 || echo "unset $v"; done
+        for v in FENCE_AWK ANSWER_AWK INSTRUCTION_FILE IMPORT_AWK UTF8_WELL_FORMED WALK_PUNCT; do [[ -n "${!v}" ]] || echo "no $v"; done
+        for v in SKIPPED SKIP_AT MAIN MAIN_SHA MAIN_BY_NAME IMPORTED IMPORTED_DONE IMPORTED_MAIN IMPORTED_MAIN_DONE IMPORTED_WHY IMPORT_HOME IMPORT_MAX_BYTES READERS_LINE IMPORTED_MAIN_WHY BRIEF BRIEF_ODD; do declare -p "$v" >/dev/null 2>&1 || echo "unset $v"; done
         echo sourced' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
     [ "$status" -eq 0 ] && [ "$output" = sourced ] && [ -z "$stderr" ] || { echo "$output"; echo "$stderr"; return 1; }
     [ ! -e "$S/called" ] || { cat "$S/called"; return 1; }
@@ -1595,20 +1594,15 @@ skip docs/working/briefs/closedx/2026-01-01-x.md: not one of the dev cycle's own
     [ "$output" = "skip 2026-01-01-x.md: not a build brief (docs/working/briefs/[closed/]YYYY-MM-DD-<slug>.md)" ] || { echo "$output"; return 1; }
 }
 
-@test "--check-fix models the host readers main's docs/dev-cycle.md names, and refuses every path on a malformed line or with no main by name (U2b3b1; H4; i1 security F1)" {
+@test "--check-fix ignores the legacy Reader roots and Reader homes lines: a host-only name is not imported, and neither a malformed line nor a missing default branch refuses anything (brief 2026-11-03-import-walk-plain; G20, G58)" {
     mkdir -p docs && printf 'See @/host/cw/docs/notes.md and @~/cw/docs/h.md\n' > CLAUDE.md && echo x > docs/notes.md && echo h > docs/h.md
     git add -A && git commit -qm docs
-    run --separate-stderr bash "$DC" --check-fix docs/notes.md docs/h.md
-    [ "${lines[0]}" = "ok docs/notes.md" ] && [ "${lines[1]}" = "ok docs/h.md" ] || { echo "$output $stderr"; return 1; }
-    printf 'Reader roots: /host/cw\n\nReader homes: /host\n' > docs/dev-cycle.md && git add -A && git commit -qm readers; run --separate-stderr bash "$DC" --check-fix docs/notes.md docs/h.md
-    [[ "${lines[0]}" == "skip docs/notes.md: an instruction file names it"* && "${lines[1]}" == "skip docs/h.md: an instruction file names it"* ]] \
-        || { echo "$output $stderr"; return 1; }
-    printf 'Reader roots: host/cw\n' > docs/dev-cycle.md && git add -A && git commit -qm bad; run --separate-stderr bash "$DC" --check-fix docs/notes.md docs/h.md
-    W='the instruction-file import walk failed, so an import of it cannot be ruled out: the reader settings of docs/dev-cycle.md cannot be used: '
-    [[ "${lines[0]}" == "skip docs/notes.md: ${W}line 1 lists entry 1, "* && "${lines[1]}" == "skip docs/h.md: $W"* ]] || { echo "$output $stderr"; return 1; }
-    # With no default branch found by name the settings cannot be read: fail closed.
-    printf 'Reader roots: /host/cw\n' > docs/dev-cycle.md && git add -A && git commit -qm good && git branch -m main trunk
-    run --separate-stderr bash "$DC" --check-fix docs/notes.md docs/h.md
-    [ "${lines[0]}" = "skip docs/notes.md: ${W}no default branch was found by name (origin/HEAD, main or master); file it instead" ] \
-        && [[ "${lines[1]}" == "skip docs/h.md: ${W}no default branch"* ]] || { echo "$output $stderr"; return 1; }
+    for v in 'Reader roots: /host/cw\n\nReader homes: /host\n' 'Reader roots: host/cw\n'; do
+        printf "$v" > docs/dev-cycle.md && git add -A && git commit -qm readers
+        run --separate-stderr bash "$DC" --check-fix docs/notes.md docs/h.md
+        [ "${lines[0]}" = "ok docs/notes.md" ] && [ "${lines[1]}" = "ok docs/h.md" ] || { echo "$output $stderr"; return 1; }
+    done
+    git branch -m main trunk
+    run --separate-stderr bash "$DC" --check-fix docs/notes.md
+    [ "${lines[0]}" = "ok docs/notes.md" ] || { echo "$output $stderr"; return 1; }
 }
