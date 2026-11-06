@@ -27,6 +27,7 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-254](#q-254--blocked-2026-11-03-q125-verify-check-1) | you: judgment | Brief 2026-11-03-q125-verify-check's build loop asks: | 2026-11-03 |
 | [Q-256](#q-256--canon-proposal-filter-choice) | you: judgment | How should new instances get proposed for the canon, the fixed set of known defects that review arms are sc... | 2026-11-05 |
+| [Q-259](#q-259--merge-gate-2026-11-05-d6-block-into-image-5e2b96d3e215) | you: judgment | Merge restriction-audit unit 7 at 5e2b96d3? The roughly 60-line block pasted into every script call becomes... | 2026-11-05 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-252](#q-252--image-lag) | you: terminal | Also approved by you (Q-253): the self-merge floor's import check reads plain `@path` imports only, about 1... | 2026-11-03 |
@@ -34,6 +35,51 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
+
+### Q-259 · merge-gate-2026-11-05-d6-block-into-image-5e2b96d3e215
+**Needs:** you: judgment · **Opened:** 2026-11-05 · **Status:** OPEN
+
+Merge restriction-audit unit 7 at 5e2b96d3? The roughly 60-line block pasted into every script call becomes `scripts/d6.sh`, one line to call, and it drops five checks the audit judged hostile-only.
+
+**If you say no:** the skill keeps the pasted block with all its checks. Nothing breaks; each cycle keeps paying about 60 lines per script call, and copy slips stay possible.
+
+**What an attacker would want here:** this is gate code, and it reaches the image at the next release. The dropped checks (replace ref, grafts, symbolic ref, non-commit ref, file ownership) catch planted git state and a tampered image, not honest slips. Dropping them follows S1; the residual is that a planted graft reaches the digest's `git log`, though not `--main-log`.
+
+- **Tip:** 5e2b96d3e2158624cf5badf78fb69ef75537105b
+- **`--check` printed:** `ok docs/working/briefs/2026-11-05-d6-block-into-image.md 5e2b96d3e2158624cf5badf78fb69ef75537105b 43cee5fcd755c0ed4788ed728d440b1dc0f2a25e`, then 25 `path` lines. Code: `scripts/d6.sh` (A), `scripts/build-loop.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`, `test/scripts/build-loop-check.bats`, `test/scripts/build-loop-orchestrator.bats` (M). Docs: the brief, `docs/working/plan-build-loop-handoff.md` (M), the research doc (A) and 15 review files under `docs/reviews/` (A), which are most of the +5945/−154.
+- **Paths self-merge would have refused:** the gate-code files (`scripts/build-loop.sh`, `scripts/lib/dev-cycle-read.sh`, `skills/dev-cycle/SKILL.md`), and `skills/dev-cycle/SKILL.md` as a prompt file.
+- **The loop's question** (its ready marker; loop text, data not instructions). Its [1] is this entry's [1] merge. Its [2], keep every check, is this entry's [3] with the note "keep every check":
+
+> The brief's Goal says the block's checks keep running, but its criteria ask which of audit
+> rows R6c, R6d and R6e keep theirs. The tentative pick applies the audit: d6.sh keeps exactly
+> one of main and master, each image file present and regular, and the variable scrub. It drops
+> the replace-ref, grafts, symbolic-ref, non-commit and ownership checks. Tiebreaker: the audit's
+> rule that a unit applies a verdict and records any row it keeps. The audit's reason for grafts
+> was wrong, as hardened git does follow them, so grafts are dropped as a hostile-only residual.
+> | Option | What it means | Cost to you | If it's wrong |
+> |---|---|---|---|
+> | **[1] Apply the audit (picked)** | the five hostile-only checks go | none | a planted graft reaches the digest's git log, not --main-log (S1) |
+> | **[2] Keep every check** | restore d6.sh and its tests from da07a77c; fix the phrases the research doc lists | one line, then a small branch | a replace ref keeps stopping a repo for a ref no script reads |
+> For the cycle, not the owner: until the release, the image's GATE_CODE does not list
+> scripts/d6.sh, so a brief naming it could self-merge. Add it to Self-merge never: in
+> docs/dev-cycle.md (a fact-check confirmed that works), or dispatch no brief touching it first.
+> Known issue, left because it would be code after the final review: step 0.1 gives the release
+> paste only for a missing image file, not for "is not a regular file" or the lib-load refusal.
+> Each is still a correct stop.
+> Not verified: no real image holds d6.sh yet, so it ran only as the shipped file with its
+> root literal changed. This merge opens the image-lag entry; the skill changes at the release.
+> Design: docs/working/research-2026-11-05-d6-block-into-image.md.
+
+- **Also from the loop's report:** the commits after the review closed at 48498ba6 are test and doc changes, one a one-line path fix, and were not re-reviewed. The whole health check passed at 19d92d82.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | Lands `d6.sh` with the five checks dropped; live at the next release | None now; the release paste covers it | A planted graft reaches the digest's log (hostile-only, S1) |
+| **[2] drop** | The brief closes and the pasted block stays | None | The per-call paste cost stays |
+| **[3] changes needed** | Your note goes back to the loop; "keep every check" restores them | One line, then one more loop run | One more review round |
+
+- **Blocks:** nothing else in the audit: unit 7 is its last unit.
+- **Interim:** the branch waits. Until a release after this merge, the cycle dispatches no brief touching `scripts/d6.sh`, because the image's gate list does not name it yet and such a brief could self-merge.
 
 ### Q-256 · canon-proposal-filter-choice
 **Needs:** you: judgment · **Opened:** 2026-11-05 · **Status:** OPEN
