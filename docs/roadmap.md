@@ -79,7 +79,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 ## In flight
 
 - Restriction audit unit 7: the D6 block becomes one root-owned image script
-  (`docs/working/briefs/2026-11-05-d6-block-into-image.md`; review policy, gate code).
+  (`docs/working/briefs/2026-11-05-d6-block-into-image.md`; review policy, gate code). Ready at
+  5e2b96d3; merge entry Q-259. After it merges, no brief touching `scripts/d6.sh` is dispatched
+  until the release, since the image's gate list does not name it yet.
 - Q-125's `cc-verify --check` file for the sandbox live run
   (`docs/working/briefs/2026-11-03-q125-verify-check.md`; review policy). Blocked at
   502296b7: the Q-125 branch's own C1 check cannot pass on a working sandbox; Q-254.
