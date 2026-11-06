@@ -1024,12 +1024,12 @@ ownfile() {
 # The gate's own files: a change to them lands only through a merge-gate-
 # review entry, never a self-merge. The scripts because the image copy, built
 # from the host checkout's HEAD, runs every merge after the next release (plan D6, D5
-# item 3; Q-140 [1]); skills/dev-cycle/ because its SKILL.md holds the D6 snippet that runs
-# the gate (U4c; plan D4, F52). Both reach a session only from a release, so
+# item 3; Q-140 [1]); scripts/d6.sh because it runs the gate; skills/dev-cycle/ because its
+# SKILL.md states the call (U4c; plan D4, F52). Both reach a session only from a release, so
 # here the floor is stricter than D5.
 # One list for floor and build-loop.sh's --approved, which tests it on its
 # own (floor does not run there); build-loop.sh's header repeats it.
-GATE_CODE='^scripts/(build-loop|dev-cycle|questions)\.sh$|^scripts/lib/|^skills/dev-cycle/'
+GATE_CODE='^scripts/(build-loop|d6|dev-cycle|questions)\.sh$|^scripts/lib/|^skills/dev-cycle/'
 # The self-merge floor (plan D5 items 1-4): a changed path that a self-merge never lands,
 # even when the brief's Paths: lists it, because it takes effect on merge with
 # no later review or later runs read it as truth. $1 is the path as the merge

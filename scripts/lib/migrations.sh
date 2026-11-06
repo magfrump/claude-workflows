@@ -32,7 +32,7 @@
 #
 # The digest reports a migration as pending while PATH holds a line ERE
 # matches. The dev cycle (SKILL.md step 1b) runs a questions.sh remedy whose
-# PATH is the questions file or the roadmap through its D6 block (the image
+# PATH is the questions file or the roadmap through d6.sh (the image
 # copy; this file sits in its root-owned lib/) and lands it with `build-loop.sh --cycle-diff --migrated ID`, which
 # reads this registry beside itself; any other remedy it files for the owner
 # in one terminal paste.

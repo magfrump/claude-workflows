@@ -244,18 +244,18 @@ refuse main-log: $X is not on the default branch's first-parent history at $T"
     bl --main-log "${X:0:12}"; [ "$status" -eq 1 ] && [[ "$stderr" == "--main-log takes one full 40- or 64-hex commit id"* ]] || { show; return 1; }
 }
 
-# The D6 snippet (U3b3; U4c, Q-140 [1]). Its one copy is SKILL.md's "The D6
-# block": the lines between the block's bash -s line and its D6 line.
-# d6_copy OPT [trust]: D6, that copy with D6_OPT set to OPT; with trust its
-# ownership check passes any path that exists (and refuses a missing one with
-# the snippet's own words), so a uid-owned OPT stands in for the root-owned
-# image. d6_setup: main holds this branch's four scripts,
+# d6.sh (U3b3; U4c, Q-140 [1]; brief 2026-11-05-d6-block-into-image): the file
+# itself, with one literal changed, runs in these tests.
+# d6_copy OPT [trust]: D6, a copy of scripts/d6.sh with D6_OPT set to OPT; with
+# trust its ownership check passes any path that exists (and refuses a missing
+# one with the script's own words), so a uid-owned OPT stands in for the
+# root-owned image. d6_setup: main holds this branch's four scripts,
 # and so does a trusted stand-in at $U.
 d6_copy() {
     D6="$BATS_TEST_TMPDIR/d6.bash"
-    awk '/^## The D6 block$/ { s = 1 } s && b && /^D6$/ { exit } b { print } s && /^cd WT && bash -s -- SCRIPT ARG\.\.\. <<.D6.$/ { b = 1 }' "$REPO_ROOT/skills/dev-cycle/SKILL.md" > "$D6"
-    grep -qxF '  D6_OPT=/opt/claude-workflows' "$D6" && sed -i "s|^  D6_OPT=/opt/claude-workflows\$|  D6_OPT=$1|" "$D6" && grep -qxF "  D6_OPT=$1" "$D6" || return 1
-    [[ "${2:-}" != trust ]] || { grep -q '^  own() { ' "$D6" && sed -i 's|^  own() { .*|  own() { [[ -e "$1" ]] \|\| no "$1 is missing"; }|' "$D6" && grep -qxF '  own() { [[ -e "$1" ]] || no "$1 is missing"; }' "$D6"; }
+    cp "$REPO_ROOT/scripts/d6.sh" "$D6"
+    grep -qxF 'D6_OPT=/opt/claude-workflows' "$D6" && sed -i "s|^D6_OPT=/opt/claude-workflows\$|D6_OPT=$1|" "$D6" && grep -qxF "D6_OPT=$1" "$D6" || return 1
+    [[ "${2:-}" != trust ]] || { grep -q '^own() { ' "$D6" && sed -i 's|^own() { .*|own() { [[ -e "$1" ]] \|\| no "$1 is missing"; }|' "$D6" && grep -qxF 'own() { [[ -e "$1" ]] || no "$1 is missing"; }' "$D6"; }
 }
 opt_copy() { mkdir -p "$1/scripts/lib" && cp "$REPO_ROOT"/scripts/{build-loop,dev-cycle,questions}.sh "$1/scripts/" && cp "$REPO_ROOT/scripts/lib/dev-cycle-read.sh" "$1/scripts/lib/"; }
 d6_setup() {
@@ -263,7 +263,7 @@ d6_setup() {
     commit_all scripts && U="$BATS_TEST_TMPDIR/opt" && opt_copy "$U" && d6_copy "$U" trust
 }
 d6() { run --separate-stderr bash "$D6" "$@"; }
-# d6_is WANT: the snippet refused with exactly WANT, exit 2, before running anything.
+# d6_is WANT: d6.sh refused with exactly WANT, exit 2, before running anything.
 d6_is() { d6 build-loop.sh --settings; [ "$status" -eq 2 ] && [ "$output" = "$1" ] && [ -z "$stderr" ] || { echo "want: $1"; show; return 1; }; }
 # shim: a git ahead of the real one on PATH that logs each call's config pairs and environment (T26's).
 shim() {
@@ -272,15 +272,47 @@ shim() {
     chmod +x "$S/git"
 }
 
-@test "SKILL.md holds the D6 snippet once, and it names no other copy to run: no root test, no read of main's scripts (T33, U4c)" {
-    K="$REPO_ROOT/skills/dev-cycle/SKILL.md"
-    [ "$(grep -c "^cd WT && bash -s -- SCRIPT ARG\.\.\. <<'D6'$" "$K")" -eq 1 ] && [ "$(grep -c '^D6$' "$K")" -eq 1 ] || { grep -n "<<'D6'\|^D6$" "$K"; return 1; }
-    d6_copy /opt/claude-workflows; [ "$(tail -n 1 "$D6")" = 'd6 "$@" </dev/null' ] || { tail -n 3 "$D6"; return 1; }
-    ! grep -v '^ *#' "$D6" | grep -nE 'D6_ROOT|cat-file (blob|--batch)|ls-tree|mktemp|\$HOME|~/' || return 1
+@test "SKILL.md states d6.sh's one-line call once, by absolute path, with no pasted block; d6.sh names no other copy to run: no root test, no read of main's scripts (T33, U4c, brief 2026-11-05-d6-block-into-image)" {
+    K="$REPO_ROOT/skills/dev-cycle/SKILL.md"; q=$'\x60'
+    [ "$(grep -cxF "  ${q}cd WT && bash /opt/claude-workflows/scripts/d6.sh SCRIPT ARG...$q" "$K")" -eq 1 ] || { grep -n 'd6\.sh' "$K"; return 1; }
+    ! grep -nE "bash -s -- |<<'D6'|^D6$|byte for byte|D6 block|D6_OPT" "$K" || return 1
+    # Where the image copy is comes from one literal, never the environment or the file's own path.
+    S="$REPO_ROOT/scripts/d6.sh"
+    [ "$(grep -c '^D6_OPT=' "$S")" -eq 1 ] && grep -qxF 'D6_OPT=/opt/claude-workflows' "$S" || return 1
+    ! grep -v '^ *#' "$S" | grep -nE 'D6_ROOT|cat-file (blob|--batch)|ls-tree|mktemp|\$HOME|~/|BASH_SOURCE|\$0|dirname' || return 1
     [ ! -e "$REPO_ROOT/test/lib/d6-snippet.bash" ]
 }
 
-@test "the D6 snippet runs the image copy's scripts by absolute path, with the image's own lib and questions.sh, never main's or the working tree's (T33, U3b3, U4c)" {
+@test "d6.sh reaches the image with no installer or Dockerfile change: scripts/ is a payload item, and a .sh file is made 0555 (brief 2026-11-05-d6-block-into-image)" {
+    C="$REPO_ROOT/devcontainer-config"
+    [ -f "$REPO_ROOT/scripts/d6.sh" ] && [ -x "$REPO_ROOT/scripts/d6.sh" ] || return 1
+    grep -qE '^CLAUDE_HOME_SRC=\(.* scripts\)$' "$C/install.sh" && grep -qE '^CLAUDE_HOME_SRC=\(.* skills ' "$C/install.sh" || { grep -n '^CLAUDE_HOME_SRC' "$C/install.sh"; return 1; }
+    grep -qF "find /opt/claude-workflows -type f \\( -name '*.sh' -o -name '*.py' \\) -exec chmod 0555" "$C/Dockerfile" || return 1
+}
+
+@test "the skill's d6 call on an image with no d6.sh (an image older than the skill): exit 127, bash names the path, nothing runs, and the Rules read it as a refusal (brief 2026-11-05-d6-block-into-image)" {
+    K="$REPO_ROOT/skills/dev-cycle/SKILL.md"; q=$'\x60'
+    l="$(grep -oF "bash /opt/claude-workflows/scripts/d6.sh SCRIPT ARG..." "$K" | head -n 1)"
+    [ -n "$l" ] || return 1
+    U="$BATS_TEST_TMPDIR/opt"; opt_copy "$U"; printf 'touch "%s/ran"\n' "$BATS_TEST_TMPDIR" >> "$U/scripts/build-loop.sh"
+    l="${l//\/opt\/claude-workflows/$U}"; l="${l/SCRIPT ARG.../build-loop.sh --settings}"
+    run --separate-stderr bash -c "$l"
+    [ "$status" -eq 127 ] && [ -z "$output" ] && [[ "$stderr" == *"$U/scripts/d6.sh: No such file or directory"* ]] && [ ! -e "$BATS_TEST_TMPDIR/ran" ] || { show; return 1; }
+    s="$(tr '\n' ' ' < "$K" | tr -s ' ')"
+    for f in "So does exit 127 with ${q}bash${q}'s ${q}No such file or directory${q} line naming d6.sh" "a ${q}refuse d6:${q} line or that exit 127, are stops too" \
+        "a ${q}refuse d6:${q} naming a missing image file, or the exit 127 above, means an image older than this skill" "a ${q}refuse d6:${q} line, its exit 127 or a timed-out call is still a stop"; do
+        [[ "$s" == *"$f"* ]] || { echo "missing: $f"; return 1; }
+    done
+}
+
+@test "d6.sh scrubs the caller's variables and closes stdin before it runs the image's script; a caller's stdin never reaches it (R6f, brief 2026-11-05-d6-block-into-image)" {
+    d6_setup
+    sed -i '2i [[ "${1:-}" != --probe ]] || { echo "live=${QUESTIONS_LIVE-unset} scrub=${DEV_CYCLE_SCRUBBED-unset} env=${ENV-unset} in=$(cat)"; exit 7; }' "$U/scripts/questions.sh"
+    run --separate-stderr bash -c 'echo piped | QUESTIONS_LIVE=x QUESTIONS_ARCHIVE=x QUESTIONS_WATCHING=x DEV_CYCLE_SCRUBBED=1 ENV=x bash "$1" questions.sh --probe' _ "$D6"
+    [ "$status" -eq 7 ] && [ "$output" = "live=unset scrub=unset env=unset in=" ] || { show; return 1; }
+}
+
+@test "d6.sh runs the image copy's scripts by absolute path, with the image's own lib and questions.sh, never main's or the working tree's (T33, U3b3, U4c)" {
     d6_setup
     # main and the working tree each hold scripts that say where they ran; the image copy's lib says where it was sourced from.
     for f in build-loop.sh dev-cycle.sh questions.sh lib/dev-cycle-read.sh; do echo 'echo main copy; exit 9' > "scripts/$f"; done
@@ -292,14 +324,14 @@ shim() {
     d6 build-loop.sh --settings
     [ "$status" -eq 0 ] && [[ "$output" == *"slots 3 default: "* ]] && [ -n "$stderr" ] || { show; return 1; }
     while IFS= read -r l; do [ "$l" = "lib at $U/scripts/lib/dev-cycle-read.sh" ] || { echo "[$l]"; show; return 1; }; done <<<"$stderr"
-    # The snippet exports no config pair, so --state run through it passes caller_gate (row 702).
+    # d6.sh exports no config pair, so --state run through it passes caller_gate (row 702).
     d6 build-loop.sh --state; [ "$status" -eq 0 ] && [ "$output" = ok ] || { show; return 1; }
     d6 dev-cycle.sh
     [ "$status" -eq 0 ] && [[ "$output" == *$'\n- Q-001  trigger           from-opt (legacy, in questions.md: step 1b\'s `questions.sh migrate` moves it)\n'* ]] || { show; return 1; }
     d6 questions.sh open; [ "$status" -eq 0 ] && [ "$output" = "Q-001  trigger           from-opt" ] || { show; return 1; }
 }
 
-@test "the D6 snippet refuses before running anything: a blob or commit replace ref, info/grafts, not exactly one plain main or master (T36, U3b3)" {
+@test "d6.sh refuses before running anything: a blob or commit replace ref, info/grafts, not exactly one plain main or master (T36, U3b3)" {
     d6_setup
     R="refuse d6: a replace ref exists (F38)"
     id="$(git rev-parse main:scripts/build-loop.sh)"; git replace "$id" "$(printf 'echo replaced\n' | git hash-object -w --stdin)"; d6_is "$R"; git replace -d "$id"
@@ -316,7 +348,7 @@ shim() {
     run --separate-stderr bash "$D6" x; [ "$status" -eq 1 ] && [ -z "$output" ] && [ "$stderr" = "d6: the first argument is build-loop.sh, dev-cycle.sh or questions.sh" ] || { show; return 1; }
 }
 
-@test "a gate copy patched in the loop's worktree prints ok for its tip; the D6 snippet's image copy refuses the same tip (T27, U3b3)" {
+@test "a gate copy patched in the loop's worktree prints ok for its tip; d6.sh's image copy refuses the same tip (T27, U3b3)" {
     d6_setup; brief x "Status: open" "Branch: feat/x"
     W="$BATS_TEST_TMPDIR/wt"; git worktree add -q -b feat/x "$W" main; cd "$W"
     # The loop drops the path rule from its own copy and adds a file whose name holds a tab.
@@ -329,7 +361,7 @@ shim() {
         && [[ "$output" == *$'\n'"deny $B A ?: not a path a checkout can hold "* ]] || { show; return 1; }
 }
 
-@test "the D6 snippet runs the root-owned image copy at /opt by absolute path, not main's copy (T37, U3b3)" {
+@test "d6.sh runs the root-owned image copy at /opt by absolute path, not main's copy (T37, U3b3)" {
     O=/opt/claude-workflows
     [[ -f "$O/scripts/build-loop.sh" && "$(stat -c %u "$O/scripts")" == 0 ]] || skip "no root-owned image copy at $O here"
     mkdir -p scripts; printf 'echo main copy\n' > scripts/build-loop.sh; commit_all scripts
@@ -337,14 +369,14 @@ shim() {
     [ "$status" -eq 0 ] && [ "$output" = "$(bash "$O/scripts/build-loop.sh" --help)" ] || { show; return 1; }
 }
 
-@test "the D6 snippet refuses an image copy the uid owns or one missing a file (an older image), and never runs main's (T37, U3b3, U4c)" {
+@test "d6.sh refuses an image copy the uid owns or one missing a file (an older image), and never runs main's (T37, U3b3, U4c)" {
     mkdir -p scripts; printf 'echo main copy\n' > scripts/build-loop.sh; commit_all scripts
     U="$BATS_TEST_TMPDIR/opt"; opt_copy "$U"; d6_copy "$U"
     d6_is "refuse d6: $U/scripts/build-loop.sh is not root-owned, a plain path and unwritable here"
     rm "$U/scripts/build-loop.sh"; d6_is "refuse d6: $U/scripts/build-loop.sh is missing"
 }
 
-@test "git_harden exports HARDEN's pairs after the caller's and a fixed environment, once however often it is called; the D6 snippet's git carries the same (rows 281, 311, 495, 704, 736, U3b3, U4b1)" {
+@test "git_harden exports HARDEN's pairs after the caller's and a fixed environment, once however often it is called; d6.sh's git carries the same (rows 281, 311, 495, 704, 736, U3b3, U4b1)" {
     L="$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
     run env -i PATH="$PATH" GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=c bash -c 'source "$1"; git_harden; git_harden; echo "caller $CALLER_COUNT"; printf "pair %s\n" "${HARDEN[@]}"; env | grep "^GIT_" | sort' _ "$L"
     [ "$status" -eq 0 ] || { echo "$output"; return 1; }
@@ -355,13 +387,13 @@ shim() {
     for kv in $H; do k=$((k + 1)); keys+=$'\n'"GIT_CONFIG_KEY_$k=${kv%%=*}"; vals+=$'\n'"GIT_CONFIG_VALUE_$k=${kv#*=}"; done
     want+=$'\n'"$(printf '%s\n' $E "GIT_CONFIG_COUNT=8" "$keys" "$vals" | LC_ALL=C sort)"
     [ "$output" = "$want" ] || { diff <(echo "$want") <(echo "$output"); return 1; }
-    # The snippet runs before anything is checked, so it cannot source the lib: it repeats both lists, on one line.
+    # d6.sh runs before anything is checked, so it cannot source the lib: it repeats both lists, on one line.
     # (The orchestrator's own git is plain git since brief 2026-11-01-relax-dev-cycle-skill-prose: H1 binds the gate's git, not its caller's.)
-    [ "$(grep -c '^  G=(env ' "$REPO_ROOT/skills/dev-cycle/SKILL.md")" -eq 1 ] || return 1
+    [ "$(grep -c '^G=(env ' "$REPO_ROOT/scripts/d6.sh")" -eq 1 ] || return 1
     # The two pins HARDEN dropped (core.commitGraph, core.multiPackIndex: brief 2026-11-01-relax-gate-git-state,
-    # research D4) may stay in the snippet until the unit that owns the D6 block drops them.
+    # research D4) may stay in d6.sh until the unit that owns it drops them.
     X=" core.commitGraph=false core.multiPackIndex=false"
-    g="$(grep '^  G=(env ' "$REPO_ROOT/skills/dev-cycle/SKILL.md")"
+    g="$(grep '^G=(env ' "$REPO_ROOT/scripts/d6.sh")"
     c="$(grep -o -- '-c [^ )]*' <<<"$g" | cut -c4- | tr '\n' ' ')"
     [ "${c//$X/}" = "$H " ] || { echo "$g"; return 1; }
     [ "$(grep -o 'GIT_[A-Z_]*=[^ ]*' <<<"$g" | LC_ALL=C sort | tr '\n' ' ')" = "$E " ] || { echo "$g"; return 1; }
@@ -385,8 +417,8 @@ shim() {
 
 @test "SKILL.md step 0.1's image-lag paths are GATE_CODE's, on one line of their own: a GATE_CODE change fails here until this test's literal is updated, and a listed path that is not gate code fails (U4c i2 architecture 1)" {
     g="$(bash -c 'source "$1"; printf %s "$GATE_CODE"' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh")"
-    P="scripts/build-loop.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/"
-    [ "$g" = '^scripts/(build-loop|dev-cycle|questions)\.sh$|^scripts/lib/|^skills/dev-cycle/' ] || { echo "GATE_CODE changed: update step 0.1's PATHS line and this test: $g"; return 1; }
+    P="scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/"
+    [ "$g" = '^scripts/(build-loop|d6|dev-cycle|questions)\.sh$|^scripts/lib/|^skills/dev-cycle/' ] || { echo "GATE_CODE changed: update step 0.1's PATHS line and this test: $g"; return 1; }
     q=$'\x60'
     [ "$(grep -cxF "   $q$P$q" "$REPO_ROOT/skills/dev-cycle/SKILL.md")" -eq 1 ] || { grep -n 'scripts/build-loop.sh scripts/' "$REPO_ROOT/skills/dev-cycle/SKILL.md"; return 1; }
     for p in $P; do [[ "$p" =~ $g || "${p}x" =~ $g ]] || { echo "not GATE_CODE: $p"; return 1; }; done
