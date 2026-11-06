@@ -39,7 +39,7 @@ The index below is generated — edit entries, not the table.
 ## Open
 
 ### Q-258 · merge-2026-11-05-q089-source-guard-narrow-c9786a275cd1
-**Needs:** you: judgment · **Opened:** 2026-11-05 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-05 · **Status:** ANSWERED
 
 Merge the Q-147 result at c9786a27? It adds one test file, `test/cc-host-tool-sources.bats`, that catches a new helper script the launcher sources but does not check. No runtime code changes.
 
@@ -62,8 +62,10 @@ Merge the Q-147 result at c9786a27? It adds one test file, `test/cc-host-tool-so
 
 - **Interim:** the branch waits; nothing depends on it.
 
+**Answered:** [1] (owner, in session 2026-11-05: "Q-253, Q-257, Q-258: [1]"). The next dev-cycle iteration merges it.
+
 ### Q-257 · merge-2026-11-05-exit-scan-older-routes-6a2a4dcedf74
-**Needs:** you: judgment · **Opened:** 2026-11-05 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-05 · **Status:** ANSWERED
 
 Merge the Q-097 result at 6a2a4dce? It leaves both exit-scan routes open and records why in the guide; no code changes.
 
@@ -91,6 +93,8 @@ Merge the Q-097 result at 6a2a4dce? It leaves both exit-scan routes open and rec
 | **[3] changes needed** | Your note goes back to the loop | One line | One more loop run |
 
 - **Interim:** the branch waits; nothing depends on it.
+
+**Answered:** [1] (owner, in session 2026-11-05: "Q-253, Q-257, Q-258: [1]"). The next dev-cycle iteration merges it.
 
 ### Q-256 · canon-proposal-filter-choice
 **Needs:** you: judgment · **Opened:** 2026-11-05 · **Status:** OPEN
@@ -221,7 +225,7 @@ The `rev-parse` check runs no hook. It only confirms that your checkout is at `e
 - **Blocks:** nothing.
 
 ### Q-253 · merge-gate-2026-11-03-import-walk-plain-4d6880b7f44e
-**Needs:** you: judgment · **Opened:** 2026-11-03 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-03 · **Status:** ANSWERED
 
 Merge restriction-audit unit 6 (the self-merge floor's import check reads plain `@path` imports only) at 4d6880b7?
 
@@ -247,6 +251,8 @@ Merge restriction-audit unit 6 (the self-merge floor's import check reads plain 
 
 - **Blocks:** restriction-audit unit 7 (the D6 block into the image; it edits `skills/dev-cycle/SKILL.md` too).
 - **Interim:** the branch waits.
+
+**Answered:** [1] (owner, in session 2026-11-05: "Q-253, Q-257, Q-258: [1]"). The next dev-cycle iteration merges it.
 
 ### Q-167 · post-install-host-probes
 **Needs:** you: terminal · **Opened:** 2026-10-15 · **Status:** OPEN
