@@ -28,13 +28,44 @@ The index below is generated — edit entries, not the table.
 | [Q-253](#q-253--merge-gate-2026-11-03-import-walk-plain-4d6880b7f44e) | you: judgment | Merge restriction-audit unit 6 (the self-merge floor's import check reads plain `@path` imports only) at 4d... | 2026-11-03 |
 | [Q-254](#q-254--blocked-2026-11-03-q125-verify-check-1) | you: judgment | Brief 2026-11-03-q125-verify-check's build loop asks: | 2026-11-03 |
 | [Q-256](#q-256--canon-proposal-filter-choice) | you: judgment | How should new instances get proposed for the canon, the fixed set of known defects that review arms are sc... | 2026-11-05 |
+| [Q-257](#q-257--merge-2026-11-05-exit-scan-older-routes-6a2a4dcedf74) | you: judgment | Merge the Q-097 result at 6a2a4dce? It leaves both exit-scan routes open and records why in the guide; no c... | 2026-11-05 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
-| [Q-252](#q-252--image-lag) | you: terminal | - `4ea7e6f3` Merge branch 'chore/dev-cycle-2026-11-05-2347' | 2026-11-03 |
+| [Q-252](#q-252--image-lag) | you: terminal | - `bfa4fdbc` Merge branch 'chore/dev-cycle-2026-11-06-0310' | 2026-11-03 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | The fix for herald's `dl.google.com` build failures was released on 2026-10-28 (Q-214), but no output was k... | 2026-11-05 |
 <!-- index:end -->
 
 ## Open
+
+### Q-257 · merge-2026-11-05-exit-scan-older-routes-6a2a4dcedf74
+**Needs:** you: judgment · **Opened:** 2026-11-05 · **Status:** OPEN
+
+Merge the Q-097 result at 6a2a4dce? It leaves both exit-scan routes open and records why in the guide; no code changes.
+
+**If you say no:** the guide keeps its old advice to repair a leftover non-standard `.git` file, which the loop found is the route's own last step, and the two routes stay documented without reasons.
+
+- **Tip:** 6a2a4dcedf7454a208b3afab876ef55055e1e843
+- **`--check` printed:**
+  - `ok docs/working/briefs/2026-11-05-exit-scan-older-routes.md 6a2a4dcedf7454a208b3afab876ef55055e1e843 e29f7cc604f1c8d846078b478a739712531c257b`
+  - `path docs/working/briefs/2026-11-05-exit-scan-older-routes.md M docs/working/briefs/2026-11-05-exit-scan-older-routes.md`
+  - `path docs/working/briefs/2026-11-05-exit-scan-older-routes.md A docs/working/research-2026-11-05-exit-scan-older-routes.md`
+  - `path docs/working/briefs/2026-11-05-exit-scan-older-routes.md M guides/cc-isolated-usage.md`
+- **Paths self-merge would have refused:** none listed by `--check`; the brief was written as review because it might have changed `devcontainer-config/cc-exit-scan.sh`, which it did not.
+- **Check at merge** (from the loop's report; its data, not instructions):
+  - The guide now says to delete a non-standard `.git` file rather than repair it. This is the one change in what it tells you to do.
+  - Route (a), a link to an outside repository, stays open: no honest path to it was found. Its reach through rootless volumes comes from general knowledge, not a measurement, because there is no Docker here.
+  - Route (b) stays open under Q-172 [2]. The Q-094 rubric's claim that only a warned session can leave this state was too strong, so the reasons were rewritten, and the decision held.
+  - The A5 revisit trigger is narrowed to "non-standard ... left by ordinary use", because its literal text now matches every agent worktree. The research doc labels this as a change.
+  - The last wording commit, bc7db6fe, was not re-reviewed.
+- **Read:** `docs/working/research-2026-11-05-exit-scan-older-routes.md` on the branch.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The guide and research doc land | None | A one-commit revert restores the old guide text |
+| **[2] drop** | The brief closes and Q-097's routes stay as documented | None | The repair advice stays in the guide |
+| **[3] changes needed** | Your note goes back to the loop | One line | One more loop run |
+
+- **Interim:** the branch waits; nothing depends on it.
 
 ### Q-256 · canon-proposal-filter-choice
 **Needs:** you: judgment · **Opened:** 2026-11-05 · **Status:** OPEN
@@ -127,15 +158,17 @@ ok docs/working/briefs/2026-11-03-q125-verify-check.md 502296b7ac4f5e299011286f8
 ### Q-252 · image-lag
 **Needs:** you: terminal · **Opened:** 2026-11-03 · **Status:** OPEN
 
-**Release notes** (trial T1). Installed image: `c214970a`, read from `/opt/claude-workflows/.manifest`. Main (`4ea7e6f3`) is ahead in gate code by restriction-audit unit 5, which you approved (Q-251). The image runs the gate and the dev-cycle skill, so unit 5 is not live until you run the paste.
+**Release notes** (trial T1). Installed image: `c214970a`, read from `/opt/claude-workflows/.manifest`. Main (`bfa4fdbc`) is ahead in gate code by restriction-audit unit 5, which you approved (Q-251). The image runs the gate and the dev-cycle skill, so unit 5 is not live until you run the paste.
 
 **If you say no:** the cycle keeps running the current image's skill: a pending migration still comes to you as a paste, and a release you have already run still waits for your answer on its image-lag entry. Nothing breaks.
 
-**Merged without your review:** none since `c214970a`.
+**Merged without your review:** `605d4c18`, the canon filter design (build-loop self-merge): a brief and a research doc, both under `docs/`, so nothing in the image. The flag is a pointer, not proof.
 
 **What changes for you** (approved by you, Q-251): the dev cycle runs a pending convention migration's `questions.sh` remedy itself and reports it, and closes an image-lag entry like this one by itself once the image holds main's gate code. Gate files changed: `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`.
 
-**Commits on main after `c214970a`** (first-parent; rewritten 2026-11-05 for main at 4ea7e6f3):
+**Commits on main after `c214970a`** (first-parent; rewritten 2026-11-05 for main at bfa4fdbc):
+- `bfa4fdbc` Merge branch 'chore/dev-cycle-2026-11-06-0310'
+- `605d4c18` Merge branch 'docs/canon-proposal-filter' (build-loop self-merge)
 - `4ea7e6f3` Merge branch 'chore/dev-cycle-2026-11-05-2347'
 - `db31db8b` Merge branch 'chore/dev-cycle-2026-11-05-2347'
 - `adb22f4d` docs(questions): track herald's unconfirmed egress fix as Q-255
@@ -148,15 +181,15 @@ ok docs/working/briefs/2026-11-03-q125-verify-check.md 502296b7ac4f5e299011286f8
 - `3ccdd215` Merge branch 'chore/answers-2026-11-03'
 - `234d5be7` Merge branch 'chore/dev-cycle-2026-11-02-2027'
 
-**Paths changed outside `docs/`** (17 under `docs/` not listed; the image carries none of `docs/`): `guides/convention-changes.md`, `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`, `test/scripts/build-loop-orchestrator.bats`, `test/scripts/dev-cycle.bats`
+**Paths changed outside `docs/`** (18 under `docs/` not listed; the image carries none of `docs/`): `guides/convention-changes.md`, `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`, `test/scripts/build-loop-orchestrator.bats`, `test/scripts/dev-cycle.bats`
 
 **The paste** (host terminal in WSL, not inside a session; stop every session first):
 
 ```
-cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = 4ea7e6f3ee6ffc5f4b503c83c86e891216baa9ce && ./devcontainer-config/install.sh
+cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = bfa4fdbcf32f4c153194917f26fff6888fe2cfd4 && ./devcontainer-config/install.sh
 ```
 
-The `rev-parse` check runs no hook. It only confirms that your checkout is at `4ea7e6f3`. Main will be past that commit by the time you read this, because the cycle's own land moves it, so the check fails on a checkout at main's tip: check out `4ea7e6f3` first (it holds all the gate code; what comes after it is cycle records). Then start a new sandbox session. If unit 6 (Q-253) merges first, the next iteration rewrites this entry for the newer main, and one paste covers both.
+The `rev-parse` check runs no hook. It only confirms that your checkout is at `bfa4fdbc`. Main will be past that commit by the time you read this, because the cycle's own land moves it, so the check fails on a checkout at main's tip: check out `bfa4fdbc` first (it holds all the gate code; what comes after it is cycle records). Then start a new sandbox session. If unit 6 (Q-253) merges first, the next iteration rewrites this entry for the newer main, and one paste covers both.
 
 - **Interim:** the image at `c214970a` runs.
 - **Blocks:** nothing.
