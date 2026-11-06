@@ -421,7 +421,13 @@ last good one.
   questions that cannot be read this cycle are reported, not guessed (a `refuse d6:` line
   or a timed-out call is still a stop, as the Rules say).
 - `git -C MAIN_WT worktree list` and `git -C MAIN_WT worktree prune` (a locked worktree, a
-  live loop's, is never pruned). Delete merged branches without asking (handoff answer 2,
+  live loop's, is never pruned). Then free finished loops' worktrees: `build-loop.sh
+  --free-worktrees`, from WT, removes each locked one whose brief is closed and whose branch
+  has merged (its header gives the rule). The record's `1.` line gives the count of `freed`
+  lines; `hold` is a loop still open; each `kept` line goes in the record and the final
+  message for the user, and is never forced (no `--force`, no unlock by hand). A `refuse
+  worktrees:` line is recorded and the step goes on: the next iteration runs it again.
+  Delete merged branches without asking (handoff answer 2,
   Q-153 [1]: the global instructions exempt `git branch -d` of a merged branch): list them
   with `git -C MAIN_WT for-each-ref --merged refs/heads/main --format='%(refname:short)'
   refs/heads/`, pass the names to one `--check-branch` call, and run
