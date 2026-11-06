@@ -517,14 +517,16 @@ in the checkout, whatever the scan says.
   would use the repository behind it. (A removed worktree's old `.git` path is
   checked directly, so the note is refused there.) This stays open (Q-097): a
   plant there is a write outside the checkout, which the boundary above does
-  not cover. The container's only other writable places are its two named
-  volumes, and a link can reach those only where their host path is readable
-  (rootless Docker). A link a session makes for its own use names a container
-  path, which means something else on the host, and a link to one of your own
-  repositories exposes nothing the session wrote. The scan cannot tell from
-  the host which outside paths the container can write, and warning on every
-  outward link would fire on each virtualenv. Revisit if a launch ever mounts
-  a host path outside the checkout writable.
+  not cover. The container's other writable places are its own layer and its
+  two named volumes, and a link can reach those only where their host path is
+  readable (rootless Docker or podman, say). A link a session makes for its
+  own use names a container path, which means something else on the host, and
+  a link to one of your own repositories exposes nothing the session wrote.
+  The scan could learn which outside paths the container can write only by
+  asking the Docker daemon, a dependency it does not have, and warning on
+  every outward directory link would fire on ordinary ones such as `npm link`.
+  Revisit if a launch ever mounts a host path outside the checkout writable,
+  or if a rootless runtime becomes the supported default.
 - **A `.git` file naming the container's path, present at launch.** One that
   reads `gitdir: /workspace/<path>` names nothing on a host whose checkout is
   elsewhere; the scan maps it to `<checkout>/<path>` and walks only your own
@@ -534,11 +536,16 @@ in the checkout, whatever the scan says.
   different git dir (it goes by the worktree's name), and a git dir the scan
   never walked (one outside `.git/`, say) then runs its hooks. A `.git` added
   during the session is either git's exact form, which maps to its own private
-  dir, or a finding; the gap is one left by an earlier session. Delete such files, or repair them and start a new session.
-  This stays open by design (Q-097): it needs that leftover, kept through a
-  session that warned about it, and then host git run in the repository the
-  file belongs to. When that is a bare repository in the working tree, the
-  route above already covers running git there. Walking the mapped git dir
+  dir, or a finding; the gap is one left by an earlier session. Delete such
+  files rather than repairing them: `git worktree repair` is host git in the
+  repository behind the file, whose hooks were never walked, and a new session
+  takes whatever is there as its baseline.
+  This stays open by design (Q-097): it needs that leftover at launch, which a
+  session usually warns about (not one whose scan never ran, or one launched
+  on a different repo of a nested pair), and then host git run in a repository
+  that connects it. When that is a bare repository in the working tree, the
+  bullet "A repository in a working-tree directory not named `.git`" already
+  covers running git there. Walking the mapped git dir
   would not close this: a plant in a bare repository no `.git` names, a repair
   run from another repository, and a path such as
   `/workspace/gone/../.git/worktrees/x` would all stay silent. Revisit on a
