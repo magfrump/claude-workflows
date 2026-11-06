@@ -16,42 +16,38 @@
 # change runs from the next image release. Run it from the checkout the script
 # is to read (each step names MAIN_WT, WT or GT). Arguments: build-loop.sh,
 # dev-cycle.sh or questions.sh, then that script's own.
-# Exit: the script's own status; 2 and one "refuse d6: WHY" line on stdout,
-# with nothing run, for a replace ref, info/grafts, a default branch that is
-# not exactly one plain main or master or whose ref names no commit itself, an
-# image-copy file that is missing (an image older than the skill) or not a
-# regular file, or one of those files or a directory above them that is not
-# root-owned, a plain path and unwritable here (the -w test makes a run as root
-# refuse unless the mount is read-only), or a git read that fails (git may add
-# a line on stderr); 1 for another first argument. An image with no d6.sh at
-# all prints nothing of this: bash exits 127 naming the path, which the skill's
-# Rules read as this refusal. Its git carries the lib's HARDEN pairs and
-# git_harden's environment (G; a test pins the lists equal). These checks come
+# Exit: the script's own status; 2 and one "refuse d6: WHY" line on stdout, with
+# nothing run, for an image-copy file that is missing (an image older than the
+# skill) or not a regular file, a default branch that is not exactly one of main
+# and master, or a git read that fails (git may add a line on stderr); 1 for
+# another first argument. An image with no d6.sh at all prints nothing of this:
+# bash exits 127 naming the path, which the skill's Rules read as this refusal.
+# Its git is the image lib's git_harden, in a subshell, so no pair reaches the
+# script, whose caller_gate would refuse one (row 702). These checks come
 # before, not instead of, build-loop.sh's own state and default-branch gates in
-# its gated modes (dev-cycle.sh, questions.sh and the read modes have none; row
-# 548 for dev-cycle.sh).
+# its gated modes, which also refuse a symbolic or non-commit default branch
+# (dev-cycle.sh, questions.sh and the read modes have none; row 548 for
+# dev-cycle.sh). What it no longer checks, and why, is rows R6c to R6e of the
+# restriction audit, in docs/working/research-2026-11-05-d6-block-into-image.md.
 set -u -o pipefail
 D6_OPT=/opt/claude-workflows
 no() { echo "refuse d6: $*"; exit 2; }
-G=(env GIT_NO_REPLACE_OBJECTS=1 GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 GIT_ALLOW_PROTOCOL=none GIT_LITERAL_PATHSPECS=1 GIT_OPTIONAL_LOCKS=0 GIT_ATTR_NOSYSTEM=1 git -c core.useReplaceRefs=false -c core.hooksPath=/dev/null -c core.fsmonitor=false -c core.attributesFile=/dev/null -c core.commitGraph=false -c core.multiPackIndex=false -c log.date=default -c log.showSignature=false -c commit.gpgSign=false)
-g() { "${G[@]}" "$@"; }
-own() { [[ -e "$1" || -L "$1" ]] || no "$1 is missing"; [[ ! -L "$1" && "$(stat -c %u -- "$1")" == 0 && ! -w "$1" ]] || no "$1 is not root-owned, a plain path and unwritable here"; }
+g() { ( source "$D6_OPT/scripts/lib/dev-cycle-read.sh" && git_harden && git "$@" ); }
 s="${1:-}"
 [[ "$s" == build-loop.sh || "$s" == dev-cycle.sh || "$s" == questions.sh ]] || { echo "d6: the first argument is build-loop.sh, dev-cycle.sh or questions.sh" >&2; exit 1; }
 shift
-x="$(g for-each-ref --format='%(refname)' refs/replace/)" || no "refs/replace could not be listed"
-[[ -z "$x" ]] || no "a replace ref exists (F38)"
-x="$(g rev-parse --path-format=absolute --git-path info/grafts)" || no "the grafts path could not be read"
-[[ ! -e "$x" && ! -L "$x" ]] || no "info/grafts exists (F38)"
-m=""; for n in main master; do g show-ref --verify -q "refs/heads/$n" && m+="$n "; done
-m="${m% }"; [[ "$m" == main || "$m" == master ]] || no "the default branch is not exactly one of main and master"
-! g symbolic-ref -q "refs/heads/$m" >/dev/null || no "refs/heads/$m is a symbolic ref"
-sha="$(g rev-parse --verify -q "refs/heads/$m")" && [[ "$(g cat-file -t "$sha")" == commit ]] || no "refs/heads/$m names no commit"
 # The four files the scripts run (build-loop.sh and dev-cycle.sh source the
-# lib from their own directory; dev-cycle.sh runs questions.sh beside it),
-# then every directory from scripts/lib up to /.
+# lib from their own directory; dev-cycle.sh runs questions.sh beside it).
 for f in build-loop.sh dev-cycle.sh questions.sh lib/dev-cycle-read.sh; do
-  own "$D6_OPT/scripts/$f"; [[ -f "$D6_OPT/scripts/$f" ]] || no "$D6_OPT/scripts/$f is not a regular file"
+  x="$D6_OPT/scripts/$f"
+  [[ -e "$x" || -L "$x" ]] || no "$x is missing"
+  [[ -f "$x" ]] || no "$x is not a regular file"
 done
-x="$D6_OPT/scripts/lib"; while own "$x"; [[ "$x" != / ]]; do x="${x%/*}"; x="${x:-/}"; done
+m=""
+for n in main master; do
+  rc=0; g show-ref --verify -q "refs/heads/$n" || rc=$?
+  [[ "$rc" -le 1 ]] || no "refs/heads/$n could not be read"
+  [[ "$rc" -ne 0 ]] || m+="$n "
+done
+m="${m% }"; [[ "$m" == main || "$m" == master ]] || no "the default branch is not exactly one of main and master"
 exec env -u BASH_ENV -u ENV -u DEV_CYCLE_SCRUBBED -u QUESTIONS_LIVE -u QUESTIONS_ARCHIVE -u QUESTIONS_WATCHING bash "$D6_OPT/scripts/$s" "$@" </dev/null

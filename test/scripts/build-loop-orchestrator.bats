@@ -246,25 +246,22 @@ refuse main-log: $X is not on the default branch's first-parent history at $T"
 
 # d6.sh (U3b3; U4c, Q-140 [1]; brief 2026-11-05-d6-block-into-image): the file
 # itself, with one literal changed, runs in these tests.
-# d6_copy OPT [trust]: D6, a copy of scripts/d6.sh with D6_OPT set to OPT; with
-# trust its ownership check passes any path that exists (and refuses a missing
-# one with the script's own words), so a uid-owned OPT stands in for the
-# root-owned image. d6_setup: main holds this branch's four scripts,
-# and so does a trusted stand-in at $U.
+# d6_copy OPT: D6, a copy of scripts/d6.sh with D6_OPT set to OPT; a uid-owned
+# OPT stands in for the root-owned image, as d6.sh checks presence, not owner.
+# d6_setup: main holds this branch's four scripts, and so does a stand-in at $U.
 d6_copy() {
     D6="$BATS_TEST_TMPDIR/d6.bash"
     cp "$REPO_ROOT/scripts/d6.sh" "$D6"
     grep -qxF 'D6_OPT=/opt/claude-workflows' "$D6" && sed -i "s|^D6_OPT=/opt/claude-workflows\$|D6_OPT=$1|" "$D6" && grep -qxF "D6_OPT=$1" "$D6" || return 1
-    [[ "${2:-}" != trust ]] || { grep -q '^own() { ' "$D6" && sed -i 's|^own() { .*|own() { [[ -e "$1" ]] \|\| no "$1 is missing"; }|' "$D6" && grep -qxF 'own() { [[ -e "$1" ]] || no "$1 is missing"; }' "$D6"; }
 }
 opt_copy() { mkdir -p "$1/scripts/lib" && cp "$REPO_ROOT"/scripts/{build-loop,dev-cycle,questions}.sh "$1/scripts/" && cp "$REPO_ROOT/scripts/lib/dev-cycle-read.sh" "$1/scripts/lib/"; }
 d6_setup() {
     mkdir -p scripts/lib && cp "$REPO_ROOT"/scripts/{build-loop,dev-cycle,questions}.sh scripts/ && cp "$REPO_ROOT/scripts/lib/dev-cycle-read.sh" scripts/lib/
-    commit_all scripts && U="$BATS_TEST_TMPDIR/opt" && opt_copy "$U" && d6_copy "$U" trust
+    commit_all scripts && U="$BATS_TEST_TMPDIR/opt" && opt_copy "$U" && d6_copy "$U"
 }
 d6() { run --separate-stderr bash "$D6" "$@"; }
 # d6_is WANT: d6.sh refused with exactly WANT, exit 2, before running anything.
-d6_is() { d6 build-loop.sh --settings; [ "$status" -eq 2 ] && [ "$output" = "$1" ] && [ -z "$stderr" ] || { echo "want: $1"; show; return 1; }; }
+d6_is() { d6 build-loop.sh --settings; [ "$status" -eq 2 ] && [ "$output" = "$1" ] && { [ -z "$stderr" ] || [[ "$1" == *"could not be read" ]]; } || { echo "want: $1"; show; return 1; }; }
 # shim: a git ahead of the real one on PATH that logs each call's config pairs and environment (T26's).
 shim() {
     S="$BATS_TEST_TMPDIR/shim"; mkdir -p "$S"
@@ -331,21 +328,46 @@ shim() {
     d6 questions.sh open; [ "$status" -eq 0 ] && [ "$output" = "Q-001  trigger           from-opt" ] || { show; return 1; }
 }
 
-@test "d6.sh refuses before running anything: a blob or commit replace ref, info/grafts, not exactly one plain main or master (T36, U3b3)" {
+@test "d6.sh refuses before running anything: not exactly one of main and master, a repository git cannot read, an image file missing or not a regular file, another first argument (T36, U3b3, brief 2026-11-05-d6-block-into-image)" {
     d6_setup
-    R="refuse d6: a replace ref exists (F38)"
-    id="$(git rev-parse main:scripts/build-loop.sh)"; git replace "$id" "$(printf 'echo replaced\n' | git hash-object -w --stdin)"; d6_is "$R"; git replace -d "$id"
-    c="$(git rev-parse main)"; git replace "$c" "$(git commit-tree "$(git rev-parse 'main^{tree}')" -m other)"; d6_is "$R"; git replace -d "$c"
-    git rev-parse main > .git/info/grafts; d6_is "refuse d6: info/grafts exists (F38)"; rm .git/info/grafts
     git branch -q master; d6_is "refuse d6: the default branch is not exactly one of main and master"; git branch -q -D master
-    git branch -q feat/y; git symbolic-ref refs/heads/main refs/heads/feat/y; d6_is "refuse d6: refs/heads/main is a symbolic ref"
-    # git refuses to update-ref a branch to a tag: write the ref file (row 656's case).
-    git update-ref --no-deref refs/heads/main "$c"; git tag -a -m t t1 main; git rev-parse t1 > .git/refs/heads/main
-    d6_is "refuse d6: refs/heads/main names no commit"; echo "$c" > .git/refs/heads/main
+    git branch -q -m main trunk; d6_is "refuse d6: the default branch is not exactly one of main and master"; git branch -q -m trunk main
     d6 build-loop.sh --settings; [ "$status" -eq 0 ] || { show; return 1; }
+    N="$BATS_TEST_TMPDIR/not-a-repo"; mkdir "$N"
+    cd "$N"; GIT_CEILING_DIRECTORIES="$BATS_TEST_TMPDIR" d6_is "refuse d6: refs/heads/main could not be read"; cd - >/dev/null
     rm "$U/scripts/questions.sh"; d6_is "refuse d6: $U/scripts/questions.sh is missing"; cp "$REPO_ROOT/scripts/questions.sh" "$U/scripts/"
     mv "$U/scripts/lib/dev-cycle-read.sh" "$U/x"; mkdir "$U/scripts/lib/dev-cycle-read.sh"; d6_is "refuse d6: $U/scripts/lib/dev-cycle-read.sh is not a regular file"
+    rmdir "$U/scripts/lib/dev-cycle-read.sh"; ln -s "$U/gone" "$U/scripts/lib/dev-cycle-read.sh"; d6_is "refuse d6: $U/scripts/lib/dev-cycle-read.sh is not a regular file"
+    rm "$U/scripts/lib/dev-cycle-read.sh"; mv "$U/x" "$U/scripts/lib/dev-cycle-read.sh"
     run --separate-stderr bash "$D6" x; [ "$status" -eq 1 ] && [ -z "$output" ] && [ "$stderr" = "d6: the first argument is build-loop.sh, dev-cycle.sh or questions.sh" ] || { show; return 1; }
+    run --separate-stderr bash "$D6"; [ "$status" -eq 1 ] && [ -z "$output" ] || { show; return 1; }
+}
+
+@test "d6.sh runs the script past what audit rows R6c to R6e dropped: a replace ref, info/grafts, a symbolic or tag default branch, a uid-owned image; --state still refuses the two default-branch shapes (brief 2026-11-05-d6-block-into-image)" {
+    d6_setup
+    # A replace ref: the image's script runs and its hardened git does not follow it.
+    id="$(git rev-parse main:scripts/build-loop.sh)"; git replace "$id" "$(printf 'echo replaced\n' | git hash-object -w --stdin)"
+    d6 build-loop.sh --settings; [ "$status" -eq 0 ] || { show; return 1; }
+    git replace -d "$id"
+    git rev-parse main > .git/info/grafts; d6 build-loop.sh --settings; [ "$status" -eq 0 ] || { show; return 1; }; rm .git/info/grafts
+    c="$(git rev-parse main)"
+    git branch -q feat/y; git symbolic-ref refs/heads/main refs/heads/feat/y
+    d6 build-loop.sh --state; [ "$status" -eq 2 ] && [[ "$output" == *"refuse state default-branch: refs/heads/main is a symbolic ref"* ]] || { show; return 1; }
+    # git refuses to update-ref a branch to a tag: write the ref file (row 656's case).
+    git update-ref --no-deref refs/heads/main "$c"; git tag -a -m t t1 main; git rev-parse t1 > .git/refs/heads/main
+    d6 build-loop.sh --state; [ "$status" -eq 2 ] && [[ "$output" == *"refuse state default-branch: refs/heads/main names an object that is not a commit"* ]] || { show; return 1; }
+    echo "$c" > .git/refs/heads/main
+}
+
+@test "d6.sh's own git is hardened by the image lib's git_harden, and no pair reaches the script (T26, brief 2026-11-05-d6-block-into-image)" {
+    d6_setup; shim
+    sed -i '2i [[ "${1:-}" != --probe ]] || { echo "count=${GIT_CONFIG_COUNT-unset}"; exit 7; }' "$U/scripts/questions.sh"
+    PATH="$S:$PATH" d6 questions.sh --probe
+    [ "$status" -eq 7 ] && [ "$output" = "count=unset" ] || { show; return 1; }
+    [ "$(wc -l < "$BATS_TEST_TMPDIR/calls")" -eq 2 ] || { cat "$BATS_TEST_TMPDIR/calls"; return 1; }
+    while IFS= read -r l; do
+        for w in core.hooksPath=/dev/null core.fsmonitor=false core.useReplaceRefs=false G=/dev/null P=none S=1; do [[ "$l" == *"$w"* ]] || { echo "missing $w: $l"; return 1; }; done
+    done < "$BATS_TEST_TMPDIR/calls"
 }
 
 @test "a gate copy patched in the loop's worktree prints ok for its tip; d6.sh's image copy refuses the same tip (T27, U3b3)" {
@@ -369,14 +391,13 @@ shim() {
     [ "$status" -eq 0 ] && [ "$output" = "$(bash "$O/scripts/build-loop.sh" --help)" ] || { show; return 1; }
 }
 
-@test "d6.sh refuses an image copy the uid owns or one missing a file (an older image), and never runs main's (T37, U3b3, U4c)" {
+@test "d6.sh refuses an image copy missing a file (an older image), and never runs main's (T37, U3b3, U4c)" {
     mkdir -p scripts; printf 'echo main copy\n' > scripts/build-loop.sh; commit_all scripts
     U="$BATS_TEST_TMPDIR/opt"; opt_copy "$U"; d6_copy "$U"
-    d6_is "refuse d6: $U/scripts/build-loop.sh is not root-owned, a plain path and unwritable here"
     rm "$U/scripts/build-loop.sh"; d6_is "refuse d6: $U/scripts/build-loop.sh is missing"
 }
 
-@test "git_harden exports HARDEN's pairs after the caller's and a fixed environment, once however often it is called; d6.sh's git carries the same (rows 281, 311, 495, 704, 736, U3b3, U4b1)" {
+@test "git_harden exports HARDEN's pairs after the caller's and a fixed environment, once however often it is called (rows 281, 311, 495, 704, 736, U3b3, U4b1)" {
     L="$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
     run env -i PATH="$PATH" GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=c bash -c 'source "$1"; git_harden; git_harden; echo "caller $CALLER_COUNT"; printf "pair %s\n" "${HARDEN[@]}"; env | grep "^GIT_" | sort' _ "$L"
     [ "$status" -eq 0 ] || { echo "$output"; return 1; }
@@ -387,16 +408,8 @@ shim() {
     for kv in $H; do k=$((k + 1)); keys+=$'\n'"GIT_CONFIG_KEY_$k=${kv%%=*}"; vals+=$'\n'"GIT_CONFIG_VALUE_$k=${kv#*=}"; done
     want+=$'\n'"$(printf '%s\n' $E "GIT_CONFIG_COUNT=8" "$keys" "$vals" | LC_ALL=C sort)"
     [ "$output" = "$want" ] || { diff <(echo "$want") <(echo "$output"); return 1; }
-    # d6.sh runs before anything is checked, so it cannot source the lib: it repeats both lists, on one line.
-    # (The orchestrator's own git is plain git since brief 2026-11-01-relax-dev-cycle-skill-prose: H1 binds the gate's git, not its caller's.)
-    [ "$(grep -c '^G=(env ' "$REPO_ROOT/scripts/d6.sh")" -eq 1 ] || return 1
-    # The two pins HARDEN dropped (core.commitGraph, core.multiPackIndex: brief 2026-11-01-relax-gate-git-state,
-    # research D4) may stay in d6.sh until the unit that owns it drops them.
-    X=" core.commitGraph=false core.multiPackIndex=false"
-    g="$(grep '^G=(env ' "$REPO_ROOT/scripts/d6.sh")"
-    c="$(grep -o -- '-c [^ )]*' <<<"$g" | cut -c4- | tr '\n' ' ')"
-    [ "${c//$X/}" = "$H " ] || { echo "$g"; return 1; }
-    [ "$(grep -o 'GIT_[A-Z_]*=[^ ]*' <<<"$g" | LC_ALL=C sort | tr '\n' ' ')" = "$E " ] || { echo "$g"; return 1; }
+    # d6.sh repeats neither list: it runs the lib's git_harden (its own test above).
+    ! grep -nE '^[^#]*(GIT_NO_REPLACE_OBJECTS|core\.hooksPath)' "$REPO_ROOT/scripts/d6.sh" || return 1
 }
 
 @test "SKILL.md's orchestrator runs plain git, with no hg wrapper, identity ritual, --state re-runs, pre-write --check-write, tree-equality check or main-log refuse stop (brief 2026-11-01-relax-dev-cycle-skill-prose)" {
