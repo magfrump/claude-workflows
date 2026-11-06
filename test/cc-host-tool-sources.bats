@@ -34,7 +34,8 @@ teardown() {
 }
 
 # check_entry DIR ENTRY: what ENTRY plainly sources, directly or through what those
-# files source, is in its first verify_host_tools call and in host_tool_files. Prints
+# files source, is in its first verify_host_tools call on $CC_ISOLATED_DIR or
+# $CC_PUSH_DIR and in host_tool_files. Prints
 # the first problem. It works on copies, which it adjusts for the shared grammar:
 # CC_PUSH_DIR, which the grammar does not know, becomes the launcher's variable (so a
 # refused line shows that name), and each copy gets a final newline, because the
@@ -74,7 +75,15 @@ check_entry() {
 }
 
 @test "a plain source on a last line with no newline is still read" {
+  local good="$T/cc-push.good"
+  cp "$T/cfg/cc-push.sh" "$good"
   printf 'source "$CC_PUSH_DIR/cc-exit-scan.sh"' >> "$T/cfg/cc-push.sh"
+  run check_entry "$T/cfg" cc-push.sh
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"cc-push.sh sources cc-exit-scan.sh unchecked"* ]]
+  # The same in a file the entry point reaches, not only the entry point itself.
+  cp "$good" "$T/cfg/cc-push.sh"
+  printf 'source "$CC_PUSH_DIR/cc-exit-scan.sh"' >> "$T/cfg/cc-gitdir.sh"
   run check_entry "$T/cfg" cc-push.sh
   [ "$status" -eq 1 ]
   [[ "$output" == *"cc-push.sh sources cc-exit-scan.sh unchecked"* ]]
