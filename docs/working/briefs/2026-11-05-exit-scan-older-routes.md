@@ -31,3 +31,5 @@ Policy: review
 - Other exit-scan routes, and the `commondir` reader fold unless a fix here needs it.
 - Findings that need a malicious branch or loop author (S1): out of scope, not fix rounds.
 - Editing `docs/roadmap.md` or the questions files: the dev cycle moves those.
+
+Dispatched: 1

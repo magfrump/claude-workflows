@@ -33,3 +33,5 @@ Paths: docs/working/briefs/2026-11-05-canon-proposal-filter.md
 - Building the script or adding any canon instance.
 - Any benchmark or review run: no big compute (the A8 measurement is deferred).
 - Editing `docs/roadmap.md` or the questions files: the dev cycle moves those.
+
+Dispatched: 1
