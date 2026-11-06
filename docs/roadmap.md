@@ -28,6 +28,13 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   (`feat/q125-cc-isolated-sandbox`); the host install is done (Q-222, answered 2026-11-03). First step
   (Next 1): the `cc-verify --check` file, briefed 2026-11-03 (In flight).
 
+- **Agent: scoped deep audit, constraint drift** (filed 2026-11-05, step 4b). Motive: the
+  drift check on 605d4c18 found its script-home decision resting on a soft constraint (S4
+  pruned the checklist option) and on a rule `docs/constraints.md` does not hold (instrument
+  code lives in the SWRBench fork). Scope: Path A records since the last audit, using the
+  `constraints-builder` skill's amend mode to revise the file. First step: the owner confirms
+  scope and timing; it runs on its own branch, outside the cycle.
+
 - **Trial week: less friction, less habituation (2026-10-30 to about 2026-11-06).** Motive:
   the owner's 2026-10-29 brainstorm request ("try things for a few days to a week").
   Every iteration writes owner entries, the image-lag entry and the final message as
@@ -71,7 +78,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   (`docs/working/briefs/2026-11-03-q125-verify-check.md`; review policy). Blocked at
   502296b7: the Q-125 branch's own C1 check cannot pass on a working sandbox; Q-254.
 - Q-097: close or record the exit scan's two older routes
-  (`docs/working/briefs/2026-11-05-exit-scan-older-routes.md`; review). Full entry:
+  (`docs/working/briefs/2026-11-05-exit-scan-older-routes.md`; review). Ready at 6a2a4dce:
+  both routes stay open, reasons in the guide; merge entry Q-257. Full entry:
   `docs/working/questions.md` at b5f620ae.
 - Q-147: land or retire the Q-089 static source-set test
   (`docs/working/briefs/2026-11-05-q089-source-guard-narrow.md`; review). Full entry:
