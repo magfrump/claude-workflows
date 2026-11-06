@@ -35,6 +35,13 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   `constraints-builder` skill's amend mode to revise the file. First step: the owner confirms
   scope and timing; it runs on its own branch, outside the cycle.
 
+- **Agent: `source_lines_ok` misses an unterminated last line** (filed 2026-11-05, step 7).
+  Motive: the Q-147 review found the shipped self-check in `devcontainer-config/cc-verify.sh`
+  can miss a final line with no newline; every file ends in one today, so nothing is exposed
+  now. It lives otherwise only as a Defer row in `docs/reviews/override-log.md`, on Q-258's
+  branch. First step: after Q-258 merges, one change with `Host-tool-tested:` and a re-bless,
+  which needs a host run, so it is not briefed for a loop yet.
+
 - **Trial week: less friction, less habituation (2026-10-30 to about 2026-11-06).** Motive:
   the owner's 2026-10-29 brainstorm request ("try things for a few days to a week").
   Every iteration writes owner entries, the image-lag entry and the final message as
@@ -82,7 +89,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   both routes stay open, reasons in the guide; merge entry Q-257. Full entry:
   `docs/working/questions.md` at b5f620ae.
 - Q-147: land or retire the Q-089 static source-set test
-  (`docs/working/briefs/2026-11-05-q089-source-guard-narrow.md`; review). Full entry:
+  (`docs/working/briefs/2026-11-05-q089-source-guard-narrow.md`; review). Ready at c9786a27:
+  a narrowed test landed, not retired; merge entry Q-258. Full entry:
   `docs/working/questions.md` at b5f620ae.
 
 ## Next

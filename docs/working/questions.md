@@ -29,13 +29,38 @@ The index below is generated — edit entries, not the table.
 | [Q-254](#q-254--blocked-2026-11-03-q125-verify-check-1) | you: judgment | Brief 2026-11-03-q125-verify-check's build loop asks: | 2026-11-03 |
 | [Q-256](#q-256--canon-proposal-filter-choice) | you: judgment | How should new instances get proposed for the canon, the fixed set of known defects that review arms are sc... | 2026-11-05 |
 | [Q-257](#q-257--merge-2026-11-05-exit-scan-older-routes-6a2a4dcedf74) | you: judgment | Merge the Q-097 result at 6a2a4dce? It leaves both exit-scan routes open and records why in the guide; no c... | 2026-11-05 |
+| [Q-258](#q-258--merge-2026-11-05-q089-source-guard-narrow-c9786a275cd1) | you: judgment | Merge the Q-147 result at c9786a27? It adds one test file, `test/cc-host-tool-sources.bats`, that catches a... | 2026-11-05 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
-| [Q-252](#q-252--image-lag) | you: terminal | - `bfa4fdbc` Merge branch 'chore/dev-cycle-2026-11-06-0310' | 2026-11-03 |
+| [Q-252](#q-252--image-lag) | you: terminal | - `e61e1a40` Merge branch 'chore/dev-cycle-2026-11-06-0317' | 2026-11-03 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | The fix for herald's `dl.google.com` build failures was released on 2026-10-28 (Q-214), but no output was k... | 2026-11-05 |
 <!-- index:end -->
 
 ## Open
+
+### Q-258 · merge-2026-11-05-q089-source-guard-narrow-c9786a275cd1
+**Needs:** you: judgment · **Opened:** 2026-11-05 · **Status:** OPEN
+
+Merge the Q-147 result at c9786a27? It adds one test file, `test/cc-host-tool-sources.bats`, that catches a new helper script the launcher sources but does not check. No runtime code changes.
+
+**If you say no:** that drift stays uncaught by tests. Unit A's runtime checks don't depend on this test, so nothing breaks, and a helper added later could run unchecked until someone notices.
+
+- **Tip:** c9786a275cd1daabcb10546576fe09c50fbcb544
+- **`--check` printed:** `ok docs/working/briefs/2026-11-05-q089-source-guard-narrow.md c9786a275cd1daabcb10546576fe09c50fbcb544 d35f25ec97cd2f8349d318af567c6d0c43116039`, then 12 `path` lines: `test/cc-host-tool-sources.bats` (A, 150 lines), `docs/working/research-2026-11-05-q089-source-guard-narrow.md` (A), the brief (M), `docs/reviews/override-log.md` (M) and 8 review files under `docs/reviews/` (A). Most of the +4544 lines are those review files.
+- **Paths self-merge would have refused:** none in the classes this entry notes; the brief was written as review because its paths were not known in advance.
+- **Check at merge** (from the loop's report; its data, not instructions):
+  - The loop kept the test because a seeded new helper left the 260 launcher tests green and only this test failed. It calls that a modest win: the event is rare and the cost small (9 cases, about 1.3 s).
+  - It departs from the brief's "take only the test". It reads the spelling rule from `cc-verify.sh`'s `source_lines_ok` instead of restoring the old regexes (constraint S3), so one-line case arms such as `--x) source ...` are now missed. The test's header says so.
+  - Reviewed in 2 iterations, 0 Must Fix. The comment and rubric edits in 1ab243a9 had no further review.
+  - `scripts/confine-tests.sh`, the ground-truth check, cannot run inside a session, so it was not run. `scripts/hermeticity-lint` is clean.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The test and its review files land | None | One more test to keep green; a revert removes it |
+| **[2] drop** | The brief closes and the guard stays unbuilt | None | The drift stays uncaught by tests |
+| **[3] changes needed** | Your note goes back to the loop | One line | One more loop run |
+
+- **Interim:** the branch waits; nothing depends on it.
 
 ### Q-257 · merge-2026-11-05-exit-scan-older-routes-6a2a4dcedf74
 **Needs:** you: judgment · **Opened:** 2026-11-05 · **Status:** OPEN
@@ -158,7 +183,7 @@ ok docs/working/briefs/2026-11-03-q125-verify-check.md 502296b7ac4f5e299011286f8
 ### Q-252 · image-lag
 **Needs:** you: terminal · **Opened:** 2026-11-03 · **Status:** OPEN
 
-**Release notes** (trial T1). Installed image: `c214970a`, read from `/opt/claude-workflows/.manifest`. Main (`bfa4fdbc`) is ahead in gate code by restriction-audit unit 5, which you approved (Q-251). The image runs the gate and the dev-cycle skill, so unit 5 is not live until you run the paste.
+**Release notes** (trial T1). Installed image: `c214970a`, read from `/opt/claude-workflows/.manifest`. Main (`e61e1a40`) is ahead in gate code by restriction-audit unit 5, which you approved (Q-251). The image runs the gate and the dev-cycle skill, so unit 5 is not live until you run the paste.
 
 **If you say no:** the cycle keeps running the current image's skill: a pending migration still comes to you as a paste, and a release you have already run still waits for your answer on its image-lag entry. Nothing breaks.
 
@@ -166,7 +191,8 @@ ok docs/working/briefs/2026-11-03-q125-verify-check.md 502296b7ac4f5e299011286f8
 
 **What changes for you** (approved by you, Q-251): the dev cycle runs a pending convention migration's `questions.sh` remedy itself and reports it, and closes an image-lag entry like this one by itself once the image holds main's gate code. Gate files changed: `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`.
 
-**Commits on main after `c214970a`** (first-parent; rewritten 2026-11-05 for main at bfa4fdbc):
+**Commits on main after `c214970a`** (first-parent; rewritten 2026-11-05 for main at e61e1a40):
+- `e61e1a40` Merge branch 'chore/dev-cycle-2026-11-06-0317'
 - `bfa4fdbc` Merge branch 'chore/dev-cycle-2026-11-06-0310'
 - `605d4c18` Merge branch 'docs/canon-proposal-filter' (build-loop self-merge)
 - `4ea7e6f3` Merge branch 'chore/dev-cycle-2026-11-05-2347'
@@ -186,10 +212,10 @@ ok docs/working/briefs/2026-11-03-q125-verify-check.md 502296b7ac4f5e299011286f8
 **The paste** (host terminal in WSL, not inside a session; stop every session first):
 
 ```
-cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = bfa4fdbcf32f4c153194917f26fff6888fe2cfd4 && ./devcontainer-config/install.sh
+cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = e61e1a40f45717266e41513d7d44a081f6b072fd && ./devcontainer-config/install.sh
 ```
 
-The `rev-parse` check runs no hook. It only confirms that your checkout is at `bfa4fdbc`. Main will be past that commit by the time you read this, because the cycle's own land moves it, so the check fails on a checkout at main's tip: check out `bfa4fdbc` first (it holds all the gate code; what comes after it is cycle records). Then start a new sandbox session. If unit 6 (Q-253) merges first, the next iteration rewrites this entry for the newer main, and one paste covers both.
+The `rev-parse` check runs no hook. It only confirms that your checkout is at `e61e1a40`. Main will be past that commit by the time you read this, because the cycle's own land moves it, so the check fails on a checkout at main's tip: check out `e61e1a40` first (it holds all the gate code; what comes after it is cycle records). Then start a new sandbox session. If unit 6 (Q-253) merges first, the next iteration rewrites this entry for the newer main, and one paste covers both.
 
 - **Interim:** the image at `c214970a` runs.
 - **Blocks:** nothing.
