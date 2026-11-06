@@ -27,13 +27,35 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-253](#q-253--merge-gate-2026-11-03-import-walk-plain-4d6880b7f44e) | you: judgment | Merge restriction-audit unit 6 (the self-merge floor's import check reads plain `@path` imports only) at 4d... | 2026-11-03 |
 | [Q-254](#q-254--blocked-2026-11-03-q125-verify-check-1) | you: judgment | Brief 2026-11-03-q125-verify-check's build loop asks: | 2026-11-03 |
+| [Q-256](#q-256--canon-proposal-filter-choice) | you: judgment | How should new instances get proposed for the canon, the fixed set of known defects that review arms are sc... | 2026-11-05 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
-| [Q-252](#q-252--image-lag) | you: terminal | - `adb22f4d` docs(questions): track herald's unconfirmed egress fix as Q-255 | 2026-11-03 |
+| [Q-252](#q-252--image-lag) | you: terminal | - `4ea7e6f3` Merge branch 'chore/dev-cycle-2026-11-05-2347' | 2026-11-03 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | The fix for herald's `dl.google.com` build failures was released on 2026-10-28 (Q-214), but no output was k... | 2026-11-05 |
 <!-- index:end -->
 
 ## Open
+
+### Q-256 · canon-proposal-filter-choice
+**Needs:** you: judgment · **Opened:** 2026-11-05 · **Status:** OPEN
+
+How should new instances get proposed for the canon, the fixed set of known defects that review arms are scored against?
+
+**If you say no:** with no answer the interim [1] stands, so nothing is built and no instance is added until a recall run (a measured re-test of review quality) is briefed. Nothing is burning.
+
+No review work now scheduled needs a new instance, and the canon has had no run in about 11 weeks. There is a gap for harness work: 12% to 20% of the sampled in-scope findings sit in three classes the canon lacks (hostile-shaped text, instruction prose, performance). That figure comes from this repo only, and the classes and the 12-row cap are the build loop's own. The loop's tentative pick is [1], at 55% confidence.
+
+- **Read:** `docs/working/research-2026-11-05-canon-proposal-filter.md`, sections 8 and 10 (the rule, the dry run and the script spec).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Scheduled pass** | Nothing is built now. When a recall run is briefed, one pass applies the rule and proposes at most 3 instances | About 10 minutes, once, at that run | No run comes, and nothing differs from [4] |
+| **[2] One pass now** | The same rule today with this repo as the subject: build the script, add 1 or 2 dev-cycle candidates as rows | About 10 minutes now | Effort goes into harness-only instances no run may use |
+| **[3] Standing scan** | A script checks new rubrics each cycle and files proposals | A triage entry when one fires | A standing script for a rule that closes after one pass |
+| **[4] Leave it** | No proposals; the canon grows only by hand | None | A recall run on shell or prose work has no instance and picks ad hoc |
+
+- **Interim:** [1]. The canon and ledger are unchanged. The watch on "a recall run is briefed" is filed once you answer [1].
+- **If the answer differs:** [2] starts a build brief, [3] adds a classifier, [4] needs no watch. Nothing needs undoing.
 
 ### Q-255 · herald-egress-fix-unconfirmed
 **Needs:** you: terminal · **Opened:** 2026-11-05 · **Status:** OPEN
@@ -105,7 +127,7 @@ ok docs/working/briefs/2026-11-03-q125-verify-check.md 502296b7ac4f5e299011286f8
 ### Q-252 · image-lag
 **Needs:** you: terminal · **Opened:** 2026-11-03 · **Status:** OPEN
 
-**Release notes** (trial T1). Installed image: `c214970a`, read from `/opt/claude-workflows/.manifest`. Main (`adb22f4d`) is ahead in gate code by restriction-audit unit 5, which you approved (Q-251). The image runs the gate and the dev-cycle skill, so unit 5 is not live until you run the paste.
+**Release notes** (trial T1). Installed image: `c214970a`, read from `/opt/claude-workflows/.manifest`. Main (`4ea7e6f3`) is ahead in gate code by restriction-audit unit 5, which you approved (Q-251). The image runs the gate and the dev-cycle skill, so unit 5 is not live until you run the paste.
 
 **If you say no:** the cycle keeps running the current image's skill: a pending migration still comes to you as a paste, and a release you have already run still waits for your answer on its image-lag entry. Nothing breaks.
 
@@ -113,7 +135,9 @@ ok docs/working/briefs/2026-11-03-q125-verify-check.md 502296b7ac4f5e299011286f8
 
 **What changes for you** (approved by you, Q-251): the dev cycle runs a pending convention migration's `questions.sh` remedy itself and reports it, and closes an image-lag entry like this one by itself once the image holds main's gate code. Gate files changed: `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`.
 
-**Commits on main after `c214970a`** (first-parent; rewritten 2026-11-05 for main at adb22f4d):
+**Commits on main after `c214970a`** (first-parent; rewritten 2026-11-05 for main at 4ea7e6f3):
+- `4ea7e6f3` Merge branch 'chore/dev-cycle-2026-11-05-2347'
+- `db31db8b` Merge branch 'chore/dev-cycle-2026-11-05-2347'
 - `adb22f4d` docs(questions): track herald's unconfirmed egress fix as Q-255
 - `dcbfeb8d` Merge branch 'chore/dev-cycle-2026-11-04-0031'
 - `8d16b1d5` Merge branch 'chore/dev-cycle-2026-11-04-0017'
@@ -124,15 +148,15 @@ ok docs/working/briefs/2026-11-03-q125-verify-check.md 502296b7ac4f5e299011286f8
 - `3ccdd215` Merge branch 'chore/answers-2026-11-03'
 - `234d5be7` Merge branch 'chore/dev-cycle-2026-11-02-2027'
 
-**Paths changed outside `docs/`** (13 under `docs/` not listed; the image carries none of `docs/`): `guides/convention-changes.md`, `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`, `test/scripts/build-loop-orchestrator.bats`, `test/scripts/dev-cycle.bats`
+**Paths changed outside `docs/`** (17 under `docs/` not listed; the image carries none of `docs/`): `guides/convention-changes.md`, `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`, `test/scripts/build-loop-orchestrator.bats`, `test/scripts/dev-cycle.bats`
 
 **The paste** (host terminal in WSL, not inside a session; stop every session first):
 
 ```
-cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = adb22f4d412148e172a901caf318198213c2e4ee && ./devcontainer-config/install.sh
+cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = 4ea7e6f3ee6ffc5f4b503c83c86e891216baa9ce && ./devcontainer-config/install.sh
 ```
 
-The `rev-parse` check runs no hook. It only confirms that your checkout is at `adb22f4d`. Main will be past that commit by the time you read this, because the cycle's own land moves it, so the check fails on a checkout at main's tip: check out `adb22f4d` first (it holds all the gate code; what comes after it is cycle records). Then start a new sandbox session. If unit 6 (Q-253) merges first, the next iteration rewrites this entry for the newer main, and one paste covers both.
+The `rev-parse` check runs no hook. It only confirms that your checkout is at `4ea7e6f3`. Main will be past that commit by the time you read this, because the cycle's own land moves it, so the check fails on a checkout at main's tip: check out `4ea7e6f3` first (it holds all the gate code; what comes after it is cycle records). Then start a new sandbox session. If unit 6 (Q-253) merges first, the next iteration rewrites this entry for the newer main, and one paste covers both.
 
 - **Interim:** the image at `c214970a` runs.
 - **Blocks:** nothing.
