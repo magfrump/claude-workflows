@@ -1,15 +1,17 @@
 #!/usr/bin/env bats
 # @category fast
-# Accidental-drift guard (Q-147, from Q-089 unit A's finding A6): when a plain
-# `source` line is added to a host tool's entry point, or a name is dropped from
-# its check list, the file it loads could run unhashed without any test noticing.
+# Accidental-drift guard (Q-147, from Q-089 unit A's finding A6): a new helper that
+# an entry point plainly sources, directly or through a file it sources, must be in
+# that entry point's verify_host_tools list, or it runs unchecked. No other test ties
+# the list to the `source` lines; the two names in use today are pinned one by one.
 #
 # A grep guards plain spellings only, and it cannot be complete for bash: Q-089's
 # fourth review pass showed that. Forms this one misses include `FOO=1 . f`,
 # `FOO=1 source f`, one-line case arms, a quoted or obfuscated `source`, and `$c f`.
 # It also does not see a tool run by name, cc-verify.sh (no verify_host_tools call;
-# it sources nothing today) or the lists `--list` passes. It is hardening against a
-# refactor, and the runtime checks do not depend on it.
+# it sources nothing today), the lists `--list` passes, or whether the check comes
+# before the source. It is hardening against a refactor, and the runtime checks do
+# not depend on it.
 #
 # The spelling rule is cc-verify.sh's own source_lines_ok, read from that file
 # rather than restated here, so there is one grammar to keep.
