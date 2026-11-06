@@ -41,6 +41,9 @@ Failure-pattern grep: FP-011, FP-013, FP-014, FP-068, FP-141 (see Prior failures
 - `--status` for a closed brief reads the same STATE, POLICY and BRANCH afterwards, but LOOP goes from `working SHA DATE` to `absent - -` once the branch is deleted. Nothing reads that: step 7 acts only on STATE `open`, and In flight's check says Done never depends on the branch [observed].
 - A worktree with a missing directory: `git worktree remove` would drop the entry, but a missing directory may be an unmounted disk, which is what a lock is for. It stays, reported, as `dispatch` treats it.
 
+- Failure-pattern skip: the branch's fix(...) commits correct its own unreleased code in review; no shipped failure to record.
+- A dropped brief with an unmerged branch reads `hold` every iteration and no one is told: its worktree stays, by the brief's rule that an unmerged branch stays locked. That is a smaller, separate leak; this brief does not cover it.
+
 ## Prior failures
 
 - FP-011 (orphaned worktree after partial add), FP-014 (stale `worktrees` entry breaks the next add): a failed removal must leave a state the next run reads. A refused remove restores the lock; a lock that fails to go back is said on the line.

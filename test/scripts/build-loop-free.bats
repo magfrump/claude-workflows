@@ -14,6 +14,7 @@ setup() {
 }
 
 fr() { run --separate-stderr bash "$BL" --free-worktrees; }
+# shellcheck disable=SC2154  # bats' run sets $output and $stderr
 show() { echo "status $status"; echo "$output"; echo "$stderr"; git worktree list --porcelain; git log --oneline --graph --all; }
 # said LINE...: the run exited 0 and printed exactly these lines.
 said() { [ "$status" -eq 0 ] && [ "$output" = "$(printf '%s\n' "$@")" ] || { echo "want: $*"; show; return 1; }; }
@@ -126,6 +127,15 @@ merged() { finished "$1" && git merge -q --no-ff -m "merge $1" "feat/$1"; }
     mv "$W" "$W.away"
     fr; said "kept feat/x $W: it is missing or a symbolic link"
     [ -n "$(lock_of "$W")" ]
+}
+
+@test "a run from inside the worktree keeps it, and a GIT_DIR-style variable refuses before anything is read" {
+    merged x
+    run --separate-stderr bash -c 'cd "$1" && bash "$2" --free-worktrees' _ "$W" "$BL"
+    said "kept feat/x $W: this run started in it"; stays "$W"
+    GIT_DIR="$R/.git" fr
+    [ "$status" -eq 2 ] && [[ "$output" == "refuse state GIT_DIR: "* ]] || { show; return 1; }
+    stays "$W"
 }
 
 @test "an ignored file goes with the worktree: git does not call it dirty" {

@@ -546,25 +546,29 @@
 #                 Removed: the brief STEM (docs/working/briefs/, else closed/)
 #                 reads done or dropped on the default branch and names BRANCH,
 #                 BRANCH's tip is an ancestor of the default branch and past
-#                 the lock's TIP (a loop just dispatched sits at TIP, itself an
-#                 ancestor: only the tip having moved says it ran), and
+#                 the lock's TIP (a loop --start just dispatched sits at TIP,
+#                 itself an ancestor: only the tip having moved says it ran), and
 #                 unlocking and `git worktree remove`, never --force, passed.
 #                 Git does not count an ignored file as dirty: one goes with
 #                 the worktree.
 #             hold BRANCH DIR: WHY
-#                 Not finished: the brief is open, or BRANCH has not merged.
-#                 The lock stays.
+#                 Not finished: the brief is open, or it is closed and BRANCH
+#                 has not merged (a dropped brief's). The lock stays.
 #             kept BRANCH DIR: WHY
-#                 Not removed, for a person to read: on no branch (BRANCH "-"),
-#                 the brief skipped by --status or not on the default branch,
-#                 naming another branch, BRANCH's history unreadable, the lock
-#                 at or not behind the tip (a live loop may hold it), DIR
-#                 missing or a symbolic link, or git refused (a change or an
-#                 untracked file, say). A lock it took off is put back, and the
-#                 line says when that failed.
+#                 For a person to read: on no branch (BRANCH "-"), the
+#                 checkout this run started in, the brief skipped by --status
+#                 or not on the default branch, naming another branch, BRANCH's
+#                 history unreadable, the lock at or not behind the tip (a live
+#                 loop may hold it), DIR missing or a symbolic link, or git
+#                 refused (a change or an untracked file, say). A lock it took
+#                 off is put back, and the line says when that failed: a remove
+#                 that fails part way (a read-only directory) can leave DIR part
+#                 removed and no longer registered, which no later run names.
 #             or one refuse worktrees: WHY, with nothing removed, when another
-#             run holds the dispatch lock (as --start's refusal; retry) or the
-#             worktrees could not be listed.
+#             run holds the dispatch lock (as --start's refusal; retry), that
+#             file is not a plain file or cannot be opened, or the worktrees
+#             could not be listed; or, as for --state, a refuse state line when
+#             a GIT_DIR-style variable is set in the caller's environment.
 #
 # Acts on $PWD's git repo, like dev-cycle.sh, and needs its default branch
 # found by name (origin/HEAD, main or master), but for --check-constraints,
@@ -573,7 +577,8 @@
 # store), --merge's commit, the branch it moves and that branch's reflog
 # (and in W: its files, index, HEAD reflog and ORIG_HEAD), --start's branch
 # and its reflog, the worktrees and locks --start and --prompt make or
-# replace, the worktrees --free-worktrees removes, the dispatch lock file, and its own
+# replace, the worktrees --free-worktrees removes and the locks it takes off
+# and puts back, the dispatch lock file, and its own
 # temporary directory, removed at exit.
 # Output passes through the lib's scrub (but for the start-up errors about
 # perl and the lib); printed repo text is data.
@@ -829,7 +834,9 @@ ROOT_REAL="$(pwd -P)"
 # orchestrator's --state at the start of its iteration covers both (row 690).
 GATED=""; [[ "$MODE" =~ ^(settings|status|marker)$ ]] || GATED=1  # not the gate repository's GATE_*
 # The caller's environment first: it can point the state gate's own reads at another repository.
-if [[ "$MODE" == state ]]; then caller_gate || exit 2; fi
+# --free-worktrees too: it removes what it reads, so it does not lean on an
+# earlier --state.
+if [[ "$MODE" == state || "$MODE" == free-worktrees ]]; then caller_gate || exit 2; fi
 if [[ -n "$GATED" ]]; then state_gate || exit 2; fi
 resolve_main || true
 main_by_name || { echo "build-loop.sh needs a default branch found by name (origin/HEAD, main or master); found none" >&2; exit 1; }
@@ -1782,6 +1789,7 @@ free_one() {
   [[ "$lk" =~ ^locked\ build-loop\ dispatch\ of\ ([^\ ]+)\ at\ ([0123456789abcdef]{40}|[0123456789abcdef]{64}),\ UTC\ $DIGIT{4}-$DIGIT{2}-$DIGIT{2}T$DIGIT{2}:$DIGIT{2}:$DIGIT{2}Z$ ]] || return 0
   stem="${BASH_REMATCH[1]}"
   [[ -n "$b" ]] || { echo "kept - $p: it is on no branch"; return 0; }
+  [[ "$p" != "$ROOT" && "$p" != "$ROOT_REAL" ]] || { echo "kept $b $p: this run started in it"; return 0; }
   a="docs/working/briefs/$stem.md"; status_fields "$a"
   [[ "${STATUS[state]-}" != new ]] || { a="docs/working/briefs/closed/$stem.md"; status_fields "$a"; }
   [[ "${STATUS[line]}" == "ok "* ]] || { echo "kept $b $p: its brief is not read (${STATUS[line]})"; return 0; }
@@ -2396,8 +2404,8 @@ land_cycle() {
 # dispatch_lock WHAT: one dispatch at a time in the repository (i2 security 1:
 # two runs could both add or steal), and no removal under one: held until
 # exit; a second run refuses, naming WHAT. Only a plain file is opened (a FIFO
-# would block); the holder's children do not inherit the descriptor (9>&- at
-# each call), so none outlives the run holding it.
+# would block); the work under it runs with the descriptor closed (9>&- at each
+# call), so nothing it starts outlives the run holding it.
 dispatch_lock() {
   local lk
   lk="$(git rev-parse --path-format=absolute --git-common-dir)/build-loop-dispatch.lock"
