@@ -31,7 +31,7 @@ The index below is generated — edit entries, not the table.
 | [Q-260](#q-260--merge-gate-2026-11-06-free-merged-loop-worktrees-0ed2fc852e54) | you: judgment | Merge the worktree cleanup at 0ed2fc85? It adds `build-loop.sh --free-worktrees`, which step 1 runs so that... | 2026-11-06 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
-| [Q-252](#q-252--image-lag) | you: terminal | Also approved by you (Q-253): the self-merge floor's import check reads plain `@path` imports only, about 1... | 2026-11-03 |
+| [Q-252](#q-252--image-lag) | you: terminal | Q-252: met — image dff98910546c29f0de84927d7352deebadc5dd67 holds the gate code of main dff98910546c29f0d... | 2026-11-03 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | The fix for herald's `dl.google.com` build failures was released on 2026-10-28 (Q-214), but no output was k... | 2026-11-05 |
 <!-- index:end -->
 
@@ -200,7 +200,8 @@ ok docs/working/briefs/2026-11-03-q125-verify-check.md 502296b7ac4f5e299011286f8
 - **If the answer differs:** the loop is re-dispatched with your answer either way.
 
 ### Q-252 · image-lag
-**Needs:** you: terminal · **Opened:** 2026-11-03 · **Status:** OPEN
+**Needs:** you: terminal · **Opened:** 2026-11-03 · **Status:** ANSWERED
+Q-252: met — image dff98910546c29f0de84927d7352deebadc5dd67 holds the gate code of main dff98910546c29f0de84927d7352deebadc5dd67
 
 **Release notes** (trial T1). Installed image: `c214970a`, read from `/opt/claude-workflows/.manifest`. Main (`3a663f88`) is ahead in gate code by restriction-audit units 5 and 6, which you approved (Q-251, Q-253). The image runs the gate and the dev-cycle skill, so neither is live until you run the paste.
 
@@ -286,6 +287,14 @@ Step 2, inside the session at Claude's prompt, then exit the session:
 - **If the answer differs:** any exit but 3, or a warning that does not name the hook, is a bug in Q-096; paste the output.
 
 **2026-11-03 (answers-11-3-2026.txt):** **(c) passed.** `cc-isolated exit=3`. The WARNING named `+ hook /tmp/…/proj/mirror-repo/hooks/pre-receive  file 755` and pointed to `cc-push`, so Q-096's exit scan is live-verified on bless 3c5dd7853cf7a3f9. **(a), second half:** `cc-isolated --list | grep -i 'verified live'` prints `Blessed config 3c5dd7853cf7a3f9 — verified live: yes`, so a probe-only run marks the bless as verified (`Live-verified: 3c5dd7853cf7a3f9`). **Still not reported:** (a)'s first half, the hint text that a fresh bless prints before any probe (`Verified live:  NO …` and `Next: cc-isolated --probe-only <repo>` on its own line, plus `--list` showing `verified live: NO (run: …)`). Any later `install.sh` that re-blesses will show it. **(b)** is also not reported: the four one-workspace-rule lines. Q-167 stays open for those two items only.
+
+**2026-11-06, one more check (d), Q-241's settings merge:** no record shows that `install.sh`'s host target merged the hooks into your `settings.json`. On the host, after that install:
+
+```
+grep -c 'live-verify-gate' ~/.claude/settings.json
+```
+
+Paste the number back. 1 or more means the hooks are wired (by the merge, or by an earlier hand merge). 0 means they are not, and the install's output says why (`WARNING: settings.json NOT merged: …`). Q-167 now stays open for (a)'s first half, (b) and (d).
 
 ### Q-084 · q076-live-checks
 **Needs:** you: terminal · **Opened:** 2026-09-27 · **Status:** OPEN
