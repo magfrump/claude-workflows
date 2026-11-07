@@ -44,8 +44,8 @@ The index below is generated — edit entries, not the table.
 
 **What changes for you:**
 
-- Q-259: that block becomes `scripts/d6.sh`, one line to call, and drops the five checks the restriction audit judged hostile-only.
-- Q-260: each cycle's cleanup step removes a finished loop's worktree, so its merged branch can then be deleted.
+- That block becomes `scripts/d6.sh`, one line to call, and drops the five checks the restriction audit judged hostile-only (from Q-259).
+- Each cycle's cleanup step removes a finished loop's worktree, so its merged branch can then be deleted (from Q-260).
 
 **Merged without your review:** nothing.
 
