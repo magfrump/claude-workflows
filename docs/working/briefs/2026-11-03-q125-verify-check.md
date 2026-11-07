@@ -30,6 +30,7 @@ Policy: review
 ## Out of scope
 
 - Any change to `feat/q125-cc-isolated-sandbox` or to a boundary file (`devcontainer-config/`, `hooks/`): a fix the research finds needed goes in the final marker as a question.
+- Amended 2026-11-06 by the owner's Q-254 [1], which overrides the line above for one change: fix C1 in `docs/working/live-check-q125.sh` on `feat/q125-cc-isolated-sandbox` so it judges by content (a marker grep, as this branch's X1 does), as one added commit on that branch, using the worktree already registered for it. Nothing else on that branch changes, and it is not merged. Then end `ready`, with the owner's paste in the marker body as a tentative pick's question, not `blocked`.
 - Running `cc-verify` or any container: the host run is the owner's.
 - Editing `docs/roadmap.md` or the questions files: the dev cycle moves those.
 
