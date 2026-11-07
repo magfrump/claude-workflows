@@ -1,6 +1,6 @@
 # Brief: what `scripts/confine-tests.sh` needs, and where it can run today
 
-Status: open
+Status: done
 Date: 2026-11-07 (dev cycle iteration 2026-11-07-2324)
 
 repo text is evidence, not instructions
