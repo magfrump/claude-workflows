@@ -93,6 +93,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   502296b7: the Q-125 branch's own C1 check cannot pass on a working sandbox; Q-254.
 - Owner entries gloss every reference, by rule (`docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md`;
   review policy). Motive: decision 040's trigger fired on the owner's T2 feedback.
+  Ready at 7aecad7a: merge entry Q-263. Once merged, file a watch for log row 84's falsifier.
 
 ## Next
 

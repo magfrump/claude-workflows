@@ -28,6 +28,7 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-254](#q-254--blocked-2026-11-03-q125-verify-check-1) | you: judgment | Brief 2026-11-03-q125-verify-check's build loop asks: | 2026-11-03 |
 | [Q-256](#q-256--canon-proposal-filter-choice) | you: judgment | How should new instances get proposed for the canon, the fixed set of known defects that review arms are sc... | 2026-11-05 |
+| [Q-263](#q-263--merge-gate-2026-11-06-owner-entry-gloss-rule-7aecad7a3453) | you: judgment | Merge the rule that owner-facing text explains every internal reference in plain language? | 2026-11-06 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | The fix for herald's `dl.google.com` build failures was released on 2026-10-28 (Q-214), but no output was k... | 2026-11-05 |
@@ -35,6 +36,57 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
+
+### Q-263 · merge-gate-2026-11-06-owner-entry-gloss-rule-7aecad7a3453
+**Needs:** you: judgment · **Opened:** 2026-11-06 · **Status:** OPEN
+
+Merge the rule that owner-facing text explains every internal reference in plain language?
+
+**If you say no:** the rule stays in one session memory, which build loops and other repos never see, so entries keep the jargon you called the biggest problem on 2026-11-06. Nothing else changes.
+
+**What an attacker would want here:** little. The change adds text to instructions and to one prompt, and it adds no logic. An outside party gains nothing from it.
+
+**What it does.** One new bullet, "Gloss every reference", goes in the running-questions section of the global instructions: every internal reference gets a plain explanation, and a numbered label links the doc that defines it. The dev-cycle skill and the build-loop prompt point to that bullet, so all three writers of your text meet it: the cycle's entries, a loop's marker bodies and the final message. There is no mechanical check, because a pattern can find a label but cannot judge its explanation, and it would fire on nearly every entry.
+
+**Why it was built:** read by hand, 5 of the 6 open entries fail the rule on a strict reading, or 2 to 3 on a lenient one.
+
+**Things to weigh:**
+
+- A question ID needs only the explanation, not a link. That is narrower than the brief's wording.
+- The rule covers a cycle's final message and an end-of-run summary, but `skills/code-review/references/chat-synthesis.md` is unchanged, so a code-review summary can still show bare IDs.
+- **Not met:** the brief asked for tests to pass under `scripts/confine-tests.sh`, which cannot run in this container. The full suite passed in the loop (1978 tests), and the hermeticity lint passed.
+- The rubric's review status is "passes", as a single-sample review, and the loop lists its departures from the review skill in `docs/reviews/code-review-rubric-2026-11-06-feat-owner-entry-gloss-rule.md`.
+
+**Paths the self-merge floor would refuse** (the floor is the list of paths the cycle may not merge without you): `global-instructions/CLAUDE.md` is an instruction file; `scripts/build-loop.sh` and `skills/dev-cycle/SKILL.md` are gate code, so they take effect only at the next release; `docs/decisions/log.md` is a decision record.
+
+**Tip:** `7aecad7a3453a6ab638feee5f49d8a885e0e5fc9`
+
+`--check`'s lines, as printed:
+
+```
+ok docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md 7aecad7a3453a6ab638feee5f49d8a885e0e5fc9 9f97529fc4452487293cd67d85b20675d18cdcef
+path docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md M docs/decisions/log.md
+path docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md A docs/reviews/code-review-rubric-2026-11-06-feat-owner-entry-gloss-rule.md
+path docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md M docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md
+path docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md A docs/working/research-2026-11-06-owner-entry-gloss-rule.md
+path docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md M global-instructions/CLAUDE.md
+path docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md M scripts/build-loop.sh
+path docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md M skills/dev-cycle/SKILL.md
+path docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md M test/questions-doc.bats
+path docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md M test/scripts/build-loop-dispatch.bats
+```
+
+The loop's marker holds only its attribution lines, so it asks no question.
+
+- **Read:** `docs/working/research-2026-11-06-owner-entry-gloss-rule.md` (the design record, on the branch `feat/owner-entry-gloss-rule`).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The cycle merges this exact commit | One word now; the rule reaches sessions at your next install | A line of instructions to remove with one revert |
+| **[2] drop** | The brief closes, and the rule stays in memory only | None now | Jargon stays the biggest problem in your asks |
+| **[3] changes needed** | Your note goes back to a build loop | One note, then another merge entry | One more loop's delay |
+
+- **Interim:** the branch waits, and nothing has merged.
 
 ### Q-261 · image-lag
 **Needs:** you: terminal · **Opened:** 2026-11-06 · **Status:** OPEN
@@ -50,26 +102,27 @@ Run the paste below to bring the installed dev-cycle scripts up to main.
 - That block becomes `scripts/d6.sh`, one line to call, and drops the five checks the restriction audit judged hostile-only (from Q-259).
 - Each cycle's cleanup step removes a finished loop's worktree, so its merged branch can then be deleted (from Q-260).
 
-**Merged without your review:** nothing.
+**Merged without your review:** one design record and its brief, both docs (`e9f3e176`, flagged below). The image carries neither.
 
 **Commits since the image:**
 
 - `85080263` Merge branch 'refactor/free-merged-loop-worktrees' (build-loop approved merge)
 - `aeab6745` Merge branch 'refactor/d6-block-into-image' (build-loop approved merge)
+- `e9f3e176` Merge branch 'docs/merge-friction-design' (build-loop self-merge): no one reviewed it
 - `21399f53` Merge branch 'docs/trial-feedback-2026-11-06' (your end-of-trial feedback, one doc)
-- `657b96b4`, `65fd1b17` and `f979bc57`: cycle lands, records only
+- `abea6674`, `37a56702`, `62687b97`, `657b96b4`, `65fd1b17` and `f979bc57`: cycle lands, records only
 
 **Gate files changed:** `scripts/build-loop.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`, and the new `scripts/d6.sh`.
 
-**Paths outside `docs/`** (29 paths under `docs/` also changed; the image carries none of them): `scripts/build-loop.sh`, `scripts/d6.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`, `test/scripts/build-loop-check.bats`, `test/scripts/build-loop-dispatch.bats`, `test/scripts/build-loop-free.bats`, `test/scripts/build-loop-orchestrator.bats`
+**Paths outside `docs/`** (33 paths under `docs/` also changed; the image carries none of them): `scripts/build-loop.sh`, `scripts/d6.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`, `test/scripts/build-loop-check.bats`, `test/scripts/build-loop-dispatch.bats`, `test/scripts/build-loop-free.bats`, `test/scripts/build-loop-orchestrator.bats`
 
 **The paste** (host terminal in WSL, not inside a session; stop every session first):
 
 ```
-cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = 21399f53ddfa765d14981ba9042760318365e3c5 && ./devcontainer-config/install.sh
+cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = abea6674e46933fd8d51ebfdcc2f496e3600a97d && ./devcontainer-config/install.sh
 ```
 
-The `rev-parse` check runs no hook. It only confirms your checkout is at `21399f53`. Main will be past that commit by the time you read this, because the cycle's own land moves it, so check out `21399f53` first. That checkout, like any other git command on the host, can run a hook a sandbox session planted, which is `install.sh`'s own trust model. If the install re-blesses, it also prints the hint that Q-167's step (a) still needs.
+The `rev-parse` check runs no hook. It only confirms your checkout is at `abea6674`. Main will be past that commit by the time you read this, because the cycle's own land moves it, so check out `abea6674` first. If you merge Q-263 first, the cycle rewrites this paste to include it, and that is the install that carries the new rule. That checkout, like any other git command on the host, can run a hook a sandbox session planted, which is `install.sh`'s own trust model. If the install re-blesses, it also prints the hint that Q-167's step (a) still needs.
 
 - **Interim:** the image at `dff98910` runs.
 
