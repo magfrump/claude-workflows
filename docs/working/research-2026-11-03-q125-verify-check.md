@@ -2,7 +2,7 @@
 
 - **Goal**: one check file on main that the owner runs as `cc-verify --check FILE REPO feat/q125-cc-isolated-sandbox`, whose exit status is the verdict on Q-125's Claude Code Bash sandbox in a container built from main + that branch.
 - **Problem framing**: the hard part is reaching Claude Code's *sandboxed* Bash path with no one at a prompt, in a fresh volume with no login. Considered and discarded: framing it as "write a shell probe" (a plain shell in the container is unsandboxed and proves nothing, as the branch's script says).
-- **Project state**: brief `docs/working/briefs/2026-11-03-q125-verify-check.md` (dispatch 1), branch `feat/q125-verify-check` from main ed6b0be2; the Q-125 work is unmerged at 2961ca2f (cite: feat/q125-cc-isolated-sandbox).
+- **Project state**: brief `docs/working/briefs/2026-11-03-q125-verify-check.md` (dispatch 2), branch `feat/q125-verify-check` from main ed6b0be2; the Q-125 work is unmerged at 8dfe3ab9 (cite: feat/q125-cc-isolated-sandbox).
 - **Task status**: implemented; FILE, bats suite and this doc on the branch; the host run is the owner's.
 
 FILE: `docs/working/q125-verify-check.sh`. Test: `test/q125-verify-check.bats`.
@@ -23,8 +23,21 @@ Run (host, from the claude-workflows checkout at main, once this branch is merge
 
 ## Findings from the binary (Claude Code in this sandbox, `bin/claude.exe`)
 
-- **denyRead masks a file with `--ro-bind /dev/null <file>`** (the regular-file read-deny path in the binary's Linux sandbox code: `R.push("--ro-bind","/dev/null",Tn)`). A refused read therefore *succeeds* and prints nothing. The branch script judges C1 by exit status, so `C1-cat-credential` will print FAIL on a working sandbox, and the abort right after it skips the other C1 lines and C2 to C6: a VERDICT pass is impossible until the branch is fixed. FILE's X1 checks judge by content instead. This is a branch fix, out of scope here: it is the question in the final marker.
+- **denyRead masks a file with `--ro-bind /dev/null <file>`** (the regular-file read-deny path in the binary's Linux sandbox code: `R.push("--ro-bind","/dev/null",Tn)`). A refused read therefore *succeeds* and prints nothing. The branch script judges C1 by exit status, so `C1-cat-credential` will print FAIL on a working sandbox, and the abort right after it skips the other C1 lines and C2 to C6: a VERDICT pass is impossible until the branch is fixed. FILE's X1 checks judge by content instead. Fixed on the branch in dispatch 2, under Q-254 [1] (see below).
 - `ANTHROPIC_BASE_URL` is read by the binary (also under the gateway mode), which is what the stub design uses.
+
+## Dispatch 2: Q-254 [1], the C1 fix
+
+The owner chose to fix the branch first, and the brief's amendment allows one commit on `feat/q125-cc-isolated-sandbox`: 8dfe3ab9, `docs/working/live-check-q125.sh` only, result ids unchanged. FILE, its test and the paste are unchanged.
+
+- `C1-cat-credential` fails on any byte of stdout, not on a marker: the abort is what keeps an unsandboxed run from reaching the write checks, so it must not depend on knowing the credential's format. An empty stdout is what the mask gives. This is content-judged and stricter than the marker grep Q-254 named.
+- `C1-git-diff`, `C1-man-l` and `C1-date-f` could not stay on `refused` either: a masked file makes them exit 0 too, and each would print FAIL. They grep for the canary or a real login's keys, behind a control file, the shape of FILE's X1.
+- Probe (scratch, only the script's head, before the C2 section; scratch HOME): the old script on a masked file prints FAIL and aborts; the new one passes all four. A readable canary and a readable unknown format abort with exit 1. A canary and a real-login shape hidden from `cat` alone give three FAIL lines. A broken `date` gives a control FAIL. No bwrap or unshare here, so the mask was a symlink to /dev/null; a real bind is first exercised by the live run, where FILE's X1 covers the same four reads.
+
+Found while doing it, neither changed here (Q-254 allows nothing else on that branch):
+
+- **The paste cannot run yet: the branch no longer merges with main.** `git merge-tree --write-tree main feat/q125-cc-isolated-sandbox` exits 1, with conflicts in `devcontainer-config/install.sh`, `docs/decisions/log.md`, `hooks/live-verify-gate.sh`, `test/cc-isolated-functions.bats` and `test/install-host.bats`. It did already at ed6b0be2, so dispatch 1's paste was never runnable. `cc-verify.sh` step 1 dies on that ("does not merge cleanly with main"), before any prompt or build. The conflicts seen are mostly both sides extending one list (`PAYLOAD`, the `enforcement` regex, the bats file lists), but they touch boundary files. Question in the final marker.
+- `--watch`'s C10 loop judges by exit status, the same bug as C1: it would print `C10-cred-across-rename FAIL` on a working sandbox. FILE does not use `--watch` (its X4 replaces it), so the paste is unaffected. It needs fixing if anyone runs `--watch` by hand.
 
 ## Design choice 1: how FILE reaches the sandboxed Bash path (divergent design)
 
