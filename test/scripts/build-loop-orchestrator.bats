@@ -427,13 +427,13 @@ shim() {
     # T1: notes, not the commit list; the unreviewed part and the paths stay whole, as docs/dev-cycle.md relies on.
     a="$(sect '### 0. Start and digest')"
     for f in "never from the old entry's text" "**Merged without your review:** every line of THE LOG" "**What changes for you:**" "as a count" \
-        "every path changed from C to M outside ${q}docs/${q} on one line" "one paste for every host step"; do want "$a" "$f" || return 1; done
+        "every path changed from C to M outside ${q}docs/${q} on one line" "one paste for every host command"; do want "$a" "$f" || return 1; done
     # T2: the jargon half is the global rule, pointed at and not restated; the attacker line never names the author.
     want "$s" "with a line ${q}**If you say no:** WHAT${q}" || return 1
     a="$(sect '### 7. Collect')"
     for f in "${q}**What an attacker would want here:** WHAT${q}" "naming outside parties only" "never the code's own author"; do want "$a" "$f" || return 1; done
     # T3: a batch counts with IDs or a block, and an option; "yes" never does. Step 9's record template holds ### lines, so sect stops short of this rule.
-    for f in "A batched answer counts when the message names the IDs" "or a block listing them" "and an option" 'never inferred from "yes"'; do want "$s" "$f" || return 1; done
+    for f in "or is a batched answer: one naming the IDs" "or a block listing them" "and an option" 'never inferred from "yes"'; do want "$s" "$f" || return 1; done
     # T4 and T5: the digest's path and sections, at step 9's head; the cycle never closes an owner's entry.
     a="$(sect '### 9. Record and land')"
     for f in "${q}docs/working/weekly/${q} holds no ${q}YYYY-MM-DD.md${q} dated under 7 days" "the ask counter" "open 21 days or more" "only the owner's answer closes it" "one self-merge picked at random"; do

@@ -247,7 +247,7 @@ the iteration with no record, so the next one starts from the same `Main at:`:
    CR, another control or bidi character, or bytes that are not UTF-8 written as
    `(withheld: see SHA)` (questions.sh finds its `<!-- index:` markers anywhere in a line,
    and `--check-answer` refuses an unclosed `<!--`); a backtick, `<` or `>` is shown, a
-   path holding a backtick in a double-backtick span with spaces inside it; and one paste for every host step the release needs, `cd A && test "$(git rev-parse HEAD)" = M &&
+   path holding a backtick in a double-backtick span with spaces inside it; and one paste for every host command the release needs, `cd A && test "$(git rev-parse HEAD)" = M &&
    ./devcontainer-config/install.sh` (host; then a new sandbox launch; the paste's only git
    call before install.sh's state gate is `rev-parse`, which runs no hook or fsmonitor; any
    other git command the user runs on the host here, a checkout to reach M included, can run
@@ -741,7 +741,7 @@ lands with this block. Keep each part short, and say so when one is empty:
 - the ask counter: asks opened and answered, and how often the owner picked the default;
 - stale entries: one line per `you:` entry open 21 days or more, with a proposed fate. One
   whose own closure line is met proposes closing, with the evidence: only the owner's answer
-  closes it (`--cycle-diff`), while watches and agent items close in steps 3 and 6;
+  closes it (`--cycle-diff`; step 0.1's image entries aside), while watches and agent items close in steps 3 and 6;
 - one self-merge picked at random, with the command that shows it, and "anything surprising?".
 
 Write the record `docs/working/cycles/cycle-YYYY-MM-DD.md`, dated as the digest dates
@@ -806,9 +806,9 @@ Then land WT's branch (D13; not through `pr-prep`: rows 747-759, 781), all from 
    listed under `### Answers committed` and in the final message: row 748). A merge entry's answer
    counts only when the user's own message names its ID and an option (`Q-NNN: [1]`, or
    "Q-NNN merge", the option's label; never inferred from "yes" or from which entry is
-   open). A batched answer counts when the message names the IDs (`Q-235..237: [1]`, `all but
-   Q-236: [1]`), or a block listing them (the final message's, as "merge all three" did), and
-   an option: it answers each merge entry among them. Write each as `Q-NNN: [N]`, N the number of that option in the entry's table (a
+   open), or is a batched answer: one naming the IDs (`Q-235..237: [1]`) or a block listing
+   them (the final message's, as "merge all three" or `all but Q-236: [1]` do), and an option,
+   which answers each merge entry among them. Write each as `Q-NNN: [N]`, N the number of that option in the entry's table (a
    label is translated here, in session, while step 7 reads a committed "merge" as
    `unrecognized`), and quote their words under `### Answers committed` (design and residual risk:
    `docs/working/research-2026-10-29-session-answers-for-merge-entries.md`). It refuses, among the rules its header lists (rows 745,
@@ -888,7 +888,7 @@ own dispatch (its `10.` line names them). A session that ends first loses them, 
 count on main reads one low per lost line, one more loop run under the cap (a Q-103
 residual). Then remove WT (step 0.3).
 
-**Final message**, then wait. Gloss every reference in it (the Rules' "Attention is the budget"). `⚠ SECURITY` is reserved: it opens the message, saying what happened and not who did it, and goes out as a push notification when the session has a tool for one, for only three things: a `--state` refusal, a High finding from a security review that still holds after its fix round, or a Q-103 residual (a known risk the owner accepted) becoming live. It is never used for anything else, "this touches security code" included. Below it, list migrations first (step 1b: what ran, then what is pending), then the new `you: judgment` entries by ID, name and a plain line on what each asks (merge
+**Final message**, then wait. Gloss every reference in it (the Rules' "Attention is the budget"). `⚠ SECURITY` is reserved: it opens the message, saying what happened and not who did it, and goes out as a push notification when the session has a tool for one, for only three things: a `--state` refusal (step 0.1's, or a `refuse state` line from `--merge` or `--check`), a High finding from a security review that still holds after its fix round, or a Q-103 residual (a known risk the owner accepted) becoming live. It is never used for anything else, "this touches security code" included. Below it, list migrations first (step 1b: what ran, then what is pending), then the new `you: judgment` entries by ID, name and a plain line on what each asks (merge
 entries marked; several open ones also as one block, offered as `Q-235..237: [1]` or `all but
 Q-236: [1]`, the entries staying separate because the gate finds each by its heading), each answer still `open`, skipped or `unrecognized` (with its brief; an
 answer written only in a working tree is not applied: "tell me, or commit it yourself",

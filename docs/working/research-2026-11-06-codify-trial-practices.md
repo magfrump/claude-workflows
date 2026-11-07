@@ -16,10 +16,10 @@
 
 ## Invariants
 
-- `--cycle-diff` refuses a change to an open entry's **Needs:** line (which holds Status) without `--answered`, except `image-lag` and migrations. [observed: header at `scripts/build-loop.sh` lines 196-216] So the cycle cannot close a `you:` entry itself, whatever its closure line says.
+- `--cycle-diff` refuses a change to an open entry's **Needs:** line (which holds Status) without `--answered`, except step 0.1's image entries and migrations. [observed: header at `scripts/build-loop.sh` lines 196-216] So, those aside, the cycle cannot close a `you:` entry itself, whatever its closure line says.
 - A cycle file never takes an earlier `truthrule` word. [observed: comment above `truthrule`] A dated `.md` under `docs/working/weekly/` matches neither `isstart` nor a dot part.
 - Step 0.1's GATE_CODE path line and the `**Final message**, then wait. Gloss every reference in it` line are pinned by tests. [observed] Neither moves.
-- The entry grammar's first body line is the one-line question, and step 7 puts its own question line under **Needs:**. T2's line goes right after it. [observed: Q-261's layout]
+- The entry grammar's first body line is the one-line question, and step 7 puts its own question line under **Needs:**. T2's line goes right after it. [observed: Q-256 and Q-259; Q-261 has its release notes in between]
 - The image lags main: a gate change here runs only after the next release. [observed: SKILL Rules] The weekly route must work before then, and does, since the image's `--cycle-diff` already passes the path.
 
 ## Prior art
@@ -33,7 +33,7 @@
 Failure-pattern grep: FP-021, FP-063
 
 - FP-021 and FP-063 matched on the word "writable" alone: an agent-writable file baked into an image, and a non-writable TMPDIR. Neither bears on this work.
-- The brief asks that `docs/dev-cycle.md` agree with the change, but the N rules refuse a branch touching it and this loop's dispatch forbids it. Its text stays true in substance: line 55's "the release entry flags self-merged subjects" still holds, since T1 keeps every self-merge listed. Its line 31 lists the cycle's own files without `docs/working/weekly/` (it already omits `watching.md`). That small update is left to the cycle or the owner, and is in the marker.
+- The brief asks that `docs/dev-cycle.md` agree with the change, but the N rules refuse a branch touching it and this loop's dispatch forbids it. Its text stays true in substance: line 55's "the release entry flags self-merged subjects" still holds, since T1 keeps every self-merge listed. Its line 31 lists the cycle's own files without `docs/working/weekly/` (it already omits `watching.md`). Neither a loop nor the cycle may write that file (`cycle_rules` refuses it), so that small update is the owner's, or a session they ask. The marker says so.
 - Dropping the commit list from the release entry weakens nothing the owner used (T1 feedback: not read thoroughly), but `docs/dev-cycle.md` calls that entry the check on self-merged scripts, including `install.sh`. So the self-merge list and the paths line stay whole. The wider point, that this check is weaker than the file assumes, is in the merge-friction record's section 12 and is not this brief's.
 - T6's first trigger is narrower than when the trial began (`--state` refuses only a shallow or partial clone, a default branch that is not one plain main or master, or a `GIT_DIR`-style variable). The skill also says a stop is not called hostile, so the marker text says what happened, not who did it.
 - "Push notification" has no tool named in the skill, and none is guaranteed in a session. It is written as "when the session has a tool for one", so nothing silently depends on it. [assumed: the orchestrator has one, since the trial said so; no record shows a firing]
@@ -57,9 +57,9 @@ Constraints (from `docs/constraints.md` and the brief): H1 (a new gate path is i
 | [4] | pass | pass | pass | pass | fail: buried in an append-only daily file |
 | [5] | pass | pass | pass | pass | fail: gone after the message, and the sample link needs a home |
 
-Stress test on [2]: the image lags, but its `--cycle-diff` already passes the path, so the route works before the release. A case-variant path is refused by the cycle rule. A loop that writes a digest is refused under the N rules, which is right: the digest describes the loop's own work.
+Stress test on [2]: the image lags, but its `--cycle-diff` already passes the path, so the route works before the release. After the release a case-variant path is refused by the cycle rule and a non-plain directory shows in section 8; until then the image does neither, and the digest still lands. A loop that writes a digest is refused under the N rules, which is right: the digest describes the loop's own work.
 
-**Decision: [2], Path A.** One soft cost: `docs/dev-cycle.md` line 31 goes a little staler until someone may write it.
+**Decision: [2], Path A.** One soft cost: `docs/dev-cycle.md` lines 31-32 go a little staler until the owner updates them.
 
 ### D2: where the practices are written
 
@@ -71,7 +71,7 @@ Candidates: **[a]** each inline at the step that writes the text. **[b]** one ne
 
 ### D3: the commit list in the release entry (T1)
 
-Candidates: **[i]** keep every first-parent commit (today). **[ii]** self-merges in full, what changes in plain lines, the rest a count, plus the log command for anyone who wants the whole list. **[iii]** the same with no command. **[iv]** a link to the weekly digest in place of notes.
+Candidates: **[i]** keep every first-parent commit (today). **[ii]** self-merges in full, what changes in plain lines, the rest a count, plus the log command for anyone who wants the whole list (the separate changed-names list also goes: nothing reads it, and the paths line shows those names). **[iii]** the same with no command. **[iv]** a link to the weekly digest in place of notes.
 
 [i] is what T1 replaced, and the 2026-11-06 digest counts it as the miss (Q-252 still carried 19 commits). [iii] drops a free escape for "did you miss the full list". [iv] fails between editions. F58 needs the unreviewed part whole, which [ii] keeps.
 
@@ -82,7 +82,7 @@ Candidates: **[i]** keep every first-parent commit (today). **[ii]** self-merges
 - **T1 release notes, one paste:** step 0.1, in the `image-lag` paragraph, since that is where the entry is written. It also carries the trial's lesson that a rewrite reads `.manifest` and no older text.
 - **T2 asks read cold:** "If you say no:" is in the Rules' "Attention is the budget" bullet, because every owner entry is written under it, and that bullet already points at "Gloss every reference" for the jargon half (not restated). The attacker line is in step 7's merge-entry paragraph, the only writer of `merge-gate-` entries, and names outside parties only.
 - **T3 batched answers:** the offer is in the final message; the rule is in step 9.3, the merge-answer rule. Two sentences, kept cheap, since the owner says it targets no big blocker.
-- **T4 stale sweep:** one bullet of the weekly digest's list. Closing needs no new text for watches and agent items (step 3 and the roadmap already do it). A `you:` entry whose closure line is met gets "close" as its proposed fate, as the gate refuses a cycle close and the global rule forbids closing by inference. Nothing new runs each iteration, per the owner's "no change to the interface will change what my priorities are".
+- **T4 stale sweep:** one bullet of the weekly digest's list. Closing needs no new text for watches and agent items (step 3 and the roadmap already do it). The line covers `you:` entries only, a narrowing from the trial's "an entry": the cycle checks watches itself every iteration, so an owner line on them spends attention for nothing. A `you:` entry whose closure line is met gets "close" as its proposed fate, as the gate refuses a cycle close (step 0.1's image entries aside). Nothing new runs each iteration, per the owner's "no change to the interface will change what my priorities are".
 - **T5 weekly digest:** a paragraph at the head of step 9, plus D1's gate change.
 - **T6 security marker:** the final message's paragraph, where it fires. The digest list reports the count.
 - **T7 recurring warnings:** step 1, beside the health-check triage, where the warnings are read. Filed as agent work, so no owner cost.
