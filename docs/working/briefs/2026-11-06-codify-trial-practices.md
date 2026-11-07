@@ -34,3 +34,5 @@ Policy: review
 - The second trial set (T8 onward).
 - `scripts/d6.sh`: no brief touches it until the release in Q-261 (the pending install of the dev-cycle scripts) has run.
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`: the dev cycle owns those.
+
+Dispatched: 1
