@@ -20,7 +20,7 @@ The reading is strict: a label is glossed only when the words next to it say wha
 | Q-167 post-install-host-probes | Q-096, Q-156, Q-241 | Q-156 | No |
 | Q-084 q076-live-checks | C2, C3, Q-076, Q-086, Q-090, Q-091, Q-093, Q-094 | C2, C3, Q-086, Q-090; Q-091, Q-093 and Q-094 are thin | No |
 
-**Baseline, entries' own text: 5 of 6 entries fail, under every even reclassification the fact-check tried; 21 distinct labels (self-references aside), about 13 to 16 of them bare; no entry uses a markdown link, and 3 of the 6 name a doc path at all.** Read leniently, with a bracketed citation or a thin phrase counting as a gloss, 2 or 3 of 6 fail. The motive holds either way: the failure is common, not one bad entry. These are hand classifications of one snapshot.
+**Baseline, entries' own text: 5 of 6 entries fail, under every even reclassification the fact-check tried; 21 distinct labels (self-references aside), about 11 to 16 of them bare; no entry uses a markdown link, and 3 of the 6 name a doc path at all.** Read leniently, with a bracketed citation or a thin phrase counting as a gloss, 2 or 3 of 6 fail. The motive holds either way: the failure is common, not one bad entry. These are hand classifications of one snapshot.
 
 **Baseline, marker bodies: 1 of 1 fails.** Q-254 quotes the only open marker body, and it never says what Q-125 is. That is also the worst entry, so the build-loop writer has to be reached too: a rule only the orchestrator sees would miss it.
 
@@ -103,27 +103,27 @@ The requirement: all three writers meet the rule when they write, in every repo,
 | Candidate | Orchestrator entries | Marker bodies | Final message | Other repos | Always-loaded cost (S2) | One source (S3) | At the moment (S4) |
 |---|---|---|---|---|---|---|---|
 | [1] Status quo | Partly (this repo) | Partly | Partly | No | 0 | Yes | No |
-| [2] Global only | Yes | Yes, but nowhere near the marker instructions | Yes | Yes | about 6 lines | Yes | Weak |
+| [2] Global only | Yes | Yes, but nowhere near the marker instructions | Yes | Yes | one bullet, under 1 KB | Yes | Weak |
 | [3] Skill only | Yes | No | Yes | Yes | 0 | Yes | Yes |
 | [4] Prompt only | No | Yes | No | Yes | 0 | Yes | Yes |
 | [6] Check warns | Yes, noisily | No | No | Yes | 0 | Second statement | At check time, after writing |
-| [7] Composite | Yes | Yes | Yes | Yes | about 6 lines | Yes: pointers name the bullet | Yes |
+| [7] Composite | Yes | Yes | Yes | Yes | one bullet, under 1 KB | Yes: pointers name the bullet | Yes |
 | [8] Guide plus pointers | Only if opened | Only if opened | Only if opened | Yes | 0 | Yes | Needs one more read |
 
-H4 allows [6], an advisory check, but it fails on its own terms. By the hand audit it would be right about two times in three, it fires on five of six entries each cycle, and trial T7 ("zero recurring warnings") set the opposite direction. S11 (pure text) favours the prose options too. [8] saves about 6 always-loaded lines but puts a rule whose whole cost is forgetting it behind an extra read, and the bullet sits well inside S2's budget, so the saving does not pay for the lost reach. An /away session in another repo writing one entry has no prompt and no skill: only the global section reaches it, which rules out [3] and [4] alone.
+H4 allows [6], an advisory check, but it fails on its own terms. By the hand audit it would be right about two times in three, it fires on five of six entries each cycle, and trial T7 ("zero recurring warnings") set the opposite direction. S11 (pure text) favours the prose options too. [8] saves that bullet but puts a rule whose whole cost is forgetting it behind an extra read, and the bullet sits well inside S2's budget, so the saving does not pay for the lost reach. An /away session in another repo writing one entry has no prompt and no skill: only the global section reaches it, which rules out [3] and [4] alone.
 
 ### Decision (Path A)
 
-**[7].** It is the only survivor that reaches all three writers at the moment of writing, in every repo, for one always-loaded bullet of about 6 wrapped lines. Confidence above 80%: [2] reaches them only from far away, and the others each miss a writer the brief requires.
+**[7].** It is the only survivor that reaches all three writers at the moment of writing, in every repo, for one always-loaded bullet of under 1 KB. Confidence above 80%: [2] reaches them only from far away, and the others each miss a writer the brief requires.
 
 The rule goes unenforced, on purpose: no re-checkable test separates a gloss from a bare label, so a check would be noise. The count below stands in for it after the fact.
 
 Non-DD choices:
 
-- Pointer wording: the prompt carries one self-contained sentence, not only a pointer, since a loop's marker is the worst-failing writer and non-Claude agents may run it (S11). That restates the rule's core in one clause, a small deliberate cost to S3; it names the bullet and leaves the exceptions there.
+- Pointer wording: the prompt carries a short self-contained passage, not only a pointer, since a loop's marker is the worst-failing writer and non-Claude agents may run it (S11). That restates the rule's core and the two points a marker needs (the Q-ID link exception, the 300-byte line), a small deliberate cost to S3.
 - Q-IDs need the gloss alone, not a link (written into the bullet). A good gloss removes the lookup, a Q-ID's text may sit in any of four files (Q-125 is on the roadmap), and a link on every Q-ID would make the rule too heavy to follow. The brief's example of the link half is a trial number, and its own gloss of Q-261 has no link.
-- Review additions: the rule says never to open a line with `Q-NNN:`, which `--cycle-diff`'s answer pattern reads as an answer; the prompt says to put glosses above an options table, since a marker line over 300 bytes is cut; step 7 gives the cycle's gloss lines a place and a source (the default branch, with anything from the marker attributed to the loop); "by ID and name" gains a plain line.
-- `skills/code-review/references/chat-synthesis.md` says not to restate rubric IDs in its chat summary. That text is for the branch's author beside the rubric, outside the brief's three writers, so the bullet is scoped to "a final message or end-of-run summary" and the skill is unchanged.
+- Review additions: the bullet says no gloss line in an entry opens with `Q-NNN:` or `- Q-NNN:`, which `--cycle-diff`'s answer pattern reads as an answer (the prompt does not: a marker line is filed quoted, and quoted lines are never read as answers, row 81); the prompt keeps a long gloss or link out of an options table, since a marker line over 300 bytes is cut; step 7 gives the cycle's gloss lines a place and a source (the default branch, with anything from the marker attributed to the loop), for merge entries too; "by ID and name" gains a plain line.
+- `skills/code-review/references/chat-synthesis.md` says not to restate the IDs of `agent`-route rubric items in its chat summary. That is a review's report to the branch's author, outside the brief's three writers, so the bullet is scoped to "a cycle's final message or an end-of-run summary" and the skill is unchanged. If the owner reads that synthesis directly, the two pull apart; left for a later brief if it matters.
 - Quoted text: gate output and marker bodies stay verbatim, and the orchestrator's own lines around them carry the gloss (the memory's note that gate output is easy to skip, plus rows 706 and 714).
 - Durable record: `docs/decisions/log.md` row 84. This doc is disposable, and the observable has to outlive it.
 - Tests: one bats case that holds all three pointers to the bullet's name, so a rename cannot leave them dangling, and one phrase in the dispatch test. No script logic changes.

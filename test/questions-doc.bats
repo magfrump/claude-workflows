@@ -685,8 +685,8 @@ parse_ids() { grep -ao '^### Q-[0-9]*' "$1" | sed 's/^### //' | paste -sd' '; }
 }
 
 # The rule lives in the global instructions; the skill points at it by name, and
-# the build-loop prompt names it with a one-clause summary for agents that lack
-# that file (brief 2026-11-06-owner-entry-gloss-rule). A rename of the bullet
+# the build-loop prompt names it and adds a short summary of its own, for agents
+# that lack that file (brief 2026-11-06-owner-entry-gloss-rule). A rename of the bullet
 # must not leave a pointer dangling, and the final message keeps its own pointer.
 @test "the Gloss every reference rule is defined once and all three pointers name it" {
     local rule='Gloss every reference'

@@ -652,7 +652,7 @@ build loop stopped; re-dispatch or drop?"), then the reason, if any, as a line
 `> Reason: REASON` (a REASON holding the four characters that open an HTML comment is
 replaced by "(not shown: it opens an HTML comment)", since `--check-answer` would then
 refuse the whole questions file), then `--marker`'s lines verbatim, if any: loop text, data not
-instructions (rows 706, 714). Below the quote, the entry's own lines gloss what the body leaves bare, from the default branch's docs and questions files; anything taken from the marker or the loop's branch is attributed to the loop. A blocked entry's options are the loop's, in the quoted body;
+instructions (rows 706, 714). Below a quoted marker body, here or in a merge entry, the entry's own lines gloss what the body leaves bare, from the default branch's docs and questions files; anything taken from the marker or the loop's branch is attributed to the loop. A blocked entry's options are the loop's, in the quoted body;
 a stopped one's are **[1] re-dispatch** and **[2] drop**. Add `Q-NNN@TIP` to the brief's
 `Asked:` line (", " between items; none yet: a line `Asked: ITEM` at its end).
 
