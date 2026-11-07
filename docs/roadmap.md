@@ -100,6 +100,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 - Write the first trial set's practices into the dev cycle
   (`docs/working/briefs/2026-11-06-codify-trial-practices.md`; review policy). Motive: the
   owner kept all of T1-T7.
+  Ready at e49f133c: merge entry Q-266.
 
 ## Next
 
