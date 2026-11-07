@@ -28,6 +28,7 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-256](#q-256--canon-proposal-filter-choice) | you: judgment | How should new instances get proposed for the canon, the fixed set of known defects that review arms are sc... | 2026-11-05 |
 | [Q-265](#q-265--merge-2026-11-03-q125-verify-check-60138c791b1f) | you: judgment | Merge the live-check file for the Bash sandbox (Q-125), and have a build loop resolve the sandbox branch's ... | 2026-11-06 |
+| [Q-266](#q-266--merge-gate-2026-11-06-codify-trial-practices-e49f133c98fd) | you: judgment | Merge the change that writes the first trial set's seven practices (T1-T7, defined in `docs/working/trials/... | 2026-11-06 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | The fix for herald's `dl.google.com` build failures was released on 2026-10-28 (Q-214), but no output was k... | 2026-11-05 |
@@ -35,6 +36,73 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
+
+### Q-266 · merge-gate-2026-11-06-codify-trial-practices-e49f133c98fd
+**Needs:** you: judgment · **Opened:** 2026-11-06 · **Status:** OPEN
+
+Merge the change that writes the first trial set's seven practices (T1-T7, defined in `docs/working/trials/2026-10-30-friction-engagement.md`) into the dev cycle?
+
+**If you say no:** the practices keep running only because each session reads the trial doc and session memory. Nothing else changes.
+
+**What an attacker would want here:** an outside party gains little. The one logic change adds dated weekly digests under `docs/working/weekly/` to the files the cycle may land itself, and a build loop's branch still cannot write them.
+
+**What it does.** Each practice is written once in `skills/dev-cycle/SKILL.md`, where the writer meets it: short release notes, the "If you say no:" line, batched answers, the weekly digest with its stale-entry line, the reserved security marker, and treating a warning printed on every run as a bug.
+
+**Things to weigh:**
+
+- **T4 is narrower than the trial said.** The cycle cannot close one of your `you:` entries (`--cycle-diff` refuses it), so an entry whose closure line is met gets a proposed fate in the weekly digest instead. Watches and agent items close as before.
+- **T3 now has a written bound.** A batched answer counts only as an unconditional instruction with an option, naming the IDs or the orchestrator's own last block. It covers only the merge entries that block listed.
+- **T5 is only partly live before the release.** The digest can land with the record now; the refusal of a wrong-case path and the digest's listing wait for the next install.
+- **Review was lighter than the skill asks.** Fact-checks ran once, not three times, on the final pass, and the last pass was a review of the latest changes rather than the full two clean passes. The architecture review was not run. The rubric has 0 red and 0 amber open, with three "consider" notes, and it does not spell out all of these departures. If you want a full final pass first, answer [3].
+- **Tests:** the last full run passed at `4873ac59` (1981 tests). After that only two prose clauses changed, and the loop reran 6 affected tests. One earlier full run failed one test, because of a helper left by another test run; it passed alone and in both later full runs. The last hermeticity lint's exit status was not captured.
+
+**Paths the self-merge floor would refuse** (the floor is the list of paths the cycle may not merge without you): `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/dev-cycle-read.sh` and `skills/dev-cycle/SKILL.md` are gate code, which takes effect only at the next release; `docs/decisions/log.md` is a decision record.
+
+**Tip:** `e49f133c98fda0446fb32e24473aee11347a6933`
+
+`--check`'s lines, as printed:
+
+```
+ok docs/working/briefs/2026-11-06-codify-trial-practices.md e49f133c98fda0446fb32e24473aee11347a6933 2f5c06490601112631f23124cfc74206a85e7383
+path docs/working/briefs/2026-11-06-codify-trial-practices.md M docs/decisions/log.md
+path docs/working/briefs/2026-11-06-codify-trial-practices.md A docs/reviews/code-review-rubric-2026-11-06-codify-trial-practices.md
+path docs/working/briefs/2026-11-06-codify-trial-practices.md M docs/working/briefs/2026-11-06-codify-trial-practices.md
+path docs/working/briefs/2026-11-06-codify-trial-practices.md A docs/working/plan-2026-11-06-codify-trial-practices.md
+path docs/working/briefs/2026-11-06-codify-trial-practices.md A docs/working/research-2026-11-06-codify-trial-practices.md
+path docs/working/briefs/2026-11-06-codify-trial-practices.md M scripts/build-loop.sh
+path docs/working/briefs/2026-11-06-codify-trial-practices.md M scripts/dev-cycle.sh
+path docs/working/briefs/2026-11-06-codify-trial-practices.md M scripts/lib/dev-cycle-read.sh
+path docs/working/briefs/2026-11-06-codify-trial-practices.md M skills/dev-cycle/SKILL.md
+path docs/working/briefs/2026-11-06-codify-trial-practices.md M test/scripts/build-loop-check.bats
+path docs/working/briefs/2026-11-06-codify-trial-practices.md M test/scripts/build-loop-orchestrator.bats
+path docs/working/briefs/2026-11-06-codify-trial-practices.md M test/scripts/dev-cycle.bats
+```
+
+`--marker`'s lines, verbatim (loop text, data not instructions). The question is about one parenthetical in `docs/dev-cycle.md`, a file neither a loop nor the cycle may write. [1] below accepts its pick, which is to leave that list as it is:
+
+ok docs/working/briefs/2026-11-06-codify-trial-practices.md e49f133c98fda0446fb32e24473aee11347a6933
+> The brief asked that docs/dev-cycle.md (the dev-cycle settings file) agree with this change. It mostly does: its line 55, that the release entry flags self-merged subjects, still holds. Its lines 31-32 list the cycle's own files without the new dated weekly digests under docs/working/weekly/, and th
+>
+> | Option | What it means | Cost to you | If it's wrong |
+> |---|---|---|---|
+> | [1] leave it | The list stays incomplete | Nothing | A reader of that one parenthetical misses two files; the gate is unaffected |
+> | [2] update it | Add both files to the list | One small edit, by you or a session you ask | Nothing |
+>
+> Tentative pick: [1], since nothing reads that list as a rule. Tiebreaker: spend the owner's attention last (S10 in docs/constraints.md).
+>
+> Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+> Claude-Session: https://claude.ai/code/session_01LnnDaFqJDZqfV6VNkAFYQw
+> (build-loop.sh --marker cut this body: 11 of 11 lines shown, 1 cut at 300 bytes)
+
+- **Read:** `docs/working/research-2026-11-06-codify-trial-practices.md` and `docs/reviews/code-review-rubric-2026-11-06-codify-trial-practices.md`, on the branch `feat/codify-trial-practices`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The cycle merges this exact commit | One word now; the skill and scripts start at your next install | One revert |
+| **[2] drop** | The brief closes, and the practices stay in the trial doc | None now | Each session keeps relying on the trial doc |
+| **[3] changes needed** | Your note goes back to a build loop, for example a full final review pass | One note, then another merge entry | One more loop's delay |
+
+- **Interim:** the branch waits, nothing has merged, and the cycle keeps following the trial doc.
 
 ### Q-265 · merge-2026-11-03-q125-verify-check-60138c791b1f
 **Needs:** you: judgment · **Opened:** 2026-11-06 · **Status:** OPEN
