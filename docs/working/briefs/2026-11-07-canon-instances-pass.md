@@ -32,3 +32,5 @@ Policy: review
 - Running any review arm or recall measurement, and the A8 measurement.
 - Rebuilding clones beyond what one candidate's check needs.
 - Editing `docs/roadmap.md` or the questions files: the dev cycle moves those.
+
+Dispatched: 1

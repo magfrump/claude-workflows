@@ -32,3 +32,5 @@ Policy: review
 - Fixing anything the live run would find: that waits on the owner's paste.
 - Rewriting or deleting `feat/q125-cc-isolated-sandbox`, or touching the worktree that holds it.
 - Editing `docs/roadmap.md` or the questions files: the dev cycle moves those.
+
+Dispatched: 1
