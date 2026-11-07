@@ -27,18 +27,18 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-254](#q-254--blocked-2026-11-03-q125-verify-check-1) | you: judgment | Brief 2026-11-03-q125-verify-check's build loop asks: | 2026-11-03 |
 | [Q-256](#q-256--canon-proposal-filter-choice) | you: judgment | How should new instances get proposed for the canon, the fixed set of known defects that review arms are sc... | 2026-11-05 |
-| [Q-259](#q-259--merge-gate-2026-11-05-d6-block-into-image-5e2b96d3e215) | you: judgment | Merge restriction-audit unit 7 at 5e2b96d3? The roughly 60-line block pasted into every script call becomes... | 2026-11-05 |
-| [Q-260](#q-260--merge-gate-2026-11-06-free-merged-loop-worktrees-0ed2fc852e54) | you: judgment | Merge the worktree cleanup at 0ed2fc85? It adds `build-loop.sh --free-worktrees`, which step 1 runs so that... | 2026-11-06 |
+| [Q-259](#q-259--merge-gate-2026-11-05-d6-block-into-image-5e2b96d3e215) | you: judgment | Q-259: [1] | 2026-11-05 |
+| [Q-260](#q-260--merge-gate-2026-11-06-free-merged-loop-worktrees-0ed2fc852e54) | you: judgment | Q-260: [1] | 2026-11-06 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
-| [Q-252](#q-252--image-lag) | you: terminal | Q-252: met — image dff98910546c29f0de84927d7352deebadc5dd67 holds the gate code of main dff98910546c29f0d... | 2026-11-03 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | The fix for herald's `dl.google.com` build failures was released on 2026-10-28 (Q-214), but no output was k... | 2026-11-05 |
 <!-- index:end -->
 
 ## Open
 
 ### Q-260 · merge-gate-2026-11-06-free-merged-loop-worktrees-0ed2fc852e54
-**Needs:** you: judgment · **Opened:** 2026-11-06 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-06 · **Status:** ANSWERED
+Q-260: [1]
 
 Merge the worktree cleanup at 0ed2fc85? It adds `build-loop.sh --free-worktrees`, which step 1 runs so that a finished loop's worktree goes away and `branch -d` can then delete its branch.
 
@@ -67,7 +67,8 @@ Merge the worktree cleanup at 0ed2fc85? It adds `build-loop.sh --free-worktrees`
 - **Interim:** the branch waits; nothing depends on it.
 
 ### Q-259 · merge-gate-2026-11-05-d6-block-into-image-5e2b96d3e215
-**Needs:** you: judgment · **Opened:** 2026-11-05 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-05 · **Status:** ANSWERED
+Q-259: [1]
 
 Merge restriction-audit unit 7 at 5e2b96d3? The roughly 60-line block pasted into every script call becomes `scripts/d6.sh`, one line to call, and it drops five checks the audit judged hostile-only.
 
@@ -198,54 +199,6 @@ ok docs/working/briefs/2026-11-03-q125-verify-check.md 502296b7ac4f5e299011286f8
 - **Blocks:** Q-125's live run; behind it the watches Q-098 and Q-161.
 - **Interim:** the branch waits; nothing runs on the host.
 - **If the answer differs:** the loop is re-dispatched with your answer either way.
-
-### Q-252 · image-lag
-**Needs:** you: terminal · **Opened:** 2026-11-03 · **Status:** ANSWERED
-Q-252: met — image dff98910546c29f0de84927d7352deebadc5dd67 holds the gate code of main dff98910546c29f0de84927d7352deebadc5dd67
-
-**Release notes** (trial T1). Installed image: `c214970a`, read from `/opt/claude-workflows/.manifest`. Main (`3a663f88`) is ahead in gate code by restriction-audit units 5 and 6, which you approved (Q-251, Q-253). The image runs the gate and the dev-cycle skill, so neither is live until you run the paste.
-
-**If you say no:** the cycle keeps running the current image's skill: a pending migration still comes to you as a paste, and a release you have already run still waits for your answer on its image-lag entry. Nothing breaks.
-
-**Merged without your review:** `605d4c18`, the canon filter design (build-loop self-merge): a brief and a research doc, both under `docs/`, so nothing in the image. The flag is a pointer, not proof.
-
-**What changes for you** (approved by you, Q-251): the dev cycle runs a pending convention migration's `questions.sh` remedy itself and reports it, and closes an image-lag entry like this one by itself once the image holds main's gate code. Gate files changed: `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`.
-
-Also approved by you (Q-253): the self-merge floor's import check reads plain `@path` imports only, about 1000 lines shorter, and the `Reader roots:` and `Reader homes:` lines in `docs/dev-cycle.md` stop being read. After this release `--settings` prints that they can go; `docs/dev-cycle.md` is yours to edit. Gate files added: `scripts/lib/dev-cycle-read.sh`.
-
-**Commits on main after `c214970a`** (first-parent; rewritten 2026-11-05 for main at 3a663f88):
-- `3a663f88` Merge branch 'test/q089-source-guard-narrow' (build-loop approved merge)
-- `3424799f` Merge branch 'fix/exit-scan-older-routes' (build-loop approved merge)
-- `68a05afe` Merge branch 'refactor/import-walk-plain' (build-loop approved merge)
-- `09e6999a` Merge branch 'chore/dev-cycle-2026-11-06-0630'
-- `f52d0f95` Merge branch 'chore/dev-cycle-2026-11-06-0400'
-- `e61e1a40` Merge branch 'chore/dev-cycle-2026-11-06-0317'
-- `bfa4fdbc` Merge branch 'chore/dev-cycle-2026-11-06-0310'
-- `605d4c18` Merge branch 'docs/canon-proposal-filter' (build-loop self-merge)
-- `4ea7e6f3` Merge branch 'chore/dev-cycle-2026-11-05-2347'
-- `db31db8b` Merge branch 'chore/dev-cycle-2026-11-05-2347'
-- `adb22f4d` docs(questions): track herald's unconfirmed egress fix as Q-255
-- `dcbfeb8d` Merge branch 'chore/dev-cycle-2026-11-04-0031'
-- `8d16b1d5` Merge branch 'chore/dev-cycle-2026-11-04-0017'
-- `c741fa77` Merge branch 'chore/dev-cycle-2026-11-03-2329'
-- `ed6b0be2` Merge branch 'chore/dev-cycle-2026-11-03-2329'
-- `89ed0db4` Merge branch 'refactor/cycle-runs-migrations' (build-loop approved merge)
-- `f354e949` Merge branch 'chore/answers-2026-11-03b'
-- `3ccdd215` Merge branch 'chore/answers-2026-11-03'
-- `234d5be7` Merge branch 'chore/dev-cycle-2026-11-02-2027'
-
-**Paths changed outside `docs/`** (31 under `docs/` not listed; the image carries none of `docs/`): `guides/cc-isolated-usage.md`, `guides/convention-changes.md`, `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`, `test/cc-host-tool-sources.bats`, `test/lib/build-loop-fixtures.bash`, `test/scripts/build-loop-check.bats`, `test/scripts/build-loop-orchestrator.bats`, `test/scripts/build-loop-read.bats`, `test/scripts/dev-cycle.bats`
-
-**The paste** (host terminal in WSL, not inside a session; stop every session first):
-
-```
-cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = 3a663f886009075fe7be95f35a38cdf856aff994 && ./devcontainer-config/install.sh
-```
-
-The `rev-parse` check runs no hook. It only confirms that your checkout is at `3a663f88`. Main will be past that commit by the time you read this, because the cycle's own land moves it, so the check fails on a checkout at main's tip: check out `3a663f88` first (it holds all the gate code; what comes after it is cycle records). Then start a new sandbox session. Unit 7 (the D6 block into the image) is briefed and needs its own release once it merges; there is no need to wait for it.
-
-- **Interim:** the image at `c214970a` runs.
-- **Blocks:** nothing.
 
 ### Q-167 · post-install-host-probes
 **Needs:** you: terminal · **Opened:** 2026-10-15 · **Status:** OPEN
