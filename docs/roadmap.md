@@ -13,16 +13,11 @@ user's order).
 
 Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0002).
 
-- **Agent: restriction audit units 4-7** (filed 2026-11-01, owner request). Motive: the owner
-  asked to remove every restriction without a specific, in-scope threat model; plan and
-  inventories in `docs/working/research-2026-11-01-restriction-audit.md`. Units 1-3 merged
-  (63ba32e9, 242081af, 78dad60b); unit 4 merged (3019016a, Q-250 [1]); unit 5 merged (89ed0db4, Q-251 [1]). Unit 6 (import
-  walk seeds and parser) merged (68a05afe, Q-253 [1]). Unit 7 (D6 block into the image)
-  briefed 2026-11-05 (In flight).
-  Unit 4 also gives `skills/draft-review/SKILL.md`'s Fact-Check Gate the same unattended
-  default (unit 2's override-log C9).
-  Unit 3's loop left two stale lines for later units (`plan-build-loop-handoff.md` D13 and
-  the "SKILL.md's hg" comment in `scripts/lib/dev-cycle-read.sh`): both are in unit 6's brief.
+- **Agent: after the Q-261 release** (filed 2026-11-06, step 7). Motive: Q-259 and Q-260 are
+  merged but not live, and the image's gate list does not name `scripts/d6.sh` yet. Until the
+  release, no brief touching `scripts/d6.sh` is dispatched. First step: once Q-261 closes,
+  confirm the cycle's cleanup step frees the 32 held worktrees, then take the idea-log items
+  that were waiting on Q-259's skill rewrite.
 - **Agent: Q-125 · cc-isolated Bash sandbox, live run** (filed 2026-11-01, step 6, from
   Q-234's migrate). Motive: nothing sandboxes Bash in cc-isolated. Built, unmerged
   (`feat/q125-cc-isolated-sandbox`); the host install is done (Q-222, answered 2026-11-03). First step
@@ -33,7 +28,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   pruned the checklist option) and on a rule `docs/constraints.md` does not hold (instrument
   code lives in the SWRBench fork). Scope: Path A records since the last audit, using the
   `constraints-builder` skill's amend mode to revise the file. First step: the owner confirms
-  scope and timing; it runs on its own branch, outside the cycle.
+  scope and timing; it runs on its own branch, outside the cycle. It also covers
+  `skills/dev-cycle/SKILL.md` as Q-259 and Q-260 changed it (step 4b, 2026-11-06).
 
 - **Agent: `source_lines_ok` misses an unterminated last line** (filed 2026-11-05, step 7).
   Motive: the Q-147 review found the shipped self-check in `devcontainer-config/cc-verify.sh`
@@ -54,7 +50,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   Every iteration writes owner entries, the image-lag entry and the final message as
   `docs/working/trials/2026-10-30-friction-engagement.md` says (T1-T7), and the first
   iteration of each week writes `docs/working/weekly/`. First step: done (T1, T2, T4, T5 started
-  2026-10-30). Next: record owner feedback there, then run `divergent-design` on A1/A3/A10.
+  2026-10-30). Owner feedback on T1-T7 recorded there on 2026-11-06. Next: run `divergent-design` on A1/A3/A10.
 - **Questions doc becomes owner-only (Q-221 [14′], decision 040).** Motive: the owner reported
   that agent bookkeeping crowds the one page meant for them (17 open entries, 2 theirs).
   Build in three units: (1) four owner routes (`you: judgment`, `you: terminal`, new
@@ -85,13 +81,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
-- Free a finished loop's worktree and branch
-  (`docs/working/briefs/2026-11-06-free-merged-loop-worktrees.md`; review policy, gate code).
-  Ready at 0ed2fc85; merge entry Q-260.
-- Restriction audit unit 7: the D6 block becomes one root-owned image script
-  (`docs/working/briefs/2026-11-05-d6-block-into-image.md`; review policy, gate code). Ready at
-  5e2b96d3; merge entry Q-259. After it merges, no brief touching `scripts/d6.sh` is dispatched
-  until the release, since the image's gate list does not name it yet.
 - Q-125's `cc-verify --check` file for the sandbox live run
   (`docs/working/briefs/2026-11-03-q125-verify-check.md`; review policy). Blocked at
   502296b7: the Q-125 branch's own C1 check cannot pass on a working sandbox; Q-254.
@@ -344,6 +333,8 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- Free a finished loop's worktree and branch (`docs/working/briefs/closed/2026-11-06-free-merged-loop-worktrees.md`). Merged 85080263 (Q-260 [1]).
+- Restriction audit unit 7, the D6 block as one root-owned image script (`docs/working/briefs/closed/2026-11-05-d6-block-into-image.md`). Merged aeab6745 (Q-259 [1]). All seven units of the audit are now merged (`docs/working/research-2026-11-01-restriction-audit.md`).
 - **Agent: Q-241's settings merge check** (filed 2026-11-06, step 3): the check is step (d) of Q-167, since the release closed Q-252 first. `chore/dev-cycle-2026-11-07-0115`.
 - **Restriction audit unit 6: the import walk reads plain `@path` imports only.** Merged
   68a05afe (Q-253 [1]). It takes effect from the next image release. Brief:

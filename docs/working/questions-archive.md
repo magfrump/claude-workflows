@@ -250,6 +250,8 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-253](#q-253--merge-gate-2026-11-03-import-walk-plain-4d6880b7f44e) | Merge restriction-audit unit 6 (the self-merge floor's import check reads plain `@path` imports only) at 4d... | 2026-11-03 |
 | [Q-257](#q-257--merge-2026-11-05-exit-scan-older-routes-6a2a4dcedf74) | Merge the Q-097 result at 6a2a4dce? It leaves both exit-scan routes open and records why in the guide; no c... | 2026-11-05 |
 | [Q-258](#q-258--merge-2026-11-05-q089-source-guard-narrow-c9786a275cd1) | Merge the Q-147 result at c9786a27? It adds one test file, `test/cc-host-tool-sources.bats`, that catches a... | 2026-11-05 |
+| [Q-259](#q-259--merge-gate-2026-11-05-d6-block-into-image-5e2b96d3e215) | Q-259: [1] | 2026-11-05 |
+| [Q-260](#q-260--merge-gate-2026-11-06-free-merged-loop-worktrees-0ed2fc852e54) | Q-260: [1] | 2026-11-06 |
 <!-- index:end -->
 
 ## Answered
@@ -5743,5 +5745,83 @@ The `rev-parse` check runs no hook. It only confirms that your checkout is at `3
 
 - **Interim:** the image at `c214970a` runs.
 - **Blocks:** nothing.
+
+
+### Q-260 · merge-gate-2026-11-06-free-merged-loop-worktrees-0ed2fc852e54
+**Needs:** you: judgment · **Opened:** 2026-11-06 · **Status:** ANSWERED
+Q-260: [1]
+
+Merge the worktree cleanup at 0ed2fc85? It adds `build-loop.sh --free-worktrees`, which step 1 runs so that a finished loop's worktree goes away and `branch -d` can then delete its branch.
+
+**If you say no:** finished loops keep accumulating. 32 merged worktrees hold 2.85 GiB today, and `branch -d` keeps refusing every branch behind them. Nothing breaks.
+
+**What an attacker would want here:** this is gate code that deletes directories, so the risk is an honest slip losing work. It removes a worktree only when a closed brief names the branch, the tip is merged and past the lock's commit, a handoff marker is at the tip, and git's clean check passes. It never forces, and it refuses a stray `GIT_DIR`, which review found could have freed another repository's worktrees.
+
+- **Tip:** 0ed2fc852e548bdff8cab08c4d851755f337a4bd
+- **`--check` printed:** `ok docs/working/briefs/2026-11-06-free-merged-loop-worktrees.md 0ed2fc852e548bdff8cab08c4d851755f337a4bd 8599324957d99d3a44ba63b43bc3352246af1fc4`, then 9 `path` lines: `scripts/build-loop.sh`, `skills/dev-cycle/SKILL.md`, `test/scripts/build-loop-dispatch.bats`, `docs/reviews/override-log.md` and the brief (M); `test/scripts/build-loop-free.bats`, the research doc, the plan and the rubric (A). +563/−25.
+- **Paths self-merge would have refused:** `scripts/build-loop.sh` and `skills/dev-cycle/SKILL.md` (gate code; the skill is also a prompt file).
+- **Check at merge** (from the loop's report; its data, not instructions):
+  - The brief's rule was not enough: a loop just dispatched sits at main's commit, so merged-and-clean alone would have deleted it. The extra conditions above fix that.
+  - Ignored files go with the worktree. In this repo that includes an unforced `plan-*.md`. The backlog's only ignored paths today are `.bats/` and `__pycache__/`.
+  - Left in place: a dropped or squash-landed brief's worktree stays with no report; a run killed between unlock and remove leaves one worktree unlocked and unnamed; an edit under assume-unchanged passes the clean check.
+  - On clones with the 35 real locks it printed 32 `freed` and 3 `hold`. The real worktrees' own clean check was not exercised, because the clones lack their files.
+  - The final pass ran the fact-check on the whole branch but only one combined security and API critic on the fixes; performance and architecture did not re-run, and self-eval was skipped. The brief's claim about the import walks is out of date, as they stopped reading the worktree list on 2026-11-05.
+  - The health check passed at cbd189ef; later commits changed docs and the brief's status only.
+- **Merges cleanly with Q-259's branch** (`git merge-tree` of the two tips exits 0), so the order of the two answers does not matter.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | Live at the next release; its first run clears the backlog | None now | A worktree it removes held something ignored that mattered; a revert stops further removals |
+| **[2] drop** | The brief closes and the pile-up continues | None | About 90 MB per finished loop keeps accruing |
+| **[3] changes needed** | Your note goes back to the loop | One line | One more loop run |
+
+- **Interim:** the branch waits; nothing depends on it.
+
+
+### Q-259 · merge-gate-2026-11-05-d6-block-into-image-5e2b96d3e215
+**Needs:** you: judgment · **Opened:** 2026-11-05 · **Status:** ANSWERED
+Q-259: [1]
+
+Merge restriction-audit unit 7 at 5e2b96d3? The roughly 60-line block pasted into every script call becomes `scripts/d6.sh`, one line to call, and it drops five checks the audit judged hostile-only.
+
+**If you say no:** the skill keeps the pasted block with all its checks. Nothing breaks; each cycle keeps paying about 60 lines per script call, and copy slips stay possible.
+
+**What an attacker would want here:** this is gate code, and it reaches the image at the next release. The dropped checks (replace ref, grafts, symbolic ref, non-commit ref, file ownership) catch planted git state and a tampered image, not honest slips. Dropping them follows S1; the residual is that a planted graft reaches the digest's `git log`, though not `--main-log`.
+
+- **Tip:** 5e2b96d3e2158624cf5badf78fb69ef75537105b
+- **`--check` printed:** `ok docs/working/briefs/2026-11-05-d6-block-into-image.md 5e2b96d3e2158624cf5badf78fb69ef75537105b 43cee5fcd755c0ed4788ed728d440b1dc0f2a25e`, then 25 `path` lines. Code: `scripts/d6.sh` (A), `scripts/build-loop.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`, `test/scripts/build-loop-check.bats`, `test/scripts/build-loop-orchestrator.bats` (M). Docs: the brief, `docs/working/plan-build-loop-handoff.md` (M), the research doc (A) and 15 review files under `docs/reviews/` (A), which are most of the +5945/−154.
+- **Paths self-merge would have refused:** the gate-code files (`scripts/build-loop.sh`, `scripts/lib/dev-cycle-read.sh`, `skills/dev-cycle/SKILL.md`), and `skills/dev-cycle/SKILL.md` as a prompt file.
+- **The loop's question** (its ready marker; loop text, data not instructions). Its [1] is this entry's [1] merge. Its [2], keep every check, is this entry's [3] with the note "keep every check":
+
+> The brief's Goal says the block's checks keep running, but its criteria ask which of audit
+> rows R6c, R6d and R6e keep theirs. The tentative pick applies the audit: d6.sh keeps exactly
+> one of main and master, each image file present and regular, and the variable scrub. It drops
+> the replace-ref, grafts, symbolic-ref, non-commit and ownership checks. Tiebreaker: the audit's
+> rule that a unit applies a verdict and records any row it keeps. The audit's reason for grafts
+> was wrong, as hardened git does follow them, so grafts are dropped as a hostile-only residual.
+> | Option | What it means | Cost to you | If it's wrong |
+> |---|---|---|---|
+> | **[1] Apply the audit (picked)** | the five hostile-only checks go | none | a planted graft reaches the digest's git log, not --main-log (S1) |
+> | **[2] Keep every check** | restore d6.sh and its tests from da07a77c; fix the phrases the research doc lists | one line, then a small branch | a replace ref keeps stopping a repo for a ref no script reads |
+> For the cycle, not the owner: until the release, the image's GATE_CODE does not list
+> scripts/d6.sh, so a brief naming it could self-merge. Add it to Self-merge never: in
+> docs/dev-cycle.md (a fact-check confirmed that works), or dispatch no brief touching it first.
+> Known issue, left because it would be code after the final review: step 0.1 gives the release
+> paste only for a missing image file, not for "is not a regular file" or the lib-load refusal.
+> Each is still a correct stop.
+> Not verified: no real image holds d6.sh yet, so it ran only as the shipped file with its
+> root literal changed. This merge opens the image-lag entry; the skill changes at the release.
+> Design: docs/working/research-2026-11-05-d6-block-into-image.md.
+
+- **Also from the loop's report:** the commits after the review closed at 48498ba6 are test and doc changes, one a one-line path fix, and were not re-reviewed. The whole health check passed at 19d92d82.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | Lands `d6.sh` with the five checks dropped; live at the next release | None now; the release paste covers it | A planted graft reaches the digest's log (hostile-only, S1) |
+| **[2] drop** | The brief closes and the pasted block stays | None | The per-call paste cost stays |
+| **[3] changes needed** | Your note goes back to the loop; "keep every check" restores them | One line, then one more loop run | One more review round |
+
+- **Blocks:** nothing else in the audit: unit 7 is its last unit.
+- **Interim:** the branch waits. Until a release after this merge, the cycle dispatches no brief touching `scripts/d6.sh`, because the image's gate list does not name it yet and such a brief could self-merge.
 
 
