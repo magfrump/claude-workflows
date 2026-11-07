@@ -171,3 +171,5 @@ Ran because the last brainstorm was 7 days ago (2026-10-29). Sources: this cycle
 - Keep a list of things waiting for a release, read when the image-lag entry closes (signal: Q-241's item planned to ride on Q-252's next rewrite; the release came first)
 - Give a trial a closing step (signal: the trial week reached its end date with feedback on only part of T1-T7)
 - Do nothing else until Q-259 and Q-260 are answered (signal: all three briefs wait on the owner, and the queued skill ideas edit passages Q-259 rewrites)
+- Give the trial doc and the weekly digest a path the cycle land may write, or fold them into the record (signal: the end-of-trial reading went to the roadmap because `--check-fix` refuses `docs/working/`)
+- Generate the questions file's route table from `questions.sh`'s route list (signal: it listed the retired `agent`, `trigger` and `deferred` routes for days after decision 040)
