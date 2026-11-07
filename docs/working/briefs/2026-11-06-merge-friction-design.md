@@ -34,3 +34,5 @@ Paths: docs/working/briefs/2026-11-06-merge-friction-design.md docs/working/rese
 - Building any candidate, or editing `scripts/`, `skills/` or `hooks/`.
 - Editing `docs/roadmap.md`, the questions files or the trial doc: the dev cycle moves those.
 - Any benchmark or review run.
+
+Dispatched: 1
