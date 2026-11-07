@@ -48,10 +48,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   add the section to both files or exempt it in the check, depending on whether other agents
   need it. Those are instruction files, so it is a review merge; not briefed, since a full
   build loop outweighs a few lines while it would add another owner entry.
-- **Agent: Q-241's settings merge was never confirmed on the host** (filed 2026-11-06, step 3).
-  Motive: the weekly digest found Q-241 pointing at Q-167 for this check, but Q-167's text has
-  no settings step, and no record shows it run. First step: add the step to Q-167, or to Q-252's
-  next rewrite, so the owner sees it with the next release.
 
 - **Trial week: less friction, less habituation (2026-10-30 to about 2026-11-06).** Motive:
   the owner's 2026-10-29 brainstorm request ("try things for a few days to a week").
@@ -125,6 +121,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 Unranked. Each names the signal that motivates it.
 
+- **Give a decision's runtime-log trigger a readable route.** Signal: decision 039's trigger names `/run/cc-sni-proxy/proxy.log`, which `--check-path` always refuses as untracked, so the cycle can only ever answer "cannot tell". Either a read-only runtime-log allowance, or the log's FAIL count in Q-255's paste. Gate code if the former.
+- **Things waiting for a release need a list of their own.** Signal: Q-241's item planned to ride on Q-252's next rewrite, and the release came first, so Q-252 closed with no rewrite. A section the close step reads would stop the next one being lost.
+- **A trial needs a closing step.** Signal: the trial week reached its end date with feedback on only part of T1-T7, and nothing asks for the rest but a line in the final message.
 - **The skill's identity check should accept an environment identity.** Signal: iteration
   2026-11-05-2347, where `git config` was empty and `GIT_AUTHOR_*` held the real identity,
   which the gate accepts. `git var GIT_AUTHOR_IDENT` answers both. Gate code (the skill).
@@ -345,6 +344,7 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- **Agent: Q-241's settings merge check** (filed 2026-11-06, step 3): the check is step (d) of Q-167, since the release closed Q-252 first. `chore/dev-cycle-2026-11-07-0115`.
 - **Restriction audit unit 6: the import walk reads plain `@path` imports only.** Merged
   68a05afe (Q-253 [1]). It takes effect from the next image release. Brief:
   `docs/working/briefs/closed/2026-11-03-import-walk-plain.md`.
