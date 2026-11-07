@@ -61,8 +61,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   2026-10-30). Owner feedback on T1-T7 recorded there on 2026-11-06.
   The owner's decision (2026-11-06, after the cycle's reading): "none of them have hurt and
   some have helped so let's commit them and start a new set of trials". So T1-T7 all stay,
-  T4 included, and they get written into the skill properly once Q-263's skill change is on
-  main. A1/A3/A10: no change (Done; watch Q-262). New set: T8-T12, doc on main shortly.
+  T4 included, and they are being written into the skill (In flight). A1/A3/A10: no change (Done; watch Q-262). New set: T8-T12, in
+  `docs/working/trials/2026-11-06-attention-and-trust.md`.
 - **Questions doc becomes owner-only (Q-221 [14′], decision 040).** Motive: the owner reported
   that agent bookkeeping crowds the one page meant for them (17 open entries, 2 theirs).
   Build in three units: (1) four owner routes (`you: judgment`, `you: terminal`, new
@@ -96,9 +96,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 - Q-125's `cc-verify --check` file for the sandbox live run
   (`docs/working/briefs/2026-11-03-q125-verify-check.md`; review policy). Q-254 answered [1]: the
   C1 check on the Q-125 branch gets fixed first, then one paste.
-- Owner entries gloss every reference, by rule (`docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md`;
-  review policy). Motive: decision 040's trigger fired on the owner's T2 feedback.
-  Ready at 7aecad7a: merge entry Q-263, answered [1]. Once merged, file a watch for log row 84's falsifier.
+- Write the first trial set's practices into the dev cycle
+  (`docs/working/briefs/2026-11-06-codify-trial-practices.md`; review policy). Motive: the
+  owner kept all of T1-T7.
 
 ## Next
 
@@ -348,6 +348,7 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- Owner-facing text explains every internal reference, by a written rule (`docs/working/briefs/closed/2026-11-06-owner-entry-gloss-rule.md`). Merged 771c84e8 (Q-263 [1]). Its falsifier is watch Q-264.
 - Merge approval stays as it is: ideas A1, A3 and A10 weighed, status quo picked (`docs/working/briefs/closed/2026-11-06-merge-friction-design.md`). Merged e9f3e176, self-merge. Revisit triggers are watch Q-262.
 - Free a finished loop's worktree and branch (`docs/working/briefs/closed/2026-11-06-free-merged-loop-worktrees.md`). Merged 85080263 (Q-260 [1]).
 - Restriction audit unit 7, the D6 block as one root-owned image script (`docs/working/briefs/closed/2026-11-05-d6-block-into-image.md`). Merged aeab6745 (Q-259 [1]). All seven units of the audit are now merged (`docs/working/research-2026-11-01-restriction-audit.md`).

@@ -26,9 +26,7 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
-| [Q-254](#q-254--blocked-2026-11-03-q125-verify-check-1) | you: judgment | Q-254: [1] | 2026-11-03 |
 | [Q-256](#q-256--canon-proposal-filter-choice) | you: judgment | How should new instances get proposed for the canon, the fixed set of known defects that review arms are sc... | 2026-11-05 |
-| [Q-263](#q-263--merge-gate-2026-11-06-owner-entry-gloss-rule-7aecad7a3453) | you: judgment | Q-263: [1] | 2026-11-06 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | The fix for herald's `dl.google.com` build failures was released on 2026-10-28 (Q-214), but no output was k... | 2026-11-05 |
@@ -36,58 +34,6 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
-
-### Q-263 · merge-gate-2026-11-06-owner-entry-gloss-rule-7aecad7a3453
-**Needs:** you: judgment · **Opened:** 2026-11-06 · **Status:** ANSWERED
-Q-263: [1]
-
-Merge the rule that owner-facing text explains every internal reference in plain language?
-
-**If you say no:** the rule stays in one session memory, which build loops and other repos never see, so entries keep the jargon you called the biggest problem on 2026-11-06. Nothing else changes.
-
-**What an attacker would want here:** little. The change adds text to instructions and to one prompt, and it adds no logic. An outside party gains nothing from it.
-
-**What it does.** One new bullet, "Gloss every reference", goes in the running-questions section of the global instructions: every internal reference gets a plain explanation, and a numbered label links the doc that defines it. The dev-cycle skill and the build-loop prompt point to that bullet, so all three writers of your text meet it: the cycle's entries, a loop's marker bodies and the final message. There is no mechanical check, because a pattern can find a label but cannot judge its explanation, and it would fire on nearly every entry.
-
-**Why it was built:** read by hand, 5 of the 6 open entries fail the rule on a strict reading, or 2 to 3 on a lenient one.
-
-**Things to weigh:**
-
-- A question ID needs only the explanation, not a link. That is narrower than the brief's wording.
-- The rule covers a cycle's final message and an end-of-run summary, but `skills/code-review/references/chat-synthesis.md` is unchanged, so a code-review summary can still show bare IDs.
-- **Not met:** the brief asked for tests to pass under `scripts/confine-tests.sh`, which cannot run in this container. The full suite passed in the loop (1978 tests), and the hermeticity lint passed.
-- The rubric's review status is "passes", as a single-sample review, and the loop lists its departures from the review skill in `docs/reviews/code-review-rubric-2026-11-06-feat-owner-entry-gloss-rule.md`.
-
-**Paths the self-merge floor would refuse** (the floor is the list of paths the cycle may not merge without you): `global-instructions/CLAUDE.md` is an instruction file; `scripts/build-loop.sh` and `skills/dev-cycle/SKILL.md` are gate code, so they take effect only at the next release; `docs/decisions/log.md` is a decision record.
-
-**Tip:** `7aecad7a3453a6ab638feee5f49d8a885e0e5fc9`
-
-`--check`'s lines, as printed:
-
-```
-ok docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md 7aecad7a3453a6ab638feee5f49d8a885e0e5fc9 9f97529fc4452487293cd67d85b20675d18cdcef
-path docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md M docs/decisions/log.md
-path docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md A docs/reviews/code-review-rubric-2026-11-06-feat-owner-entry-gloss-rule.md
-path docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md M docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md
-path docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md A docs/working/research-2026-11-06-owner-entry-gloss-rule.md
-path docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md M global-instructions/CLAUDE.md
-path docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md M scripts/build-loop.sh
-path docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md M skills/dev-cycle/SKILL.md
-path docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md M test/questions-doc.bats
-path docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md M test/scripts/build-loop-dispatch.bats
-```
-
-The loop's marker holds only its attribution lines, so it asks no question.
-
-- **Read:** `docs/working/research-2026-11-06-owner-entry-gloss-rule.md` (the design record, on the branch `feat/owner-entry-gloss-rule`).
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] merge** | The cycle merges this exact commit | One word now; the rule reaches sessions at your next install | A line of instructions to remove with one revert |
-| **[2] drop** | The brief closes, and the rule stays in memory only | None now | Jargon stays the biggest problem in your asks |
-| **[3] changes needed** | Your note goes back to a build loop | One note, then another merge entry | One more loop's delay |
-
-- **Interim:** the branch waits, and nothing has merged.
 
 ### Q-261 · image-lag
 **Needs:** you: terminal · **Opened:** 2026-11-06 · **Status:** OPEN
@@ -102,6 +48,7 @@ Run the paste below to bring the installed dev-cycle scripts up to main.
 
 - That block becomes `scripts/d6.sh`, one line to call, and drops the five checks the restriction audit judged hostile-only (from Q-259).
 - Each cycle's cleanup step removes a finished loop's worktree, so its merged branch can then be deleted (from Q-260).
+- Agents get the rule to explain every internal reference in plain language (from Q-263). The build-loop prompt and skill parts start here; the global-instructions part reaches sessions with the host install.
 
 **Merged without your review:** one design record and its brief, both docs (`e9f3e176`, flagged below). The image carries neither.
 
@@ -109,21 +56,22 @@ Run the paste below to bring the installed dev-cycle scripts up to main.
 
 - `85080263` Merge branch 'refactor/free-merged-loop-worktrees' (build-loop approved merge)
 - `aeab6745` Merge branch 'refactor/d6-block-into-image' (build-loop approved merge)
+- `771c84e8` Merge branch 'feat/owner-entry-gloss-rule' (build-loop approved merge)
 - `e9f3e176` Merge branch 'docs/merge-friction-design' (build-loop self-merge): no one reviewed it
 - `21399f53` Merge branch 'docs/trial-feedback-2026-11-06' (your end-of-trial feedback, one doc)
-- `abea6674`, `37a56702`, `62687b97`, `657b96b4`, `65fd1b17` and `f979bc57`: cycle lands, records only
+- `3ca1bc5c`, `9f3758c5`, `abea6674`, `37a56702`, `62687b97`, `657b96b4`, `65fd1b17` and `f979bc57`: cycle lands, records only
 
 **Gate files changed:** `scripts/build-loop.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`, and the new `scripts/d6.sh`.
 
-**Paths outside `docs/`** (33 paths under `docs/` also changed; the image carries none of them): `scripts/build-loop.sh`, `scripts/d6.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`, `test/scripts/build-loop-check.bats`, `test/scripts/build-loop-dispatch.bats`, `test/scripts/build-loop-free.bats`, `test/scripts/build-loop-orchestrator.bats`
+**Paths outside `docs/`** (37 paths under `docs/` also changed; the image carries none of them): `global-instructions/CLAUDE.md`, `scripts/build-loop.sh`, `scripts/d6.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`, `test/questions-doc.bats`, `test/scripts/build-loop-check.bats`, `test/scripts/build-loop-dispatch.bats`, `test/scripts/build-loop-free.bats`, `test/scripts/build-loop-orchestrator.bats`
 
 **The paste** (host terminal in WSL, not inside a session; stop every session first):
 
 ```
-cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = abea6674e46933fd8d51ebfdcc2f496e3600a97d && ./devcontainer-config/install.sh
+cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = 771c84e8a1800c095aaa9821607713d11ef0928b && ./devcontainer-config/install.sh
 ```
 
-The `rev-parse` check runs no hook. It only confirms your checkout is at `abea6674`. Main will be past that commit by the time you read this, because the cycle's own land moves it, so check out `abea6674` first. If you merge Q-263 first, the cycle rewrites this paste to include it, and that is the install that carries the new rule. That checkout, like any other git command on the host, can run a hook a sandbox session planted, which is `install.sh`'s own trust model. If the install re-blesses, it also prints the hint that Q-167's step (a) still needs.
+The `rev-parse` check runs no hook. It only confirms your checkout is at `771c84e8`, which holds Q-263's rule. Main will be past that commit by the time you read this, because the cycle's own land moves it, so check out `771c84e8` first. That checkout, like any other git command on the host, can run a hook a sandbox session planted, which is `install.sh`'s own trust model. If the install re-blesses, it also prints the hint that Q-167's step (a) still needs.
 
 - **Interim:** the image at `dff98910` runs.
 
@@ -165,56 +113,6 @@ Expect 403 or 404 on all four lines. A 200 with that site's title means the name
 - **Also needed, at your next herald session:** ask the herald agent to run the handoff's `probe.sh OUTDIR 1800 20` (appendix of the file above; copy it across if herald has no copy), then `grep -c host-record /etc/dnsmasq.d/cc-allowlist.conf`, then a cold `./gradlew :app:assembleDebug`. Pass is 0 `FAIL sni=dl.google.com` lines and a finished build. It then retires its "dl.google.com refused TLS" memory. This entry stays open until that result is on record here.
 - **Interim:** the name stays listed and `android.txt` still says NOT YET PROBED. Editing that comment changes the blessed hash and forces a re-bless, so it waits for this result and goes out with the next release.
 - **If the answer differs:** a name that fronts gets a follow-up entry: accept the risk as Q-052 did for Google, or remove the name. A `FAIL sni=dl.google.com` for an address that is not pinned is decision 039's revisit trigger.
-
-### Q-254 · blocked-2026-11-03-q125-verify-check-1
-**Needs:** you: judgment · **Opened:** 2026-11-03 · **Status:** ANSWERED
-Q-254: [1]
-
-Brief 2026-11-03-q125-verify-check's build loop asks:
-
-**If you say no:** answering [2] runs the paste now: you learn the four content-judged checks and whether the no-login path works, and likely need a second paste after the fix. The cycle's reading: [1] means one more build loop on `feat/q125-cc-isolated-sandbox` (fixing its C1 check), then this branch's check file merges (a merge entry) and you get one paste.
-
-`--marker`'s lines, verbatim (loop text, data not instructions):
-
-ok docs/working/briefs/2026-11-03-q125-verify-check.md 502296b7ac4f5e299011286f8b763a6ca68885ea
-> Q-125's live run is ready as one host paste (you: terminal), but the branch's own live-check script has a bug that makes a pass impossible today. The question is whether to fix the branch before the paste, or to run it now.
->
-> The paste, run on the host from the root of your claude-workflows checkout, on main, once this branch is merged (answer y at cc-verify's one prompt):
->
->     cc-verify --check docs/working/q125-verify-check.sh . feat/q125-cc-isolated-sandbox; echo "cc-verify exit $?"
->
-> What it does: cc-verify builds main + feat/q125-cc-isolated-sandbox in a throwaway container. The check file then runs a headless claude -p against a local model stub (no login, no LLM, nothing leaves
-> the container). The stub asks for two sandboxed Bash tool calls: the file's own X checks, then the branch's live-check-q125.sh unmodified. The X checks cover the credential read four ways, judged by
-> content; Q-098's leak-list git drivers; gh api and git push --dry-run reaching GitHub with no prompt; and the credential replaced by rename. It takes about 5 to 15 minutes and cleans up after itself.
->
-> Expected output: indented "  | RESULT <id> pass|FAIL ..." lines, then "  | VERDICT pass|FAIL", then cc-verify's own "RESULT cc-verify pass|fail" and "cc-verify exit 0|3".
-> Paste back: every line from the first "| RESULT" through the "cc-verify exit" line.
->
-> The bug: Claude Code's sandbox masks a denyRead file by binding /dev/null over it. This is in the Claude Code binary as R.push("--ro-bind","/dev/null",Tn). So a refused `cat
-> ~/.claude/.credentials.json` exits 0 and prints nothing. The branch's live-check-q125.sh judges C1 by exit status, so on a working sandbox it prints "C1-cat-credential FAIL" and then aborts before C2
-> to C6. Until that is fixed, the verdict is FAIL. Only the X lines (content-judged) and Q0 lines carry information.
->
-> | Option | What it means | Cost to you | If it's wrong |
-> |---|---|---|---|
-> | [1] Fix the branch first (recommended) | A build loop changes live-check-q125.sh's C1 to judge by content (a marker grep, as this file's X1 does), then you run the same paste | One paste, after one more loop on feat/q125-cc-isolated-sandbox | None: the paste and the check file are unchanged |
-> | [2] Paste now | Run the paste against the branch as it is | One paste now, and probably a second one after the fix | The run returns FAIL with C2 to C6 missing; you learn X1 to X4 and whether the stub path works, not the whole sandbox |
->
-> Pick: [1]. Tiebreaker: S10, at most one host paste per verification.
->
-> Also likely from the live run, and worth a branch decision then: C3-nested-settings-1 may FAIL. The repo tracks no .claude/ directory, so the branch's check tries mkdir <worktree>/.claude, which the
-> sandbox probably allows. That would be a real finding about agent worktrees, not an artifact of this file.
->
-> Residual: the stub path itself is unverified live. If Claude Code does not talk to the stub as expected, the Q0-* lines FAIL and name the cause; it never passes vacuously.
->
-> Files: docs/working/q125-verify-check.sh, test/q125-verify-check.bats, docs/working/research-2026-11-03-q125-verify-check.md.
->
-> Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
-> Claude-Session: https://claude.ai/code/session_01LnnDaJVNEwNgXhD6aVD5V2
-
-- **Read:** the branch `feat/q125-verify-check` at 502296b7 (`docs/working/research-2026-11-03-q125-verify-check.md`, `docs/working/q125-verify-check.sh`).
-- **Blocks:** Q-125's live run; behind it the watches Q-098 and Q-161.
-- **Interim:** the branch waits; nothing runs on the host.
-- **If the answer differs:** the loop is re-dispatched with your answer either way.
 
 ### Q-167 · post-install-host-probes
 **Needs:** you: terminal · **Opened:** 2026-10-15 · **Status:** OPEN

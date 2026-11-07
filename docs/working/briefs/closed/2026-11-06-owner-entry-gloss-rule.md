@@ -33,3 +33,5 @@ Policy: review
 - Length limits on entries: the owner said length is not the problem, clarity is.
 
 Dispatched: 1
+
+Applied: Q-263=merged
