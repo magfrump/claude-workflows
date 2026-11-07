@@ -32,6 +32,14 @@ Write it anywhere, in any order, for example: `T2 good, T3 made me skim, T5 too 
 - **2026-10-30, owner:** "Q-239..241: [1]", the second batched answer, in the `Q-NNN..NNN: [n]` form the final message offered. Recorded as `[1]` on each entry; all three merged the same hour.
 - **2026-10-30, owner, on T2's attacker lines:** "a hostile code author is out of scope for this repo. Every project is asking the agent to write and test code, which involves running the agent's code. Guarding against intentional hostility doesn't create security and does add friction." This came after Q-241's first version escalated Q-106 to a 5th review round on findings that each needed a hostile branch. That is constraint S1, and the review brief had not quoted it. For T2: "What an attacker would want here" names outside parties only, never the code's own author.
 - **2026-11-05, owner:** "what's the expected interface for me to see what trials are happening, to know what feedback is relevant?" The answer was this doc, and nothing brought it to the owner. Since then, each final message ends with a line naming the running trials and linking here.
+- **2026-11-06, owner, end of trial, on each trial in turn:**
+  - **T1:** "I'm not reading the release notes thoroughly since I'm mostly tracking what's happening in the repo via my answers to other questions. The location is accessible."
+  - **T2:** "this has improved a little bit, but the biggest problem is jargon and references, like "feedback on T1-T7" without the link to `2026-10-30-friction-engagement.md` which explains which trial number means what. The loop-ending message here is great with the two links for further reading."
+  - **T3:** "this is fine, but it's not targetting a big blocker."
+  - **T4:** "stale items can arise for lots of reasons, often they are directions for development I haven't had time to think about yet, and no change to the interface will change what my priorities are."
+  - **T5:** "this week's digest was nice to read, but as with T1 I'm following a lot of the work via my answers to questions, the digest will be more helpful as work requires less intervention from me."
+  - **T6:** "I did trust this but it's hard to tell what my level of trust should be."
+  - **T7:** "I had noticed the setlocale warning in the past, I didn't actively notice that it disappeared but I am glad you're looking at it."
 
 ## Orchestrator notes
 
