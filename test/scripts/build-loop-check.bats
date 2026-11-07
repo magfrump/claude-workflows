@@ -259,7 +259,7 @@ tree still failed" ] || { echo "$output $stderr"; return 1; }
     refuse=(CLAUDE.md "$INSTR" docs/sub/SKILL.md "$INSTR" Agents.MD "$INSTR" docs/working/CLAUDE.md "$INSTR"
         .claude/rules/x.md "$INSTR" .claude/commands/c.md "$INSTR" scripts/lib/CLAUDE.md "$INSTR"
         .claude/settings.json "$DOT" .envrc "$DOT" .gitattributes "$DOT" docs/x/.y "$DOT" .github/x.yml "$DOT"
-        scripts/build-loop.sh "$GATE" scripts/dev-cycle.sh "$GATE" scripts/questions.sh "$GATE"
+        scripts/build-loop.sh "$GATE" scripts/d6.sh "$GATE" scripts/dev-cycle.sh "$GATE" scripts/questions.sh "$GATE"
         scripts/lib/dev-cycle-read.sh "$GATE" scripts/lib/new.sh "$GATE" Scripts/Build-Loop.sh "$GATE"
         skills/dev-cycle/references/x.md "$GATE" Skills/Dev-Cycle/x.sh "$GATE" skills/dev-cycle/SKILL.md "$INSTR"
         docs/imported.md "$IMP" Docs/Imported.md "$IMP" docs/deep.md "$IMP" skills/x/ref.md "$IMP" docs/new.md "$IMP" docs/private.md "$IMP"

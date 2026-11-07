@@ -10,6 +10,8 @@
 # sources it from its own directory (never from the repo it acts on), so a copy
 # of scripts/ with its lib/ is self-contained. A change here must pass
 # test/scripts/dev-cycle.bats and build-loop.sh's suites (build-loop-*.bats).
+# scripts/d6.sh is the exception to what follows: it sources the image copy in
+# a subshell for git_harden alone, with no -e and no ROOT_REAL.
 # The caller sets -euo pipefail (check_answer, brief_fields and the import
 # walks also set pipefail for themselves), cds to the repo root and sets ROOT_REAL (that root,
 # symlinks resolved) before calling any file check. inrepo, dirok, skipped,
@@ -306,7 +308,8 @@ oddwhy() {  # the reason fence() refused a file, for a skip line
 # hardened, but where a caller hands back its own setting on purpose
 # (merge_ident reads the caller's global config); build-loop.sh and
 # dev-cycle.sh call it once, after scrub_reexec and before their first git
-# call (D6 runs both as gate code: rows 281, 495). Each pin keeps the gate's
+# call (D6 runs both as gate code: rows 281, 495; d6.sh calls it in a subshell
+# for its own git). Each pin keeps the gate's
 # reads stable and its own (narrowed to these by brief
 # 2026-11-01-relax-gate-git-state, research D4; the anti-forgery pins for the
 # commit-graph and multi-pack-index went with it). HARDEN's config pairs
@@ -1024,12 +1027,12 @@ ownfile() {
 # The gate's own files: a change to them lands only through a merge-gate-
 # review entry, never a self-merge. The scripts because the image copy, built
 # from the host checkout's HEAD, runs every merge after the next release (plan D6, D5
-# item 3; Q-140 [1]); skills/dev-cycle/ because its SKILL.md holds the D6 snippet that runs
-# the gate (U4c; plan D4, F52). Both reach a session only from a release, so
+# item 3; Q-140 [1]); scripts/d6.sh because it runs the gate; skills/dev-cycle/ because its
+# SKILL.md states the call (U4c; plan D4, F52). All reach a session only from a release, so
 # here the floor is stricter than D5.
 # One list for floor and build-loop.sh's --approved, which tests it on its
 # own (floor does not run there); build-loop.sh's header repeats it.
-GATE_CODE='^scripts/(build-loop|dev-cycle|questions)\.sh$|^scripts/lib/|^skills/dev-cycle/'
+GATE_CODE='^scripts/(build-loop|d6|dev-cycle|questions)\.sh$|^scripts/lib/|^skills/dev-cycle/'
 # The self-merge floor (plan D5 items 1-4): a changed path that a self-merge never lands,
 # even when the brief's Paths: lists it, because it takes effect on merge with
 # no later review or later runs read it as truth. $1 is the path as the merge
