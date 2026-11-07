@@ -3,7 +3,7 @@
 **Goal**: make T1 to T7 of `docs/working/trials/2026-10-30-friction-engagement.md` standing dev-cycle behaviour, each written once where its writer meets it, with no dependence on a session reading the trial doc.
 **Problem framing**: the practices live only in a doc the skill does not name, and a new trial set is taking that doc's place in the final message, so they will quietly stop. Considered and discarded: "the skill needs a new owner-facing-writing chapter" (that restates rules away from the moment they apply, and the owner's feedback says T3 and T4 earn little).
 **Project state**: this branch delivers the skill text and a small gate change for the weekly path · standalone, under the dev cycle's trial close-out · not blocked (cite: docs/working/briefs/2026-11-06-codify-trial-practices.md)
-**Task status**: in-progress (research done, implementing)
+**Task status**: complete (implemented and reviewed)
 
 ## What exists
 
@@ -82,9 +82,10 @@ Candidates: **[i]** keep every first-parent commit (today). **[ii]** self-merges
 - **T1 release notes, one paste:** step 0.1, in the `image-lag` paragraph, since that is where the entry is written. It also carries the trial's lesson that a rewrite reads `.manifest` and no older text.
 - **T2 asks read cold:** "If you say no:" is in the Rules' "Attention is the budget" bullet, because every owner entry is written under it, and that bullet already points at "Gloss every reference" for the jargon half (not restated). The attacker line is in step 7's merge-entry paragraph, the only writer of `merge-gate-` entries, and names outside parties only.
 - **T3 batched answers:** the offer is in the final message; the rule is in step 9.3, the merge-answer rule. Two sentences, kept cheap, since the owner says it targets no big blocker.
+  Residual risk, stated as S1 asks: `--answered` is blind to how an ID was reached, so which entries a batch covers rests on the orchestrator's reading. T3 relaxes the "the answer must name the ID" bound of `docs/working/research-2026-10-29-session-answers-for-merge-entries.md` for the block route, as the brief requires. The bounds are that the block is the orchestrator's own last final message (never text quoted in it), the instruction is unconditional, later entries stay out, and the record names each ID.
 - **T4 stale sweep:** one bullet of the weekly digest's list. Closing needs no new text for watches and agent items (step 3 and the roadmap already do it). The line covers `you:` entries only, a narrowing from the trial's "an entry": the cycle checks watches itself every iteration, so an owner line on them spends attention for nothing. A `you:` entry whose closure line is met gets "close" as its proposed fate, as the gate refuses a cycle close (step 0.1's image entries aside). Nothing new runs each iteration, per the owner's "no change to the interface will change what my priorities are".
 - **T5 weekly digest:** a paragraph at the head of step 9, plus D1's gate change.
-- **T6 security marker:** the final message's paragraph, where it fires. The digest list reports the count.
+- **T6 security marker:** the final message's paragraph, where it fires. The digest list reports the count, from the entries and reviews that outlast a final message.
 - **T7 recurring warnings:** step 1, beside the health-check triage, where the warnings are read. Filed as agent work, so no owner cost.
 
 Observable (S6): each edition's ask counter and `⚠ SECURITY` count, and whether the next release entry stays short. It can come out negative: a release entry that regrows a commit list, or a week with no edition, is visible in `docs/working/weekly/` and the questions file.

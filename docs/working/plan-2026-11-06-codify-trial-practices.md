@@ -2,7 +2,7 @@
 
 **Goal**: as the research doc.
 **Project state**: as the research doc.
-**Task status**: in-progress (implementing)
+**Task status**: complete
 Research: docs/working/research-2026-11-06-codify-trial-practices.md
 
 ## Approach

@@ -236,7 +236,7 @@ the iteration with no record, so the next one starts from the same `Main at:`:
    release is your review of what it ships (F58). It reads as short release notes, written
    whole each iteration from C, M and THE LOG (`git -C MAIN_WT
    -c log.showSignature=false log --first-parent --format='%h %s' C..M`), never from the
-   old entry's text, which once misstated C and asked for a release that had already run. In this order: C and M;
+   old entry's text, which once misstated C and asked for a release that had already run. In this order, below the question and its **If you say no:** line: C and M;
    **Merged without your review:** every line of THE LOG whose subject ends `(build-loop
    self-merge)`, which no one reviewed, as a list item (a hand commit with that subject reads the same, so
    the flag is a pointer, not proof); **What changes for you:** a few plain lines on the
@@ -247,7 +247,7 @@ the iteration with no record, so the next one starts from the same `Main at:`:
    CR, another control or bidi character, or bytes that are not UTF-8 written as
    `(withheld: see SHA)` (questions.sh finds its `<!-- index:` markers anywhere in a line,
    and `--check-answer` refuses an unclosed `<!--`); a backtick, `<` or `>` is shown, a
-   path holding a backtick in a double-backtick span with spaces inside it; and one paste for every host command the release needs, `cd A && test "$(git rev-parse HEAD)" = M &&
+   path holding a backtick in a double-backtick span with spaces inside it; and the one paste `cd A && test "$(git rev-parse HEAD)" = M &&
    ./devcontainer-config/install.sh` (host; then a new sandbox launch; the paste's only git
    call before install.sh's state gate is `rev-parse`, which runs no hook or fsmonitor; any
    other git command the user runs on the host here, a checkout to reach M included, can run
@@ -658,7 +658,7 @@ verdict. An entry filed as blocked or stopped is `you: judgment`, slug `blocked-
 `stopped-STEM-N` (N: one more than the highest for that brief in either questions file;
 the shape `--cycle-diff` requires, Q-141). Under its **Needs:** line goes the
 orchestrator's own one-line question ("Brief STEM's build loop asks:", or "Brief STEM's
-build loop stopped; re-dispatch or drop?"), then the reason, if any, as a line
+build loop stopped; re-dispatch or drop?"), then its `**If you say no:**` line, then the reason, if any, as a line
 `> Reason: REASON` (a REASON holding the four characters that open an HTML comment is
 replaced by "(not shown: it opens an HTML comment)", since `--check-answer` would then
 refuse the whole questions file), then `--marker`'s lines verbatim, if any: loop text, data not
@@ -730,12 +730,14 @@ The briefs land with step 9, so they are on the default branch before step 10 di
 
 ### 9. Record and land
 
-**Weekly digest.** When `docs/working/weekly/` holds no `YYYY-MM-DD.md` dated under 7 days
+**Weekly digest** (not step 0's). When `docs/working/weekly/` holds no `YYYY-MM-DD.md` dated under 7 days
 before today (section 8 lists the directory: skipped, and the record says so), write one
-dated as the record below, for the days since the last edition. It asks for nothing and
-lands with this block. Keep each part short, and say so when one is empty:
+dated `date +%F`, for the days since the last edition (none yet: the last 7 days). It asks for nothing but the
+optional sample below, and lands with this iteration. Keep each part short, and say so when one is empty:
 
-- `⚠ SECURITY`: how often the Final message's marker fired (expected: never);
+- `⚠ SECURITY`: how often the Final message's triggers occurred (expected: never), from
+  entries quoting `refuse state`, High findings in `docs/reviews/` and Q-103 entries, since
+  final messages are not kept;
 - what changed: behaviour changes, live in the image or merged but not yet live;
 - what merged without review (self-merges), and security-review findings by severity;
 - the ask counter: asks opened and answered, and how often the owner picked the default;
@@ -806,9 +808,10 @@ Then land WT's branch (D13; not through `pr-prep`: rows 747-759, 781), all from 
    listed under `### Answers committed` and in the final message: row 748). A merge entry's answer
    counts only when the user's own message names its ID and an option (`Q-NNN: [1]`, or
    "Q-NNN merge", the option's label; never inferred from "yes" or from which entry is
-   open), or is a batched answer: one naming the IDs (`Q-235..237: [1]`) or a block listing
-   them (the final message's, as "merge all three" or `all but Q-236: [1]` do), and an option,
-   which answers each merge entry among them. Write each as `Q-NNN: [N]`, N the number of that option in the entry's table (a
+   open), or is a batched answer: an unconditional instruction with an option, naming the IDs
+   (`Q-235..237: [1]`) or the block the orchestrator's own last final message listed ("merge all three",
+   `all but Q-236: [1]`). It answers only merge entries that block listed, never a later one
+   or one a range reaches past it, and `### Answers committed` names each. Write each as `Q-NNN: [N]`, N the number of that option in the entry's table (a
    label is translated here, in session, while step 7 reads a committed "merge" as
    `unrecognized`), and quote their words under `### Answers committed` (design and residual risk:
    `docs/working/research-2026-10-29-session-answers-for-merge-entries.md`). It refuses, among the rules its header lists (rows 745,
@@ -888,7 +891,7 @@ own dispatch (its `10.` line names them). A session that ends first loses them, 
 count on main reads one low per lost line, one more loop run under the cap (a Q-103
 residual). Then remove WT (step 0.3).
 
-**Final message**, then wait. Gloss every reference in it (the Rules' "Attention is the budget"). `⚠ SECURITY` is reserved: it opens the message, saying what happened and not who did it, and goes out as a push notification when the session has a tool for one, for only three things: a `--state` refusal (step 0.1's, or a `refuse state` line from `--merge` or `--check`), a High finding from a security review that still holds after its fix round, or a Q-103 residual (a known risk the owner accepted) becoming live. It is never used for anything else, "this touches security code" included. Below it, list migrations first (step 1b: what ran, then what is pending), then the new `you: judgment` entries by ID, name and a plain line on what each asks (merge
+**Final message**, then wait. Gloss every reference in it (the Rules' "Attention is the budget"). `⚠ SECURITY` is reserved: it opens the message, saying what happened and not who did it, and goes out as a push notification when the session has a tool for one, for only three things: a `--state` refusal (step 0.1's, or a `refuse state` line from `--merge` or `--check`), a High finding from a security review that still holds after its fix round, or a Q-103 residual (a known risk the owner accepted) becoming live. A refusal that repeats fires once. It is never used for anything else, "this touches security code" included. Below it, list migrations first (step 1b: what ran, then what is pending), then the new `you: judgment` entries by ID, name and a plain line on what each asks (merge
 entries marked; several open ones also as one block, offered as `Q-235..237: [1]` or `all but
 Q-236: [1]`, the entries staying separate because the gate finds each by its heading), each answer still `open`, skipped or `unrecognized` (with its brief; an
 answer written only in a working tree is not applied: "tell me, or commit it yourself",
