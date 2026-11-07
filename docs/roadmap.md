@@ -29,7 +29,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   code lives in the SWRBench fork). Scope: Path A records since the last audit, using the
   `constraints-builder` skill's amend mode to revise the file. First step: the owner confirms
   scope and timing; it runs on its own branch, outside the cycle. It also covers
-  `skills/dev-cycle/SKILL.md` as Q-259 and Q-260 changed it (step 4b, 2026-11-06).
+  `skills/dev-cycle/SKILL.md` as Q-259 and Q-260 changed it (step 4b, 2026-11-06). Also 85080263's
+  Path A record, where S4 (soft) shared the pruning of candidate D with H1 (step 4, 2026-11-06).
 
 - **Agent: `source_lines_ok` misses an unterminated last line** (filed 2026-11-05, step 7).
   Motive: the Q-147 review found the shipped self-check in `devcontainer-config/cc-verify.sh`
@@ -50,7 +51,13 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   Every iteration writes owner entries, the image-lag entry and the final message as
   `docs/working/trials/2026-10-30-friction-engagement.md` says (T1-T7), and the first
   iteration of each week writes `docs/working/weekly/`. First step: done (T1, T2, T4, T5 started
-  2026-10-30). Owner feedback on T1-T7 recorded there on 2026-11-06. Next: run `divergent-design` on A1/A3/A10.
+  2026-10-30). Owner feedback on T1-T7 recorded there on 2026-11-06.
+  The cycle's reading (iteration 2026-11-07-0500; the owner can overrule any line): T1 release
+  notes, T3 batched answers, T5 weekly digest, T6 security marker and T7 no recurring warnings
+  stay as they are, with nothing to build. T2's opening lines stay, and its real problem,
+  jargon and bare references, is briefed (In flight). T4: the 21-day proposed-fate line in the
+  weekly digest stops, because stale entries are unthought directions and no interface changes
+  that; closing an entry whose own closure line is met stays. A1/A3/A10 are briefed (In flight).
 - **Questions doc becomes owner-only (Q-221 [14′], decision 040).** Motive: the owner reported
   that agent bookkeeping crowds the one page meant for them (17 open entries, 2 theirs).
   Build in three units: (1) four owner routes (`you: judgment`, `you: terminal`, new
@@ -84,6 +91,10 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 - Q-125's `cc-verify --check` file for the sandbox live run
   (`docs/working/briefs/2026-11-03-q125-verify-check.md`; review policy). Blocked at
   502296b7: the Q-125 branch's own C1 check cannot pass on a working sandbox; Q-254.
+- Owner entries gloss every reference, by rule (`docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md`;
+  review policy). Motive: decision 040's trigger fired on the owner's T2 feedback.
+- Whether merge approval needs changing, ideas A1, A3 and A10
+  (`docs/working/briefs/2026-11-06-merge-friction-design.md`; self-merge, design record only).
 
 ## Next
 

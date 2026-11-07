@@ -13,9 +13,10 @@ the entry to `questions-archive.md`, so this file only ever holds what is still 
 |---|---|
 | `you: judgment` | Needs your taste or authority. The only real attention spend. |
 | `you: terminal` | Needs your machine, not your mind. Collected into one paste below. |
-| `agent` | Mechanical. Should not be here long. |
-| `trigger` | Not a question yet — a condition being watched. Costs you nothing. |
-| `deferred` | Scheduled behind an event that has not happened. |
+| `you: walkthrough` | A hands-on walkthrough or playtest only you can do. |
+| `you: fyi` | A quick read to acknowledge, answered `seen`. |
+
+Agent work is on the roadmap (`docs/roadmap.md`), and conditions the cycle is watching are in `docs/working/watching.md`.
 
 Maintained by `scripts/questions.sh` (`check` · `index` · `archive` · `next-id` · `open`).
 The index below is generated — edit entries, not the table.
@@ -30,13 +31,15 @@ The index below is generated — edit entries, not the table.
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | The fix for herald's `dl.google.com` build failures was released on 2026-10-28 (Q-214), but no output was k... | 2026-11-05 |
-| [Q-261](#q-261--image-lag) | you: terminal | - Q-259: that block becomes `scripts/d6.sh`, one line to call, and drops the five checks the restriction au... | 2026-11-06 |
+| [Q-261](#q-261--image-lag) | you: terminal | Run the paste below to bring the installed dev-cycle scripts up to main. | 2026-11-06 |
 <!-- index:end -->
 
 ## Open
 
 ### Q-261 · image-lag
 **Needs:** you: terminal · **Opened:** 2026-11-06 · **Status:** OPEN
+
+Run the paste below to bring the installed dev-cycle scripts up to main.
 
 **Release notes.** The installed image is the root-owned copy of the dev-cycle scripts and skill. It is at `dff98910` (read from `/opt/claude-workflows/.manifest`), and main is ahead of it by the two merges you approved today, Q-259 and Q-260. Neither is live until you run the paste below.
 
@@ -53,19 +56,20 @@ The index below is generated — edit entries, not the table.
 
 - `85080263` Merge branch 'refactor/free-merged-loop-worktrees' (build-loop approved merge)
 - `aeab6745` Merge branch 'refactor/d6-block-into-image' (build-loop approved merge)
-- `65fd1b17` and `f979bc57`: cycle lands, records only
+- `21399f53` Merge branch 'docs/trial-feedback-2026-11-06' (your end-of-trial feedback, one doc)
+- `657b96b4`, `65fd1b17` and `f979bc57`: cycle lands, records only
 
 **Gate files changed:** `scripts/build-loop.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`, and the new `scripts/d6.sh`.
 
-**Paths outside `docs/`** (28 paths under `docs/` also changed; the image carries none of them): `scripts/build-loop.sh`, `scripts/d6.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`, `test/scripts/build-loop-check.bats`, `test/scripts/build-loop-dispatch.bats`, `test/scripts/build-loop-free.bats`, `test/scripts/build-loop-orchestrator.bats`
+**Paths outside `docs/`** (29 paths under `docs/` also changed; the image carries none of them): `scripts/build-loop.sh`, `scripts/d6.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`, `test/scripts/build-loop-check.bats`, `test/scripts/build-loop-dispatch.bats`, `test/scripts/build-loop-free.bats`, `test/scripts/build-loop-orchestrator.bats`
 
 **The paste** (host terminal in WSL, not inside a session; stop every session first):
 
 ```
-cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = 850802633c9d4f63974ed88b3a84fbd0edb82d33 && ./devcontainer-config/install.sh
+cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = 21399f53ddfa765d14981ba9042760318365e3c5 && ./devcontainer-config/install.sh
 ```
 
-The `rev-parse` check runs no hook. It only confirms your checkout is at `85080263`. Main will be past that commit by the time you read this, because the cycle's own land moves it, so check out `85080263` first. That checkout, like any other git command on the host, can run a hook a sandbox session planted, which is `install.sh`'s own trust model. If the install re-blesses, it also prints the hint that Q-167's step (a) still needs.
+The `rev-parse` check runs no hook. It only confirms your checkout is at `21399f53`. Main will be past that commit by the time you read this, because the cycle's own land moves it, so check out `21399f53` first. That checkout, like any other git command on the host, can run a hook a sandbox session planted, which is `install.sh`'s own trust model. If the install re-blesses, it also prints the hint that Q-167's step (a) still needs.
 
 - **Interim:** the image at `dff98910` runs.
 
