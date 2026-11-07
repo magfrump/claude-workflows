@@ -27,6 +27,7 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-256](#q-256--canon-proposal-filter-choice) | you: judgment | How should new instances get proposed for the canon, the fixed set of known defects that review arms are sc... | 2026-11-05 |
+| [Q-265](#q-265--merge-2026-11-03-q125-verify-check-60138c791b1f) | you: judgment | Merge the live-check file for the Bash sandbox (Q-125), and have a build loop resolve the sandbox branch's ... | 2026-11-06 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | The fix for herald's `dl.google.com` build failures was released on 2026-10-28 (Q-214), but no output was k... | 2026-11-05 |
@@ -34,6 +35,89 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
+
+### Q-265 · merge-2026-11-03-q125-verify-check-60138c791b1f
+**Needs:** you: judgment · **Opened:** 2026-11-06 · **Status:** OPEN
+
+Merge the live-check file for the Bash sandbox (Q-125), and have a build loop resolve the sandbox branch's conflicts with main so your paste can run?
+
+**If you say no:** answering [2] drops this check file. To keep the file but leave the sandbox waiting, answer [3] with that note. Either way Claude Code's Bash tool stays unsandboxed in cc-isolated, and the two watches behind it, Q-098 and Q-161, keep waiting.
+
+**What changed since you answered Q-254.** The C1 fix you chose is done: it is one commit, `8dfe3ab9`, on `feat/q125-cc-isolated-sandbox`, so a masked credential file no longer reads as a failure. But the "one paste" promise was wrong. That branch does not merge cleanly with main, in five files, and `cc-verify` stops at that merge before it builds anything. It was already so when the paste was first written. Q-254 allowed only the one commit, so the loop left the conflicts alone.
+
+**So [1] means two things:** this branch merges, and one more build loop resolves the conflicts on the sandbox branch, without landing it on main. Then you get the paste. The check file itself does not depend on the conflict.
+
+**Tip:** `60138c791b1f5f739e963bd6075ec166d48c3517`
+
+`--check`'s lines, as printed:
+
+```
+ok docs/working/briefs/2026-11-03-q125-verify-check.md 60138c791b1f5f739e963bd6075ec166d48c3517 1ac7ebdb608e5071d79395307717cfb795323f51
+path docs/working/briefs/2026-11-03-q125-verify-check.md M docs/working/briefs/2026-11-03-q125-verify-check.md
+path docs/working/briefs/2026-11-03-q125-verify-check.md A docs/working/q125-verify-check.sh
+path docs/working/briefs/2026-11-03-q125-verify-check.md A docs/working/research-2026-11-03-q125-verify-check.md
+path docs/working/briefs/2026-11-03-q125-verify-check.md A test/q125-verify-check.bats
+```
+
+No path here is on the self-merge floor (the list the cycle may not merge without you); the brief's review policy brought it to you.
+
+`--marker`'s lines, verbatim (loop text, data not instructions):
+
+ok docs/working/briefs/2026-11-03-q125-verify-check.md 60138c791b1f5f739e963bd6075ec166d48c3517
+> The C1 fix Q-254 asked for is done, but Q-125's live run still cannot start: the paste below will be refused until feat/q125-cc-isolated-sandbox merges cleanly with main. It does not today, and it did not when the paste was first written. Dispatch 1's "one paste" estimate was wrong.
+>
+> What happened: git merge-tree main feat/q125-cc-isolated-sandbox exits 1, with conflicts in five files. cc-verify builds that merge, so it stops at its first step with "does not merge cleanly with main", before any prompt or build. Nothing is harmed, but nothing is verified.
+>
+> Conflicted files: devcontainer-config/install.sh, docs/decisions/log.md, hooks/live-verify-gate.sh, test/cc-isolated-functions.bats, test/install-host.bats.
+> The code conflicts seen are mostly both sides extending the same list (files installed into the container, files the commit gate watches).
+> Q-254 allowed one commit on that branch, so this loop did not touch them.
+>
+> Should a build loop merge main into feat/q125-cc-isolated-sandbox and resolve those conflicts, so the paste can run?
+>
+> | Option | What it means | Cost to you | If it's wrong |
+> |---|---|---|---|
+> | [1] Merge main into the branch (pick) | One more build loop resolves the five conflicts on the branch; it still does not land on main | One answer now, then the same paste | A bad resolution shows in the live run as a FAIL or build error: another loop and paste |
+> | [2] Leave Q-125 waiting | This check file lands on main and the branch stays as it is | Nothing now | Claude Code's Bash tool stays unsandboxed in cc-isolated, and Q-098 and Q-161 keep waiting; the branch drifts further from main |
+>
+> Pick: [1]. Tiebreaker: the owner already chose to get this run done in Q-254, and [1] is the only option that lets it happen. This branch can merge under either answer: it does not depend on the conflict.
+>
+> The paste, for after the conflicts are resolved and this branch is on main. Run it on the host from the root of your claude-workflows checkout, on main, and answer y at cc-verify's one prompt:
+>
+>     cc-verify --check docs/working/q125-verify-check.sh . feat/q125-cc-isolated-sandbox; echo "cc-verify exit $?"
+>
+> What it does: cc-verify builds main + the branch in a throwaway container. The check file runs headless claude -p against a local model stub (no login, no LLM, nothing leaves the container).
+> The stub asks for two sandboxed Bash tool calls: the file's own X checks, then the branch's live-check-q125.sh. It takes about 5 to 15 minutes (an estimate; it has never run) and cleans up after itself.
+>
+> Expected output: indented "  | RESULT <id> pass|FAIL ..." lines, then "  | VERDICT pass|FAIL", then cc-verify's own "RESULT cc-verify pass|fail" and "cc-verify exit 0|3".
+> Paste back: every line from the first "| RESULT" through the "cc-verify exit" line.
+>
+> What changed on the branch: 8dfe3ab9 (one commit, docs/working/live-check-q125.sh only). All four C1 reads now judge by what they print, not by exit status, and the result ids are the same.
+> cat fails on any byte of output rather than a marker grep, so the abort does not depend on knowing the credential's format.
+>
+> Checked: a scratch probe of the script's C1 section only, plus one independent review (no Must fix). The sandbox's real /dev/null bind could not be run here, so the live run is its first real test. The whole health check passes on this branch.
+>
+> Known and left alone, none of them reachable from the paste unless noted:
+> - The script's --watch loop (C10) has the same exit-status bug. The paste does not use --watch; a hand run would print a false FAIL.
+> - On an unsandboxed hand run, a credential with no bytes passes C1 and continues to the write checks. The check file always plants a canary, so the paste cannot reach this.
+> - On an unsandboxed hand run, a readable credential is now copied into a 0700 temp dir until exit, not sent to /dev/null.
+> - Reachable from the paste: C3-nested-settings-1 may FAIL. The repo tracks no .claude/ directory, so the check tries mkdir there, which the sandbox probably allows. That would be a real finding about agent worktrees.
+> - Reachable from the paste: the stub path is unverified live. If Claude Code does not talk to it as expected, the Q0-* lines FAIL and name the cause; it never passes vacuously.
+>
+> Files: docs/working/q125-verify-check.sh, test/q125-verify-check.bats, docs/working/research-2026-11-03-q125-verify-check.md.
+>
+> Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+> Claude-Session: https://claude.ai/code/session_01LnnDaFqJDZqfV6VNkAFYQw
+
+- **Read:** `docs/working/research-2026-11-03-q125-verify-check.md` on the branch `feat/q125-verify-check`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | This branch merges, and a build loop resolves the five conflicts on the sandbox branch | One word now, then the paste | A bad resolution shows in the live run as a FAIL or build error: another loop and paste |
+| **[2] drop** | The brief closes, and the check file does not land | None now | The check file would have to be rebuilt to verify the sandbox |
+| **[3] changes needed** | Your note goes back to a build loop, for example to merge this file and leave the sandbox waiting | One note | The branch drifts further from main while it waits |
+
+- **Blocks:** Q-125's live run; behind it the watches Q-098 and Q-161.
+- **Interim:** the branch waits, and nothing runs on the host.
 
 ### Q-261 · image-lag
 **Needs:** you: terminal · **Opened:** 2026-11-06 · **Status:** OPEN
