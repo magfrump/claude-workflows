@@ -1,28 +1,28 @@
 # Research: owner entries gloss every reference, by rule
 
 - **Goal**: Put the rule "owner-facing text glosses its internal references, and a numbered label links the doc that defines it" where all three writers of owner text meet it (the orchestrator's entries, a build loop's marker bodies, the final message), instead of in one session memory.
-- **Problem framing**: Five of the six open owner entries still carry a bare numbered label (read strictly; three of six read leniently), and the only statement of the rule any writer loads is a memory that a build loop or a cycle in another repo never sees. Considered and discarded: "the questions file is hard to read because entries are long or the file holds the wrong things", which decision 040's route split already addressed and which the owner rejected in terms ("length isn't the relevant dimension, clarity is").
+- **Problem framing**: Five of the six open owner entries still carry a bare numbered label (read strictly; two or three of six read leniently), and the only statement of the rule any writer loads is a memory that a build loop or a cycle in another repo never sees. Considered and discarded: "the questions file is hard to read because entries are long or the file holds the wrong things", which decision 040's route split already addressed and which the owner rejected in terms ("length isn't the relevant dimension, clarity is").
 - **Project state**: Delivers the rule in the global instructions, the dev-cycle skill and the build-loop prompt · closes the revisit trigger decision 040 named ("then entry clarity is the problem") · not blocked (cite: docs/decisions/040-questions-doc-owner-only.md)
-- **Task status**: complete (implemented; review-fix loop clean; see Outcome)
+- **Task status**: complete (implemented; review record in docs/reviews/code-review-rubric-2026-11-06-feat-owner-entry-gloss-rule.md)
 
 ## Motive check (constraint S5)
 
 Hand audit of the six open entries in `docs/working/questions.md` at 62687b97. Own text only: fenced blocks and quoted marker lines are left out. Labels were found with a regex over `Q-NNN`, `FP-NNN`, `decision NNN`, `row N` and one-letter-plus-digits forms, then each was read in place and classified by hand. [observed]
 
-The reading is strict and even: a label is glossed only when the words next to it say what that item is. A bracketed citation after a stated fact, such as `(Q-156)` or `(Q-214)`, is not a gloss. A Q-ID needs the gloss alone, since the questions files are its one known home; any other numbered label also needs its doc.
+The reading is strict: a label is glossed only when the words next to it say what that item is, and a bracketed citation after a stated fact, such as `(Q-156)`, is not a gloss. A Q-ID needs the gloss alone; any other numbered label also needs its doc. This is a hand reading, and a fact-check pass re-read several calls differently, so the entry count is the firm figure and the label count is a range.
 
 | Entry | Own-text labels (excluding the entry's own ID) | Bare ones | Passes the rule? |
 |---|---|---|---|
 | Q-261 image-lag | Q-167, Q-259, Q-260 | Q-167 ("step (a) still needs") | No |
 | Q-256 canon-proposal-filter-choice | none | none numbered ("review arms" is unglossed jargon) | Yes on labels |
-| Q-255 herald-egress-fix-unconfirmed | Q-052, Q-214, decision 039 | Q-052, Q-214 | No |
+| Q-255 herald-egress-fix-unconfirmed | Q-052, Q-214, decision 039 | Q-214; Q-052 and decision 039 are thin | No |
 | Q-254 blocked-...-q125-verify-check-1 | C1, Q-098, Q-125, Q-161 | all four; Q-125 is the entry's whole subject and never says what it is | No |
 | Q-167 post-install-host-probes | Q-096, Q-156, Q-241 | Q-156 | No |
-| Q-084 q076-live-checks | C2, C3, Q-076, Q-086, Q-090, Q-091, Q-093, Q-094 | all but Q-076 | No |
+| Q-084 q076-live-checks | C2, C3, Q-076, Q-086, Q-090, Q-091, Q-093, Q-094 | C2, C3, Q-086, Q-090; Q-091, Q-093 and Q-094 are thin | No |
 
-**Baseline, entries' own text: 5 of 6 entries fail; 21 distinct labels (self-references aside), 15 of them bare; no entry uses a markdown link, and 3 of the 6 name a doc path at all.** Read leniently, with a bracketed citation or a thin phrase counting as a gloss, Q-255 and Q-167 pass and 3 of 6 fail. The motive holds either way: the failure is common, not one bad entry. These are one person's hand classifications of one snapshot.
+**Baseline, entries' own text: 5 of 6 entries fail, under every even reclassification the fact-check tried; 21 distinct labels (self-references aside), about 13 to 16 of them bare; no entry uses a markdown link, and 3 of the 6 name a doc path at all.** Read leniently, with a bracketed citation or a thin phrase counting as a gloss, 2 or 3 of 6 fail. The motive holds either way: the failure is common, not one bad entry. These are hand classifications of one snapshot.
 
-**Baseline, marker bodies: 1 of 1 fails.** Q-254 quotes the only open marker body, and it never says what Q-125 is or what C2 to C6 are. That is also the worst entry, so the build-loop writer has to be reached too: a rule only the orchestrator sees would miss it.
+**Baseline, marker bodies: 1 of 1 fails.** Q-254 quotes the only open marker body, and it never says what Q-125 is. That is also the worst entry, so the build-loop writer has to be reached too: a rule only the orchestrator sees would miss it.
 
 The owner's words are in `docs/working/trials/2026-10-30-friction-engagement.md` (T2, 2026-11-06): "the biggest problem is jargon and references", and the same note calls the final message with two links "great".
 
@@ -50,7 +50,7 @@ Decision 040 pruned "[11] shorter entries: wrong measure (clarity, not length)",
 
 Failure-pattern grep: FP-016, FP-071, FP-162, FP-169 (see Prior failures section)
 
-- A regex cannot tell a glossed label from a bare one: one that flags every label flags all 21 above, 6 of them glossed, and misses "review arms" (no number). That figure comes from the hand audit, not from running such a check. See candidate [6].
+- A regex cannot tell a glossed label from a bare one: one that flags every label flags all 21 above, roughly a third of them glossed, and misses "review arms" (no number). That figure comes from the hand audit, not from running such a check. See candidate [6].
 - Writing a file through Bash with a body naming the global file and a `.claude` path trips the policy-file hook; use Write or Edit, and `git commit -F`.
 
 ### Prior failures
@@ -90,7 +90,7 @@ The requirement: all three writers meet the rule when they write, in every repo,
 
 | Candidate | Result | Why |
 |---|---|---|
-| [5] check refuses | Pruned | H4 does not bar a regex, but a regex can only test for a label, not for its gloss, so it would refuse all 6 glossed labels above along with the 15 bare ones: a gate on the wrong thing. It also turns the health check red on five of six entries, and it sees a marker only after filing and never a final message. |
+| [5] check refuses | Pruned | H4 does not bar a regex, but a regex can only test for a label, not for its gloss, so it would refuse the glossed labels above along with the bare ones: a gate on the wrong thing. It also turns the health check red on five of six entries, and it sees a marker only after filing and never a final message. |
 | [12] --marker refuses | Pruned | Same as [5], at the gate, and a refused marker costs a whole loop. |
 | [13] LLM rewrite | Pruned | A new mandatory agent step per entry (S2), and marker text is quoted verbatim by rule. |
 | [9] Terms bullet | Pruned | Checks that the field exists, not that it helps; it is a convention change with a migration across repos, and it adds a line to entries that have no labels. |
@@ -121,7 +121,9 @@ The rule goes unenforced, on purpose: no re-checkable test separates a gloss fro
 Non-DD choices:
 
 - Pointer wording: the prompt carries one self-contained sentence, not only a pointer, since a loop's marker is the worst-failing writer and non-Claude agents may run it (S11). That restates the rule's core in one clause, a small deliberate cost to S3; it names the bullet and leaves the exceptions there.
-- Q-IDs need the gloss alone, not a link (written into the bullet): the questions files are their one known home, and a link on every Q-ID would make the rule too heavy to follow. The brief's example of the link half is a trial number.
+- Q-IDs need the gloss alone, not a link (written into the bullet). A good gloss removes the lookup, a Q-ID's text may sit in any of four files (Q-125 is on the roadmap), and a link on every Q-ID would make the rule too heavy to follow. The brief's example of the link half is a trial number, and its own gloss of Q-261 has no link.
+- Review additions: the rule says never to open a line with `Q-NNN:`, which `--cycle-diff`'s answer pattern reads as an answer; the prompt says to put glosses above an options table, since a marker line over 300 bytes is cut; step 7 gives the cycle's gloss lines a place and a source (the default branch, with anything from the marker attributed to the loop); "by ID and name" gains a plain line.
+- `skills/code-review/references/chat-synthesis.md` says not to restate rubric IDs in its chat summary. That text is for the branch's author beside the rubric, outside the brief's three writers, so the bullet is scoped to "a final message or end-of-run summary" and the skill is unchanged.
 - Quoted text: gate output and marker bodies stay verbatim, and the orchestrator's own lines around them carry the gloss (the memory's note that gate output is easy to skip, plus rows 706 and 714).
 - Durable record: `docs/decisions/log.md` row 84. This doc is disposable, and the observable has to outlive it.
 - Tests: one bats case that holds all three pointers to the bullet's name, so a rename cannot leave them dangling, and one phrase in the dispatch test. No script logic changes.
@@ -131,7 +133,7 @@ Non-DD choices:
 
 Both can come out negative.
 
-1. **The count.** Repeat the audit above, with the same strict reading, over at least 5 entries opened after the first install from a commit holding this merge. Count entries' own text and marker bodies separately. Baselines: 5 of 6 own-text fail, 1 of 1 marker bodies fail. It helped if under half of the new entries fail on their own text and the marker bodies filed by then mostly pass. If half or more still fail, prose has not worked at this reach, and the next step is a new divergent design, not a louder sentence.
+1. **The count.** Repeat the audit above, with the strict reading (restated in row 84), over at least 5 entries opened after the first install from a commit holding this merge. Count entries' own text and marker bodies separately. Baselines: 5 of 6 own-text fail, 1 of 1 marker bodies fail. It helped if under half of the new entries fail on their own text and the marker bodies filed by then mostly pass. If half or more still fail, prose has not worked at this reach, and the next step is a new divergent design, not a louder sentence.
 2. **The owner's report.** The owner's next feedback on the asks. It failed if jargon or bare references are again named as the problem, whatever the count says.
 
 The separate marker count is what shows whether the prompt's sentence reaches loops. Only the cycle can file a watch for this (a build loop may not write `watching.md`), so this run's report asks it to.
