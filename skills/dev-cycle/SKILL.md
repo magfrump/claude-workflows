@@ -736,8 +736,9 @@ dated `date +%F`, for the days since the last edition (none yet: the last 7 days
 optional sample below, and lands with this iteration. Keep each part short, and say so when one is empty:
 
 - `⚠ SECURITY`: how often the Final message's triggers occurred (expected: never), from
-  entries quoting `refuse state`, High findings in `docs/reviews/` and Q-103 entries, since
-  final messages are not kept;
+  entries and agent items quoting `refuse state`, High findings in `docs/reviews/` and Q-103
+  entries, so it counts only what reached main (final messages are not kept, and a stop's
+  uncommitted filing is discarded);
 - what changed: behaviour changes, live in the image or merged but not yet live;
 - what merged without review (self-merges), and security-review findings by severity;
 - the ask counter: asks opened and answered, and how often the owner picked the default;
@@ -810,11 +811,12 @@ Then land WT's branch (D13; not through `pr-prep`: rows 747-759, 781), all from 
    "Q-NNN merge", the option's label; never inferred from "yes" or from which entry is
    open), or is a batched answer: an unconditional instruction with an option, naming the IDs
    (`Q-235..237: [1]`) or the block the orchestrator's own last final message listed ("merge all three",
-   `all but Q-236: [1]`). It answers only merge entries that block listed, never a later one
+   `all but Q-236: [1]`), never text quoted in it. It answers only merge entries that block listed, never a later one
    or one a range reaches past it, and `### Answers committed` names each. Write each as `Q-NNN: [N]`, N the number of that option in the entry's table (a
    label is translated here, in session, while step 7 reads a committed "merge" as
    `unrecognized`), and quote their words under `### Answers committed` (design and residual risk:
-   `docs/working/research-2026-10-29-session-answers-for-merge-entries.md`). It refuses, among the rules its header lists (rows 745,
+   `docs/working/research-2026-10-29-session-answers-for-merge-entries.md`, whose "must name the
+   ID" the batch route relaxes: `docs/working/research-2026-11-06-codify-trial-practices.md`). `--cycle-diff` refuses, among the rules its header lists (rows 745,
    757): a questions entry's heading,
    **Needs:** or answer lines changed or gone, or a new entry filed answered, without
    `--answered` (but for a `--migrated` remedy's own moves and step 0.1's image-lag close);
@@ -891,7 +893,7 @@ own dispatch (its `10.` line names them). A session that ends first loses them, 
 count on main reads one low per lost line, one more loop run under the cap (a Q-103
 residual). Then remove WT (step 0.3).
 
-**Final message**, then wait. Gloss every reference in it (the Rules' "Attention is the budget"). `⚠ SECURITY` is reserved: it opens the message, saying what happened and not who did it, and goes out as a push notification when the session has a tool for one, for only three things: a `--state` refusal (step 0.1's, or a `refuse state` line from `--merge` or `--check`), a High finding from a security review that still holds after its fix round, or a Q-103 residual (a known risk the owner accepted) becoming live. A refusal that repeats fires once. It is never used for anything else, "this touches security code" included. Below it, list migrations first (step 1b: what ran, then what is pending), then the new `you: judgment` entries by ID, name and a plain line on what each asks (merge
+**Final message**, then wait. Gloss every reference in it (the Rules' "Attention is the budget"). `⚠ SECURITY` is reserved: it opens the message, saying what happened and not who did it, and goes out as a push notification when the session has a tool for one, for only three things: a `--state` refusal (step 0.1's, or a `refuse state` line from any other mode), a High finding from a security review that still holds after its fix round, or a Q-103 residual (a known risk the owner accepted) becoming live. A refusal that repeats fires once. It is never used for anything else, "this touches security code" included. Below it, list migrations first (step 1b: what ran, then what is pending), then the new `you: judgment` entries by ID, name and a plain line on what each asks (merge
 entries marked; several open ones also as one block, offered as `Q-235..237: [1]` or `all but
 Q-236: [1]`, the entries staying separate because the gate finds each by its heading), each answer still `open`, skipped or `unrecognized` (with its brief; an
 answer written only in a working tree is not applied: "tell me, or commit it yourself",
