@@ -176,3 +176,4 @@ Ran because the last brainstorm was 7 days ago (2026-10-29). Sources: this cycle
 - Re-dispatch a loop after a merge conflict without asking the owner (signal: Q-243 and Q-244's conflict cost six asks for two branches; merge-friction record, section 12)
 - Say in the skill that a batched answer to named merge entries counts, as the trial doc asked if T3 was kept (signal: T3 kept, no such text; merge-friction record, section 12)
 - Decide what backs up the release entry as the check on self-merged scripts, now that the owner says they do not read it closely (signal: T1 feedback against `docs/dev-cycle.md`; merge-friction record, section 12)
+- Narrow the policy-file hook, which refuses Bash commands that only name the instruction file beside a redirect or a `.claude` path (signal: it blocked this cycle's brief writing, and the gloss-rule loop's read-only work)
