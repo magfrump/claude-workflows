@@ -451,7 +451,7 @@
 #                 "### Q-NNN · merge-STEM-SHA12" (SHA12: TIP's first 12 hex
 #                 digits), or "merge-gate-STEM-SHA12" when a changed path,
 #                 lower-cased, is the gate's own code (the lib's GATE_CODE:
-#                 scripts/build-loop.sh, dev-cycle.sh, questions.sh, anything
+#                 scripts/build-loop.sh, d6.sh, dev-cycle.sh, questions.sh, anything
 #                 under scripts/lib/ or skills/dev-cycle/); then the message
 #                 reads "(build-loop approved merge)" with a second trailer
 #                 "Build-loop-approved: Q-NNN", and the reflog "build-loop:
@@ -757,7 +757,7 @@ caller_gate() {
 }
 # The state gate's second half, once resolve_main has run (--state calls
 # both): the default branch counts only when no other name could claim it
-# (H2: a silent pick between two names, or a name the D6 block does not take,
+# (H2: a silent pick between two names, or a name d6.sh does not take,
 # would land on a branch the cycle does not read as its default; R7, and the
 # research doc of brief 2026-11-01-relax-gate-git-state, D2). Prints one line
 # per finding, as state_gate does; returns 1 on any.
