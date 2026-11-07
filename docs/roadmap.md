@@ -21,7 +21,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 - **Agent: Q-125 · cc-isolated Bash sandbox, live run** (filed 2026-11-01, step 6, from
   Q-234's migrate). Motive: nothing sandboxes Bash in cc-isolated. Built, unmerged
   (`feat/q125-cc-isolated-sandbox`); the host install is done (Q-222, answered 2026-11-03). First step
-  (Next 1): the `cc-verify --check` file, briefed 2026-11-03 (In flight).
+  (Next 1): Q-265, then resolve the branch's conflicts with main.
 
 - **Agent: scoped deep audit, constraint drift** (filed 2026-11-05, step 4b). Motive: the
   drift check on 605d4c18 found its script-home decision resting on a soft constraint (S4
@@ -94,8 +94,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 ## In flight
 
 - Q-125's `cc-verify --check` file for the sandbox live run
-  (`docs/working/briefs/2026-11-03-q125-verify-check.md`; review policy). Q-254 answered [1]: the
-  C1 check on the Q-125 branch gets fixed first, then one paste.
+  (`docs/working/briefs/2026-11-03-q125-verify-check.md`; review policy). C1 is fixed at 8dfe3ab9
+  (Q-254 [1]), but that branch conflicts with main in five files, so the paste cannot run yet.
+  Ready at 60138c79: merge entry Q-265.
 - Write the first trial set's practices into the dev cycle
   (`docs/working/briefs/2026-11-06-codify-trial-practices.md`; review policy). Motive: the
   owner kept all of T1-T7.
