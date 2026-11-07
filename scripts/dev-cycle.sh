@@ -26,7 +26,8 @@
 #   --check-write  the same for one of the cycle's own bookkeeping files
 #             (roadmap, questions files, idea log, watching.md, the listing
 #             `questions.sh migrate` leaves for the roadmap, cycle records,
-#             open briefs and briefs/closed/); the file need not exist yet.
+#             weekly digests, open briefs and briefs/closed/); the file need
+#             not exist yet.
 #   --check-brief  for a build brief path (docs/working/briefs/[closed/]
 #             YYYY-MM-DD-<slug>.md): "ok <path> new" when the default branch has no file
 #             there (not landed, or moved to closed/), else "ok <path>
@@ -608,6 +609,7 @@ fi
 # non-plain one is listed below like every other input.
 skipped docs/dev-cycle.md || true
 skipdir docs/working/briefs || true
+skipdir docs/working/weekly || true
 
 printf '\n%s\n\n' "## 8. Skipped inputs"
 if [[ ${#SKIPPED[@]} -eq 0 ]]; then
