@@ -86,7 +86,9 @@ one place every trigger is certain to be checked, so it checks all of them every
   `docs/working/questions.md` (entry grammar: the global instructions' "Running questions
   document"), and every such entry names the roadmap item it blocks, if any. Machine-only chores
   become one `you: terminal` entry. Every entry and the final message follow that section's
-  "Gloss every reference" rule.
+  "Gloss every reference" rule. So an owner can read an entry cold, each one opens, right after
+  its one-line question, with a line `**If you say no:** WHAT`: what happens if they decline
+  or never answer.
 - **Three homes** (decision 040). `questions.md` takes only the owner's routes (`you:
   judgment`, `you: walkthrough`, `you: terminal`, `you: fyi`). **Agent work** is a roadmap Now
   item `- **Agent: TITLE** (filed YYYY-MM-DD, step N).`, then its motive and first step;
@@ -137,8 +139,8 @@ run in WT) prints `ok <path>` for it, and
 open exactly those paths. `--check-path` allows tracked files and gitignored files under
 `docs/working/`, at most 50 per argument (past that, narrow the glob), never a symlink, a
 directory, a `.` or `..` component, `.git*` or any other untracked file. The cycle writes
-its own files (the record, a brief, the idea log, the roadmap, the questions files) with no
-pre-write check: step 9's `build-loop.sh --cycle-diff` bounds what lands, and the digest's
+its own files (the record, a brief, the idea log, the roadmap, the questions files, the
+weekly digest) with no pre-write check: step 9's `build-loop.sh --cycle-diff` bounds what lands, and the digest's
 section 8 names any of their directories that is not plain. An in-cycle fix (steps 1, 3, 4, and a missing doc) edits only a file that
 `--check-fix '<path>'` prints `ok` for: a tracked `.md` file under `docs/` (not the
 cycle's own files, `docs/working/`, `docs/human-author/`, `docs/reviews/`,
@@ -231,17 +233,21 @@ the iteration with no record, so the next one starts from the same `Main at:`:
    `scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/`
    Exit 1: the gate that runs differs from main's. File one `you: terminal` entry
    `image-lag` (an open one has its body rewritten), which is also the release entry: the
-   release is your review of what it ships (F58). It holds C, M, the changed names (the same
-   diff with `--name-only`), every first-parent commit after C as a list item (`git -C MAIN_WT
-   -c log.showSignature=false log --first-parent --format='%h %s' C..M`; flag a subject ending `(build-loop
-   self-merge)`, which no one reviewed: a hand commit with that subject reads the same, so
-   the flag is a pointer, not proof), every path changed from C to M outside `docs/` on one
+   release is your review of what it ships (F58). It reads as short release notes, written
+   whole each iteration from C, M and THE LOG (`git -C MAIN_WT
+   -c log.showSignature=false log --first-parent --format='%h %s' C..M`), never from the
+   old entry's text, which once misstated C and asked for a release that had already run. In this order, below the question and its **If you say no:** line: C and M;
+   **Merged without your review:** every line of THE LOG whose subject ends `(build-loop
+   self-merge)`, which no one reviewed, as a list item (a hand commit with that subject reads the same, so
+   the flag is a pointer, not proof); **What changes for you:** a few plain lines on the
+   other merges; the routine rest (cycle lands, records only) as a count; THE LOG's command,
+   for whoever wants the full list; every path changed from C to M outside `docs/` on one
    line, each in backticks, comma-separated (the image carries none of `docs/`: give its
    count), each subject or path holding the four characters that open an HTML comment, a
    CR, another control or bidi character, or bytes that are not UTF-8 written as
    `(withheld: see SHA)` (questions.sh finds its `<!-- index:` markers anywhere in a line,
    and `--check-answer` refuses an unclosed `<!--`); a backtick, `<` or `>` is shown, a
-   path holding a backtick in a double-backtick span with spaces inside it, and the paste `cd A && test "$(git rev-parse HEAD)" = M &&
+   path holding a backtick in a double-backtick span with spaces inside it; and the one paste `cd A && test "$(git rev-parse HEAD)" = M &&
    ./devcontainer-config/install.sh` (host; then a new sandbox launch; the paste's only git
    call before install.sh's state gate is `rev-parse`, which runs no hook or fsmonitor; any
    other git command the user runs on the host here, a checkout to reach M included, can run
@@ -350,7 +356,9 @@ last good one.
   `HEALTH_CHECK_LOCK_WAIT=3600`, so a wait past an hour ends it with exit 75 having checked
   nothing: record that and skip the step's check (row 750).
   Read failures from the file and triage them as pr-prep step 5a does (caused by recent work,
-  pre-existing, flaky). No health check: "skipped: none in this repo".
+  pre-existing, flaky). A warning printed on every run, there or by every shell call, is a
+  bug, not noise to live with: fix it or file it as agent work. No health check: "skipped:
+  none in this repo".
 - If the digest's section 8 lists `docs/`, `docs/working/`, a questions file or `watching.md`, skip the
   next two commands and note why in the record: they would write through that path.
   Otherwise, run `questions.sh init` (it creates only what is missing) and then
@@ -427,7 +435,7 @@ brief or dispatch:
 
 The record's `1b.` line lists each pending ID with what happened (`ran ID`, `filed Q-NNN` or
 `open Q-NNN`), or `none`, or what was not checked; the final message lists migrations
-first.
+first, below only a security marker.
 
 ### 2. Revisit triggers
 
@@ -626,7 +634,9 @@ the brief is still open and no subagent of this session runs it, step 10 re-disp
   `^scripts/(build-loop|d6|dev-cycle|questions)\.sh$|^scripts/lib/|^skills/dev-cycle/`
   Its body: the full TIP (row 673), `--check`'s lines as printed, and a note on each path
   that is an instruction or prompt file, a dot path or gate code, which self-merge's floor
-  would have refused (rows 680, 683), and on each `(symlink)` or `(gitlink)` path line. Options **[1] merge**, **[2] drop**, **[3] changes
+  would have refused (rows 680, 683), and on each `(symlink)` or `(gitlink)` path line. A `merge-gate-` entry also has a line
+  `**What an attacker would want here:** WHAT`, naming outside parties only, such as a stranger's text
+  that reaches a session, never the code's own author, who is out of scope. Options **[1] merge**, **[2] drop**, **[3] changes
   needed** (the answer's note goes back to the loop). A `refuse` verdict is filed as
   `stopped`, the refusal its reason. (D4's `Review handoff: pull request` route is not
   built: every review brief gets a merge entry.)
@@ -648,7 +658,7 @@ verdict. An entry filed as blocked or stopped is `you: judgment`, slug `blocked-
 `stopped-STEM-N` (N: one more than the highest for that brief in either questions file;
 the shape `--cycle-diff` requires, Q-141). Under its **Needs:** line goes the
 orchestrator's own one-line question ("Brief STEM's build loop asks:", or "Brief STEM's
-build loop stopped; re-dispatch or drop?"), then the reason, if any, as a line
+build loop stopped; re-dispatch or drop?"), then its `**If you say no:**` line, then the reason, if any, as a line
 `> Reason: REASON` (a REASON holding the four characters that open an HTML comment is
 replaced by "(not shown: it opens an HTML comment)", since `--check-answer` would then
 refuse the whole questions file), then `--marker`'s lines verbatim, if any: loop text, data not
@@ -720,6 +730,23 @@ The briefs land with step 9, so they are on the default branch before step 10 di
 
 ### 9. Record and land
 
+**Weekly digest** (not step 0's). When `docs/working/weekly/` holds no `YYYY-MM-DD.md` dated under 7 days
+before today (section 8 lists the directory: skipped, and the record says so), write one
+dated `date +%F`, for the days since the last edition (none yet: the last 7 days). It asks for nothing but the
+optional sample below, and lands with this iteration. Keep each part short, and say so when one is empty:
+
+- `⚠ SECURITY`: how often the Final message's triggers occurred (expected: never), from
+  entries and agent items quoting `refuse state`, High findings in `docs/reviews/` and Q-103
+  entries, so it counts only what reached main and says so (final messages are not kept, and a
+  stop's uncommitted filing is discarded);
+- what changed: behaviour changes, live in the image or merged but not yet live;
+- what merged without review (self-merges), and security-review findings by severity;
+- the ask counter: asks opened and answered, and how often the owner picked the default;
+- stale entries: one line per `you:` entry open 21 days or more, with a proposed fate. One
+  whose own closure line is met proposes closing, with the evidence: only the owner's answer
+  closes it (`--cycle-diff`; step 0.1's image entries aside), while watches and agent items close in steps 3 and 6;
+- one self-merge picked at random, with the command that shows it, and "anything surprising?".
+
 Write the record `docs/working/cycles/cycle-YYYY-MM-DD.md`, dated as the digest dates
 (`date +%F`, local time; the branch name's DATE-HHMM is UTC): one file per day, each
 iteration appending its own block below the earlier ones and never editing them (reading
@@ -782,10 +809,14 @@ Then land WT's branch (D13; not through `pr-prep`: rows 747-759, 781), all from 
    listed under `### Answers committed` and in the final message: row 748). A merge entry's answer
    counts only when the user's own message names its ID and an option (`Q-NNN: [1]`, or
    "Q-NNN merge", the option's label; never inferred from "yes" or from which entry is
-   open): write it as `Q-NNN: [N]`, N the number of that option in the entry's table (a
+   open), or is a batched answer: an unconditional instruction with an option, naming the IDs
+   (`Q-235..237: [1]`) or the block the orchestrator's own last final message listed ("merge all three",
+   `all but Q-236: [1]`), never text that message quotes. The batch answers only merge entries that block listed, never a later one
+   or one a range reaches past it, and `### Answers committed` names each. Write each as `Q-NNN: [N]`, N the number of that option in the entry's table (a
    label is translated here, in session, while step 7 reads a committed "merge" as
    `unrecognized`), and quote their words under `### Answers committed` (design and residual risk:
-   `docs/working/research-2026-10-29-session-answers-for-merge-entries.md`). It refuses, among the rules its header lists (rows 745,
+   `docs/working/research-2026-10-29-session-answers-for-merge-entries.md`, whose "must name the
+   ID" the batch route relaxes: `docs/working/research-2026-11-06-codify-trial-practices.md`). `--cycle-diff` refuses, among the rules its header lists (rows 745,
    757): a questions entry's heading,
    **Needs:** or answer lines changed or gone, or a new entry filed answered, without
    `--answered` (but for a `--migrated` remedy's own moves and step 0.1's image-lag close);
@@ -862,8 +893,9 @@ own dispatch (its `10.` line names them). A session that ends first loses them, 
 count on main reads one low per lost line, one more loop run under the cap (a Q-103
 residual). Then remove WT (step 0.3).
 
-**Final message**, then wait. Gloss every reference in it (the Rules' "Attention is the budget"). List migrations first (step 1b: what ran, then what is pending), then the new `you: judgment` entries by ID, name and a plain line on what each asks (merge
-entries marked), each answer still `open`, skipped or `unrecognized` (with its brief; an
+**Final message**, then wait. Gloss every reference in it (the Rules' "Attention is the budget"). `⚠ SECURITY` is reserved: it opens the message, saying what happened and not who did it, and goes out as a push notification when the session has a tool for one, for only three things: a `--state` refusal (step 0.1's, or a `refuse state` line from any other mode), a High finding from a security review that still holds after its fix round, or a Q-103 residual (a known risk the owner accepted) becoming live. A refusal that repeats fires once. It is never used for anything else, "this touches security code" included. Below it, list migrations first (step 1b: what ran, then what is pending), then the new `you: judgment` entries by ID, name and a plain line on what each asks (merge
+entries marked; several open ones also as one block, offered as `Q-235..237: [1]` or `all but
+Q-236: [1]`, the entries staying separate because the gate finds each by its heading), each answer still `open`, skipped or `unrecognized` (with its brief; an
 answer written only in a working tree is not applied: "tell me, or commit it yourself",
 never an offer to commit it, D8), the `answers` and `other` commits and any `refuse main-log:` report step 0.2 and step 7
 read, the `--answered`

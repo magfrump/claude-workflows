@@ -402,7 +402,8 @@
 #                 from open to done (mode kept); and, compared lower-cased, the
 #                 dev cycle's own files (the roadmap, the questions files, the
 #                 idea log, docs/working/watching.md and
-#                 roadmap-from-questions.md, docs/dev-cycle.md, anything under
+#                 roadmap-from-questions.md, a dated digest under
+#                 docs/working/weekly/, docs/dev-cycle.md, anything under
 #                 docs/working/briefs/ or docs/working/cycles/, or either
 #                 as a file) and docs/constraints.md, or a path below one of
 #                 those names.
