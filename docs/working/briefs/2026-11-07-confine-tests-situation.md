@@ -31,3 +31,5 @@ Paths: docs/working/research-2026-11-07-confine-tests-situation.md docs/working/
 
 - Changing `scripts/confine-tests.sh`, the lint, decision 017 or any brief template.
 - Editing `docs/roadmap.md` or the questions files: the dev cycle moves those.
+
+Dispatched: 1
