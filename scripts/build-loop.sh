@@ -15,6 +15,7 @@
 #        scripts/build-loop.sh --merge BRIEF --expect SHA [--approved Q-NNN]
 #        scripts/build-loop.sh --start BRIEF [--dir DIR]
 #        scripts/build-loop.sh --prompt BRIEF [--dir DIR] [--steal]
+#        scripts/build-loop.sh --free-worktrees
 #        scripts/build-loop.sh -h | --help
 #
 #   --settings  five lines from the default branch's commit, never the working
@@ -528,13 +529,52 @@
 #             refused: the branch in two worktrees, or in one whose directory
 #             is missing or a symbolic link (locked or not) or whose path is
 #             not one --dir takes. Both refuse while another --start or
-#             --prompt holds the repository's dispatch lock (a flock on
+#             --prompt, or --free-worktrees, holds the repository's dispatch lock (a flock on
 #             build-loop-dispatch.lock in the git common directory), or when
 #             that file is not a plain file or cannot be opened. Of the rule
 #             refusals, only two can clear with no change to the repository:
-#             "another --start or --prompt is running ..." and "... under 2
+#             "another --start, --prompt or --free-worktrees is running ..." and "... under 2
 #             hours old"; a refusal naming a failed git command (could not be
 #             read, listed, created, added or locked) may clear on a retry.
+#   --free-worktrees  removes each finished loop's worktree, so its branch can
+#             be deleted (`git branch -d` refuses one checked out). It deletes
+#             no branch, and looks only at a worktree whose lock reason is
+#             exactly --start's or --prompt's ("build-loop dispatch of STEM at
+#             TIP, UTC TIME"); any other, locked or not, gets no line of its
+#             own (a kept line can name one inside DIR). For each, in git's
+#             order, one line:
+#             freed BRANCH DIR
+#                 Removed: the brief STEM (docs/working/briefs/, else closed/)
+#                 reads done or dropped on the default branch and names BRANCH,
+#                 BRANCH's tip is an ancestor of the default branch, past the
+#                 lock's TIP and a handoff marker (a loop --start just dispatched
+#                 sits at TIP, itself an ancestor, and may fast-forward to main:
+#                 only a marker says it ended), no other worktree is inside DIR,
+#                 and unlocking and `git worktree remove`, never --force, passed
+#                 (untracked files count, whatever status.showUntrackedFiles
+#                 says). Git does not count an ignored file as dirty: one goes
+#                 with the worktree.
+#             hold BRANCH DIR: WHY
+#                 Not finished: the brief is open, or it is closed and BRANCH
+#                 has not merged (a dropped brief's, or a done one's landed by
+#                 squash). The lock stays.
+#             kept BRANCH DIR: WHY
+#                 For a person to read: on no branch (BRANCH "-"), the
+#                 checkout this run started in, the brief skipped by --status
+#                 or not on the default branch, naming another branch, BRANCH's
+#                 history unreadable, the lock at or not behind the tip or the
+#                 tip no marker (a live loop may hold it), another worktree
+#                 inside DIR, DIR missing or a symbolic link, or git refused (a
+#                 change or an untracked file, say). A lock it took
+#                 off is put back, and the line says when that failed: a remove
+#                 that fails part way (a read-only directory) can leave DIR part
+#                 removed and no longer registered, which no later run names.
+#             or one refuse worktrees: WHY, with nothing removed, when another
+#             run holds the dispatch lock (as --start's refusal; retry), that
+#             file is not a plain file or cannot be opened, or the worktrees
+#             could not be listed; or, as for --state, a refuse state line
+#             from the state gate, default_gate or a GIT_DIR-style variable set
+#             in the caller's environment.
 #
 # Acts on $PWD's git repo, like dev-cycle.sh, and needs its default branch
 # found by name (origin/HEAD, main or master), but for --check-constraints,
@@ -543,21 +583,23 @@
 # store), --merge's commit, the branch it moves and that branch's reflog
 # (and in W: its files, index, HEAD reflog and ORIG_HEAD), --start's branch
 # and its reflog, the worktrees and locks --start and --prompt make or
-# replace, the dispatch lock file, and its own
+# replace, the worktrees --free-worktrees removes and the locks it takes off
+# and puts back, the dispatch lock file, and its own
 # temporary directory, removed at exit.
 # Output passes through the lib's scrub (but for the start-up errors about
 # perl and the lib); printed repo text is data.
 # Exit: 0 every line printed (or help; a --marker skip is a line; for
 # --check-constraints, only an ok line), for
 # --state ok, for --main-log no other line, for --cycle-diff ok, for --check every verdict line ok,
-# for --merge merged, for --start and --prompt ok; 2 any other --check,
-# --merge, --start or --prompt verdict line, --main-log's other or refuse
-# line, a --cycle-diff refuse line, a --check-constraints line other than ok, or the state gate (--state's included) not ok. A --check or
-# --merge can also stop part way, after the lines of the briefs before, with 1
+# for --merge merged, for --start and --prompt ok, for --free-worktrees any
+# line but refuse; 2 any other --check,
+# --merge, --start or --prompt verdict line, --free-worktrees' refuse line, --main-log's other or refuse
+# line, a --cycle-diff refuse line, a --check-constraints line other than ok, or the state gate (--state's included) not ok. A --check,
+# --merge or --free-worktrees can also stop part way, after the lines before, with 1
 # (need_root) or a failed command's own status: a caller reads any exit but 0
 # as nothing decided. 1 bad usage, a GIT_CONFIG_COUNT that is not plain
 # decimal, not a git repo, no perl or lib/dev-cycle-read.sh, a failed mktemp
-# (--state, --main-log, --cycle-diff, --check, --merge, --start, --prompt; no line printed),
+# (--state, --main-log, --cycle-diff, --check, --merge, --start, --prompt, --free-worktrees; no line printed),
 # or no default branch found by name.
 
 set -euo pipefail
@@ -615,7 +657,7 @@ constraints_line() {
     *) echo "constraints unreadable: line $c looks like a constraint but is not exactly \"H<n>: text\" or \"S<n>: text\" (optionally after \"- \", n without a leading 0)" ;;
   esac
 }
-usage() { echo "$1 (usage: build-loop.sh --settings | --check-constraints FILE | --status BRIEF... | --marker BRIEF | --state | --main-log SINCE | --cycle-diff [--answered Q-NNN]... [--migrated ID]... | --land-cycle --main SHA [--answered Q-NNN]... [--migrated ID]... | --check BRIEF... [--expect SHA] | --merge BRIEF --expect SHA [--approved Q-NNN] | --start BRIEF [--dir DIR] | --prompt BRIEF [--dir DIR] [--steal])" >&2; exit 1; }
+usage() { echo "$1 (usage: build-loop.sh --settings | --check-constraints FILE | --status BRIEF... | --marker BRIEF | --state | --main-log SINCE | --cycle-diff [--answered Q-NNN]... [--migrated ID]... | --land-cycle --main SHA [--answered Q-NNN]... [--migrated ID]... | --check BRIEF... [--expect SHA] | --merge BRIEF --expect SHA [--approved Q-NNN] | --start BRIEF [--dir DIR] | --prompt BRIEF [--dir DIR] [--steal] | --free-worktrees)" >&2; exit 1; }
 MODE=""; ARGS=(); EXPECT=""; APPROVED=""; DIR=""; STEAL=""; ANSWERED=(); MIGRATED=(); LAND_MAIN=""
 case "${1:-}" in
   --settings) MODE=settings; [[ $# -eq 1 ]] || usage "--settings takes no arguments" ;;
@@ -669,6 +711,7 @@ case "${1:-}" in
       else ARGS+=("$1"); shift; fi
     done
     [[ ${#ARGS[@]} -eq 1 ]] || usage "--$MODE takes one brief path" ;;
+  --free-worktrees) MODE=free-worktrees; [[ $# -eq 1 ]] || usage "--free-worktrees takes no arguments" ;;
   # The header: from line 2 to the first non-empty line not starting with # (no fixed range to go stale).
   -h|--help) sed -n '2,/^[^#]/{/^#/p}' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
   '') usage "no mode given" ;;
@@ -797,7 +840,9 @@ ROOT_REAL="$(pwd -P)"
 # orchestrator's --state at the start of its iteration covers both (row 690).
 GATED=""; [[ "$MODE" =~ ^(settings|status|marker)$ ]] || GATED=1  # not the gate repository's GATE_*
 # The caller's environment first: it can point the state gate's own reads at another repository.
-if [[ "$MODE" == state ]]; then caller_gate || exit 2; fi
+# --free-worktrees too: it removes what it reads, so it does not lean on an
+# earlier --state.
+if [[ "$MODE" == state || "$MODE" == free-worktrees ]]; then caller_gate || exit 2; fi
 if [[ -n "$GATED" ]]; then state_gate || exit 2; fi
 resolve_main || true
 main_by_name || { echo "build-loop.sh needs a default branch found by name (origin/HEAD, main or master); found none" >&2; exit 1; }
@@ -896,7 +941,8 @@ read_settings() {
 
 # The tip SHA of a brief's branch, read as a handoff marker: prints ready,
 # blocked, "stopped REASON", working (no "handoff:" subject), or "bad WHY".
-# The caller has checked that the branch is at least one commit ahead of main.
+# --status calls it only on a branch at least one commit ahead of main;
+# free_one on a merged one.
 marker_kind() {
   local msg subj rest p r
   # git parses the parents; the message is the raw object's text after its
@@ -1641,6 +1687,10 @@ land() {
   fi
 }
 
+# A lock reason as dispatch writes it, up to its time (groups: STEM, TIP), and
+# that time. lock_behind reads the first alone, free_one both, whole.
+LOCK_RE='^locked build-loop dispatch of ([^ ]+) at ([0123456789abcdef]{40}|[0123456789abcdef]{64}), UTC '
+LOCK_TIME="$DIGIT{4}-$DIGIT{2}-$DIGIT{2}T$DIGIT{2}:$DIGIT{2}:$DIGIT{2}Z"
 # wt_of BRANCH: the worktrees git lists. MAINWT is the first (the main
 # worktree; empty when bare); WT_N counts those with BRANCH checked out, and
 # WT, WT_LOCK ("locked", or "locked REASON") and WT_PRUNE (set when git calls
@@ -1688,8 +1738,13 @@ steal() {
 # this marker is a newer, live dispatch (final security 1).
 ended() {
   [[ "${STATUS[loop]}" == ready || "${STATUS[loop]}" == blocked || "${STATUS[loop]}" == stopped ]] || return 1
-  [[ "$WT_LOCK" =~ ^locked\ build-loop\ dispatch\ of\ [^\ ]+\ at\ ([0123456789abcdef]{40}|[0123456789abcdef]{64}),\ UTC\  ]] || return 1
-  [[ "${BASH_REMATCH[1]}" != "${STATUS[sha]}" ]] && git merge-base --is-ancestor "${BASH_REMATCH[1]}" "${STATUS[sha]}" 2>/dev/null
+  lock_behind "$WT_LOCK" "${STATUS[sha]}"
+}
+# lock_behind LOCK TIP: LOCK (as wt_of's WT_LOCK) names the tip a dispatch
+# started from, and that is another commit than TIP and an ancestor of it.
+lock_behind() {
+  [[ "$1" =~ $LOCK_RE ]] || return 1
+  [[ "${BASH_REMATCH[2]}" != "$2" ]] && git merge-base --is-ancestor "${BASH_REMATCH[2]}" "$2" 2>/dev/null
 }
 # dispatch BRIEF: --start or --prompt (D1) for one brief, under the dispatch
 # lock its caller holds. Prints "ok BRIEF BRANCH DIR", "dispatched N" and the
@@ -1735,6 +1790,60 @@ dispatch() {
   [[ -z "$x" ]] || { echo "refuse $a: $x"; return 1; }
   printf 'ok %s %s %s\ndispatched %s\n' "$a" "$br" "$DIR" "$n"
   loop_prompt "$a" "$stem" "$ct" "$n" "$tip"
+}
+# free_one DIR BRANCH LOCK: --free-worktrees' line for one worktree (BRANCH
+# empty when it is on none, LOCK as wt_of's WT_LOCK), and the removal. Each
+# test leaves the lock in place until the last step, which needs it off: git
+# refuses to remove a locked worktree without a double --force.
+free_one() {
+  local p="$1" b="$2" lk="$3" stem a rc=0 why q
+  [[ "$lk" =~ $LOCK_RE$LOCK_TIME$ ]] || return 0
+  stem="${BASH_REMATCH[1]}"
+  [[ -n "$b" ]] || { echo "kept - $p: it is on no branch"; return 0; }
+  [[ "$p" != "$ROOT" && "$p" != "$ROOT_REAL" ]] || { echo "kept $b $p: this run started in it"; return 0; }
+  a="docs/working/briefs/$stem.md"; status_fields "$a"
+  [[ "${STATUS[state]-}" != new ]] || { a="docs/working/briefs/closed/$stem.md"; status_fields "$a"; }
+  [[ "${STATUS[line]}" == "ok "* ]] || { echo "kept $b $p: its brief is not read (${STATUS[line]})"; return 0; }
+  case "${STATUS[state]}" in
+    new) echo "kept $b $p: the default branch has no brief $stem"; return 0 ;;
+    open) echo "hold $b $p: its brief is open"; return 0 ;;
+  esac
+  [[ "${STATUS[branch]}" == "$b" ]] || { echo "kept $b $p: its brief $a names the branch ${STATUS[branch]}"; return 0; }
+  git merge-base --is-ancestor "${STATUS[sha]}" "$MAIN_SHA" 2>/dev/null || rc=$?
+  [[ "$rc" -ne 1 ]] || { echo "hold $b $p: its branch has not merged"; return 0; }
+  [[ "$rc" -eq 0 ]] || { echo "kept $b $p: its branch's history could not be read"; return 0; }
+  lock_behind "$lk" "${STATUS[sha]}" || { echo "kept $b $p: its tip is not past the commit its lock names, so a live loop may hold it"; return 0; }
+  case "$(marker_kind "${STATUS[sha]}")" in
+    ready|blocked|"stopped "*) ;;
+    *) echo "kept $b $p: its tip is no handoff marker, so a live loop may hold it"; return 0 ;;
+  esac
+  [[ -d "$p" && ! -L "$p" ]] || { echo "kept $b $p: it is missing or a symbolic link"; return 0; }
+  # Git would delete a worktree nested inside this one with its ignored files.
+  for q in "${WT_PATHS[@]}"; do [[ "$q" != "$p/"* ]] || { echo "kept $b $p: the worktree $q is inside it"; return 0; }; done
+  git worktree unlock "$p" 2>"$GATE_TMP/err" || { echo "kept $b $p: it could not be unlocked ($(head -n 1 "$GATE_TMP/err"))"; return 0; }
+  # The -c: the status behind remove's clean check reads this key, and "no" hides untracked files.
+  if git -c status.showUntrackedFiles=normal worktree remove -- "$p" 2>"$GATE_TMP/err"; then echo "freed $b $p"; return 0; fi
+  why="$(head -n 1 "$GATE_TMP/err")"
+  git worktree lock --reason "${lk#locked }" "$p" 2>/dev/null || why+="; its lock could not be put back"
+  echo "kept $b $p: git refused ($why)"
+}
+# free_worktrees: --free-worktrees, under the dispatch lock its caller holds.
+# The whole list first: a removal changes what git would list next.
+free_worktrees() {
+  local x p="" b="" lk="" f=()
+  git worktree list --porcelain -z > "$GATE_TMP/wts" || { echo "refuse worktrees: the worktrees could not be listed"; exit 2; }
+  mapfile -d '' -t f < "$GATE_TMP/wts"
+  WT_PATHS=()
+  for x in "${f[@]}"; do [[ "$x" != "worktree "* ]] || WT_PATHS+=("${x#worktree }"); done
+  # NUL-ended fields; an empty field ends each record.
+  for x in "${f[@]}"; do
+    case "$x" in
+      "worktree "*) p="${x#worktree }"; b=""; lk="" ;;
+      "branch refs/heads/"*) b="${x#branch refs/heads/}" ;;
+      locked|"locked "*) lk="$x" ;;
+      "") free_one "$p" "$b" "$lk" ;;
+    esac
+  done
 }
 # loop_prompt BRIEF STEM CONSTRAINTS N TIP: the loop's prompt (plan, "Prompt
 # content"; D2, D3, D11, D14; row 622), for dispatch N of a branch at TIP in
@@ -2312,6 +2421,20 @@ land_cycle() {
   echo "landed $b $h $r $NEW"
 }
 
+# dispatch_lock WHAT: one dispatch at a time in the repository (i2 security 1:
+# two runs could both add or steal), and no removal under one: held until
+# exit; a second run refuses, naming WHAT. Only a plain file is opened (a FIFO
+# would block); the work under it runs with the descriptor closed (9>&- at each
+# call), so nothing it starts outlives the run holding it.
+dispatch_lock() {
+  local lk
+  lk="$(git rev-parse --path-format=absolute --git-common-dir)/build-loop-dispatch.lock"
+  if [[ -L "$lk" || ( -e "$lk" && ! -f "$lk" ) ]] || ! { exec 9>> "$lk"; } 2>/dev/null; then
+    echo "refuse $1: the dispatch lock file (build-loop-dispatch.lock in the git directory) is not a plain file or cannot be opened"; exit 2
+  fi
+  flock -n 9 || { echo "refuse $1: another --start, --prompt or --free-worktrees is running in this repository; retry once it ends"; exit 2; }
+}
+
 case "$MODE" in
   marker)
     read_settings
@@ -2368,16 +2491,13 @@ case "$MODE" in
     ;;
   start|prompt)
     gate_start
-    # One dispatch at a time in the repository (i2 security 1: two runs could
-    # both add or steal): held for all of dispatch, until exit; a second run
-    # refuses. Only a plain file is opened (a FIFO would block); dispatch's
-    # children do not inherit the descriptor (9>&-), so none outlives the run holding it.
-    lk="$(git rev-parse --path-format=absolute --git-common-dir)/build-loop-dispatch.lock"
-    if [[ -L "$lk" || ( -e "$lk" && ! -f "$lk" ) ]] || ! { exec 9>> "$lk"; } 2>/dev/null; then
-      echo "refuse ${ARGS[0]}: the dispatch lock file (build-loop-dispatch.lock in the git directory) is not a plain file or cannot be opened"; exit 2
-    fi
-    flock -n 9 || { echo "refuse ${ARGS[0]}: another --start or --prompt is running in this repository; retry once it ends"; exit 2; }
+    dispatch_lock "${ARGS[0]}"
     dispatch "${ARGS[0]}" 9>&- > "$GATE_TMP/line" || { cat "$GATE_TMP/line"; exit 2; }
     cat "$GATE_TMP/line"
+    ;;
+  free-worktrees)
+    gate_start
+    dispatch_lock worktrees
+    free_worktrees 9>&-
     ;;
 esac

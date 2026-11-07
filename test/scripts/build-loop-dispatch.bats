@@ -66,7 +66,7 @@ lock() { git worktree unlock "$1" 2>/dev/null; git worktree lock --reason "$2" "
     f="$R/.git/build-loop-dispatch.lock"; timeout 20 flock "$f" sleep 20 & p=$!
     for _ in $(seq 50); do flock -n "$f" true || break; sleep 0.1; done
     dsp --start "$B"; kill "$p"; wait "$p" || true
-    refused "another --start or --prompt is running in this repository; retry once it ends"; none
+    refused "another --start, --prompt or --free-worktrees is running in this repository; retry once it ends"; none
     rm "$f"; ln -s "$BATS_TEST_TMPDIR/nowhere" "$f"; dsp --start "$B"; rm "$f"
     refused "the dispatch lock file (build-loop-dispatch.lock in the git directory) is not a plain file or cannot be opened"; none
     # An unborn checkout of the absent branch is not taken over (final r3, security 2).
