@@ -737,8 +737,8 @@ optional sample below, and lands with this iteration. Keep each part short, and 
 
 - `⚠ SECURITY`: how often the Final message's triggers occurred (expected: never), from
   entries and agent items quoting `refuse state`, High findings in `docs/reviews/` and Q-103
-  entries, so it counts only what reached main (final messages are not kept, and a stop's
-  uncommitted filing is discarded);
+  entries, so it counts only what reached main and says so (final messages are not kept, and a
+  stop's uncommitted filing is discarded);
 - what changed: behaviour changes, live in the image or merged but not yet live;
 - what merged without review (self-merges), and security-review findings by severity;
 - the ask counter: asks opened and answered, and how often the owner picked the default;
@@ -811,7 +811,7 @@ Then land WT's branch (D13; not through `pr-prep`: rows 747-759, 781), all from 
    "Q-NNN merge", the option's label; never inferred from "yes" or from which entry is
    open), or is a batched answer: an unconditional instruction with an option, naming the IDs
    (`Q-235..237: [1]`) or the block the orchestrator's own last final message listed ("merge all three",
-   `all but Q-236: [1]`), never text quoted in it. It answers only merge entries that block listed, never a later one
+   `all but Q-236: [1]`), never text that message quotes. The batch answers only merge entries that block listed, never a later one
    or one a range reaches past it, and `### Answers committed` names each. Write each as `Q-NNN: [N]`, N the number of that option in the entry's table (a
    label is translated here, in session, while step 7 reads a committed "merge" as
    `unrecognized`), and quote their words under `### Answers committed` (design and residual risk:

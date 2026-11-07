@@ -433,7 +433,7 @@ shim() {
     a="$(sect '### 7. Collect')"
     for f in "${q}**What an attacker would want here:** WHAT${q}" "naming outside parties only" "never the code's own author"; do want "$a" "$f" || return 1; done
     # T3: a batch counts with IDs or a block, and an option; "yes" never does. Step 9's record template holds ### lines, so sect stops short of this rule.
-    for f in "or is a batched answer: an unconditional instruction with an option" "own last final message listed" "It answers only merge entries that block listed, never a later one" "never text quoted in it" 'never inferred from "yes"'; do want "$s" "$f" || return 1; done
+    for f in "or is a batched answer: an unconditional instruction with an option" "own last final message listed" "The batch answers only merge entries that block listed, never a later one" "never text that message quotes" 'never inferred from "yes"'; do want "$s" "$f" || return 1; done
     # T4 and T5: the digest's path and sections, at step 9's head; the cycle never closes an owner's entry.
     a="$(sect '### 9. Record and land')"
     for f in "${q}docs/working/weekly/${q} holds no ${q}YYYY-MM-DD.md${q} dated under 7 days" "(none yet: the last 7 days)" "entries and agent items quoting ${q}refuse state${q}" "the ask counter" "open 21 days or more" "only the owner's answer closes it" "one self-merge picked at random"; do
