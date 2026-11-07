@@ -26,230 +26,58 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
-| [Q-256](#q-256--canon-proposal-filter-choice) | you: judgment | How should new instances get proposed for the canon, the fixed set of known defects that review arms are sc... | 2026-11-05 |
-| [Q-265](#q-265--merge-2026-11-03-q125-verify-check-60138c791b1f) | you: judgment | Merge the live-check file for the Bash sandbox (Q-125), and have a build loop resolve the sandbox branch's ... | 2026-11-06 |
-| [Q-266](#q-266--merge-gate-2026-11-06-codify-trial-practices-e49f133c98fd) | you: judgment | Merge the change that writes the first trial set's seven practices (T1-T7, defined in `docs/working/trials/... | 2026-11-06 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
-| [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
-| [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | The fix for herald's `dl.google.com` build failures was released on 2026-10-28 (Q-214), but no output was k... | 2026-11-05 |
+| [Q-167](#q-167--post-install-host-probes) | you: terminal | Q-167: (b) and (d) answered 2026-11-07 (answers-11-7-26.txt), on bless 91c5f79dd91eb7ee, which --probe-only... | 2026-10-15 |
+| [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Q-255: first half answered 2026-11-07 (answers-11-7-26.txt): all four fronted probes through plugins-artifa... | 2026-11-05 |
 | [Q-261](#q-261--image-lag) | you: terminal | Run the paste below to bring the installed dev-cycle scripts up to main. | 2026-11-06 |
 <!-- index:end -->
 
 ## Open
-
-### Q-266 · merge-gate-2026-11-06-codify-trial-practices-e49f133c98fd
-**Needs:** you: judgment · **Opened:** 2026-11-06 · **Status:** ANSWERED
-Q-266: [1] (owner, answers-11-7-26.txt). Merge e49f133c98fda0446fb32e24473aee11347a6933; the marker's docs/dev-cycle.md question takes its tentative pick, [1] leave it.
-
-Merge the change that writes the first trial set's seven practices (T1-T7, defined in `docs/working/trials/2026-10-30-friction-engagement.md`) into the dev cycle?
-
-**If you say no:** the practices keep running only because each session reads the trial doc and session memory. Nothing else changes.
-
-**What an attacker would want here:** an outside party gains little. The one logic change adds dated weekly digests under `docs/working/weekly/` to the files the cycle may land itself, and a build loop's branch still cannot write them.
-
-**What it does.** Each practice is written once in `skills/dev-cycle/SKILL.md`, where the writer meets it: short release notes, the "If you say no:" line, batched answers, the weekly digest with its stale-entry line, the reserved security marker, and treating a warning printed on every run as a bug.
-
-**Things to weigh:**
-
-- **T4 is narrower than the trial said.** The cycle cannot close one of your `you:` entries (`--cycle-diff` refuses it), so an entry whose closure line is met gets a proposed fate in the weekly digest instead. Watches and agent items close as before.
-- **T3 now has a written bound.** A batched answer counts only as an unconditional instruction with an option, naming the IDs or the orchestrator's own last block. It covers only the merge entries that block listed.
-- **T5 is only partly live before the release.** The digest can land with the record now; the refusal of a wrong-case path and the digest's listing wait for the next install.
-- **Review was lighter than the skill asks.** Fact-checks ran once, not three times, on the final pass, and the last pass was a review of the latest changes rather than the full two clean passes. The architecture review was not run. The rubric has 0 red and 0 amber open, with three "consider" notes, and it does not spell out all of these departures. If you want a full final pass first, answer [3].
-- **Tests:** the last full run passed at `4873ac59` (1981 tests). After that only two prose clauses changed, and the loop reran 6 affected tests. One earlier full run failed one test, because of a helper left by another test run; it passed alone and in both later full runs. The last hermeticity lint's exit status was not captured.
-
-**Paths the self-merge floor would refuse** (the floor is the list of paths the cycle may not merge without you): `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/dev-cycle-read.sh` and `skills/dev-cycle/SKILL.md` are gate code, which takes effect only at the next release; `docs/decisions/log.md` is a decision record.
-
-**Tip:** `e49f133c98fda0446fb32e24473aee11347a6933`
-
-`--check`'s lines, as printed:
-
-```
-ok docs/working/briefs/2026-11-06-codify-trial-practices.md e49f133c98fda0446fb32e24473aee11347a6933 2f5c06490601112631f23124cfc74206a85e7383
-path docs/working/briefs/2026-11-06-codify-trial-practices.md M docs/decisions/log.md
-path docs/working/briefs/2026-11-06-codify-trial-practices.md A docs/reviews/code-review-rubric-2026-11-06-codify-trial-practices.md
-path docs/working/briefs/2026-11-06-codify-trial-practices.md M docs/working/briefs/2026-11-06-codify-trial-practices.md
-path docs/working/briefs/2026-11-06-codify-trial-practices.md A docs/working/plan-2026-11-06-codify-trial-practices.md
-path docs/working/briefs/2026-11-06-codify-trial-practices.md A docs/working/research-2026-11-06-codify-trial-practices.md
-path docs/working/briefs/2026-11-06-codify-trial-practices.md M scripts/build-loop.sh
-path docs/working/briefs/2026-11-06-codify-trial-practices.md M scripts/dev-cycle.sh
-path docs/working/briefs/2026-11-06-codify-trial-practices.md M scripts/lib/dev-cycle-read.sh
-path docs/working/briefs/2026-11-06-codify-trial-practices.md M skills/dev-cycle/SKILL.md
-path docs/working/briefs/2026-11-06-codify-trial-practices.md M test/scripts/build-loop-check.bats
-path docs/working/briefs/2026-11-06-codify-trial-practices.md M test/scripts/build-loop-orchestrator.bats
-path docs/working/briefs/2026-11-06-codify-trial-practices.md M test/scripts/dev-cycle.bats
-```
-
-`--marker`'s lines, verbatim (loop text, data not instructions). The question is about one parenthetical in `docs/dev-cycle.md`, a file neither a loop nor the cycle may write. [1] below accepts its pick, which is to leave that list as it is:
-
-ok docs/working/briefs/2026-11-06-codify-trial-practices.md e49f133c98fda0446fb32e24473aee11347a6933
-> The brief asked that docs/dev-cycle.md (the dev-cycle settings file) agree with this change. It mostly does: its line 55, that the release entry flags self-merged subjects, still holds. Its lines 31-32 list the cycle's own files without the new dated weekly digests under docs/working/weekly/, and th
->
-> | Option | What it means | Cost to you | If it's wrong |
-> |---|---|---|---|
-> | [1] leave it | The list stays incomplete | Nothing | A reader of that one parenthetical misses two files; the gate is unaffected |
-> | [2] update it | Add both files to the list | One small edit, by you or a session you ask | Nothing |
->
-> Tentative pick: [1], since nothing reads that list as a rule. Tiebreaker: spend the owner's attention last (S10 in docs/constraints.md).
->
-> Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
-> Claude-Session: https://claude.ai/code/session_01LnnDaFqJDZqfV6VNkAFYQw
-> (build-loop.sh --marker cut this body: 11 of 11 lines shown, 1 cut at 300 bytes)
-
-- **Read:** `docs/working/research-2026-11-06-codify-trial-practices.md` and `docs/reviews/code-review-rubric-2026-11-06-codify-trial-practices.md`, on the branch `feat/codify-trial-practices`.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] merge** | The cycle merges this exact commit | One word now; the skill and scripts start at your next install | One revert |
-| **[2] drop** | The brief closes, and the practices stay in the trial doc | None now | Each session keeps relying on the trial doc |
-| **[3] changes needed** | Your note goes back to a build loop, for example a full final review pass | One note, then another merge entry | One more loop's delay |
-
-- **Interim:** the branch waits, nothing has merged, and the cycle keeps following the trial doc.
-
-### Q-265 · merge-2026-11-03-q125-verify-check-60138c791b1f
-**Needs:** you: judgment · **Opened:** 2026-11-06 · **Status:** ANSWERED
-Q-265: [1] (owner, answers-11-7-26.txt). Merge 60138c791b1f5f739e963bd6075ec166d48c3517, then one build loop merges main into feat/q125-cc-isolated-sandbox and resolves the five conflicts, without landing it on main; the cc-verify paste follows.
-
-Merge the live-check file for the Bash sandbox (Q-125), and have a build loop resolve the sandbox branch's conflicts with main so your paste can run?
-
-**If you say no:** answering [2] drops this check file. To keep the file but leave the sandbox waiting, answer [3] with that note. Either way Claude Code's Bash tool stays unsandboxed in cc-isolated, and the two watches behind it, Q-098 and Q-161, keep waiting.
-
-**What changed since you answered Q-254.** The C1 fix you chose is done: it is one commit, `8dfe3ab9`, on `feat/q125-cc-isolated-sandbox`, so a masked credential file no longer reads as a failure. But the "one paste" promise was wrong. That branch does not merge cleanly with main, in five files, and `cc-verify` stops at that merge before it builds anything. It was already so when the paste was first written. Q-254 allowed only the one commit, so the loop left the conflicts alone.
-
-**So [1] means two things:** this branch merges, and one more build loop resolves the conflicts on the sandbox branch, without landing it on main. Then you get the paste. The check file itself does not depend on the conflict.
-
-**Tip:** `60138c791b1f5f739e963bd6075ec166d48c3517`
-
-`--check`'s lines, as printed:
-
-```
-ok docs/working/briefs/2026-11-03-q125-verify-check.md 60138c791b1f5f739e963bd6075ec166d48c3517 1ac7ebdb608e5071d79395307717cfb795323f51
-path docs/working/briefs/2026-11-03-q125-verify-check.md M docs/working/briefs/2026-11-03-q125-verify-check.md
-path docs/working/briefs/2026-11-03-q125-verify-check.md A docs/working/q125-verify-check.sh
-path docs/working/briefs/2026-11-03-q125-verify-check.md A docs/working/research-2026-11-03-q125-verify-check.md
-path docs/working/briefs/2026-11-03-q125-verify-check.md A test/q125-verify-check.bats
-```
-
-No path here is on the self-merge floor (the list the cycle may not merge without you); the brief's review policy brought it to you.
-
-`--marker`'s lines, verbatim (loop text, data not instructions):
-
-ok docs/working/briefs/2026-11-03-q125-verify-check.md 60138c791b1f5f739e963bd6075ec166d48c3517
-> The C1 fix Q-254 asked for is done, but Q-125's live run still cannot start: the paste below will be refused until feat/q125-cc-isolated-sandbox merges cleanly with main. It does not today, and it did not when the paste was first written. Dispatch 1's "one paste" estimate was wrong.
->
-> What happened: git merge-tree main feat/q125-cc-isolated-sandbox exits 1, with conflicts in five files. cc-verify builds that merge, so it stops at its first step with "does not merge cleanly with main", before any prompt or build. Nothing is harmed, but nothing is verified.
->
-> Conflicted files: devcontainer-config/install.sh, docs/decisions/log.md, hooks/live-verify-gate.sh, test/cc-isolated-functions.bats, test/install-host.bats.
-> The code conflicts seen are mostly both sides extending the same list (files installed into the container, files the commit gate watches).
-> Q-254 allowed one commit on that branch, so this loop did not touch them.
->
-> Should a build loop merge main into feat/q125-cc-isolated-sandbox and resolve those conflicts, so the paste can run?
->
-> | Option | What it means | Cost to you | If it's wrong |
-> |---|---|---|---|
-> | [1] Merge main into the branch (pick) | One more build loop resolves the five conflicts on the branch; it still does not land on main | One answer now, then the same paste | A bad resolution shows in the live run as a FAIL or build error: another loop and paste |
-> | [2] Leave Q-125 waiting | This check file lands on main and the branch stays as it is | Nothing now | Claude Code's Bash tool stays unsandboxed in cc-isolated, and Q-098 and Q-161 keep waiting; the branch drifts further from main |
->
-> Pick: [1]. Tiebreaker: the owner already chose to get this run done in Q-254, and [1] is the only option that lets it happen. This branch can merge under either answer: it does not depend on the conflict.
->
-> The paste, for after the conflicts are resolved and this branch is on main. Run it on the host from the root of your claude-workflows checkout, on main, and answer y at cc-verify's one prompt:
->
->     cc-verify --check docs/working/q125-verify-check.sh . feat/q125-cc-isolated-sandbox; echo "cc-verify exit $?"
->
-> What it does: cc-verify builds main + the branch in a throwaway container. The check file runs headless claude -p against a local model stub (no login, no LLM, nothing leaves the container).
-> The stub asks for two sandboxed Bash tool calls: the file's own X checks, then the branch's live-check-q125.sh. It takes about 5 to 15 minutes (an estimate; it has never run) and cleans up after itself.
->
-> Expected output: indented "  | RESULT <id> pass|FAIL ..." lines, then "  | VERDICT pass|FAIL", then cc-verify's own "RESULT cc-verify pass|fail" and "cc-verify exit 0|3".
-> Paste back: every line from the first "| RESULT" through the "cc-verify exit" line.
->
-> What changed on the branch: 8dfe3ab9 (one commit, docs/working/live-check-q125.sh only). All four C1 reads now judge by what they print, not by exit status, and the result ids are the same.
-> cat fails on any byte of output rather than a marker grep, so the abort does not depend on knowing the credential's format.
->
-> Checked: a scratch probe of the script's C1 section only, plus one independent review (no Must fix). The sandbox's real /dev/null bind could not be run here, so the live run is its first real test. The whole health check passes on this branch.
->
-> Known and left alone, none of them reachable from the paste unless noted:
-> - The script's --watch loop (C10) has the same exit-status bug. The paste does not use --watch; a hand run would print a false FAIL.
-> - On an unsandboxed hand run, a credential with no bytes passes C1 and continues to the write checks. The check file always plants a canary, so the paste cannot reach this.
-> - On an unsandboxed hand run, a readable credential is now copied into a 0700 temp dir until exit, not sent to /dev/null.
-> - Reachable from the paste: C3-nested-settings-1 may FAIL. The repo tracks no .claude/ directory, so the check tries mkdir there, which the sandbox probably allows. That would be a real finding about agent worktrees.
-> - Reachable from the paste: the stub path is unverified live. If Claude Code does not talk to it as expected, the Q0-* lines FAIL and name the cause; it never passes vacuously.
->
-> Files: docs/working/q125-verify-check.sh, test/q125-verify-check.bats, docs/working/research-2026-11-03-q125-verify-check.md.
->
-> Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
-> Claude-Session: https://claude.ai/code/session_01LnnDaFqJDZqfV6VNkAFYQw
-
-- **Read:** `docs/working/research-2026-11-03-q125-verify-check.md` on the branch `feat/q125-verify-check`.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] merge** | This branch merges, and a build loop resolves the five conflicts on the sandbox branch | One word now, then the paste | A bad resolution shows in the live run as a FAIL or build error: another loop and paste |
-| **[2] drop** | The brief closes, and the check file does not land | None now | The check file would have to be rebuilt to verify the sandbox |
-| **[3] changes needed** | Your note goes back to a build loop, for example to merge this file and leave the sandbox waiting | One note | The branch drifts further from main while it waits |
-
-- **Blocks:** Q-125's live run; behind it the watches Q-098 and Q-161.
-- **Interim:** the branch waits, and nothing runs on the host.
 
 ### Q-261 · image-lag
 **Needs:** you: terminal · **Opened:** 2026-11-06 · **Status:** OPEN
 
 Run the paste below to bring the installed dev-cycle scripts up to main.
 
-**Release notes.** The installed image is the root-owned copy of the dev-cycle scripts and skill. It is at `dff98910` (read from `/opt/claude-workflows/.manifest`), and main is ahead of it by the two merges you approved today, Q-259 and Q-260. Neither is live until you run the paste below.
+**Release notes.** The installed image is the root-owned copy of the dev-cycle scripts and skill. It is at `dff98910` (read from `/opt/claude-workflows/.manifest`), and main is ahead of it by four merges you approved: Q-259, Q-260, Q-263 and, today, Q-266. None of them is live until you run the paste below.
 
-**If you say no:** the cycle keeps pasting the roughly 60-line block into every script call, and finished build loops keep their worktrees (2.85 GiB at last count) and branches. Nothing breaks.
+**If you say no:** the cycle keeps pasting the roughly 60-line block into every script call, finished build loops keep their worktrees and branches (36 merged branches are held by worktrees today), and the trial practices keep running from the trial doc. Nothing breaks.
 
 **What changes for you:**
 
 - That block becomes `scripts/d6.sh`, one line to call, and drops the five checks the restriction audit judged hostile-only (from Q-259).
 - Each cycle's cleanup step removes a finished loop's worktree, so its merged branch can then be deleted (from Q-260).
 - Agents get the rule to explain every internal reference in plain language (from Q-263). The build-loop prompt and skill parts start here; the global-instructions part reaches sessions with the host install.
+- The first trial set's practices T1-T7 (short release notes, the "If you say no:" line, batched answers, the weekly digest, the reserved security marker, a warning printed on every run treated as a bug) are written into the dev-cycle skill and scripts (from Q-266).
 
 **Merged without your review:** one design record and its brief, both docs (`e9f3e176`, flagged below). The image carries neither.
 
 **Commits since the image:**
 
-- `85080263` Merge branch 'refactor/free-merged-loop-worktrees' (build-loop approved merge)
-- `aeab6745` Merge branch 'refactor/d6-block-into-image' (build-loop approved merge)
+- `3dbf43cb` Merge branch 'feat/codify-trial-practices' (build-loop approved merge)
+- `546788f2` Merge branch 'feat/q125-verify-check' (build-loop approved merge): the Q-125 check file, not gate code
+- `e56f53ac` docs(questions): record owner answers of 2026-11-07 (your answers, one doc)
+- `672f7521` Merge branch 'docs/trial-set-2-2026-11-06' (the second trial set, docs)
 - `771c84e8` Merge branch 'feat/owner-entry-gloss-rule' (build-loop approved merge)
 - `e9f3e176` Merge branch 'docs/merge-friction-design' (build-loop self-merge): no one reviewed it
 - `21399f53` Merge branch 'docs/trial-feedback-2026-11-06' (your end-of-trial feedback, one doc)
-- `3ca1bc5c`, `9f3758c5`, `abea6674`, `37a56702`, `62687b97`, `657b96b4`, `65fd1b17` and `f979bc57`: cycle lands, records only
+- `85080263` Merge branch 'refactor/free-merged-loop-worktrees' (build-loop approved merge)
+- `aeab6745` Merge branch 'refactor/d6-block-into-image' (build-loop approved merge)
+- `c3f785d4`, `4fbba149`, `d6e672ab`, `c14c9c08`, `3ca1bc5c`, `9f3758c5`, `abea6674`, `37a56702`, `62687b97`, `657b96b4`, `65fd1b17` and `f979bc57`: cycle lands, records only
 
-**Gate files changed:** `scripts/build-loop.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`, and the new `scripts/d6.sh`.
+**Gate files changed:** `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`, and the new `scripts/d6.sh`.
 
-**Paths outside `docs/`** (37 paths under `docs/` also changed; the image carries none of them): `global-instructions/CLAUDE.md`, `scripts/build-loop.sh`, `scripts/d6.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`, `test/questions-doc.bats`, `test/scripts/build-loop-check.bats`, `test/scripts/build-loop-dispatch.bats`, `test/scripts/build-loop-free.bats`, `test/scripts/build-loop-orchestrator.bats`
+**Paths outside `docs/`** (44 paths under `docs/` also changed; the image carries none of them): `global-instructions/CLAUDE.md`, `scripts/build-loop.sh`, `scripts/d6.sh`, `scripts/dev-cycle.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`, `test/q125-verify-check.bats`, `test/questions-doc.bats`, `test/scripts/build-loop-check.bats`, `test/scripts/build-loop-dispatch.bats`, `test/scripts/build-loop-free.bats`, `test/scripts/build-loop-orchestrator.bats`, `test/scripts/dev-cycle.bats`
 
 **The paste** (host terminal in WSL, not inside a session; stop every session first):
 
 ```
-cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = 771c84e8a1800c095aaa9821607713d11ef0928b && ./devcontainer-config/install.sh
+cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = 3dbf43cb9d63ae12a40bda6f7928f9e31d7b9e0b && ./devcontainer-config/install.sh
 ```
 
-The `rev-parse` check runs no hook. It only confirms your checkout is at `771c84e8`, which holds Q-263's rule. Main will be past that commit by the time you read this, because the cycle's own land moves it, so check out `771c84e8` first. That checkout, like any other git command on the host, can run a hook a sandbox session planted, which is `install.sh`'s own trust model. If the install re-blesses, it also prints the hint that Q-167's step (a) still needs.
+The `rev-parse` check runs no hook. It only confirms your checkout is at `3dbf43cb`, which holds Q-266's merge. Main will be past that commit by the time you read this, because the cycle's own land moves it, so check out `3dbf43cb` first. That checkout, like any other git command on the host, can run a hook a sandbox session planted, which is `install.sh`'s own trust model. If the install re-blesses, it also prints the hint that Q-167's step (a) still needs.
 
 - **Interim:** the image at `dff98910` runs.
-
-### Q-256 · canon-proposal-filter-choice
-**Needs:** you: judgment · **Opened:** 2026-11-05 · **Status:** ANSWERED
-Q-256: [2] (owner, answers-11-7-26.txt). One pass now: start a build brief that builds the script and adds 1 or 2 dev-cycle candidates as rows, per sections 8 and 10 of the research doc.
-
-How should new instances get proposed for the canon, the fixed set of known defects that review arms are scored against?
-
-**If you say no:** with no answer the interim [1] stands, so nothing is built and no instance is added until a recall run (a measured re-test of review quality) is briefed. Nothing is burning.
-
-No review work now scheduled needs a new instance, and the canon has had no run in about 11 weeks. There is a gap for harness work: 12% to 20% of the sampled in-scope findings sit in three classes the canon lacks (hostile-shaped text, instruction prose, performance). That figure comes from this repo only, and the classes and the 12-row cap are the build loop's own. The loop's tentative pick is [1], at 55% confidence.
-
-- **Read:** `docs/working/research-2026-11-05-canon-proposal-filter.md`, sections 8 and 10 (the rule, the dry run and the script spec).
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Scheduled pass** | Nothing is built now. When a recall run is briefed, one pass applies the rule and proposes at most 3 instances | About 10 minutes, once, at that run | No run comes, and nothing differs from [4] |
-| **[2] One pass now** | The same rule today with this repo as the subject: build the script, add 1 or 2 dev-cycle candidates as rows | About 10 minutes now | Effort goes into harness-only instances no run may use |
-| **[3] Standing scan** | A script checks new rubrics each cycle and files proposals | A triage entry when one fires | A standing script for a rule that closes after one pass |
-| **[4] Leave it** | No proposals; the canon grows only by hand | None | A recall run on shell or prose work has no instance and picks ad hoc |
-
-- **Interim:** [1]. The canon and ledger are unchanged. The watch on "a recall run is briefed" is filed once you answer [1].
-- **If the answer differs:** [2] starts a build brief, [3] adds a classifier, [4] needs no watch. Nothing needs undoing.
 
 ### Q-255 · herald-egress-fix-unconfirmed
 **Needs:** you: terminal · **Opened:** 2026-11-05 · **Status:** OPEN
