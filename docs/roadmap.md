@@ -20,8 +20,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   that were waiting on Q-259's skill rewrite.
 - **Agent: Q-125 · cc-isolated Bash sandbox, live run** (filed 2026-11-01, step 6, from
   Q-234's migrate). Motive: nothing sandboxes Bash in cc-isolated. Built, unmerged
-  (`feat/q125-cc-isolated-sandbox`); the host install is done (Q-222, answered 2026-11-03). First step
-  (Next 1): Q-265, then resolve the branch's conflicts with main.
+  (`feat/q125-cc-isolated-sandbox`); the host install is done (Q-222, answered 2026-11-03). The
+  check file merged at 546788f2 (Q-265 [1]). First step: the conflict merge, briefed 2026-11-07
+  (In flight), then the owner's `cc-verify` paste.
 
 - **Agent: scoped deep audit, constraint drift** (filed 2026-11-05, step 4b). Motive: the
   drift check on 605d4c18 found its script-home decision resting on a soft constraint (S4
@@ -31,6 +32,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   scope and timing; it runs on its own branch, outside the cycle. It also covers
   `skills/dev-cycle/SKILL.md` as Q-259 and Q-260 changed it (step 4b, 2026-11-06). Also 85080263's
   Path A record, where S4 (soft) shared the pruning of candidate D with H1 (step 4, 2026-11-06).
+  Also aeab6745's Path A record, where S8 (soft) shared the pruning of `bin/d6` with the
+  enforcement-file cost, while H1 pruned `/usr/local/bin` (step 4, 2026-11-07); and
+  `skills/dev-cycle/SKILL.md` as 3dbf43cb (Q-266) changed it.
 
 - **Agent: `source_lines_ok` misses an unterminated last line** (filed 2026-11-05, step 7).
   Motive: the Q-147 review found the shipped self-check in `devcontainer-config/cc-verify.sh`
@@ -42,9 +46,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 - **Agent: figure out the confine-tests situation** (filed 2026-11-06, step 6). Motive: the
   owner asked for this after Q-263's brief required tests to pass under
   `scripts/confine-tests.sh`, which cannot run in this container, so no build loop can meet
-  that line. Decision 017 calls it the real enforcement, CI-side, and this repo has no CI
-  run of it on record. First step: find what it needs, where it can run today (the host, or
-  a session once Q-125's sandbox lands), and whether briefs should stop naming it until then.
+  that line. Briefed 2026-11-07 (In flight).
 
 - **Agent: the `Harness feedback` section warning** (filed 2026-11-06, step 3, trial T7).
   Motive: every health check warns that this H2 of the global instructions is missing from
@@ -93,23 +95,22 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
-- Q-125's `cc-verify --check` file for the sandbox live run
-  (`docs/working/briefs/2026-11-03-q125-verify-check.md`; review policy). C1 is fixed at 8dfe3ab9
-  (Q-254 [1]), but that branch conflicts with main in five files, so the paste cannot run yet.
-  Ready at 60138c79: merge entry Q-265.
-- Write the first trial set's practices into the dev cycle
-  (`docs/working/briefs/2026-11-06-codify-trial-practices.md`; review policy). Motive: the
-  owner kept all of T1-T7.
-  Ready at e49f133c: merge entry Q-266.
+- Bring the Q-125 sandbox branch up to main, so the live run can start
+  (`docs/working/briefs/2026-11-07-q125-sandbox-on-main.md`; review policy). Motive: Q-265 [1].
+- One canon-proposal pass now, with this repo as the subject
+  (`docs/working/briefs/2026-11-07-canon-instances-pass.md`; review policy). Motive: Q-256 [2].
+- What `scripts/confine-tests.sh` needs and where it can run
+  (`docs/working/briefs/2026-11-07-confine-tests-situation.md`; self-merge, docs only). Motive:
+  the Now agent item of 2026-11-06.
 
 ## Next
 
 1. **Q-125's host live run, now that `cc-verify` is merged.** Motive: Q-125 (the
    cc-isolated Bash sandbox), and behind it Q-098 (global allowlist) and Q-161 (hermeticity
    layer 2), waited on `cc-verify` (merged at 37b24c02, Q-217 [1]). The host install has
-   `cc-verify` (Q-222, answered 2026-11-03). First step, briefed 2026-11-03 (In flight): write the probe FILE for Q-125's live check (a sandboxed
-   `cat ~/.claude/.credentials.json` refused, Q-098's leak list re-run, `gh`/`git push` not
-   prompting) and file it as one `you: terminal` paste. `~/cc-verify` is already in the agents'
+   `cc-verify` (Q-222, answered 2026-11-03). The check file merged at 546788f2 (Q-265 [1]).
+   First step: the conflict-merge brief of 2026-11-07 (In flight), whose marker carries the
+   owner's paste. `~/cc-verify` is already in the agents'
    sandbox `denyWrite` (owner, 2026-11-03).
 2. **A8 post-restructure token measurement.** Motive: the user deferred big compute until
    code and prompts settle; it validates code-review lever #3 (rubric row A8 in
@@ -350,6 +351,12 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- Q-125's `cc-verify --check` file for the sandbox live run
+  (`docs/working/briefs/closed/2026-11-03-q125-verify-check.md`). Merged 546788f2 (Q-265 [1]).
+- The first trial set's practices (T1-T7) written into the dev cycle
+  (`docs/working/briefs/closed/2026-11-06-codify-trial-practices.md`). Merged 3dbf43cb
+  (Q-266 [1]; the marker's `docs/dev-cycle.md` question takes its pick, [1] leave it). Gate
+  code: live from the next image release.
 - Owner-facing text explains every internal reference, by a written rule (`docs/working/briefs/closed/2026-11-06-owner-entry-gloss-rule.md`). Merged 771c84e8 (Q-263 [1]). Its falsifier is watch Q-264.
 - Merge approval stays as it is: ideas A1, A3 and A10 weighed, status quo picked (`docs/working/briefs/closed/2026-11-06-merge-friction-design.md`). Merged e9f3e176, self-merge. Revisit triggers are watch Q-262.
 - Free a finished loop's worktree and branch (`docs/working/briefs/closed/2026-11-06-free-merged-loop-worktrees.md`). Merged 85080263 (Q-260 [1]).

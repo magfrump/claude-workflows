@@ -177,3 +177,4 @@ Ran because the last brainstorm was 7 days ago (2026-10-29). Sources: this cycle
 - Say in the skill that a batched answer to named merge entries counts, as the trial doc asked if T3 was kept (signal: T3 kept, no such text; merge-friction record, section 12)
 - Decide what backs up the release entry as the check on self-merged scripts, now that the owner says they do not read it closely (signal: T1 feedback against `docs/dev-cycle.md`; merge-friction record, section 12)
 - Narrow the policy-file hook, which refuses Bash commands that only name the instruction file beside a redirect or a `.claude` path (signal: it blocked this cycle's brief writing, and the gloss-rule loop's read-only work)
+- Delete the old Reader roots and Reader homes lines from `docs/dev-cycle.md` (lines 63 and 65), a file only the owner writes: `--settings` prints `readers ignored` on every call, which T7 counts as a bug (signal: iteration 2026-11-07-2324's `--settings` call)

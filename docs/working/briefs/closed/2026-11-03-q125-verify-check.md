@@ -38,4 +38,4 @@ Dispatched: 2
 
 Asked: Q-254@502296b7ac4f5e299011286f8b763a6ca68885ea
 
-Applied: Q-254=redispatch
+Applied: Q-254=redispatch, Q-265=merged
