@@ -67,7 +67,7 @@ Does the problem exist, in the owner's terms?
 |---|---|
 | 2026-10-09, Q-137 (memory note): "For review adjustments and merges like this, go ahead with your recommendation"; the landing questions cost attention with no decision in them | For change. Those were gate units, which self-merge has never covered |
 | 2026-10-20 feedback, the founding purpose of the dev cycle: agents saying "should I merge this?", with the answer "yes, with this review process" available without the owner's input | For change, and the strongest line here: a standing goal, not a complaint |
-| 2026-10-17, Q-149: "I don't want this much merging blocked on my manual actions" | For change, but the answer kept the floor and narrowed the never line |
+| 2026-10-17, Q-149: "I don't want this much merging blocked on my manual actions" | For change, but it was about the never line; the floor was not on offer |
 | 2026-10-20 feedback: "a larger amount of process blockage"; the skill "stops to ask for permission at far more stages" | For change, about stops in general |
 | 2026-10-29: asks where the harness creates friction, above all in merges (brainstorm); "can't merge from a chat answer ... the gate is too strict" | For change, and Q-230 fixed that one the same day |
 | 2026-11-06, T3: "this is fine, but it's not targetting a big blocker" | Against, within limits: the latest word, but it judges a bundling display, not options that remove asks |
