@@ -57,7 +57,17 @@
 
   "runArgs": [
     "--cap-add=NET_ADMIN",
-    "--cap-add=NET_RAW"
+    "--cap-add=NET_RAW",
+    // Claude Code's Bash sandbox (Q-125): Docker's default seccomp profile plus
+    // ONE tagged rule letting clone/unshare/mount/umount2/pivot_root through
+    // without CAP_SYS_ADMIN, so an unprivileged bwrap can build its user, mount,
+    // pid and net namespaces. Every other rule is upstream's, byte-for-byte in
+    // canonical form (test/seccomp-cc-sandbox.bats pins the hash). No capability
+    // is added: the container still cannot mount or unshare in its OWN namespaces,
+    // only inside a user namespace it creates. Absolute path for the same reason
+    // as the build paths above.
+    "--security-opt",
+    "seccomp=${localEnv:CC_CONFIG_DIR}/seccomp-cc-sandbox.json"
     // NOTE: this boundary deliberately requires NO sysctl. The nat chains in
     // init-firewall.sh DNAT to the container's own address rather than REDIRECTing
     // to 127.0.0.1, so nothing here depends on `route_localnet` or any other kernel
