@@ -49,18 +49,32 @@ if [ "${1:-}" = "--watch" ]; then
   res C10-cred-across-rename pass; exit 0
 fi
 
-# C1 the credential. If it is readable this shell is not sandboxed (a `!` run, or
-# a broken sandbox): stop here, before any check that writes, so an unsandboxed
-# run cannot touch settings.json or plant probe files.
-if cat "$cred" >/dev/null 2>&1; then
+# C1 the credential, judged by CONTENT and never by exit status: denyRead binds
+# /dev/null over the file, so a refused read exits 0 and prints nothing. If cat
+# shows a single byte this shell is not sandboxed (a `!` run, or a broken sandbox):
+# stop here, before any check that writes, so an unsandboxed run cannot touch
+# settings.json or plant probe files.
+cat "$cred" > "$tmp/o" 2>/dev/null
+if [ -s "$tmp/o" ]; then
   res C1-cat-credential "FAIL (readable: not sandboxed, or the sandbox is broken)"
   echo "ABORT: skipping every other check; nothing was written." >&2
   exit 1
 fi
 res C1-cat-credential pass
-refused C1-git-diff-credential git diff --no-index /dev/null "$cred"
-refused C1-man-l-credential man -l "$cred"
-refused C1-date-f-credential date -f "$cred"
+# The other readers print the file inside a diff or an error message, so these grep
+# for its content: q125-verify-check.sh's canary, or a real login's keys. A control
+# file proves the tool would have shown content, so a broken tool cannot pass.
+echo '{"q125Control":"shown"}' > "$tmp/control"
+noread() {
+  local id="$1"; shift
+  "$@" "$tmp/control" > "$tmp/o" 2>&1
+  if ! grep -q q125Control "$tmp/o"; then res "$id" "FAIL (control: $* shows no content)"; return; fi
+  "$@" "$cred" > "$tmp/o" 2>&1
+  if grep -qE 'q125canary[0-9a-f]{16}|claudeAiOauth|accessToken' "$tmp/o"; then res "$id" "FAIL (credential content read: $*)"; else res "$id" pass; fi
+}
+noread C1-git-diff-credential git diff --no-index /dev/null
+noread C1-man-l-credential env MANPAGER=cat PAGER=cat man -l
+noread C1-date-f-credential date -f
 
 # C2 settings, hooks wiring, Claude Code state.
 nowrite C2-user-settings "$HOME/.claude/settings.json"
