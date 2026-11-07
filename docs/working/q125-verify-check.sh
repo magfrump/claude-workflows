@@ -4,7 +4,9 @@
 # docs/working/research-2026-11-03-q125-verify-check.md, force-added on its branch).
 #
 # RUN it on the HOST, from your claude-workflows checkout at main:
-#   cc-verify --check docs/working/q125-verify-check.sh . feat/q125-cc-isolated-sandbox
+#   cc-verify --check docs/working/q125-verify-check.sh . feat/q125-sandbox-on-main
+# (feat/q125-sandbox-on-main is feat/q125-cc-isolated-sandbox merged with main; the
+# old branch no longer merges cleanly, so cc-verify refuses it.)
 # cc-verify builds main + the branch in a throwaway container and runs this text there
 # as `bash -c`, stdin closed. Exit 0 is pass (cc-verify exits 0); anything else is a
 # failed check (cc-verify exits 3).

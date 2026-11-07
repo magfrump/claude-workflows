@@ -3,6 +3,7 @@ Date: 2026-10-07
 Branch: feat/q125-cc-isolated-sandbox (U2), stacked on feat/q125a-seccomp (U1)
 Research: docs/working/research-q125-cc-isolated-sandbox.md
 Plan: docs/working/plan-q125-cc-isolated-sandbox.md
+Note (2026-11-07): the live run now verifies `feat/q125-sandbox-on-main`, which merges this branch with main (docs/working/research-2026-11-07-q125-sandbox-on-main.md).
 
 ## Project state
 - **Branch purpose**: Claude Code's Bash sandbox in cc-isolated (Q-124 [1] / Q-125).
