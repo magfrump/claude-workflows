@@ -39,6 +39,13 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   Q-258. First step: one change with `Host-tool-tested:` and a re-bless,
   which needs a host run, so it is not briefed for a loop yet.
 
+- **Agent: figure out the confine-tests situation** (filed 2026-11-06, step 6). Motive: the
+  owner asked for this after Q-263's brief required tests to pass under
+  `scripts/confine-tests.sh`, which cannot run in this container, so no build loop can meet
+  that line. Decision 017 calls it the real enforcement, CI-side, and this repo has no CI
+  run of it on record. First step: find what it needs, where it can run today (the host, or
+  a session once Q-125's sandbox lands), and whether briefs should stop naming it until then.
+
 - **Agent: the `Harness feedback` section warning** (filed 2026-11-06, step 3, trial T7).
   Motive: every health check warns that this H2 of the global instructions is missing from
   `AGENTS.md` and `GEMINI.md`, and T7 files any warning printed every run as a bug. First step:
@@ -52,12 +59,10 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   `docs/working/trials/2026-10-30-friction-engagement.md` says (T1-T7), and the first
   iteration of each week writes `docs/working/weekly/`. First step: done (T1, T2, T4, T5 started
   2026-10-30). Owner feedback on T1-T7 recorded there on 2026-11-06.
-  The cycle's reading (iteration 2026-11-07-0500; the owner can overrule any line): T1 release
-  notes, T3 batched answers, T5 weekly digest, T6 security marker and T7 no recurring warnings
-  stay as they are, with nothing to build. T2's opening lines stay, and its real problem,
-  jargon and bare references, is briefed (In flight). T4: the 21-day proposed-fate line in the
-  weekly digest stops, because stale entries are unthought directions and no interface changes
-  that; closing an entry whose own closure line is met stays. A1/A3/A10: no change (Done; watch Q-262).
+  The owner's decision (2026-11-06, after the cycle's reading): "none of them have hurt and
+  some have helped so let's commit them and start a new set of trials". So T1-T7 all stay,
+  T4 included, and they get written into the skill properly once Q-263's skill change is on
+  main. A1/A3/A10: no change (Done; watch Q-262). New set: T8-T12, doc on main shortly.
 - **Questions doc becomes owner-only (Q-221 [14′], decision 040).** Motive: the owner reported
   that agent bookkeeping crowds the one page meant for them (17 open entries, 2 theirs).
   Build in three units: (1) four owner routes (`you: judgment`, `you: terminal`, new
@@ -89,11 +94,11 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 ## In flight
 
 - Q-125's `cc-verify --check` file for the sandbox live run
-  (`docs/working/briefs/2026-11-03-q125-verify-check.md`; review policy). Blocked at
-  502296b7: the Q-125 branch's own C1 check cannot pass on a working sandbox; Q-254.
+  (`docs/working/briefs/2026-11-03-q125-verify-check.md`; review policy). Q-254 answered [1]: the
+  C1 check on the Q-125 branch gets fixed first, then one paste.
 - Owner entries gloss every reference, by rule (`docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md`;
   review policy). Motive: decision 040's trigger fired on the owner's T2 feedback.
-  Ready at 7aecad7a: merge entry Q-263. Once merged, file a watch for log row 84's falsifier.
+  Ready at 7aecad7a: merge entry Q-263, answered [1]. Once merged, file a watch for log row 84's falsifier.
 
 ## Next
 

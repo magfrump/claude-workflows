@@ -26,9 +26,9 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
-| [Q-254](#q-254--blocked-2026-11-03-q125-verify-check-1) | you: judgment | Brief 2026-11-03-q125-verify-check's build loop asks: | 2026-11-03 |
+| [Q-254](#q-254--blocked-2026-11-03-q125-verify-check-1) | you: judgment | Q-254: [1] | 2026-11-03 |
 | [Q-256](#q-256--canon-proposal-filter-choice) | you: judgment | How should new instances get proposed for the canon, the fixed set of known defects that review arms are sc... | 2026-11-05 |
-| [Q-263](#q-263--merge-gate-2026-11-06-owner-entry-gloss-rule-7aecad7a3453) | you: judgment | Merge the rule that owner-facing text explains every internal reference in plain language? | 2026-11-06 |
+| [Q-263](#q-263--merge-gate-2026-11-06-owner-entry-gloss-rule-7aecad7a3453) | you: judgment | Q-263: [1] | 2026-11-06 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | The fix for herald's `dl.google.com` build failures was released on 2026-10-28 (Q-214), but no output was k... | 2026-11-05 |
@@ -38,7 +38,8 @@ The index below is generated — edit entries, not the table.
 ## Open
 
 ### Q-263 · merge-gate-2026-11-06-owner-entry-gloss-rule-7aecad7a3453
-**Needs:** you: judgment · **Opened:** 2026-11-06 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-06 · **Status:** ANSWERED
+Q-263: [1]
 
 Merge the rule that owner-facing text explains every internal reference in plain language?
 
@@ -166,7 +167,8 @@ Expect 403 or 404 on all four lines. A 200 with that site's title means the name
 - **If the answer differs:** a name that fronts gets a follow-up entry: accept the risk as Q-052 did for Google, or remove the name. A `FAIL sni=dl.google.com` for an address that is not pinned is decision 039's revisit trigger.
 
 ### Q-254 · blocked-2026-11-03-q125-verify-check-1
-**Needs:** you: judgment · **Opened:** 2026-11-03 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-03 · **Status:** ANSWERED
+Q-254: [1]
 
 Brief 2026-11-03-q125-verify-check's build loop asks:
 
