@@ -51,7 +51,7 @@ rootfs and no private `/tmp`, so FP-050 applies to it.
 | # | Place | Works today? | What it needs | Cost to the owner | Recorded run? |
 |---|---|---|---|---|---|
 | 1 | This container (cc-isolated, main's image) | **No**, exit 3 (above) | the seccomp change plus bwrap, which is what place 2 is | n/a | refusals only: the 2026-11-05 q089 loop (exit 3, `cycle-2026-11-05.md` step 7), the 2026-11-06 gloss-rule loop (Q-263 "Not met"), and this run |
-| 2 | A session after Q-125 merges | **Expected yes, untested** | Q-125's image: `bubblewrap` in the Dockerfile, and `seccomp-cc-sandbox.json`, which lets clone/unshare/mount/pivot_root through inside a user namespace. Q-126's host probe saw bwrap start in a container under that profile, with a fresh `/proc`. But every Bash call would then already run inside Claude Code's own bwrap, so `confine-tests.sh` becomes a **nested** bwrap. Q-125's plan (residuals table) says Claude Code passes no `--disable-userns`, so a nested user namespace should be allowed [inferred]. The 2026-07-09 spike showed nested bwrap working, but on the pre-Docker host [observed then; boundary since changed]. | Nothing new: one `scripts/confine-tests.sh --probe` line could ride along in Q-125's already-queued live run (roadmap Next 1). This is what the Q-161 watch waits for. | none |
+| 2 | A session after Q-125 merges | **Expected yes, untested** | Q-125's image: `bubblewrap` in the Dockerfile, and `seccomp-cc-sandbox.json`, which lets clone/unshare/mount/pivot_root through inside a user namespace. Q-126's host probe saw bwrap start in a container under that profile, with a fresh `/proc`. But every Bash call would then already run inside Claude Code's own bwrap, so `confine-tests.sh` becomes a **nested** bwrap. Q-125's plan (residuals table) says Claude Code passes no `--disable-userns`, so a nested user namespace should be allowed [inferred]. The decision 014 layer-3 spike (dated 2026-07-09 inside; archived as `archive/docs/2026-08-06-spike-nested-bwrap-fixture-confinement.md`) showed nested bwrap working, but on the pre-Docker host [observed then; boundary since changed]. | Nothing new: one `scripts/confine-tests.sh --probe` line could ride along in Q-125's already-queued live run (roadmap `## Now`). That run would be evidence for the nested-bwrap inference. The Q-161 watch itself fires on Q-125's merge (`command -v bwrap` on main's image), not on a confine-tests run. | none |
 | 3 | The owner's WSL2 host | **Probably**, unverified | Q-126 recorded "no LSM" on that kernel, so the AppArmor block on unprivileged user namespaces should not apply and `unshare -rn` likely works. Whether bwrap is on the host is unknown: the probe installed it inside throwaway containers. It also needs a checkout of the branch plus the suite's tools (bats, python3 and the rest) on the host. | One paste per verification. A one-off baseline run is within S10. Requiring it per merge would be a new recurring host chore, which S10 rules out. | none |
 | 4 | CI | **No CI exists** | the repo has no `.github/workflows`, and the owner's practice is local merge only, with no push (memory: no GitHub routing). GitHub's ubuntu-24.04 runners are also reported to restrict unprivileged user namespaces through AppArmor [web knowledge, unverified here: no egress to check]. | setting up a remote and CI would reverse a standing practice | none |
 | 5 | This container, with a different kernel primitive (Landlock) | **Partly, today** (see below) | a change to `confine-tests.sh` and an amendment to decision 017, both out of this brief's scope | none: no host step | the probe below is the first |
@@ -108,10 +108,11 @@ practice, and the choice is about which wording to use going forward.
 **What the lint covers meanwhile** (`scripts/hermeticity-lint --root .`, exit 0 here:
 "142 test file(s) checked, no unstubbed network spawns"): bash and python test files that
 spawn `claude`, `curl`, `wget` or `gh`, directly or through a sourced repo script, without
-a stub in `setup()` or a `# @network: allowed` marker. **Not covered** (decision 017, and
-the lint's own output): in-process HTTP, C-extension egress, a network binary outside those
-four (`nc`, `ssh`, `git fetch` from a remote URL), and indirect reach such as
-`python3 -c "import requests…"`. Note also that Q-125's sandbox will not close this gap by
+a stub in `setup()` or a `# @network: allowed` marker. **Not covered**: in-process HTTP and
+C-extension egress (decision 017's scope table and the lint's own NOTE), indirect reach such
+as `python3 -c "import requests…"` (017's "push to extreme" mitigation), and, inferred from
+the adapters' `network_bins` list (`scripts/hermeticity/adapters/bash.json`, `python.json`),
+any network binary outside those four, such as `nc`, `ssh` or `git fetch` from a remote URL. Note also that Q-125's sandbox will not close this gap by
 itself: its network allowlist admits the project's egress profile, so a test inside a
 sandboxed Bash call could still reach the API host.
 
@@ -120,21 +121,24 @@ sandboxed Bash call could still reach the API host.
 | Option | Meetable today | After Q-125 | Owner cost | Constraint notes |
 |---|---|---|---|---|
 | **A. Keep** "pass under confine-tests" | no: every loop reports "Not met" (Q-263) | yes, if nested bwrap works | an unmeetable line in every merge entry | breaks S10 (owner reads the same noise each time); a requirement no loop can meet is "present-but-inert" in H2's sense |
-| **B. Drop**, require `scripts/run-tests.sh` plus `scripts/hermeticity-lint --root .` | yes | does not upgrade itself; someone must remember to re-add the line | none | S10's "no safety that depends on remembering" cuts against it once Q-125 lands |
+| **B. Drop**, require `scripts/run-tests.sh` plus `scripts/hermeticity-lint --root .` | yes | does not upgrade itself; the dev cycle must remember to re-add the line | none | prose drift: the requirement depends on an agent remembering, which S4 (mechanical steps in scripts, prose at the moment it is needed) argues against once Q-125 lands |
 | **C. Replace with a conditional**: "run `scripts/confine-tests.sh --probe`; if it exits 0, tests must pass under `scripts/confine-tests.sh -- scripts/run-tests.sh`; if it exits 3, quote its first line and rely on `scripts/run-tests.sh` plus `scripts/hermeticity-lint --root .`" | yes (the probe refuses loudly and the lint covers) | upgrades itself when the primitive appears | none | H2: the gap is named in each loop's report, not hidden. Costs about a second per loop (S2). Still prose, though (S4: a script would be better, see follow-ups) |
 | **D. Owner host run per merge** | yes, via the owner | yes | one paste per merge | breaks S10 (a new recurring host chore) |
 | **E. Wait for a Landlock tier** in `confine-tests.sh` | no (not built) | n/a | none | out of scope here. It is a follow-up, not a wording |
+| **F. Scripted conditional**: `scripts/run-tests.sh` (or a wrapper) runs the probe and confines itself when it can; briefs just say "pass `scripts/run-tests.sh`" | yes | upgrades itself | none | S4 ranks it above C, but it changes a script, which this brief excludes. Excluded by scope, not dominated |
 
-D breaks a hard-edged S10 line, E is not a wording, and A is unmeetable and noisy. C costs
-the same as B today (one probe line) and adds the upgrade when Q-125 lands. **Path A
-(dominant option): adopt C.** No owner judgment is needed: this is the cycle's own
+D breaks a hard-edged S10 line, E is not a wording, F is out of this brief's scope, and A is
+unmeetable and noisy. C costs the same as B today (one probe line) and adds the upgrade when
+Q-125 lands. **Path A (dominant in-scope option): adopt C**, with F as the better follow-up
+(item 3 below), which would replace C's prose. No owner judgment is needed: this is the cycle's own
 brief-writing practice, and C changes nothing the owner pays for.
 
 Risk accepted with C: once the probe passes, the bwrap profile's read-only rootfs may fail
 suites that write outside `$PWD` and `/tmp` (for example `~/.cache`). That is FP-052's
 shape. Wording for that case: a failure caused by confinement and not by the network is a
 finding to report, not a blocker. The loop names the failing tests and the write that was
-refused.
+refused, and (H2: name what went unenforced) its report states "confined run failed;
+acceptance rests on the unconfined run plus the lint".
 
 Other choices, one line each:
 - Where to record a host baseline: one-off and optional. Do not ask for it now, because
@@ -146,7 +150,8 @@ Other choices, one line each:
 1. **Brief wording**: use option C's sentence in briefs whose acceptance includes tests.
 2. **Q-125 live run**: add `scripts/confine-tests.sh --probe` and one
    `scripts/confine-tests.sh -- bats test/<one fast suite>` to the in-session checks. If both
-   pass, this is the first recorded run and Q-161's condition is met. If the probe exits 3
+   pass, this is the first recorded run and evidence for the nested-bwrap inference (Q-161
+   still fires only on Q-125's merge). If the probe exits 3
    under the sandbox, the nested-bwrap inference above is refuted.
 3. **Candidate roadmap item, a scripted conditional (S4)**: let `scripts/run-tests.sh` (or a
    wrapper) run the probe and confine itself when it can, so prose need not carry the
@@ -158,3 +163,12 @@ Other choices, one line each:
 5. `confine-tests.sh` still has no bats case (review weak seam 3). Once place 2 works, one
    hermetic case (probe exit codes with stubbed `bwrap`/`unshare` on PATH) can be written
    even without a primitive.
+
+## Review
+
+One fact-check pass (an independent subagent) over b8d733bf found 19 of 23 claims accurate
+and no Must Fix. It found three Should Fix items: Q-161's condition was misstated, S10 was
+misapplied to option B, and option F was missing. It also found nits: the roadmap location,
+the source cited for the uncovered binaries, the spike's date, and H2 wording in the accepted
+risk. All are fixed in the commit after b8d733bf. It re-ran the Q1 probes and the Landlock
+probe, with the same results.
