@@ -22,11 +22,26 @@ Evidence-grounded), plus retrospective adjudications where noted. Context base =
 | mfc-corpus | `dc6dfb0..2dc403e` | 28f +2211/−33 | `docs/reviews/code-review-rubric.md` (top-level) | 🟡 CONDITIONAL | 0/4/— | Large-diff stratum (needs split or raised budget per arm run); all 4 ambers fix-confirmed in follow-up commit |
 | mfc-postfix | `9c9edf5..7f30210` | 6f +97/−13 | `runs/review-arms/mfc-2026-08-06/groundtruth/` | 🔴 DOES NOT PASS | 1/8/14 | 2026-08-06 ground-truth run; arm results already scored (comparison doc). **Post-review-fix state** — the only canon instance whose input was already lite/full-review-fixed |
 | ~~11 archived eval cells~~ | md1/nd2/nd3 | — | `/home/node/cr-eval/runs/` | — | 90 ✅-rows classified | **Not reachable from this environment** — md1 labels partially recovered via mfc-csp above; nd2/nd3 (sim repo) pending access |
+| cw-devcycle | `4225753a..89a3d3b7` | 6f +342/−1 | `docs/reviews/code-review-rubric-2026-09-29-feat-dev-cycle.md@d8b0cca9` | 🔴 DOES NOT PASS | 1/13/10 | **claude-workflows** (this repo), 2026-11-07 canon pass, class T12 (hostile-shaped text): R1, an option-like origin/HEAD name reaching `git log`, re-probed at head 2026-11-07 (truncates a file); all 14 labels fix-confirmed by `d8b0cca9`; in scope under S1 (reason in the pass's research doc) |
+| cw-devcycle-skill | `65bd4336..e438cd18` | 4f +129/−1 | `docs/reviews/code-review-rubric-2026-09-29-feat-dev-cycle-skill.md@6ee33e35` | 🟡 CONDITIONAL | 0/6/7 | **claude-workflows**, 2026-11-07 canon pass, class T15 (instruction prose as behaviour): A1, the skill commits without the Operating Modes gate; all 6 labels fix-confirmed by `6ee33e35`; the tree holds pass-1's review of `89a3d3b` (an earlier state, not the answer key) |
 
 Freeze rule: canon rows are append-only; a re-adjudication updates the provenance column,
 never rewrites the label in place.
 
-Per-issue ledger: `canon-issue-ledger.md` (2026-08-14) enumerates all 43 distinct known
+Rows from this repo (2026-11-07). The two `cw-` rows are the first canon pass the
+owner chose (Q-256 [2]): the rule in section 8 of
+`research-2026-11-05-canon-proposal-filter.md`, applied with this repo as the
+subject in `research-2026-11-07-canon-instances-pass.md`, which records each step.
+They are shell and skill-prose changes, not TypeScript, and they fill two classes
+no meta-formalism-copilot row covers; T16 (performance) stays open. Size counts
+files outside `docs/` only. Ranges are the reviewed state, not the merge; the
+rubric is pinned by the commit that added it. Both are self-referential: the tree
+a reviewer reads holds this repo's skills and older rubrics. No arm has been run on
+them. The rows were printed by `scripts/canon-instance.py`, which checks the range
+and builds the scrubbed clone (run `scripts/canon-instance.py --help`; its header
+gives the interface), and pasted here by hand: the script writes neither file.
+
+Per-issue ledger: `canon-issue-ledger.md` (2026-08-14; 76 issues since 2026-11-07, stratum F holding the `cw-` labels) enumerates all 43 distinct known
 issues across the canon — the 24 original labels, the 9 postfix labels, 4 headless-arm
 appends, and 6 live-at-HEAD E1 findings — with which review process found each.
 
@@ -120,7 +135,8 @@ accounting); host-script arms (E5/E7 `run-host.sh`) already satisfy this via
 
 ## 4. Status
 
-- Canon v1: frozen above (8 rows). Expansion candidates: nd2/nd3 cells if the archive
+- Canon v1: frozen above (8 rows). 2026-11-07: rows 9 and 10 (`cw-devcycle`,
+  `cw-devcycle-skill`) appended from this repo by the first canon pass (§1 note). Expansion candidates: nd2/nd3 cells if the archive
   becomes reachable; /workspace's own docs/reviews history (rubrics deleted in working
   tree, recoverable from git log).
 - E2 **run and scored 2026-08-06** (`e2-results-2026-08-06.md`, actual $0.81): red recall
