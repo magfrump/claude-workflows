@@ -246,6 +246,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-249](#q-249--merge-gate-2026-11-01-relax-dev-cycle-skill-prose-28f3cf1afc73) | Merge restriction-audit unit 3 (the dev-cycle skill drops its out-of-scope rituals: the `hg` wrapper, the i... | 2026-11-01 |
 | [Q-250](#q-250--merge-gate-2026-11-02-relax-grammar-and-loop-prompt-c1aae1b28040) | Merge restriction-audit unit 4 (the gate's brief, marker and path rules refuse only real ambiguity, and the... | 2026-11-02 |
 | [Q-251](#q-251--merge-gate-2026-11-02-cycle-runs-migrations-fa77134b1255) | Merge restriction-audit unit 5 (the dev cycle runs convention migrations itself, and closes a cleared image... | 2026-11-02 |
+| [Q-252](#q-252--image-lag) | Q-252: met — image dff98910546c29f0de84927d7352deebadc5dd67 holds the gate code of main dff98910546c29f0d... | 2026-11-03 |
 | [Q-253](#q-253--merge-gate-2026-11-03-import-walk-plain-4d6880b7f44e) | Merge restriction-audit unit 6 (the self-merge floor's import check reads plain `@path` imports only) at 4d... | 2026-11-03 |
 | [Q-257](#q-257--merge-2026-11-05-exit-scan-older-routes-6a2a4dcedf74) | Merge the Q-097 result at 6a2a4dce? It leaves both exit-scan routes open and records why in the guide; no c... | 2026-11-05 |
 | [Q-258](#q-258--merge-2026-11-05-q089-source-guard-narrow-c9786a275cd1) | Merge the Q-147 result at c9786a27? It adds one test file, `test/cc-host-tool-sources.bats`, that catches a... | 2026-11-05 |
@@ -5693,5 +5694,54 @@ Merge restriction-audit unit 6 (the self-merge floor's import check reads plain 
 - **Interim:** the branch waits.
 
 **Answered:** [1] (owner, in session 2026-11-05: "Q-253, Q-257, Q-258: [1]"). The next dev-cycle iteration merges it.
+
+
+### Q-252 · image-lag
+**Needs:** you: terminal · **Opened:** 2026-11-03 · **Status:** ANSWERED
+Q-252: met — image dff98910546c29f0de84927d7352deebadc5dd67 holds the gate code of main dff98910546c29f0de84927d7352deebadc5dd67
+
+**Release notes** (trial T1). Installed image: `c214970a`, read from `/opt/claude-workflows/.manifest`. Main (`3a663f88`) is ahead in gate code by restriction-audit units 5 and 6, which you approved (Q-251, Q-253). The image runs the gate and the dev-cycle skill, so neither is live until you run the paste.
+
+**If you say no:** the cycle keeps running the current image's skill: a pending migration still comes to you as a paste, and a release you have already run still waits for your answer on its image-lag entry. Nothing breaks.
+
+**Merged without your review:** `605d4c18`, the canon filter design (build-loop self-merge): a brief and a research doc, both under `docs/`, so nothing in the image. The flag is a pointer, not proof.
+
+**What changes for you** (approved by you, Q-251): the dev cycle runs a pending convention migration's `questions.sh` remedy itself and reports it, and closes an image-lag entry like this one by itself once the image holds main's gate code. Gate files changed: `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`.
+
+Also approved by you (Q-253): the self-merge floor's import check reads plain `@path` imports only, about 1000 lines shorter, and the `Reader roots:` and `Reader homes:` lines in `docs/dev-cycle.md` stop being read. After this release `--settings` prints that they can go; `docs/dev-cycle.md` is yours to edit. Gate files added: `scripts/lib/dev-cycle-read.sh`.
+
+**Commits on main after `c214970a`** (first-parent; rewritten 2026-11-05 for main at 3a663f88):
+- `3a663f88` Merge branch 'test/q089-source-guard-narrow' (build-loop approved merge)
+- `3424799f` Merge branch 'fix/exit-scan-older-routes' (build-loop approved merge)
+- `68a05afe` Merge branch 'refactor/import-walk-plain' (build-loop approved merge)
+- `09e6999a` Merge branch 'chore/dev-cycle-2026-11-06-0630'
+- `f52d0f95` Merge branch 'chore/dev-cycle-2026-11-06-0400'
+- `e61e1a40` Merge branch 'chore/dev-cycle-2026-11-06-0317'
+- `bfa4fdbc` Merge branch 'chore/dev-cycle-2026-11-06-0310'
+- `605d4c18` Merge branch 'docs/canon-proposal-filter' (build-loop self-merge)
+- `4ea7e6f3` Merge branch 'chore/dev-cycle-2026-11-05-2347'
+- `db31db8b` Merge branch 'chore/dev-cycle-2026-11-05-2347'
+- `adb22f4d` docs(questions): track herald's unconfirmed egress fix as Q-255
+- `dcbfeb8d` Merge branch 'chore/dev-cycle-2026-11-04-0031'
+- `8d16b1d5` Merge branch 'chore/dev-cycle-2026-11-04-0017'
+- `c741fa77` Merge branch 'chore/dev-cycle-2026-11-03-2329'
+- `ed6b0be2` Merge branch 'chore/dev-cycle-2026-11-03-2329'
+- `89ed0db4` Merge branch 'refactor/cycle-runs-migrations' (build-loop approved merge)
+- `f354e949` Merge branch 'chore/answers-2026-11-03b'
+- `3ccdd215` Merge branch 'chore/answers-2026-11-03'
+- `234d5be7` Merge branch 'chore/dev-cycle-2026-11-02-2027'
+
+**Paths changed outside `docs/`** (31 under `docs/` not listed; the image carries none of `docs/`): `guides/cc-isolated-usage.md`, `guides/convention-changes.md`, `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`, `test/cc-host-tool-sources.bats`, `test/lib/build-loop-fixtures.bash`, `test/scripts/build-loop-check.bats`, `test/scripts/build-loop-orchestrator.bats`, `test/scripts/build-loop-read.bats`, `test/scripts/dev-cycle.bats`
+
+**The paste** (host terminal in WSL, not inside a session; stop every session first):
+
+```
+cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = 3a663f886009075fe7be95f35a38cdf856aff994 && ./devcontainer-config/install.sh
+```
+
+The `rev-parse` check runs no hook. It only confirms that your checkout is at `3a663f88`. Main will be past that commit by the time you read this, because the cycle's own land moves it, so the check fails on a checkout at main's tip: check out `3a663f88` first (it holds all the gate code; what comes after it is cycle records). Then start a new sandbox session. Unit 7 (the D6 block into the image) is briefed and needs its own release once it merges; there is no need to wait for it.
+
+- **Interim:** the image at `c214970a` runs.
+- **Blocks:** nothing.
 
 
