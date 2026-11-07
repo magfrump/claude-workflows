@@ -40,6 +40,7 @@ Write it anywhere, in any order, for example: `T2 good, T3 made me skim, T5 too 
   - **T5:** "this week's digest was nice to read, but as with T1 I'm following a lot of the work via my answers to questions, the digest will be more helpful as work requires less intervention from me."
   - **T6:** "I did trust this but it's hard to tell what my level of trust should be."
   - **T7:** "I had noticed the setlocale warning in the past, I didn't actively notice that it disappeared but I am glad you're looking at it."
+- **2026-11-06, owner, closing the trial:** "none of them have hurt and some have helped so let's commit them and start a new set of trials". So T1-T7 all stay, T4 included. `docs/working/briefs/2026-11-06-codify-trial-practices.md` writes them into the dev cycle, and the new set is `docs/working/trials/2026-11-06-attention-and-trust.md`.
 
 ## Orchestrator notes
 
