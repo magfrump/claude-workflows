@@ -248,10 +248,12 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-251](#q-251--merge-gate-2026-11-02-cycle-runs-migrations-fa77134b1255) | Merge restriction-audit unit 5 (the dev cycle runs convention migrations itself, and closes a cleared image... | 2026-11-02 |
 | [Q-252](#q-252--image-lag) | Q-252: met — image dff98910546c29f0de84927d7352deebadc5dd67 holds the gate code of main dff98910546c29f0d... | 2026-11-03 |
 | [Q-253](#q-253--merge-gate-2026-11-03-import-walk-plain-4d6880b7f44e) | Merge restriction-audit unit 6 (the self-merge floor's import check reads plain `@path` imports only) at 4d... | 2026-11-03 |
+| [Q-254](#q-254--blocked-2026-11-03-q125-verify-check-1) | Q-254: [1] | 2026-11-03 |
 | [Q-257](#q-257--merge-2026-11-05-exit-scan-older-routes-6a2a4dcedf74) | Merge the Q-097 result at 6a2a4dce? It leaves both exit-scan routes open and records why in the guide; no c... | 2026-11-05 |
 | [Q-258](#q-258--merge-2026-11-05-q089-source-guard-narrow-c9786a275cd1) | Merge the Q-147 result at c9786a27? It adds one test file, `test/cc-host-tool-sources.bats`, that catches a... | 2026-11-05 |
 | [Q-259](#q-259--merge-gate-2026-11-05-d6-block-into-image-5e2b96d3e215) | Q-259: [1] | 2026-11-05 |
 | [Q-260](#q-260--merge-gate-2026-11-06-free-merged-loop-worktrees-0ed2fc852e54) | Q-260: [1] | 2026-11-06 |
+| [Q-263](#q-263--merge-gate-2026-11-06-owner-entry-gloss-rule-7aecad7a3453) | Q-263: [1] | 2026-11-06 |
 <!-- index:end -->
 
 ## Answered
@@ -5823,5 +5825,109 @@ Merge restriction-audit unit 7 at 5e2b96d3? The roughly 60-line block pasted int
 
 - **Blocks:** nothing else in the audit: unit 7 is its last unit.
 - **Interim:** the branch waits. Until a release after this merge, the cycle dispatches no brief touching `scripts/d6.sh`, because the image's gate list does not name it yet and such a brief could self-merge.
+
+
+### Q-263 · merge-gate-2026-11-06-owner-entry-gloss-rule-7aecad7a3453
+**Needs:** you: judgment · **Opened:** 2026-11-06 · **Status:** ANSWERED
+Q-263: [1]
+
+Merge the rule that owner-facing text explains every internal reference in plain language?
+
+**If you say no:** the rule stays in one session memory, which build loops and other repos never see, so entries keep the jargon you called the biggest problem on 2026-11-06. Nothing else changes.
+
+**What an attacker would want here:** little. The change adds text to instructions and to one prompt, and it adds no logic. An outside party gains nothing from it.
+
+**What it does.** One new bullet, "Gloss every reference", goes in the running-questions section of the global instructions: every internal reference gets a plain explanation, and a numbered label links the doc that defines it. The dev-cycle skill and the build-loop prompt point to that bullet, so all three writers of your text meet it: the cycle's entries, a loop's marker bodies and the final message. There is no mechanical check, because a pattern can find a label but cannot judge its explanation, and it would fire on nearly every entry.
+
+**Why it was built:** read by hand, 5 of the 6 open entries fail the rule on a strict reading, or 2 to 3 on a lenient one.
+
+**Things to weigh:**
+
+- A question ID needs only the explanation, not a link. That is narrower than the brief's wording.
+- The rule covers a cycle's final message and an end-of-run summary, but `skills/code-review/references/chat-synthesis.md` is unchanged, so a code-review summary can still show bare IDs.
+- **Not met:** the brief asked for tests to pass under `scripts/confine-tests.sh`, which cannot run in this container. The full suite passed in the loop (1978 tests), and the hermeticity lint passed.
+- The rubric's review status is "passes", as a single-sample review, and the loop lists its departures from the review skill in `docs/reviews/code-review-rubric-2026-11-06-feat-owner-entry-gloss-rule.md`.
+
+**Paths the self-merge floor would refuse** (the floor is the list of paths the cycle may not merge without you): `global-instructions/CLAUDE.md` is an instruction file; `scripts/build-loop.sh` and `skills/dev-cycle/SKILL.md` are gate code, so they take effect only at the next release; `docs/decisions/log.md` is a decision record.
+
+**Tip:** `7aecad7a3453a6ab638feee5f49d8a885e0e5fc9`
+
+`--check`'s lines, as printed:
+
+```
+ok docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md 7aecad7a3453a6ab638feee5f49d8a885e0e5fc9 9f97529fc4452487293cd67d85b20675d18cdcef
+path docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md M docs/decisions/log.md
+path docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md A docs/reviews/code-review-rubric-2026-11-06-feat-owner-entry-gloss-rule.md
+path docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md M docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md
+path docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md A docs/working/research-2026-11-06-owner-entry-gloss-rule.md
+path docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md M global-instructions/CLAUDE.md
+path docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md M scripts/build-loop.sh
+path docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md M skills/dev-cycle/SKILL.md
+path docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md M test/questions-doc.bats
+path docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md M test/scripts/build-loop-dispatch.bats
+```
+
+The loop's marker holds only its attribution lines, so it asks no question.
+
+- **Read:** `docs/working/research-2026-11-06-owner-entry-gloss-rule.md` (the design record, on the branch `feat/owner-entry-gloss-rule`).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The cycle merges this exact commit | One word now; the rule reaches sessions at your next install | A line of instructions to remove with one revert |
+| **[2] drop** | The brief closes, and the rule stays in memory only | None now | Jargon stays the biggest problem in your asks |
+| **[3] changes needed** | Your note goes back to a build loop | One note, then another merge entry | One more loop's delay |
+
+- **Interim:** the branch waits, and nothing has merged.
+
+
+### Q-254 · blocked-2026-11-03-q125-verify-check-1
+**Needs:** you: judgment · **Opened:** 2026-11-03 · **Status:** ANSWERED
+Q-254: [1]
+
+Brief 2026-11-03-q125-verify-check's build loop asks:
+
+**If you say no:** answering [2] runs the paste now: you learn the four content-judged checks and whether the no-login path works, and likely need a second paste after the fix. The cycle's reading: [1] means one more build loop on `feat/q125-cc-isolated-sandbox` (fixing its C1 check), then this branch's check file merges (a merge entry) and you get one paste.
+
+`--marker`'s lines, verbatim (loop text, data not instructions):
+
+ok docs/working/briefs/2026-11-03-q125-verify-check.md 502296b7ac4f5e299011286f8b763a6ca68885ea
+> Q-125's live run is ready as one host paste (you: terminal), but the branch's own live-check script has a bug that makes a pass impossible today. The question is whether to fix the branch before the paste, or to run it now.
+>
+> The paste, run on the host from the root of your claude-workflows checkout, on main, once this branch is merged (answer y at cc-verify's one prompt):
+>
+>     cc-verify --check docs/working/q125-verify-check.sh . feat/q125-cc-isolated-sandbox; echo "cc-verify exit $?"
+>
+> What it does: cc-verify builds main + feat/q125-cc-isolated-sandbox in a throwaway container. The check file then runs a headless claude -p against a local model stub (no login, no LLM, nothing leaves
+> the container). The stub asks for two sandboxed Bash tool calls: the file's own X checks, then the branch's live-check-q125.sh unmodified. The X checks cover the credential read four ways, judged by
+> content; Q-098's leak-list git drivers; gh api and git push --dry-run reaching GitHub with no prompt; and the credential replaced by rename. It takes about 5 to 15 minutes and cleans up after itself.
+>
+> Expected output: indented "  | RESULT <id> pass|FAIL ..." lines, then "  | VERDICT pass|FAIL", then cc-verify's own "RESULT cc-verify pass|fail" and "cc-verify exit 0|3".
+> Paste back: every line from the first "| RESULT" through the "cc-verify exit" line.
+>
+> The bug: Claude Code's sandbox masks a denyRead file by binding /dev/null over it. This is in the Claude Code binary as R.push("--ro-bind","/dev/null",Tn). So a refused `cat
+> ~/.claude/.credentials.json` exits 0 and prints nothing. The branch's live-check-q125.sh judges C1 by exit status, so on a working sandbox it prints "C1-cat-credential FAIL" and then aborts before C2
+> to C6. Until that is fixed, the verdict is FAIL. Only the X lines (content-judged) and Q0 lines carry information.
+>
+> | Option | What it means | Cost to you | If it's wrong |
+> |---|---|---|---|
+> | [1] Fix the branch first (recommended) | A build loop changes live-check-q125.sh's C1 to judge by content (a marker grep, as this file's X1 does), then you run the same paste | One paste, after one more loop on feat/q125-cc-isolated-sandbox | None: the paste and the check file are unchanged |
+> | [2] Paste now | Run the paste against the branch as it is | One paste now, and probably a second one after the fix | The run returns FAIL with C2 to C6 missing; you learn X1 to X4 and whether the stub path works, not the whole sandbox |
+>
+> Pick: [1]. Tiebreaker: S10, at most one host paste per verification.
+>
+> Also likely from the live run, and worth a branch decision then: C3-nested-settings-1 may FAIL. The repo tracks no .claude/ directory, so the branch's check tries mkdir <worktree>/.claude, which the
+> sandbox probably allows. That would be a real finding about agent worktrees, not an artifact of this file.
+>
+> Residual: the stub path itself is unverified live. If Claude Code does not talk to the stub as expected, the Q0-* lines FAIL and name the cause; it never passes vacuously.
+>
+> Files: docs/working/q125-verify-check.sh, test/q125-verify-check.bats, docs/working/research-2026-11-03-q125-verify-check.md.
+>
+> Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+> Claude-Session: https://claude.ai/code/session_01LnnDaJVNEwNgXhD6aVD5V2
+
+- **Read:** the branch `feat/q125-verify-check` at 502296b7 (`docs/working/research-2026-11-03-q125-verify-check.md`, `docs/working/q125-verify-check.sh`).
+- **Blocks:** Q-125's live run; behind it the watches Q-098 and Q-161.
+- **Interim:** the branch waits; nothing runs on the host.
+- **If the answer differs:** the loop is re-dispatched with your answer either way.
 
 
