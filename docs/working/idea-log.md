@@ -173,3 +173,6 @@ Ran because the last brainstorm was 7 days ago (2026-10-29). Sources: this cycle
 - Do nothing else until Q-259 and Q-260 are answered (signal: all three briefs wait on the owner, and the queued skill ideas edit passages Q-259 rewrites)
 - Give the trial doc and the weekly digest a path the cycle land may write, or fold them into the record (signal: the end-of-trial reading went to the roadmap because `--check-fix` refuses `docs/working/`)
 - Generate the questions file's route table from `questions.sh`'s route list (signal: it listed the retired `agent`, `trigger` and `deferred` routes for days after decision 040)
+- Re-dispatch a loop after a merge conflict without asking the owner (signal: Q-243 and Q-244's conflict cost six asks for two branches; merge-friction record, section 12)
+- Say in the skill that a batched answer to named merge entries counts, as the trial doc asked if T3 was kept (signal: T3 kept, no such text; merge-friction record, section 12)
+- Decide what backs up the release entry as the check on self-merged scripts, now that the owner says they do not read it closely (signal: T1 feedback against `docs/dev-cycle.md`; merge-friction record, section 12)

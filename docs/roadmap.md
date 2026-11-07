@@ -57,7 +57,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   stay as they are, with nothing to build. T2's opening lines stay, and its real problem,
   jargon and bare references, is briefed (In flight). T4: the 21-day proposed-fate line in the
   weekly digest stops, because stale entries are unthought directions and no interface changes
-  that; closing an entry whose own closure line is met stays. A1/A3/A10 are briefed (In flight).
+  that; closing an entry whose own closure line is met stays. A1/A3/A10: no change (Done; watch Q-262).
 - **Questions doc becomes owner-only (Q-221 [14′], decision 040).** Motive: the owner reported
   that agent bookkeeping crowds the one page meant for them (17 open entries, 2 theirs).
   Build in three units: (1) four owner routes (`you: judgment`, `you: terminal`, new
@@ -93,8 +93,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   502296b7: the Q-125 branch's own C1 check cannot pass on a working sandbox; Q-254.
 - Owner entries gloss every reference, by rule (`docs/working/briefs/2026-11-06-owner-entry-gloss-rule.md`;
   review policy). Motive: decision 040's trigger fired on the owner's T2 feedback.
-- Whether merge approval needs changing, ideas A1, A3 and A10
-  (`docs/working/briefs/2026-11-06-merge-friction-design.md`; self-merge, design record only).
 
 ## Next
 
@@ -344,6 +342,7 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- Merge approval stays as it is: ideas A1, A3 and A10 weighed, status quo picked (`docs/working/briefs/closed/2026-11-06-merge-friction-design.md`). Merged e9f3e176, self-merge. Revisit triggers are watch Q-262.
 - Free a finished loop's worktree and branch (`docs/working/briefs/closed/2026-11-06-free-merged-loop-worktrees.md`). Merged 85080263 (Q-260 [1]).
 - Restriction audit unit 7, the D6 block as one root-owned image script (`docs/working/briefs/closed/2026-11-05-d6-block-into-image.md`). Merged aeab6745 (Q-259 [1]). All seven units of the audit are now merged (`docs/working/research-2026-11-01-restriction-audit.md`).
 - **Agent: Q-241's settings merge check** (filed 2026-11-06, step 3): the check is step (d) of Q-167, since the release closed Q-252 first. `chore/dev-cycle-2026-11-07-0115`.
