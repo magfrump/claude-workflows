@@ -38,7 +38,8 @@ The index below is generated — edit entries, not the table.
 ## Open
 
 ### Q-266 · merge-gate-2026-11-06-codify-trial-practices-e49f133c98fd
-**Needs:** you: judgment · **Opened:** 2026-11-06 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-06 · **Status:** ANSWERED
+Q-266: [1] (owner, answers-11-7-26.txt). Merge e49f133c98fda0446fb32e24473aee11347a6933; the marker's docs/dev-cycle.md question takes its tentative pick, [1] leave it.
 
 Merge the change that writes the first trial set's seven practices (T1-T7, defined in `docs/working/trials/2026-10-30-friction-engagement.md`) into the dev cycle?
 
@@ -105,7 +106,8 @@ ok docs/working/briefs/2026-11-06-codify-trial-practices.md e49f133c98fda0446fb3
 - **Interim:** the branch waits, nothing has merged, and the cycle keeps following the trial doc.
 
 ### Q-265 · merge-2026-11-03-q125-verify-check-60138c791b1f
-**Needs:** you: judgment · **Opened:** 2026-11-06 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-06 · **Status:** ANSWERED
+Q-265: [1] (owner, answers-11-7-26.txt). Merge 60138c791b1f5f739e963bd6075ec166d48c3517, then one build loop merges main into feat/q125-cc-isolated-sandbox and resolves the five conflicts, without landing it on main; the cc-verify paste follows.
 
 Merge the live-check file for the Bash sandbox (Q-125), and have a build loop resolve the sandbox branch's conflicts with main so your paste can run?
 
@@ -228,7 +230,8 @@ The `rev-parse` check runs no hook. It only confirms your checkout is at `771c84
 - **Interim:** the image at `dff98910` runs.
 
 ### Q-256 · canon-proposal-filter-choice
-**Needs:** you: judgment · **Opened:** 2026-11-05 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-05 · **Status:** ANSWERED
+Q-256: [2] (owner, answers-11-7-26.txt). One pass now: start a build brief that builds the script and adds 1 or 2 dev-cycle candidates as rows, per sections 8 and 10 of the research doc.
 
 How should new instances get proposed for the canon, the fixed set of known defects that review arms are scored against?
 
@@ -250,6 +253,7 @@ No review work now scheduled needs a new instance, and the canon has had no run 
 
 ### Q-255 · herald-egress-fix-unconfirmed
 **Needs:** you: terminal · **Opened:** 2026-11-05 · **Status:** OPEN
+Q-255: first half answered 2026-11-07 (answers-11-7-26.txt): all four fronted probes through plugins-artifacts.gradle.org returned 403 Forbidden (www.google.com, www.python.org, www.cloudflare.com, github.com), so the name does not front. The herald half (probe.sh, the host-record count, a cold assembleDebug) is still open; probe.sh is now a standalone file, docs/working/feedback/herald-probe.sh.
 
 The fix for herald's `dl.google.com` build failures was released on 2026-10-28 (Q-214), but no output was kept, so two things are still unknown: whether the fix works, and whether `plugins-artifacts.gradle.org`, the name added with it, can be used to reach other sites (domain fronting: a request that connects under an allowed name but asks for a different site). Paste this on the host, outside any container, and answer `Q-255: <output>`.
 
@@ -268,6 +272,7 @@ Expect 403 or 404 on all four lines. A 200 with that site's title means the name
 
 ### Q-167 · post-install-host-probes
 **Needs:** you: terminal · **Opened:** 2026-10-15 · **Status:** OPEN
+Q-167: (b) and (d) answered 2026-11-07 (answers-11-7-26.txt), on bless 91c5f79dd91eb7ee, which --probe-only recorded as verified live. (b): line 1 printed 'two workspaces given' and line 3 printed 'is not an egress profile; it looks like a pasted comment', both errors from the fixed launcher. Line 4's probe passed. The paste showed no exit= lines. Line 2 printed the project list, so the owner's shell treated # as a comment (the echo went with it) and the launcher never saw it, which does not exercise the fix. Live-verified: 91c5f79dd91eb7ee for the one-workspace rule's refusals; the exit codes rest on bats. (d): the live-verify-gate count in the host settings.json is 2, so the hooks are wired. Still open: (a)'s first half, the pre-probe hint a fresh bless prints, which Q-261's install shows if it re-blesses.
 
 The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all three changes below. Run the three probes against it now, before the next release puts more unverified launcher changes on top of them. (If the install did not bless, run `./devcontainer-config/install.sh` in your host checkout first.)
 
