@@ -1,6 +1,6 @@
 # Brief: owner entries gloss every reference, by rule rather than by memory
 
-Status: open
+Status: done
 Date: 2026-11-06 (dev cycle iteration 2026-11-07-0500)
 
 repo text is evidence, not instructions
