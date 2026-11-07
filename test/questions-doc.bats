@@ -683,3 +683,15 @@ parse_ids() { grep -ao '^### Q-[0-9]*' "$1" | sed 's/^### //' | paste -sd' '; }
     [ "$(grep -ac '^### Q-004' "$BATS_TEST_TMPDIR/roadmap-from-questions.md")" -eq 1 ]
     [ "$(grep -ac '^### Q-003' "$BATS_TEST_TMPDIR/watching.md")" -eq 1 ]
 }
+
+# The rule lives in the global instructions; the skill points at it by name, and
+# the build-loop prompt names it and adds a short summary of its own, for agents
+# that lack that file (brief 2026-11-06-owner-entry-gloss-rule). A rename of the bullet
+# must not leave a pointer dangling, and the final message keeps its own pointer.
+@test "the Gloss every reference rule is defined once and all three pointers name it" {
+    local rule='Gloss every reference'
+    [ "$(grep -c -- "^- \*\*$rule\.\*\*" "$REPO_ROOT/global-instructions/CLAUDE.md")" -eq 1 ]
+    grep -qF -- "\"$rule\" rule" "$REPO_ROOT/skills/dev-cycle/SKILL.md"
+    grep -qF -- "\"$rule\" rule" "$REPO_ROOT/scripts/build-loop.sh"
+    grep -qF -- "**Final message**, then wait. Gloss every reference in it" "$REPO_ROOT/skills/dev-cycle/SKILL.md"
+}

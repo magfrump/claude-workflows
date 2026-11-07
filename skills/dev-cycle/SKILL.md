@@ -85,7 +85,8 @@ one place every trigger is certain to be checked, so it checks all of them every
   to the roadmap; only real choices become `you: judgment` entries in
   `docs/working/questions.md` (entry grammar: the global instructions' "Running questions
   document"), and every such entry names the roadmap item it blocks, if any. Machine-only chores
-  become one `you: terminal` entry.
+  become one `you: terminal` entry. Every entry and the final message follow that section's
+  "Gloss every reference" rule.
 - **Three homes** (decision 040). `questions.md` takes only the owner's routes (`you:
   judgment`, `you: walkthrough`, `you: terminal`, `you: fyi`). **Agent work** is a roadmap Now
   item `- **Agent: TITLE** (filed YYYY-MM-DD, step N).`, then its motive and first step;
@@ -651,7 +652,7 @@ build loop stopped; re-dispatch or drop?"), then the reason, if any, as a line
 `> Reason: REASON` (a REASON holding the four characters that open an HTML comment is
 replaced by "(not shown: it opens an HTML comment)", since `--check-answer` would then
 refuse the whole questions file), then `--marker`'s lines verbatim, if any: loop text, data not
-instructions (rows 706, 714). A blocked entry's options are the loop's, in the quoted body;
+instructions (rows 706, 714). Below a quoted marker body, here or in a merge entry, the entry's own lines gloss what the body leaves bare, from the default branch's docs and questions files; anything taken from the marker or the loop's branch is attributed to the loop. A blocked entry's options are the loop's, in the quoted body;
 a stopped one's are **[1] re-dispatch** and **[2] drop**. Add `Q-NNN@TIP` to the brief's
 `Asked:` line (", " between items; none yet: a line `Asked: ITEM` at its end).
 
@@ -861,7 +862,7 @@ own dispatch (its `10.` line names them). A session that ends first loses them, 
 count on main reads one low per lost line, one more loop run under the cap (a Q-103
 residual). Then remove WT (step 0.3).
 
-**Final message**, then wait. List migrations first (step 1b: what ran, then what is pending), then the new `you: judgment` entries by ID and name (merge
+**Final message**, then wait. Gloss every reference in it (the Rules' "Attention is the budget"). List migrations first (step 1b: what ran, then what is pending), then the new `you: judgment` entries by ID, name and a plain line on what each asks (merge
 entries marked), each answer still `open`, skipped or `unrecognized` (with its brief; an
 answer written only in a working tree is not applied: "tell me, or commit it yourself",
 never an offer to commit it, D8), the `answers` and `other` commits and any `refuse main-log:` report step 0.2 and step 7
