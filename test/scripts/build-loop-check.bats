@@ -356,7 +356,8 @@ C: the path could not be lower-cased" ] && [ ! -e "$BATS_TEST_TMPDIR/calls" ] ||
     run --separate-stderr env LC_ALL=C bash -c 'source "$1"; shift
         for p in "$@"; do if truthrule "$p"; then echo "$p: $TRUTH_WHY"; else echo "$p: -"; fi; done' _ "$LIB" \
         claude.md docs/x/skill.md .claude/commands/c.md .envrc docs/x/.y docs/roadmap.md docs/dev-cycle.md docs/constraints.md \
-        docs/decisions/1.md docs/human-author/a.md docs/failure-patterns.md docs/thoughts/failure-patterns.md docs/thoughts/t.md docs/guide.md Docs/Constraints.md
+        docs/decisions/1.md docs/human-author/a.md docs/failure-patterns.md docs/thoughts/failure-patterns.md docs/thoughts/t.md docs/guide.md Docs/Constraints.md \
+        docs/working/weekly/2026-11-13.md docs/working/weekly/notes.md
     [ "$output" = "claude.md: instr
 docs/x/skill.md: instr
 .claude/commands/c.md: instr
@@ -371,7 +372,9 @@ docs/failure-patterns.md: record
 docs/thoughts/failure-patterns.md: record
 docs/thoughts/t.md: -
 docs/guide.md: -
-Docs/Constraints.md: case" ] || { echo "$output $stderr"; return 1; }
+Docs/Constraints.md: case
+docs/working/weekly/2026-11-13.md: cycle
+docs/working/weekly/notes.md: -" ] || { echo "$output $stderr"; return 1; }
     mkdir -p docs/thoughts && printf 'x\n' > docs/thoughts/t.md && commit_all thoughts
     run --separate-stderr bash "$REPO_ROOT/scripts/dev-cycle.sh" --check-fix docs/thoughts/t.md
     [ "$output" = "ok docs/thoughts/t.md" ] || { echo "$output $stderr"; return 1; }
@@ -616,10 +619,10 @@ NBRIEF="this brief: only its first Status: line outside a fence may change, from
     fs=(docs/roadmap.md docs/working/questions.md docs/working/questions-archive.md docs/working/idea-log.md
         docs/working/cycles/cycle-2026-10-01.md docs/working/cycles/notes.md docs/dev-cycle.md "$o"
         docs/working/briefs/2026-10-02-new.md docs/working/briefs/closed/x Docs/Roadmap.md docs/Dev-Cycle.md docs/working/Questions.md
-        docs/working/watching.md docs/working/roadmap-from-questions.md)
-    onx 'mkdir -p docs/working/briefs/closed docs/working/cycles Docs; for f in "${fs[@]}" docs/constraints.md docs/CONSTRAINTS.md docs/ok.md; do echo x > "$f"; done'
+        docs/working/watching.md docs/working/roadmap-from-questions.md docs/working/weekly/2026-10-02.md)
+    onx 'mkdir -p docs/working/briefs/closed docs/working/cycles docs/working/weekly Docs; for f in "${fs[@]}" docs/constraints.md docs/CONSTRAINTS.md docs/ok.md; do echo x > "$f"; done'
     chk "$B"
-    [ "$status" -eq 2 ] && [ "${lines[0]}" = "$(nref 17 18)" ] && [ "${#lines[@]}" -eq 19 ] || { show; return 1; }
+    [ "$status" -eq 2 ] && [ "${lines[0]}" = "$(nref 18 19)" ] && [ "${#lines[@]}" -eq 20 ] || { show; return 1; }
     has "deny $B M docs/roadmap.md: $NOWN"
     for f in "${fs[@]:1}"; do [[ "$f" == "$o" ]] && m=M || m=A; has "deny $B $m $f: $NOWN"; done
     has "deny $B A docs/constraints.md: $NUSER"; has "deny $B A docs/CONSTRAINTS.md: $NUSER"

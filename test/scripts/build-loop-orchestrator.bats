@@ -418,6 +418,33 @@ shim() {
     ! grep -nE '^[^#]*(GIT_NO_REPLACE_OBJECTS|core\.hooksPath)' "$REPO_ROOT/scripts/d6.sh" || return 1
 }
 
+@test "the first trial set's practices stay in SKILL.md at the steps that write them (brief 2026-11-06-codify-trial-practices)" {
+    K="$REPO_ROOT/skills/dev-cycle/SKILL.md"; q=$'\x60'
+    # sect HEADING: that section, joined to one line, as the wrapped prose reads.
+    sect() { awk -v h="$1" '$0 == h { on = 1; next } on && /^### / { exit } on' "$K" | tr '\n' ' ' | tr -s ' '; }
+    want() { [[ "$1" == *"$2"* ]] || { echo "missing: $2"; return 1; }; }
+    s="$(tr '\n' ' ' < "$K" | tr -s ' ')"
+    # T1: notes, not the commit list; the unreviewed part and the paths stay whole, as docs/dev-cycle.md relies on.
+    a="$(sect '### 0. Start and digest')"
+    for f in "never from the old entry's text" "**Merged without your review:** every line of THE LOG" "**What changes for you:**" "as a count" \
+        "every path changed from C to M outside ${q}docs/${q} on one line" "one paste for every host step"; do want "$a" "$f" || return 1; done
+    # T2: the jargon half is the global rule, pointed at and not restated; the attacker line never names the author.
+    want "$s" "with a line ${q}**If you say no:** WHAT${q}" || return 1
+    a="$(sect '### 7. Collect')"
+    for f in "${q}**What an attacker would want here:** WHAT${q}" "naming outside parties only" "never the code's own author"; do want "$a" "$f" || return 1; done
+    # T3: a batch counts with IDs or a block, and an option; "yes" never does. Step 9's record template holds ### lines, so sect stops short of this rule.
+    for f in "A batched answer counts when the message names the IDs" "or a block listing them" "and an option" 'never inferred from "yes"'; do want "$s" "$f" || return 1; done
+    # T4 and T5: the digest's path and sections, at step 9's head; the cycle never closes an owner's entry.
+    a="$(sect '### 9. Record and land')"
+    for f in "${q}docs/working/weekly/${q} holds no ${q}YYYY-MM-DD.md${q} dated under 7 days" "the ask counter" "open 21 days or more" "only the owner's answer closes it" "one self-merge picked at random"; do
+        want "$a" "$f" || return 1; done
+    # T6: reserved to three triggers, ahead of everything. T7: a bug, in step 1.
+    for f in "${q}⚠ SECURITY${q} is reserved: it opens the message" "for only three things" "It is never used for anything else"; do want "$s" "$f" || return 1; done
+    want "$(sect '### 1. Health and cleanup')" "A warning printed on every run" || return 1
+    # Nothing leans on the trial doc, which a new set replaces.
+    ! grep -n 'friction-engagement' "$K"
+}
+
 @test "SKILL.md's orchestrator runs plain git, with no hg wrapper, identity ritual, --state re-runs, pre-write --check-write, tree-equality check or main-log refuse stop (brief 2026-11-01-relax-dev-cycle-skill-prose)" {
     K="$REPO_ROOT/skills/dev-cycle/SKILL.md"
     # The removed rituals stay removed.
@@ -820,6 +847,16 @@ refuse docs/thoughts/failure-patterns.md: $R"; git reset -q --hard; rm -rf docs/
 refuse src/app.sh: $O"; git reset -q --hard
     # Compared lower-cased, as --check-fix compares (confirming F-B).
     echo r > readme.md; mkdir -p Docs; echo d > Docs/x.md; git add -A; cd_is ok
+}
+
+@test "a weekly digest lands with the cycle's record, as a chore merge; a copy in another case refuses (brief 2026-11-06-codify-trial-practices)" {
+    qa; B=chore/dev-cycle-2026-10-12; M="$(git rev-parse main)"; F=docs/working/weekly/2026-10-12.md
+    mkdir -p docs/working/weekly; echo w > docs/working/weekly/2026-10-12.MD; git add -A
+    cd_is "refuse docs/working/weekly/2026-10-12.MD: one of the dev cycle's own files, spelled in another case, which these rules do not read"; git reset -q --hard; rm -rf docs/working/weekly
+    mkdir -p docs/working/weekly docs/working/cycles; echo w > "$F"; printf '%s\n' "Branch: $B" > docs/working/cycles/cycle-2026-10-12.md; git add -A; cd_is ok
+    commit_all land; bl --land-cycle --main "$M"
+    [ "$status" -eq 0 ] && [[ "$output" == "landed $B "* ]] && git cat-file -e "main:$F" || { show; return 1; }
+    bl --main-log "$M"; [ "$status" -eq 0 ] && [ "${lines[1]}" = "chore $(git rev-parse main) Merge branch '$B'" ] || { show; return 1; }
 }
 
 # lc_is WANT ARG...: --land-cycle ARG... refused with exactly WANT, exit 2. rec LINE...: the day's cycle record gains LINEs, committed.

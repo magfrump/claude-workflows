@@ -722,6 +722,18 @@ EOF
     [[ "${lines[2]}" == "skip docs/working/Watching.md: not one of the dev cycle's own files" ]] || { echo "$output"; return 1; }
 }
 
+@test "--check-write allows a dated weekly digest only, and a symlinked weekly directory is refused and listed in section 8 (brief 2026-11-06-codify-trial-practices)" {
+    run --separate-stderr bash "$DC" --check-write docs/working/weekly/2026-11-13.md docs/working/weekly/notes.md docs/working/Weekly/2026-11-13.md
+    [ "$status" -eq 0 ] && [ "$output" = "ok docs/working/weekly/2026-11-13.md
+skip docs/working/weekly/notes.md: not one of the dev cycle's own files
+skip docs/working/Weekly/2026-11-13.md: not one of the dev cycle's own files" ] || { echo "$output"; return 1; }
+    mkdir -p docs/working "$BATS_TEST_TMPDIR/outside"; ln -s "$BATS_TEST_TMPDIR/outside" docs/working/weekly
+    run --separate-stderr bash "$DC" --check-write docs/working/weekly/2026-11-13.md
+    [[ "$output" == "skip docs/working/weekly/2026-11-13.md: reached through a symlink"* ]] || { echo "$output"; return 1; }
+    run --separate-stderr bash "$DC"
+    [[ "$(echo "$output" | sed -n '/## 8/,$p')" == *"- docs/working/weekly"* ]] || { echo "$output" | sed -n '/## 8/,$p'; return 1; }
+}
+
 @test "--check-write allows a new file under plain directories and refuses symlinks" {
     mkdir -p docs/working "$BATS_TEST_TMPDIR/outside"
     ln -s "$BATS_TEST_TMPDIR/outside" docs/working/briefs
@@ -1295,7 +1307,7 @@ EOF
     for b in git perl; do printf '#!/bin/sh\necho "%s" >> "%s/called"\n' "$b" "$S" > "$S/$b"; chmod +x "$S/$b"; done
     cd "$BATS_TEST_TMPDIR"
     run --separate-stderr env LC_ALL=C PATH="$S:$PATH" bash -c 'set -euo pipefail; source "$1"
-        for f in scrub scrub_reexec rawfile plaindir blocker inrepo dirok skipped pathform isbrief writable need_root \
+        for f in scrub scrub_reexec rawfile plaindir blocker inrepo dirok skipped pathform isbrief isweekly writable need_root \
                  oddwhy check_brief check_branch resolve_main main_by_name main_entry brief_fields lower imported_names check_answer \
                  isclosed entry_why isimported inrepo_here main_imports nul_list import_targets untracked_md lower_all import_home walk_file walk_core walk_why walk_has import_reset reader_settings readerform; do
             declare -F "$f" >/dev/null || echo "missing $f"
