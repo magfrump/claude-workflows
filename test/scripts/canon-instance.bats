@@ -150,11 +150,24 @@ refused() { # $1: the reason text the refusal must name
     refused "rubric row '1' has no severity"
 }
 
+@test "a severity marker in a cell counts, and a fenced table is not read" {
+    printf '## Iteration 2\n\n| # | Sev | Finding |\n|---|---|---|\n| B1 | 🟡 | late amber |\n\n~~~\n# not a heading\n| # | Finding |\n|---|---|\n| R9 | fenced example |\n~~~\n' > "$RUB"
+    ci --base "$BASE" --head "$HEAD_SHA"
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+    [[ "${lines[0]}" == *"| 0/1/0 |"* ]]
+    [[ "$output" == *"fx-B1,late amber"* ]]
+    [[ "$output" != *"fx-R9"* ]]
+}
+
 @test "refuses a rubric that is not UTF-8 with a named reason" {
     printf '| # | Finding |\n|---|---|\n| R1 | caf\xe9 |\n' > "$RUB"
     ci --base "$BASE" --head "$HEAD_SHA"
     refused "input is not UTF-8"
     [[ "$output" != *Traceback* ]]
+    mkdir -p "$R/docs/reviews" && cp "$RUB" "$R/docs/reviews/l1.md"
+    git -C "$R" add docs && git -C "$R" commit -q -m latin1
+    run python3 "$CI" --repo "$R" --id fx --rubric docs/reviews/l1.md --rubric-commit HEAD --base "$BASE" --head "$HEAD_SHA"
+    refused "input is not UTF-8"
 }
 
 @test "refuses a repo that is not a git repository" {
@@ -197,12 +210,19 @@ refused() { # $1: the reason text the refusal must name
 }
 
 @test "--clone builds a scrubbed clone with no answer key" {
+    # A post-checkout hook from the user's global config must not run in the clone.
+    H="$BATS_TEST_TMPDIR/hk"
+    mkdir -p "$H" && printf '#!/bin/sh\ntouch "%s/hook-ran"\n' "$BATS_TEST_TMPDIR" > "$H/post-checkout"
+    chmod +x "$H/post-checkout"
+    printf '[core]\n\thooksPath = %s\n' "$H" > "$BATS_TEST_TMPDIR/gitconfig"
+    export GIT_CONFIG_GLOBAL="$BATS_TEST_TMPDIR/gitconfig"
     ci --base "$BASE" --head "$HEAD_SHA" --clone "$BATS_TEST_TMPDIR/cl"
     [ "$status" -eq 0 ] || { echo "$output"; return 1; }
     [[ "$output" == *"clone $BATS_TEST_TMPDIR/cl: ok, 1 commit(s) under review"* ]]
     [ "$(git -C "$BATS_TEST_TMPDIR/cl" rev-parse review)" = "$HEAD_SHA" ]
     [ "$(git -C "$BATS_TEST_TMPDIR/cl" rev-parse main)" = "$BASE" ]
     [ -z "$(git -C "$BATS_TEST_TMPDIR/cl" remote)" ]
+    [ ! -e "$BATS_TEST_TMPDIR/hook-ran" ]
     run git -C "$BATS_TEST_TMPDIR/cl" cat-file -e "$FIX"
     [ "$status" -ne 0 ]
 }
@@ -230,7 +250,7 @@ refused() { # $1: the reason text the refusal must name
     mkdir -p "$R/docs/reviews" "$R/other" && printf 'Commit: abc1234\n' > "$R/docs/reviews/own.md"
     printf 'abc1234\n' > "$R/other/x.md"
     git -C "$R" add . && git -C "$R" commit -q -m reviews
-    run python3 -I -c 'import importlib.util,sys
+    run python3 -I -B -c 'import importlib.util,sys
 spec = importlib.util.spec_from_file_location("ci", sys.argv[1]); m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
 print(m.reviews_naming(sys.argv[2], ["abc1234"])); print(m.reviews_naming(sys.argv[2], ["fff0000"]))' "$CI" "$R"
     [ "$status" -eq 0 ] || { echo "$output"; return 1; }

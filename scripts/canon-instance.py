@@ -8,7 +8,7 @@ unless both commits resolve and neither is spelled like an option, base is a
 strict ancestor of head, the diff changes a file outside docs/, that part is
 at most 10 files and 500 changed lines (a binary file counts 0 lines), and the
 rubric has a table with a Finding column (found by header name) whose every
-row has a severity (a 🔴/🟡/🟢 heading or an R/A/C ID). Then it prints one
+row has a severity (a 🔴/🟡/🟢 heading or cell, or an R/A/C ID). Then it prints one
 review-canon.md section 1 row and a skeleton ledger CSV row per red or amber
 finding. It writes neither canon file. Usage errors exit 2.
 
@@ -107,7 +107,7 @@ def parse_rubric(text):
     i = 0
     while i < len(lines):
         line = lines[i]
-        if line.lstrip().startswith("```"):
+        if line.lstrip().startswith(("```", "~~~")):
             fence = not fence
         if line.startswith("#") and not fence:
             heading = line
@@ -129,9 +129,11 @@ def parse_rubric(text):
         hsev = next((v for k, v in SEVERITY.items() if k in heading), None)
         for r in body:
             rid = r[icol] if icol is not None and icol < len(r) else ""
-            sev = hsev or (rid[:1].upper() if rid[:1].upper() in ("R", "A", "C") else None)
+            # Later-iteration tables often carry the marker in a cell of their own.
+            cell = next((v for c in r for k, v in SEVERITY.items() if k in c), None)
+            sev = hsev or cell or (rid[:1].upper() if rid[:1].upper() in ("R", "A", "C") else None)
             if not sev:
-                raise Refusal("rubric row %r has no severity (no 🔴/🟡/🟢 heading, no R/A/C ID)"
+                raise Refusal("rubric row %r has no severity (no 🔴/🟡/🟢 heading or cell, no R/A/C ID)"
                               % (rid or r[0]))
             rows.append((sev, rid or "%s%d" % (sev, len(rows) + 1),
                          r[fcol] if fcol < len(r) else ""))
