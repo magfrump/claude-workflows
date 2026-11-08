@@ -43,10 +43,13 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   Q-258. First step: one change with `Host-tool-tested:` and a re-bless,
   which needs a host run, so it is not briefed for a loop yet.
 
-- **Agent: figure out the confine-tests situation** (filed 2026-11-06, step 6). Motive: the
-  owner asked for this after Q-263's brief required tests to pass under
-  `scripts/confine-tests.sh`, which cannot run in this container, so no build loop can meet
-  that line. Briefed 2026-11-07 (In flight).
+- **Agent: confine-tests follow-ups** (filed 2026-11-07, step 7). Motive: the research
+  merged at be12889c (`docs/working/research-2026-11-07-confine-tests-situation.md`) found
+  the script refuses here (no bwrap, `unshare -rn` EPERM), has never run with a primitive,
+  and has no test. First step: in briefs whose acceptance names tests, use its conditional
+  wording (run `scripts/confine-tests.sh --probe`; exit 0: tests pass confined; exit 3:
+  quote its first line and rely on `scripts/run-tests.sh` plus the hermeticity lint). Then
+  add a `--probe` line to Q-125's live run when its paste is filed. The rest are Ideas.
 
 - **Agent: the `Harness feedback` section warning** (filed 2026-11-06, step 3, trial T7).
   Motive: every health check warns that this H2 of the global instructions is missing from
@@ -99,9 +102,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   (`docs/working/briefs/2026-11-07-q125-sandbox-on-main.md`; review policy). Motive: Q-265 [1].
 - One canon-proposal pass now, with this repo as the subject
   (`docs/working/briefs/2026-11-07-canon-instances-pass.md`; review policy). Motive: Q-256 [2].
-- What `scripts/confine-tests.sh` needs and where it can run
-  (`docs/working/briefs/2026-11-07-confine-tests-situation.md`; self-merge, docs only). Motive:
-  the Now agent item of 2026-11-06.
 
 ## Next
 
@@ -127,6 +127,14 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 ## Ideas
 
 Unranked. Each names the signal that motivates it.
+
+- **`scripts/run-tests.sh` runs the confinement probe and confines itself when it can.**
+  Signal: the confine-tests research (be12889c); S4 ranks a script over brief prose.
+- **A Landlock tier in `scripts/confine-tests.sh`.** Signal: the same research found
+  Landlock ABI 7 works unprivileged here and blocks a child's outgoing TCP (not UDP, and by
+  port only), which partly refutes decision 017's finding 1. Needs a 017 amendment.
+- **A bats test for `scripts/confine-tests.sh`.** Signal: the same research; the script has
+  none, and its bwrap paths have never run.
 
 - **Give a decision's runtime-log trigger a readable route.** Signal: decision 039's trigger names `/run/cc-sni-proxy/proxy.log`, which `--check-path` always refuses as untracked, so the cycle can only ever answer "cannot tell". Either a read-only runtime-log allowance, or the log's FAIL count in Q-255's paste. Gate code if the former.
 - **Things waiting for a release need a list of their own.** Signal: Q-241's item planned to ride on Q-252's next rewrite, and the release came first, so Q-252 closed with no rewrite. A section the close step reads would stop the next one being lost.
@@ -351,6 +359,9 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- What `scripts/confine-tests.sh` needs and where it can run
+  (`docs/working/briefs/closed/2026-11-07-confine-tests-situation.md`). Merged be12889c,
+  self-merge (docs only). Follow-ups are Now agent work and Ideas.
 - Q-125's `cc-verify --check` file for the sandbox live run
   (`docs/working/briefs/closed/2026-11-03-q125-verify-check.md`). Merged 546788f2 (Q-265 [1]).
 - The first trial set's practices (T1-T7) written into the dev cycle
