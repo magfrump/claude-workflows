@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+# @category fast
 # devcontainer-config/cc-sandbox-settings.sh and its template managed-settings.json
 # (Q-125): the build-time renderer of Claude Code's managed sandbox settings, fed
 # by init-firewall.sh --print-entries so the sandbox and the firewall share one
@@ -91,6 +92,7 @@ entries_for() {
   # Things that run unsandboxed (hooks, git, the next session) must not be
   # sandbox-writable: the PATH-first elan bin dir, the web-taint state, and the
   # project files that wire hooks or execute on git.
+  # shellcheck disable=SC2088  # the literal `~/` is the settings string Claude Code expands.
   for p in '~/.elan/bin' /tmp/cc-web-taint /workspace/.claude/settings.json \
            /workspace/.claude/settings.local.json /workspace/.mcp.json \
            /workspace/.git/config /workspace/.git/hooks; do

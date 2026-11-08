@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+# @category fast
 # devcontainer-config/seccomp-cc-sandbox.json (Q-125): Docker's default seccomp
 # profile plus exactly one rule, tagged by a `cc-sandbox:` comment, that lets an
 # unprivileged bwrap build its namespaces. These tests pin both halves: what was

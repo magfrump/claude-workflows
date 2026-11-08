@@ -2,10 +2,12 @@
 
 Brief: `docs/working/briefs/2026-11-07-q125-sandbox-on-main.md` (at f93c043c)
 Branch: `feat/q125-sandbox-on-main`, cut at main f93c043c
-Merged: `feat/q125-cc-isolated-sandbox` at 8dfe3ab90d2d7321b3656390631e9d618d63a083 (merge base 2e022614)
+Merged: `feat/q125-cc-isolated-sandbox` at 8dfe3ab90d2d7321b3656390631e9d618d63a083 (merge base 7ea99d96)
 Date: 2026-11-07
 
 Failure-pattern grep: FP-012, FP-015, FP-029, FP-145, FP-158 (keywords merge, conflict, payload, enforcement; none has this shape: every hit is a merge-tool or install-path failure, not two branches extending the same file list)
+
+Failure-pattern skip: the branch's fix(...) commits (785a8104, 8dfe3ab9) come from feat/q125-cc-isolated-sandbox, where they were diagnosed and reviewed; this branch makes no new diagnosis and has no fix of its own
 
 ## What the merge is
 
