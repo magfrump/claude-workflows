@@ -72,7 +72,7 @@ refused() { # $1: the reason text the refusal must name
     [[ "${lines[0]}" == "| fx | \`${BASE:0:8}..${HEAD_SHA:0:8}\` | 2f +2/−0 | \`$RUB\` | 🔴 DOES NOT PASS | 1/2/1 |"* ]] || { echo "$output"; return 1; }
     [[ "$output" == *"fx-R1,Option-like name reaches git log,fixture,${HEAD_SHA:0:8},not run,TODO: fix commit"* ]]
     # parsed by header name: Finding is the third column in the amber table
-    [[ "$output" == *"fx-A1,Window drops the record day, a | b,fixture"* ]] || [[ "$output" == *'fx-A1,"Window drops the record day, a | b",fixture'* ]]
+    [[ "$output" == *'fx-A1,"Window drops the record day, a | b",fixture'* ]]
     [[ "$output" == *"fx-A2,Failure shown as success"* ]]
     [[ "$output" != *"fx-C1"* ]]
 }
@@ -144,6 +144,32 @@ refused() { # $1: the reason text the refusal must name
     refused "rubric has no table with a Finding column"
 }
 
+@test "refuses a rubric row with no severity rather than passing it" {
+    printf '## Findings\n\n| # | Finding |\n|---|---|\n| 1 | real bug |\n' > "$RUB"
+    ci --base "$BASE" --head "$HEAD_SHA"
+    refused "rubric row '1' has no severity"
+}
+
+@test "refuses a rubric that is not UTF-8 with a named reason" {
+    printf '| # | Finding |\n|---|---|\n| R1 | caf\xe9 |\n' > "$RUB"
+    ci --base "$BASE" --head "$HEAD_SHA"
+    refused "input is not UTF-8"
+    [[ "$output" != *Traceback* ]]
+}
+
+@test "refuses a repo that is not a git repository" {
+    mkdir "$BATS_TEST_TMPDIR/plain"
+    run python3 "$CI" --repo "$BATS_TEST_TMPDIR/plain" --id fx --rubric "$RUB" --base "$BASE" --head "$HEAD_SHA"
+    refused "is not a git repository"
+}
+
+@test "the default repo name is the repository's, even from a linked worktree" {
+    git -C "$R" worktree add -q "$BATS_TEST_TMPDIR/wt-other" "$HEAD_SHA"
+    run python3 "$CI" --repo "$BATS_TEST_TMPDIR/wt-other" --id fx --rubric "$RUB" --base "$BASE" --head "$HEAD_SHA"
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+    [[ "$output" == *"fx-R1,Option-like name reaches git log,repo,"* ]]
+}
+
 @test "refuses a ledger header missing a named column" {
     printf 'issue ID,summary,repo,commit ID,fix status\n' > "$LEDGER"
     ci --base "$BASE" --head "$HEAD_SHA" --ledger-csv "$LEDGER"
@@ -208,7 +234,8 @@ refused() { # $1: the reason text the refusal must name
 spec = importlib.util.spec_from_file_location("ci", sys.argv[1]); m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
 print(m.reviews_naming(sys.argv[2], ["abc1234"])); print(m.reviews_naming(sys.argv[2], ["fff0000"]))' "$CI" "$R"
     [ "$status" -eq 0 ] || { echo "$output"; return 1; }
-    [ "${lines[0]}" = "['docs/reviews/own.md']" ] && [ "${lines[1]}" = "[]" ]
+    [ "${lines[0]}" = "['docs/reviews/own.md']" ]
+    [ "${lines[1]}" = "[]" ]
     grep -q 'own = reviews_naming(dest, \[head\[:7\]\])' "$CI"
     grep -q 'raise Refusal("guard (b): the tree has its own review' "$CI"
 }

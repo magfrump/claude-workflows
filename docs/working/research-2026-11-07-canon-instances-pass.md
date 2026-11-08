@@ -7,7 +7,7 @@
 Tags: [observed] checked by reading or running; [inferred] derived from observed facts. No plan doc: the plan is section 5 here, and there was no approval gate.
 
 Failure-pattern grep: FP-009, FP-064, FP-071, FP-108, FP-172 (see Prior failures)
-Failure-pattern skip: no fix(...) commit on this branch; the probe and mutation results below are design checks, not defects found in merged code.
+Failure-pattern skip: the one fix(...) commit is review iteration 1 on this branch's own unmerged script (a vacuous test, decode and severity refusals); each shape is already in the library (FP-172 empty input passes, FP-152 vacuous assertion), so none earns a new entry.
 
 ## 1. The rule, step by step (section 8 of the 2026-11-05 doc)
 
@@ -68,18 +68,22 @@ Other choices (one line each):
 - **Non-doc size**: count files outside `docs/` only. This reproduces both figures in the 2026-11-05 doc (6f +342/−1 and 4f +129/−1), and in this repo `docs/` holds review records, not code.
 - **Rubric pinning**: `--rubric-commit` reads the rubric at a commit (FP-064). This option is an addition to the section-10 interface; without it the script reads the file.
 - **Ledger header**: `--ledger-csv` reads the header and finds its columns by name, so the skeleton rows fit the real ledger's 15 columns. This is the same header-name rule as the rubric.
-- **Guard (b)**: refuse a tree holding a `docs/reviews/` file that names head's 7-character prefix, and only note, not refuse, files naming other commits in the range (the spec says "report"). A commit cannot name its own hash, so guard (b) is tested through its detector function (bats case 18).
+- **Guard (b)**: refuse a tree holding a `docs/reviews/` file that names head's 7-character prefix, and only note, not refuse, files naming other commits in the range (the spec says "report"). A commit cannot name its own hash, so guard (b) is tested through its detector function (bats case 22).
+- **Clone hardening** (review G1, G2): the source is passed as an absolute path, so a name like `h:x` cannot be read as an ssh URL; every git call runs with `core.hooksPath=/dev/null`; the remote is named `origin` explicitly and its removal is checked.
+- **Default repo name** comes from `--git-common-dir`, so a linked worktree reports the repository's name (review A7).
 - **Stripping GIT_DIR and related variables** from the script's git environment: the lesson of `5a063f0e` (a stray GIT_DIR acted on another repo), with a bats case.
 - **Labels in the ledger**: every red and amber row (14 and 6), following the canon's own label rule, as a new stratum F. The headline recall table stays dated to the 56-row ledger (FP-108).
 - **Canon placement**: rows appended at the end of the §1 table, after the archived-cells row (append-only).
 
 ## 4. Invariants kept
 
-Canon rows are append-only: two rows were appended and no existing row was edited. The script writes neither canon file (bats case 2). Clones hold no descendant commits (guard (a), bats case 15). No arm was run and no recall was measured (out of scope).
+Canon rows are append-only: two rows were appended and no existing row was edited. The script writes neither canon file (bats case 2). The scrub drops the descendant fix commit (bats case 19). Guard (a) itself has no case: after the scrub nothing can survive, so it is defense in depth, as in the archived script. Guard (b) is tested through its detector (case 22). No arm was run and no recall was measured (out of scope).
 
 ## 5. What was built
 
-- `scripts/canon-instance.py` (stdlib, about 315 lines) and `test/scripts/canon-instance.bats` (18 cases). Mutation check: disabling each of the 8 refusal conditions, one at a time, fails exactly one case each [observed].
+- `scripts/canon-instance.py` (stdlib, 282 lines) and `test/scripts/canon-instance.bats` (22 cases). Mutation check: disabling each refusal condition one at a time (option-spelled, unresolved, base equal to head, not an ancestor, no file, docs only, over 10 files, over 500 lines, no Finding column, row without severity, not a repository) fails at least one case each [observed]. Guard (a) and guard (b)'s `if` are not killed by any case (see section 4).
+- Review iteration 1 (one reviewer: correctness, tests, fact-check) found 1 red (a vacuous `&&` assertion), 7 amber and 7 green. All were fixed except G4's duplicate-table and withdrawn-row cases (the rubric's Status column is not parsed; a pass reads the printed rows before pasting them) and G5 (binary files count 0 lines, now stated in the docstring).
+- Size: 523 code lines against `f93c043c` (script 282, tests 241). That is over pr-prep step 1a's 400-line entry cap and under the review loop's ~800 limit. The ready split point is `--clone` (about 50 script lines and 4 cases); see the marker.
 - `docs/working/review-canon.md`: rows `cw-devcycle` and `cw-devcycle-skill`, a §1 note on where they came from, a §4 status line.
 - `docs/working/canon-issue-ledger.csv` (+20 rows) and `.md` (stratum F, count reconciliation 56 → 76, revision line).
 
