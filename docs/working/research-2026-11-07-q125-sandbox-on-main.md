@@ -52,4 +52,7 @@ All five are resolved as unions. The script that did it is mechanical: it assert
 
 ## Results
 
-(filled in after the gate)
+- Affected suites on the merge (cc-isolated-functions, install-host, hooks/live-verify-gate, seccomp-cc-sandbox, cc-sandbox-settings, q125-verify-check, cc-verify): 387/387 pass.
+- First full `scripts/health-check.sh`: failed on two things main added since the sandbox branch was cut. The two sandbox suites had no `# @category` tag, and SC2088 fired on a deliberately literal `'~/.elan/bin'` in cc-sandbox-settings.bats. Fixed in 1c6a3652 (both tagged `fast`, about 10 s together; SC2088 disabled on that one line). Rerun at 1c6a3652: exit 0, "All checks passed."
+- `git merge-tree --write-tree refs/heads/main HEAD`: exit 0.
+- Independent review (one reviewer, given the code rather than this doc): 0 Critical/High/Medium, 5 Low. Fixed: the wrong merge-base hash here, the guide's enforcement-file list missing the three sandbox files (`guides/devcontainer-setup.md`), and this section and the skip line not yet committed. Left for later: row 53's "built but unmerged as Q-125" and its Q-126/Q-127 and deny-check sentences, which a post-live-run amendment should settle. Also, main's copy of `q125-verify-check.sh` still names the old branch, so the owner's paste must name this branch explicitly (it does).
