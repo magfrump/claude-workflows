@@ -21,8 +21,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 - **Agent: Q-125 · cc-isolated Bash sandbox, live run** (filed 2026-11-01, step 6, from
   Q-234's migrate). Motive: nothing sandboxes Bash in cc-isolated. Built, unmerged
   (`feat/q125-cc-isolated-sandbox`); the host install is done (Q-222, answered 2026-11-03). The
-  check file merged at 546788f2 (Q-265 [1]). First step: the conflict merge, briefed 2026-11-07
-  (In flight), then the owner's `cc-verify` paste.
+  check file merged at 546788f2 (Q-265 [1]). The conflict merge is ready at cd6d4332 (In
+  flight). First step: the owner's `cc-verify` paste in merge entry Q-267, then its answer.
 
 - **Agent: scoped deep audit, constraint drift** (filed 2026-11-05, step 4b). Motive: the
   drift check on 605d4c18 found its script-home decision resting on a soft constraint (S4
@@ -100,6 +100,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 - Bring the Q-125 sandbox branch up to main, so the live run can start
   (`docs/working/briefs/2026-11-07-q125-sandbox-on-main.md`; review policy). Motive: Q-265 [1].
+  Ready at cd6d4332: merge entry Q-267, which carries the live-run paste.
 - One canon-proposal pass now, with this repo as the subject
   (`docs/working/briefs/2026-11-07-canon-instances-pass.md`; review policy). Motive: Q-256 [2].
 
@@ -109,8 +110,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
    cc-isolated Bash sandbox), and behind it Q-098 (global allowlist) and Q-161 (hermeticity
    layer 2), waited on `cc-verify` (merged at 37b24c02, Q-217 [1]). The host install has
    `cc-verify` (Q-222, answered 2026-11-03). The check file merged at 546788f2 (Q-265 [1]).
-   First step: the conflict-merge brief of 2026-11-07 (In flight), whose marker carries the
-   owner's paste. `~/cc-verify` is already in the agents'
+   First step: the live-run paste in merge entry Q-267 (the conflict merge is ready at
+   cd6d4332). `~/cc-verify` is already in the agents'
    sandbox `denyWrite` (owner, 2026-11-03).
 2. **A8 post-restructure token measurement.** Motive: the user deferred big compute until
    code and prompts settle; it validates code-review lever #3 (rubric row A8 in

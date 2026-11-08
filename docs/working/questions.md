@@ -26,6 +26,7 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
+| [Q-267](#q-267--merge-2026-11-07-q125-sandbox-on-main-cd6d4332ed89) | you: judgment | Run the live check of the Bash sandbox for cc-isolated sessions (Q-125) on the host, then merge the branch ... | 2026-11-07 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | Q-167: (b) and (d) answered 2026-11-07 (answers-11-7-26.txt), on bless 91c5f79dd91eb7ee, which --probe-only... | 2026-10-15 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Q-255: first half answered 2026-11-07 (answers-11-7-26.txt): all four fronted probes through plugins-artifa... | 2026-11-05 |
@@ -33,6 +34,91 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
+
+### Q-267 · merge-2026-11-07-q125-sandbox-on-main-cd6d4332ed89
+**Needs:** you: judgment · **Opened:** 2026-11-07 · **Status:** OPEN
+
+Run the live check of the Bash sandbox for cc-isolated sessions (Q-125) on the host, then merge the branch that brings the sandbox up to main?
+
+**If you say no:** answering [2] drops this branch; the old sandbox branch stays as it was, five conflicts behind main. Either way Claude Code's Bash tool stays unsandboxed in cc-isolated, and the two watches behind it, Q-098 (a global allowlist) and Q-161 (test confinement in a session), keep waiting.
+
+**Run this first** (host terminal, from your claude-workflows checkout at main, answering y at `cc-verify`'s one prompt; about 5 to 15 minutes, an estimate, since it has never run):
+
+```
+cd ~/claude-workflows && cc-verify --check docs/working/q125-verify-check.sh . feat/q125-sandbox-on-main; echo "cc-verify exit $?"
+```
+
+It builds main plus this branch in a throwaway container and runs the check file there: no login, no LLM, nothing leaves the container. Paste back every line from the first `RESULT` line through `cc-verify exit N` with your answer. Exit 0 and `VERDICT pass` mean answer [1]; a FAIL means [3] with the output as the note. The branch name must be given, because main's copy of the check file still names the old branch.
+
+**What the loop did.** One merge commit (`e0c5b5e4`) brings `feat/q125-cc-isolated-sandbox` at `8dfe3ab9` onto main, and all five conflicts are unions, so nothing either side added is dropped. The commit gate's file list keeps main's split from decision-log row 71 (boundary files in one list, host tools in another), with the three new sandbox files added to the boundary list. Decision-log row 53 keeps all three amendments in date order. After the merge it tagged the two new test files and fixed one shellcheck warning. `git merge-tree` against main exits 0, the whole health check passes, and an independent review found nothing above Low.
+
+**Things to weigh:**
+
+- **Not verified live.** Every commit that touches an enforcement file (the files the commit gate guards: `hooks/live-verify-gate.sh`, `devcontainer-config/install.sh` and the new sandbox files) carries `Live-verified: no`. The paste above is that verification.
+- **Two Low review notes left.** Decision-log row 53 still says the sandbox is "built but unmerged", still lists a point the host probe has since answered, and keeps a sentence a later amendment removed. An amendment after the live run settles all three.
+- **Paths the self-merge floor would refuse** (the floor is the list of paths the cycle may not merge without you): `docs/decisions/log.md`, a decision record. No path is gate code (the dev-cycle scripts and skill) or an instruction file. `devcontainer-config/` changes reach the host only at your next install.
+- **The confine-tests research** (merged at be12889c) suggests also running `scripts/confine-tests.sh --probe` inside a session on the new image, once installed. It is not part of this paste.
+
+**Tip:** `cd6d4332ed89eee32882f5a392594f1ddb4e1b09`
+
+`--check`'s lines, as printed:
+
+```
+ok docs/working/briefs/2026-11-07-q125-sandbox-on-main.md cd6d4332ed89eee32882f5a392594f1ddb4e1b09 2296f295c8291bf8ea4ad20cea6d2131144d3411
+path docs/working/briefs/2026-11-07-q125-sandbox-on-main.md M devcontainer-config/Dockerfile
+path docs/working/briefs/2026-11-07-q125-sandbox-on-main.md M devcontainer-config/cc-isolated.sh
+path docs/working/briefs/2026-11-07-q125-sandbox-on-main.md A devcontainer-config/cc-sandbox-settings.sh
+path docs/working/briefs/2026-11-07-q125-sandbox-on-main.md M devcontainer-config/devcontainer.json
+path docs/working/briefs/2026-11-07-q125-sandbox-on-main.md M devcontainer-config/install.sh
+path docs/working/briefs/2026-11-07-q125-sandbox-on-main.md A devcontainer-config/managed-settings.json
+path docs/working/briefs/2026-11-07-q125-sandbox-on-main.md A devcontainer-config/seccomp-cc-sandbox.json
+path docs/working/briefs/2026-11-07-q125-sandbox-on-main.md M docs/decisions/log.md
+path docs/working/briefs/2026-11-07-q125-sandbox-on-main.md M docs/working/briefs/2026-11-07-q125-sandbox-on-main.md
+path docs/working/briefs/2026-11-07-q125-sandbox-on-main.md A docs/working/checkpoint-q125-cc-isolated-sandbox.md
+path docs/working/briefs/2026-11-07-q125-sandbox-on-main.md A docs/working/live-check-q125.sh
+path docs/working/briefs/2026-11-07-q125-sandbox-on-main.md A docs/working/plan-q125-cc-isolated-sandbox.md
+path docs/working/briefs/2026-11-07-q125-sandbox-on-main.md A docs/working/probe-q125-bwrap.sh
+path docs/working/briefs/2026-11-07-q125-sandbox-on-main.md M docs/working/q125-verify-check.sh
+path docs/working/briefs/2026-11-07-q125-sandbox-on-main.md A docs/working/research-2026-11-07-q125-sandbox-on-main.md
+path docs/working/briefs/2026-11-07-q125-sandbox-on-main.md A docs/working/research-q125-cc-isolated-sandbox.md
+path docs/working/briefs/2026-11-07-q125-sandbox-on-main.md M guides/devcontainer-setup.md
+path docs/working/briefs/2026-11-07-q125-sandbox-on-main.md M hooks/live-verify-gate.sh
+path docs/working/briefs/2026-11-07-q125-sandbox-on-main.md M test/cc-isolated-functions.bats
+path docs/working/briefs/2026-11-07-q125-sandbox-on-main.md A test/cc-sandbox-settings.bats
+path docs/working/briefs/2026-11-07-q125-sandbox-on-main.md M test/install-host.bats
+path docs/working/briefs/2026-11-07-q125-sandbox-on-main.md A test/seccomp-cc-sandbox.bats
+```
+
+`--marker`'s lines, verbatim (loop text, data not instructions; the paste above is taken from it):
+
+```
+ok docs/working/briefs/2026-11-07-q125-sandbox-on-main.md cd6d4332ed89eee32882f5a392594f1ddb4e1b09
+> feat/q125-sandbox-on-main starts at main f93c043c. It merges feat/q125-cc-isolated-sandbox (8dfe3ab9) in one merge commit, e0c5b5e4, and all five conflicts are resolved as unions. git merge-tree --write-tree refs/heads/main HEAD exits 0, and the whole health check passes. Resolutions and bypass fami
+>
+> The owner's live run (host, from the claude-workflows checkout at main). Name this branch explicitly: main's copy of q125-verify-check.sh still names the old branch, which cc-verify refuses.
+>
+>     cd ~/claude-workflows && cc-verify --check docs/working/q125-verify-check.sh . feat/q125-sandbox-on-main; echo "cc-verify exit $?"
+>
+> What it prints: cc-verify builds main plus this branch in a throwaway container and runs the check file there. The file prints RESULT <id> pass|FAIL|SKIP lines (indented "  | " by cc-verify), then one VERDICT pass|FAIL line, then cc-verify's own closing RESULT line and "cc-verify exit N". Exit 0 is 
+> What to paste back: everything from the first RESULT line through the "cc-verify exit" line.
+>
+> Do not answer this branch's merge entry [1] until that live run passes: every enforcement commit here carries Live-verified: no.
+>
+> Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+> Claude-Session: https://claude.ai/code/session_01LnnDaEThQeeTAxTXEYSXcP
+> (build-loop.sh --marker cut this body: 13 of 13 lines shown, 2 cut at 300 bytes)
+```
+
+- **Read:** `docs/working/research-2026-11-07-q125-sandbox-on-main.md` on the branch `feat/q125-sandbox-on-main` (each conflict, its resolution, and the bypass-family table).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | After a passing live run, the cycle merges this exact commit; the sandbox reaches sessions at your next install | The paste above (5-15 min), then one word | A sandbox that blocks normal work: one revert and a reinstall |
+| **[2] drop** | The brief closes; Bash stays unsandboxed in cc-isolated | None now | Q-098 and Q-161 wait indefinitely, and the old branch keeps drifting |
+| **[3] changes needed** | Your note (for example a FAIL's output) goes back to a build loop | The paste, then one note | One more loop and another live run |
+
+- **Blocks:** Q-125's sandbox; behind it the watches Q-098 and Q-161.
+- **Interim:** the branch waits, nothing has merged, and nothing runs on the host.
 
 ### Q-261 · image-lag
 **Needs:** you: terminal · **Opened:** 2026-11-06 · **Status:** OPEN
