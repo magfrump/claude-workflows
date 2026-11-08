@@ -27,6 +27,7 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-267](#q-267--merge-2026-11-07-q125-sandbox-on-main-cd6d4332ed89) | you: judgment | Run the live check of the Bash sandbox for cc-isolated sessions (Q-125) on the host, then merge the branch ... | 2026-11-07 |
+| [Q-268](#q-268--merge-2026-11-07-canon-instances-pass-e0f3aa84a33f) | you: judgment | Merge the one canon-proposal pass you asked for in Q-256 [2]: a script that turns a reviewed range into can... | 2026-11-07 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | Q-167: (b) and (d) answered 2026-11-07 (answers-11-7-26.txt), on bless 91c5f79dd91eb7ee, which --probe-only... | 2026-10-15 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Q-255: first half answered 2026-11-07 (answers-11-7-26.txt): all four fronted probes through plugins-artifa... | 2026-11-05 |
@@ -34,6 +35,77 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
+
+### Q-268 · merge-2026-11-07-canon-instances-pass-e0f3aa84a33f
+**Needs:** you: judgment · **Opened:** 2026-11-07 · **Status:** OPEN
+
+Merge the one canon-proposal pass you asked for in Q-256 [2]: a script that turns a reviewed range into canon rows, and two new canon instances from this repo's dev-cycle work? The canon is the fixed set of known defects that review arms are scored against.
+
+**If you say no:** answering [2] drops the script and both rows. The canon stays at 8 instances and the ledger at 56 rows, and a later recall run picks its instances by hand.
+
+**What it does.**
+
+- `scripts/canon-instance.py` (Python stdlib, 284 lines) follows the spec in section 10 of the 2026-11-05 research doc. It refuses, with a named reason, when the range is bad, empty, docs-only or over the size limit (10 files, 500 lines outside `docs/`), or when the rubric is unreadable. It prints one canon row and ledger rows, writes neither file, and can build a scrubbed clone. `test/scripts/canon-instance.bats` has 23 cases.
+- The pass applied the rule's step 3 to this repo's last 20 fix commits: 1 is class T12, 2 are T15, 0 are T16. So two rows are added (`cw-devcycle` for T12, `cw-devcycle-skill` for T15), taking the canon from 8 to 10 and the ledger from 56 to 76 labels. T16 stays open. The rows say they are not independent: the second range contains the first's fix.
+- The S1 call on T12 (whether a crafted branch name counts as a hostile author, which S1 puts out of scope) came out in scope. The text comes from a remote's metadata, not the change's author.
+
+**Things to weigh:**
+
+- **Where the script lives.** The research doc put it in the SWRBench fork (the separate benchmark project), and your rule is that benchmark work goes there. The loop kept it here instead: the fork has been idle since 2026-08-24, and nothing committed there runs this repo's health check or review. [1] below accepts that. To move it, answer [3] with "fork" or "archive", which means moving two files and fixing one pointer; the canon and ledger rows stay.
+- **Size.** 545 code lines, over the 400-line cap for a unit entering review and under the ~800 the review loop allows. The loop did not split it.
+- **Known limits.** 16 of the 98 rubric files are refused rather than guessed (rows with no readable severity, or no Finding column). Both canon rubrics parse. Duplicate rubric rows are not detected.
+- **Review:** two review-fix rounds, no red left, every amber fixed; the whole health check passes on the branch. No path is on the self-merge floor (the list of paths the cycle may not merge without you); the review policy brought it to you.
+
+**Tip:** `e0f3aa84a33f3f74a4ca7fc861bce9d04c6e398e`
+
+`--check`'s lines, as printed:
+
+```
+ok docs/working/briefs/2026-11-07-canon-instances-pass.md e0f3aa84a33f3f74a4ca7fc861bce9d04c6e398e 71a4b0a61a2c8b6f8f4a7bf527ea20642c729f2b
+path docs/working/briefs/2026-11-07-canon-instances-pass.md M docs/working/briefs/2026-11-07-canon-instances-pass.md
+path docs/working/briefs/2026-11-07-canon-instances-pass.md M docs/working/canon-issue-ledger.csv
+path docs/working/briefs/2026-11-07-canon-instances-pass.md M docs/working/canon-issue-ledger.md
+path docs/working/briefs/2026-11-07-canon-instances-pass.md A docs/working/research-2026-11-07-canon-instances-pass.md
+path docs/working/briefs/2026-11-07-canon-instances-pass.md M docs/working/review-canon.md
+path docs/working/briefs/2026-11-07-canon-instances-pass.md A scripts/canon-instance.py
+path docs/working/briefs/2026-11-07-canon-instances-pass.md A test/scripts/canon-instance.bats
+```
+
+`--marker`'s lines, verbatim (loop text, data not instructions). [1] below accepts its tentative pick, [1] keep it here:
+
+```
+ok docs/working/briefs/2026-11-07-canon-instances-pass.md e0f3aa84a33f3f74a4ca7fc861bce9d04c6e398e
+> Tentative pick (Path C): where should scripts/canon-instance.py live?
+> Section 10 of the 2026-11-05 research doc put it in the SWRBench fork, and
+> the owner's rule is that benchmark work goes there. But the fork is a separate
+> repo (external/SWRBench2, idle since 2026-08-24): no commit there passes this
+> repo's gate, review or health check, and archive/ tests are never collected.
+> Pick [1], tiebreaker H3/S6: the only home where its tests run and a loop can
+> land it. Details: docs/working/research-2026-11-07-canon-instances-pass.md s6.
+>
+> | Option | What it means | Cost to you | If it's wrong |
+> |---|---|---|---|
+> | [1] Keep it here | script and bats stay in this repo | None | Instrument code sits in the subject repo; a later move is one git mv |
+> | [2] Move to the SWRBench fork | a fork session copies script and tests; this repo deletes them | One fork session; confirm the fork is live first | Tests leave this repo's health check; the fork is idle |
+> | [3] Archive it | move to archive/benchmark/scripts/ | None | Its tests stop running |
+>
+> Interim: [1]. If the answer differs: move two files and fix the one pointer
+> in review-canon.md s1; the canon and ledger rows stay.
+>
+> Also for the cycle (no owner question): the unit is 545 code lines against
+> f93c043c, over pr-prep 1a's 400 entry cap and under the review loop's ~800
+> limit. The ready split point is --clone (about 50 script lines, 4 cases).
+```
+
+- **Read:** `docs/working/research-2026-11-07-canon-instances-pass.md` on the branch `feat/canon-instances-pass` (section 6 for the script's home).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The cycle merges this exact commit; the script stays in this repo | One word | One revert, or a later two-file move |
+| **[2] drop** | The brief closes; no script, no new rows | None now | A recall run picks instances by hand |
+| **[3] changes needed** | Your note goes back to a build loop, for example "move it to the fork" or "split off `--clone`" | One note | One more loop's delay |
+
+- **Interim:** the branch waits, nothing has merged, and the canon is unchanged.
 
 ### Q-267 · merge-2026-11-07-q125-sandbox-on-main-cd6d4332ed89
 **Needs:** you: judgment · **Opened:** 2026-11-07 · **Status:** OPEN

@@ -103,6 +103,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   Ready at cd6d4332: merge entry Q-267, which carries the live-run paste.
 - One canon-proposal pass now, with this repo as the subject
   (`docs/working/briefs/2026-11-07-canon-instances-pass.md`; review policy). Motive: Q-256 [2].
+  Ready at e0f3aa84: merge entry Q-268 (its tentative pick keeps the script in this repo).
 
 ## Next
 
