@@ -250,20 +250,22 @@ the iteration with no record, so the next one starts from the same `Main at:`:
    CR, another control or bidi character, or bytes that are not UTF-8 written as
    `(withheld: see SHA)` (questions.sh finds its `<!-- index:` markers anywhere in a line,
    and `--check-answer` refuses an unclosed `<!--`); a backtick, `<` or `>` is shown, a
-   path holding a backtick in a double-backtick span with spaces inside it; and the one paste, on one line, with A, M and PATHS written out (and `master` for `main` where that is the default branch):
-   `cd A && ( h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)" || { echo "release refused: this checkout is not at main's tip"; false; exit; }; for p in PATHS devcontainer-config/install.sh; do g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "M:$p")" || { echo "release refused: $p changed after M, so this paste is out of date"; false; exit; }; done ) && ./devcontainer-config/install.sh`
+   path holding a backtick in a double-backtick span with spaces inside it; and the one paste, alone on one line of a fenced block, with A, M and PATHS written out (and `master` for `main` where that is the default branch):
+   `sh -c 'n=0; cd "A" && n=1; h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)" && n=$((n+1)) || echo "release refused: this checkout is not at the tip of main"; for p in PATHS devcontainer-config/install.sh; do g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "M:$p")" && n=$((n+1)) || echo "release refused: $p changed after M: run the dev cycle for a new paste"; done; test "$n" = 9 && devcontainer-config/install.sh'`
    (host; then a new sandbox launch), interim: the image's gate runs. The paste runs from a
    checkout at main's tip: the cycle's lands move main past M but carry no gate code. It
    refuses, saying which, a checkout that is not at main's tip, and gate code or an
    installer that is not M's: one that reached main after the paste was written, which the
-   entry does not describe (`false; exit`, not `exit 1`: a line the terminal wrapped
-   between those two words would refuse and then install). Every iteration writes the paste
-   again from its M, here and in an open `image-off-main` entry (a stop gives it in its
-   final message), and step 7 runs this image check again after a merge. Other code that
-   reached main after M is installed without being listed in the entry, a risk taken so
-   the paste runs where the checkout is. The paste's only git call before install.sh's
-   state gate is `rev-parse` inside `$( )`, which runs no hook, fsmonitor or pager; any
-   other git command the user runs on the host here, a checkout to reach main's tip
+   entry does not describe. Keep its shape: the installer runs only after all nine checks
+   counted (the `cd`, the tip, the seven paths), and the whole of it is one quoted word, so
+   a copy the terminal broke into lines refuses or fails instead of installing. Every
+   iteration writes the paste again from its M, in the `image-lag` entry and in an open
+   `image-off-main` entry (a stop repeats it in its final message), and step 7 runs this
+   image check again after a merge. Other code that reached main after M is installed
+   without being listed in the entry, a risk taken so the paste runs where the checkout
+   is. The paste's only git call before install.sh's state gate is `rev-parse` inside
+   `$( )`, which runs no hook, fsmonitor or pager; any other git command the user runs on
+   the host here, a checkout to reach main's tip
    included, can run one a sandbox session planted,
    install.sh's own trust model. Exit 0: the image
    holds main's gate code; once WT exists, close any open `image-lag` or `image-off-main-*`
@@ -712,7 +714,8 @@ restart.
 
 A `merged` line moved main. After this step's last one, run step 0.1's image check again,
 with main's commit then in M's place and C as before: it files, rewrites or closes its
-entry as there (one step 0.1 closed stays closed), and the `7.` line says what it found,
+entry as there (one step 0.1 closed stays closed; one this iteration filed, then found
+cleared, is taken out again, not filed answered), and the `7.` line says what it found,
 so the release paste names the gate code main's tip holds.
 
 ### 8. Build briefs
