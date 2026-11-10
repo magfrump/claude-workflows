@@ -3,7 +3,7 @@
 **Goal**: fix three passages of `skills/dev-cycle/SKILL.md` that every recent iteration worked around: the identity check, the release paste's pinned commit, and the record's silence about a free slot.
 **Problem framing**: each passage asks the orchestrator, or the owner, for something that cannot be done as written, so it is skipped or worked around and guards nothing. Considered and discarded: "the orchestrator is not following the skill" (the records show it tried each one as written, and the workaround was the only way on).
 **Project state**: this branch delivers the three prose fixes and the tests that run the skill's own commands · standalone, from the roadmap's Now item "after the Q-261 release" · not blocked (cite: docs/working/briefs/2026-11-10-dev-cycle-skill-held-fixes.md)
-**Task status**: in-progress (review-fix loop: iteration 2 fixes applied, last confirming pass next)
+**Task status**: complete (implemented; the review-fix loop ran its three iterations, and the rubric says how it ended)
 
 ## What exists
 
@@ -166,34 +166,36 @@ Hypotheses. 3: the next two releases run the paste as written from main's tip; c
 | The checkout is on a branch, or behind main | Covered: the tip test refuses, saying so. |
 | Gate code moved after the entry was written (a step 7 merge, a hand commit) | Covered: the loop refuses, naming the path; step 7 runs the image check again after a merge, and every iteration writes the paste again in the `image-lag` entry and in an open `image-off-main` entry (a stop repeats it in its final message). |
 | The installer changed after M (a self-merged `install.sh` runs on the host before any review of its own) | Covered since the security review: the loop compares `devcontainer-config/install.sh` too, so `docs/dev-cycle.md`'s sentence that reviewing the entry is the check on a self-merged installer still holds. |
-| The terminal or a renderer breaks the paste into lines | Covered, in two steps. Security review: with `exit 1`, a break between the two words printed the refusal and then ran the installer. Confirming pass: with `( … ) && ./devcontainer-config/install.sh`, a copy broken in two or more places, typed into an interactive shell already in the checkout, hit a syntax error that dropped the checks, and the last line, the installer alone, ran (62 of 274 widths). Now the paste is one quoted word with a counted last step. Test: typed into an interactive bash sitting in the checkout, with a break before each word and folded at 40 to 240 columns, it never installs from a refusing checkout. By hand: the sweeps under "The break sweeps" below. |
+| The terminal or a renderer breaks the paste into lines | Covered, in two steps. Security review: with `exit 1`, a break between the two words printed the refusal and then ran the installer. Confirming pass: with `( … ) && ./devcontainer-config/install.sh`, a copy broken in two or more places, typed into an interactive shell already in the checkout, hit a syntax error that dropped the checks, and the last line, the installer alone, ran (62 of 274 widths). Last confirming pass: as one quoted word with `&&` chains, a copy with CR LF line ends piped to a shell ran the line after a CR on its own, and installed. Now the paste is one quoted word, each count sits inside an `if`, and the installer inside a `case` arm. Test: typed into an interactive bash sitting in the checkout, and piped with CR LF ends into `sh`, with a break before each word and folded at 40 to 240 columns, it never installs from a refusing checkout. By hand: the sweeps under "The break sweeps" below. |
 | Fail-open on a failed read (no repository, M absent, a path absent, git missing) | Covered: each left side is taken through `&&` on git's exit status, and an unresolved right side prints its own argument, which never equals an object name. |
-| The shell runs the installer after a refusal (`a && b \|\| c` precedence) | Covered: no refusal leads anywhere; the installer is one step, `test "$n" = 9 && …`, and each check adds to the count only when both reads succeed and agree. Test: the stub installer's marker is absent after each refusal. |
-| A is wrong or missing while the shell sits in another checkout that passes | Covered: the `cd` is one of the nine counted checks. Test: run from a passing checkout with an A that is not there, nothing installs. |
-| The orchestrator mistypes the paste | Partly: a wrong M or path refuses. A paste with the checks dropped is prose's risk, as today; the test pins the skill's line. |
+| The shell runs the installer after a refusal (`a && b \|\| c` precedence) | Covered: no refusal leads anywhere; the installer sits in the `case` arm that matches a count of nine, and each check adds to the count only when both reads succeed and agree. Test: the stub installer's marker is absent after each refusal. |
+| A is wrong or missing while the shell sits in another checkout that passes | Covered: the `cd` is one of the nine counted checks. Test: run from a passing checkout with an A that is not there, nothing installs. An A written as empty or `.` is not refused: `cd` succeeds, and the paste installs from the shell's own directory when that is a checkout that passes every other check. Harmless. |
+| The orchestrator mistypes the paste | Partly: a wrong path, a short id that does not resolve, the literal `M` or an empty M refuses. A symbolic M (`HEAD`, `main`) compares the checkout with itself and passes: the skill asks for all 40 hex digits, and the paste does not enforce it. A paste with the checks dropped is prose's risk, as today; the test pins the skill's line. |
 | PATHS drifts from `GATE_CODE` | Covered: the existing test pins the line, and the new test builds the paste from that line. |
 | HEAD moves between the test and the install | Not covered by the paste; `install.sh` refuses while a session runs, and the manifest's `commit=` shows what was built, which step 0.1 reads next. |
 | Uncommitted edits in the checkout | Covered by `install.sh`: it installs HEAD's committed content and lists the rest as not included. |
 | Code outside PATHS and the installer committed after M ships unlisted (also through a paste copied from an earlier iteration, which passes while gate code and installer are unchanged) | Not covered, by choice (candidate 5 covers it): the stated residual. |
-| The orchestrator writes an empty M | Refuses (`:path` names no index entry). With a planted `core.fsmonitor` that index read starts it: out of scope (S1), found by the security review. |
+| The orchestrator writes an empty M | Refuses, through the two directory entries (`:scripts/lib/` names no index entry; the five file entries do resolve from the index and count). With a planted `core.fsmonitor` that index read starts it: out of scope (S1), found by the security review. |
 | A planted promisor remote (`extensions.partialClone` with a `remote.x.uploadpack` program) and an object the clone lacks | Not covered, and out of scope (S1: a hostile session). Found by the test-strategy pass and confirmed: `git rev-parse "M:p"` for an M the clone lacks ran the planted program; with M present nothing ran. The old flow has the same reach one step later: `install.sh`'s `git archive` of HEAD ran it when one of HEAD's objects was gone, and its state gate reads no promisor key. What is new is one trigger, an M the clone lacks, and the session that would plant this also writes the paste. `GIT_NO_LAZY_FETCH=1` stopped it on git 2.39.5; not added: S1 puts a hostile session out of scope, and the installer's own archive has the same reach. |
 | A mode-only change to one of the five file entries (a blob's name holds no mode) | Not covered, harmless: the image build sets every `.sh` file to 0555, and the two directory entries do refuse a mode change inside them. |
-| The orchestrator writes the paste with a short or empty path list | Covered since the count: fewer paths than seven leave it under nine, and nothing installs. |
+| The orchestrator writes the paste with a short or empty path list | Covered since the count: fewer paths than seven leave it under nine, nothing installs, and the last line says how many of the nine checks passed. |
+| The owner's shell exports `CDPATH` | Covered: the installer starts as `./devcontainer-config/install.sh`, as before the branch. Started without `./` (one form this branch tried), its own `cd` to its directory followed `CDPATH` and it died. |
+| A break inside the installer's path makes part of it a lookup on `PATH` | Covered: the path sits inside the `case` arm, reached only at a count of nine. |
 | Planted refs, replace refs, grafts, alternates (a hostile session) | Out of scope (S1), listed once. `M:path` is content-addressed, so only a replace ref or a forged `refs/heads/main` reaches it (the security review ran the replace-ref case: the installer ran with changed gate code). |
 
 **Decision (Path A): candidate 3, with the installer among the compared paths.** The paste, with A, M and PATHS written out:
 
 ```
-sh -c 'n=0; cd "A" && n=1; h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)" && n=$((n+1)) || echo "release refused: this checkout is not at the tip of main"; for p in PATHS devcontainer-config/install.sh; do g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "M:$p")" && n=$((n+1)) || echo "release refused: $p changed after M: run the dev cycle for a new paste"; done; test "$n" = 9 && devcontainer-config/install.sh'
+sh -c 'n=0; if cd "A"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in PATHS devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "M:$p")"; then n=$((n+1)); else echo "release refused: $p changed after M: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
 ```
 
-It keeps the one command the skill already argues for, reuses the PATHS line, refuses loudly, and runs from where the checkout already is. Its shape came from the review (mitigations below): the whole of it is one single-quoted word handed to `sh`, and the installer is its last step, reached only when a count of every check (the `cd`, the tip, the seven paths) comes to nine. Nothing in it exits early, so no lost word can turn a refusal into an install. See alternatives considered → the matrix above.
+It keeps the one command the skill already argues for, reuses the PATHS line, refuses loudly, and runs from where the checkout already is. Its shape came from the review, in three steps (mitigations below): the whole of it is one single-quoted word handed to `sh`; each check adds to a count inside an `if`; and the installer sits in the arm of a `case` that matches only a count of nine (the `cd`, the tip, PATHS' six and the installer). Nothing follows a bare `&&` and nothing exits early, so a line break, with an LF or a CR LF end, cannot part a count or the installer from its condition. See alternatives considered → the matrix above.
 
 **Pruned candidates and why.** Each entry is `[candidate]: reason`. [0]: cannot pass at main's tip, and sends the owner to `checkout`. [1]: needs a second command that is safe only in `$( )`, and a second value. [2]: `merge-base` run bare starts a planted pager. [4]: lets an off-main checkout release. [5]: a second list, and the refusals that got Q-156's paste skipped. [6]: a commit cannot name itself. [7]: no refusal. [8]: grows `install.sh`. [9]: check code in an agent-writable checkout. [10], [11]: a checkout runs hooks. [12]: `diff-tree` starts a planted fsmonitor and pager. [13]: same check as 3 with more to copy.
 
-**Stress-test mitigations.** How to read: *Invert the thesis* mitigation: step 7 runs the image check again after a merge, which keeps this cycle's own merges out of candidate 3's residual. How to read: *Failure-driven* mitigations from the review (iteration 1): the installer joined the compared paths (security finding 2: an installer changed after M ran on the host unlisted); the refusals became `false; exit` (security finding 1: a wrapped line refused and then installed); the refusal's message stopped promising a rewrite, and every iteration writes the paste again in the `image-lag` entry and in an open `image-off-main` entry (consistency finding 1, security finding 4: an `image-off-main` entry's paste was filed once and would have refused for good). From the confirming pass (iteration 2): the paste became one quoted word run by `sh -c`, with the installer behind a count of every check and no early exit (finding F1, above); its refusal names the way forward ("run the dev cycle for a new paste"); A is quoted; step 7's rerun says what happens to an entry the same iteration filed.
+**Stress-test mitigations.** How to read: *Invert the thesis* mitigation: step 7 runs the image check again after a merge, which keeps this cycle's own merges out of candidate 3's residual. How to read: *Failure-driven* mitigations from the review (iteration 1): the installer joined the compared paths (security finding 2: an installer changed after M ran on the host unlisted); the refusals became `false; exit` (security finding 1: a wrapped line refused and then installed); the refusal's message stopped promising a rewrite, and every iteration writes the paste again in the `image-lag` entry and in an open `image-off-main` entry (consistency finding 1, security finding 4: an `image-off-main` entry's paste was filed once and would have refused for good). From the confirming pass (iteration 2): the paste became one quoted word run by `sh -c`, with the installer behind a count of every check and no early exit (finding F1, above); its refusal names the way forward ("run the dev cycle for a new paste"); A is quoted; step 7's rerun says what happens to an entry the same iteration filed. From the last confirming pass (iteration 3): each count and the installer moved inside an `if` or the `case` (its finding 1: a CR after `&&` ran the next line alone, 135 installs in 21,260 runs with CR LF ends); the installer got its `./` back, now safe inside the `case` arm (without it an exported `CDPATH` broke the installer's own `cd`); a refusal ends by saying how many of the nine checks passed, so a short path list no longer refuses in silence; the skill asks for M in full. The same class of finding, a broken copy that installs, came back in each of the three passes; the rubric records that, what was done about its cause, and that no reviewer read the final shape.
 
-**Consequences.** Easier: a release is the paste, from where the checkout is. Harder: the paste is about 460 characters as a template and about 700 written out, copied from the skill by the orchestrator onto one line of a fenced block; a test pins the line and runs it, broken into lines too. Residual risk, stated once (S1) and written into the skill beside the paste: code outside the six gate-code paths and the installer that reaches main after the entry's M ships with that release without appearing in the entry. Decision log row 86 records the choice and its revisit triggers. [corrected in review: an earlier draft, and commit f5eef430's Notes line, said an in-flight branch appends to the log; it edits row 53 in place]
+**Consequences.** Easier: a release is the paste, from where the checkout is. Harder: the paste is about 560 characters as a template and about 800 written out, copied from the skill by the orchestrator onto one line of a fenced block; a test pins the line and runs it, broken into lines too. Residual risk, stated once (S1) and written into the skill beside the paste: code outside the six gate-code paths and the installer that reaches main after the entry's M ships with that release without appearing in the entry. Decision log row 86 records the choice and its revisit triggers. [corrected in review: an earlier draft, and commit f5eef430's Notes line, said an in-flight branch appends to the log; it edits row 53 in place]
 
 **Revisit triggers.** Each entry is an observable condition. if an image's `commit=` names a commit with gate code other than the entry's M. if an `image-off-main` entry is filed after a paste ran. if the owner reports a release that shipped a self-merge the entry did not flag. if `GATE_CODE` gains a path that does not exist at some M (the paste would refuse until it does). if `GATE_CODE` loses a path (an older image's skill would still write it into the paste, which then refuses until an install by hand).
 
@@ -241,58 +243,18 @@ old flow, HEAD's tree object gone: rev-parse HEAD: exit 0; nothing ran
 old flow, HEAD's tree object gone: install.sh's archive of HEAD: exit 128; promisor-program
 ```
 
-**The break sweeps** (the paste as decided, written out to 792 characters with a checkout path as long as the host's; each variant fed to the shell a line at a time, from inside the checkout and from outside it, with the checkout in each of three refusing states: off main's tip, gate code changed after M, installer changed after M; a run counts as an install when the stub installer ran). Unbroken, the paste installed at main's tip and refused in the three states under `bash -s`, `bash -i`, `sh -s`, `sh -i`, `zsh -s` and `zsh -i`.
+**The break sweeps** (the paste as decided; 865 characters written out for a 126-character checkout path, template 559; each variant fed on the shell's standard input from inside the checkout, with the checkout in each of three refusing states: off main's tip, gate code changed after M, installer changed after M; under `bash -s`, `bash -i`, `sh -s`, `sh -i`, `zsh -s` and `zsh -i`; a run counts as an install when the stub installer ran). Variants: word wrap and hard wrap at every second width (30 or 20 to 520 columns), one break at every character, and 300 random sets of two to five breaks; each with LF and with CR LF line ends.
 
 ```
-word wrap (fold -s), every width 30-520: 0 installs in 8838 runs (491 variants x 3 refusing states x 3 shells x 2 directories)
-hard wrap (fold), every width 20-520: 0 installs in 9018 runs (501 variants x 3 refusing states x 3 shells x 2 directories)
-one break at every character: 0 installs in 14238 runs (791 variants x 3 refusing states x 3 shells x 2 directories)
-two to five breaks at random characters, 500 variants: 0 installs in 9000 runs (500 variants x 3 refusing states x 3 shells x 2 directories)
+wordwrap, lf ends: 0 installs in 4428 runs
+wordwrap, crlf ends: 0 installs in 4428 runs
+hardwrap, lf ends: 0 installs in 4518 runs
+hardwrap, crlf ends: 0 installs in 4518 runs
+onechar, lf ends: 0 installs in 15552 runs
+onechar, crlf ends: 0 installs in 15552 runs
+random, lf ends: 0 installs in 5400 runs
+random, crlf ends: 0 installs in 5400 runs
 ```
 
-The three shells there are interactive bash, `bash -s` and interactive zsh; a first pass over every sixth width also ran `sh -s`, `sh -i` and `zsh -s` (0 installs in 4968 runs). For comparison, the confirming reviewer's sweep of the paste before this shape (a subshell, `false; exit`, then `&& ./devcontainer-config/install.sh`) installed at 62 of 274 widths in an interactive shell sitting in the checkout, and the paste before the branch at none.
+That is 0 installs in 59,796 runs. Unbroken, the paste installed at main's tip under all six shells with LF ends; with CR LF ends it installed only under interactive bash and failed, closed, under the others (the CR joins the quoted word). The history of the shape, for comparison: the paste before this branch (one `test`, about 120 characters) had no break that installed; the first paste here (`( … exit 1 … ) && ./devcontainer-config/install.sh`) installed when broken between `exit` and `1`; with `false; exit` it installed at 62 of 274 widths in an interactive shell sitting in the checkout (the second reviewer's sweep, not kept in the repository); as one quoted word with `&&` chains it had 0 installs in 41,094 LF runs here and 188,074 by the last reviewer, and 135 in that reviewer's 21,260 runs with CR LF ends.
 
-### Item 2, second choice: the entry after a step 7 merge (two options)
-
-One-line note: have step 7 run step 0.1's image check again after its last merge (written in step 7, where the merge happens, with a pointer from step 0.1), over leaving the entry at step 0.1's M. Without it, the release that follows an approved gate merge is refused at main's tip until another iteration runs; the records show the orchestrator already rewrites the entry there (prior art above).
-
-### Item 3: the free slot (two options)
-
-One-line note: one clause on the record's `8.` line and one sentence in step 8, over a `### Free slots` section in the template, which the brief rules out. The clause gives the reason once when it is the same for every free slot.
-
-## A script changes after all
-
-The brief asks for prose unless prose cannot state the fix. One line of `scripts/lib/migrations.sh` changes: the record template is a fingerprinted convention (`guides/convention-changes.md`), so the new `8.` line needs a registry line, `record-8-free-slot`, with remedy `none` (every record written before stays valid). The full suite caught it: three `convention-migrations.bats` cases and the health check failed until the line was added.
-
-## Failure patterns
-
-Two `fix(...)` commits earn an entry each in `docs/failure-patterns.md`: FP-177 (the identity check modelled one of git's two identity sources) and FP-178 (a guard pinned to a value its own workflow moves, refused every honest run and was skipped).
-
-## Files read
-
-Last verified: 2026-11-10
-skills/dev-cycle/SKILL.md
-docs/dev-cycle.md
-docs/constraints.md
-docs/failure-patterns.md
-docs/roadmap.md
-docs/working/idea-log.md
-docs/working/questions-archive.md
-docs/working/cycles/cycle-2026-11-03.md
-docs/working/cycles/cycle-2026-11-05.md
-docs/working/cycles/cycle-2026-11-06.md
-docs/working/cycles/cycle-2026-11-07.md
-docs/working/research-2026-11-01-relax-dev-cycle-skill-prose.md
-docs/working/research-2026-11-06-codify-trial-practices.md
-docs/reviews/security-review-2026-10-14-u5-i2.md
-docs/decisions/log.md
-scripts/build-loop.sh
-scripts/lib/dev-cycle-read.sh
-devcontainer-config/install.sh
-hooks/live-verify-gate.sh
-test/scripts/build-loop-orchestrator.bats
-test/scripts/build-loop-merge.bats
-test/lib/build-loop-fixtures.bash
-workflows/research-plan-implement.md
-workflows/divergent-design.md
-workflows/pr-prep.md

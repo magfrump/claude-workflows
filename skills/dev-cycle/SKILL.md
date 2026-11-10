@@ -250,15 +250,17 @@ the iteration with no record, so the next one starts from the same `Main at:`:
    CR, another control or bidi character, or bytes that are not UTF-8 written as
    `(withheld: see SHA)` (questions.sh finds its `<!-- index:` markers anywhere in a line,
    and `--check-answer` refuses an unclosed `<!--`); a backtick, `<` or `>` is shown, a
-   path holding a backtick in a double-backtick span with spaces inside it; and the one paste, alone on one line of a fenced block, with A, M and PATHS written out (and `master` for `main` where that is the default branch):
-   `sh -c 'n=0; cd "A" && n=1; h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)" && n=$((n+1)) || echo "release refused: this checkout is not at the tip of main"; for p in PATHS devcontainer-config/install.sh; do g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "M:$p")" && n=$((n+1)) || echo "release refused: $p changed after M: run the dev cycle for a new paste"; done; test "$n" = 9 && devcontainer-config/install.sh'`
+   path holding a backtick in a double-backtick span with spaces inside it; and the one paste, alone on one line of a fenced block, with A, M (all 40 hex digits) and PATHS written out (and `master` for `main` where that is the default branch):
+   `sh -c 'n=0; if cd "A"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in PATHS devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "M:$p")"; then n=$((n+1)); else echo "release refused: $p changed after M: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'`
    (host; then a new sandbox launch), interim: the image's gate runs. The paste runs from a
    checkout at main's tip: the cycle's lands move main past M but carry no gate code. It
    refuses, saying which, a checkout that is not at main's tip, and gate code or an
    installer that is not M's: one that reached main after the paste was written, which the
    entry does not describe. Keep its shape: the installer runs only after all nine checks
-   counted (the `cd`, the tip, the seven paths), and the whole of it is one quoted word, so
-   a copy the terminal broke into lines refuses or fails instead of installing. Every
+   counted (the `cd`, the tip, PATHS' six and the installer); each count and the installer
+   sit inside an `if` or the `case`, never after a bare `&&` or an `exit`; and the whole of
+   it is one quoted word. So a copy broken into lines, with CR LF ends too, refuses or
+   fails instead of installing. Every
    iteration writes the paste again from its M, in the `image-lag` entry and in an open
    `image-off-main` entry (a stop repeats it in its final message), and step 7 runs this
    image check again after a merge. Other code that reached main after M is installed

@@ -503,7 +503,7 @@ shim() {
     run --separate-stderr ident "${none[@]}"; [ "$status" -eq 0 ] && [[ "${lines[0]}" == "c <c@example.invalid> "* && "${lines[1]}" == "c <c@example.invalid> "* ]] || { show; return 1; }
 }
 
-@test "SKILL.md step 0.1's release paste installs from a checkout at main's tip and refuses, saying why, a checkout off the tip, gate code or an installer that is not M's and a read that fails; broken into lines it never installs from a refusing checkout; its only git command, rev-parse in a command substitution, runs no planted hook or fsmonitor (brief 2026-11-10-dev-cycle-skill-held-fixes)" {
+@test "SKILL.md step 0.1's release paste installs from a checkout at main's tip and refuses, saying why, a checkout off the tip, gate code or an installer that is not M's and a read that fails; broken into lines, with LF or CR LF ends, it never installs from a refusing checkout; its only git command, rev-parse in a command substitution, runs no planted hook or fsmonitor (brief 2026-11-10-dev-cycle-skill-held-fixes)" {
     K="$REPO_ROOT/skills/dev-cycle/SKILL.md"; q=$'\x60'
     # Step 0.1's PATHS line (the test above holds it to GATE_CODE) and the paste, each alone on its line. The paste is
     # one single-quoted word handed to sh: a copy broken into lines is still that one word, never a line of its own.
@@ -515,13 +515,15 @@ shim() {
     [ "$(grep -o 'git ' <<<"$t" | grep -c .)" -eq "$(grep -oF '$(git rev-parse ' <<<"$t" | grep -c .)" ] || { echo "$t"; return 1; }
     # A PATHS entry this repository lacks would make the paste refuse every release.
     for p in $P; do [ -e "$REPO_ROOT/$p" ] || { echo "PATHS names nothing here: $p"; return 1; }; done
-    # The installer is the last step, behind a count of every check (the cd, the tip, each path), with no exit or
-    # exec whose loss could let it through.
+    # The installer is the last step, behind a count of every check (the cd, the tip, each path). Each count and
+    # the installer sit inside an if or the case: none follows a bare && or depends on an exit, which a broken line
+    # can part from its condition.
     L="$P devcontainer-config/install.sh"; n=$(( $(wc -w <<<"$L") + 2 ))
-    [[ "$t" == *"; done; test \"\$n\" = $n && devcontainer-config/install.sh'" && "$t" == "sh -c 'n=0; cd \"A\" && n=1; "* && "$t" != *exit* && "$t" != *exec* ]] || { echo "want a count of $n before the installer: $t"; return 1; }
-    [ "$(grep -o 'n=\$((n+1))' <<<"$t" | grep -c .)" -eq 2 ] && [ "$(grep -o 'devcontainer-config/install\.sh' <<<"$t" | grep -c .)" -eq 2 ] || { echo "$t"; return 1; }
+    [[ "$t" == "sh -c 'n=0; if cd \"A\"; then n=1; fi; if "* && "$t" == *"; fi; done; case \"\$n\" in $n) ./devcontainer-config/install.sh;; *) echo \"release refused: \$n of $n checks passed\"; false;; esac'" ]] || { echo "want a count of $n before the installer: $t"; return 1; }
+    [[ "$t" != *exit* && "$t" != *exec* && "$t" != *'&& n='* && "$t" != *'&& ./'* && "$t" != *'|| '* ]] || { echo "a count or the installer outside its if or case: $t"; return 1; }
+    [ "$(grep -o '; then n=\$((n+1)); else echo "release refused: ' <<<"$t" | grep -c .)" -eq 2 ] && [ "$(grep -o 'devcontainer-config/install\.sh' <<<"$t" | grep -c .)" -eq 2 ] || { echo "$t"; return 1; }
     # The tip is the branch's full ref, so a tag named main cannot stand in for it.
-    [[ "$t" == *'h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)" && n=$((n+1)) || echo'* ]] || { echo "$t"; return 1; }
+    [[ "$t" == *'if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo'* ]] || { echo "$t"; return 1; }
     # paste DIR SHA: sets c to the line as the orchestrator writes it out, DIR for A and SHA for M.
     sub() { [[ "$c" == *"$1"* ]] || { echo "the paste lacks: $1"; return 1; }; c="${c//"$1"/"$2"}"; }
     paste() { c="$t"; sub 'cd "A"' "cd \"$1\"" && sub 'for p in PATHS ' "for p in $P " && sub '"M:$p"' "\"$2:\$p\"" && sub 'after M:' "after $2:"; }
@@ -535,8 +537,8 @@ shim() {
     shs=(bash sh); ! command -v zsh > /dev/null || shs+=(zsh)
     both() { local sh; paste "$1" "$2" || return 1; for sh in "${shs[@]}"; do rm -f "$I"; run --separate-stderr "$sh" -c "cd / && $c"; "${@:3}" || { echo "under $sh"; show; return 1; }; done; }
     ran() { [ "$status" -eq 0 ] && [ -z "$output" ] && [ "$(cat "$I")" = ran ]; }
-    # nope LINE...: exit 1, exactly these refusals in this order, and no install.
-    nope() { local w; w="$(printf 'release refused: %s\n' "$@")"; [ "$status" -eq 1 ] && [ "$output" = "$w" ] && [ ! -e "$I" ]; }
+    # nope LINE...: exit 1, exactly these refusals in this order, then how many of the checks passed, and no install.
+    nope() { local w; w="$(printf 'release refused: %s\n' "$@" "$((n - $#)) of $n checks passed")"; [ "$status" -eq 1 ] && [ "$output" = "$w" ] && [ ! -e "$I" ]; }
     tip="this checkout is not at the tip of main"; stale() { printf '%s changed after %s: run the dev cycle for a new paste' "$1" "$2"; }
     both "$R" "$M" ran
     # Main's tip, moved past M by a commit that holds no gate code, as every cycle land does.
@@ -561,26 +563,36 @@ shim() {
     export GIT_CEILING_DIRECTORIES="$BATS_TEST_TMPDIR"; both "$BATS_TEST_TMPDIR/plain" "$M" nope "${every[@]}"; unset GIT_CEILING_DIRECTORIES
     # Here the shell sits in a checkout where every other check passes: the count is one short, and nothing installs.
     paste "$BATS_TEST_TMPDIR/nowhere" "$M"; rm -f "$I"; run --separate-stderr sh -c "$c"
-    [ "$status" -eq 1 ] && [ -z "$output" ] && [[ "$stderr" == *"$BATS_TEST_TMPDIR/nowhere"* ]] && [ ! -e "$I" ] || { echo "an A that is not there"; show; return 1; }
-    # A terminal or a renderer can break the line. Typed into an interactive shell that already sits in the checkout,
-    # a line at a time, as such a copy arrives: with a break before each word in turn, and folded at a range of
-    # widths, the installer never runs from a refusing checkout. (The first paste on this branch, a subshell with
-    # `exit 1` and then `&& ./devcontainer-config/install.sh`, did: a syntax error dropped the checks and the last line ran alone.)
-    typed() { rm -f "$I"; printf '%s\n' "$1" | timeout 30 bash --norc --noprofile -i > /dev/null 2>&1 || true; }
-    paste "$R" "$M"; typed "$c"; [ "$(cat "$I")" = ran ] || { echo "typed whole at main's tip, the paste did not install"; return 1; }
+    [ "$status" -eq 1 ] && [ "$output" = "release refused: $((n - 1)) of $n checks passed" ] && [[ "$stderr" == *"$BATS_TEST_TMPDIR/nowhere"* ]] && [ ! -e "$I" ] || { echo "an A that is not there"; show; return 1; }
+    # A terminal, a renderer or a saved file can break the line. Two ways such a copy arrives: typed, a line at a
+    # time, into an interactive shell that already sits in the checkout; and piped with CR LF line ends into sh. With
+    # a break before each word in turn, and folded at a range of widths, the installer never runs from a refusing
+    # checkout. Earlier pastes on this branch did: `exit 1` broken between its two words; then `( … ) && INSTALLER`,
+    # where a syntax error dropped the checks and left the installer alone on the last line; then a CR after `&&`.
+    # HISTFILE is unset: an interactive bash would write these lines into the caller's history file.
+    typed() { rm -f "$I"; printf '%s\n' "$1" | timeout 30 env -u HISTFILE bash --norc --noprofile -i > /dev/null 2>&1 || true; }
+    piped() { rm -f "$I"; printf '%s\n' "$1" | sed 's/$/\r/' | timeout 30 sh -s > /dev/null 2>&1 || true; }
+    paste "$R" "$M"
+    typed "$c"; [ "$(cat "$I")" = ran ] || { echo "typed whole at main's tip, the paste did not install"; return 1; }
+    rm -f "$I"; printf '%s\n' "$c" | timeout 30 sh -s > /dev/null 2>&1; [ "$(cat "$I")" = ran ] || { echo "piped whole at main's tip, the paste did not install"; return 1; }
+    # With CR LF ends even the whole line fails, closed: the CR joins the quoted word and spoils its last keyword.
+    piped "$c"; [ ! -e "$I" ] || { echo "piped whole with CR LF ends, the paste installed: update this case"; return 1; }
     read -r -a ws <<<"$c"; [ "${ws[*]}" = "$c" ] && [ "${#ws[@]}" -gt 40 ] || { echo "the paste did not split into its words"; return 1; }
+    # broken STATE HOW...: each HOW (typed, piped) over the folds; over the single breaks too for the first HOW.
     broken() {
-        local i w
-        for ((i = 1; i < ${#ws[@]}; i++)); do
-            typed "${ws[*]:0:i}"$'\n'"${ws[*]:i}"; [ ! -e "$I" ] || { echo "$1: installed with a break before word $i, ${ws[i]}"; return 1; }
+        local st="$1" how i w v; shift
+        for how in "$@"; do
+            for ((w = 40; w <= 240; w += 8)); do
+                "$how" "$(fold -s -w "$w" <<<"$c")"; [ ! -e "$I" ] || { echo "$st: installed when folded at $w columns and $how"; return 1; }
+            done
         done
-        for ((w = 40; w <= 240; w += 8)); do
-            typed "$(fold -s -w "$w" <<<"$c")"; [ ! -e "$I" ] || { echo "$1: installed when folded at $w columns"; return 1; }
+        for ((i = 1; i < ${#ws[@]}; i++)); do
+            v="${ws[*]:0:i}"$'\n'"${ws[*]:i}"
+            "$1" "$v"; [ ! -e "$I" ] || { echo "$st: installed with a break before word $i, ${ws[i]}, and $1"; return 1; }
         done
     }
-    echo b > scripts/lib/x; commit_all "after M"; broken "gate code after M"; git reset -q --hard "$T"
-    git checkout -q feat; for ((w = 40; w <= 240; w += 8)); do typed "$(fold -s -w "$w" <<<"$c")"; [ ! -e "$I" ] || { echo "off main's tip: installed when folded at $w columns"; return 1; }; done
-    git checkout -q main
+    echo b > scripts/lib/x; commit_all "after M"; broken "gate code after M" piped typed; git reset -q --hard "$T"
+    git checkout -q feat; broken "off main's tip" typed piped; git checkout -q main
     # Planted state, as a sandbox session could leave in the host checkout's .git: the paste runs none of it. The same
     # state is live: git status starts the fsmonitor, and a checkout (what the pinned paste asked for) runs the hooks.
     F="$BATS_TEST_TMPDIR/fired"; H="$BATS_TEST_TMPDIR/planted"; mkdir -p "$H"
@@ -596,7 +608,8 @@ shim() {
     a="$(sect '### 0. Start and digest')"
     for f in "which refuses until the host checkout is at main's tip" "and the one paste, alone on one line of a fenced block," "The paste runs from a checkout at main's tip" \
         "It refuses, saying which, a checkout that is not at main's tip, and gate code or an installer that is not M's" \
-        "Keep its shape: the installer runs only after all nine checks counted" "the whole of it is one quoted word" \
+        "with A, M (all 40 hex digits) and PATHS written out" "Keep its shape: the installer runs only after all nine checks counted" \
+        "each count and the installer sit inside an ${q}if$q or the ${q}case$q, never after a bare ${q}&&$q or an ${q}exit$q" "the whole of it is one quoted word" \
         "Every iteration writes the paste again from its M, in the ${q}image-lag$q entry and in an open ${q}image-off-main$q entry (a stop repeats it in its final message)" "step 7 runs this image check again after a merge" \
         "is installed without being listed in the entry" "is ${q}rev-parse$q inside ${q}\$( )$q, which runs no hook, fsmonitor or pager" "a checkout to reach main's tip included"; do
         [[ "$a" == *"$f"* ]] || { echo "step 0 lacks: $f"; return 1; }
