@@ -26,6 +26,14 @@
 #   no guard: it converts a loud failure into a false green. So a missing
 #   primitive is a hard error (exit 3), never a warning.
 #
+#   A weaker primitive is a warning, on every run. The script has two
+#   primitives: bwrap, and `unshare`, which denies the network and nothing
+#   else — no read-only rootfs, no private /tmp, no pid namespace, and the
+#   tests run as uid 0. When bwrap is not installed or is unusable, the run
+#   falls back to unshare and goes ahead, and says first, on stderr, what
+#   that leaves unconfined. A --probe that falls back prints its verdict,
+#   which names the primitive, and not this warning.
+#
 # LOOPBACK
 #   A fresh netns comes up with `lo` DOWN. Suites that spin a local server
 #   (httptest, mockito, msw, a bats fixture server) need it UP, so we raise it by
@@ -33,10 +41,11 @@
 #
 #   --no-loopback keeps `lo` down. It is NOT simply "a stricter profile": bwrap
 #   raises `lo` itself and cannot be told not to, so the flag forces the
-#   `unshare` primitive, which denies the network and nothing else — no
-#   read-only rootfs, no private /tmp, no pid namespace, and the tests run as
-#   uid 0. You are trading filesystem confinement for loopback denial. The
-#   script says so at runtime, and refuses outright when unshare is unusable.
+#   `unshare` primitive (above). You are trading filesystem confinement for
+#   loopback denial. Where bwrap works, the script says so, in the fallback
+#   warning's words, on a run and on a --probe, and refuses outright when
+#   unshare is unusable. Where bwrap does not work, the flag changes nothing
+#   about the primitive, and a run prints the fallback's warning.
 #
 # THE RUNNER'S OWN NETWORK
 #   Denial applies to the whole process tree, including any dependency fetch the
@@ -112,9 +121,34 @@ confine-tests: NO CONFINEMENT PRIMITIVE AVAILABLE — refusing to run.
 EOF
 }
 
+# What unshare does not confine, in one place for both routes that reach it:
+# --no-loopback switching away from bwrap, and bwrap being unavailable.
+# $1 is the headline (why unshare is the primitive). The way back to bwrap's
+# profile differs by route: $2 is its first words, which finish the last
+# shared line, and each further argument is a line of its own. That split
+# keeps the --no-loopback warning byte for byte what it was before the text
+# was shared, so no --probe prints anything it did not print before.
+warn_unshare_only() {
+  echo "confine-tests: WARNING — $1" >&2
+  cat >&2 <<'EOF'
+  It denies the network and NOTHING ELSE. bwrap's read-only rootfs, its
+  private /tmp and its pid namespace are all absent, and your tests run
+  as uid 0 in a user namespace: a stray write that bwrap would refuse
+EOF
+  echo "  with EROFS will succeed against the real filesystem. $2" >&2
+  printf '  %s\n' "${@:3}" >&2
+}
+
 if ! primitive="$(detect_primitive)"; then
   explain_unavailable
   exit 3
+fi
+
+# Detection settled for unshare: bwrap is not installed, or its probe failed.
+# A run says so before it starts (see "run" below).
+fell_back=0
+if [[ "$primitive" == "unshare" ]]; then
+  fell_back=1
 fi
 
 # --- primitive selection ---------------------------------------------------
@@ -134,13 +168,10 @@ fi
 if [[ "$primitive" == "bwrap" && "$loopback" -eq 0 ]]; then
   if command -v unshare >/dev/null 2>&1 && unshare -rn true >/dev/null 2>&1; then
     primitive="unshare"
-    echo "confine-tests: WARNING — --no-loopback forces the unshare primitive." >&2
-    echo "  It denies the network and NOTHING ELSE. bwrap's read-only rootfs, its" >&2
-    echo "  private /tmp and its pid namespace are all absent, and your tests run" >&2
-    echo "  as uid 0 in a user namespace: a stray write that bwrap would refuse" >&2
-    echo "  with EROFS will succeed against the real filesystem. Drop the flag to" >&2
-    echo "  get the hardened profile (loopback is not egress — the namespace has" >&2
-    echo "  no route off the host)." >&2
+    warn_unshare_only "--no-loopback forces the unshare primitive." \
+      "Drop the flag to" \
+      "get the hardened profile (loopback is not egress — the namespace has" \
+      "no route off the host)."
   else
     echo "confine-tests: --no-loopback is not supported by the bwrap primitive." >&2
     echo "  bwrap brings \`lo\` up inside --unshare-net and cannot be told not to." >&2
@@ -174,6 +205,29 @@ if [[ "${#cmd[@]}" -eq 0 ]]; then
 fi
 
 # --- run ------------------------------------------------------------------
+
+# The fallback's warning: the same weaker profile --no-loopback warns about
+# above, reached because bwrap does not work here. It is printed here and not
+# at selection, so only a run that is about to start prints it: --probe's
+# output and the refusals above are unchanged. `command -v` runs nothing.
+#
+# With --no-loopback, getting bwrap back is not enough (bwrap cannot keep `lo`
+# down, so the flag would switch to unshare again): the way back names both.
+if [[ "$fell_back" -eq 1 ]]; then
+  and_flag=""
+  if [[ "$loopback" -eq 0 ]]; then
+    and_flag=" and drop --no-loopback"
+  fi
+  if command -v bwrap >/dev/null 2>&1; then
+    warn_unshare_only "bwrap is unusable here; falling back to the unshare primitive." \
+      "Run on a host" \
+      "where bwrap works$and_flag to get the hardened profile."
+  else
+    warn_unshare_only "bwrap is not installed; falling back to the unshare primitive." \
+      "Install bwrap" \
+      "(bubblewrap)$and_flag to get the hardened profile."
+  fi
+fi
 
 echo "confine-tests: denying network via $primitive (loopback=$loopback)" >&2
 
@@ -216,12 +270,23 @@ fi
 # The `ip link` failure is NOT swallowed. `|| true` there would let the run
 # proceed with `lo` down after the banner had already announced loopback=1 —
 # a guard quietly not guarding, which is the one thing this script refuses to do.
+#
+# Decision 018's reference pattern (a static body, values as positional
+# arguments, `--` before the command). The body is the same text whatever the
+# command; the command reaches it as positional arguments, and `--` ends
+# exec's options so a command named `-a` is run (or not found), never read as
+# one. It runs under "$BASH", the bash already running this script, and not
+# under `sh`: bash's exec takes options and needs the `--`, dash's takes none
+# and would run `--` as the command, so no one spelling is right under both,
+# and which of them `sh` is varies by host. The body's $0 names it, so bash's
+# own errors read "confine-tests: unshare body: line N: ...", N a line of the
+# body and not of this file.
 if [[ "$loopback" -eq 1 ]]; then
-  exec unshare -rn -- sh -c '
+  exec unshare -rn -- "$BASH" -c '
     if ! ip link set lo up; then
       echo "confine-tests: failed to bring loopback up inside the namespace." >&2
       exit 3
     fi
-    exec "$@"' sh "${cmd[@]}"
+    exec -- "$@"' "confine-tests: unshare body" "${cmd[@]}"
 fi
 exec unshare -rn -- "${cmd[@]}"

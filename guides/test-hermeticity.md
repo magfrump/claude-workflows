@@ -5,7 +5,7 @@
 [decision 017](../docs/decisions/017-polyglot-test-hermeticity.md).*
 
 Last verified: 2026-07-13
-Relevant paths: scripts/hermeticity-lint, scripts/hermeticity/adapters/, scripts/confine-tests.sh, test/hermeticity-lint.bats
+Relevant paths: scripts/hermeticity-lint, scripts/hermeticity/adapters/, scripts/confine-tests.sh, test/hermeticity-lint.bats, test/scripts/confine-tests.bats
 
 ## The rule
 
@@ -55,6 +55,14 @@ prints this itself, and prints the `confine-tests.sh` command as the authoritati
 devcontainer has zero effective capabilities and seccomp blocks `CLONE_NEWUSER`, so no namespace can be
 created. It refuses loudly (exit 3) rather than running your tests unconfined — a guard that silently stops
 guarding is worse than no guard.
+
+**The runner has two primitives, and the weaker one says so.** `bwrap` adds a read-only root, a private
+`/tmp` and a pid namespace to the network namespace. When `bwrap` is not installed or is unusable, a run
+falls back to `unshare -rn`, which denies the network and nothing else: the tests run as uid 0 against the
+real filesystem. The run goes ahead, and first prints a warning on stderr that names what is absent
+(`--no-loopback` over a working `bwrap` switches to the same primitive and warns in the same words, under
+its own headline).
+`--probe` names the primitive it found (`bwrap` or `unshare`) on the first line of its stdout.
 
 ## Fixing a violation
 
@@ -174,7 +182,9 @@ how the machine running it happens to be configured.
 - **In-process HTTP**: out of scope by design (see above).
 - **C-extension / raw-native egress** (psycopg2, grpc, pycurl): invisible to every static pass *and* to
   every language-level blocker. Only the netns runner sees it.
-- **Reads are not confined** by the runner — `--unshare-net` denies network and nothing else.
+- **Reads are not confined** by the runner — `--unshare-net` denies network and nothing else. Under the
+  `unshare` primitive (the fallback, or `--no-loopback`) writes are not confined either (see "Triage vs.
+  ground truth").
 
 Each of these is a reason the runner is the ground truth and the lint is triage. If a suite passes the lint
 and still makes a live network call, that is a hole worth filing as a fixture — see 017's revisit triggers.
