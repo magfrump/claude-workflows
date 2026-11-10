@@ -175,7 +175,17 @@ A 22nd copy adds a warning line to every unshare run (what a fix for D2 would do
 
 ### Gates
 
-Filled in after the final review pass.
+| Gate | Result |
+|---|---|
+| `scripts/confine-tests.sh --probe` | exit 3 (first line quoted under "What exists"): nothing in this branch ran confined |
+| `timeout 300 bats test/scripts/confine-tests.bats` | 17 of 17 pass |
+| `scripts/hermeticity-lint --root .` | exit 0: "143 test file(s) checked, no unstubbed network spawns" |
+| `shellcheck -x -e SC1091 -s bash -S warning test/scripts/confine-tests.bats` (the health check's own command) | exit 0 |
+| `scripts/run-tests.sh` (whole suite, serial) at 9d37c1ac | **red**: 2005 pass, 3 fail, all in `test/scripts/health-check.bats`, all from SC2154 in the new file (see Gotchas) |
+| `scripts/run-tests.sh` (whole suite, serial) at f36108e4, after the fix | exit 0: 2008 of 2008 pass. The runner lists 50 report-dependent suites as NOT RUN, which is its own report gating and not something this branch touches |
+| `scripts/lite-review.py --range 9d37c1ac..HEAD --mode fix-drift` (the fix-commit drift check) | "FINDINGS: NONE" |
+
+The review loop's outcome is in `docs/reviews/code-review-rubric-2026-11-10-confine-tests-bats.md`.
 
 ## What a stub cannot show
 
