@@ -258,3 +258,66 @@ random, crlf ends: 0 installs in 5400 runs
 
 That is 0 installs in 59,796 runs. Unbroken, the paste installed at main's tip under all six shells with LF ends; with CR LF ends it installed only under interactive bash and failed, closed, under the others (the CR joins the quoted word). The history of the shape, for comparison: the paste before this branch (one `test`, about 120 characters) had no break that installed; the first paste here (`( … exit 1 … ) && ./devcontainer-config/install.sh`) installed when broken between `exit` and `1`; with `false; exit` it installed at 62 of 274 widths in an interactive shell sitting in the checkout (the second reviewer's sweep, not kept in the repository); as one quoted word with `&&` chains it had 0 installs in 41,094 LF runs here and 188,074 by the last reviewer, and 135 in that reviewer's 21,260 runs with CR LF ends.
 
+### Item 2, second choice: the entry after a step 7 merge (two options)
+
+One-line note: have step 7 run step 0.1's image check again after its last merge (written in step 7, where the merge happens, with a pointer from step 0.1), over leaving the entry at step 0.1's M. Without it, the release that follows an approved gate merge is refused at main's tip until another iteration runs; the records show the orchestrator already rewrites the entry there (prior art above).
+
+### Item 3: the free slot (two options)
+
+One-line note: one clause on the record's `8.` line and one sentence in step 8, over a `### Free slots` section in the template, which the brief rules out. The clause gives the reason once when it is the same for every free slot.
+
+## A script changes after all
+
+The brief asks for prose unless prose cannot state the fix. One line of `scripts/lib/migrations.sh` changes: the record template is a fingerprinted convention (`guides/convention-changes.md`), so the new `8.` line needs a registry line, `record-8-free-slot`, with remedy `none` (every record written before stays valid). The full suite caught it: three `convention-migrations.bats` cases and the health check failed until the line was added.
+
+## Failure patterns
+
+Four entries in `docs/failure-patterns.md`: FP-177 (the identity check modelled one of git's two identity sources), FP-178 (a guard pinned to a value its own workflow moves refused every honest run and was skipped), FP-179 (a one-line paste for the host, broken into lines, printed its refusal and then ran the installer, in three shapes running) and FP-180 (a test that typed into an interactive bash overwrote the caller's history file).
+
+## Question for the owner (a tentative pick, also in the ready marker)
+
+Should the new release paste ship in this merge, although no reviewer has read the last change to it?
+
+In three review passes running, a reviewer found that a copy of the paste broken into lines by a terminal could print its refusal and still run the installer. Each fix changed the paste's shape, and the review loop allows three passes (`workflows/review-fix-loop.md`), so the last shape was tested by its author and not read by a reviewer: 0 installs in 59,796 runs of broken copies, and 19 deliberate breakages of its text each fail a test. The rubric (`docs/reviews/code-review-rubric-2026-11-10-dev-cycle-skill-held-fixes.md`, "How the loop ended") has the record.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| A: ship the paste now (the pick) | merging lands all three fixes | nothing more | a broken copy of the paste might still install where it should refuse |
+| B: take the paste out | fix 2 is reverted; fixes 1 and 3 land; the paste gets its own brief | one more build loop and merge entry | the old paste stays: it never passes at main's tip |
+
+Tiebreaker for A: the last two releases ran without the old paste's check, so an imperfect check is more than there is today, and pasted whole the new one refused correctly for every reviewer. This is the one choice here left to the owner. The paste's design (candidate 3 with the installer) stays Path A above, with its residual stated.
+
+## Files read
+
+Last verified: 2026-11-10
+skills/dev-cycle/SKILL.md
+docs/dev-cycle.md
+docs/constraints.md
+docs/failure-patterns.md
+docs/roadmap.md
+docs/working/idea-log.md
+docs/working/questions-archive.md
+docs/working/cycles/cycle-2026-11-03.md
+docs/working/cycles/cycle-2026-11-05.md
+docs/working/cycles/cycle-2026-11-06.md
+docs/working/cycles/cycle-2026-11-07.md
+docs/working/research-2026-11-01-relax-dev-cycle-skill-prose.md
+docs/working/research-2026-11-06-codify-trial-practices.md
+docs/reviews/security-review-2026-10-14-u5-i2.md
+docs/decisions/log.md
+scripts/build-loop.sh
+scripts/lib/dev-cycle-read.sh
+devcontainer-config/install.sh
+hooks/live-verify-gate.sh
+test/scripts/build-loop-orchestrator.bats
+test/scripts/build-loop-merge.bats
+test/lib/build-loop-fixtures.bash
+workflows/research-plan-implement.md
+workflows/divergent-design.md
+workflows/pr-prep.md
+workflows/review-fix-loop.md
+scripts/lib/migrations.sh
+scripts/health-check.sh
+guides/convention-changes.md
+docs/reviews/override-log.md
+docs/working/plan-build-loop-handoff.md

@@ -32,7 +32,8 @@ Evidence for the final shape: 0 installs in 59,796 runs here (word wrap, hard wr
 - Pass 3 (74631bb9): one reader over the whole branch as fact-check and security.
 - Fix-drift check (`scripts/lite-review.py --mode fix-drift`) after each of the first two fix commits: none, then one unverified claim (whether the count of nine matches the path list), which checks out: six PATHS entries, the installer, the `cd` and the tip. The skill's wording was tightened.
 - Departures from `code-review`: fact-check ran at k=1, not k=3; performance had no dedicated reader (one paste the owner runs once per release, one test of about seven seconds); architecture-review was not dispatched (prose, its tests, one registry line); `/self-eval` wrote no file, its read is folded into pass 1's consistency report. Critic reports stayed in the session's scratch directory.
-- Full suite (`scripts/run-tests.sh`): green at 74631bb9, and again at the final commit (see its body).
+- Full suite (`scripts/run-tests.sh`): green at 74631bb9 and at 43bad29b, the last code change (1994 passed, 0 failed; 50 report-dependent suites are gated out, as on main). `scripts/confine-tests.sh --probe` exits 3 in this sandbox, so the suite ran unconfined beside `scripts/hermeticity-lint`, which passes.
+- Fix-drift check after the third fix commit: none.
 
 ## Findings
 
