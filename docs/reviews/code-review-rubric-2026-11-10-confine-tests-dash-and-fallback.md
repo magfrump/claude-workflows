@@ -1,8 +1,9 @@
-Commit: bd312d15
+Commit: 6276e42c
+Loop closed at 6276e42c
 
 # Code Review Rubric
 
-**Scope:** `fix/confine-tests-dash-and-fallback`, 23ffb16c..bd312d15 (the whole branch at passes 1 and 2) | **Reviewed:** 2026-11-10 | **Status: 🟢 PASSES** — 0 red; every amber fixed or standing with a note, one of them (A9) an open question for the owner that no change on this branch settles
+**Scope:** `fix/confine-tests-dash-and-fallback`, 23ffb16c..6276e42c (the whole branch at passes 1 and 2, the last fix commit at pass 3) | **Reviewed:** 2026-11-10 | **Status: 🟢 PASSES** — 0 red; every amber fixed or standing with a note, one of them (A9) an open question for the owner that no change on this branch settles. The loop ended at its cap of three iterations; pass 3's own fixes were checked by re-running the test file and by the drift check, not by a fourth review pass
 
 The file's name ends in the brief's stem, not the branch slug, so the build loop's gate counts it as this brief's own file; passes therefore name their range explicitly. Delivery mode: self-read (each agent read one shared scratch file holding the preamble and the diff, then the files). All agents ran on opus. Reports are in this directory, named `<kind>-2026-11-10-confine-tests-dash-and-fallback.md`.
 
@@ -16,9 +17,13 @@ The file's name ends in the brief's stem, not the branch slug, so the build loop
 | r2 | 47 | 38 | 4 | 1 | 3 | 1 |
 | r3 | 55 | 45 | 8 | 0 | 2 | 0 |
 
-No replicate found anything wrong in what the script or the tests do. Each ran the 23ffb16c script against the bd312d15 one on the test file's stand-ins (1,924, 4,536 and 1,650 runs) and found every `--probe` byte-identical and the primitive unchanged. Every Incorrect and Stale is in a doc or a commit message, so by the tier rule for a fact-check red (the code is right and only a reader is misinformed) they are 🟡, not 🔴. Critics: security (`security-review-final`): 1 Medium that needs no code change here, 2 Informational; performance (`performance-review-final`): none; API consistency (`api-consistency-review-final`): 2 Minor, 4 Informational. Fixes are in the commit that follows bd312d15.
+No replicate found anything wrong in what the script or the tests do. Each ran the 23ffb16c script against the bd312d15 one on the test file's stand-ins (1,924, 2,268 and 1,650 inputs) and found every `--probe` byte-identical and the primitive unchanged. Every Incorrect and Stale is in a doc or a commit message, so by the tier rule for a fact-check red (the code is right and only a reader is misinformed) they are 🟡, not 🔴. Critics: security (`security-review-final`): 1 Medium that needs no code change here, 2 Informational; performance (`performance-review-final`): none; API consistency (`api-consistency-review-final`): 2 Minor, 4 Informational. Fixed in 6276e42c. The drift check declined that commit (its diff, with six review reports in it, is 339 KB against the checker's 192 KB limit, and it says to use the full review path), so pass 3 is that fuller path.
 
-FC n is pass 1's fact-check claim n; M n a merged cluster of pass 2's; S, P, A a critic's finding, "final" for pass 2's.
+**Pass 3** (iteration 3 of 3, `--loop-pass`, scoped to `bd312d15..6276e42c` in the script, the test file, the guide, the research doc and the pre-mortem): k=1 fact-check (`code-fact-check-report-i3`), which also gave the stage-2.5 verdicts on the eight claims the pass-2 critics routed: 56 claims; 43 Verified, 7 Mostly accurate, 2 Incorrect, 4 Unverifiable (46 harvested, 10 submitted after two were split). Again nothing wrong in the script or the tests; the two Incorrect are one miscount in the docs (row A18). No critics ran on this pass: it is a loop pass over a commit whose code changes are two reworded strings and one added test route, and the full panel had run one commit earlier. Fixed in the commit after the pass-3 report.
+
+This is the cap. No fourth iteration was started, so the cap's decision gate did not arise: at the end of iteration 3 no red remained, and the one open amber (A9) is a question no change on this branch settles.
+
+FC n is pass 1's fact-check claim n; M n a merged cluster of pass 2's; i3 n a claim of pass 3's; S, P, A a critic's finding, "final" for pass 2's.
 
 ---
 
@@ -63,6 +68,8 @@ note with neither ("known, acceptable for now") is not qualifying; the row stays
 | A15 | H2 paraphrased as "a degraded primitive names what went unenforced", dropping "refuses": commit 6465a156, the brief `:13`, the research doc, and "(H2)" in test 20's name. Location: `test/scripts/confine-tests.bats:476` at bd312d15 | Docs / Test | Mostly accurate; Minor | pass 2: M15 (r3); A final 2 | for-author | — | 🟢 Fixed where this branch may write: the test's name drops "(H2)" and a comment above it quotes H2 and says the run is kept by the brief; the research doc quotes H2 word for word. The commit message and the brief's sentence stand (the brief is the dev cycle's file) | See A9 for the substance. |
 | A16 | Commit ca6cf3be says the way back "must now start on the sixth line"; since bd312d15 it starts partway through line 5. | Docs (commit message) | Stale | pass 2: M7 (r2) | for-author | — | 🟡 Stands (immutable) | The research doc's "Mutation run" history says how the comparison changed. Revisit trigger: none can arise. |
 | A17 | "the four tests ... that begin `[ "$(id -u)" -ne 0 ] || skip`" and "four tests fewer": one of the four has a statement before the guard, and a fifth test probably skips too under the uid mapping (`test/scripts/build-loop-orchestrator.bats:394`; inferred, not run). | Docs | Unverifiable (stated failure mode: none; coverage only) | pass 2: M17 (r1; r2's annotation) | for-author | — | 🟢 Fixed: "at least four ... a fifth probably"; the count is a follow-up for the first live run | — |
+| A18 | The docs said four tests skip as uid 0 under the fallback; ten do. One of the four locations listed (`test/cc-isolated-functions.bats:1970`) is the helper `not_root()`, which seven tests call. Location: pre-mortem `:21`, `:24`; research doc `:391`, `:398` at 6276e42c | Docs | Incorrect (doc only) | pass 3: i3 3a, i3 33 (and 31a) | for-author | — | 🟢 Fixed in all four places, and in the pre-mortem's heading | Supersedes A17's "at least four". |
+| A19 | Four loose points: the reviewers' runs given as "1,650 to 4,536 inputs" in mixed units (i3 26; the same in 6276e42c's message, i3 40); the guide's "prints the same warning" for `--no-loopback`, whose warning has its own headline (i3 34); a test comment's "the test above" for a case four tests up, and no status assertion on test 20's new route (i3 38); "every finding of the three iterations" written before this file held the third (i3 25). Locations: research doc `:358`, `:367`; `guides/test-hermeticity.md:63`; `test/scripts/confine-tests.bats:506` | Docs / Test | Mostly accurate | pass 3: i3 25, 26, 34, 38, 40 | for-author | — | 🟢 Fixed, each in place; the commit message stands (immutable) and the research doc's "Review" section says how to read its figures | — |
 
 ---
 
@@ -87,8 +94,9 @@ opportunities. Not required to pass review.
 | C12 | The unusable-bwrap warning sends a reader on a CI runner "where bwrap works (a CI runner or a dev host)", and its headline is 101 characters where the script's other lines wrap near 75. Location: `scripts/confine-tests.sh:221-224` at bd312d15 | pass 2: A final 4 | Informational | for-author | — | Fixed: "bwrap is unusable here; falling back to the unshare primitive." and "Run on a host where bwrap works ..." |
 | C13 | Test 14's name still says "refused"; the guide's Known-gaps bullet leaves out the `--no-loopback` route to unshare. Location: `test/scripts/confine-tests.bats:367`, `guides/test-hermeticity.md:183-184` at bd312d15 | pass 2: A final 5 | Informational | for-author | — | Fixed |
 | C15 | For a bare name that matches a directory on PATH, the loopback form now exits 127 where a real unshare on the `--no-loopback` form would exit 126 (modelled). Location: `scripts/confine-tests.sh:290` at bd312d15 | pass 2: A final 3 | Informational | for-author | — | Won't-Fix: closing it means resolving the name outside the body, which the design pruned; recorded under "Exit statuses" in the research doc |
+| C16 | The stand-ins accept fixed argument prefixes and leave the command words free; on the unshare form the free words include the interpreter, so a script that called `bash` by name would pass every stand-in and is caught only by test 16's exact argv comparison. Location: `test/scripts/confine-tests.bats`, `write_stub` | pass 3: i3 47b (a submitted claim, Mostly accurate) | Informational | for-orchestrator-synthesis | — | Open: by design (a stand-in cannot know the test command); test 16 holds the pin, and the mutation run's "bash by name" mutant fails it |
 
-(There is no C14.)
+(There is no C14: pass 2's repeat of the environment finding is in C6.)
 
 ---
 
@@ -113,7 +121,19 @@ Every row carries `Evidence` and has passed the Confirmed-Good cross-check — s
 | At bd312d15 each of the author's 22 mutants fails at least one test, as the research doc's table then listed, and the unchanged script passes 21 of 21 | ✅ Confirmed | merged report, executed table row 5 (the mutation script re-run by each replicate) | code-fact-check ×3 | for-orchestrator-synthesis |
 | Each cell of the research doc's Exit-statuses table as it stood at bd312d15 (four commands) | ✅ Confirmed | merged report, executed table row 3; the table was short, see A10 | code-fact-check ×3 | for-orchestrator-synthesis |
 
-Routed by critics and pending a verdict (submitted to the fact-check of pass 3): no word of the command is spliced into the body; a dash-named first word is never read as an option of `exec`, whichever shell `sh` is; every route to unshare warns, and a failed warning stops the run; the stand-ins accept only the exact calls the script makes (security); the test command runs as the script's own pid on the loopback form; the test file's extra time is in proportion to its added tests (performance); the warning comes before the banner on every route (API consistency). Not submitted, because nothing here can run it: the real tools' exit statuses when a command cannot be run (API consistency; see C9).
+Rows from the claims the pass-2 critics routed, each verdicted by pass 3's fact-check at 6276e42c, by execution on stand-ins:
+
+| Item | Verdict | Evidence | Source | Legibility-target |
+|---|---|---|---|---|
+| On the unshare-with-loopback form the body is one fixed text for any command, and each word of the command arrives as its own argv element. Not shown: what a real unshare does with the argv | ✅ Confirmed | `scripts/confine-tests.sh` — `exec -- "$@"' "confine-tests: unshare body" "${cmd[@]}"`; i3 44 (executed: test 16) | security, verified by code-fact-check | for-orchestrator-synthesis |
+| A dash-named first word gives the same result with `sh` as bash, as dash and absent, taken as a command name. Not shown: other bash versions | ✅ Confirmed | same line; i3 45 (executed) | security, verified by code-fact-check | for-orchestrator-synthesis |
+| In the 30 runs built, no run reached unshare without a warning printed first; with stderr closed the script exits 1, with a broken pipe 141, and the command does not run. Not shown: a stderr that is open and blocked | ✅ Confirmed | `scripts/confine-tests.sh` — `echo "confine-tests: WARNING — $1" >&2`; i3 46 (executed, five routes) | security, verified by code-fact-check | for-orchestrator-synthesis |
+| A stand-in call outside the accepted shapes exits 99 and fails the test through `confine()` | ✅ Confirmed | `test/scripts/confine-tests.bats` — `[[ ! -e "$LOG/unexpected" ]]`; i3 47a (executed); see C16 for what the shapes leave free | security, verified by code-fact-check | for-orchestrator-synthesis |
+| Under the stand-in unshare, the test command runs as the script's own pid on the loopback form | ✅ Confirmed | `test/scripts/confine-tests.bats` — `cmp -s "$LOG/script-pid" "$LOG/child-pid"`; i3 48a (executed: tests 16 to 18) | performance, verified by code-fact-check | for-orchestrator-synthesis |
+| In the 144 runs built, every warning came before the banner on stderr (probes print no banner) | ✅ Confirmed | `scripts/confine-tests.sh` — `echo "confine-tests: denying network via $primitive (loopback=$loopback)" >&2`; i3 50 (executed) | API consistency, verified by code-fact-check | for-orchestrator-synthesis |
+| On 504 probe inputs, stdout, stderr and status at 6276e42c are byte-identical to 23ffb16c | ✅ Confirmed | i3 51 (executed; scope: those inputs, stand-ins) | API consistency, verified by code-fact-check | for-orchestrator-synthesis |
+
+Not confirmed, and not cited as such: that a real `unshare -rn` does not fork (i3 48b, Unverifiable here); that the test file's added time is in proportion to its added tests (i3 49: Verified at medium confidence from timings on this machine only, so it is not a row); the real tools' exit statuses when a command cannot be run (not submitted: nothing here can run it; see C9).
 
 ---
 
@@ -147,4 +167,4 @@ To pass review: all 🔴 items must be resolved. All 🟡 items must be either f
 carry a qualifying author note (a discoverable TODO or a concrete revisit trigger; see
 "Qualifying author note" in `skills/code-review/references/rubric.md`). 🟢 items are optional.
 
-Tokens (agents' reported totals): pass 1: fact-check 210k, security 126k, performance 101k, API consistency 138k, about 575k. Pass 2: fact-check 257k, 251k and 254k, security 141k, performance 102k, API consistency 169k, about 1,174k.
+Tokens (agents' reported totals): pass 1: fact-check 210k, security 126k, performance 101k, API consistency 138k, about 575k. Pass 2: fact-check 257k, 251k and 254k, security 141k, performance 102k, API consistency 169k, about 1,174k. Pass 3: fact-check 262k. About 2.0M in all.

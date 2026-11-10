@@ -15,13 +15,13 @@ Prior art: `grep -ril -e 'BASH_ENV' -e 'uid 0' -e 'warning fatigue' -e 'unshare 
 
 ## Failure Narratives
 
-### 1. "Confined and green", four tests short
+### 1. "Confined and green", ten tests short
 
 - **Root cause:** `--probe` on a host with `unshare` and no usable `bwrap` prints `primitive available: unshare (loopback=1)` and exits 0, with no warning (the brief keeps `--probe` unchanged; `scripts/confine-tests.sh`, the block under "# --- run").
-- **Chain of consequences:** The cc-isolated sandbox merges and the image gains a kernel that allows `unshare -rn` in a session where nested `bwrap` is refused. A build loop follows its brief's wording (`docs/roadmap.md:49`: "exit 0: tests pass confined"). It runs `scripts/confine-tests.sh -- scripts/run-tests.sh` with output sent to a file, as the repo rules ask. The run prints the new warning as the file's first six lines. `unshare -r` makes the suite uid 0, so the four tests guarded by `[ "$(id -u)" -ne 0 ] || skip` (`test/cc-push.bats:417`, `test/hooks/guard-trusted-writes.bats:889`, `test/install-host.bats:680`, `test/cc-isolated-functions.bats:1970`) skip. The loop reads the last line, sees a pass, and records "passes confined".
-- **Observable outcome:** a research doc says the suite passed confined; the run's file starts with `confine-tests: WARNING — bwrap is unusable here` and lists at least four skips that an unconfined run does not have. Nobody quotes either.
+- **Chain of consequences:** The cc-isolated sandbox merges and the image gains a kernel that allows `unshare -rn` in a session where nested `bwrap` is refused. A build loop follows its brief's wording (`docs/roadmap.md:49`: "exit 0: tests pass confined"). It runs `scripts/confine-tests.sh -- scripts/run-tests.sh` with output sent to a file, as the repo rules ask. The run prints the new warning as the file's first six lines. `unshare -r` makes the suite uid 0, so ten tests skip on the guard `[ "$(id -u)" -ne 0 ] || skip`: one each at `test/cc-push.bats:417`, `test/hooks/guard-trusted-writes.bats:889` and `test/install-host.bats:680`, and the seven that call the helper `not_root()` (`test/cc-isolated-functions.bats:1970`). The loop reads the last line, sees a pass, and records "passes confined".
+- **Observable outcome:** a research doc says the suite passed confined; the run's file starts with `confine-tests: WARNING — bwrap is unusable here` and lists ten skips that an unconfined run does not have. Nobody quotes either.
 - **Plausibility:** Plausible
-- **Severity:** Low (four permission tests, each still run by the unconfined gate)
+- **Severity:** Low (ten permission tests, each still run by the unconfined gate)
 - **Tag:** `[PRIOR CONSIDERATION]` in part: `docs/working/research-2026-11-07-confine-tests-situation.md` (the unshare tier), FP-050.
 - **Revisit trigger:** the first `scripts/confine-tests.sh --probe` in any session whose first line reads `confine-tests: primitive available: unshare`; at that point the brief wording at `docs/roadmap.md:49` ("exit 0: tests pass confined") should ask the loop to quote the run's first stderr line beside the probe's.
 

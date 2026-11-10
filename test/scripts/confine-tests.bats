@@ -503,8 +503,10 @@ $shared Run on a host
   where bwrap works to get the hardened profile.
 $UNSHARE_BANNER" ]
   # The same with --no-loopback: bwrap alone would not serve the flag, so the
-  # way back names both steps (the not-installed case is in the test above).
+  # way back names both steps (the not-installed case is in the test of
+  # unshare without ip).
   confine "bwrap unshare" STUB_BWRAP=refused STUB_UNSHARE=ok -- --no-loopback -- "$RECORD" one
+  [ "$status" -eq 0 ]
   [ "$stderr" = "$BWRAP_UNUSABLE_WARNING
 $shared Run on a host
   where bwrap works and drop --no-loopback to get the hardened profile.

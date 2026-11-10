@@ -364,7 +364,7 @@ Pass 1 (iteration 1 of 3) at de1f4bf9: one fact-check, then security, performanc
 - "refused here" became "unusable here", the script's own word for a primitive that does not work; the body's `$0` became `confine-tests: unshare body`; the header's sentence on when `--no-loopback` warns now says "where bwrap works"; the guide says "the first line of its stdout".
 - Four wrong or loose sentences in this doc and the pre-mortem (that the repo rules file cites a line number; "ran `z`"; "238 code lines"; the invariant about `--probe`).
 
-The final confirming pass (iteration 2 of 3) at bd312d15, on the whole branch: three fact-check replicates, then the three critics. No red, and nothing wrong in what the script does: each replicate ran the old script against the new on 1,650 to 4,536 inputs and found every `--probe` byte-identical and the primitive unchanged. It found:
+The final confirming pass (iteration 2 of 3) at bd312d15, on the whole branch: three fact-check replicates, then the three critics. No red, and nothing wrong in what the script does: each replicate ran the old script against the new on 1,650 to 2,268 inputs (the largest set is 4,536 runs, counting both scripts) and found every `--probe` byte-identical and the primitive unchanged. It found:
 
 - One amber that no change on this branch settles (security, Medium): constraint H2 says a degraded primitive "refuses and names what went unenforced", and the fallback to unshare runs and names. The brief keeps the run and puts a refusal out of scope, so the code stays; the question is in the marker for the owner (see "Observations for the cycle").
 - This doc's record of exit statuses was short by three cases (the directory through PATH, two more dash-named inputs, a host with no `sh`). The table above now has them.
@@ -372,7 +372,14 @@ The final confirming pass (iteration 2 of 3) at bd312d15, on the whole branch: t
 - The unusable-bwrap warning sent a reader on a CI runner "where bwrap works (a CI runner or a dev host)", and its headline ran to 101 characters. Both are reworded.
 - Twelve wrong, stale or loose sentences in this doc and the pre-mortem, among them two search results reported as narrower than they were (the pre-mortem's prior-art grep, DD-1's prior-pruning grep), the test-plan row that still named the old `$0`, and the whole-suite count given without its two skips.
 
-Sentences in commit messages cannot be changed and stand as written. Each is listed in the rubric: d03a3078 says each of its seven failing tests fails "for the reason it names" (the fallback test fails earlier there, on `exec: sh: not found`); 6465a156 says `--probe` is unchanged for every input (true from bd312d15 on) and paraphrases H2 without "refuses"; ca6cf3be says the way back "must now start on the sixth line" (true until bd312d15); bd312d15's Notes name only the empty name among the statuses that moved.
+Pass 3 (iteration 3 of 3) at 6276e42c: one fact-check scoped to the final pass's fix commit, which also gave verdicts on the eight claims the critics had routed (that no word of the command is spliced into the body, that every route to unshare warns first and a warning that cannot be written stops the run, that the stand-ins accept only the script's own calls, and five more). The drift check had declined that commit for size (339 KB with six review reports in it), so this was the fuller path. Nothing wrong in the script or the tests, and the routed claims held wherever they could be run. It found:
+
+- One miscount, in four places: ten tests, not four, skip as uid 0 under the fallback. One of the four locations I had listed is a helper that seven tests call.
+- Four smaller points: a count of the reviewers' runs given in mixed units; the guide's "prints the same warning" (the flag's warning has its own headline); a test comment's "the test above" (it is four tests up); no status assertion on test 20's new route.
+
+All are fixed in the commit after the pass-3 report. This is the cap. No fourth pass was started, so the cap's decision gate did not arise: after iteration 3 no red remained, and the one open amber is the owner question below, which no change on this branch settles. The last fixes were checked by re-running the test file and by the drift check over that commit alone.
+
+Sentences in commit messages cannot be changed and stand as written. Each is listed in the rubric: d03a3078 says each of its seven failing tests fails "for the reason it names" (the fallback test fails earlier there, on `exec: sh: not found`); 6465a156 says `--probe` is unchanged for every input (true from bd312d15 on) and paraphrases H2 without "refuses"; ca6cf3be says the way back "must now start on the sixth line" (true until bd312d15); bd312d15's Notes name only the empty name among the statuses that moved; 6276e42c gives the reviewers' runs as "1,650 to 4,536" (the first counts one script's runs, the second both scripts').
 
 No row was added to `docs/reviews/override-log.md` for what was not changed: that file is outside this brief's Paths and on the self-merge floor. The rubric lists each one.
 
@@ -388,14 +395,34 @@ As in the first unit: no test here creates a namespace. In particular nothing sh
 
 - **Constraint H2 and the fallback.** `docs/constraints.md` H2 reads: "a missing dependency, unparseable or unmodelled input, absent verdict or degraded primitive refuses and names what went unenforced; nothing ships present-but-inert, and degradation only ever narrows access." When bwrap is unusable the script falls back to unshare, which confines less, and runs. This branch adds the naming; the brief says the run "still goes ahead" and lists "a refusal in place of the fallback" as out of scope, and the brief's own sentence about H2 leaves "refuses" out. The final pass's security critic rates the gap Medium: a run on that tier can write to the host as uid 0 and exit green. Whether the unshare tier should refuse, refuse unless asked for, or stand as a recorded exception to H2 is the owner's call; the question is in this branch's marker.
 - **A fallback `--probe` says nothing about the weaker profile.** It prints `primitive available: unshare (loopback=1)` and exits 0. The brief keeps `--probe` unchanged, so this unit did not touch it (DD-2). It belongs to the same question: moving the warning's call to selection time is one line, and would also make a `--no-loopback` probe and a fallback probe behave alike.
-- **Under the unshare fallback the suite runs as uid 0**, so at least four tests here skip, each on a guard of the form `[ "$(id -u)" -ne 0 ] || skip` (`test/cc-push.bats:417`, `test/hooks/guard-trusted-writes.bats:889`, `test/install-host.bats:680`, `test/cc-isolated-functions.bats:1970`). A fifth probably does too, for another reason (`test/scripts/build-loop-orchestrator.bats:394` checks an owner uid that `unshare -r` leaves unmapped; inferred by a reviewer, not run). A "passes confined" from that tier covers fewer tests than the unconfined gate (pre-mortem, narrative 1).
-- **The test file is 525 lines**, past the 500-line guideline and the plan's "no file passes 500": the review's fixes added the whole-warning constant, exact comparisons and one more route. It is one cohesive file; splitting it would duplicate the harness at its top.
+- **Under the unshare fallback the suite runs as uid 0**, so ten tests here skip on the guard `[ "$(id -u)" -ne 0 ] || skip`: one each at `test/cc-push.bats:417`, `test/hooks/guard-trusted-writes.bats:889` and `test/install-host.bats:680`, and the seven that call the helper `not_root()` (`test/cc-isolated-functions.bats:1970`). An eleventh probably skips too, for another reason (`test/scripts/build-loop-orchestrator.bats:394` checks an owner uid that `unshare -r` leaves unmapped; inferred by a reviewer, not run). A "passes confined" from that tier covers fewer tests than the unconfined gate (pre-mortem, narrative 1).
+- **The test file is 527 lines**, past the 500-line guideline and the plan's "no file passes 500": the review's fixes added the whole-warning constant, exact comparisons and one more route. It is one cohesive file; splitting it would duplicate the harness at its top.
+
+## Question for the owner (also in the ready marker)
+
+The choice is a divergent-design Path C: no option wins on the constraints alone (H2, a hard constraint, favours a refusal; the brief, which binds this unit, keeps the run), so the branch proceeds on the brief's pick and asks.
+
+What the script does. `scripts/confine-tests.sh` runs a test command with the network cut off. It has two ways to do that. bwrap also makes the root filesystem read-only and gives the tests a private `/tmp`. unshare cuts the network and nothing else: the tests run as uid 0 and can write to the real filesystem. When bwrap is not installed or does not work, the script falls back to unshare and runs the tests.
+
+What this branch did. The fallback used to run without a word. It now prints a warning first that names what unshare does not confine. That is what the brief asked for: it says the run still goes ahead, and it lists a refusal as out of scope.
+
+What the review found. Hard constraint H2 in `docs/constraints.md` (the rule that a gate fails closed) reads: "a ... degraded primitive refuses and names what went unenforced ... degradation only ever narrows access". A fallback that runs with less confinement names, and does not refuse. The gap is older than this branch; the branch narrows it and does not close it. The security reviewer rated it Medium: a run on a host without bwrap can write to the host and still report a pass.
+
+The question: when bwrap is unusable, should the script keep running under unshare, or refuse?
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| [1] Run and warn (picked) | As merged. Record unshare as a stated exception to H2. | None now; a loop writes the exception. | A host without bwrap gets a pass from a run that could write to it. |
+| [2] Refuse unless asked | Without bwrap: exit 3, unless a new flag asks for unshare. | One small follow-up brief. | Hosts with only unshare lose confined runs until the flag is passed. |
+| [3] Always refuse | Without bwrap: exit 3. unshare stays only behind `--no-loopback`. | One small follow-up brief. | As [2], with no way to opt in. |
+
+Tentative pick: [1]. Tiebreaker: the brief chose it, and nothing calls the script yet, so no run is exposed while the question is open. The same answer settles one smaller point: on a fallback, `--probe` exits 0 and prints no warning; under [2] or [3] it would refuse too. Interim: [1], as merged. If the answer differs: one small brief changes the fallback and its tests; nothing in this branch is redone.
 
 ## Follow-ups (outside this brief's Paths)
 
 - `docs/decisions/018-argv-exec-over-shell-string-interpolation.md:43,117` cite `scripts/confine-tests.sh:220`, which is no longer the pattern's line. The comment above the body now opens "Decision 018's reference pattern", a phrase a citation can name without a line number.
 - `docs/roadmap.md:49` words the probe step for new briefs as "exit 0: tests pass confined". Once a probe names `unshare`, the step should also ask for the run's first stderr line.
-- The first live run (the sandbox's, when it merges) should confirm that `"$BASH"` starts under a real `unshare -rn`, and count which tests skip as uid 0 on the unshare tier (four are known, a fifth is likely).
+- The first live run (the sandbox's, when it merges) should confirm that `"$BASH"` starts under a real `unshare -rn`, and count which tests skip as uid 0 on the unshare tier (ten are known by their guard, an eleventh is likely).
 - A failure-pattern entry for D1's shape (bash's `exec` reads a command's dash-leading first word as an option; dash's `exec` takes no `--`; so `exec "$@"` under `sh` is host-dependent) may be worth the cycle's adding: this unit could not write `docs/failure-patterns.md`.
 
 ## Docs

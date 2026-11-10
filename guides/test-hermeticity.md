@@ -60,7 +60,8 @@ guarding is worse than no guard.
 `/tmp` and a pid namespace to the network namespace. When `bwrap` is not installed or is unusable, a run
 falls back to `unshare -rn`, which denies the network and nothing else: the tests run as uid 0 against the
 real filesystem. The run goes ahead, and first prints a warning on stderr that names what is absent
-(`--no-loopback` switches to the same primitive and prints the same warning).
+(`--no-loopback` over a working `bwrap` switches to the same primitive and warns in the same words, under
+its own headline).
 `--probe` names the primitive it found (`bwrap` or `unshare`) on the first line of its stdout.
 
 ## Fixing a violation
