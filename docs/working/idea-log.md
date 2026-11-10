@@ -178,3 +178,15 @@ Ran because the last brainstorm was 7 days ago (2026-10-29). Sources: this cycle
 - Decide what backs up the release entry as the check on self-merged scripts, now that the owner says they do not read it closely (signal: T1 feedback against `docs/dev-cycle.md`; merge-friction record, section 12)
 - Narrow the policy-file hook, which refuses Bash commands that only name the instruction file beside a redirect or a `.claude` path (signal: it blocked this cycle's brief writing, and the gloss-rule loop's read-only work)
 - Delete the old Reader roots and Reader homes lines from `docs/dev-cycle.md` (lines 63 and 65), a file only the owner writes: `--settings` prints `readers ignored` on every call, which T7 counts as a bug (signal: iteration 2026-11-07-2324's `--settings` call)
+
+## Brainstorm 2026-11-10
+
+Ran because roadmap Now held one item ready for a brief and had changed since the last brainstorm (2026-11-06). Sources: this iteration's signals, this log, roadmap Ideas, and `docs/working/feature-ideas.md` (the one idea source `docs/dev-cycle.md` lists; a March 2026 design doc whose survivors have shipped, and none matched a current signal).
+
+- Total what each dev-cycle iteration costs and how many were quiet, so the owner can decide the light pass of Q-154 (signal: iterations 2026-11-08-0036, 2026-11-08-0600 and 2026-11-10-1902 each re-decided 28 triggers with only cycle lands between them, and none fired; briefed)
+- Give `scripts/confine-tests.sh` a first bats test before the sandbox merge makes it live (signal: the confine-tests research at be12889c found no test, and watch Q-161 revives confinement when Q-125 merges; briefed)
+- Retarget the deferred review re-evaluation (review k, the lite review, A8) at the model now in use, and still ask before running (signal: the record's `Model:` line changed from `claude-opus-5-5` to `claude-fable-5-2`)
+- Ask the owner once for the deep audit's scope and timing instead of listing its triggers in every final message (signal: the task has fired in most cycles since 2026-10-02 and never run; filed as Q-269)
+- Give the skill a portable way to pass a list of names to a check, such as `xargs CHECK < FILE` (signal: this iteration ran in zsh, which has no `mapfile`, and the session's safety check refused zsh's array form)
+- Move finished history out of roadmap Now (signal: the digest counted 9 Now items and one was ready to brief)
+- Do nothing more on merge friction (signal: Q-267 and Q-268 have waited three days, and watch Q-262's wait condition needs a median over 48 hours for two weeks running)

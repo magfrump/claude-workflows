@@ -28,13 +28,41 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-267](#q-267--merge-2026-11-07-q125-sandbox-on-main-cd6d4332ed89) | you: judgment | Run the live check of the Bash sandbox for cc-isolated sessions (Q-125) on the host, then merge the branch ... | 2026-11-07 |
 | [Q-268](#q-268--merge-2026-11-07-canon-instances-pass-e0f3aa84a33f) | you: judgment | Merge the one canon-proposal pass you asked for in Q-256 [2]: a script that turns a reviewed range into can... | 2026-11-07 |
+| [Q-269](#q-269--deep-audit-scope-and-timing) | you: judgment | Run the deep audit the dev cycle keeps saying is due, and if so, the small one or the full one? | 2026-11-10 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | Q-167: (b) and (d) answered 2026-11-07 (answers-11-7-26.txt), on bless 91c5f79dd91eb7ee, which --probe-only... | 2026-10-15 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Q-255: first half answered 2026-11-07 (answers-11-7-26.txt): all four fronted probes through plugins-artifa... | 2026-11-05 |
-| [Q-261](#q-261--image-lag) | you: terminal | Run the paste below to bring the installed dev-cycle scripts up to main. | 2026-11-06 |
 <!-- index:end -->
 
 ## Open
+
+### Q-269 · deep-audit-scope-and-timing
+**Needs:** you: judgment · **Opened:** 2026-11-10 · **Status:** OPEN
+
+Run the deep audit the dev cycle keeps saying is due, and if so, the small one or the full one?
+
+**If you say no:** nothing runs, which is also what happens if you never answer. The cycle keeps adding a line to the roadmap each time the audit's conditions hold, and loops keep making design choices against `docs/constraints.md` as it is.
+
+**What a deep audit is.** Each cycle checks only last week's merges. A deep audit re-reads older conclusions (decision records, the decision log, the skills, the roadmap's finished items) against today's state, because a new skill, a model change or a big design decision can make them stale. The cycle only decides whether one is due; scope and timing are yours, and it runs on its own branch.
+
+**Why ask now.** It has come due in most cycles since 2026-10-02 and never run, because no one asked you. Two things are new today:
+
+- The model running these sessions changed from `claude-opus-5-5` to `claude-fable-5-2`. Past measurements of review quality and cost, and the judgment calls that rest on them, were made under older models.
+- A seventh finding of one kind. When a build loop picks between designs, it is meant to rule options out only on the hard constraints in `docs/constraints.md` (the `H` lines) and to rank what is left with the soft ones (the `S` lines). In seven design records since 2026-10-20, a soft line helped rule an option out; in three of them a rule that helped decide was not in the file at all (for example "benchmark code lives in the SWRBench fork"). Every pick still stands, since a hard line or a clearly better option decided each one. The pattern suggests some soft lines are being treated as hard, or should be.
+
+- **Why it's yours:** promoting a soft constraint to hard, or dropping one, changes what every loop may build. The full audit is also a large run, and your standing rule is no big compute until the code settles.
+- **Read:** the roadmap's Now item "Agent: scoped deep audit, constraint drift" and its Ideas item "Scoped deep audit" (`docs/roadmap.md`), which list the seven records between them · `docs/constraints.md` (4 hard lines, 10 soft)
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] The small audit now** | One build loop reads the seven flagged design records and drafts changes to `docs/constraints.md` with the `constraints-builder` skill (the skill that drafts that file; its amend mode revises it). You get one later entry: promote, keep soft or drop, per flagged line. Nothing else is re-read. | One loop's compute, then one entry with a handful of yes/no calls | The older conclusions stay unchecked under the new model; you can ask for [2] later |
+| **[2] The full audit now** | [1], plus a re-read of every decision record, log row, skill and finished roadmap item against today's state, split over several loops | Several loops' compute over a day or more, and likely several entries | Heavy spend before the A8 token measurement you deferred, and it may muddy that baseline |
+| **[3] Wait** | Nothing runs until you say. The cycle keeps recording when it comes due | None | Loops keep ruling options out on soft lines; a wrongly rigid one costs a better design somewhere, unseen |
+
+My recommendation is [1]: it is the part with evidence behind it, it is small, and it does not touch the compute you are holding back.
+
+- **Interim:** [3]. Nothing is burning: every flagged pick was checked and stands.
+- **If the answer differs:** nothing is redone; [1] or [2] becomes a brief at the next cycle.
 
 ### Q-268 · merge-2026-11-07-canon-instances-pass-e0f3aa84a33f
 **Needs:** you: judgment · **Opened:** 2026-11-07 · **Status:** OPEN
@@ -191,51 +219,6 @@ ok docs/working/briefs/2026-11-07-q125-sandbox-on-main.md cd6d4332ed89eee32882f5
 
 - **Blocks:** Q-125's sandbox; behind it the watches Q-098 and Q-161.
 - **Interim:** the branch waits, nothing has merged, and nothing runs on the host.
-
-### Q-261 · image-lag
-**Needs:** you: terminal · **Opened:** 2026-11-06 · **Status:** OPEN
-
-Run the paste below to bring the installed dev-cycle scripts up to main.
-
-**Release notes.** The installed image is the root-owned copy of the dev-cycle scripts and skill. It is at `dff98910` (read from `/opt/claude-workflows/.manifest`), and main is ahead of it by four merges you approved: Q-259, Q-260, Q-263 and, today, Q-266. None of them is live until you run the paste below.
-
-**If you say no:** the cycle keeps pasting the roughly 60-line block into every script call, finished build loops keep their worktrees and branches (36 merged branches are held by worktrees today), and the trial practices keep running from the trial doc. Nothing breaks.
-
-**What changes for you:**
-
-- That block becomes `scripts/d6.sh`, one line to call, and drops the five checks the restriction audit judged hostile-only (from Q-259).
-- Each cycle's cleanup step removes a finished loop's worktree, so its merged branch can then be deleted (from Q-260).
-- Agents get the rule to explain every internal reference in plain language (from Q-263). The build-loop prompt and skill parts start here; the global-instructions part reaches sessions with the host install.
-- The first trial set's practices T1-T7 (short release notes, the "If you say no:" line, batched answers, the weekly digest, the reserved security marker, a warning printed on every run treated as a bug) are written into the dev-cycle skill and scripts (from Q-266).
-
-**Merged without your review:** one design record and its brief, both docs (`e9f3e176`, flagged below). The image carries neither.
-
-**Commits since the image:**
-
-- `3dbf43cb` Merge branch 'feat/codify-trial-practices' (build-loop approved merge)
-- `546788f2` Merge branch 'feat/q125-verify-check' (build-loop approved merge): the Q-125 check file, not gate code
-- `e56f53ac` docs(questions): record owner answers of 2026-11-07 (your answers, one doc)
-- `672f7521` Merge branch 'docs/trial-set-2-2026-11-06' (the second trial set, docs)
-- `771c84e8` Merge branch 'feat/owner-entry-gloss-rule' (build-loop approved merge)
-- `e9f3e176` Merge branch 'docs/merge-friction-design' (build-loop self-merge): no one reviewed it
-- `21399f53` Merge branch 'docs/trial-feedback-2026-11-06' (your end-of-trial feedback, one doc)
-- `85080263` Merge branch 'refactor/free-merged-loop-worktrees' (build-loop approved merge)
-- `aeab6745` Merge branch 'refactor/d6-block-into-image' (build-loop approved merge)
-- `c3f785d4`, `4fbba149`, `d6e672ab`, `c14c9c08`, `3ca1bc5c`, `9f3758c5`, `abea6674`, `37a56702`, `62687b97`, `657b96b4`, `65fd1b17` and `f979bc57`: cycle lands, records only
-
-**Gate files changed:** `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`, and the new `scripts/d6.sh`.
-
-**Paths outside `docs/`** (44 paths under `docs/` also changed; the image carries none of them): `global-instructions/CLAUDE.md`, `scripts/build-loop.sh`, `scripts/d6.sh`, `scripts/dev-cycle.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`, `test/q125-verify-check.bats`, `test/questions-doc.bats`, `test/scripts/build-loop-check.bats`, `test/scripts/build-loop-dispatch.bats`, `test/scripts/build-loop-free.bats`, `test/scripts/build-loop-orchestrator.bats`, `test/scripts/dev-cycle.bats`
-
-**The paste** (host terminal in WSL, not inside a session; stop every session first):
-
-```
-cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = 3dbf43cb9d63ae12a40bda6f7928f9e31d7b9e0b && ./devcontainer-config/install.sh
-```
-
-The `rev-parse` check runs no hook. It only confirms your checkout is at `3dbf43cb`, which holds Q-266's merge. Main will be past that commit by the time you read this, because the cycle's own land moves it, so check out `3dbf43cb` first. That checkout, like any other git command on the host, can run a hook a sandbox session planted, which is `install.sh`'s own trust model. If the install re-blesses, it also prints the hint that Q-167's step (a) still needs.
-
-- **Interim:** the image at `dff98910` runs.
 
 ### Q-255 · herald-egress-fix-unconfirmed
 **Needs:** you: terminal · **Opened:** 2026-11-05 · **Status:** OPEN

@@ -13,11 +13,6 @@ user's order).
 
 Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0002).
 
-- **Agent: after the Q-261 release** (filed 2026-11-06, step 7). Motive: Q-259 and Q-260 are
-  merged but not live, and the image's gate list does not name `scripts/d6.sh` yet. Until the
-  release, no brief touching `scripts/d6.sh` is dispatched. First step: once Q-261 closes,
-  confirm the cycle's cleanup step frees the 32 held worktrees, then take the idea-log items
-  that were waiting on Q-259's skill rewrite.
 - **Agent: Q-125 · cc-isolated Bash sandbox, live run** (filed 2026-11-01, step 6, from
   Q-234's migrate). Motive: nothing sandboxes Bash in cc-isolated. Built, unmerged
   (`feat/q125-cc-isolated-sandbox`); the host install is done (Q-222, answered 2026-11-03). The
@@ -35,6 +30,10 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   Also aeab6745's Path A record, where S8 (soft) shared the pruning of `bin/d6` with the
   enforcement-file cost, while H1 pruned `/usr/local/bin` (step 4, 2026-11-07); and
   `skills/dev-cycle/SKILL.md` as 3dbf43cb (Q-266) changed it.
+  Fired again 2026-11-10 on two more triggers: the model running the cycle changed from
+  `claude-opus-5-5` to `claude-fable-5-2`, and 546788f2's Path A record pruned its option A
+  on S10 (soft) beside H4 (hard); the pick (B) stands. Scope and timing are now asked in
+  Q-269 (run the small constraint-drift audit, the full audit, or wait).
 
 - **Agent: `source_lines_ok` misses an unterminated last line** (filed 2026-11-05, step 7).
   Motive: the Q-147 review found the shipped self-check in `devcontainer-config/cc-verify.sh`
@@ -50,6 +49,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   wording (run `scripts/confine-tests.sh --probe`; exit 0: tests pass confined; exit 3:
   quote its first line and rely on `scripts/run-tests.sh` plus the hermeticity lint). Then
   add a `--probe` line to Q-125's live run when its paste is filed. The rest are Ideas.
+  2026-11-10: the conditional wording is in all three briefs written today, Q-267 (the
+  sandbox merge entry) names the `--probe` run as a step after the install, and the bats
+  test is In flight. What remains here is that `--probe` run, once Q-267 merges and installs.
 
 - **Agent: the `Harness feedback` section warning** (filed 2026-11-06, step 3, trial T7).
   Motive: every health check warns that this H2 of the global instructions is missing from
@@ -66,8 +68,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   2026-10-30). Owner feedback on T1-T7 recorded there on 2026-11-06.
   The owner's decision (2026-11-06, after the cycle's reading): "none of them have hurt and
   some have helped so let's commit them and start a new set of trials". So T1-T7 all stay,
-  T4 included, and they are being written into the skill (In flight). A1/A3/A10: no change (Done; watch Q-262). New set: T8-T12, in
-  `docs/working/trials/2026-11-06-attention-and-trust.md`.
+  T4 included, and they are written into the skill (3dbf43cb, live in the image since 2026-11-10). A1/A3/A10: no change (Done; watch Q-262). New set: T8-T12, in
+  `docs/working/trials/2026-11-06-attention-and-trust.md`, running to about 2026-11-13; no owner feedback on it yet.
 - **Questions doc becomes owner-only (Q-221 [14′], decision 040).** Motive: the owner reported
   that agent bookkeeping crowds the one page meant for them (17 open entries, 2 theirs).
   Build in three units: (1) four owner routes (`you: judgment`, `you: terminal`, new
@@ -104,6 +106,17 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 - One canon-proposal pass now, with this repo as the subject
   (`docs/working/briefs/2026-11-07-canon-instances-pass.md`; review policy). Motive: Q-256 [2].
   Ready at e0f3aa84: merge entry Q-268 (its tentative pick keeps the script in this repo).
+- Three small dev-cycle skill fixes that waited on the release: the identity check accepts an
+  environment identity, the image-lag paste runs from main's tip, and the record says why a
+  free slot stays empty (`docs/working/briefs/2026-11-10-dev-cycle-skill-held-fixes.md`;
+  review policy, gate code). Motive: the Now agent item "after the Q-261 release".
+- What the dev cycle costs per iteration, for the light-pass decision
+  (`docs/working/briefs/2026-11-10-cycle-overhead-numbers.md`; self-merge, docs only).
+  Motive: Next 3 (Q-154) and the owner's 2026-10-20 note on verification overhead.
+- A first bats test for `scripts/confine-tests.sh`
+  (`docs/working/briefs/2026-11-10-confine-tests-bats.md`; self-merge, one test file).
+  Motive: the confine-tests research (be12889c); watch Q-161 revives confinement once
+  Q-125's sandbox merges.
 
 ## Next
 
@@ -119,12 +132,14 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
    `docs/reviews/code-review-rubric-2026-08-07-main.md`). First step: confirm
    settlement (no open code-review SKILL changes), then re-run one canon cell. The
    user's 2026-10-20 feedback adds re-evaluating review k and the lite review under Opus
-   5.5; deferred, ask before running.
+   5.5; deferred, ask before running. (2026-11-10: sessions here now run
+   `claude-fable-5-2`, so a re-evaluation, when you ask for it, would be under that model.)
 3. **Revisit the light pass between full cycles (C5, Q-154).** Motive: you answered C5 with a
    full cycle every iteration for now and a light pass of steps 7, 8 and 10 between full
    cycles once the costs are visible (plan D12, F53). First step: after the orchestrator's
    first day of iterations here (after Q-156's release), total each iteration's tokens and
-   wall time from its records and bring the numbers to you.
+   wall time from its records and bring the numbers to you. That first step is In flight
+   (`docs/working/briefs/2026-11-10-cycle-overhead-numbers.md`).
 
 ## Ideas
 
@@ -135,20 +150,20 @@ Unranked. Each names the signal that motivates it.
 - **A Landlock tier in `scripts/confine-tests.sh`.** Signal: the same research found
   Landlock ABI 7 works unprivileged here and blocks a child's outgoing TCP (not UDP, and by
   port only), which partly refutes decision 017's finding 1. Needs a 017 amendment.
-- **A bats test for `scripts/confine-tests.sh`.** Signal: the same research; the script has
-  none, and its bwrap paths have never run.
 
 - **Give a decision's runtime-log trigger a readable route.** Signal: decision 039's trigger names `/run/cc-sni-proxy/proxy.log`, which `--check-path` always refuses as untracked, so the cycle can only ever answer "cannot tell". Either a read-only runtime-log allowance, or the log's FAIL count in Q-255's paste. Gate code if the former.
 - **Things waiting for a release need a list of their own.** Signal: Q-241's item planned to ride on Q-252's next rewrite, and the release came first, so Q-252 closed with no rewrite. A section the close step reads would stop the next one being lost.
 - **A trial needs a closing step.** Signal: the trial week reached its end date with feedback on only part of T1-T7, and nothing asks for the rest but a line in the final message.
-- **The skill's identity check should accept an environment identity.** Signal: iteration
-  2026-11-05-2347, where `git config` was empty and `GIT_AUTHOR_*` held the real identity,
-  which the gate accepts. `git var GIT_AUTHOR_IDENT` answers both. Gate code (the skill).
-- **The image-lag paste should survive the cycle's own land.** Signal: Q-252's paste pins M,
-  which the same iteration's land leaves behind, so the check fails at main's tip. Gate code.
 - **Skip the health rerun for docs-only `other` commits.** Signal: adb22f4d cost a full run.
-- **Say why a free slot stays empty.** Signal: three iterations of 2026-11-03 left the queue
-  under its slots with no reason given.
+- **Retarget the deferred review re-evaluation at the model now in use.** Signal: the
+  cycle's `Model:` line changed from `claude-opus-5-5` to `claude-fable-5-2` on 2026-11-10,
+  and Next 2 and watch Q-067 still describe runs under the old model. Still ask before running.
+- **Give the skill a portable way to pass a list of names to a check.** Signal: iteration
+  2026-11-10-1902 ran in zsh, which has no `mapfile`, and the session's safety check refused
+  zsh's own array form; `xargs CHECK < FILE` worked. One clause in the skill; gate code.
+- **Move finished history out of Now.** Signal: the digest counted 9 Now items on
+  2026-11-10 and one was ready to brief; the owner-only questions item and the 2026-10-29
+  feedback item are merged but for one point each.
 
 - **Dropped 2026-10-30: Q-168's remote-name parsing branch** (`fix/q096b-exit-scan-remote-names`,
   75d08a94). Reason: Q-238 [1]. Every route it closes needs launch-time state, outside Q-172
@@ -171,10 +186,6 @@ Unranked. Each names the signal that motivates it.
   `questions.sh migrate` has a digest that shows "None open" for its watches until the image
   carries unit 3.
 
-- **Free a merged loop's worktree.** Signal: iteration 2026-10-30-0035 deleted 9 merged
-  branches and git refused 15 more, each still checked out in a finished loop's locked
-  worktree under `.claude/`; they cost disk and join the import walks' reader set. The gate
-  (`--merge`) or step 1 could unlock and remove a worktree whose branch is merged.
 - **Name the 2026-10-30 cutoff before it bites.** Signal: `questions.sh`'s
   `LEGACY_BEFORE='2026-10-30'` refuses `agent`/`trigger`/`deferred` entries opened from
   that date, but until unit 3 merges and is released the dev-cycle skill still files
@@ -195,10 +206,6 @@ Unranked. Each names the signal that motivates it.
   first fact-check, k=1 in review-fix iterations and a clean final pass. First step: read
   the code-review and review-fix-loop texts against 031, then the rubrics of the last few
   merges. Re-evaluating k under Opus 5.5 is a separate, deferred ask.
-- **Count each cycle's overhead against feature work.** Signal: the same note says the dev
-  cycle spends more on verification overhead than on features. First step: from the
-  records, total each iteration's own landed lines and commits against feature merges in
-  its window; feeds Next 3 (Q-154).
 
 - **Union-merge the append-only review logs.** Signal: on 2026-10-15 every pair of finished
   units conflicted only in `docs/reviews/override-log.md` (and earlier in
@@ -360,6 +367,12 @@ Unranked. Each names the signal that motivates it.
 ## Done
 
 Items finished since the last cycle, with the merge.
+
+- Agent: after the Q-261 release (filed 2026-11-06). Done in-cycle on
+  `chore/dev-cycle-2026-11-10-1902`: the image now holds main's gate code (both at
+  536b7082), so Q-261 (the release entry) closed as met; the cleanup step freed 39 finished
+  loops' worktrees and deleted 44 merged branches, which shows 85080263's worktree freeing
+  works live. The held idea-log items became a brief (In flight).
 
 - What `scripts/confine-tests.sh` needs and where it can run
   (`docs/working/briefs/closed/2026-11-07-confine-tests-situation.md`). Merged be12889c,

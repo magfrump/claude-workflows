@@ -254,6 +254,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-258](#q-258--merge-2026-11-05-q089-source-guard-narrow-c9786a275cd1) | Merge the Q-147 result at c9786a27? It adds one test file, `test/cc-host-tool-sources.bats`, that catches a... | 2026-11-05 |
 | [Q-259](#q-259--merge-gate-2026-11-05-d6-block-into-image-5e2b96d3e215) | Q-259: [1] | 2026-11-05 |
 | [Q-260](#q-260--merge-gate-2026-11-06-free-merged-loop-worktrees-0ed2fc852e54) | Q-260: [1] | 2026-11-06 |
+| [Q-261](#q-261--image-lag) | Q-261: met — image 536b708294d1584be3c7455d78462716ce36edce holds the gate code of main 536b708294d1584be... | 2026-11-06 |
 | [Q-263](#q-263--merge-gate-2026-11-06-owner-entry-gloss-rule-7aecad7a3453) | Q-263: [1] | 2026-11-06 |
 | [Q-265](#q-265--merge-2026-11-03-q125-verify-check-60138c791b1f) | Q-265: [1] (owner, answers-11-7-26.txt). Merge 60138c791b1f5f739e963bd6075ec166d48c3517, then one build loo... | 2026-11-06 |
 | [Q-266](#q-266--merge-gate-2026-11-06-codify-trial-practices-e49f133c98fd) | Q-266: [1] (owner, answers-11-7-26.txt). Merge e49f133c98fda0446fb32e24473aee11347a6933; the marker's docs/... | 2026-11-06 |
@@ -6109,5 +6110,52 @@ No review work now scheduled needs a new instance, and the canon has had no run 
 
 - **Interim:** [1]. The canon and ledger are unchanged. The watch on "a recall run is briefed" is filed once you answer [1].
 - **If the answer differs:** [2] starts a build brief, [3] adds a classifier, [4] needs no watch. Nothing needs undoing.
+
+
+### Q-261 · image-lag
+**Needs:** you: terminal · **Opened:** 2026-11-06 · **Status:** ANSWERED
+Q-261: met — image 536b708294d1584be3c7455d78462716ce36edce holds the gate code of main 536b708294d1584be3c7455d78462716ce36edce
+
+Run the paste below to bring the installed dev-cycle scripts up to main.
+
+**Release notes.** The installed image is the root-owned copy of the dev-cycle scripts and skill. It is at `dff98910` (read from `/opt/claude-workflows/.manifest`), and main is ahead of it by four merges you approved: Q-259, Q-260, Q-263 and, today, Q-266. None of them is live until you run the paste below.
+
+**If you say no:** the cycle keeps pasting the roughly 60-line block into every script call, finished build loops keep their worktrees and branches (36 merged branches are held by worktrees today), and the trial practices keep running from the trial doc. Nothing breaks.
+
+**What changes for you:**
+
+- That block becomes `scripts/d6.sh`, one line to call, and drops the five checks the restriction audit judged hostile-only (from Q-259).
+- Each cycle's cleanup step removes a finished loop's worktree, so its merged branch can then be deleted (from Q-260).
+- Agents get the rule to explain every internal reference in plain language (from Q-263). The build-loop prompt and skill parts start here; the global-instructions part reaches sessions with the host install.
+- The first trial set's practices T1-T7 (short release notes, the "If you say no:" line, batched answers, the weekly digest, the reserved security marker, a warning printed on every run treated as a bug) are written into the dev-cycle skill and scripts (from Q-266).
+
+**Merged without your review:** one design record and its brief, both docs (`e9f3e176`, flagged below). The image carries neither.
+
+**Commits since the image:**
+
+- `3dbf43cb` Merge branch 'feat/codify-trial-practices' (build-loop approved merge)
+- `546788f2` Merge branch 'feat/q125-verify-check' (build-loop approved merge): the Q-125 check file, not gate code
+- `e56f53ac` docs(questions): record owner answers of 2026-11-07 (your answers, one doc)
+- `672f7521` Merge branch 'docs/trial-set-2-2026-11-06' (the second trial set, docs)
+- `771c84e8` Merge branch 'feat/owner-entry-gloss-rule' (build-loop approved merge)
+- `e9f3e176` Merge branch 'docs/merge-friction-design' (build-loop self-merge): no one reviewed it
+- `21399f53` Merge branch 'docs/trial-feedback-2026-11-06' (your end-of-trial feedback, one doc)
+- `85080263` Merge branch 'refactor/free-merged-loop-worktrees' (build-loop approved merge)
+- `aeab6745` Merge branch 'refactor/d6-block-into-image' (build-loop approved merge)
+- `c3f785d4`, `4fbba149`, `d6e672ab`, `c14c9c08`, `3ca1bc5c`, `9f3758c5`, `abea6674`, `37a56702`, `62687b97`, `657b96b4`, `65fd1b17` and `f979bc57`: cycle lands, records only
+
+**Gate files changed:** `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`, and the new `scripts/d6.sh`.
+
+**Paths outside `docs/`** (44 paths under `docs/` also changed; the image carries none of them): `global-instructions/CLAUDE.md`, `scripts/build-loop.sh`, `scripts/d6.sh`, `scripts/dev-cycle.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`, `test/q125-verify-check.bats`, `test/questions-doc.bats`, `test/scripts/build-loop-check.bats`, `test/scripts/build-loop-dispatch.bats`, `test/scripts/build-loop-free.bats`, `test/scripts/build-loop-orchestrator.bats`, `test/scripts/dev-cycle.bats`
+
+**The paste** (host terminal in WSL, not inside a session; stop every session first):
+
+```
+cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = 3dbf43cb9d63ae12a40bda6f7928f9e31d7b9e0b && ./devcontainer-config/install.sh
+```
+
+The `rev-parse` check runs no hook. It only confirms your checkout is at `3dbf43cb`, which holds Q-266's merge. Main will be past that commit by the time you read this, because the cycle's own land moves it, so check out `3dbf43cb` first. That checkout, like any other git command on the host, can run a hook a sandbox session planted, which is `install.sh`'s own trust model. If the install re-blesses, it also prints the hint that Q-167's step (a) still needs.
+
+- **Interim:** the image at `dff98910` runs.
 
 
