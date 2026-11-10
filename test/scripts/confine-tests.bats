@@ -244,8 +244,9 @@ refused() {
     [ "${stderr_lines[-1]}" = "confine-tests: nothing to run. Usage: $SCRIPT -- <test command...>" ]
     [ -z "$output" ]
   done
-  # Probes only (one of unshare, for --no-loopback): nothing was asked to run.
-  calls bwrap 3 unshare 1
+  # How many probes came first is not pinned (research doc, O3). A run with no
+  # command would reach a stand-in as a call it does not accept, and confine()
+  # would have failed the test.
 }
 
 @test "--help and -h print the header comment only, exit 0, and try no primitive" {

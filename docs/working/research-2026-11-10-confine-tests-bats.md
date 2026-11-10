@@ -3,7 +3,7 @@
 - **Goal**: Give `scripts/confine-tests.sh` its first test file, `test/scripts/confine-tests.bats`, pinning what the script does today wherever that is right.
 - **Problem framing**: The script that decision 017 calls the real enforcement of test hermeticity has no test, and it is about to matter (the image gains `bwrap` when the cc-isolated sandbox merges). Considered and discarded: "the script has never run with a primitive, so get it a live run first". A live run needs a host or the unmerged sandbox, and it would show one profile once; it would not pin the refusals, the usage errors or the argv handling, which can all be tested here today.
 - **Project state**: this branch adds one test file, this doc and its review loop's reports under `docs/reviews/` · standalone, first of the confine-tests follow-ups · not blocked (cite: docs/working/research-2026-11-07-confine-tests-situation.md)
-- **Task status**: in-progress (review loop: the final full pass is done and its fixes made; a check of those fixes is next)
+- **Task status**: in-progress (review loop at its cap of three iterations: the third, a check of the final pass's fixes, is done and its own fixes made; the last gate and the brief's status line remain)
 
 Brief: `docs/working/briefs/2026-11-10-confine-tests-bats.md` · Branch: `test/confine-tests-bats` from a37733cc · Date: 2026-11-10
 
@@ -19,7 +19,7 @@ Brief: `docs/working/briefs/2026-11-10-confine-tests-bats.md` · Branch: `test/c
 6. **No command** (171-174): `nothing to run`, exit 2. This comes after detection.
 7. **Run** (178-227): a banner on stderr, then `exec` of one of three forms: bwrap with a fixed profile and `-- "${cmd[@]}"`; `unshare -rn -- sh -c '<static body>' sh "${cmd[@]}"` (the body raises `lo`, exits 3 if that fails, then `exec "$@"`); or, with `--no-loopback`, `unshare -rn -- "${cmd[@]}"`.
 
-Callers: none in code. The hermeticity lint prints its name, `guides/test-hermeticity.md` documents it, and briefs whose acceptance includes tests (this one among them) ask their loop to run `--probe`.
+Callers: none in code. The hermeticity lint prints its name, `guides/test-hermeticity.md` documents it, and this brief, like other recent ones that require tests, asks its loop to run `--probe` (the wording for new briefs is in `docs/roadmap.md`; not every open brief has it).
 
 In this container `scripts/confine-tests.sh --probe` exits 3 [observed 2026-11-10]. Its first line:
 
@@ -34,7 +34,7 @@ So, as the brief says for exit 3, acceptance rests on `scripts/run-tests.sh` plu
 - Every `.bats` file carries `# @category fast|slow` (`scripts/run-tests.sh` header). This file is `slow`: it executes a script.
 - A stub is at least as strict as its tool (repo rule; decision log row 44, where an `iptables` stub that took any argv let a syntax error reach a live container).
 - No `skip` on a repo file (decision 023). The file has no `skip` at all.
-- A review unit enters its review loop at or under 400 changed code lines outside `docs/` (decision log row 62). The test file was 395 lines at entry, 412 after pass 1's fixes and is 419 after the final pass's, inside the loop's re-check limit of about 800 (`workflows/review-fix-loop.md`, size re-check).
+- A review unit enters its review loop at or under 400 changed code lines outside `docs/` (decision log row 62). The test file was 395 lines at entry, 412 after pass 1's fixes, 419 after the final pass's and is 420 after the last check's, inside the loop's re-check limit of about 800 (`workflows/review-fix-loop.md`, size re-check).
 
 ## Prior art
 
@@ -174,7 +174,7 @@ Each mutant is a scratch copy of the script with one change, run against the tes
 Three notes on the `exec` row, each found by the review's fact-checks and re-run here:
 
 - Without the `exit $?`, the bwrap and `unshare ... sh -c` mutants also fail, but for another reason: the script falls through to its next `exec`, which makes a call a stand-in does not accept or runs the command a second time.
-- Before `same_process` existed (the test file at 9d37c1ac), two of the four survived: the `sh` body and `unshare` direct.
+- Before `same_process` existed (the test file at 9d37c1ac), all four of the row's mutants passed every test. In the plain form without `exit $?`, two passed (the `sh` body and `unshare` direct) and the other two failed only by falling through. I first wrote here that "two of the four survived", which is true of the plain form and not of the row's; the review's last check caught it, and the same wrong sentence stands in the message of commit 7d77df6c, which cannot be changed.
 - At the `sh` body the pin holds only where `sh` is dash. With `sh` on the test's PATH linked to bash, the `sh` body mutant passes every test, because bash runs the last command of a `-c` string in place whether or not it says `exec`. On such a host the two spellings behave the same, so there is nothing to tell apart.
 
 Two more copies add a warning to every unshare fallback, which is what a fix for D2 would do: one prints it at run time after the banner, one at selection time before the `ip` check (so on probes too). Both pass every test, as intended: the warning's absence is not pinned.
@@ -210,7 +210,7 @@ They show what the script asks for and what it does with the answer. The first l
 - A live confined run: no primitive here (exit 3 above).
 - The exact text of the long refusal and of the header comment: the tests pin first lines and a few phrases, so wording can change.
 - The second line of the probe's output ("network denial is kernel-enforced ..."): it is a claim a stub cannot back.
-- D2, O3 and O4 below: behaviour I did not judge clearly right, so no test pins it. For D2 that took the review two rounds. Pass 1 found that an exact match on stderr in an unshare run test pinned the missing warning; the final pass found two more places (an empty-stderr check on the fallback `--probe`, and a first-line check on the `ip` refusal). All now only require the line they are about to be present.
+- D2, O3 and O4 below: behaviour I did not judge clearly right, so no test pins it. For D2 that took the review two rounds. Pass 1 found that an exact match on stderr in an unshare run test pinned the missing warning; the final pass found two more places (an empty-stderr check on the fallback `--probe`, and a first-line check on the `ip` refusal). All now only require the line they are about to be present. For O3 the last check of the review found one more pin: the no-command test counted the probes that ran before the refusal, which fixes the order O3 describes. That count is gone, and a copy of the script that refuses an empty command before detection passes every test.
 - O1 and O5 below are about the argv the script hands bwrap. The stand-in pins that argv exactly as it is today (DD-2), so a change to the probe or to the profile means changing the stand-in and the expected argv in the same commit. That pins what the script asks for, not that it is the right thing to ask.
 - `set -e` and `pipefail`: a copy of the script with `set -uo pipefail` passes every test. No test makes a command fail in a place where only errexit stops the script.
 
