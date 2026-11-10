@@ -40,3 +40,5 @@ Paths: scripts/confine-tests.sh test/scripts/confine-tests.bats guides/test-herm
 - A Landlock tier, a refusal in place of the fallback, or having `scripts/run-tests.sh` confine itself.
 - Decision 017 and the hermeticity lint.
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`: the dev cycle owns those.
+
+Dispatched: 1
