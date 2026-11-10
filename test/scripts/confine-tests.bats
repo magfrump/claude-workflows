@@ -26,9 +26,20 @@ NO_PRIMITIVE='confine-tests: NO CONFINEMENT PRIMITIVE AVAILABLE — refusing to 
 NO_IP='confine-tests: `ip` (iproute2) not found — cannot bring loopback up.'
 NO_LO_OVER_BWRAP='confine-tests: --no-loopback is not supported by the bwrap primitive.'
 LO_WARNING='confine-tests: WARNING — --no-loopback forces the unshare primitive.'
+# The whole --no-loopback warning, byte for byte what the script printed
+# before the fallback came to share its text: a --probe prints it too, and a
+# probe's output is not to change.
+LO_WARNING_TEXT="$LO_WARNING
+  It denies the network and NOTHING ELSE. bwrap's read-only rootfs, its
+  private /tmp and its pid namespace are all absent, and your tests run
+  as uid 0 in a user namespace: a stray write that bwrap would refuse
+  with EROFS will succeed against the real filesystem. Drop the flag to
+  get the hardened profile (loopback is not egress — the namespace has
+  no route off the host)."
 NO_BWRAP_WARNING='confine-tests: WARNING — bwrap is not installed; falling back to the unshare primitive.'
-BWRAP_REFUSED_WARNING='confine-tests: WARNING — bwrap was refused here; falling back to the unshare primitive.'
+BWRAP_UNUSABLE_WARNING='confine-tests: WARNING — bwrap is installed but unusable here; falling back to the unshare primitive.'
 UNSHARE_BANNER='confine-tests: denying network via unshare (loopback=1)'
+BODY_NAME='confine-tests: unshare body'
 # Words a shell would mangle if any step re-parsed them: a space, leading
 # dashes (the script's own flags among them), an empty word, substitutions, a
 # separator, a glob, a quote and a newline.
@@ -320,8 +331,7 @@ refused() {
     confine "bwrap unshare" STUB_BWRAP=ok STUB_UNSHARE=ok -- $flags
     [ "$status" -eq 0 ]
     [ "${lines[0]}" = "confine-tests: primitive available: unshare (loopback=0)" ]
-    [ "${stderr_lines[0]}" = "$LO_WARNING" ]
-    [[ "$stderr" == *"denies the network and NOTHING ELSE"* ]]
+    [ "$stderr" = "$LO_WARNING_TEXT" ]
   done
 }
 
@@ -385,9 +395,10 @@ refused() {
   confine "unshare" STUB_UNSHARE=ok -- --no-loopback -- -record -x
   [ "$status" -eq 0 ]
   # The flag did not cause the weaker profile here (there is no bwrap to drop
-  # it for), so the warning is the fallback's, not the flag's.
+  # it for), so the warning is the fallback's, not the flag's; and its way
+  # back names both steps, since bwrap alone could not serve the flag.
   [ "${stderr_lines[0]}" = "$NO_BWRAP_WARNING" ]
-  [[ "$stderr" != *"Drop the flag"* ]]
+  [ "${stderr_lines[5]}" = "  (bubblewrap) and drop --no-loopback to get the hardened profile." ]
   # One probe per invocation (there is no bwrap to switch from), then the run.
   calls unshare 5
   call unshare 5 -rn -- -record -x
@@ -406,18 +417,19 @@ refused() {
   call child 1 "${TRICKY[@]}"
   [ ! -e pwned ]
   same_process
-  # unshare -rn -- BASH -c BODY confine-tests COMMAND..., where BASH is the
-  # bash that runs the script (here the one on the built PATH), not sh: what
-  # exec does with a word starting "-" depends on which shell sh is.
+  # unshare -rn -- BASH -c BODY NAME COMMAND..., where BASH is the bash that
+  # runs the script (here the one on the built PATH), not sh: what exec does
+  # with a word starting "-" depends on which shell sh is. NAME is the body's
+  # $0, which bash puts before its own error messages.
   mapfile -d '' -t first < "$LOG/unshare.2"
-  call unshare 2 -rn -- "$TOOLS/bash" -c "${first[4]}" confine-tests "$RECORD" "${TRICKY[@]}"
+  call unshare 2 -rn -- "$TOOLS/bash" -c "${first[4]}" "$BODY_NAME" "$RECORD" "${TRICKY[@]}"
   # BODY is the same text whatever the command (decision 018's pattern): no
   # part of the command is spliced into what bash parses. The command's exit
   # status comes back through bash.
   confine "unshare ip" STUB_UNSHARE=ok STUB_IP=ok CHILD_EXIT=7 -- -- "$RECORD" other words
   [ "$status" -eq 7 ]
   mapfile -d '' -t second < "$LOG/unshare.4"
-  call unshare 4 -rn -- "$TOOLS/bash" -c "${second[4]}" confine-tests "$RECORD" other words
+  call unshare 4 -rn -- "$TOOLS/bash" -c "${second[4]}" "$BODY_NAME" "$RECORD" other words
   [ -n "${first[4]}" ]
   [ "${first[4]}" = "${second[4]}" ]
   [[ "${first[4]}" != *"$RECORD"* && "${first[4]}" != *pwned* && "${first[4]}" != *"two words"* ]]
@@ -437,7 +449,7 @@ dash_named_on_unshare() {
   same_process
   # No file is named -a, so nothing runs: not the later word that names one.
   confine -127 "unshare ip" STUB_UNSHARE=ok STUB_IP=ok -- -- -a x "$RECORD" one
-  [[ "${stderr_lines[-1]}" == "confine-tests: "*"exec: -a: not found" ]]
+  [[ "${stderr_lines[-1]}" == "$BODY_NAME: line "*": exec: -a: not found" ]]
   [ -z "$output" ]
   calls child 1
 }
@@ -463,32 +475,31 @@ dash_named_on_unshare() {
 
 @test "a run that falls back to unshare first warns what unshare does not confine, in --no-loopback's words (H2)" {
   local shared
-  # The warning --no-loopback has always printed: a headline, four lines on
-  # what unshare lacks, then the way back to bwrap's profile (which starts on
-  # the sixth line: the text between is the same on every route).
+  # The warning --no-loopback has always printed, unchanged, then the banner.
   confine "bwrap unshare" STUB_BWRAP=ok STUB_UNSHARE=ok -- --no-loopback -- "$RECORD" one
-  [ "${stderr_lines[0]}" = "$LO_WARNING" ]
-  shared="$(printf '%s\n' "${stderr_lines[@]:1:4}")"
+  [ "$stderr" = "$LO_WARNING_TEXT"$'\n'"confine-tests: denying network via unshare (loopback=0)" ]
+  # What every route says after its own headline: all of that warning up to
+  # the way back to bwrap's profile, which starts mid-line and differs.
+  shared="${LO_WARNING_TEXT#*$'\n'}"
+  shared="${shared%% Drop the flag to*}"
   [[ "$shared" == *"denies the network and NOTHING ELSE"* && "$shared" == *"read-only rootfs"* ]]
   [[ "$shared" == *"private /tmp"* && "$shared" == *"pid namespace"* && "$shared" == *"uid 0"* ]]
-  [[ "${stderr_lines[5]}" == "  Drop the flag"* ]]
-  # bwrap not installed: the same four lines under the fallback's headline,
-  # once, on stderr, before the banner; and the run goes ahead.
+  # bwrap not installed: the fallback's headline, the same text, its own way
+  # back, then the banner; all on stderr, once; and the run goes ahead.
   confine "unshare ip" STUB_UNSHARE=ok STUB_IP=ok CHILD_EXIT=7 -- -- "$RECORD" one
   [ "$status" -eq 7 ]
-  [ "${stderr_lines[0]}" = "$NO_BWRAP_WARNING" ]
-  [ "$(printf '%s\n' "${stderr_lines[@]:1:4}")" = "$shared" ]
-  [[ "${stderr_lines[5]}" == "  Install bwrap"* ]]
-  [ "$(grep -c 'NOTHING ELSE' <<< "$stderr")" -eq 1 ]
-  [ "${stderr_lines[-1]}" = "$UNSHARE_BANNER" ]
+  [ "$stderr" = "$NO_BWRAP_WARNING
+$shared Install bwrap
+  (bubblewrap) to get the hardened profile.
+$UNSHARE_BANNER" ]
   [ -z "$output" ]
-  # bwrap installed and refused: the headline says so.
+  # bwrap installed and unusable: the headline and the way back say so.
   confine "bwrap unshare ip" STUB_BWRAP=refused STUB_UNSHARE=ok STUB_IP=ok -- -- "$RECORD" one
   [ "$status" -eq 0 ]
-  [ "${stderr_lines[0]}" = "$BWRAP_REFUSED_WARNING" ]
-  [ "$(printf '%s\n' "${stderr_lines[@]:1:4}")" = "$shared" ]
-  [[ "${stderr_lines[5]}" == "  Run where bwrap works"* ]]
-  [ "${stderr_lines[-1]}" = "$UNSHARE_BANNER" ]
+  [ "$stderr" = "$BWRAP_UNUSABLE_WARNING
+$shared Run where bwrap works
+  (a CI runner or a dev host) to get the hardened profile.
+$UNSHARE_BANNER" ]
   calls child 3
   # With nothing to run there is nothing to warn about.
   confine "unshare ip" STUB_UNSHARE=ok -- --

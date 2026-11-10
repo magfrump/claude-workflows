@@ -3,7 +3,7 @@
 - **Goal**: Fix the two defects the script's first tests recorded: a test command whose name starts with `-` is misread on the `unshare` path when `sh` is bash (D1), and a plain fallback from `bwrap` to `unshare` runs without saying what `unshare` does not confine (D2); and list the test file in the guide.
 - **Problem framing**: The script the repo rules name as the reference for passing untrusted text to a subprocess hands the command to whatever `sh` is, and what `exec "$@"` means depends on that shell; and it warns about the weaker `unshare` profile on one of the two routes that reach it. Considered and discarded: "D1 is a missing `--`, so add it to the `sh` body". dash's `exec` runs `--` as the command, so no one spelling of the last line is right under both shells; the problem is the choice of interpreter, not the spelling.
 - **Project state**: this branch changes the script's `unshare` run form and its warning, the test file and one guide · second of the confine-tests follow-ups, after `test/confine-tests-bats` (merged at 9d6d6101) · not blocked (cite: docs/working/briefs/2026-11-10-confine-tests-dash-and-fallback.md)
-- **Task status**: in-progress (research and plan written; tests next)
+- **Task status**: in-progress (implemented; review pass 1 done and its fixes in; the final confirming pass next)
 
 Brief: `docs/working/briefs/2026-11-10-confine-tests-dash-and-fallback.md` · Branch: `fix/confine-tests-dash-and-fallback` from 23ffb16c · Date: 2026-11-10
 
@@ -19,7 +19,7 @@ This one file holds the research, the design record and the plan, as the first u
 
 `test/scripts/confine-tests.bats` (420 lines, 17 tests) runs the script under `env -i` on a PATH of stand-ins for `bwrap`, `unshare` and `ip` plus symlinks to the real `bash`, `sh`, `cat` and `awk`. It pins a dash-named command on the bwrap and `--no-loopback` forms only, and leaves the fallback warning's absence unpinned on purpose (three assertions were loosened for it in the first unit's review).
 
-Callers: none in code [observed: `grep -rn confine-tests` over `*.sh`, `*.bats`, `*.py`]. `CLAUDE.md` and decision 018 (`docs/decisions/018-argv-exec-over-shell-string-interpolation.md:43,117`) cite `scripts/confine-tests.sh:220` as the reference for "static shell body, values as positional arguments".
+Callers: none in code [observed: `grep -rn confine-tests` over `*.sh`, `*.bats`, `*.py`]. Decision 018 (`docs/decisions/018-argv-exec-over-shell-string-interpolation.md:43,117`) cites `scripts/confine-tests.sh:220`, and `CLAUDE.md` names the script without a line, as the reference for "static shell body, values as positional arguments".
 
 In this container `scripts/confine-tests.sh --probe` exits 3 [observed 2026-11-10, at 23ffb16c and again on this branch's final tree]. Its first line:
 
@@ -44,7 +44,7 @@ Reproduction: in the test file's harness, `confine "unshare ip" STUB_UNSHARE=ok 
 
 ## Invariants
 
-- Which primitive is chosen, every exit status other than D1's, and `--probe` (stdout, stderr and status, for every input) do not change (brief). The tests pin this: the selection tests are untouched, and the fallback probe's stderr is now pinned empty.
+- Which primitive is chosen, every exit status other than D1's, and `--probe` (stdout, stderr and status, for every input) do not change (brief). The tests pin this: the selection tests are untouched, the fallback probe's stderr is pinned empty, and the `--no-loopback` probe's stderr is compared with the whole old warning, byte for byte. One status does move outside the dash-named cases; see "Exit statuses" under Results.
 - Each word of the test command reaches the child as its own argv element; no part of it is spliced into text a shell parses (repo rule; decision 018). The body stays one static single-quoted string [observed: the unshare run test compares the body across two different commands].
 - The suite stays hermetic and passes `scripts/hermeticity-lint --root .` (H3). The test file spawns none of `claude`, `curl`, `gh`, `wget`.
 - A stand-in is at least as strict as its tool (repo rule; decision log row 44). The stand-ins for `sh` in the new tests are the real bash and the real dash under the name `sh`.
@@ -119,7 +119,7 @@ Health check: 3-6 are one cluster (keep `sh`, change the last line); 7, 8 and 14
 | 2 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ~ | survives |
 | 3 | ⚠ | ⚠ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ | ✓ | pruned: `eval ...` runs the builtin, and the `exec` is lost |
 | 4 | ⚠ | ⚠ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ | ✓ | pruned: as 3 |
-| 5 | ✗ | ✗ | ✓ | ✓ | ✓ | ✓ | ✓ | ~ | ✗ | ~ | pruned: a name holding `=` is read as an assignment (`a=b z` ran `z`) |
+| 5 | ✗ | ✗ | ✓ | ✓ | ✓ | ✓ | ✓ | ~ | ✗ | ~ | pruned: a name holding `=` is read as an assignment (`a=b z` set a variable and tried to run `z`) |
 | 6 | ~ | ~ | ✓ | ~ | ~ | ✓ | ~ | ✓ | ✓ | ✗ | pruned: right for bash and dash only; busybox ash, ksh and zsh as `sh` each have their own `exec` and cannot be tested here |
 | 7 | ✓ | ✓ | ✗ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ | ✓ | pruned: where `sh` is dash a dash-named command runs today, so this turns exit 0 into exit 2 there, and the fallback would refuse what bwrap runs |
 | 8 | ✓ | ✓ | ✗ | ✓ | ✓ | ✓ | ✓ | ✓ | ~ | ✓ | pruned: changes the bwrap and `--no-loopback` statuses, which tests pin |
@@ -202,11 +202,11 @@ One survivor. **Path A: a.** The asymmetry it leaves (a `--no-loopback` probe wa
 
 Other choices, one line each:
 
-- One source for the text: a function `warn_unshare_only HEADLINE WAY-BACK...` that prints the headline, the four shared lines from a quoted heredoc, then the way back to bwrap's profile, which differs by route ("Drop the flag" against "Install bwrap"). A variable holding the text, or a mode argument, would do the same with more indirection.
-- The fallback headline says whether bwrap is not installed or was refused (`command -v bwrap`, which runs nothing): the two need different actions from the reader.
-- `--no-loopback` with bwrap unavailable prints the fallback warning, not the `--no-loopback` one: dropping the flag there would not bring bwrap's profile back, so "Drop the flag" would be false. Today that route prints no warning at all.
-- The `--no-loopback` warning is re-wrapped so the shared sentences end on line boundaries: its words are unchanged, its line breaks are not. Its first line, which the tests and any reader key on, is byte-identical.
-- The body's `$0` is `confine-tests`, so bash's own errors read `confine-tests: line 6: exec: -a: not found`, like the script's other messages.
+- One source for the text: a function `warn_unshare_only HEADLINE FIRST-WORDS LINE...` that prints the headline, the shared text, then the way back to bwrap's profile, which differs by route ("Drop the flag" against "Install bwrap"). The way back starts on the shared text's last line, as it always did in the `--no-loopback` warning, so its first words are an argument of their own. A variable holding the text, or a mode argument, would do the same with more indirection.
+- The fallback headline says whether bwrap is not installed or is installed but unusable (`command -v bwrap`, which runs nothing): the two need different actions from the reader. "Unusable here" is the script's existing word for a primitive that does not work (its `--no-loopback` refusal says `unshare -rn` "is unusable here"); a first version said "refused", which the script keeps for its own refusals (review pass 1, API finding 3).
+- `--no-loopback` with bwrap unavailable prints the fallback warning, not the `--no-loopback` one: dropping the flag there would not bring bwrap's profile back, so "Drop the flag" would be false. Getting bwrap back would not either while the flag stays, so on that route the way back names both steps ("Install bwrap (bubblewrap) and drop --no-loopback"; review pass 1, security finding 2). At 23ffb16c that route printed no warning at all.
+- The `--no-loopback` warning is byte for byte what it was. A first version re-wrapped it so the shared sentences ended on line boundaries; review pass 1 showed that this changed the stderr of a `--no-loopback --probe`, which the brief's "no change to `--probe`" forbids, so the line breaks went back and the function took the shape above.
+- The body's `$0` is `confine-tests: unshare body`, so bash's own errors read `confine-tests: unshare body: line 6: exec: -a: not found`: the script's prefix, then where the line number counts from (the body, not the file; review pass 1, API finding 4).
 - `sh` leaves the tests' built PATH: the script no longer needs it, and an absent `sh` is the strictest stand-in (a call fails the run). The two D1 tests put the real bash and the real dash there under that name.
 - The dash test skips, loudly, on a host without dash: dash is not a file in this repo (decision 023 is about those), and the bash test and every other unshare test still run there.
 
@@ -243,7 +243,7 @@ Actual context cost (post-implementation): __
 | G2 (D1) | `-- -a x RECORD one`, both shells | exit 127, `exec: -a: not found`, the child not run | regression | the same |
 | G3 (D1) | `-- eval 'touch pwned'` with a file named `eval` on PATH | the file runs with that one argument; no `pwned` | regression | the same |
 | G4 (D1) | the unshare call's argv | `-rn -- <the script's bash> -c BODY confine-tests CMD...`, BODY the same for two commands | characterization | the same |
-| G5 (D2) | a fallback run, bwrap not installed; bwrap installed and refused | the warning first, its headline naming the cause, then the banner; the child runs; status unchanged | regression | the same |
+| G5 (D2) | a fallback run, bwrap not installed; bwrap installed and unusable (the stand-in's `refused` mode) | the warning first, its headline naming the cause, then the banner; the child runs; status unchanged | regression | the same |
 | G6 (D2) | the shared lines | identical between the fallback warning and the `--no-loopback` one; printed once, on stderr | regression | both texts |
 | G7 (D2) | `--probe` on a fallback; `--no-loopback --probe` with bwrap unavailable | stderr empty, verdict unchanged | characterization | the same |
 | G8 (D2) | `--no-loopback` with bwrap working | its own warning first, not the fallback's | characterization | the same |
@@ -262,7 +262,7 @@ Actual context cost (post-implementation): __
 ### Risks
 
 - No live run: a real `unshare -rn` has not started `"$BASH"` here. The path is the one the kernel already ran the script from, and `-r` maps the caller to root in the namespace, so reading it cannot be refused by a permission the caller had; that is inference, not observation [inferred].
-- Decision 018 and `CLAUDE.md` cite `scripts/confine-tests.sh:220`; the line moves. Both files are outside this brief's Paths (a decision record and an instruction file, both on the self-merge floor). Recorded under "Follow-ups".
+- Decision 018 cites `scripts/confine-tests.sh:220`; the line moves (`CLAUDE.md` names only the file, so nothing there goes stale). The decision record is outside this brief's Paths and on the self-merge floor. Recorded under "Follow-ups".
 - Deferred coverage: `set -e` and `pipefail` in the script are still unpinned (first unit's "Not covered"); out of this unit's scope.
 
 ### Rollback
@@ -276,6 +276,110 @@ Both are bash script files run under `timeout` from a scratch directory they cre
 Probe 1 (`probe1.sh`): a directory with recording commands named `-rec`, `rec`, `eval` and `a=b` first on PATH; for `sh` linked to bash and to dash, `SH -c BODY sh WORDS...` for each BODY in `exec "$@"`, `exec -- "$@"`, `command -- "$@"`, `"$@"`, `exec env -- "$@"` and each WORDS in `-rec -x`, `-a x rec one`, `eval echo hi`, `-nonexistent y`, `a=b z`. Results are in the tables above. (Its status column was wrong, a `PIPESTATUS` read inside a command substitution; the conclusions rest on the output text.)
 
 Probe 2 (`probe2.sh`): a script with the shebang `#!/usr/bin/env bash` that prints `$BASH` and its pid, then `exec "$BASH" -c 'echo ...; exec -- "$@"' bash "$@"`, run under `env -i` on a PATH holding a symlink to bash. Results are under "Gotchas".
+
+## Results
+
+### What the branch changes
+
+- `scripts/confine-tests.sh`: the `unshare`-with-loopback body runs under `"$BASH"` and ends `exec -- "$@"` (D1); `warn_unshare_only` holds the warning's text once and is called from the `--no-loopback` switch and, on a run, from the fallback (D2); the header comment says both.
+- `test/scripts/confine-tests.bats`: 17 tests become 21. Four are new (a dash-named command with `sh` as bash and as dash, a command named like a builtin, the fallback's warning); the unshare tests that had left the warning's absence unpinned now pin where it appears and where it does not.
+- `guides/test-hermeticity.md`: the `Relevant paths:` line and a paragraph on the fallback.
+
+### Exit statuses
+
+On the `unshare`-with-loopback form, by what `sh` was at 23ffb16c [observed: the tests, probe 1, and the review's 264 old-against-new runs; the empty name by a run of each shell]:
+
+| Command | 23ffb16c, `sh` is bash | 23ffb16c, `sh` is dash | This branch, any `sh` |
+|---|---|---|---|
+| `-record -x` (a file `-record` is on PATH) | 2, refused (`exec: -r: invalid option`) | the command's own | the command's own |
+| `-a x CMD one` | CMD's own: **CMD ran** | 127 | 127 |
+| `-nonexistent y` | 2 | 127 | 127 |
+| `''` (an empty name) | 127 | 126 (`exec: : Permission denied`) | 127 |
+
+The first three rows are D1. The fourth is a status that moves outside the dash-named cases, on hosts where `sh` is dash: the old status was whatever that host's `sh` gave, and the new one is bash's everywhere. The brief allows no status change "other than D1's"; I count this one as D1's, because it follows from the fix itself (the body no longer runs under `sh`) and no fix that takes `sh` out keeps a status only dash gave. The review's API pass found it; it is in the marker for the cycle to see. Every other input the review compared, on every route, exits as before, and so does every `--probe`.
+
+### Mutation run
+
+Each mutant is a scratch copy of the script with one change, run against the repo's test file from a scratch tree (the repo's script is never edited). On the script as it stands after review pass 1's fixes, 22 of 22 fail at least one test, and the unchanged script passes 21 of 21:
+
+| Mutant | Fails tests |
+|---|---|
+| the body under `sh` again, `exec --` kept | 16, 18, 19, 20, 21 (17, `sh` is bash, passes: bash as `sh` takes `--`) |
+| the old line: `sh -c`, `exec "$@"` | 16, 17, 18, 19, 20, 21 |
+| `exec "$@"` without `--`, under `"$BASH"` | 17, 18 |
+| a bare `"$@"`; `command -- "$@"` | 17, 18, 19 (each) |
+| `bash` by name in place of `"$BASH"` | 16 |
+| the body's `$0` back to `confine-tests` | 16, 17, 18 |
+| the fallback warning removed | 15, 20 |
+| the fallback warning at selection time (so on probes and before refusals) | 14, 15, 20 |
+| the fallback warning on stdout | 15, 16, 17, 18, 20, 21 |
+| the fallback warning after the banner | 15, 16, 20 |
+| the fallback warning printed twice | 20 |
+| the two fallback headlines swapped | 15, 20 |
+| the `--no-loopback` warning removed | 11, 12, 20 |
+| `--no-loopback` without bwrap prints the flag's warning | 15 |
+| an extra line on the fallback route after the shared text | 15, 20 |
+| the fallback refuses (exit 3) after warning | 15, 16, 17, 18, 19, 20, 21 |
+| the shared text loses its uid 0 clause | 11, 15, 20 |
+| the way back's later lines dropped | 11, 15, 20 |
+| the way back's first words dropped | 11, 20 |
+| the `--no-loopback` warning re-wrapped (the first version's line breaks) | 11, 15, 20 |
+| the fallback with `--no-loopback` does not say to drop the flag | 15 |
+
+Test numbers are positions in the file: 11 and 12 are the `--no-loopback` tests, 14 the fallback probe, 15 unshare without `ip`, 16 the unshare run's argv, 17 and 18 the dash-named command with `sh` as bash and as dash, 19 the builtin's name, 20 the fallback's warning, 21 `lo` not raised.
+
+Two runs came before this one. In the first, the "extra line" mutant passed every test: the comparison of shared text stopped at its fourth line. The test was strengthened (ca6cf3be), and the second run had no survivor (19 of 19). After review pass 1 changed the warning's shape, the mutants were rewritten for it and three were added.
+
+The test of the whole `--no-loopback` warning (test 11) also passes against the script at 23ffb16c: the text it compares is the old text, which is what "no change to `--probe`" means on that route.
+
+### Gates
+
+| Gate | Result |
+|---|---|
+| `scripts/confine-tests.sh --probe` | exit 3 (first line quoted under "What exists"): nothing in this branch ran confined |
+| `timeout 300 bats test/scripts/confine-tests.bats` | 21 of 21 pass (the dash test runs here; it would skip on a host without dash) |
+| `scripts/hermeticity-lint --root .` | exit 0: "143 test file(s) checked, no unstubbed network spawns" |
+| `shellcheck -x -e SC1091 -s bash -S warning` on the script and the test file (the health check's command) | exit 0 |
+| `scripts/run-tests.sh` (whole suite, serial, output to a file) at ca6cf3be, before review | exit 0: 2012 of 2012 pass |
+
+### Review
+
+`docs/reviews/code-review-rubric-2026-11-10-confine-tests-dash-and-fallback.md` has every finding and what was done with it.
+
+Pass 1 (iteration 1 of 3) at de1f4bf9: one fact-check, then security, performance and API-consistency critics. No red. What it found, and what changed:
+
+- The first version re-wrapped the `--no-loopback` warning, so a `--no-loopback --probe` printed the same words with different line breaks: a change to `--probe`, which the brief forbids. Fixed in code (the old line breaks are back; a test compares the whole text). The API pass advised correcting the claim and keeping the re-wrap; the brief's line is the stricter reading and costs one function argument, so I took it.
+- With `--no-loopback` and no usable bwrap, the fallback's way back ("Install bwrap") was not enough while the flag stayed. It now says to drop the flag too.
+- "refused here" became "unusable here", the script's own word for a primitive that does not work; the body's `$0` became `confine-tests: unshare body`; the header's sentence on when `--no-loopback` warns now says "where bwrap works"; the guide says "the first line of its stdout".
+- Four wrong or loose sentences in this doc and the pre-mortem (that the repo rules file cites a line number; "ran `z`"; "238 code lines"; the invariant about `--probe`).
+- Two sentences in commit messages cannot be changed and stand as written: d03a3078 says each of its seven failing tests fails "for the reason it names" (the fallback test fails earlier there, on `exec: sh: not found`), and 6465a156 says `--probe` is unchanged for every input (true of the branch's final script, not of that commit's).
+
+No row was added to `docs/reviews/override-log.md` for what was not changed: that file is outside this brief's Paths and on the self-merge floor. The rubric lists each one.
+
+### The first doc's smaller observations
+
+The brief keeps three of them out of scope and asks whether a fix here touches one. None does: the probe still asks bwrap for less than a run does (O1; the stand-in's two accepted argv shapes are unchanged), no primitive and no command still exits 3 (O3; pinned nowhere, as before), and the bwrap profile is untouched (O5).
+
+## What a stub cannot show
+
+As in the first unit: no test here creates a namespace. In particular nothing shows that a real `unshare -rn` starts `"$BASH"` (the review's one Unverifiable claim), or what a real bwrap or unshare exits with when the command cannot be run (the stand-ins exec it themselves, so the three run forms agree here by construction).
+
+## Observations for the cycle
+
+- **A fallback `--probe` says nothing about the weaker profile.** It prints `primitive available: unshare (loopback=1)` and exits 0. The brief keeps `--probe` unchanged, so this unit did not touch it (DD-2). The review's security pass read constraint H2 ("a degraded primitive ... names what went unenforced") as possibly covering it. Moving the warning's call to selection time is one line; it would also make a `--no-loopback` probe and a fallback probe behave alike.
+- **Under the unshare fallback the suite runs as uid 0**, so the four tests here that begin `[ "$(id -u)" -ne 0 ] || skip` skip (`test/cc-push.bats:417`, `test/hooks/guard-trusted-writes.bats:889`, `test/install-host.bats:680`, `test/cc-isolated-functions.bats:1970`). A "passes confined" from that tier covers four tests fewer than the unconfined gate (pre-mortem, narrative 1).
+- **The test file is 516 lines**, past the 500-line guideline and the plan's "no file passes 500": review pass 1's fixes added the whole-warning constant and exact comparisons. It is one cohesive file; splitting it would duplicate the harness at its top.
+
+## Follow-ups (outside this brief's Paths)
+
+- `docs/decisions/018-argv-exec-over-shell-string-interpolation.md:43,117` cite `scripts/confine-tests.sh:220`, which is no longer the pattern's line. The comment above the body now opens "Decision 018's reference pattern", a phrase a citation can name without a line number.
+- `docs/roadmap.md:49` words the probe step for new briefs as "exit 0: tests pass confined". Once a probe names `unshare`, the step should also ask for the run's first stderr line.
+- The first live run (the sandbox's, when it merges) should confirm that `"$BASH"` starts under a real `unshare -rn`.
+- A failure-pattern entry for D1's shape (bash's `exec` reads a command's dash-leading first word as an option; dash's `exec` takes no `--`; so `exec "$@"` under `sh` is host-dependent) may be worth the cycle's adding: this unit could not write `docs/failure-patterns.md`.
+
+## Docs
+
+The script's header comment (which `--help` prints) and `guides/test-hermeticity.md` describe the fallback and its warning. The guide's `Last verified:` date is not moved: only its lines about `confine-tests.sh` were checked against the code.
 
 ## Files read
 

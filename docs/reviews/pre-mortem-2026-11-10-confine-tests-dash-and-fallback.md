@@ -1,6 +1,6 @@
 # Pre-Mortem: the two confine-tests fixes
 
-**Proposal:** the diff 23ffb16c..ca6cf3be on `fix/confine-tests-dash-and-fallback`: `scripts/confine-tests.sh` runs its `unshare` body under `"$BASH"` with `exec -- "$@"`, and a run that falls back from bwrap to unshare prints a warning first. Plan and design record: `docs/working/research-2026-11-10-confine-tests-dash-and-fallback.md`.
+**Proposal:** the diff 23ffb16c..ca6cf3be (two details below were brought up to date after review pass 1 changed the warning's wording) on `fix/confine-tests-dash-and-fallback`: `scripts/confine-tests.sh` runs its `unshare` body under `"$BASH"` with `exec -- "$@"`, and a run that falls back from bwrap to unshare prints a warning first. Plan and design record: `docs/working/research-2026-11-10-confine-tests-dash-and-fallback.md`.
 **Date:** 2026-11-10
 **Upstream what-if analysis:** none
 
@@ -9,7 +9,7 @@
 > provide its output — this skill is sharpest when seeded with already-mapped assumptions
 > and coupling points.
 
-Why this ran: pr-prep's fallback check fired on a count of 539 changed lines, 301 of them the research doc; the code change is 238 lines and touches no enforcement file. The plan had recorded "not triggered". It is run here by the author, inline, with no agent dispatch.
+Why this ran: pr-prep's fallback check fired on a count of 539 changed lines, 301 of them the research doc; 238 lines change outside `docs/` (227 in the script and its test, 11 in the guide), none in an enforcement file. The plan had recorded "not triggered". It is run here by the author, inline, with no agent dispatch.
 
 Prior art: `grep -ril -e 'BASH_ENV' -e 'uid 0' -e 'warning fatigue' -e 'unshare -r' docs/decisions/ docs/working/` returns decision 017, the two earlier confine-tests research docs and this unit's own. Decision 017 and `docs/working/research-2026-11-07-confine-tests-situation.md` already hold narrative 1's ground (the unshare tier is weaker); the others are new.
 
@@ -18,8 +18,8 @@ Prior art: `grep -ril -e 'BASH_ENV' -e 'uid 0' -e 'warning fatigue' -e 'unshare 
 ### 1. "Confined and green", four tests short
 
 - **Root cause:** `--probe` on a host with `unshare` and no usable `bwrap` prints `primitive available: unshare (loopback=1)` and exits 0, with no warning (the brief keeps `--probe` unchanged; `scripts/confine-tests.sh`, the block under "# --- run").
-- **Chain of consequences:** The cc-isolated sandbox merges and the image gains a kernel that allows `unshare -rn` in a session where nested `bwrap` is refused. A build loop follows its brief's wording (`docs/roadmap.md:49`: "exit 0: tests pass confined"). It runs `scripts/confine-tests.sh -- scripts/run-tests.sh` with output sent to a file, as the repo rules ask. The run prints the new warning as the file's first seven lines. `unshare -r` makes the suite uid 0, so the four tests that begin `[ "$(id -u)" -ne 0 ] || skip` (`test/cc-push.bats:417`, `test/hooks/guard-trusted-writes.bats:889`, `test/install-host.bats:680`, `test/cc-isolated-functions.bats:1970`) skip. The loop reads the last line, sees a pass, and records "passes confined".
-- **Observable outcome:** a research doc says the suite passed confined; the run's file starts with `confine-tests: WARNING — bwrap was refused here` and lists four skips that an unconfined run does not have. Nobody quotes either.
+- **Chain of consequences:** The cc-isolated sandbox merges and the image gains a kernel that allows `unshare -rn` in a session where nested `bwrap` is refused. A build loop follows its brief's wording (`docs/roadmap.md:49`: "exit 0: tests pass confined"). It runs `scripts/confine-tests.sh -- scripts/run-tests.sh` with output sent to a file, as the repo rules ask. The run prints the new warning as the file's first six lines. `unshare -r` makes the suite uid 0, so the four tests that begin `[ "$(id -u)" -ne 0 ] || skip` (`test/cc-push.bats:417`, `test/hooks/guard-trusted-writes.bats:889`, `test/install-host.bats:680`, `test/cc-isolated-functions.bats:1970`) skip. The loop reads the last line, sees a pass, and records "passes confined".
+- **Observable outcome:** a research doc says the suite passed confined; the run's file starts with `confine-tests: WARNING — bwrap is installed but unusable here` and lists four skips that an unconfined run does not have. Nobody quotes either.
 - **Plausibility:** Plausible
 - **Severity:** Low (four permission tests, each still run by the unconfined gate)
 - **Tag:** `[PRIOR CONSIDERATION]` in part: `docs/working/research-2026-11-07-confine-tests-situation.md` (the unshare tier), FP-050.

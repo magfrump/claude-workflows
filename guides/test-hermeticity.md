@@ -57,10 +57,10 @@ created. It refuses loudly (exit 3) rather than running your tests unconfined â€
 guarding is worse than no guard.
 
 **The runner has two primitives, and the weaker one says so.** `bwrap` adds a read-only root, a private
-`/tmp` and a pid namespace to the network namespace. When `bwrap` is not installed or is refused, a run
+`/tmp` and a pid namespace to the network namespace. When `bwrap` is not installed or is unusable, a run
 falls back to `unshare -rn`, which denies the network and nothing else: the tests run as uid 0 against the
 real filesystem. The run goes ahead, and first prints a warning on stderr that names what is absent.
-`--probe` names the primitive it found (`bwrap` or `unshare`) on its first line.
+`--probe` names the primitive it found (`bwrap` or `unshare`) on the first line of its stdout.
 
 ## Fixing a violation
 
