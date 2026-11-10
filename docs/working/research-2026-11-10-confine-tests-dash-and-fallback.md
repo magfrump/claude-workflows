@@ -3,7 +3,7 @@
 - **Goal**: Fix the two defects the script's first tests recorded: a test command whose name starts with `-` is misread on the `unshare` path when `sh` is bash (D1), and a plain fallback from `bwrap` to `unshare` runs without saying what `unshare` does not confine (D2); and list the test file in the guide.
 - **Problem framing**: The script the repo rules name as the reference for passing untrusted text to a subprocess hands the command to whatever `sh` is, and what `exec "$@"` means depends on that shell; and it warns about the weaker `unshare` profile on one of the two routes that reach it. Considered and discarded: "D1 is a missing `--`, so add it to the `sh` body". dash's `exec` runs `--` as the command, so no one spelling of the last line is right under both shells; the problem is the choice of interpreter, not the spelling.
 - **Project state**: this branch changes the script's `unshare` run form and its warning, the test file and one guide · second of the confine-tests follow-ups, after `test/confine-tests-bats` (merged at 9d6d6101) · not blocked (cite: docs/working/briefs/2026-11-10-confine-tests-dash-and-fallback.md)
-- **Task status**: in-progress (implemented; two review passes done and their fixes in; a check of the last fixes next)
+- **Task status**: complete (the review loop ended at its cap of three iterations with no red; one amber is a question for the owner, in the marker and below; follow-ups outside the brief's Paths go to the dev cycle)
 
 Brief: `docs/working/briefs/2026-11-10-confine-tests-dash-and-fallback.md` · Branch: `fix/confine-tests-dash-and-fallback` from 23ffb16c · Date: 2026-11-10
 
@@ -229,7 +229,7 @@ Implementation order: `1 → 2 → [3, 4] → 5 → 6 → 7`.
 Size estimate: about 120 changed code lines outside `docs/`, under the ~400 entry cap. No file passes 500 lines.
 
 Estimated context cost: Research ~60k, Implementation ~40k, Review ~40k of this session's own tokens (review agents' totals are reported apart).
-Actual context cost (post-implementation): __
+Actual context cost (post-implementation): this session's own share was not metered; it ran well past the estimate in every phase, most of all in review (briefing eleven agents, merging three fact-check replicates, three rounds of fixes) and in reading the workflow and review-skill documents. The review agents are counted apart, by their reported totals: about 2.0M tokens over eleven runs (pass 1 about 575k, the final pass about 1,174k, pass 3 about 262k). The scope did not grow past the plan: the same three files and this doc, plus the review's own reports.
 
 `/pre-mortem`: not triggered (not an enforcement file, under 500 lines, no irreversible step). The change does sit at a trust boundary in the sense of decision 018 (text handed to a subprocess), so "Failure modes considered" below is filled in. `/architecture-review`: not triggered (one script and its test; no module boundary moves).
 
@@ -352,6 +352,11 @@ The test of the whole `--no-loopback` warning (test 11) also passes against the 
 | `shellcheck -x -e SC1091 -s bash -S warning` on the script and the test file (the health check's command) | exit 0 |
 | `scripts/run-tests.sh` (whole suite, output to a file; one file at a time, the runner's default) at ca6cf3be, before review | exit 0: 2012 `ok` lines and no `not ok`. Two of the 2012 are skips that are not this branch's (tests 1190 and 1191: "settings file has no permissions.allow array"), and the runner lists 50 report-dependent suites as NOT RUN, which is its own report gating |
 | `scripts/lite-review.py --range de1f4bf9..bd312d15 --mode fix-drift` (the drift check on review pass 1's fixes) | "FINDINGS: NONE" |
+| the same drift check over the final pass's fix commit, 6276e42c | declined: the diff, with six review reports in it, is 339 KB against the checker's 192 KB limit, and it says to use the full review path. Pass 3's fact-check, scoped to that commit, is that path |
+| the same drift check over pass 3's fix commit alone, fc38ba4c | "FINDINGS: NONE" |
+| `timeout 300 bats test/scripts/confine-tests.bats`, the health check's shellcheck command, and `scripts/hermeticity-lint --root .` at fc38ba4c | 21 of 21 pass; exit 0; exit 0 (143 test files) |
+| `scripts/run-tests.sh` (whole suite, output to a file) on the branch's final tree: fc38ba4c plus the last commit's changes (the brief's status line and this doc), all but this row, which was added after the run | exit 0: 2012 `ok` lines and no `not ok`; the same two skips and the same 50 report-dependent suites NOT RUN. No probe was running, and the machine's load was under 1 at the start |
+| `scripts/build-loop.sh --check` on this brief, run from the branch (advisory) | the refusal it gives any self-merge brief checked from its own branch, then one `path` line per changed file; no `deny` line and no `gap` line |
 
 ### Review
 
@@ -451,3 +456,11 @@ scripts/lib/dev-cycle-read.sh
 scripts/run-tests.sh
 scripts/health-check.sh
 hooks/live-verify-gate.sh
+docs/roadmap.md
+scripts/lite-review.py
+test/cc-isolated-functions.bats
+test/cc-push.bats
+test/install-host.bats
+skills/code-review/SKILL.md
+skills/code-review/references/rubric.md
+skills/pre-mortem/SKILL.md
