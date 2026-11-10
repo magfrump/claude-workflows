@@ -132,8 +132,9 @@ EOF
 
 # confine "STUB..." [VAR=value...] -- [ARG...]: run the script with ARGs in an
 # empty environment whose PATH holds the named stand-ins (of bwrap, unshare,
-# ip) and the real tools. Fails the test when a stand-in refused a call. The
-# script's pid goes to $LOG/script-pid (bash and env exec, so it is the same).
+# ip) and the real tools. Fails the test when a stand-in got a call it does
+# not accept. The script's pid goes to $LOG/script-pid (bash and env exec, so
+# it is the same).
 confine() {
   local path="$TOOLS" tool assigns=()
   for tool in $1; do path="$T/stub/$tool:$path"; done
@@ -147,7 +148,9 @@ confine() {
 
 # same_process: the test command ran as the process the script was. No step
 # between them forked: the script execs its primitive, and its sh body execs
-# the command. (A stand-in execs the command too; the real bwrap forks it.)
+# the command. (The stand-in execs the command too; what a real primitive does
+# with it is not tested.) Where sh is bash this cannot see the sh body's exec:
+# bash runs the last command of a -c string in place with or without it.
 same_process() {
   cmp -s "$LOG/script-pid" "$LOG/child-pid" || { echo "the command was not exec'd all the way"; return 1; }
 }
@@ -346,7 +349,6 @@ refused() {
   confine "unshare ip" STUB_UNSHARE=ok -- --probe
   [ "$status" -eq 0 ]
   [ "${lines[0]}" = "confine-tests: primitive available: unshare (loopback=1)" ]
-  [ -z "$stderr" ]
   call unshare 1 -rn true
   confine "bwrap unshare ip" STUB_BWRAP=refused STUB_UNSHARE=ok -- --probe
   [ "$status" -eq 0 ]
@@ -355,11 +357,16 @@ refused() {
 }
 
 @test "unshare without ip is refused (exit 3), probe or run, and serves --no-loopback" {
+  # The refusal need not be stderr's first line: a fallback to unshare may
+  # come to warn before it (research doc, D2), and that is not pinned here.
   confine "unshare" STUB_UNSHARE=ok -- --probe
-  refused 3 "$NO_IP"
+  [ "$status" -eq 3 ]
+  [[ "$stderr" == *"$NO_IP"* ]]
+  [ -z "$output" ]
   confine "unshare" STUB_UNSHARE=ok -- -- "$RECORD" one
-  refused 3 "$NO_IP"
-  [[ "$stderr" == *"--no-loopback"* ]]
+  [ "$status" -eq 3 ]
+  [[ "$stderr" == *"$NO_IP"* && "$stderr" == *"--no-loopback"* ]]
+  [ -z "$output" ]
   calls child 0
   confine "unshare" STUB_UNSHARE=ok -- --no-loopback --probe
   [ "$status" -eq 0 ]
