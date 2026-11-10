@@ -65,8 +65,10 @@ one place every trigger is certain to be checked, so it checks all of them every
   `~/.claude/scripts/questions.sh` (a uid-owned link; its own hints still print that path).
 - **The orchestrator's git** (worktrees, staging, its commits, merging main into WT, ancestry
   checks) is plain `git -C PATH …`, with the user's normal config and identity: before the
-  iteration's first commit, `git -C WT config user.email` and `… user.name` must each print
-  one (none: a stop, since git would otherwise make one up from the account and host). Two honest settings are pinned where they matter:
+  iteration's first commit, `git -C WT -c user.useConfigOnly=true var GIT_AUTHOR_IDENT` and
+  the same for `GIT_COMMITTER_IDENT` must each exit 0 and print one, from git config or the
+  environment's identity variables, the question the gate's own merge asks (a failure: a
+  stop, since git would otherwise take `EMAIL` or make one up from the account and host). Two honest settings are pinned where they matter:
   `-c log.showSignature=false` on a `log` whose output is read, and `-c commit.gpgSign=false`
   on a command that writes a commit (no signing key in the sandbox). `add`, `mv` and `rm`
   run as `git --literal-pathspecs -C PATH add -- FILE…`, so a path holding `*` or
