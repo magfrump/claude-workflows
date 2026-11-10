@@ -38,3 +38,5 @@ Paths: docs/working/research-2026-11-10-cycle-overhead-numbers.md docs/working/b
 - Changing the dev-cycle skill, its scripts or `docs/dev-cycle.md`: the light pass itself is the owner's decision and a later unit.
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`: the dev cycle owns those.
 - Any model run made only to measure cost.
+
+Dispatched: 1
