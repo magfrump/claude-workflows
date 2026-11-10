@@ -55,6 +55,15 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   The test merged at 9d6d6101 and found two defects, now In flight as their own brief. It
   also noted that `--probe` asks `bwrap` for less than a run does, so a probe can pass and
   the run then fail to start: check that in the same `--probe` run.
+  The two defects are fixed (b0ebed19). Whether the `unshare` fallback should run or refuse
+  is Q-272. For the first live run: confirm the script's bash starts under a real
+  `unshare -rn`, and count the tests that skip as uid 0 (ten, by the loop's count), since a
+  pass from that tier covers less. When a probe names `unshare`, a brief's test step also
+  quotes the run's first stderr line. Two small records wait for a review merge that
+  touches them anyway: decision 018 cites `scripts/confine-tests.sh:220`, a line that moved
+  (the comment above it now opens "Decision 018's reference pattern"), and
+  `docs/failure-patterns.md` may deserve an entry for `exec "$@"` under `sh` reading a
+  dash-leading word as an option where `sh` is bash.
 
 - **Agent: the `Harness feedback` section warning** (filed 2026-11-06, step 3, trial T7).
   Motive: every health check warns that this H2 of the global instructions is missing from
@@ -115,11 +124,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   review policy, gate code). Motive: the Now agent item "after the Q-261 release".
   Ready at 8b03c7e6: merge entry Q-271 (its tentative pick ships the new paste, whose last
   change no reviewer read).
-- Fix two defects the first tests found in `scripts/confine-tests.sh`: a command name
-  starting with a dash is misread where `sh` is bash, and a fallback to `unshare` prints
-  no warning (`docs/working/briefs/2026-11-10-confine-tests-dash-and-fallback.md`;
-  self-merge). Motive: the merged test brief's marker (9d6d6101); constraint H2 for the
-  warning.
 
 ## Next
 
@@ -370,6 +374,11 @@ Unranked. Each names the signal that motivates it.
 ## Done
 
 Items finished since the last cycle, with the merge.
+
+- Two defects in `scripts/confine-tests.sh` fixed: a command name starting with a dash now
+  runs as named, and a fallback to `unshare` prints a warning first
+  (`docs/working/briefs/closed/2026-11-10-confine-tests-dash-and-fallback.md`). Merged
+  b0ebed19, self-merge. Its question (run or refuse on a fallback) is Q-272.
 
 - A first bats test for `scripts/confine-tests.sh`, 17 tests behind PATH stand-ins
   (`docs/working/briefs/closed/2026-11-10-confine-tests-bats.md`). Merged 9d6d6101,

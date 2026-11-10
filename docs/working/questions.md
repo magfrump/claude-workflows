@@ -31,12 +31,38 @@ The index below is generated — edit entries, not the table.
 | [Q-269](#q-269--deep-audit-scope-and-timing) | you: judgment | Run the deep audit the dev cycle keeps saying is due, and if so, the small one or the full one? | 2026-11-10 |
 | [Q-270](#q-270--light-pass-between-full-cycles) | you: judgment | Between full dev-cycle iterations, should the cycle run a light pass, and if so, what brings a full cycle b... | 2026-11-10 |
 | [Q-271](#q-271--merge-gate-2026-11-10-dev-cycle-skill-held-fixes-8b03c7e6a245) | you: judgment | Merge three fixes to the dev-cycle skill, including a new release paste whose final form no reviewer has read? | 2026-11-10 |
+| [Q-272](#q-272--confine-tests-fallback-run-or-refuse) | you: judgment | When the test-confinement script cannot use its strong tool, should it still run the tests under its weak o... | 2026-11-10 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | Q-167: (b) and (d) answered 2026-11-07 (answers-11-7-26.txt), on bless 91c5f79dd91eb7ee, which --probe-only... | 2026-10-15 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Q-255: first half answered 2026-11-07 (answers-11-7-26.txt): all four fronted probes through plugins-artifa... | 2026-11-05 |
 <!-- index:end -->
 
 ## Open
+
+### Q-272 · confine-tests-fallback-run-or-refuse
+**Needs:** you: judgment · **Opened:** 2026-11-10 · **Status:** OPEN
+
+When the test-confinement script cannot use its strong tool, should it still run the tests under its weak one, or refuse?
+
+**If you say no:** nothing changes, which is also what happens if you never answer: the script runs under the weak tool after printing a warning, as merged today. Nothing calls the script yet, so no run is exposed while this is open.
+
+**What this is about.** `scripts/confine-tests.sh` runs a test command with the network cut off. It prefers `bwrap`, which also makes the filesystem read-only and gives the tests a private `/tmp`. When `bwrap` is missing or refused it falls back to `unshare`, which cuts the network and nothing else: the tests run as uid 0 inside a user namespace and can write to the real filesystem. Until today that fallback said nothing. A fix merged at b0ebed19 without review (a self-merge) makes it print a warning naming what `unshare` does not confine, and then run.
+
+**Why it comes to you.** One of the four hard constraints in `docs/constraints.md`, H2, says a gate fails closed: "a ... degraded primitive refuses and names what went unenforced ... degradation only ever narrows access". Running with less confinement names the gap but does not refuse. The brief I wrote for the fix asked only for the warning and put a refusal out of scope, so the code follows the brief, not the whole of H2. The build loop's security review rated the remaining gap Medium: a run on a host without `bwrap` can write to that host and still report a pass. The gap is older than today's change, which narrowed it.
+
+- **Why it's yours:** keeping the run means recording an exception to a hard constraint, and only you change those.
+- **Read:** `docs/working/research-2026-11-10-confine-tests-dash-and-fallback.md` (its question section and its "Exit statuses" table) · `docs/reviews/security-review-final-2026-11-10-confine-tests-dash-and-fallback.md` · H2 in `docs/constraints.md`
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Run and warn** | As merged. `unshare` becomes a stated exception to H2, which you add to `docs/constraints.md` or ask a session to draft | A line in the constraints file | A host without `bwrap` gets a pass from a run that could write to it |
+| **[2] Refuse unless asked** | Without `bwrap` the script exits 3, unless a new flag asks for `unshare` | One more build loop, self-merged | Hosts with only `unshare` lose confined runs until someone passes the flag |
+| **[3] Always refuse** | Without `bwrap` the script exits 3; `unshare` stays only behind `--no-loopback` | One more build loop, self-merged | As [2], with no way to opt in |
+
+My recommendation is [2]: it meets H2 as written without an exception, and the weak mode stays available to someone who asks for it. It can wait until the sandbox branch (Q-267) merges, since that is when the image gains `bwrap` and the script first has something to run under. The same answer settles a smaller point: on a fallback, the script's `--probe` check exits 0 with no warning today, and under [2] or [3] it would refuse too.
+
+- **Interim:** [1], as merged.
+- **If the answer differs:** one small brief changes the fallback and its tests; nothing merged today is redone.
 
 ### Q-271 · merge-gate-2026-11-10-dev-cycle-skill-held-fixes-8b03c7e6a245
 **Needs:** you: judgment · **Opened:** 2026-11-10 · **Status:** OPEN
