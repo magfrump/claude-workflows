@@ -110,9 +110,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   environment identity, the image-lag paste runs from main's tip, and the record says why a
   free slot stays empty (`docs/working/briefs/2026-11-10-dev-cycle-skill-held-fixes.md`;
   review policy, gate code). Motive: the Now agent item "after the Q-261 release".
-- What the dev cycle costs per iteration, for the light-pass decision
-  (`docs/working/briefs/2026-11-10-cycle-overhead-numbers.md`; self-merge, docs only).
-  Motive: Next 3 (Q-154) and the owner's 2026-10-20 note on verification overhead.
 - A first bats test for `scripts/confine-tests.sh`
   (`docs/working/briefs/2026-11-10-confine-tests-bats.md`; self-merge, one test file).
   Motive: the confine-tests research (be12889c); watch Q-161 revives confinement once
@@ -138,8 +135,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
    full cycle every iteration for now and a light pass of steps 7, 8 and 10 between full
    cycles once the costs are visible (plan D12, F53). First step: after the orchestrator's
    first day of iterations here (after Q-156's release), total each iteration's tokens and
-   wall time from its records and bring the numbers to you. That first step is In flight
-   (`docs/working/briefs/2026-11-10-cycle-overhead-numbers.md`).
+   wall time from its records and bring the numbers to you. That first step is done
+   (c70bb17a; no token counts exist to total), and the choice is now Q-270.
 
 ## Ideas
 
@@ -367,6 +364,10 @@ Unranked. Each names the signal that motivates it.
 ## Done
 
 Items finished since the last cycle, with the merge.
+
+- What the dev cycle costs per iteration, for the light-pass decision
+  (`docs/working/briefs/closed/2026-11-10-cycle-overhead-numbers.md`). Merged c70bb17a,
+  self-merge (docs only). Its question for the owner is Q-270.
 
 - Agent: after the Q-261 release (filed 2026-11-06). Done in-cycle on
   `chore/dev-cycle-2026-11-10-1902`: the image now holds main's gate code (both at
