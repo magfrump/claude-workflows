@@ -483,15 +483,19 @@ shim() {
     none=(env -u GIT_AUTHOR_NAME -u GIT_AUTHOR_EMAIL -u GIT_COMMITTER_NAME -u GIT_COMMITTER_EMAIL -u EMAIL)
     # Neither source: a stop, where plain git would take EMAIL or make an identity up from the account and host.
     run --separate-stderr ident "${none[@]}"; [ "$status" -ne 0 ] && [ -z "$output" ] && [[ "$stderr" == *"auto-detection is disabled"* ]] || { show; return 1; }
-    run --separate-stderr ident "${none[@]}" EMAIL=e@example.invalid; [ "$status" -ne 0 ] && [ -z "$output" ] || { show; return 1; }
+    # Names with the email only in EMAIL: plain git var prints an identity here, so this case fails if the flag goes.
+    e=(GIT_AUTHOR_NAME=a GIT_COMMITTER_NAME=a EMAIL=e@example.invalid)
+    run --separate-stderr "${none[@]}" "${e[@]}" git -C "$R" var GIT_AUTHOR_IDENT; [ "$status" -eq 0 ] && [[ "$output" == "a <e@example.invalid> "* ]] || { show; return 1; }
+    run --separate-stderr ident "${none[@]}" "${e[@]}"; [ "$status" -ne 0 ] && [ -z "$output" ] || { show; return 1; }
     # An author with no committer: the second call stops it.
     run --separate-stderr ident "${none[@]}" GIT_AUTHOR_NAME=a GIT_AUTHOR_EMAIL=a@example.invalid
     [ "$status" -ne 0 ] && [ "${#lines[@]}" -eq 1 ] && [[ "${lines[0]}" == "a <a@example.invalid> "* ]] || { show; return 1; }
     # The environment's identity (bl_setup's), with no user.* in any config: the case the old read reported as none.
     [ -z "$(git config user.email)" ] || return 1
     run --separate-stderr ident env; [ "$status" -eq 0 ] && [[ "${lines[0]}" == "t <t@example.invalid> "* && "${lines[1]}" == "t <t@example.invalid> "* ]] || { show; return 1; }
-    # Git config's identity, with nothing in the environment.
-    git config user.name c; git config user.email c@example.invalid
+    # Git config's identity, with nothing in the environment: a name alone stops, both pass.
+    git config user.name c; run --separate-stderr ident "${none[@]}"; [ "$status" -ne 0 ] && [ -z "$output" ] || { show; return 1; }
+    git config user.email c@example.invalid
     run --separate-stderr ident "${none[@]}"; [ "$status" -eq 0 ] && [[ "${lines[0]}" == "c <c@example.invalid> "* && "${lines[1]}" == "c <c@example.invalid> "* ]] || { show; return 1; }
 }
 
@@ -514,8 +518,8 @@ shim() {
     for p in $P; do if [[ "$p" == */ ]]; then mkdir -p "$p" && echo a > "${p}x"; else mkdir -p "${p%/*}" && echo a > "$p"; fi; done
     printf '#!/bin/sh\necho ran >> "%s"\n' "$I" > devcontainer-config/install.sh; chmod +x devcontainer-config/install.sh
     echo d > docs/d.md; commit_all gate; M="$(git rev-parse HEAD)"
-    # both DIR SHA CHECK...: the paste under bash, and under zsh where there is one (the owner's shell may be either), then CHECK.
-    shs=(bash); ! command -v zsh > /dev/null || shs+=(zsh)
+    # both DIR SHA CHECK...: the paste under bash and sh, and under zsh where there is one (the owner's shell may be any), then CHECK.
+    shs=(bash sh); ! command -v zsh > /dev/null || shs+=(zsh)
     both() { local sh; for sh in "${shs[@]}"; do rm -f "$I"; run --separate-stderr "$sh" -c "$c" paste "$1" "$2"; "${@:3}" || { echo "under $sh"; show; return 1; }; done; }
     ran() { [ "$status" -eq 0 ] && [ -z "$output" ] && [ "$(cat "$I")" = ran ]; }
     nope() { [ "$status" -eq 1 ] && [ "$output" = "release refused: $1" ] && [ ! -e "$I" ]; }
@@ -525,12 +529,17 @@ shim() {
     # Off main's tip: a branch left checked out, and a checkout still at M.
     git checkout -q -b feat; echo x > other.txt; commit_all work; both "$R" "$M" nope "this checkout is not at main's tip"
     git checkout -q --detach "$M"; both "$R" "$M" nope "this checkout is not at main's tip"
-    # Main's tip with gate code the entry did not describe.
-    git checkout -q main; echo b > scripts/lib/x; commit_all "gate code"
-    both "$R" "$M" nope "scripts/lib/ is not as at $M; the next dev-cycle iteration rewrites this paste"
+    # Main's tip with gate code the entry did not describe: each PATHS entry in turn, so a loop that stops early shows.
+    git checkout -q main; T="$(git rev-parse HEAD)"
+    for p in $P; do
+        if [[ "$p" == */ ]]; then echo b > "${p}x"; else echo b > "$p"; fi
+        commit_all "gate code"; both "$R" "$M" nope "$p is not as at $M; the next dev-cycle iteration rewrites this paste"; git reset -q --hard "$T"
+    done
     # Reads that fail refuse: a gate file gone, an M this clone lacks, a directory that is no repository.
     git rm -q scripts/d6.sh; commit_all gone; both "$R" "$M" nope "scripts/d6.sh is not as at $M; the next dev-cycle iteration rewrites this paste"
-    git reset -q --hard HEAD~2
+    # Gone on both sides, where two failed reads would compare equal: still a refusal.
+    G="$(git rev-parse HEAD)"; both "$R" "$G" nope "scripts/d6.sh is not as at $G; the next dev-cycle iteration rewrites this paste"
+    git reset -q --hard "$T"
     z=0123456789012345678901234567890123456789; both "$R" "$z" nope "scripts/build-loop.sh is not as at $z; the next dev-cycle iteration rewrites this paste"
     mkdir -p "$BATS_TEST_TMPDIR/plain" && cp -r devcontainer-config "$BATS_TEST_TMPDIR/plain/"
     export GIT_CEILING_DIRECTORIES="$BATS_TEST_TMPDIR"; both "$BATS_TEST_TMPDIR/plain" "$M" nope "this checkout is not at main's tip"; unset GIT_CEILING_DIRECTORIES

@@ -2,7 +2,7 @@
 
 **Goal**: as the research doc.
 **Project state**: as the research doc.
-**Task status**: in-progress (plan written; tests next)
+**Task status**: in-progress (implemented; review-fix loop next)
 Research: docs/working/research-2026-11-10-dev-cycle-skill-held-fixes.md
 
 ## Approach
@@ -42,13 +42,27 @@ Actual context cost (post-implementation): __
 | Prose: item 2 | "a checkout to reach main's tip included", the rerun after a step 7 merge, the `image-off-main` option naming main's tip | unit | the missing string |
 | Prose: item 3 | the template's `8.` line and step 8 both say "why each free slot stayed free" | unit | the missing string |
 
-The `test-strategy` skill's gap list is folded in below once its run returns.
+The `test-strategy` skill ran as a read-only subagent (its report came back as text; it wrote no file). Its gaps, and where each landed:
+
+| Gap | What | Outcome |
+|---|---|---|
+| G1-G3 | identity: environment-only passes; a guessed identity stops; the committer call; a config name with no email | test 1. The `EMAIL` case now sets the names, so it fails if the flag goes (plain `git var` is shown to pass there) |
+| G4, G16, G17 | old wordings stay gone; the prose that moves with the paste; the free-slot clause in both places | tests 1 and 3 |
+| G5, G6, G8 | the paste at M and at main's tip; off the tip; failed reads | test 2 |
+| G7 | each of the six PATHS entries refuses, so a loop that stops early shows | test 2, one case per entry |
+| G9 | an empty path list passes | not tested: the template is pinned (`for p in PATHS;`); research doc, bypass table |
+| G10 | `exit 1` must end only the `( … )` | test 2's line pattern: `cd A && ( … ) && ./devcontainer-config/install.sh` |
+| G11 | bash, sh and zsh | test 2 runs each case under all three (zsh where installed) |
+| G12 | no planted hook or fsmonitor runs | test 2, with a control showing the planted state is live |
+| G13 | a pager needs a terminal, so a bats control would be vacuous | left to the text check: every git call is `$(git rev-parse` |
+| G14 | a planted promisor remote runs its program when M is absent | confirmed by probe; out of scope under S1, recorded in the research doc's bypass table, no test |
+| G15 | a mode-only change to a file entry passes | recorded as harmless in the bypass table, no test |
 
 ## Failure modes considered
 
 | Failure mode | Guard |
 |---|---|
-| The paste fails open: a failed read on both sides compares equal and the installer runs | Test cases "M the clone lacks", "no repository" and "gate file missing" assert the refusal and the absent marker |
+| The paste fails open: a failed read on both sides compares equal and the installer runs | Test cases "M the clone lacks", "no repository", "gate file gone" and "gone on both sides" assert the refusal and the absent marker; the `x="$(…)" &&` form is structural (a mutation without it passed the same cases, because `rev-parse` echoes what it cannot resolve) |
 | The installer runs after a refusal (shell precedence) | Every refusal case asserts the stub's marker is absent |
 | A later edit swaps `rev-parse` for a command that runs a planted hook or pager | The text test allows only `$(git rev-parse`; the planted-state case runs it, with a control showing the planted state is live |
 | The identity check passes with a made-up identity | The `EMAIL`-only and neither cases assert a non-zero exit under `user.useConfigOnly` |

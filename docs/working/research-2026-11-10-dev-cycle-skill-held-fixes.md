@@ -3,7 +3,7 @@
 **Goal**: fix three passages of `skills/dev-cycle/SKILL.md` that every recent iteration worked around: the identity check, the release paste's pinned commit, and the record's silence about a free slot.
 **Problem framing**: each passage asks the orchestrator, or the owner, for something that cannot be done as written, so it is skipped or worked around and guards nothing. Considered and discarded: "the orchestrator is not following the skill" (the records show it tried each one as written, and the workaround was the only way on).
 **Project state**: this branch delivers the three prose fixes and the tests that run the skill's own commands · standalone, from the roadmap's Now item "after the Q-261 release" · not blocked (cite: docs/working/briefs/2026-11-10-dev-cycle-skill-held-fixes.md)
-**Task status**: in-progress (research and design done, plan next)
+**Task status**: in-progress (implemented; review-fix loop next)
 
 ## What exists
 
@@ -40,7 +40,7 @@
 - Failure-pattern grep: FP-157
   - FP-157 (a pinned value bypassed a fail-closed guard; cause guard-misses-subject): the same shape from the other side. Here the pinned value made the guard refuse every honest run, and the run went ahead without the guard. The fix must keep a refusal for the case the pin existed for (gate code the entry did not describe).
   - Grep run: `grep -inE 'identity-unknown|git-config|user\.email|image-lag|paste|rev-parse|pinned|moved-main|dev-cycle|free-slot|skill-prose' docs/failure-patterns.md`.
-- `git rev-parse` prints nothing on stdout when `REV:path` does not resolve, so `test "$(git rev-parse HEAD:p)" = "$(git rev-parse M:p)"` passes when the path is missing on both sides, or when git fails on both sides. The paste takes each left side through `x="$(…)" &&`, which fails on git's exit status. [observed in the scratch runs below]
+- `git rev-parse` echoes an argument it cannot resolve (and exits 128), and prints nothing outside a repository. So a bare `test "$(git rev-parse HEAD:p)" = "$(git rev-parse M:p)"` refuses a missing path only because the two echoed arguments differ, and passes when both sides print nothing. The paste does not lean on what a failed call prints: each left side goes through `x="$(…)" &&`, which fails on git's exit status. [observed: `git rev-parse HEAD:no/such/path` prints `HEAD:no/such/path`; a mutation that dropped the `&&` form still passed every test case, so the form is structure, not something a case here can tell apart]
 - The Bash tool here runs zsh, which does not split an unquoted `$P`. The paste writes its path list out, so it does not depend on word splitting, and it was run under both shells.
 - `git diff-tree --quiet` and `git status` read the index and so start `core.fsmonitor`; `merge-base`, `rev-list` and `diff-tree` run as a bare command start a pager that `pager.<cmd>` and `core.pager` name. `rev-parse` does neither, bare or in `$( )`. [observed: the planted-state probe below, git 2.39.5] The host's git version is not known from here. [assumed: `rev-parse` behaves the same there; it takes no pager in any version I know of, and in `$( )` its stdout is not a terminal]
 - `scripts/confine-tests.sh --probe` exits 3 here. Its first line: `confine-tests: NO CONFINEMENT PRIMITIVE AVAILABLE — refusing to run.` The tests rely on `scripts/run-tests.sh` and `scripts/hermeticity-lint`.
@@ -163,13 +163,16 @@ Hypotheses. 3: the next two releases run the paste as written from main's tip; c
 | The owner is pushed to another git command to make the paste pass | Covered for the normal case: the checkout is already at main's tip. Off the tip, the owner still has to move it, and the skill keeps the sentence saying that command can run a planted hook. |
 | The checkout is on a branch, or behind main | Covered: the tip test refuses, saying so. |
 | Gate code moved after the entry was written (a step 7 merge, a hand commit) | Covered: the PATHS loop refuses, naming the path; the cycle writes the entry again after a step 7 merge. |
-| Fail-open on a failed read (no repository, M absent, a path absent, git missing) | Covered: each left side is taken through `&&` on git's exit status, and an unresolved right side prints nothing, which never equals an object name. |
+| Fail-open on a failed read (no repository, M absent, a path absent, git missing) | Covered: each left side is taken through `&&` on git's exit status, and an unresolved right side prints its own argument, which never equals an object name. |
 | The shell runs the installer after a refusal (`a && b \|\| c` precedence) | Covered: the checks sit in a subshell that exits 1, joined to the installer by `&&`. Test: the stub installer's marker is absent after each refusal. |
 | The orchestrator mistypes the paste | Partly: a wrong M or path refuses. A paste with the checks dropped is prose's risk, as today; the test pins the skill's line. |
 | PATHS drifts from `GATE_CODE` | Covered: the existing test pins the line, and the new test builds the paste from that line. |
 | HEAD moves between the test and the install | Not covered by the paste; `install.sh` refuses while a session runs, and the manifest's `commit=` shows what was built, which step 0.1 reads next. |
 | Uncommitted edits in the checkout | Covered by `install.sh`: it installs HEAD's committed content and lists the rest as not included. |
 | Code outside PATHS committed after M ships unlisted | Not covered, by choice (candidate 5 covers it): the stated residual. |
+| A planted promisor remote (`extensions.partialClone` with a `remote.x.uploadpack` program) and an object the clone lacks | Not covered, and out of scope (S1: a hostile session). Found by the test-strategy pass and confirmed: `git rev-parse "M:p"` for an M the clone lacks ran the planted program; with M present nothing ran. The old flow has the same reach one step later: `install.sh`'s `git archive` of HEAD ran it when one of HEAD's objects was gone, and its state gate reads no promisor key. What is new is one trigger, an M the clone lacks, and the session that would plant this also writes the paste. `GIT_NO_LAZY_FETCH=1` stopped it on git 2.39.5; not added, since the restriction audit (Q-259) took hostile-only checks out of the paste. |
+| A mode-only change to one of the four file entries (a blob's name holds no mode) | Not covered, harmless: the image build sets every `.sh` file to 0555, and the two directory entries do refuse a mode change inside them. |
+| The orchestrator writes the paste with an empty path list | Not covered beyond the template: a loop over nothing passes, leaving the tip test alone. The test pins `for p in PATHS;` in the skill's line. |
 | Planted refs, replace refs, grafts, alternates (a hostile session) | Out of scope (S1), listed once. `M:path` is content-addressed, so only a replace ref or a forged `refs/heads/main` reaches it. |
 
 **Decision (Path A): candidate 3.** The paste, with A, M and PATHS written out:
@@ -184,11 +187,11 @@ It keeps the one command the skill already argues for, reuses the PATHS line, re
 
 **Stress-test mitigations.** How to read: *Invert the thesis* mitigation: added the sentence that step 7's merge has the image check run again, so M trails main only by cycle lands, which narrows candidate 3's residual to hand commits and other sessions' merges.
 
-**Consequences.** Easier: a release is the paste, from where the checkout is. Harder: the paste is about 400 characters, copied from the skill by the orchestrator; a test pins the line and runs it. Residual risk, stated once (S1): code outside the six gate-code paths that reaches main after the entry's M ships with that release without appearing in the entry.
+**Consequences.** Easier: a release is the paste, from where the checkout is. Harder: the paste is about 480 characters, copied from the skill by the orchestrator; a test pins the line and runs it. Residual risk, stated once (S1) and written into the skill beside the paste: code outside the six gate-code paths that reaches main after the entry's M ships with that release without appearing in the entry. No decision-log row: an in-flight branch (`feat/q125-sandbox-on-main`) appends to `docs/decisions/log.md`, and a second append would conflict at merge; this section is the record.
 
 **Revisit triggers.** Each entry is an observable condition. if an image's `commit=` names a commit with gate code other than the entry's M. if an `image-off-main` entry is filed after a paste ran. if the owner reports a release that shipped a self-merge the entry did not flag. if `GATE_CODE` gains a path that does not exist at some M (the paste would refuse until it does).
 
-**The paste's cases**, run by hand in a scratch repository under bash and again under zsh (the same output from both; M is the scratch repository's base commit):
+**The paste's cases**, run by hand in a scratch repository under bash and again under zsh (the same output from both, and the test adds `sh`; M is the scratch repository's base commit; the first runs printed "is not as at M" alone, before the message gained its second half):
 
 ```
 1. at M:                                        INSTALL RAN                                           exit=0
@@ -219,6 +222,17 @@ rev-list -1 --first-parent HEAD -- PATHS: pager
 rev-list in $( ): nothing ran
 status --porcelain: fsmonitor,hook post-index-change,pager
 checkout M (what the old paste made the owner do): fsmonitor,hook post-checkout,hook post-index-change,hook reference-transaction,pager
+```
+
+**The promisor probe** (`extensions.partialClone`, a promisor remote whose `uploadpack` is a planted program):
+
+```
+old paste: rev-parse HEAD: exit 0; nothing ran
+new paste, honest: rev-parse HEAD:p and M:p, M present: exit 0; nothing ran
+new paste, an M the clone lacks: exit 128; promisor-program
+the same with GIT_NO_LAZY_FETCH=1: exit 128; nothing ran
+old flow, HEAD's tree object gone: rev-parse HEAD: exit 0; nothing ran
+old flow, HEAD's tree object gone: install.sh's archive of HEAD: exit 128; promisor-program
 ```
 
 ### Item 2, second choice: the entry after a step 7 merge (two options)
