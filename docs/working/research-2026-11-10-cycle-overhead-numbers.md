@@ -1,9 +1,9 @@
 # Research: what the dev cycle costs per iteration (numbers for the light-pass decision)
 
 - **Goal**: Give the owner, from the repo's own records and history, how many dev-cycle iterations ran since 2026-10-16, how many found or changed anything outside their own bookkeeping, and what each kind cost, so they can decide the light pass.
-- **Problem framing**: The owner chose a full cycle every iteration "until the costs are visible", and nobody has totalled the costs. Considered and discarded: "the cycle is too slow" (wall time turns out to be minutes per iteration; what is unknown is tokens, which no record holds).
+- **Problem framing**: The owner chose a full cycle every iteration for now and a light pass "once the costs are visible", and nobody has totalled the costs. Considered and discarded: "the cycle is too slow" (wall time turns out to be minutes per iteration; what is unknown is tokens, which no record holds).
 - **Project state**: this branch delivers one research doc, docs only · the first step of roadmap Next 3 (revisit the light pass), the later skill change being a separate unit · not blocked (cite: docs/working/briefs/2026-11-10-cycle-overhead-numbers.md)
-- **Task status**: in-progress (round 1 review fixes in; round 2 review pending)
+- **Task status**: complete (two review rounds; see Review)
 
 Brief: `docs/working/briefs/2026-11-10-cycle-overhead-numbers.md` (self-merge, docs only).
 Everything here was read at main's commit a37733cc. Nothing was run to measure cost.
@@ -205,8 +205,9 @@ a median of 3.9 minutes. [observed]
 What this shows, and what it does not:
 
 - Iterations whose health check re-ran took far longer (9.8 against 2.4 minutes among the
-  quiet ones). Those are also the iterations where main had moved, so step 4 had something
-  new to check and step 7 had merges to make; the health check is not the only cause.
+  quiet ones). Those are mostly also the iterations where main had moved, so step 4 had
+  something new to check and step 7 had merges to make; the health check is not the only
+  cause.
 - A quiet full iteration whose health check did not re-run took 2.4 minutes, less than
   the median light pass (2.9). The same is true of the quiet ones that wrote one "as at"
   line. That suggests many quiet "full" iterations did not redo the checking steps.
@@ -336,7 +337,9 @@ From each record's step 0 line or `Window:` line: [observed]
   2026-11-05), and each says the wakeup found a loop still working and ran no iteration.
 - An owner's answer to a merge question can cost two iterations: one to land the answer
   on main, and a second to apply it, because the build-loop script reads such an answer
-  only from main. Five of the seven "went straight on" iterations exist for that reason.
+  only from main. Six of the seven "went straight on" iterations exist for that reason
+  (the five light ones and 2026-10-29-2223); in one of the six the answer was to a
+  stopped-loop entry, not a merge question.
 
 ## 6. Tokens
 
@@ -453,11 +456,11 @@ day ("day"); 0 means that iteration would still have been a full cycle.
 | 2026-10-26-0002 | 3, 4 | Four finished agent entries marked done; a stale sentence found in decision-log row 53 (the auto-approve hook's accepted gaps), which that iteration's own merge fixed | yes | 0 | 0 |
 | 2026-10-26-0027 | 4 | The interview profile's README found to misstate behaviour; fixed on 2026-10-28 by a self-merge (9b8a0b34) | yes | 0 | 69 h |
 | 2026-10-28-2136 | 3, 4b | Watch Q-074 (does the failure-pattern log gain entries?) met and sent to the owner as Q-223; deep-audit task filed for decision 040 (the questions file holds only owner entries) | yes | 0 | 0 |
-| 2026-10-28-2223 | 4, 4b | Drift finding on the fix-drift-check merge (68287ee2); added to the deep-audit task | no | 1 h | 21 h |
+| 2026-10-28-2223 | 4, 4b | Drift finding on the fix-drift-check merge (68287ee2); deep-audit task filed (added to the existing roadmap item) | no | 1 h | 21 h |
 | 2026-10-29-0235 | 4 | The previous iteration's land had cut a brief down to one line; restored in-cycle | no | 17 h | 17 h |
 | 2026-10-29-2003 | 3 | Watch Q-074 met again, by the merge that wires failure patterns into build loops (f91d7d09) | yes | 0 | 11 h |
 | 2026-10-29-2212 | 4 | A test on a loop's branch fails in this sandbox on a locale warning; passed to that loop | yes | 0 | 9 h |
-| 2026-10-30-0035 | 4, 4b | Drift finding on the watching-file merge (6ee39f24); added to the deep-audit task | yes | 0 | 6.5 h |
+| 2026-10-30-0035 | 4, 4b | Drift finding on the watching-file merge (6ee39f24); deep-audit task filed (added to the existing roadmap item) | yes | 0 | 6.5 h |
 | 2026-10-30-0100 | 4 | `migrations.sh check .` fails when given a relative path; briefed, and fixed the same day by a merge (ea1ab6fe) | yes | 0 | 6 h |
 | 2026-10-30-0731 | 3 | A stale item's wait condition could no longer be met; became owner entry Q-238 (what to do with an old unmerged branch) | yes | 0 | 39 h |
 | 2026-11-02-0326 | 4 | A brief's claim that three units could run in parallel did not hold (two conflicted at merge); the cycle changed how it splits briefs | yes | 0 | 5 h |
@@ -474,7 +477,7 @@ Notes on the four that would have waited under the "moved or day" rule:
 
 - 2026-10-29-0235 (17 h): a light pass would have seen this one anyway. The same record's
   collect line says the build-loop script's brief reader (`--status`) refused the cut-down
-  brief, and the loop had reported it.
+  brief, and its step 4 line says the loop had reported it.
 - 2026-11-02-2027 (27 h): the "Main moved" column says yes because main had moved since
   the previous full cycle in fact. Under the rule a full cycle would have run 101 minutes
   earlier, at 2026-11-02-1846 (in fact a light pass), and could have made the same roadmap
@@ -510,9 +513,10 @@ have been made.
    one record says its own name is wrong and three more are later than their own land.
    The start check runs before the name exists and the final message comes after the last
    land, so the wall times are slightly short.
-6. **What a light pass would take.** The 2.9-minute median comes from 22 iterations the
-   orchestrator chose to make light, 20 of them on two days. It is not a fair estimate of
-   what a light pass would take in place of any given full one.
+6. **What a light pass would take.** The 2.9-minute median comes from the 22 light
+   iterations that can be measured (21 the orchestrator chose, 1 the owner directed), 18
+   of them on two days (2026-11-01 and 2026-11-02). It is not a fair estimate of what a
+   light pass would take in place of any given full one.
 7. **What the steps around the four caught.** The health check, migrations, the
    brainstorm check and the roadmap step are not counted here (section 7 gives the two
    facts that were easy to read).
@@ -626,7 +630,7 @@ are pruned only on the brief's lines or on a plain fact; the soft constraints on
 
 | Candidate | Brief's lines | Notes |
 |---|---|---|
-| A. Name's minute to last land's commit time | passes; covers all 100 | the name is typed, so it needs a cross-check |
+| A. Name's minute to last land's commit time | passes; covers 96 of the 100 | the name is typed, so it needs a cross-check |
 | B. Loop marker's commit time to last land | passes; covers 41 | a real clock at both ends, but only for loop-started iterations |
 | C. Gap between one iteration's land and the next | fails: the brief asks for wall time per iteration, and this includes the idle wait between them | |
 | D. Timestamps in the record | fails: the records hold none | |
@@ -671,7 +675,7 @@ No plan doc: the brief's `Paths:` line allows this file and the brief only. Step
 parse the records, read git history, classify by hand, compute, write, review, fix,
 review again. No code or behaviour changes, so no tests were written and `test-strategy`
 was not run. Verification is the commands in section 1 and Appendix B, re-run by the
-review passes, and the repo's health check run once on the branch.
+review passes, and the repo's health check run on the branch (see Review).
 
 | Failure mode | Guard |
 |---|---|
@@ -707,7 +711,21 @@ subagent with its own scratch directory:
 
 The fixes are in the commit after abc8b1c1.
 
-Round 2: pending.
+Round 2, on the revised doc (5e6a8412). One independent reviewer re-ran Appendix B,
+re-derived every number that round 1's changes added or moved, and checked each gloss
+against its source. The new split was carried through consistently and no stale number was
+left. It found two new sentences with wrong numbers (how many "went straight on"
+iterations follow an owner's answer: six, not five; and where the light-pass median comes
+from: 22 measurable light iterations, 18 on two days) and six small wording points. All
+are fixed in the commit after 5e6a8412. No Must Fix item is left, so the loop ended after
+two rounds.
+
+Health check (`scripts/health-check.sh`, output sent to a file). A first run, made while
+the three round 1 reviewers were working, failed on one test
+(`test/rubric-selection.bats`, "emits nothing when two candidates tie"); that test then
+passed three times on its own. A second run with nothing else running passed in full
+(1,991 tests, "All checks passed"). The change is docs only, so the one failure looks like
+a test that is sensitive to load, not something this branch caused. [inferred]
 
 ## Files read
 
@@ -918,7 +936,7 @@ A "catch" is something the checking steps found; there were 22 in 26 days.
 |---|---|---|---|
 | **[1] Full cycle every iteration** | Q-154's answer stays. The skill already says this; holding to it means the orchestrator stops choosing light passes and writes every verdict out. | None if left to the skill's prose, which was not followed in 51 of 96 iterations. One merge to approve if a check should enforce it. | The repeats go on, and grow if the rule is really held: 50 of the 72 full iterations found nothing new. What that costs in tokens is unmeasured. |
 | **[2] Full when main moved or a new day starts, light otherwise** | A full cycle on a day's first iteration and whenever main gained anything but a cycle land since the last full cycle. Otherwise collect, briefs, dispatch and land. | One merge to approve: it changes the dev-cycle skill, which never self-merges. | Whatever is not a commit on main waits for the next day's first iteration: a model change, a release, a dated trigger, a stale item. Replayed, 4 of 22 catches waited, 2 of them really (1 and 3.8 hours). The saving it buys is unmeasured. |
-| **[3] One full cycle a day, light otherwise** | The first iteration of each day is full; every other one is light. This is Q-154's second option with a day as its interval. | One merge to approve, as for [2]. | Most catches wait a day. Replayed, 15 of 22 waited a median of 18 hours and up to 5 days, and 9 of those came from spot-check sampling that a later cycle might never repeat. Unless the light pass keeps the health check, it would not run after a loop merge until the next day. |
+| **[3] One full cycle a day, light otherwise** | The first iteration of each day is full; every other one is light. Close to Q-154's second option (a full cycle every N hours), with the day's first iteration in place of a fixed interval. | One merge to approve, as for [2]. | Most catches wait a day. Replayed, 15 of 22 waited a median of 18 hours and up to 5 days, and 9 of those came from spot-check sampling that a later cycle might never repeat. Unless the light pass keeps the health check, it would not run after a loop merge until the next day. |
 | **[4] Measure tokens first, then decide** | Q-154's answer stays for now. A docs-only unit totals tokens per iteration from the session transcripts that already exist, with no model run, or the record gains a token line (section 6). This question comes back with the numbers. | This question reaches you once more. A merge to approve only if the token line goes into the skill. | The repeats continue meanwhile. If the transcripts cannot be matched to iterations, the numbers need a few weeks of new records instead. |
 
 - **Interim:** [1] as written. Q-154's answer stays in force until this is answered.
