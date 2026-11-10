@@ -1,6 +1,6 @@
 # Pre-Mortem: the two confine-tests fixes
 
-**Proposal:** the diff 23ffb16c..ca6cf3be (two details below were brought up to date after review pass 1 changed the warning's wording) on `fix/confine-tests-dash-and-fallback`: `scripts/confine-tests.sh` runs its `unshare` body under `"$BASH"` with `exec -- "$@"`, and a run that falls back from bwrap to unshare prints a warning first. Plan and design record: `docs/working/research-2026-11-10-confine-tests-dash-and-fallback.md`.
+**Proposal:** the diff 23ffb16c..ca6cf3be (details below were brought up to date after the two review passes changed the warning's wording and corrected the prior-art sentence) on `fix/confine-tests-dash-and-fallback`: `scripts/confine-tests.sh` runs its `unshare` body under `"$BASH"` with `exec -- "$@"`, and a run that falls back from bwrap to unshare prints a warning first. Plan and design record: `docs/working/research-2026-11-10-confine-tests-dash-and-fallback.md`.
 **Date:** 2026-11-10
 **Upstream what-if analysis:** none
 
@@ -11,15 +11,15 @@
 
 Why this ran: pr-prep's fallback check fired on a count of 539 changed lines, 301 of them the research doc; 238 lines change outside `docs/` (227 in the script and its test, 11 in the guide), none in an enforcement file. The plan had recorded "not triggered". It is run here by the author, inline, with no agent dispatch.
 
-Prior art: `grep -ril -e 'BASH_ENV' -e 'uid 0' -e 'warning fatigue' -e 'unshare -r' docs/decisions/ docs/working/` returns decision 017, the two earlier confine-tests research docs and this unit's own. Decision 017 and `docs/working/research-2026-11-07-confine-tests-situation.md` already hold narrative 1's ground (the unshare tier is weaker); the others are new.
+Prior art: `grep -ril -e 'BASH_ENV' -e 'uid 0' -e 'warning fatigue' -e 'unshare -r' docs/decisions/ docs/working/` returns 17 files: decisions 017 and 019, the three confine-tests research docs (this unit's among them) and both confine-tests briefs, five cycle logs, and five other working docs. I read the confine-tests ones and decision 017, not all 17. Decision 017 and `docs/working/research-2026-11-07-confine-tests-situation.md` already hold narrative 1's ground (the unshare tier is weaker); I found narratives 2 to 4 in none of the files I read.
 
 ## Failure Narratives
 
 ### 1. "Confined and green", four tests short
 
 - **Root cause:** `--probe` on a host with `unshare` and no usable `bwrap` prints `primitive available: unshare (loopback=1)` and exits 0, with no warning (the brief keeps `--probe` unchanged; `scripts/confine-tests.sh`, the block under "# --- run").
-- **Chain of consequences:** The cc-isolated sandbox merges and the image gains a kernel that allows `unshare -rn` in a session where nested `bwrap` is refused. A build loop follows its brief's wording (`docs/roadmap.md:49`: "exit 0: tests pass confined"). It runs `scripts/confine-tests.sh -- scripts/run-tests.sh` with output sent to a file, as the repo rules ask. The run prints the new warning as the file's first six lines. `unshare -r` makes the suite uid 0, so the four tests that begin `[ "$(id -u)" -ne 0 ] || skip` (`test/cc-push.bats:417`, `test/hooks/guard-trusted-writes.bats:889`, `test/install-host.bats:680`, `test/cc-isolated-functions.bats:1970`) skip. The loop reads the last line, sees a pass, and records "passes confined".
-- **Observable outcome:** a research doc says the suite passed confined; the run's file starts with `confine-tests: WARNING — bwrap is installed but unusable here` and lists four skips that an unconfined run does not have. Nobody quotes either.
+- **Chain of consequences:** The cc-isolated sandbox merges and the image gains a kernel that allows `unshare -rn` in a session where nested `bwrap` is refused. A build loop follows its brief's wording (`docs/roadmap.md:49`: "exit 0: tests pass confined"). It runs `scripts/confine-tests.sh -- scripts/run-tests.sh` with output sent to a file, as the repo rules ask. The run prints the new warning as the file's first six lines. `unshare -r` makes the suite uid 0, so the four tests guarded by `[ "$(id -u)" -ne 0 ] || skip` (`test/cc-push.bats:417`, `test/hooks/guard-trusted-writes.bats:889`, `test/install-host.bats:680`, `test/cc-isolated-functions.bats:1970`) skip. The loop reads the last line, sees a pass, and records "passes confined".
+- **Observable outcome:** a research doc says the suite passed confined; the run's file starts with `confine-tests: WARNING — bwrap is unusable here` and lists at least four skips that an unconfined run does not have. Nobody quotes either.
 - **Plausibility:** Plausible
 - **Severity:** Low (four permission tests, each still run by the unconfined gate)
 - **Tag:** `[PRIOR CONSIDERATION]` in part: `docs/working/research-2026-11-07-confine-tests-situation.md` (the unshare tier), FP-050.
@@ -30,7 +30,7 @@ Prior art: `grep -ril -e 'BASH_ENV' -e 'uid 0' -e 'warning fatigue' -e 'unshare 
 - **Root cause:** on a fallback run the first stderr line is now `confine-tests: WARNING — ...`; before, it was the banner `confine-tests: denying network via unshare (loopback=1)` (`scripts/confine-tests.sh`, the `fell_back` block printed before the banner).
 - **Chain of consequences:** Another project adopts the runner as `guides/test-hermeticity.md` suggests and wraps it in a CI step that checks the first stderr line for `denying network via` to confirm confinement was on. Its runner image has no bwrap. After this change the first line is the warning, the check fails, and the job goes red on every commit with tests that never ran differently.
 - **Observable outcome:** a CI step fails with "confinement banner not found" on the first run after the script is updated; the log shows the banner on line seven.
-- **Plausibility:** Unlikely-but-catastrophic by label only: under 10% (no caller exists in this repo, and `grep -rn confine-tests` over code finds none), and the cost is one red job and a one-line fix.
+- **Plausibility:** Unlikely-but-catastrophic by label only: under 10% (no caller exists in this repo, and `grep -rn confine-tests` over code finds no caller, only a comment in `test/fixture-hermeticity.bats`), and the cost is one red job and a one-line fix.
 - **Severity:** Low
 - **Mitigation:** none taken in code; the order is deliberate (a warning after the banner reads as an afterthought, and `--no-loopback`'s has always come first). `scripts/confine-tests.sh`'s header, under "WHY IT NEVER DEGRADES QUIETLY", now says the warning comes first on stderr, which is the contract such a wrapper should read.
 

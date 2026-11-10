@@ -219,9 +219,9 @@ if [[ "$fell_back" -eq 1 ]]; then
     and_flag=" and drop --no-loopback"
   fi
   if command -v bwrap >/dev/null 2>&1; then
-    warn_unshare_only "bwrap is installed but unusable here; falling back to the unshare primitive." \
-      "Run where bwrap works" \
-      "(a CI runner or a dev host)$and_flag to get the hardened profile."
+    warn_unshare_only "bwrap is unusable here; falling back to the unshare primitive." \
+      "Run on a host" \
+      "where bwrap works$and_flag to get the hardened profile."
   else
     warn_unshare_only "bwrap is not installed; falling back to the unshare primitive." \
       "Install bwrap" \

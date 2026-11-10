@@ -59,7 +59,8 @@ guarding is worse than no guard.
 **The runner has two primitives, and the weaker one says so.** `bwrap` adds a read-only root, a private
 `/tmp` and a pid namespace to the network namespace. When `bwrap` is not installed or is unusable, a run
 falls back to `unshare -rn`, which denies the network and nothing else: the tests run as uid 0 against the
-real filesystem. The run goes ahead, and first prints a warning on stderr that names what is absent.
+real filesystem. The run goes ahead, and first prints a warning on stderr that names what is absent
+(`--no-loopback` switches to the same primitive and prints the same warning).
 `--probe` names the primitive it found (`bwrap` or `unshare`) on the first line of its stdout.
 
 ## Fixing a violation
@@ -180,8 +181,9 @@ how the machine running it happens to be configured.
 - **In-process HTTP**: out of scope by design (see above).
 - **C-extension / raw-native egress** (psycopg2, grpc, pycurl): invisible to every static pass *and* to
   every language-level blocker. Only the netns runner sees it.
-- **Reads are not confined** by the runner — `--unshare-net` denies network and nothing else. On the
-  `unshare` fallback writes are not confined either (see "Triage vs. ground truth").
+- **Reads are not confined** by the runner — `--unshare-net` denies network and nothing else. Under the
+  `unshare` primitive (the fallback, or `--no-loopback`) writes are not confined either (see "Triage vs.
+  ground truth").
 
 Each of these is a reason the runner is the ground truth and the lint is triage. If a suite passes the lint
 and still makes a live network call, that is a hole worth filing as a fixture — see 017's revisit triggers.

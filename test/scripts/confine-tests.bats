@@ -37,7 +37,7 @@ LO_WARNING_TEXT="$LO_WARNING
   get the hardened profile (loopback is not egress — the namespace has
   no route off the host)."
 NO_BWRAP_WARNING='confine-tests: WARNING — bwrap is not installed; falling back to the unshare primitive.'
-BWRAP_UNUSABLE_WARNING='confine-tests: WARNING — bwrap is installed but unusable here; falling back to the unshare primitive.'
+BWRAP_UNUSABLE_WARNING='confine-tests: WARNING — bwrap is unusable here; falling back to the unshare primitive.'
 UNSHARE_BANNER='confine-tests: denying network via unshare (loopback=1)'
 BODY_NAME='confine-tests: unshare body'
 # Words a shell would mangle if any step re-parsed them: a space, leading
@@ -364,7 +364,7 @@ refused() {
   calls child 0
 }
 
-@test "--probe reports unshare when bwrap is not installed, or is installed and refused" {
+@test "--probe reports unshare when bwrap is not installed, or is installed and unusable" {
   # A probe's output is its verdict alone: the fallback's warning belongs to
   # a run (see the test of it below).
   confine "unshare ip" STUB_UNSHARE=ok -- --probe
@@ -473,7 +473,9 @@ dash_named_on_unshare() {
   [ ! -e pwned ]
 }
 
-@test "a run that falls back to unshare first warns what unshare does not confine, in --no-loopback's words (H2)" {
+# The naming half of constraint H2 (a degraded primitive "refuses and names
+# what went unenforced"): the run is kept, by the brief, and says what it lacks.
+@test "a run that falls back to unshare first warns what unshare does not confine, in --no-loopback's words" {
   local shared
   # The warning --no-loopback has always printed, unchanged, then the banner.
   confine "bwrap unshare" STUB_BWRAP=ok STUB_UNSHARE=ok -- --no-loopback -- "$RECORD" one
@@ -497,10 +499,17 @@ $UNSHARE_BANNER" ]
   confine "bwrap unshare ip" STUB_BWRAP=refused STUB_UNSHARE=ok STUB_IP=ok -- -- "$RECORD" one
   [ "$status" -eq 0 ]
   [ "$stderr" = "$BWRAP_UNUSABLE_WARNING
-$shared Run where bwrap works
-  (a CI runner or a dev host) to get the hardened profile.
+$shared Run on a host
+  where bwrap works to get the hardened profile.
 $UNSHARE_BANNER" ]
-  calls child 3
+  # The same with --no-loopback: bwrap alone would not serve the flag, so the
+  # way back names both steps (the not-installed case is in the test above).
+  confine "bwrap unshare" STUB_BWRAP=refused STUB_UNSHARE=ok -- --no-loopback -- "$RECORD" one
+  [ "$stderr" = "$BWRAP_UNUSABLE_WARNING
+$shared Run on a host
+  where bwrap works and drop --no-loopback to get the hardened profile.
+confine-tests: denying network via unshare (loopback=0)" ]
+  calls child 4
   # With nothing to run there is nothing to warn about.
   confine "unshare ip" STUB_UNSHARE=ok -- --
   [ "$status" -eq 2 ]
