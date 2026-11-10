@@ -230,7 +230,7 @@ the iteration with no record, so the next one starts from the same `Main at:`:
    branch's own commits are not on it). Not on main: the gate that runs is a commit no merge
    to main landed; file one `you: judgment` entry `image-off-main-C12` (C's first 12 hex),
    unless WT's questions files hold one: [1] rebuild from main (the paste below, which
-   refuses until the host checkout is at M), [2] keep this image. On main: run
+   refuses until the host checkout is at main's tip), [2] keep this image. On main: run
    `git -C MAIN_WT diff --quiet C M -- PATHS`, PATHS being GATE_CODE's (a test pins the line):
    `scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/`
    Exit 1: the gate that runs differs from main's. File one `you: terminal` entry
@@ -249,11 +249,20 @@ the iteration with no record, so the next one starts from the same `Main at:`:
    CR, another control or bidi character, or bytes that are not UTF-8 written as
    `(withheld: see SHA)` (questions.sh finds its `<!-- index:` markers anywhere in a line,
    and `--check-answer` refuses an unclosed `<!--`); a backtick, `<` or `>` is shown, a
-   path holding a backtick in a double-backtick span with spaces inside it; and the one paste `cd A && test "$(git rev-parse HEAD)" = M &&
-   ./devcontainer-config/install.sh` (host; then a new sandbox launch; the paste's only git
-   call before install.sh's state gate is `rev-parse`, which runs no hook or fsmonitor; any
-   other git command the user runs on the host here, a checkout to reach M included, can run
-   one a sandbox session planted, install.sh's own trust model), interim: the image's gate runs. Exit 0: the image
+   path holding a backtick in a double-backtick span with spaces inside it; and the one paste, with A, M and PATHS written out (and `master` for `main` where that is the default branch):
+   `cd A && ( h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)" || { echo "release refused: this checkout is not at main's tip"; exit 1; }; for p in PATHS; do g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "M:$p")" || { echo "release refused: $p is not as at M; the next dev-cycle iteration rewrites this paste"; exit 1; }; done ) && ./devcontainer-config/install.sh`
+   (host; then a new sandbox launch), interim: the image's gate runs. It runs from a checkout at main's tip, where
+   the land leaves the host checkout: the cycle's lands move main past M but carry no gate
+   code. It refuses, saying which, a checkout that is not at main's tip and a PATHS entry
+   that is not M's (gate code merged after the entry was written, which the entry does not
+   describe; code outside PATHS that reached main after M installs unlisted, a risk taken
+   so the paste runs where the checkout is). A step 7 merge moves main: run the
+   `diff --quiet` check again with main's new commit as M before step 9 stages, filing or
+   rewriting the entry from it, so the paste names the gate code main's tip holds. The
+   paste's only git call before install.sh's state gate is `rev-parse` inside `$( )`, which
+   runs no hook, fsmonitor or pager; any other git command the user runs on the host here,
+   a checkout to reach main's tip included, can run one a sandbox session planted,
+   install.sh's own trust model. Exit 0: the image
    holds main's gate code; once WT exists, close any open `image-lag` or `image-off-main-*`
    entry in its questions files: `**Status:** ANSWERED` in its **Needs:** line and, under
    that line, `Q-NNN: met — image C holds the gate code of main M` (its own ID, C and M in
