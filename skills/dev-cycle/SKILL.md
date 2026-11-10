@@ -66,9 +66,10 @@ one place every trigger is certain to be checked, so it checks all of them every
 - **The orchestrator's git** (worktrees, staging, its commits, merging main into WT, ancestry
   checks) is plain `git -C PATH …`, with the user's normal config and identity: before the
   iteration's first commit, `git -C WT -c user.useConfigOnly=true var GIT_AUTHOR_IDENT` and
-  the same for `GIT_COMMITTER_IDENT` must each exit 0 and print one, from git config or the
-  environment's identity variables, the question the gate's own merge asks (a failure: a
-  stop, since git would otherwise take `EMAIL` or make one up from the account and host). Two honest settings are pinned where they matter:
+  the same for `GIT_COMMITTER_IDENT` must each exit 0 and print one, name and address both
+  non-empty, from git config or the environment's identity variables, the question the
+  gate's own merge asks (a failure: a stop, since git would otherwise take `EMAIL` or make
+  one up from the account and host). Two honest settings are pinned where they matter:
   `-c log.showSignature=false` on a `log` whose output is read, and `-c commit.gpgSign=false`
   on a command that writes a commit (no signing key in the sandbox). `add`, `mv` and `rm`
   run as `git --literal-pathspecs -C PATH add -- FILE…`, so a path holding `*` or
@@ -249,19 +250,21 @@ the iteration with no record, so the next one starts from the same `Main at:`:
    CR, another control or bidi character, or bytes that are not UTF-8 written as
    `(withheld: see SHA)` (questions.sh finds its `<!-- index:` markers anywhere in a line,
    and `--check-answer` refuses an unclosed `<!--`); a backtick, `<` or `>` is shown, a
-   path holding a backtick in a double-backtick span with spaces inside it; and the one paste, with A, M and PATHS written out (and `master` for `main` where that is the default branch):
-   `cd A && ( h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)" || { echo "release refused: this checkout is not at main's tip"; exit 1; }; for p in PATHS; do g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "M:$p")" || { echo "release refused: $p is not as at M; the next dev-cycle iteration rewrites this paste"; exit 1; }; done ) && ./devcontainer-config/install.sh`
-   (host; then a new sandbox launch), interim: the image's gate runs. It runs from a checkout at main's tip, where
-   the land leaves the host checkout: the cycle's lands move main past M but carry no gate
-   code. It refuses, saying which, a checkout that is not at main's tip and a PATHS entry
-   that is not M's (gate code merged after the entry was written, which the entry does not
-   describe; code outside PATHS that reached main after M installs unlisted, a risk taken
-   so the paste runs where the checkout is). A step 7 merge moves main: run the
-   `diff --quiet` check again with main's new commit as M before step 9 stages, filing or
-   rewriting the entry from it, so the paste names the gate code main's tip holds. The
-   paste's only git call before install.sh's state gate is `rev-parse` inside `$( )`, which
-   runs no hook, fsmonitor or pager; any other git command the user runs on the host here,
-   a checkout to reach main's tip included, can run one a sandbox session planted,
+   path holding a backtick in a double-backtick span with spaces inside it; and the one paste, on one line, with A, M and PATHS written out (and `master` for `main` where that is the default branch):
+   `cd A && ( h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)" || { echo "release refused: this checkout is not at main's tip"; false; exit; }; for p in PATHS devcontainer-config/install.sh; do g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "M:$p")" || { echo "release refused: $p changed after M, so this paste is out of date"; false; exit; }; done ) && ./devcontainer-config/install.sh`
+   (host; then a new sandbox launch), interim: the image's gate runs. The paste runs from a
+   checkout at main's tip: the cycle's lands move main past M but carry no gate code. It
+   refuses, saying which, a checkout that is not at main's tip, and gate code or an
+   installer that is not M's: one that reached main after the paste was written, which the
+   entry does not describe (`false; exit`, not `exit 1`: a line the terminal wrapped
+   between those two words would refuse and then install). Every iteration writes the paste
+   again from its M, here and in an open `image-off-main` entry (a stop gives it in its
+   final message), and step 7 runs this image check again after a merge. Other code that
+   reached main after M is installed without being listed in the entry, a risk taken so
+   the paste runs where the checkout is. The paste's only git call before install.sh's
+   state gate is `rev-parse` inside `$( )`, which runs no hook, fsmonitor or pager; any
+   other git command the user runs on the host here, a checkout to reach main's tip
+   included, can run one a sandbox session planted,
    install.sh's own trust model. Exit 0: the image
    holds main's gate code; once WT exists, close any open `image-lag` or `image-off-main-*`
    entry in its questions files: `**Status:** ANSWERED` in its **Needs:** line and, under
@@ -707,6 +710,11 @@ none yet: a line `Applied: ITEM` at its end), ACTION being `redispatch`, `merged
 or `noted` (`unrecognized`), so each answer is acted on once and the action survives a
 restart.
 
+A `merged` line moved main. After this step's last one, run step 0.1's image check again,
+with main's commit then in M's place and C as before: it files, rewrites or closes its
+entry as there (one step 0.1 closed stays closed), and the `7.` line says what it found,
+so the release paste names the gate code main's tip holds.
+
 ### 8. Build briefs
 
 Take the Now items whose first step needs no open choice (no open `you: judgment` names
@@ -715,7 +723,7 @@ Rules' "holds a slot", which keeps a brief's branch out of cleanup): open briefs
 loop step 7 read as absent or working, plus those it sends back to a loop, each counted
 once (a blocked, stopped, capped or ready one, or a stalled one held, waits on the user and
 is not counted). A queue left under its slots is explained on the record's `8.` line, in
-one plain clause: why each free slot stayed free (every other Now item waits on the owner,
+one plain clause: why each free slot stayed free (every other Now item waits on the user,
 a host run or a choice, say; slots that share a reason share the clause).
 For each, write `docs/working/briefs/YYYY-MM-DD-<slug>.md`, where the slug is lowercase
 letters, digits and hyphens only (a file name no brief has used before, in `briefs/` or
