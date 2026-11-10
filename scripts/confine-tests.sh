@@ -26,6 +26,14 @@
 #   no guard: it converts a loud failure into a false green. So a missing
 #   primitive is a hard error (exit 3), never a warning.
 #
+#   A weaker primitive is a warning, on every run. The script has two
+#   primitives: bwrap, and `unshare`, which denies the network and nothing
+#   else — no read-only rootfs, no private /tmp, no pid namespace, and the
+#   tests run as uid 0. When bwrap is not installed or is refused, the run
+#   falls back to unshare and goes ahead, and says first, on stderr, what
+#   that leaves unconfined. A --probe that falls back prints its verdict,
+#   which names the primitive, and not this warning.
+#
 # LOOPBACK
 #   A fresh netns comes up with `lo` DOWN. Suites that spin a local server
 #   (httptest, mockito, msw, a bats fixture server) need it UP, so we raise it by
@@ -33,10 +41,9 @@
 #
 #   --no-loopback keeps `lo` down. It is NOT simply "a stricter profile": bwrap
 #   raises `lo` itself and cannot be told not to, so the flag forces the
-#   `unshare` primitive, which denies the network and nothing else — no
-#   read-only rootfs, no private /tmp, no pid namespace, and the tests run as
-#   uid 0. You are trading filesystem confinement for loopback denial. The
-#   script says so at runtime, and refuses outright when unshare is unusable.
+#   `unshare` primitive (above). You are trading filesystem confinement for
+#   loopback denial. The script says so, in the fallback warning's words, on
+#   a run and on a --probe, and refuses outright when unshare is unusable.
 #
 # THE RUNNER'S OWN NETWORK
 #   Denial applies to the whole process tree, including any dependency fetch the
@@ -112,9 +119,31 @@ confine-tests: NO CONFINEMENT PRIMITIVE AVAILABLE — refusing to run.
 EOF
 }
 
+# What unshare does not confine, in one place for both routes that reach it:
+# --no-loopback switching away from bwrap, and bwrap being unavailable.
+# $1 is the headline (why unshare is the primitive); each further argument is
+# a line of the way back to bwrap's profile, which differs by route.
+warn_unshare_only() {
+  echo "confine-tests: WARNING — $1" >&2
+  cat >&2 <<'EOF'
+  It denies the network and NOTHING ELSE. bwrap's read-only rootfs, its
+  private /tmp and its pid namespace are all absent, and your tests run
+  as uid 0 in a user namespace: a stray write that bwrap would refuse
+  with EROFS will succeed against the real filesystem.
+EOF
+  printf '  %s\n' "${@:2}" >&2
+}
+
 if ! primitive="$(detect_primitive)"; then
   explain_unavailable
   exit 3
+fi
+
+# Detection settled for unshare: bwrap is not installed, or its probe failed.
+# A run says so before it starts (see "run" below).
+fell_back=0
+if [[ "$primitive" == "unshare" ]]; then
+  fell_back=1
 fi
 
 # --- primitive selection ---------------------------------------------------
@@ -134,13 +163,9 @@ fi
 if [[ "$primitive" == "bwrap" && "$loopback" -eq 0 ]]; then
   if command -v unshare >/dev/null 2>&1 && unshare -rn true >/dev/null 2>&1; then
     primitive="unshare"
-    echo "confine-tests: WARNING — --no-loopback forces the unshare primitive." >&2
-    echo "  It denies the network and NOTHING ELSE. bwrap's read-only rootfs, its" >&2
-    echo "  private /tmp and its pid namespace are all absent, and your tests run" >&2
-    echo "  as uid 0 in a user namespace: a stray write that bwrap would refuse" >&2
-    echo "  with EROFS will succeed against the real filesystem. Drop the flag to" >&2
-    echo "  get the hardened profile (loopback is not egress — the namespace has" >&2
-    echo "  no route off the host)." >&2
+    warn_unshare_only "--no-loopback forces the unshare primitive." \
+      "Drop the flag to get the hardened profile (loopback is not egress — the" \
+      "namespace has no route off the host)."
   else
     echo "confine-tests: --no-loopback is not supported by the bwrap primitive." >&2
     echo "  bwrap brings \`lo\` up inside --unshare-net and cannot be told not to." >&2
@@ -174,6 +199,22 @@ if [[ "${#cmd[@]}" -eq 0 ]]; then
 fi
 
 # --- run ------------------------------------------------------------------
+
+# The fallback's warning: the same weaker profile --no-loopback warns about
+# above, reached without the flag (or with it, where there is no bwrap for
+# dropping the flag to bring back). It is printed here and not at selection,
+# so only a run that is about to start prints it: --probe's output and the
+# refusals above are unchanged. `command -v` runs nothing.
+if [[ "$fell_back" -eq 1 ]]; then
+  if command -v bwrap >/dev/null 2>&1; then
+    warn_unshare_only "bwrap was refused here; falling back to the unshare primitive." \
+      "Run where bwrap works (a CI runner or a dev host) to get the hardened" \
+      "profile."
+  else
+    warn_unshare_only "bwrap is not installed; falling back to the unshare primitive." \
+      "Install bwrap (bubblewrap) to get the hardened profile."
+  fi
+fi
 
 echo "confine-tests: denying network via $primitive (loopback=$loopback)" >&2
 
