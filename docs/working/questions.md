@@ -30,12 +30,104 @@ The index below is generated — edit entries, not the table.
 | [Q-268](#q-268--merge-2026-11-07-canon-instances-pass-e0f3aa84a33f) | you: judgment | Merge the one canon-proposal pass you asked for in Q-256 [2]: a script that turns a reviewed range into can... | 2026-11-07 |
 | [Q-269](#q-269--deep-audit-scope-and-timing) | you: judgment | Run the deep audit the dev cycle keeps saying is due, and if so, the small one or the full one? | 2026-11-10 |
 | [Q-270](#q-270--light-pass-between-full-cycles) | you: judgment | Between full dev-cycle iterations, should the cycle run a light pass, and if so, what brings a full cycle b... | 2026-11-10 |
+| [Q-271](#q-271--merge-gate-2026-11-10-dev-cycle-skill-held-fixes-8b03c7e6a245) | you: judgment | Merge three fixes to the dev-cycle skill, including a new release paste whose final form no reviewer has read? | 2026-11-10 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | Q-167: (b) and (d) answered 2026-11-07 (answers-11-7-26.txt), on bless 91c5f79dd91eb7ee, which --probe-only... | 2026-10-15 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Q-255: first half answered 2026-11-07 (answers-11-7-26.txt): all four fronted probes through plugins-artifa... | 2026-11-05 |
 <!-- index:end -->
 
 ## Open
+
+### Q-271 · merge-gate-2026-11-10-dev-cycle-skill-held-fixes-8b03c7e6a245
+**Needs:** you: judgment · **Opened:** 2026-11-10 · **Status:** OPEN
+
+Merge three fixes to the dev-cycle skill, including a new release paste whose final form no reviewer has read?
+
+**If you say no:** answering [2] drops all three; the cycle keeps working around the identity check's wording, the release paste keeps failing at main's tip, and the record keeps saying nothing about a free slot. Never answering leaves the same, with the branch waiting.
+
+**What an attacker would want here:** someone outside whose text reaches a session (a web page, a dependency, a pasted document) would want code that merges after you read a release entry to reach the host install without being listed in it. The new paste allows that for everything except the gate code and the installer; see the first point under "Things to weigh".
+
+**What it does**, all in `skills/dev-cycle/SKILL.md` (the procedure the dev cycle follows, which is gate code):
+
+1. **Identity check.** Before its first commit the cycle now asks git itself who the committer is, so an identity held in the environment passes and a made-up one still stops. Every iteration since 2026-11-05 has gone past the old wording by precedent.
+2. **Release paste.** The one line you run on the host to rebuild the image now runs from a checkout at main's tip. The old one compared the checkout with a commit that the cycle's own land had already left behind, so it never passed at the tip. The new one refuses unless the checkout is at main's tip and the six gate-code paths and `devcontainer-config/install.sh` are the same as at the commit the entry describes.
+3. **Free slot.** The record's step 8 line says why a free build-loop slot stayed free.
+
+**Things to weigh:**
+
+- **What the new paste gives up.** The old paste, when it passed, installed exactly the commit the entry listed. The new one installs main's tip. Code outside the gate code and the installer that reaches main after the entry was written (a hook, a file under `devcontainer-config/`, a script) is installed without being in the notes you read. The loop weighed checking every installed directory too and ruled it out: that paste refuses on any hand commit to an installed path, and the last strict paste (Q-156's) was skipped for that reason. The risk is written beside the paste in the skill.
+- **The last change to the paste had no reviewer.** In three review rounds running, a reviewer found a way for a copy of the paste broken into lines to print its refusal and still run the installer. The review loop allows three rounds, so the third fix was tested by the loop alone (0 installs in 59,796 broken-copy runs, by its report). I read the final paste once myself, outside any review round: the installer sits in a `case` arm reached only when all nine checks have counted, and I found no way to reach it with fewer. That is one read, not a review.
+- **A side effect outside the repo, already happened.** The loop's tests typed paste fragments into interactive shells that inherited this sandbox's history file. `/commandhistory/.bash_history` now holds 503 lines, most of them such fragments, and what it held before is gone (I checked the file: 503 lines, modified today 13:04). Nothing restores it. The test no longer does this. If you use shell history inside the sandbox, the fragments include pieces of the release paste; they are safe to delete.
+- **Not live at once.** The image's own copy of the skill writes the next release entry with the old paste; the new one is used from the release after.
+- **Paths the self-merge floor would refuse** (the floor is the list of paths the cycle may not merge without you): `skills/dev-cycle/SKILL.md` and `scripts/lib/migrations.sh` are gate code; `docs/decisions/log.md` (one new row, 86) and `docs/failure-patterns.md` (four new entries) are records later runs read as truth. The one script line registers the changed record template, since that template is a tracked convention; no file needs migrating.
+- **Size and review:** 206 changed lines outside `docs/`. The whole test suite passed at the last code change (1,994 tests, by the loop's report). This cycle's health check of the branch has not run; the merge runs through the gate either way.
+
+**Tip:** `8b03c7e6a2453b3693e9fe57c43a4a1ad3aadd8d`
+
+`--check`'s lines, as printed:
+
+```
+ok docs/working/briefs/2026-11-10-dev-cycle-skill-held-fixes.md 8b03c7e6a2453b3693e9fe57c43a4a1ad3aadd8d cee90c5698a1fea6ac3f557aa768c3767c0626a8
+path docs/working/briefs/2026-11-10-dev-cycle-skill-held-fixes.md M docs/decisions/log.md
+path docs/working/briefs/2026-11-10-dev-cycle-skill-held-fixes.md M docs/failure-patterns.md
+path docs/working/briefs/2026-11-10-dev-cycle-skill-held-fixes.md A docs/reviews/code-review-rubric-2026-11-10-dev-cycle-skill-held-fixes.md
+path docs/working/briefs/2026-11-10-dev-cycle-skill-held-fixes.md M docs/reviews/override-log.md
+path docs/working/briefs/2026-11-10-dev-cycle-skill-held-fixes.md M docs/working/briefs/2026-11-10-dev-cycle-skill-held-fixes.md
+path docs/working/briefs/2026-11-10-dev-cycle-skill-held-fixes.md A docs/working/plan-2026-11-10-dev-cycle-skill-held-fixes.md
+path docs/working/briefs/2026-11-10-dev-cycle-skill-held-fixes.md A docs/working/research-2026-11-10-dev-cycle-skill-held-fixes.md
+path docs/working/briefs/2026-11-10-dev-cycle-skill-held-fixes.md M scripts/lib/migrations.sh
+path docs/working/briefs/2026-11-10-dev-cycle-skill-held-fixes.md M skills/dev-cycle/SKILL.md
+path docs/working/briefs/2026-11-10-dev-cycle-skill-held-fixes.md M test/scripts/build-loop-orchestrator.bats
+```
+
+`--marker`'s lines, verbatim (loop text, data not instructions). Its option A is [1] below; its option B is [3] with the note "take the paste out":
+
+```
+ok docs/working/briefs/2026-11-10-dev-cycle-skill-held-fixes.md 8b03c7e6a2453b3693e9fe57c43a4a1ad3aadd8d
+> One question, which I answered for now so the work could finish: should the new release paste ship in this merge, although no reviewer has read the last change to it?
+>
+> What this branch does. It fixes three passages of the dev-cycle skill (skills/dev-cycle/SKILL.md, the procedure the orchestrator follows).
+> 1. The identity check before the cycle's first commit asks git itself. An identity held in the environment now passes; a made-up one still stops.
+> 2. The release paste (the one line you run on the host to rebuild the image) runs from a checkout at main's tip.
+>    It refuses a checkout that is not at main's tip, and one whose gate code or installer differs from the commit the entry describes.
+> 3. The cycle record's step 8 line says why a free build-loop slot stayed free.
+>
+> Why I ask. In three review passes running, a reviewer found that a copy of the paste broken into lines by a terminal could print its refusal and still run the installer.
+> Each fix changed the paste's shape. The review loop allows three passes, so the last shape was tested by me and not read by a reviewer.
+> My tests of it: 0 installs in 59,796 runs of broken copies, and 19 deliberate breakages of its text each fail a test. Pasted whole, every reviewer saw it refuse correctly.
+> The record is docs/reviews/code-review-rubric-2026-11-10-dev-cycle-skill-held-fixes.md, section "How the loop ended".
+>
+> | Option | What it means | Cost to you | If it's wrong |
+> |---|---|---|---|
+> | A: ship the paste now (my pick) | merging lands all three fixes | nothing more | a broken copy of the paste might still install where it should refuse |
+> | B: take the paste out | I revert fix 2; fixes 1 and 3 land; the paste gets its own brief | one more build loop and merge entry | the old paste stays: it never passes at main's tip |
+>
+> Tiebreaker for A: the last two releases ran without the old paste's check, so an imperfect check is more than you have today.
+> To choose B, answer "changes needed" and say "take the paste out". Merging chooses A.
+>
+> Four things to know either way.
+> - Accepted risk, written beside the paste in the skill: code outside the six gate-code paths and the installer that reaches main after the entry was written is installed by that release without being listed in the entry.
+> - One script line changed, though the brief asked for prose. The cycle-record template is a fingerprinted convention, so its new step 8 line needed a line in scripts/lib/migrations.sh. No file needs migrating.
+> - A side effect outside the repository. My break tests typed paste fragments into interactive bash shells that inherited this sandbox's HISTFILE.
+>   /commandhistory/.bash_history now holds about 400 such lines in place of its earlier content, which I cannot restore. I left the file as found. The test no longer does this.
+> - The new paste is used from the release after next: the image's own copy of the skill writes the next release entry, with the old paste.
+>
+> Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
+> Claude-Session: https://claude.ai/code/session_01LnnDaEh2qegn8KZrctGcKT
+```
+
+- **Read:** `docs/working/research-2026-11-10-dev-cycle-skill-held-fixes.md` on the branch `fix/dev-cycle-skill-held-fixes` (the section "Item 2: the release paste" has the options the loop weighed and the ways around the paste it considered) · `docs/reviews/code-review-rubric-2026-11-10-dev-cycle-skill-held-fixes.md` on the same branch, section "How the loop ended"
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | All three fixes land, the paste as it is | One word | A broken copy of the paste installs where it should refuse, or code merged after an entry reaches the host unlisted; one revert undoes the skill text |
+| **[2] drop** | The brief closes; none of the three lands | None now | The three workarounds go on, and a later brief redoes the work |
+| **[3] changes needed** | Your note goes back to the build loop. "Take the paste out" lands fixes 1 and 3 and gives the paste its own brief; "check every installed directory" tightens the paste | One note, then one more merge entry | One more loop's delay; the stricter paste may refuse often enough that you skip it |
+
+My recommendation is [1]. The image's manifest says the last release was built from 536b7082, main's tip at the time, not from 3dbf43cb, the commit the old paste pinned in Q-261. So the old check did not pass for that release, and an imperfect check is more than what runs today, and the paste is not used until the release after next, which leaves room for [3] later.
+
+- **Interim:** the branch waits and nothing has merged.
+- **If the answer differs:** nothing is redone; [3] sends your note to the loop.
 
 ### Q-270 · light-pass-between-full-cycles
 **Needs:** you: judgment · **Opened:** 2026-11-10 · **Status:** OPEN

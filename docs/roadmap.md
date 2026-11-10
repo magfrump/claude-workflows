@@ -52,6 +52,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   2026-11-10: the conditional wording is in all three briefs written today, Q-267 (the
   sandbox merge entry) names the `--probe` run as a step after the install, and the bats
   test is In flight. What remains here is that `--probe` run, once Q-267 merges and installs.
+  The test merged at 9d6d6101 and found two defects, now In flight as their own brief. It
+  also noted that `--probe` asks `bwrap` for less than a run does, so a probe can pass and
+  the run then fail to start: check that in the same `--probe` run.
 
 - **Agent: the `Harness feedback` section warning** (filed 2026-11-06, step 3, trial T7).
   Motive: every health check warns that this H2 of the global instructions is missing from
@@ -110,10 +113,13 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   environment identity, the image-lag paste runs from main's tip, and the record says why a
   free slot stays empty (`docs/working/briefs/2026-11-10-dev-cycle-skill-held-fixes.md`;
   review policy, gate code). Motive: the Now agent item "after the Q-261 release".
-- A first bats test for `scripts/confine-tests.sh`
-  (`docs/working/briefs/2026-11-10-confine-tests-bats.md`; self-merge, one test file).
-  Motive: the confine-tests research (be12889c); watch Q-161 revives confinement once
-  Q-125's sandbox merges.
+  Ready at 8b03c7e6: merge entry Q-271 (its tentative pick ships the new paste, whose last
+  change no reviewer read).
+- Fix two defects the first tests found in `scripts/confine-tests.sh`: a command name
+  starting with a dash is misread where `sh` is bash, and a fallback to `unshare` prints
+  no warning (`docs/working/briefs/2026-11-10-confine-tests-dash-and-fallback.md`;
+  self-merge). Motive: the merged test brief's marker (9d6d6101); constraint H2 for the
+  warning.
 
 ## Next
 
@@ -364,6 +370,10 @@ Unranked. Each names the signal that motivates it.
 ## Done
 
 Items finished since the last cycle, with the merge.
+
+- A first bats test for `scripts/confine-tests.sh`, 17 tests behind PATH stand-ins
+  (`docs/working/briefs/closed/2026-11-10-confine-tests-bats.md`). Merged 9d6d6101,
+  self-merge. Nothing ran confined (no primitive here); its two defects are In flight.
 
 - What the dev cycle costs per iteration, for the light-pass decision
   (`docs/working/briefs/closed/2026-11-10-cycle-overhead-numbers.md`). Merged c70bb17a,
