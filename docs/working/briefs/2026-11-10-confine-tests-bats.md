@@ -36,3 +36,5 @@ Paths: test/scripts/confine-tests.bats docs/working/research-2026-11-10-confine-
 - Changing `scripts/confine-tests.sh`, the hermeticity lint or decision 017.
 - A Landlock tier, or having `scripts/run-tests.sh` confine itself: both are separate roadmap ideas.
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`: the dev cycle owns those.
+
+Dispatched: 1

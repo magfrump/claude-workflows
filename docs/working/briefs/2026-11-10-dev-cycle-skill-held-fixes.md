@@ -37,3 +37,5 @@ Policy: review
 
 - The other held ideas (a list of things waiting for a release, a closing step for a trial, skipping the health rerun for docs-only commits, re-dispatching after a merge conflict): each is a design choice of its own.
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`: the dev cycle owns those.
+
+Dispatched: 1
