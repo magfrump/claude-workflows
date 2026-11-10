@@ -82,6 +82,6 @@ Did the rule to explain every internal reference work? Decision-log row 84 names
 
 - **Read:** `docs/decisions/log.md`, row 84.
 - **Interim:** the rule stands. The condition, counted once 5 or more entries have opened after the first install from a commit holding 771c84e8, with entries' own text and marker bodies counted separately: half or more still carry a bare numbered label, or filed marker bodies mostly do, or the owner again names references as the problem. Then re-run divergent design.
-- **2026-11-10:** that first install has happened. The image is at 536b7082, which holds 771c84e8 (`git merge-base --is-ancestor`), so the count starts with entries opened from today. So far: 3 (Q-269, Q-270, Q-271).
+- **2026-11-10:** that first install has happened. The image is at 536b7082, which holds 771c84e8 (`git merge-base --is-ancestor`), so the count starts with entries opened from today. So far: 4 (Q-269, Q-270, Q-271, Q-272); the count is made at 5.
 
 ## Closed
