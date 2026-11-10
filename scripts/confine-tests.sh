@@ -216,12 +216,19 @@ fi
 # The `ip link` failure is NOT swallowed. `|| true` there would let the run
 # proceed with `lo` down after the banner had already announced loopback=1 —
 # a guard quietly not guarding, which is the one thing this script refuses to do.
+#
+# The body is static; the command reaches it as positional arguments, and `--`
+# ends exec's options so a command named `-a` is run (or not found), never
+# read as one. It runs under "$BASH", the bash already running this script,
+# and not under `sh`: bash's exec takes options and needs the `--`, dash's
+# takes none and would run `--` as the command, so no one spelling is right
+# under both, and which of them `sh` is varies by host.
 if [[ "$loopback" -eq 1 ]]; then
-  exec unshare -rn -- sh -c '
+  exec unshare -rn -- "$BASH" -c '
     if ! ip link set lo up; then
       echo "confine-tests: failed to bring loopback up inside the namespace." >&2
       exit 3
     fi
-    exec "$@"' sh "${cmd[@]}"
+    exec -- "$@"' confine-tests "${cmd[@]}"
 fi
 exec unshare -rn -- "${cmd[@]}"
