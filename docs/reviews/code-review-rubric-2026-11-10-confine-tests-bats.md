@@ -1,8 +1,9 @@
-Commit: 27b5e861
+Commit: 7d77df6c
+Loop closed at 7d77df6c
 
 # Code Review Rubric
 
-**Scope:** test/confine-tests-bats, `a37733cc..27b5e861` (full branch) | **Reviewed:** 2026-11-10 | **Status: 🟡 IN LOOP** — 0 red; the final pass's findings are fixed in the next commit, and a check of that commit is still to run
+**Scope:** test/confine-tests-bats, `a37733cc..7d77df6c` (full branch at pass 2, the last fix commit at pass 3) | **Reviewed:** 2026-11-10 | **Status: 🟢 PASSES** — 0 red; every amber fixed, except the two against the unchanged script (A7, A8), which are deferred with a follow-up and a revisit trigger. The loop ended at its cap of three iterations; pass 3's own fixes (aa8a818c) were checked by re-running and by the drift check, not by a fourth review pass
 
 The file's name ends in the brief's stem, not the branch slug, so the build loop's gate counts it as this brief's own file; passes therefore name their range explicitly. Delivery mode: self-read (each agent ran its own `git diff` and read the files). All agents ran on opus. Reports are in this directory, named `<kind>-2026-11-10-confine-tests-bats.md`.
 
@@ -18,7 +19,13 @@ The file's name ends in the brief's stem, not the branch slug, so the build loop
 
 No replicate found anything wrong in the test code, and all three found every test name true to its body. Every Incorrect and Stale is in the research doc's prose, so by the tier rule for a fact-check red (the code is right and only a reader is misinformed) they are 🟡, not 🔴. The replicates were merged by most-severe-wins straight into the rows below, with no merged report file. Verdict stability: A10 was Incorrect in r2 and r3 and Mostly accurate in r1; A11 was Incorrect in r2 alone, and the final security critic found it independently. Critics: security (`security-review-final`): 1 Low against this diff, 1 Medium repeat against the unchanged script, 2 Informational; performance (`performance-review-final`): nothing to fix, 1 Informational.
 
-Executed evidence outside the critics: the first whole-suite run (at 9d37c1ac) was red, 2005 pass and 3 fail, all in `test/scripts/health-check.bats` (row A9). The whole suite at f36108e4 passed, 2008 of 2008.
+Fixed in 7d77df6c. The drift check declined that commit (its diff, with the five review reports in it, is 239 KB against the checker's 192 KB limit, and it says to use the full review path), so pass 3 is that fuller path.
+
+**Pass 3** (iteration 3 of 3, `--loop-pass`, scoped to `27b5e861..7d77df6c` in the test file and the research doc): k=1 fact-check (`code-fact-check-report-i3`): 37 claims; 31 Verified, 2 Mostly accurate, 2 Incorrect, 2 Unverifiable. Again nothing wrong in the test code; the two Incorrect are one prose error, stated in the research doc and repeated in the message of 7d77df6c (row A14). No critics ran on this pass: it is a loop pass over a prose-and-comment fix whose only code change loosened two assertions, and the full panel had run one commit earlier. Fixed in aa8a818c. The drift check over aa8a818c alone returned one Low "unverified claim" (that `docs/roadmap.md` holds the `--probe` wording for new briefs); checked against `docs/roadmap.md:48-49`, it holds, so no edit.
+
+This is the cap. No fourth iteration was started, so the cap's decision gate did not arise: at the end of iteration 3 no red and no open amber remained.
+
+Executed evidence outside the critics: the first whole-suite run (at 9d37c1ac) was red, 2005 pass and 3 fail, all in `test/scripts/health-check.bats` (row A9). The whole suite at f36108e4 passed, 2008 of 2008. The last whole-suite run is in the research doc's "Gates" table.
 
 ---
 
@@ -44,7 +51,9 @@ None.
 | A10 | The mutation table said all four "exec replaced by a plain call" mutants fail "through `same_process`". Two of them (bwrap, `unshare ... sh -c`) failed earlier, because the script fell through to its next run form. Location: research doc, "Mutation run" | Docs | Incorrect | pass 2: r2 claim 23b, r3 claim 27a (r1 claim 27: Mostly accurate) | for-author | — | 🟢 Fixed: the four mutants are now written so nothing falls through (`exit $?` after the plain call), re-run, and fail only through `same_process`; the fall-through variants are described beside the table | — |
 | A11 | "No test pins the warning's absence" (defect D2) was false: the fallback `--probe` test required an empty stderr, and the unshare-without-ip test required the `ip` refusal to be stderr's first line. Location: `test/scripts/confine-tests.bats:349`, `:359`; research doc | Test | Incorrect | pass 2: r2 claim 31; security-final 1 (Low) | for-author | — | 🟢 Fixed: both tests now only require the line they are about; copies of the script that warn at run time and at selection time pass all 17 tests | — |
 | A12 | "See observation O2" pointed at nothing: O2 became D2. Location: research doc, "Prior failures" | Docs | Stale | pass 2: r2 claim 12, r3 claim 15 | for-author | — | 🟢 Fixed | — |
-| A13 | Six statements that were close but not exact: the Project state and Rollback lines left out the review reports the branch adds; "before it, the sh body mutant survived" (two survived); the `exec` pin at the `sh` body holds only where `sh` is dash; "the dev cycle's brief wording has each loop run `--probe`" (not every brief); `confine()`'s comment said "refused a call" where a mode is also named `refused`; "only the whole suite showed it" (a hand-run shellcheck had shown the warning, and the author took it for advice). Location: research doc; `test/scripts/confine-tests.bats:135` | Docs | Mostly accurate | pass 2: r1 claims 1, 24, 25, 27, 50b; r2 claims 1, 20, 23c; r3 claims 1, 6, 20b, 27b; security-final 3 | for-author | — | 🟢 Fixed, each one | — |
+| A13 | Six statements that were close but not exact: the Project state and Rollback lines left out the review reports the branch adds; "before it, the sh body mutant survived" (two survived); the `exec` pin at the `sh` body holds only where `sh` is dash; "the dev cycle's brief wording has each loop run `--probe`" (not every brief); `confine()`'s comment said "refused a call" where a mode is also named `refused`; "only the whole suite showed it" (a hand-run shellcheck had shown the warning, and the author took it for advice). Location: research doc; `test/scripts/confine-tests.bats:135` | Docs | Mostly accurate | pass 2: r1 claims 1, 24, 25, 27, 50b; r2 claims 1, 20, 23c; r3 claims 1, 6, 20b, 27b; security-final 3 | for-author | — | 🟢 Fixed in 7d77df6c, each one (two of them corrected again in aa8a818c: see A14, and pass 3 claim 3 on which briefs ask for `--probe`) | — |
+| A14 | "Before `same_process` existed, two of the four survived": true of the plain mutants, but the table now defines the four with `exit $?`, and in that form all four passed the test file at 9d37c1ac. The same sentence is in the message of 7d77df6c. Location: research doc, "Mutation run"; commit 7d77df6c | Docs | Incorrect | pass 3: code-fact-check claims 12, 29 | for-author | — | 🟢 Fixed in aa8a818c: the doc gives both counts, re-run. The commit message cannot be edited (the branch only adds commits), so aa8a818c's message carries the correction | — |
+| A15 | "No test pins O3" was not quite true: the no-command test counted the probes that ran before the refusal, which fixes the order O3 describes. Location: `test/scripts/confine-tests.bats:248`; research doc, "Not covered" | Test | Mostly accurate | pass 3: code-fact-check claim 15b | for-author | — | 🟢 Fixed in aa8a818c: the count is gone; a copy of the script that refuses an empty command before detection passes all 17 tests, and the copy that runs an empty command still fails | — |
 
 ---
 
@@ -60,7 +69,7 @@ None.
 | C6 | The recorder script had no `set -u` | pass 1: security (sound-checks note) | Informational | for-author | — | 🟢 Fixed in f36108e4 |
 | C7 | Not tested: whether `--bind "$PWD" "$PWD"` run from `/` undoes the read-only root | pass 1: security (not tested) | Informational | for-orchestrator-synthesis | — | 🟢 Deferred: recorded as observation O5 for a live run; no bwrap here |
 | C8 | "the real bwrap forks it" in a test comment cannot be checked here | pass 2: r1 claim 51b, r2 claim 35, r3 claim 49 | Unverifiable | for-orchestrator-synthesis | — | 🟢 Fixed: the comment now says what a real primitive does with the command is not tested |
-| C9 | The whole-suite counts and the drift check's result cannot be re-run by a reviewer under the review's rules | pass 2: r1 claims 31, 32; r2 claim 26; r3 claims 31, 32, 33 | Unverifiable | for-orchestrator-synthesis | — | 🟢 Won't-Fix: the run logs are in the session's scratch directory; a log file under `docs/reviews/execution-logs/` is not one of this brief's own paths. What a reviewer could check agreed (r2 ran the two affected suites: 57 pass) |
+| C9 | The whole-suite counts and the drift check's result cannot be re-run by a reviewer under the review's rules | pass 2: r1 claims 31, 32; r2 claim 26; r3 claims 31, 32, 33; pass 3: claims 5b, 33 (the author's account of their own runs) | Unverifiable | for-orchestrator-synthesis | — | 🟢 Won't-Fix: the run logs are in the session's scratch directory; a log file under `docs/reviews/execution-logs/` is not one of this brief's own paths. What a reviewer could check agreed (r2 ran the two affected suites: 57 pass) |
 | C10 | The `bash -c` pid wrapper and `same_process` add about 0.1 s across the file; no hang, race or order dependence | pass 2: performance PERF-F1 | Informational | for-orchestrator-synthesis | — | 🟢 Won't-Fix, on the critic's own recommendation |
 
 Out of scope, listed once: a fake `bwrap` planted on PATH (pass 1 security F5, pass 2 security-final 4) needs a deliberately hostile author (constraints S1).
@@ -91,7 +100,8 @@ All findings' evidence resolved.
 
 | Critic | Reason | Signal |
 |---|---|---|
-| api-consistency-reviewer | No public API surface touched | `git diff --stat a37733cc...27b5e861` outside `docs/reviews/`: one new test file and one working doc; no flag, export, schema or config key |
+| api-consistency-reviewer | No public API surface touched (all passes) | `git diff --stat a37733cc...27b5e861` outside `docs/reviews/`: one new test file and one working doc; no flag, export, schema or config key |
+| security-reviewer, performance-reviewer (pass 3 only) | Pass 3 was a loop pass over a fix whose delta is prose, comments and two loosened assertions; both critics had run on the full branch one commit earlier, in the final confirming pass | `git diff --stat 27b5e861..7d77df6c -- test/ docs/working/`: 2 files; in the test file, 14 lines added and 7 removed, no new command, path or loop |
 
 ---
 

@@ -3,7 +3,7 @@
 - **Goal**: Give `scripts/confine-tests.sh` its first test file, `test/scripts/confine-tests.bats`, pinning what the script does today wherever that is right.
 - **Problem framing**: The script that decision 017 calls the real enforcement of test hermeticity has no test, and it is about to matter (the image gains `bwrap` when the cc-isolated sandbox merges). Considered and discarded: "the script has never run with a primitive, so get it a live run first". A live run needs a host or the unmerged sandbox, and it would show one profile once; it would not pin the refusals, the usage errors or the argv handling, which can all be tested here today.
 - **Project state**: this branch adds one test file, this doc and its review loop's reports under `docs/reviews/` · standalone, first of the confine-tests follow-ups · not blocked (cite: docs/working/research-2026-11-07-confine-tests-situation.md)
-- **Task status**: in-progress (review loop at its cap of three iterations: the third, a check of the final pass's fixes, is done and its own fixes made; the last gate and the brief's status line remain)
+- **Task status**: complete (the review loop ended at its cap of three iterations with nothing open against this branch; defects D1 and D2 in the script go to the dev cycle)
 
 Brief: `docs/working/briefs/2026-11-10-confine-tests-bats.md` · Branch: `test/confine-tests-bats` from a37733cc · Date: 2026-11-10
 
@@ -110,7 +110,7 @@ Approach: one bats file, written test-first is not possible in the usual sense (
 Implementation order: `1 → 2 → 3 → 4 → 5`.
 
 Estimated context cost: Research ~40k, Implementation ~60k, Review ~40k.
-Actual context cost (post-implementation): __
+Actual context cost (post-implementation): the review alone took nine review agents and about 1.31M of their tokens (the sum of the nine runs' reported totals), far past the ~40k estimate, which had counted only this session's own share. Research and implementation in this session were not metered; both ran well over their estimates too, mostly in reading the workflow and review-skill documents. The scope did not grow: one test file and this doc, as planned.
 
 `/pre-mortem`: not triggered (no enforcement file, no trust boundary changed, under 500 lines). `/architecture-review`: not triggered (one module, `test/`).
 
@@ -189,9 +189,26 @@ Two more copies add a warning to every unshare fallback, which is what a fix for
 | `shellcheck -x -e SC1091 -s bash -S warning test/scripts/confine-tests.bats` (the health check's own command) | exit 0 |
 | `scripts/run-tests.sh` (whole suite, serial) at 9d37c1ac | **red**: 2005 pass, 3 fail, all in `test/scripts/health-check.bats`, all from SC2154 in the new file (see Gotchas) |
 | `scripts/run-tests.sh` (whole suite, serial) at f36108e4, after the fix | exit 0: 2008 of 2008 pass. The runner lists 50 report-dependent suites as NOT RUN, which is its own report gating and not something this branch touches |
-| `scripts/lite-review.py --range 9d37c1ac..HEAD --mode fix-drift` (the fix-commit drift check) | "FINDINGS: NONE" |
+| `scripts/lite-review.py --range 9d37c1ac..HEAD --mode fix-drift` (the fix-commit drift check) at f36108e4 | "FINDINGS: NONE" |
+| the same drift check over 7d77df6c | declined: the commit's diff (with five review reports in it) is 239 KB against the checker's 192 KB limit, and it says to use the full review path. The review's third pass, a fact-check scoped to that commit, is that path |
+| the same drift check over aa8a818c alone | one Low "unverified claim" (that `docs/roadmap.md` holds the `--probe` wording for new briefs). Checked against `docs/roadmap.md:48-49`: it holds |
+| `scripts/run-tests.sh test/scripts/health-check.bats test/scripts/confine-tests.bats test/fixture-hermeticity.bats` at 7d77df6c | 59 of 59 pass |
+| `timeout 300 bats test/scripts/confine-tests.bats` and the health check's shellcheck command at aa8a818c | 17 of 17 pass; exit 0 |
+| `scripts/run-tests.sh` (whole suite, serial) on the branch's final tree: aa8a818c plus the last commit's changes (the brief's status line, the review records, this doc), all but this row, which was added after the run | exit 0: 2008 of 2008 pass; the same 50 report-dependent suites NOT RUN. No probe was running, and the machine's load was under 2 at the start |
 
-The review loop's outcome is in `docs/reviews/code-review-rubric-2026-11-10-confine-tests-bats.md`.
+The numbers in the rows above for the file alone, the lint and shellcheck are from the first fix commit; the last row repeats them at the last one.
+
+### Review
+
+Three iterations, the loop's cap (`docs/reviews/code-review-rubric-2026-11-10-confine-tests-bats.md` has every finding and what was done with it):
+
+1. Pass 1 at 9d37c1ac: one fact-check, then security and performance critics. No red. It found the `exec` gap in the unshare run test, one assertion that pinned D2, the unbounded ambient-PATH test, the worse of D1's two cases, and six inexact sentences.
+2. The final confirming pass at 27b5e861, on the whole branch: three fact-check replicates, then both critics. No red, nothing wrong in the test code's behaviour. It found that the mutation table credited the wrong assertion, two more assertions that pinned D2, a dangling pointer, and that the `exec` pin at the `sh` body holds only where `sh` is dash.
+3. A fact-check scoped to the fixes of pass 2, at 7d77df6c. No red. It found one more wrong count in the mutation notes (repeated in that commit's message) and one assertion that pinned O3.
+
+Every finding against this branch is fixed. Two are against the script and are deferred to the dev cycle by the brief: D1 and D2. The last fix commit (aa8a818c) was checked by re-running the tests and the mutants and by the drift check, not by a fourth review pass, because the loop's cap is three.
+
+No row was added to `docs/reviews/override-log.md` for the items not fixed: that file is outside this brief's Paths and on the self-merge floor. The rubric lists them.
 
 ## What a stub cannot show
 
