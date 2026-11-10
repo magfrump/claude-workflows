@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category slow
+# shellcheck disable=SC2154  # bats' `run --separate-stderr` sets $stderr and $stderr_lines
 # scripts/confine-tests.sh: the probe verdict, the refusal to run tests
 # unconfined, usage errors, primitive selection, and that each word of the test
 # command reaches the child as its own argv element.
@@ -49,9 +50,11 @@ setup() {
   for tool in bash sh cat awk; do
     ln -s "$(type -P "$tool")" "$TOOLS/$tool"
   done
-  # The test command: it records its argv as "child" and exits $CHILD_EXIT.
-  # One copy has a space in its path; one is on PATH under a name starting "-".
-  printf '%s\n' '#!/usr/bin/env bash' 'name=child' "$RECORD_CALL" 'exit "${CHILD_EXIT:-0}"' > "$RECORD"
+  # The test command: it records its argv as "child" and its pid, and exits
+  # $CHILD_EXIT. One copy has a space in its path; one is on PATH under a name
+  # starting "-".
+  printf '%s\n' '#!/usr/bin/env bash' 'set -u' 'name=child' "$RECORD_CALL" \
+    'echo "$$" > "$STUB_LOG/child-pid"' 'exit "${CHILD_EXIT:-0}"' > "$RECORD"
   cp "$RECORD" "$TOOLS/-record"
   write_stub
   for tool in bwrap unshare ip; do cp "$T/stub/stub" "$T/stub/$tool/$tool"; done
@@ -64,7 +67,7 @@ setup() {
 }
 
 teardown() {
-  # bats shows only the failing line; add what the script and stand-ins did.
+  # bats shows the failing line, not what `run` captured or the stand-ins saw.
   [[ -n "${BATS_TEST_COMPLETED:-}" ]] && return 0
   printf 'status: %s\nstdout:\n%s\nstderr:\n%s\ncalls:\n' "${status:-}" "${output:-}" "${stderr:-}"
   local f
@@ -129,16 +132,24 @@ EOF
 
 # confine "STUB..." [VAR=value...] -- [ARG...]: run the script with ARGs in an
 # empty environment whose PATH holds the named stand-ins (of bwrap, unshare,
-# ip) and the real tools. Fails the test when a stand-in refused a call.
+# ip) and the real tools. Fails the test when a stand-in refused a call. The
+# script's pid goes to $LOG/script-pid (bash and env exec, so it is the same).
 confine() {
   local path="$TOOLS" tool assigns=()
   for tool in $1; do path="$T/stub/$tool:$path"; done
   shift
   while [[ $# -gt 0 && "$1" != -- ]]; do assigns+=("$1"); shift; done
   shift
-  run --separate-stderr env -i PATH="$path" HOME="$T" TMPDIR="$T" STUB_LOG="$LOG" \
-    "${assigns[@]}" "$SCRIPT" "$@"
+  run --separate-stderr bash -c 'echo "$$" > "$1"; shift; exec "$@"' _ "$LOG/script-pid" \
+    env -i PATH="$path" HOME="$T" TMPDIR="$T" STUB_LOG="$LOG" "${assigns[@]}" "$SCRIPT" "$@"
   [[ ! -e "$LOG/unexpected" ]]
+}
+
+# same_process: the test command ran as the process the script was. No step
+# between them forked: the script execs its primitive, and its sh body execs
+# the command. (A stand-in execs the command too; the real bwrap forks it.)
+same_process() {
+  cmp -s "$LOG/script-pid" "$LOG/child-pid" || { echo "the command was not exec'd all the way"; return 1; }
 }
 
 # calls NAME N [NAME N...]: each NAME (bwrap, unshare, ip or child) was called
@@ -196,13 +207,14 @@ refused() {
   # The one test without stand-ins: the script in its real position. It passes
   # whether or not this machine can confine, and shows no more than that the
   # verdict is well-formed and, on a refusal, that the command did not run.
-  run --separate-stderr "$SCRIPT" --probe
+  # A real primitive that stalls ends in timeout's 124, which fails the test.
+  run --separate-stderr timeout 60 "$SCRIPT" --probe
   case "$status" in
     0) [[ "${lines[0]}" =~ ^confine-tests:\ primitive\ available:\ (bwrap|unshare)\ \(loopback=1\)$ ]] ;;
     3)
       [[ "${stderr_lines[0]}" == "$NO_PRIMITIVE" || "${stderr_lines[0]}" == "$NO_IP" ]]
       [ -z "$output" ]
-      run --separate-stderr env STUB_LOG="$LOG" "$SCRIPT" -- "$RECORD" one
+      run --separate-stderr timeout 60 env STUB_LOG="$LOG" "$SCRIPT" -- "$RECORD" one
       [ "$status" -eq 3 ]
       calls child 0
       ;;
@@ -270,6 +282,7 @@ refused() {
   calls child 1
   call child 1 "${TRICKY[@]}"
   [ ! -e pwned ]
+  same_process
   calls unshare 0 ip 0
 }
 
@@ -305,7 +318,7 @@ refused() {
     --no-loopback -- "$RECORD" "${TRICKY[@]}"
   [ "$status" -eq 7 ]
   [ "${stderr_lines[0]}" = "$LO_WARNING" ]
-  [ "${stderr_lines[-1]}" = "confine-tests: denying network via unshare (loopback=0)" ]
+  [[ "$stderr" == *"confine-tests: denying network via unshare (loopback=0)"* ]]
   [ -z "$output" ]
   calls bwrap 1 unshare 2
   call unshare 1 -rn true
@@ -313,6 +326,7 @@ refused() {
   calls ip 0 child 1
   call child 1 "${TRICKY[@]}"
   [ ! -e pwned ]
+  same_process
 }
 
 @test "--no-loopback is refused (exit 2), probe or run, when bwrap works and unshare does not" {
@@ -363,12 +377,15 @@ refused() {
   local first=() second=()
   confine "unshare ip" STUB_UNSHARE=ok STUB_IP=ok -- -- "$RECORD" "${TRICKY[@]}"
   [ "$status" -eq 0 ]
-  [ "$stderr" = "confine-tests: denying network via unshare (loopback=1)" ]
+  # The banner, wherever it falls: whether a fallback to unshare should also
+  # warn is an open question (research doc, D2), so its absence is not pinned.
+  [[ "$stderr" == *"confine-tests: denying network via unshare (loopback=1)"* ]]
   [ -z "$output" ]
   call ip 1 link set lo up
   calls child 1
   call child 1 "${TRICKY[@]}"
   [ ! -e pwned ]
+  same_process
   # unshare -rn -- sh -c BODY sh COMMAND...
   mapfile -d '' -t first < "$LOG/unshare.2"
   call unshare 2 -rn -- sh -c "${first[4]}" sh "$RECORD" "${TRICKY[@]}"
