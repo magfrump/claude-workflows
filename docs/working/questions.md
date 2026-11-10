@@ -29,12 +29,49 @@ The index below is generated — edit entries, not the table.
 | [Q-267](#q-267--merge-2026-11-07-q125-sandbox-on-main-cd6d4332ed89) | you: judgment | Run the live check of the Bash sandbox for cc-isolated sessions (Q-125) on the host, then merge the branch ... | 2026-11-07 |
 | [Q-268](#q-268--merge-2026-11-07-canon-instances-pass-e0f3aa84a33f) | you: judgment | Merge the one canon-proposal pass you asked for in Q-256 [2]: a script that turns a reviewed range into can... | 2026-11-07 |
 | [Q-269](#q-269--deep-audit-scope-and-timing) | you: judgment | Run the deep audit the dev cycle keeps saying is due, and if so, the small one or the full one? | 2026-11-10 |
+| [Q-270](#q-270--light-pass-between-full-cycles) | you: judgment | Between full dev-cycle iterations, should the cycle run a light pass, and if so, what brings a full cycle b... | 2026-11-10 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | Q-167: (b) and (d) answered 2026-11-07 (answers-11-7-26.txt), on bless 91c5f79dd91eb7ee, which --probe-only... | 2026-10-15 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Q-255: first half answered 2026-11-07 (answers-11-7-26.txt): all four fronted probes through plugins-artifa... | 2026-11-05 |
 <!-- index:end -->
 
 ## Open
+
+### Q-270 · light-pass-between-full-cycles
+**Needs:** you: judgment · **Opened:** 2026-11-10 · **Status:** OPEN
+
+Between full dev-cycle iterations, should the cycle run a light pass, and if so, what brings a full cycle back?
+
+**If you say no:** nothing changes, which is also what happens if you never answer. Your earlier answer stays: a full cycle every iteration (Q-154, where you said to revisit this "once the costs are visible").
+
+**What the two are.** A full cycle runs four checking steps every time: the revisit triggers on past decisions, the watches, a spot-check of last week's merges, and the check for whether a deep audit is due. A light pass skips those four. It only collects finished build loops, writes briefs, dispatches and lands.
+
+**The numbers you asked for** are in `docs/working/research-2026-11-10-cycle-overhead-numbers.md` (merged at c70bb17a with no review; a build loop wrote it and four reviewer agents checked it). The figures below are that doc's; I re-counted only the total of iterations. From the 100 iterations recorded between 2026-10-16 and 2026-11-10:
+
+- 72 ran the checking steps. 40 found nothing, 10 only repeated "a deep audit is due" onto a task that already exists, and 22 caught something.
+- 24 were already light passes. You directed 2; the cycle chose the other 22 itself, with no rule for it in the skill, and stopped doing so after 2026-11-02.
+- Time is small: 16 hours in all. A full iteration that found nothing took a median of 3.8 minutes, a light one 2.9.
+- Tokens are not recorded anywhere in the repo, so the cost you asked about is still not visible. The doc does not estimate them.
+
+In the table, "replayed" means the doc re-ran the recorded iterations under that rule, and a "catch" is something the checking steps found (22 in 26 days).
+
+- **Why it's yours:** it changes how often past decisions get re-checked, and it replaces an answer you gave.
+- **Read:** the doc above, its Summary and section 9 · Q-154 in `docs/working/questions-archive.md`
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Full cycle every iteration** | Your Q-154 answer stays, and the cycle stops choosing light passes on its own | None | The repeats go on: 50 of 72 full iterations found nothing new, at a token cost no one has measured |
+| **[2] Full when main moved or a new day starts** | Full on each day's first iteration and whenever main gained anything but the cycle's own land; light otherwise | One merge to approve (the dev-cycle skill) | Things that are not commits wait for the next day; replayed, 4 of 22 catches waited, 2 of them really (1 hour and 3.8 hours) |
+| **[3] One full cycle a day** | The day's first iteration is full, the rest light | One merge to approve (the dev-cycle skill) | Replayed, 15 of 22 catches waited a median of 18 hours, up to 5 days; 9 might never be found |
+| **[4] Measure tokens first, then decide** | [1] stays for now; a small docs unit totals tokens from existing session transcripts, or the cycle record gains a token line | This question reaches you once more | The repeats continue meanwhile; if transcripts cannot be matched to iterations, it takes weeks of new records |
+
+The build loop recommends [4], then [2] if the tokens show the repeats cost something. Its reason: your own condition, costs visible, is not met yet. If you would rather settle it now, [2] gives up the least. I agree with that order.
+
+One thing to know either way: today the cycle's 30-minute fallback wakeup fired three times while build loops were still working. Each time I checked the loops and main, found nothing to collect, and did not run an iteration. I read that as waiting, not as a light pass, since the skill starts an iteration when a loop finishes.
+
+- **Blocks:** roadmap Next 3 (revisit the light pass).
+- **Interim:** [1], your Q-154 answer.
+- **If the answer differs:** nothing is redone; [2] or [3] becomes a brief for the dev-cycle skill, [4] a small docs brief.
 
 ### Q-269 · deep-audit-scope-and-timing
 **Needs:** you: judgment · **Opened:** 2026-11-10 · **Status:** OPEN
