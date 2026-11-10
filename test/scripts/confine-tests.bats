@@ -464,21 +464,22 @@ dash_named_on_unshare() {
 @test "a run that falls back to unshare first warns what unshare does not confine, in --no-loopback's words (H2)" {
   local shared
   # The warning --no-loopback has always printed: a headline, four lines on
-  # what unshare lacks, then the way back to bwrap's profile.
+  # what unshare lacks, then the way back to bwrap's profile (which starts on
+  # the sixth line: the text between is the same on every route).
   confine "bwrap unshare" STUB_BWRAP=ok STUB_UNSHARE=ok -- --no-loopback -- "$RECORD" one
   [ "${stderr_lines[0]}" = "$LO_WARNING" ]
   shared="$(printf '%s\n' "${stderr_lines[@]:1:4}")"
   [[ "$shared" == *"denies the network and NOTHING ELSE"* && "$shared" == *"read-only rootfs"* ]]
   [[ "$shared" == *"private /tmp"* && "$shared" == *"pid namespace"* && "$shared" == *"uid 0"* ]]
-  [[ "$stderr" == *"Drop the flag"* && "$stderr" != *"falling back"* ]]
+  [[ "${stderr_lines[5]}" == "  Drop the flag"* ]]
   # bwrap not installed: the same four lines under the fallback's headline,
   # once, on stderr, before the banner; and the run goes ahead.
   confine "unshare ip" STUB_UNSHARE=ok STUB_IP=ok CHILD_EXIT=7 -- -- "$RECORD" one
   [ "$status" -eq 7 ]
   [ "${stderr_lines[0]}" = "$NO_BWRAP_WARNING" ]
   [ "$(printf '%s\n' "${stderr_lines[@]:1:4}")" = "$shared" ]
+  [[ "${stderr_lines[5]}" == "  Install bwrap"* ]]
   [ "$(grep -c 'NOTHING ELSE' <<< "$stderr")" -eq 1 ]
-  [[ "$stderr" == *"Install bwrap"* && "$stderr" != *"Drop the flag"* ]]
   [ "${stderr_lines[-1]}" = "$UNSHARE_BANNER" ]
   [ -z "$output" ]
   # bwrap installed and refused: the headline says so.
@@ -486,7 +487,7 @@ dash_named_on_unshare() {
   [ "$status" -eq 0 ]
   [ "${stderr_lines[0]}" = "$BWRAP_REFUSED_WARNING" ]
   [ "$(printf '%s\n' "${stderr_lines[@]:1:4}")" = "$shared" ]
-  [[ "$stderr" != *"Install bwrap"* && "$stderr" != *"Drop the flag"* ]]
+  [[ "${stderr_lines[5]}" == "  Run where bwrap works"* ]]
   [ "${stderr_lines[-1]}" = "$UNSHARE_BANNER" ]
   calls child 3
   # With nothing to run there is nothing to warn about.
