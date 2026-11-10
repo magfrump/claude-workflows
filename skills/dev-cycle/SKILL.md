@@ -714,7 +714,9 @@ them), while the queue is shorter than `--settings`' `slots` line (D9's loop slo
 Rules' "holds a slot", which keeps a brief's branch out of cleanup): open briefs whose
 loop step 7 read as absent or working, plus those it sends back to a loop, each counted
 once (a blocked, stopped, capped or ready one, or a stalled one held, waits on the user and
-is not counted).
+is not counted). A queue left under its slots is explained on the record's `8.` line, in
+one plain clause: why each free slot stayed free (every other Now item waits on the owner,
+a host run or a choice, say; slots that share a reason share the clause).
 For each, write `docs/working/briefs/YYYY-MM-DD-<slug>.md`, where the slug is lowercase
 letters, digits and hyphens only (a file name no brief has used before, in `briefs/` or
 `briefs/closed/`, nor by a brief this cycle has written: `--check-brief` prints `new` for
@@ -781,7 +783,7 @@ Model: <the model id running this cycle>
 5. brainstorm: <ran: trigger / not due>
 6. roadmap: <done>
 7. collect: <per brief: STEM LOOP TIP, and what was done>
-8. briefs: <written this iteration, or none>; queue <k>/<slots> (full: no new briefs)
+8. briefs: <written this iteration, or none>; queue <k>/<slots> (<full: no new briefs / under: why each free slot stayed free>)
 9. land: <NEW, written with the 10. line before step 10's land>
 10. dispatch: <per brief: STEM dispatched N, or why not>
 ### Skipped inputs
