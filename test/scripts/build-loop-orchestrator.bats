@@ -19,6 +19,9 @@ marked() { brief x "Status: open" "Branch: feat/x"; work feat/x; tip feat/x "$1"
 # marker_is WANT: --marker printed exactly WANT (lines joined by newlines), exit 0.
 marker_is() { bl --marker "$B"; [ "$status" -eq 0 ] && [ "$output" = "$1" ] && [ -z "$stderr" ] || { echo "want: $1"; show; return 1; }; }
 RULE='no line holding "<!--"; strict UTF-8'
+# sect HEADING: that section of SKILL.md, joined to one line, as the wrapped prose reads. It ends at the next
+# "### " line, so step 9's section stops at its record template.
+sect() { awk -v h="$1" '$0 == h { on = 1; next } on && /^### / { exit } on' "$REPO_ROOT/skills/dev-cycle/SKILL.md" | tr '\n' ' ' | tr -s ' '; }
 
 @test "--state prints ok for a clean repository and refuses a shallow or partial clone and an ambiguous default branch, exit 2 (T42, U3b1; brief 2026-11-01-relax-gate-git-state)" {
     state_is ok
@@ -420,8 +423,6 @@ shim() {
 
 @test "the first trial set's practices stay in SKILL.md at the steps that write them (brief 2026-11-06-codify-trial-practices)" {
     K="$REPO_ROOT/skills/dev-cycle/SKILL.md"; q=$'\x60'
-    # sect HEADING: that section, joined to one line, as the wrapped prose reads.
-    sect() { awk -v h="$1" '$0 == h { on = 1; next } on && /^### / { exit } on' "$K" | tr '\n' ' ' | tr -s ' '; }
     want() { [[ "$1" == *"$2"* ]] || { echo "missing: $2"; return 1; }; }
     s="$(tr '\n' ' ' < "$K" | tr -s ' ')"
     # T1: notes, not the commit list; the unreviewed part and the paths stay whole, as docs/dev-cycle.md relies on.
@@ -468,6 +469,160 @@ shim() {
     q=$'\x60'
     [ "$(grep -cxF "   $q$P$q" "$REPO_ROOT/skills/dev-cycle/SKILL.md")" -eq 1 ] || { grep -n 'scripts/build-loop.sh scripts/' "$REPO_ROOT/skills/dev-cycle/SKILL.md"; return 1; }
     for p in $P; do [[ "$p" =~ $g || "${p}x" =~ $g ]] || { echo "not GATE_CODE: $p"; return 1; }; done
+}
+
+@test "SKILL.md's identity check asks git var under user.useConfigOnly, as the gate's merge does: an identity from git config or from the environment passes, none is a stop (brief 2026-11-10-dev-cycle-skill-held-fixes)" {
+    K="$REPO_ROOT/skills/dev-cycle/SKILL.md"; q=$'\x60'
+    c="git -C WT -c user.useConfigOnly=true var GIT_AUTHOR_IDENT"
+    s="$(tr '\n' ' ' < "$K" | tr -s ' ')"
+    [[ "$s" == *"$q$c$q and the same for ${q}GIT_COMMITTER_IDENT$q must each exit 0 and print one, name and address both non-empty"* && "$s" == *"(a failure: a stop, since git would otherwise take ${q}EMAIL$q"* ]] || { grep -n 'IDENT\|user\.email' "$K"; return 1; }
+    # The config-only read is gone: it printed nothing for an identity the environment holds.
+    ! grep -nE 'config user\.(email|name)' "$K" || { echo "the skill still reads git config for the identity"; return 1; }
+    # ident PREFIX...: the skill's command for both roles, on this fixture's repository, run under PREFIX.
+    read -r -a idw <<<"${c/ WT / $R }"
+    ident() { local r; for r in AUTHOR COMMITTER; do "$@" "${idw[@]/GIT_AUTHOR_IDENT/GIT_${r}_IDENT}" || return 1; done; }
+    none=(env -u GIT_AUTHOR_NAME -u GIT_AUTHOR_EMAIL -u GIT_COMMITTER_NAME -u GIT_COMMITTER_EMAIL -u EMAIL)
+    # Neither source: a stop, where plain git would take EMAIL or make an identity up from the account and host.
+    run --separate-stderr ident "${none[@]}"; [ "$status" -ne 0 ] && [ -z "$output" ] && [[ "$stderr" == *"auto-detection is disabled"* ]] || { show; return 1; }
+    # Names with the email only in EMAIL: plain git var prints an identity here, so this case fails if the flag goes.
+    e=(GIT_AUTHOR_NAME=a GIT_COMMITTER_NAME=a EMAIL=e@example.invalid)
+    run --separate-stderr "${none[@]}" "${e[@]}" git -C "$R" var GIT_AUTHOR_IDENT; [ "$status" -eq 0 ] && [[ "$output" == "a <e@example.invalid> "* ]] || { show; return 1; }
+    run --separate-stderr ident "${none[@]}" "${e[@]}"; [ "$status" -ne 0 ] && [ -z "$output" ] || { show; return 1; }
+    # An author with no committer: the second call stops it.
+    run --separate-stderr ident "${none[@]}" GIT_AUTHOR_NAME=a GIT_AUTHOR_EMAIL=a@example.invalid
+    [ "$status" -ne 0 ] && [ "${#lines[@]}" -eq 1 ] && [[ "${lines[0]}" == "a <a@example.invalid> "* ]] || { show; return 1; }
+    # A set but empty address exits 0 and prints "<>", which is why the skill asks for both parts non-empty (the gate's merge_ident refuses it by shape).
+    run --separate-stderr ident "${none[@]}" GIT_AUTHOR_NAME=a GIT_AUTHOR_EMAIL= GIT_COMMITTER_NAME=a GIT_COMMITTER_EMAIL=
+    [ "$status" -eq 0 ] && [[ "${lines[0]}" == "a <> "* ]] || { show; return 1; }
+    # The environment's identity (bl_setup's), with no user.* in any config: the case the old read reported as none.
+    [ -z "$(git config user.email)" ] || return 1
+    run --separate-stderr ident env; [ "$status" -eq 0 ] && [[ "${lines[0]}" == "t <t@example.invalid> "* && "${lines[1]}" == "t <t@example.invalid> "* ]] || { show; return 1; }
+    # Git config's identity, with nothing in the environment: a name alone stops, both pass.
+    git config user.name c; run --separate-stderr ident "${none[@]}"; [ "$status" -ne 0 ] && [ -z "$output" ] || { show; return 1; }
+    git config user.email c@example.invalid
+    run --separate-stderr ident "${none[@]}"; [ "$status" -eq 0 ] && [[ "${lines[0]}" == "c <c@example.invalid> "* && "${lines[1]}" == "c <c@example.invalid> "* ]] || { show; return 1; }
+}
+
+@test "SKILL.md step 0.1's release paste installs from a checkout at main's tip and refuses, saying why, a checkout off the tip, gate code or an installer that is not M's and a read that fails; broken into lines, with LF or CR LF ends, it never installs from a refusing checkout; its only git command, rev-parse in a command substitution, runs no planted hook or fsmonitor (brief 2026-11-10-dev-cycle-skill-held-fixes)" {
+    K="$REPO_ROOT/skills/dev-cycle/SKILL.md"; q=$'\x60'
+    # Step 0.1's PATHS line (the test above holds it to GATE_CODE) and the paste, each alone on its line. The paste is
+    # one single-quoted word handed to sh: a copy broken into lines is still that one word, never a line of its own.
+    P="$(grep -xE "   ${q}scripts/build-loop\.sh [^$q]*$q" "$K" || true)"; P="${P#"   $q"}"; P="${P%"$q"}"
+    t="$(grep -xE "   ${q}sh -c '[^']*'$q" "$K" || true)"
+    [ -n "$P" ] && [ "$(grep -c . <<<"$t")" -eq 1 ] || { echo "PATHS: $P"; grep -n 'install\.sh' "$K"; return 1; }
+    t="${t#"   $q"}"; t="${t%"$q"}"
+    # Every git call is rev-parse inside $( ): it reads no index, moves no ref, and has no terminal to page to.
+    [ "$(grep -o 'git ' <<<"$t" | grep -c .)" -eq "$(grep -oF '$(git rev-parse ' <<<"$t" | grep -c .)" ] || { echo "$t"; return 1; }
+    # A PATHS entry this repository lacks would make the paste refuse every release.
+    for p in $P; do [ -e "$REPO_ROOT/$p" ] || { echo "PATHS names nothing here: $p"; return 1; }; done
+    # The installer is the last step, behind a count of every check (the cd, the tip, each path). Each count and
+    # the installer sit inside an if or the case: none follows a bare && or depends on an exit, which a broken line
+    # can part from its condition.
+    L="$P devcontainer-config/install.sh"; n=$(( $(wc -w <<<"$L") + 2 ))
+    [[ "$t" == "sh -c 'n=0; if cd \"A\"; then n=1; fi; if "* && "$t" == *"; fi; done; case \"\$n\" in $n) ./devcontainer-config/install.sh;; *) echo \"release refused: \$n of $n checks passed\"; false;; esac'" ]] || { echo "want a count of $n before the installer: $t"; return 1; }
+    [[ "$t" != *exit* && "$t" != *exec* && "$t" != *'&& n='* && "$t" != *'&& ./'* && "$t" != *'|| '* ]] || { echo "a count or the installer outside its if or case: $t"; return 1; }
+    [ "$(grep -o '; then n=\$((n+1)); else echo "release refused: ' <<<"$t" | grep -c .)" -eq 2 ] && [ "$(grep -o 'devcontainer-config/install\.sh' <<<"$t" | grep -c .)" -eq 2 ] || { echo "$t"; return 1; }
+    # The tip is the branch's full ref, so a tag named main cannot stand in for it.
+    [[ "$t" == *'if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo'* ]] || { echo "$t"; return 1; }
+    # paste DIR SHA: sets c to the line as the orchestrator writes it out, DIR for A and SHA for M.
+    sub() { [[ "$c" == *"$1"* ]] || { echo "the paste lacks: $1"; return 1; }; c="${c//"$1"/"$2"}"; }
+    paste() { c="$t"; sub 'cd "A"' "cd \"$1\"" && sub 'for p in PATHS ' "for p in $P " && sub '"M:$p"' "\"$2:\$p\"" && sub 'after M:' "after $2:"; }
+    # The fixture: the gate-code paths, a stub installer that records its run, and one docs file; M is that commit.
+    I="$BATS_TEST_TMPDIR/installed"; mkdir -p docs devcontainer-config
+    for p in $P; do if [[ "$p" == */ ]]; then mkdir -p "$p" && echo a > "${p}x"; else mkdir -p "${p%/*}" && echo a > "$p"; fi; done
+    printf '#!/bin/sh\necho ran >> "%s"\n' "$I" > devcontainer-config/install.sh; chmod +x devcontainer-config/install.sh
+    echo d > docs/d.md; commit_all gate; M="$(git rev-parse HEAD)"
+    # both DIR SHA CHECK...: the paste under bash and sh, and under zsh where there is one (the owner's shell may be
+    # any), run from a directory that is not the checkout; then CHECK.
+    shs=(bash sh); ! command -v zsh > /dev/null || shs+=(zsh)
+    both() { local sh; paste "$1" "$2" || return 1; for sh in "${shs[@]}"; do rm -f "$I"; run --separate-stderr "$sh" -c "cd / && $c"; "${@:3}" || { echo "under $sh"; show; return 1; }; done; }
+    ran() { [ "$status" -eq 0 ] && [ -z "$output" ] && [ "$(cat "$I")" = ran ]; }
+    # nope LINE...: exit 1, exactly these refusals in this order, then how many of the checks passed, and no install.
+    nope() { local w; w="$(printf 'release refused: %s\n' "$@" "$((n - $#)) of $n checks passed")"; [ "$status" -eq 1 ] && [ "$output" = "$w" ] && [ ! -e "$I" ]; }
+    tip="this checkout is not at the tip of main"; stale() { printf '%s changed after %s: run the dev cycle for a new paste' "$1" "$2"; }
+    both "$R" "$M" ran
+    # Main's tip, moved past M by a commit that holds no gate code, as every cycle land does.
+    echo e > docs/d.md; commit_all land; both "$R" "$M" ran
+    # Off main's tip: a branch left checked out, and a checkout still at M.
+    git checkout -q -b feat; echo x > other.txt; commit_all work; both "$R" "$M" nope "$tip"
+    git checkout -q --detach "$M"; both "$R" "$M" nope "$tip"
+    # Main's tip with gate code, or an installer, the entry did not describe: each entry in turn, so a path the loop does not compare shows.
+    git checkout -q main; T="$(git rev-parse HEAD)"
+    for p in $L; do
+        if [[ "$p" == */ ]]; then echo b > "${p}x"; else echo b >> "$p"; fi
+        commit_all "after M"; both "$R" "$M" nope "$(stale "$p" "$M")"; git reset -q --hard "$T"
+    done
+    # Reads that fail refuse: a gate file gone (from HEAD, then from both sides), an M this clone lacks (every path),
+    # a directory that is no repository (the tip and every path), and an A that is not there (the cd, which says so itself).
+    git rm -q scripts/d6.sh; commit_all gone; both "$R" "$M" nope "$(stale scripts/d6.sh "$M")"
+    G="$(git rev-parse HEAD)"; both "$R" "$G" nope "$(stale scripts/d6.sh "$G")"
+    git reset -q --hard "$T"
+    z=0123456789012345678901234567890123456789; every=(); for p in $L; do every+=("$(stale "$p" "$z")"); done; both "$R" "$z" nope "${every[@]}"
+    mkdir -p "$BATS_TEST_TMPDIR/plain" && cp -r devcontainer-config "$BATS_TEST_TMPDIR/plain/"
+    every=("$tip"); for p in $L; do every+=("$(stale "$p" "$M")"); done
+    export GIT_CEILING_DIRECTORIES="$BATS_TEST_TMPDIR"; both "$BATS_TEST_TMPDIR/plain" "$M" nope "${every[@]}"; unset GIT_CEILING_DIRECTORIES
+    # Here the shell sits in a checkout where every other check passes: the count is one short, and nothing installs.
+    paste "$BATS_TEST_TMPDIR/nowhere" "$M"; rm -f "$I"; run --separate-stderr sh -c "$c"
+    [ "$status" -eq 1 ] && [ "$output" = "release refused: $((n - 1)) of $n checks passed" ] && [[ "$stderr" == *"$BATS_TEST_TMPDIR/nowhere"* ]] && [ ! -e "$I" ] || { echo "an A that is not there"; show; return 1; }
+    # A terminal, a renderer or a saved file can break the line. Two ways such a copy arrives: typed, a line at a
+    # time, into an interactive shell that already sits in the checkout; and piped with CR LF line ends into sh. With
+    # a break before each word in turn, and folded at a range of widths, the installer never runs from a refusing
+    # checkout. Earlier pastes on this branch did: `exit 1` broken between its two words; then `( … ) && INSTALLER`,
+    # where a syntax error dropped the checks and left the installer alone on the last line; then a CR after `&&`.
+    # HISTFILE is unset: an interactive bash would write these lines into the caller's history file.
+    typed() { rm -f "$I"; printf '%s\n' "$1" | timeout 30 env -u HISTFILE bash --norc --noprofile -i > /dev/null 2>&1 || true; }
+    piped() { rm -f "$I"; printf '%s\n' "$1" | sed 's/$/\r/' | timeout 30 sh -s > /dev/null 2>&1 || true; }
+    paste "$R" "$M"
+    typed "$c"; [ "$(cat "$I")" = ran ] || { echo "typed whole at main's tip, the paste did not install"; return 1; }
+    rm -f "$I"; printf '%s\n' "$c" | timeout 30 sh -s > /dev/null 2>&1; [ "$(cat "$I")" = ran ] || { echo "piped whole at main's tip, the paste did not install"; return 1; }
+    # With CR LF ends even the whole line fails, closed: the CR joins the quoted word and spoils its last keyword.
+    piped "$c"; [ ! -e "$I" ] || { echo "piped whole with CR LF ends, the paste installed: update this case"; return 1; }
+    read -r -a ws <<<"$c"; [ "${ws[*]}" = "$c" ] && [ "${#ws[@]}" -gt 40 ] || { echo "the paste did not split into its words"; return 1; }
+    # broken STATE HOW...: each HOW (typed, piped) over the folds; over the single breaks too for the first HOW.
+    broken() {
+        local st="$1" how i w v; shift
+        for how in "$@"; do
+            for ((w = 40; w <= 240; w += 8)); do
+                "$how" "$(fold -s -w "$w" <<<"$c")"; [ ! -e "$I" ] || { echo "$st: installed when folded at $w columns and $how"; return 1; }
+            done
+        done
+        for ((i = 1; i < ${#ws[@]}; i++)); do
+            v="${ws[*]:0:i}"$'\n'"${ws[*]:i}"
+            "$1" "$v"; [ ! -e "$I" ] || { echo "$st: installed with a break before word $i, ${ws[i]}, and $1"; return 1; }
+        done
+    }
+    echo b > scripts/lib/x; commit_all "after M"; broken "gate code after M" piped typed; git reset -q --hard "$T"
+    git checkout -q feat; broken "off main's tip" typed piped; git checkout -q main
+    # Planted state, as a sandbox session could leave in the host checkout's .git: the paste runs none of it. The same
+    # state is live: git status starts the fsmonitor, and a checkout (what the pinned paste asked for) runs the hooks.
+    F="$BATS_TEST_TMPDIR/fired"; H="$BATS_TEST_TMPDIR/planted"; mkdir -p "$H"
+    for h in post-checkout reference-transaction post-index-change fsmonitor; do printf '#!/bin/sh\necho %s >> "%s"\n' "$h" "$F" > "$H/$h"; chmod +x "$H/$h"; done
+    git config core.hooksPath "$H"; git config core.fsmonitor "$H/fsmonitor"
+    both "$R" "$M" ran; [ ! -e "$F" ] || { echo "the paste ran:"; sort -u "$F"; return 1; }
+    git status --porcelain > /dev/null 2>&1; git checkout -q --detach "$M" 2> /dev/null
+    grep -qx fsmonitor "$F" && grep -qx post-checkout "$F" || { echo "the planted state never ran:"; cat "$F"; return 1; }
+}
+
+@test "SKILL.md says where the release paste runs, what it refuses and who writes it again; step 7 reruns the image check after a merge; step 8 and the record's line 8 ask why a free slot stayed free (brief 2026-11-10-dev-cycle-skill-held-fixes)" {
+    K="$REPO_ROOT/skills/dev-cycle/SKILL.md"; q=$'\x60'
+    a="$(sect '### 0. Start and digest')"
+    for f in "which refuses until the host checkout is at main's tip" "and the one paste, alone on one line of a fenced block," "The paste runs from a checkout at main's tip" \
+        "It refuses, saying which, a checkout that is not at main's tip, and gate code or an installer that is not M's" \
+        "with A, M (all 40 hex digits) and PATHS written out" "Keep its shape: the installer runs only after all nine checks counted" \
+        "each count and the installer sit inside an ${q}if$q or the ${q}case$q, never after a bare ${q}&&$q or an ${q}exit$q" "the whole of it is one quoted word" \
+        "Every iteration writes the paste again from its M, in the ${q}image-lag$q entry and in an open ${q}image-off-main$q entry (a stop repeats it in its final message)" "step 7 runs this image check again after a merge" \
+        "is installed without being listed in the entry" "is ${q}rev-parse$q inside ${q}\$( )$q, which runs no hook, fsmonitor or pager" "a checkout to reach main's tip included"; do
+        [[ "$a" == *"$f"* ]] || { echo "step 0 lacks: $f"; return 1; }
+    done
+    # The rerun sits where the merges happen, and leaves a record.
+    a="$(sect '### 7. Collect')"
+    for f in "A ${q}merged$q line moved main. After this step's last one, run step 0.1's image check again" "with main's commit then in M's place" \
+        "(one step 0.1 closed stays closed; one this iteration filed, then found cleared, is taken out again, not filed answered)" "and the ${q}7.$q line says what it found"; do
+        [[ "$a" == *"$f"* ]] || { echo "step 7 lacks: $f"; return 1; }
+    done
+    # One clause, in the step that leaves the slot free and on the line that records it.
+    [[ "$(sect '### 8. Build briefs')" == *"is explained on the record's ${q}8.$q line, in one plain clause: why each free slot stayed free"* ]] || { echo "step 8 is silent"; return 1; }
+    grep -qxF '8. briefs: <written this iteration, or none>; queue <k>/<slots> (<full: no new briefs / under: why each free slot stayed free>)' "$K" || { echo "the record template's 8. line does not ask for the reason"; return 1; }
 }
 
 @test "SKILL.md step 1 runs the health check from HC, a detached checkout of WT's commit that it removes, not from WT, which the iteration edits while the check runs (brief 2026-10-30-health-check-clean-checkout)" {

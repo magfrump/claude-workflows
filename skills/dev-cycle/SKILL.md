@@ -65,8 +65,11 @@ one place every trigger is certain to be checked, so it checks all of them every
   `~/.claude/scripts/questions.sh` (a uid-owned link; its own hints still print that path).
 - **The orchestrator's git** (worktrees, staging, its commits, merging main into WT, ancestry
   checks) is plain `git -C PATH …`, with the user's normal config and identity: before the
-  iteration's first commit, `git -C WT config user.email` and `… user.name` must each print
-  one (none: a stop, since git would otherwise make one up from the account and host). Two honest settings are pinned where they matter:
+  iteration's first commit, `git -C WT -c user.useConfigOnly=true var GIT_AUTHOR_IDENT` and
+  the same for `GIT_COMMITTER_IDENT` must each exit 0 and print one, name and address both
+  non-empty, from git config or the environment's identity variables, the question the
+  gate's own merge asks (a failure: a stop, since git would otherwise take `EMAIL` or make
+  one up from the account and host). Two honest settings are pinned where they matter:
   `-c log.showSignature=false` on a `log` whose output is read, and `-c commit.gpgSign=false`
   on a command that writes a commit (no signing key in the sandbox). `add`, `mv` and `rm`
   run as `git --literal-pathspecs -C PATH add -- FILE…`, so a path holding `*` or
@@ -228,7 +231,7 @@ the iteration with no record, so the next one starts from the same `Main at:`:
    branch's own commits are not on it). Not on main: the gate that runs is a commit no merge
    to main landed; file one `you: judgment` entry `image-off-main-C12` (C's first 12 hex),
    unless WT's questions files hold one: [1] rebuild from main (the paste below, which
-   refuses until the host checkout is at M), [2] keep this image. On main: run
+   refuses until the host checkout is at main's tip), [2] keep this image. On main: run
    `git -C MAIN_WT diff --quiet C M -- PATHS`, PATHS being GATE_CODE's (a test pins the line):
    `scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/`
    Exit 1: the gate that runs differs from main's. File one `you: terminal` entry
@@ -247,11 +250,26 @@ the iteration with no record, so the next one starts from the same `Main at:`:
    CR, another control or bidi character, or bytes that are not UTF-8 written as
    `(withheld: see SHA)` (questions.sh finds its `<!-- index:` markers anywhere in a line,
    and `--check-answer` refuses an unclosed `<!--`); a backtick, `<` or `>` is shown, a
-   path holding a backtick in a double-backtick span with spaces inside it; and the one paste `cd A && test "$(git rev-parse HEAD)" = M &&
-   ./devcontainer-config/install.sh` (host; then a new sandbox launch; the paste's only git
-   call before install.sh's state gate is `rev-parse`, which runs no hook or fsmonitor; any
-   other git command the user runs on the host here, a checkout to reach M included, can run
-   one a sandbox session planted, install.sh's own trust model), interim: the image's gate runs. Exit 0: the image
+   path holding a backtick in a double-backtick span with spaces inside it; and the one paste, alone on one line of a fenced block, with A, M (all 40 hex digits) and PATHS written out (and `master` for `main` where that is the default branch):
+   `sh -c 'n=0; if cd "A"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in PATHS devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "M:$p")"; then n=$((n+1)); else echo "release refused: $p changed after M: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'`
+   (host; then a new sandbox launch), interim: the image's gate runs. The paste runs from a
+   checkout at main's tip: the cycle's lands move main past M but carry no gate code. It
+   refuses, saying which, a checkout that is not at main's tip, and gate code or an
+   installer that is not M's: one that reached main after the paste was written, which the
+   entry does not describe. Keep its shape: the installer runs only after all nine checks
+   counted (the `cd`, the tip, PATHS' six and the installer); each count and the installer
+   sit inside an `if` or the `case`, never after a bare `&&` or an `exit`; and the whole of
+   it is one quoted word. So a copy broken into lines, with CR LF ends too, refuses or
+   fails instead of installing. Every
+   iteration writes the paste again from its M, in the `image-lag` entry and in an open
+   `image-off-main` entry (a stop repeats it in its final message), and step 7 runs this
+   image check again after a merge. Other code that reached main after M is installed
+   without being listed in the entry, a risk taken so the paste runs where the checkout
+   is. The paste's only git call before install.sh's state gate is `rev-parse` inside
+   `$( )`, which runs no hook, fsmonitor or pager; any other git command the user runs on
+   the host here, a checkout to reach main's tip
+   included, can run one a sandbox session planted,
+   install.sh's own trust model. Exit 0: the image
    holds main's gate code; once WT exists, close any open `image-lag` or `image-off-main-*`
    entry in its questions files: `**Status:** ANSWERED` in its **Needs:** line and, under
    that line, `Q-NNN: met — image C holds the gate code of main M` (its own ID, C and M in
@@ -696,6 +714,12 @@ none yet: a line `Applied: ITEM` at its end), ACTION being `redispatch`, `merged
 or `noted` (`unrecognized`), so each answer is acted on once and the action survives a
 restart.
 
+A `merged` line moved main. After this step's last one, run step 0.1's image check again,
+with main's commit then in M's place and C as before: it files, rewrites or closes its
+entry as there (one step 0.1 closed stays closed; one this iteration filed, then found
+cleared, is taken out again, not filed answered), and the `7.` line says what it found,
+so the release paste names the gate code main's tip holds.
+
 ### 8. Build briefs
 
 Take the Now items whose first step needs no open choice (no open `you: judgment` names
@@ -703,7 +727,9 @@ them), while the queue is shorter than `--settings`' `slots` line (D9's loop slo
 Rules' "holds a slot", which keeps a brief's branch out of cleanup): open briefs whose
 loop step 7 read as absent or working, plus those it sends back to a loop, each counted
 once (a blocked, stopped, capped or ready one, or a stalled one held, waits on the user and
-is not counted).
+is not counted). A queue left under its slots is explained on the record's `8.` line, in
+one plain clause: why each free slot stayed free (every other Now item waits on the user,
+a host run or a choice, say; slots that share a reason share the clause).
 For each, write `docs/working/briefs/YYYY-MM-DD-<slug>.md`, where the slug is lowercase
 letters, digits and hyphens only (a file name no brief has used before, in `briefs/` or
 `briefs/closed/`, nor by a brief this cycle has written: `--check-brief` prints `new` for
@@ -770,7 +796,7 @@ Model: <the model id running this cycle>
 5. brainstorm: <ran: trigger / not due>
 6. roadmap: <done>
 7. collect: <per brief: STEM LOOP TIP, and what was done>
-8. briefs: <written this iteration, or none>; queue <k>/<slots> (full: no new briefs)
+8. briefs: <written this iteration, or none>; queue <k>/<slots> (<full: no new briefs / under: why each free slot stayed free>)
 9. land: <NEW, written with the 10. line before step 10's land>
 10. dispatch: <per brief: STEM dispatched N, or why not>
 ### Skipped inputs

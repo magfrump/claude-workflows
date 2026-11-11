@@ -1,0 +1,72 @@
+{
+  "_comment": [
+    "Claude Code MANAGED settings for cc-isolated (Q-125, decision log 53). Template only:",
+    "cc-sandbox-settings.sh fills sandbox.network.allowedDomains from the project's egress",
+    "profile and drops _comment, at BUILD time, into /etc/claude-code/managed-settings.json",
+    "(root-owned 0444). Managed settings outrank user and project settings, so unlike the",
+    "settings.json link-claude-home.sh merges, node cannot edit or override this.",
+    "Managed settings only win on keys they SET, so every switch a lower tier could flip",
+    "toward weaker is stated here explicitly, even where it equals the default",
+    "(enableWeakerNestedSandbox, filesystem.disabled, allowAllUnixSockets).",
+    "enabled + failIfUnavailable: a sandbox that cannot start refuses the session rather",
+    "than silently running Bash unsandboxed (FP-058).",
+    "allowUnsandboxedCommands false: dangerouslyDisableSandbox is ignored, so nothing the",
+    "model chooses runs outside the sandbox. `!` commands and hooks still run unsandboxed,",
+    "which is why nothing they execute or trust may be sandbox-writable:",
+    "  ~/.elan/bin is FIRST on PATH (Dockerfile), so a planted `bash` there would run",
+    "  in the next hook; /tmp/cc-web-taint is the web-taint guard's state; the project's",
+    "  .claude/settings*.json, .mcp.json and .git/config|hooks run on the next git or",
+    "  session start. /workspace is the fixed mount point in cc-isolated.",
+    "autoAllowBashIfSandboxed false: the sandbox is a floor under the permission prompts,",
+    "not a replacement for them. Widening prompting is Q-098's decision, not this one.",
+    "allowManagedDomainsOnly + strictAllowlist: the firewall admits nothing else, so a",
+    "prompt for an unlisted host could only ever fail; deny it instead.",
+    "allowWrite: the toolchain caches the image points at (cargo, elan, npm, uv, NuGet,",
+    "dotnet, gradle) and /tmp. Everything else under ~ stays read-only to sandboxed",
+    "commands. ~/.claude/jobs is deliberately absent: if it were ever a symlink, allowWrite",
+    "would bind its target, ~/.claude, writable.",
+    "permissions.deny: the Read tool's own deny for the credential, unforgeable here."
+  ],
+  "permissions": {
+    "deny": ["Read(//home/node/.claude/.credentials.json)"]
+  },
+  "sandbox": {
+    "enabled": true,
+    "failIfUnavailable": true,
+    "allowUnsandboxedCommands": false,
+    "autoAllowBashIfSandboxed": false,
+    "enableWeakerNestedSandbox": false,
+    "network": {
+      "allowedDomains": [],
+      "allowManagedDomainsOnly": true,
+      "strictAllowlist": true,
+      "allowAllUnixSockets": false
+    },
+    "filesystem": {
+      "disabled": false,
+      "denyRead": ["~/.claude/.credentials.json"],
+      "denyWrite": [
+        "~/.claude/settings.json",
+        "~/.claude/settings.local.json",
+        "~/.claude/.claude.json",
+        "~/.elan/bin",
+        "/tmp/cc-web-taint",
+        "/workspace/.claude/settings.json",
+        "/workspace/.claude/settings.local.json",
+        "/workspace/.mcp.json",
+        "/workspace/.git/config",
+        "/workspace/.git/hooks"
+      ],
+      "allowWrite": [
+        "~/.cargo",
+        "~/.elan",
+        "~/.npm",
+        "~/.cache",
+        "~/.nuget",
+        "~/.dotnet",
+        "~/.gradle",
+        "/tmp"
+      ]
+    }
+  }
+}
