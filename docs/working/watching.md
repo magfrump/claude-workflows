@@ -21,6 +21,7 @@ Maintained by `~/.claude/scripts/questions.sh` (`check` · `index` · `migrate`)
 | [Q-161](#q-161--revive-hermeticity-layer2-after-q125) | trigger | When Q-125's sandbox merges (bwrap in the cc-isolated image), decision 017's T2 fires: revive hermeticity l... | 2026-10-14 |
 | [Q-262](#q-262--merge-approval-revisit) | trigger | Should merge approval be reopened? The design record picked no change on 2026-11-06, and this watch holds i... | 2026-11-06 |
 | [Q-264](#q-264--gloss-rule-falsifier) | trigger | Q-264: met — counted on 2026-11-11 at five entries opened since the install (Q-269 to Q-273): the falsifi... | 2026-11-06 |
+| [Q-275](#q-275--self-answer-plan-after-q272) | trigger | When the owner answers Q-272 (run or refuse when the test-confinement script has only its weak tool), does ... | 2026-11-11 |
 <!-- index:end -->
 
 ## Open
@@ -76,6 +77,14 @@ Should merge approval be reopened? The design record picked no change on 2026-11
 
 - **Read:** `docs/working/research-2026-11-06-merge-friction-design.md`, section 11.
 - **Interim:** merge entries stay as they are. The conditions are that section's list: the owner names merge entries or approvals as a blocker; merge entries exceed 11 a week in 3 of the next 4 weekly digests, which reopens the record's candidate [5]; or the record's median-wait trigger.
+
+### Q-275 · self-answer-plan-after-q272
+**Needs:** trigger · **Opened:** 2026-11-11 · **Status:** OPEN
+
+When the owner answers Q-272 (run or refuse when the test-confinement script has only its weak tool), does the self-answering plan's exceptions rule have a case?
+
+- **Read:** `docs/working/research-2026-11-11-self-answer-measure.md`, sections 9.2 and 9.6 · Q-274 (how far the plan goes) · Q-272
+- **Interim:** nothing is built (Q-274's option [1]). The condition: Q-272 is answered. If the owner refuses the exception there, the rule "a brief may not scope out a hard constraint, and an entry does not ask about an exception its writer recommends against" has its first confirmed case, and one design unit can take it up, unless Q-274 says otherwise. If the owner grants it, drop the rule. This watch exists because the cycle's revisit step does not read working docs.
 
 ## Closed
 

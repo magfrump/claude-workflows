@@ -42,6 +42,13 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   First step: step 1, briefed as a docs-only unit (In flight). It also covers repos other
   than this one in its design step, since the request says "a repo": the four repos that
   run these workflows each have their own docs and questions files.
+  2026-11-11, step 1 done (fd325a74, `docs/working/research-2026-11-11-self-answer-measure.md`):
+  of 200 answered judgment entries, at most 4 (2%) were answered in full by a doc that
+  existed, 35 in part, 56 not at all, and 105 were the owner's by authority. A lookup is not
+  shown to remove any entry, so the plan pauses here. How far it goes is Q-274 (interim:
+  build nothing); watch Q-275 brings it back when Q-272 is answered. The doc's one positive
+  step is already on the roadmap: answers that deserve to be standing rules go into
+  `docs/constraints.md` at the deep audit (Q-269).
 
 - **Agent: Q-125 · cc-isolated Bash sandbox, live run** (filed 2026-11-01, step 6, from
   Q-234's migrate). Motive: nothing sandboxes Bash in cc-isolated. Built, unmerged
@@ -149,9 +156,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
-- Measure how many owner questions the repo's docs already answered, step 1 of the
-  self-answering plan (`docs/working/briefs/2026-11-11-self-answer-measure.md`; self-merge,
-  docs only). Motive: the owner's request of 2026-11-11 (Now).
 
 ## Next
 
@@ -421,6 +425,10 @@ Unranked. Each names the signal that motivates it.
 ## Done
 
 Items finished since the last cycle, with the merge.
+
+- How many owner questions the repo's docs already answered, step 1 of the self-answering
+  plan (`docs/working/briefs/closed/2026-11-11-self-answer-measure.md`). Merged fd325a74,
+  self-merge (docs only). Its question for the owner is Q-274.
 
 - The cc-isolated Bash sandbox (Q-125), brought up to main
   (`docs/working/briefs/closed/2026-11-07-q125-sandbox-on-main.md`). Merged 3cd6d9bb
