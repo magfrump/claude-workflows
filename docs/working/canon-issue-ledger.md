@@ -1,6 +1,7 @@
 # Canon issue ledger: every known defect in the canon set, with per-review provenance
 
-**Date**: 2026-08-14 · **Last revised**: 2026-08-18 (diagnostic re-scoring, not a new
+**Date**: 2026-08-14 · **Last revised**: 2026-11-07 (stratum F: two instances from
+this repo, 20 labels, from the first canon pass; see that section) · prior revision: 2026-08-18 (diagnostic re-scoring, not a new
 arm: **E9 — E8's code-fact-check-report scored in isolation** from every other critic
 and the rubric synthesis, to measure the fact-check stage's own marginal recall —
 30/54=56% (44% firm), vs. E8's full-pipeline 87%; fact-check alone recovers ~64% of
@@ -51,7 +52,12 @@ One row per **distinct underlying issue**. "Found by" columns:
 | C. Appended labels/candidates (found by headless arms, absent from the original rubrics) | 4 |
 | D. Live-at-HEAD defects surfaced by the E1 fresh re-runs on post-fix states | 6 |
 | E. Graduated candidates (2026-08-17 pass): confirmed via fix-in-history, static analysis / execution, or 2+ attestations without contradiction — N1–N5, N8–N15 | 13 |
-| **Total distinct issues** | **56** |
+| F. This repo's first canon pass (2026-11-07): `cw-devcycle` 14, `cw-devcycle-skill` 6, all fix-confirmed; no arm run yet | 20 |
+| **Total distinct issues** | **76** |
+
+The headline recall table below is dated to the 56-row ledger of 2026-08-17 and
+scores the 8 meta-formalism-copilot instances only; stratum F enters a process's
+denominator only once that process has been run on its two instances.
 
 Still candidates, outside the 56: **N6** (single E5 attestation, never re-found, no
 independent verification), **N16** (plausible-only evidence, single attestation),
@@ -284,6 +290,41 @@ refuted. As further candidates graduate, denominators grow — published recall
 figures are dated to the ledger revision they were computed against (the headline
 table below: the 56-row ledger of 2026-08-17; pre-graduation 43-row figures live in
 this file's git history and the per-arm results docs).
+
+## Stratum F — this repo's first canon pass (2026-11-07, 20 issues)
+
+Added by the one canon pass the owner chose (Q-256 [2]): the rule in section 8 of
+`research-2026-11-05-canon-proposal-filter.md`, applied with this repo as the
+subject in `research-2026-11-07-canon-instances-pass.md`. Two instances, both from
+claude-workflows (shell and skill prose, not TypeScript): `cw-devcycle` (class T12,
+hostile-shaped text: an option-like branch name) and `cw-devcycle-skill` (class
+T15, instruction prose as behaviour). Labels are each rubric's red and amber rows,
+pinned at the commit that added the rubric; the rows were printed by
+`scripts/canon-instance.py` and pasted here and in the CSV by hand. No arm has
+been run on them: every arm column is `not run`.
+
+| ID | Issue (1-line) | Pipeline | Arms | Status / fix |
+|---|---|---|---|---|
+| cw-devcycle-R1 | A remote default branch named like an option (--output=<path>) reached git log via origin/HEAD and truncated a file, despite the "read-only" header. Probe-confirmed | ✓(label) | not run | fixed d8b0cca9 (pass-1 review fixes) |
+| cw-devcycle-A1 | --since is a bare date, so git reads it as the current time of day; merges earlier on the record day are dropped | ✓(label) | not run | fixed d8b0cca9 (pass-1 review fixes) |
+| cw-devcycle-A2 | Log rows print only the first "revisit" match, so row 67's trigger is missing and row 53 is cut at 400 chars | ✓(label) | not run | fixed d8b0cca9 (pass-1 review fixes) |
+| cw-devcycle-A3 | A questions.sh open failure is shown as "None open." | ✓(label) | not run | fixed d8b0cca9 (pass-1 review fixes) |
+| cw-devcycle-A4 | A master-only repo exits 128; a relative invocation from a subdirectory fails | ✓(label) | not run | fixed d8b0cca9 (pass-1 review fixes) |
+| cw-devcycle-A5 | The date seed does nothing: every cycle samples the same merge positions | ✓(label) | not run | fixed d8b0cca9 (pass-1 review fixes) |
+| cw-devcycle-A6 | Revisit triggers ignore the window: 79% of the digest, ~45 verdicts per cycle | ✓(label) | not run | fixed d8b0cca9 (pass-1 review fixes) |
+| cw-devcycle-A7 | Nothing makes the skill wait for the background health check before step 4 | ✓(label) | not run | fixed d8b0cca9 (pass-1 review fixes) |
+| cw-devcycle-A8 | The window start depends on step 7 and silently falls back to 14 days | ✓(label) | not run | fixed d8b0cca9 (pass-1 review fixes) |
+| cw-devcycle-A9 | Step 1 named archive-working-docs.sh, which moves tracked docs into a gitignored archive | ✓(label) | not run | fixed d8b0cca9 (pass-1 review fixes) |
+| cw-devcycle-A10 | The roadmap restates questions.md state, and ideas have a third home | ✓(label) | not run | fixed d8b0cca9 (pass-1 review fixes) |
+| cw-devcycle-A11 | The skill runs scripts/dev-cycle.sh and bare questions.sh in any project (same-name shadowing) | ✓(label) | not run | fixed d8b0cca9 (pass-1 review fixes) |
+| cw-devcycle-A12 | Repo text in the digest reaches the agent as instructions | ✓(label) | not run | fixed d8b0cca9 (pass-1 review fixes) |
+| cw-devcycle-A13 | Roadmap: Q-092 does not wait on a sandbox | ✓(label) | not run | fixed d8b0cca9 (pass-1 review fixes) |
+| cw-devcycle-skill-A1 | The skill committed in steps 1, 4 and 7 without the Operating Modes gate. It could commit on main or another session's branch, and staging was unbounded | ✓(label) | not run | fixed 6ee33e35 (skill final-pass fixes) |
+| cw-devcycle-skill-A2 | Step 4 could run commands quoted in repo text; the evidence rule covered only the digest | ✓(label) | not run | fixed 6ee33e35 (skill final-pass fixes) |
+| cw-devcycle-skill-A3 | Carried verdicts were not copied into the new record, so the chain decays after one cycle | ✓(label) | not run | fixed 6ee33e35 (skill final-pass fixes) |
+| cw-devcycle-skill-A4 | Row 66's revisit trigger and roadmap Next #4 counted research/plan docs, which are gitignored (4 ever tracked) | ✓(label) | not run | fixed 6ee33e35 (skill final-pass fixes) |
+| cw-devcycle-skill-A5 | Roadmap Next #3 misdescribed the Live-verified: gate | ✓(label) | not run | fixed 6ee33e35 (skill final-pass fixes) |
+| cw-devcycle-skill-A6 | Step 7 said "silently falls back to 14 days": wrong on both counts | ✓(label) | not run | fixed 6ee33e35 (skill final-pass fixes) |
 
 ## Adjacent true findings deliberately NOT counted as issues
 
