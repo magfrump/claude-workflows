@@ -1,9 +1,9 @@
 # Research: how many owner questions did the repo's docs already answer?
 
 - **Goal**: Measure, from this repo's own history, how often a question filed for the owner could have been answered from a doc that already existed, and turn the result into a plan for letting models answer their own questions from a repo's docs.
-- **Problem framing**: The questions doc spends the owner's attention, and at least one recent entry looked answerable from a doc on main, so the question is how large that class is before anything is designed for it. Considered and discarded: "models ask because they cannot find the doc, so build a search" (where a doc decided the question, the session had already read it and made its pick; the entry was filed because a rule or a standing practice said to file it).
+- **Problem framing**: The questions doc spends the owner's attention, and at least one recent entry looked answerable from a doc on main, so the question is how large that class is before anything is designed for it. Considered and discarded: "models ask because they cannot find the doc, so build a search" (where a doc decided the question, the session had already read it and made its pick; the entry was filed because a written rule, gate or plan step said to file it).
 - **Project state**: this branch delivers one research doc, docs only · step 1 of the roadmap Now item "Models answer their own questions from the repo's docs", preparing its step 2 without building anything · not blocked (cite: docs/working/briefs/2026-11-11-self-answer-measure.md)
-- **Task status**: in-progress (revised after review round 2; a confirming round next)
+- **Task status**: in-progress (round 3 fixes in; final checks next)
 
 Brief: `docs/working/briefs/2026-11-11-self-answer-measure.md` (self-merge, docs only).
 Everything here was read at main's commit 963dbd4d. Sections 1 to 8 are the measurement.
@@ -49,8 +49,8 @@ Words used below.
 
 **The share is small. Of the 200 answered `you: judgment` entries, at most 4 (2%) were
 answered in full by a doc that existed when they were filed. None of the four is a model
-that failed to look: in each, the session had already made its pick from the doc, and the
-entry was filed because a written rule or a standing practice said to file it.**
+that failed to look: in each, the session had already made its pick, and the entry was
+filed because a written rule, gate or plan step said to file it.**
 
 | Class | Entries | Share of 200 |
 |---|---|---|
@@ -66,10 +66,12 @@ entry was filed because a written rule or a standing practice said to file it.**
   (decision log row 74, 2026-10-20). Merge approvals have not ended: 38 of the 43 came
   after 2026-10-19, and the research of 2026-11-06 on merge approval chose to leave them.
 - **The four in full were not questions a model could not answer.**
-  - Q-154 put on record a ruling the owner had given in session ten days before.
-  - Q-142 was filed at a review-cap gate with its interim already applied, and the unit
-    merged 49 minutes later, before the owner answered. A second reader classed Q-141,
-    the same kind of entry, as authority, so Q-142 is the weakest of the four.
+  - Q-154 put on record a ruling the owner had given in session ten days before. The
+    plan it came from said to file it as answered.
+  - Q-142 was filed at a review-cap gate, which the review workflow reserves to the
+    owner, with its interim already applied. The unit merged 49 minutes later, before the
+    owner answered. A second reader classed Q-141, the same kind of entry, as authority,
+    so Q-142 is the weakest of the four.
   - Q-199 recorded a split of an oversized branch. The decision log says an agent "splits
     without asking and records the split as an interim in `questions.md`", and that is
     what the session did.
@@ -92,7 +94,8 @@ entry was filed because a written rule or a standing practice said to file it.**
   under four weeks old.
 - **Two readers agreed on 21 of 24 entries** re-classed blind (17 of the 20 hand-read
   ones). Where they differed the lower class stands.
-- **Cost of the measurement**: twelve read-only subagent runs so far, about 2.3 million tokens (section 1).
+- **Cost of the measurement**: thirteen read-only subagent runs, about 2.5 million tokens, half of it the seven
+  readers and half the six reviewers (section 1).
 
 **Recommendation: do not build a lookup.** No search command, no index of standing
 answers, no `Looked in:` check. Where a doc decided a question, the models had already
@@ -201,7 +204,7 @@ entries. Appendix A marks them.
 
 **What was run.** Read-only subagents only: six first-pass readers and one second-pass
 reader (169k to 220k tokens each, 1.28 million in all), three reviewers in round 1 (0.69
-million) and two in round 2 (0.36 million), with a confirming round still to run. The figures are the totals each run reported when it finished;
+million) and two in round 2 (0.36 million) and one in round 3 (0.18 million): thirteen runs, about 2.5 million tokens. The figures are the totals each run reported when it finished;
 no file holds them [observed, not reproducible]. No headless model run, no trial, no
 change to any script, skill or questions file. The brief's "no model run only to measure"
 is read as ruling out experiments (asking a model to answer old questions and scoring
@@ -231,13 +234,20 @@ in full (4%), 35 in part (37%), 56 not at all (59%).
 | Q-199 | A 570-line branch was split into three units: keep the split or waive the cap? | Decision log row 62: "In /away mode the agent splits without asking and records the split as an interim in `questions.md` and the commit body's `Notes:` line." | The session split without asking, then recorded the split as that line says. Its commit is titled "Q-199 records the constraints-builder split". |
 | Q-254 | A build loop's question: fix the branch before the owner's host paste, or paste now and again later? | `docs/constraints.md`, S10: "at most one host paste per verification" | The loop picked by S10 (a soft constraint) and named it. The pick needed another brief's branch fixed, which a loop may not start, so it ended blocked, and the skill files one entry for each blocked loop. |
 
-So in all four the doc had been read and the pick made from it. Two entries were filed
-because a written rule said to: a line in the decision log (Q-199) and the skill's
-handling of a blocked loop (Q-254). The other two follow standing practice with no single
-written line behind them: putting an in-session ruling on record (Q-154), and filing a
-question with its interim and going on, which is what the global instructions ask of an
-unattended session (Q-142). Q-119, classed in part, has Q-199's shape under decision log
-row 61, but its split came with a redesign, and the owner answered on that.
+So in all four the pick had been made before the entry was filed: from the doc the reader
+credits or, for Q-142, from an earlier answer of the same kind (the entry cites Q-138's).
+And each entry was filed because something written said to file it:
+
+- a standing rule, for Q-199 (the decision log line above) and Q-254 (the skill's
+  handling of a blocked loop);
+- a one-off step, for Q-154: the plan's next sentence reads "U5 files C5 as ANSWERED";
+- an owner-only gate, for Q-142: the review-fix-loop workflow says "only their explicit
+  authorization permits iteration 4 to begin", so the session filed the question with its
+  interim and went on. That is why the second reader's authority class for Q-141 fits
+  Q-142 as well.
+
+Q-119, classed in part, has Q-199's shape under decision log row 61, but its split came
+with a redesign, and the owner answered on that.
 
 **Agent-route entries, counted apart (18).** In full 5, in part 5, none 8. These are not a
 rate to rely on. The five "in full" (Q-078, Q-080, Q-089, Q-092, Q-160) are work orders of
@@ -343,9 +353,11 @@ landing and cap asks, ended. Which did how much, these numbers cannot say [infer
 
 **Since 2026-10-19**, the 14 hand-written judgment entries: in full 2 (Q-199, Q-254), in
 part 4 (Q-213, Q-238, and the open Q-270 and Q-272), none 4 (Q-221, Q-223, Q-226, Q-256),
-authority 4 (Q-200, Q-246, Q-247, and the open Q-269). The orchestrator filed four of the
-14 (Q-246, Q-247, Q-254, Q-256): two after a refused merge, two from a build loop's
-marker. Merge entries, 38 in the same period, are now the bulk of what the owner is asked.
+authority 4 (Q-200, Q-246, Q-247, and the open Q-269). Four of the 14 came from a build
+loop (Q-246 and Q-247 after a refused merge, Q-254 and Q-256 from a loop's marker), the
+dev cycle wrote seven more of its own (Q-213, Q-223, Q-226, Q-238, Q-269, Q-270, Q-272),
+and hand sessions wrote three (Q-199, Q-200, Q-221). Merge entries, 38 in the same period,
+are now the bulk of what the owner is asked.
 
 ## 4. Which docs held the answers
 
@@ -520,8 +532,8 @@ What this says about the tables above:
    name the doc, so a lookup could have made some of these entries shorter or better
    informed. Nothing shows it would have removed one.
 4. **Where a doc decided the ask (at most 4), the session had already made its pick from
-   it.** The entry was filed because a written rule or a standing practice said to file
-   it. What is avoidable in this class comes from filing rules, not from missing lookups.
+   it.** The entry was filed because a written rule, gate or plan step said to file it.
+   What is avoidable in this class comes from filing rules, not from missing lookups.
 5. **Docs mislead and contradict each other** often enough to matter: 4 flagged conflicts
    and 6 doc-against-doc entries, against 4 entries a doc decided.
 6. **The volume has already fallen** to 2 to 6 hand-written judgment entries a week, for
@@ -746,10 +758,9 @@ lowered, the route-at-filing table removed, the plan rewritten with a back-test.
 **Round 2**, on the revision (8e134809). Two reviewers.
 
 - *Numbers and facts.* Every tally recounted cleanly. It found that Q-142 was filed
-  before its merge, not after; that a written rule stands behind two of the four in-full
-  entries, not all four; that four of the last 14 entries were filed by the orchestrator,
-  two from a loop's marker; that the split is prescribed in five places, not four; and a
-  wrong line count.
+  before its merge, not after; that the account of what stood behind each in-full entry
+  was too uniform; that the count of recent entries begun by a build loop was wrong; that
+  the split is prescribed in five places, not four; and a wrong line count.
 - *Owner read and design.* It found the two rule changes over-described as "two filing
   rules"; the exceptions rule credited with Q-272 although Q-272 is unanswered; cost and
   saving stated inconsistently; the split rule, as sketched, withholding a real question
@@ -760,9 +771,30 @@ All were taken (the commit after 8e134809): the rule changes became design sketc
 the points each must settle, candidate [15] was added, every candidate is scored and
 ranked, and the options table was re-cut around one question.
 
-**Round 3**, a narrow confirming pass on that commit. Pending.
+**Round 3**, a narrow confirming pass on that commit (92df263f), one reviewer. It
+re-checked every fact in the changed text against the repo and the plan's tables against
+each other. The tables agreed: 18 candidates throughout, the same five in step 4, the
+back-test and the decision block, nothing discarded on a soft line, and the Summary, 9.1
+and 9.6 naming the same pick, runner-up and tiebreaker. It found two wrong statements
+about what stood behind a filing: Q-154's plan line goes on to say "U5 files C5 as
+ANSWERED", so a written step stands behind all four in-full entries; and the dev cycle
+wrote 11 of the last 14 entries, not four. It also asked that the exceptions rule be
+marked against the roadmap's own guardrail (an exception to a hard constraint is the
+owner's), that candidate [15] not claim the breach was introduced by the unit it names,
+and for four glosses in 9.6. All were taken in the final content commit. No tally, rank
+or pick changed in rounds 2 or 3.
 
-Health check (`scripts/health-check.sh`, output sent to a file): passed in full at 8e134809 ("All checks passed", exit 0, about five minutes); to be re-run on the final commit.
+The review loop's cap is three rounds, so there was no fourth. The round 3 fixes were not
+re-reviewed by a subagent; each changed statement was checked against its source by the
+author with `git show` and `git log` (the plan line, the gate line in
+`workflows/review-fix-loop.md`, the first commit of each of the last 14 entries, the
+roadmap's guardrail text). The lite fix-drift check on this commit is recorded in the next one.
+
+Known issues left as they are: the agent-route rows are classed unevenly (section 2); the
+boundary between none and authority moves with the reader (section 7); the two rule
+changes in 9.2 are sketches, each resting on one entry.
+
+Health check (`scripts/health-check.sh`, output sent to a file): passed in full at 8e134809 ("All checks passed", exit 0, about five minutes); the run on the final content commit is recorded in the next one.
 
 ## Files read
 
@@ -1072,8 +1104,8 @@ headings are outside the sample (six terminal, one trigger). The tallies in sect
 The owner asked for "a plan for how models can answer their own questions based on
 existing docs in a repo". The measurement makes the honest plan short: **build no lookup.**
 Where a doc decided a question, the session had already read it and made its pick. The
-entry reached the owner anyway, because a written rule or a standing practice said to
-file it. What is left is small and rests on single cases, so the tentative plan is to
+entry reached the owner anyway, because a written rule, gate or plan step said to file
+it. What is left is small and rests on single cases, so the tentative plan is to
 build nothing and look again when one open entry is answered. The choice is the owner's
 (9.6, the last page).
 
@@ -1082,8 +1114,8 @@ build nothing and look again when one open entry is answered. The choice is the 
 **Decision goal**: where, if anywhere, a "look in the docs before asking the owner" step
 should live, given sections 2 to 8.
 
-**Step 1: candidates.** Candidates 1 to 6 are the roadmap item's. 0 and 5b to 12 were
-added here. 13 to 15 were added after the review rounds tested the earlier drafts against
+**Step 1: candidates.** Candidates 1 to 6 are the roadmap item's. 0, 5b and 7 to 12
+were added here. 13 to 15 were added after the review rounds tested the earlier drafts against
 recent entries.
 
 | # | Candidate | One line |
@@ -1105,7 +1137,7 @@ recent entries.
 | 12 | Two lines in the global instructions | Extend the questions section's existing "check the item actually needs a human": quote the standing-doc line that bears on it; if it decides, act and record it. Reaches every repo and agent. |
 | 13 | Stop filing a routine split as a question | Change the five places that say "record the split as an interim in `questions.md`": a split made under the size rule is recorded in the commit body and the session's summary, not as an entry. |
 | 14 | No unrequested exceptions | A rule where entries are written: an entry does not ask whether to keep something a hard constraint rules out, unless its writer is itself recommending the exception. |
-| 15 | Hard constraints bind briefs | A rule where briefs are written: a brief may not put a hard constraint's requirement out of scope, so a breach is fixed in the unit that would have introduced it. |
+| 15 | Hard constraints bind briefs | A rule where briefs are written: a brief may not put a hard constraint's requirement out of scope, so a breach is fixed in the unit that touches it. |
 
 Generation health check. *Clustering*: candidates 1, 2, 3, 4, 10 and 11 all assume the
 gap is finding the doc. The review rounds named that assumption, and 13 to 15, which
@@ -1118,15 +1150,15 @@ and 11 change tooling; 9, 13 and 15 change what is filed or briefed at all.
 **Step 2: problems and constraints.** Problems, each from the measurement:
 
 - P1. Where a doc decides the question, the session already follows it. The entry that
-  still reaches the owner comes from a written rule (Q-199, Q-254) or from the practice of
-  filing with an interim or recording a ruling (Q-142, Q-154; section 2). What can be
-  removed is a filing.
+  still reaches the owner comes from something written: a standing rule (Q-199, Q-254), a
+  gate reserved to the owner (Q-142) or a one-off plan step (Q-154; section 2). What can
+  be removed is a filing.
 - P2. Docs mislead and contradict each other (4 flagged conflicts, 6 doc-against-doc
   entries, Q-040 in both counts; section 5), so anything that acts on a doc must be easy
   to check and to undo.
-- P3. Entries are written by the orchestrator or by a hand session, never by a build
-  loop. Of the last 14, the orchestrator filed four (Q-246, Q-247, Q-254, Q-256), two of
-  them from a loop's marker (section 3).
+- P3. Entries are written by the dev cycle or by a hand session, never by a build loop.
+  Of the last 14, the cycle wrote 11, four of them passing on a build loop's stop or
+  marker, and hand sessions wrote 3 (section 3).
 - P4. In-part entries often do not name the doc that bears on them (13 of 24 checked;
   section 2). A lookup can shorten such an ask. It is not shown to remove one: the
   entries that did name their doc were filed too.
@@ -1201,8 +1233,8 @@ the guardrails rank them. The top five go to step 4.
 | # | For | Against | Rank |
 |---|---|---|---|
 | 0 | S5, S7, S8, S10: nothing to pay, nothing unmeasured | removes nothing | top five |
-| 15 | S3 (loops already prune on hard constraints; this holds the brief's writer to the same), S4, S6 | S10: a gate-code merge entry and a release; S7: one case, unanswered | top five |
-| 14 | S3, S4 (read where entries are written), S6, S8 | S10: a gate-code merge entry and a release; S7: one case, unanswered | top five |
+| 15 | S3 (loops already prune on hard constraints; this holds the brief's writer to the same), S4, S6 | S10: a gate-code merge entry and a release; S7: one case, unanswered; G2, as the roadmap words it ("a change or exception to a hard constraint" is the owner's) | top five |
+| 14 | S3, S4 (read where entries are written), S6, S8 | S10: a gate-code merge entry and a release; S7: one case, unanswered; G2, as for [15] | top five |
 | 13 | S3 (fixes existing lines, adds none), S4, S6 (a session that splits runs it), S8 | S10: one merge entry, and it amends two decision-log rows; S7: one case | top five |
 | 7t | S6 (a measure that can come out negative), S8, S10 (no merge) | G3 is weak in a trial: nothing checks the quote, and silence passes | top five |
 | 7 | S4, S6 | S7 (permanent before any measure), S10 (merge and release); shares [7t]'s back-test | sixth |
@@ -1225,9 +1257,9 @@ every home but the trial doc is a file whose change goes to them as a merge entr
 | # | Approach | Effort | Risk | Covers | Key downside |
 |---|---|---|---|---|---|
 | 0 | Status quo | none | none new | P2, P3 | One or two entries a month that a rule change might have saved |
-| 15 | Hard constraints bind briefs | one sentence in the dev-cycle skill's brief-writing step; one gate-code merge entry and an image release | medium: its one case is unanswered | P1 in part, P2, P3 | If the owner wants the exception, the unit built what they did not want |
+| 15 | Hard constraints bind briefs | one sentence in the dev-cycle skill's brief-writing step; one gate-code merge entry and an image release | medium: its one case is unanswered | P1 in part, P2, P3 | Its one case is unanswered: if the owner wants the exception, the unit built what they did not want |
 | 14 | No unrequested exceptions | one sentence in the dev-cycle skill; one gate-code merge entry and an image release | medium: its one case is unanswered | P1 in part, P2, P3, P4 | An exception the owner would have granted is not offered, and the breach stays on main until the fix lands |
-| 13 | Stop filing a routine split as a question | one small docs unit (three workflow lines) and a decision-log row by the cycle; one merge entry | medium: as first sketched it would have withheld a real question | P1, P3 | The owner is no longer asked to confirm a split |
+| 13 | Stop filing a routine split as a question | one small docs unit (three workflow lines) and a decision-log row by the cycle; one merge entry | medium: as first sketched it would have withheld a real question | P1, P3 | As first sketched it withheld Q-119's real question; and the owner is no longer asked to confirm a split |
 | 7t | General rule, writing trial | one paragraph in the trial doc; no merge | low | P2, P3, P4 | Tested against the recent cases it withholds none |
 
 **The back-test** (added in review): each top-five candidate against the recent entries
@@ -1275,8 +1307,9 @@ Falsifiable hypotheses:
   (self-merge, Q-103), and said they follow the work through their answers. Both leave
   [0] where it was.
 - [15]. *Failure-driven*: Q-272's own text gives its cause. The orchestrator's brief for
-  the fix "put a refusal out of scope", so a self-merge landed code short of H2. [15]
-  removes that at the source: the entry and the breach. *Invert the thesis*: a brief that
+  the fix "put a refusal out of scope", so a self-merge landed code still short of H2.
+  (The gap was older than that unit, which narrowed it.) [15] acts at the source: the
+  unit that touched the fallback would have had to bring it up to H2. *Invert the thesis*: a brief that
   narrows scope is how units stay small (S8), and the owner may want the narrower unit and
   the exception. This is why its risk is medium until Q-272 is answered.
 - [14]. *Push to extreme*: extended to soft constraints it would drop options the owner
@@ -1333,8 +1366,9 @@ Falsifiable hypotheses:
 ```
 
 **Decision.** On the question as posed, where a lookup should live, the answer is
-nowhere, and that part is not close: every lookup candidate (1, 2, 3, 4, 5, 5b, 10, 11,
-12) ranks below the top five, and the general rule ([7], [7t]) fails the back-test. The
+nowhere, and that part is not close: every lookup candidate (1, 2, 3, 4, 5, 5b, 10, 11)
+ranks below the top five, and the general self-answer rule in its three forms ([7t], [7],
+[12]) fails the back-test or ranks below it. The
 brief's own line settles it: "if the share answerable from docs is small, say so plainly
 and recommend not building".
 
@@ -1419,10 +1453,13 @@ settle.
      message (G3), so the owner is still told when main held a breach.
    - The fix goes to the roadmap as agent work, as the skill's "Attention is the budget"
      rule already says of work.
-   - Why this is not a self-answer on authority (G2): the constraint is already the
-     owner's ruling, and an exception stays theirs to ask for.
-   - The dev-cycle skill covers the orchestrator only. A hand session would need the
-     same line elsewhere.
+   - Whether this is a self-answer on authority (G2). The roadmap's guardrail lists "a
+     change or exception to a hard constraint" as the owner's, and Q-272's own "Why it's
+     yours" says the same. The case for the rule is that the constraint is already the
+     owner's ruling and an exception stays theirs to ask for. The design unit has to make
+     that case to the owner, not assume it.
+   - The dev-cycle skill covers the cycle only, which wrote 11 of the last 14 entries. A
+     hand session would need the same line elsewhere.
    - In another repo it depends on hard constraints that owner has ratified.
    - The skill is gate code: one merge entry, live from the next image release.
 2. **No entry for a routine split** (candidate [13]). Five places say to record a split
@@ -1453,7 +1490,8 @@ rule and to anything like candidate [7] later.
 - **A self-answer names its doc and quotes the line.** Kept. It is what made every class
   in this doc checkable by a script (59 quotes, 59 found).
 - **Never for what is the owner's by authority.** Kept. That class is half of everything
-  asked.
+  asked. The exceptions rule sits against this guardrail as the roadmap words it; 9.2
+  says what its design would have to argue.
 - **Each one is listed for the owner.** Kept, and widened: in the cycle's final message,
   which the owner reads first, as well as the weekly digest. It is the only catch for a
   stale standing line (Q-027, Q-040), and it catches nothing unless it is read.
@@ -1563,22 +1601,25 @@ Reasoned from this repo's structure and from `docs/working/feedback/philosophy-r
 - **Why the volume fell.** Four changes fall in the same two weeks.
 
 **The choice that is the owner's.** Under self-merge the dev cycle quotes a loop's
-tentative pick in its final message; it becomes an entry only if the cycle judges it
-needs an answer. One question: the measurement found no case for a lookup, and two
-possible rule changes that each rest on a single entry. How far should this go?
+tentative pick in its record and its final message. If you say nothing, [1] stands; a
+different pick you name becomes a roadmap item. One question: the measurement found no
+case for a lookup, and two possible rule changes that each rest on a single entry. How
+far should this go?
 
-Words in the table. A hard constraint is one of the four lines H1 to H4 in
-`docs/constraints.md`. Q-272 is the open entry asking whether the test-confinement script
-may run under its weak tool, as an exception to H2, or must refuse. A routine split is an
-oversized branch cut into smaller review units under the 400-line rule, with no design
-change. Decision-log rows 61 and 62 are the two rows that say a split is recorded in the
-questions file. An image release is the paste you already run on the host when gate code
-has changed.
+Words in the table. The roadmap item is "Models answer their own questions from the
+repo's docs". A hard constraint is one of the four lines H1 to H4 in
+`docs/constraints.md`. H2 says a gate fails closed: a degraded tool refuses. Q-272 is the
+open entry asking whether the test-confinement script may run under its weak tool, as an
+exception to H2, or must refuse. A routine split is a unit cut into smaller review units
+under the review loop's split rules (the 400-line cap, the early split, the size
+re-check), with no design change. Decision-log rows 61 and 62 are the two rows that say a
+split is recorded in the questions file. An image release is the paste you already run on
+the host when gate code has changed.
 
 | Option | What it means | Cost to you | If it's wrong |
 |---|---|---|---|
 | **[1] Build nothing; look again when Q-272 is answered** | The roadmap item closes at step 1. Your answer to Q-272 then says whether an exceptions rule has a case | None | One or two entries a month keep reaching you that a rule change might have saved |
-| **[2] Design the exceptions rule now** | One design unit: a brief may not scope out a hard constraint, and an entry does not ask you about an exception its own writer recommends against. The fix goes ahead and is listed in the cycle's final message | One merge entry; live from the next image release | An exception you would have granted is not offered, and you would have to ask for it. Its only case is Q-272, which you have not answered |
+| **[2] Design the exceptions rule now** | One design unit: a brief may not scope out a hard constraint, and an entry does not ask you about an exception its own writer recommends against. The fix goes ahead and is listed in the cycle's final message | One merge entry; live from the next image release | An exception you would have granted is not offered, and you would have to ask for it. The roadmap item's own guardrail lists an exception to a hard constraint as yours to decide. Its only case is Q-272, which you have not answered |
 | **[3] Design both rule changes now** | [2], and a second unit: a routine split is recorded in the commit and the session's summary, not as a question | Two merge entries and that release; your yes also amends decision-log rows 61 and 62 | As [2]. And you are no longer asked to confirm a routine split, so a wrong one shows only in a summary |
 | **[4] Build a lookup or a general self-answer rule anyway** | What the roadmap listed (a search over old answers, a `Looked in:` line, an index of standing answers), or a rule that the orchestrator acts on any doc line that decides a question | Three or more merge entries and a release; for the `Looked in:` line, one more line in every entry you read | No entry in the sample is shown to be one this would have removed. Some asks get shorter. A wrong reading acts before you see it |
 
@@ -1586,11 +1627,15 @@ Interim and tentative pick: [1]. Nothing is built or changed until this is answe
 tiebreaker is S7, the soft constraint to measure before budgeting a saving: each rule
 change rests on one entry, and one of those is unanswered. For the lookup itself the
 brief's own rule decides (a small share means recommend not building). [2] is the
-runner-up. If you want the split change alone, say so in words.
+runner-up. The brief asks for one table, so the two rule changes are not split into two
+questions; if you want the split change alone, say so in words. For "look again when
+Q-272 is answered" to happen, the cycle has to carry it as a roadmap line or a
+decision-log row: its revisit step does not read this doc.
 
 What options [2] and [3] would have removed in the last 23 days: Q-272 (if you refuse its
-exception) and Q-199. Neither reaches Q-254.
+exception) and Q-199, the entry that recorded the split of the constraints-builder
+branch. Neither reaches Q-254, the entry a blocked build loop caused.
 
 Not part of this choice: the half of your asks that are yours by authority. Those end
-only when you change a rule, as you did with the attestation stop. This doc proposes no
-new delegation.
+only when you change a rule, as you did when the dev cycle stopped asking you to attest
+that you had reviewed each commit it had not made. This doc proposes no new delegation.
