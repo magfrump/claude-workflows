@@ -260,7 +260,11 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-266](#q-266--merge-gate-2026-11-06-codify-trial-practices-e49f133c98fd) | Q-266: [1] (owner, answers-11-7-26.txt). Merge e49f133c98fda0446fb32e24473aee11347a6933; the marker's docs/... | 2026-11-06 |
 | [Q-267](#q-267--merge-2026-11-07-q125-sandbox-on-main-cd6d4332ed89) | Q-267: [1] | 2026-11-07 |
 | [Q-268](#q-268--merge-2026-11-07-canon-instances-pass-e0f3aa84a33f) | Q-268: [1] | 2026-11-07 |
+| [Q-269](#q-269--deep-audit-scope-and-timing) | Q-269: [1] (owner, answers-11-11-26.txt). The small audit now. | 2026-11-10 |
+| [Q-270](#q-270--light-pass-between-full-cycles) | Q-270: [2], and [4] as well (owner, answers-11-11-26.txt): "[2] seems low cost to do now, but agreed that [... | 2026-11-10 |
 | [Q-271](#q-271--merge-gate-2026-11-10-dev-cycle-skill-held-fixes-8b03c7e6a245) | Q-271: [1] | 2026-11-10 |
+| [Q-272](#q-272--confine-tests-fallback-run-or-refuse) | Q-272: [1] to start (owner, answers-11-11-26.txt): run and warn, as merged. The owner adds: "track the warn... | 2026-11-10 |
+| [Q-274](#q-274--self-answer-plan-how-far) | Q-274: [1] (owner, answers-11-11-26.txt). Build nothing; look again when Q-272 is answered. The owner adds:... | 2026-11-11 |
 <!-- index:end -->
 
 ## Answered
@@ -6413,5 +6417,140 @@ ok docs/working/briefs/2026-11-07-q125-sandbox-on-main.md cd6d4332ed89eee32882f5
 
 - **Blocks:** Q-125's sandbox; behind it the watches Q-098 and Q-161.
 - **Interim:** the branch waits, nothing has merged, and nothing runs on the host.
+
+
+### Q-274 · self-answer-plan-how-far
+**Needs:** you: judgment · **Opened:** 2026-11-11 · **Status:** ANSWERED
+Q-274: [1] (owner, answers-11-11-26.txt). Build nothing; look again when Q-272 is answered. The owner adds: "I do expect this repo to be unusually hard to answer questions in, so a survey of other repos might change the numbers."
+
+The measurement you asked for found almost no question that a doc already answered. How far should the self-answering plan go?
+
+**If you say no:** nothing is built, which is also what happens if you never answer. The roadmap item stops after its first step, and a watch brings it back when you answer Q-272 (the open entry on whether the test-confinement script may run under its weak tool).
+
+**What was measured.** Step 1 of the plan you asked for on 2026-11-11 ("how models can answer their own questions based on existing docs in a repo"). A build loop read every judgment entry ever filed in this repo's questions files and classed each against the docs as they stood when it was filed. The doc is `docs/working/research-2026-11-11-self-answer-measure.md`, merged at fd325a74 with no review of yours (a build loop wrote it, six reviewer agents checked it, and a second blind reader agreed on 21 of 24 entries). The figures below are that doc's; I re-counted only the total of judgment entries (203, which matches).
+
+Of the 200 answered judgment entries:
+
+- **At most 4 (2%)** were answered in full by a doc that already existed. In none of the four did a model fail to look: the session had already made its pick, and a written rule, gate or plan step told it to file the entry anyway.
+- **35 (17.5%)** were answered in part: a doc narrowed the options or named the default. About half of those did not name the doc that bore on them.
+- **56 (28%)** were not answerable from any doc.
+- **105 (52.5%)** were yours by authority, whatever the docs said: merge approvals, confirming you had reviewed a commit, landing a unit, passing a review cap.
+
+Two more findings. Docs also misled: in 4 entries a doc named a different answer than yours, and 6 entries exist only because two docs contradicted each other. And the volume already fell: hand-written judgment entries ran at 13 to 28 a week until mid-October and 2 to 6 a week since, in the weeks the constraints file landed and build loops began deciding from it (the doc marks that link as inferred; other things changed in those weeks too).
+
+So a "look in the docs first" step is not shown to remove any entry. What is left are two small rule changes, each resting on a single entry.
+
+- **Why it's yours:** you asked for the plan, and options [2] to [4] change what reaches you.
+- **Read:** the doc's Summary, and its section 9 (9.2 what to build, 9.5 another repo, 9.6 this question)
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Build nothing; look again when Q-272 is answered** | The plan stops at step 1. Your Q-272 answer then shows whether the first rule change below has a case | None | One or two entries a month reach you that a rule change might have saved |
+| **[2] Design the exceptions rule now** | A brief may not put a hard constraint's requirement out of scope, and an entry does not ask about an exception its own writer recommends against. Its only case so far is Q-272 | One merge entry; live at the next image release | An exception you would have granted is never offered to you |
+| **[3] Design both rule changes now** | [2], and when a unit is cut into smaller review units with no design change, that is recorded in the commit and the session's summary, not filed as a question. This amends decision-log rows 61 and 62 (`docs/decisions/log.md`), which say such a split goes in the questions file | Two merge entries and that release | As [2]; and a wrong split shows only in a summary |
+| **[4] Build a lookup or a general self-answer rule anyway** | A search over past answers, a line on each entry naming where it looked, an index of standing answers; or letting a model act on any doc line that decides a question | Three or more merge entries and a release | No entry is shown to be one it removes, and a wrong reading acts before you see it |
+
+The build loop's tentative pick is [1], and I agree. Its reason is the soft constraint to measure before budgeting a saving (S7 in `docs/constraints.md`): the measurement came out small. The numbers point at a different place for your attention: over half of what reaches you is approval by authority, which no doc can answer. That is the subject of the merge-approval watch (Q-262), not of this plan.
+
+For another repo, the doc reasons without reading any other checkout: a repo with no constraints file probably gains more from writing one than from any lookup, and the measurement can be repeated there for about 1.3 million tokens plus review, or cheaply by reading its last 14 hand-written entries.
+
+- **Blocks:** the roadmap Now item "Models answer their own questions from the repo's docs".
+- **Interim:** [1]. Nothing is built.
+- **If the answer differs:** [2] or [3] becomes one or two small design briefs; [4] a larger one. Nothing is redone.
+
+
+### Q-272 · confine-tests-fallback-run-or-refuse
+**Needs:** you: judgment · **Opened:** 2026-11-10 · **Status:** ANSWERED
+Q-272: [1] to start (owner, answers-11-11-26.txt): run and warn, as merged. The owner adds: "track the warnings and return the question to me in a few days with some data about how often bwrap isn't present, and how much friction inability to run tests would cause."
+
+When the test-confinement script cannot use its strong tool, should it still run the tests under its weak one, or refuse?
+
+**If you say no:** nothing changes, which is also what happens if you never answer: the script runs under the weak tool after printing a warning, as merged today. Nothing calls the script yet, so no run is exposed while this is open.
+
+**What this is about.** `scripts/confine-tests.sh` runs a test command with the network cut off. It prefers `bwrap`, which also makes the filesystem read-only and gives the tests a private `/tmp`. When `bwrap` is missing or refused it falls back to `unshare`, which cuts the network and nothing else: the tests run as uid 0 inside a user namespace and can write to the real filesystem. Until today that fallback said nothing. A fix merged at b0ebed19 without review (a self-merge) makes it print a warning naming what `unshare` does not confine, and then run.
+
+**Why it comes to you.** One of the four hard constraints in `docs/constraints.md`, H2, says a gate fails closed: "a ... degraded primitive refuses and names what went unenforced ... degradation only ever narrows access". Running with less confinement names the gap but does not refuse. The brief I wrote for the fix asked only for the warning and put a refusal out of scope, so the code follows the brief, not the whole of H2. The build loop's security review rated the remaining gap Medium: a run on a host without `bwrap` can write to that host and still report a pass. The gap is older than today's change, which narrowed it.
+
+- **Why it's yours:** keeping the run means recording an exception to a hard constraint, and only you change those.
+- **Read:** `docs/working/research-2026-11-10-confine-tests-dash-and-fallback.md` (its question section and its "Exit statuses" table) · `docs/reviews/security-review-final-2026-11-10-confine-tests-dash-and-fallback.md` · H2 in `docs/constraints.md`
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Run and warn** | As merged. `unshare` becomes a stated exception to H2, which you add to `docs/constraints.md` or ask a session to draft | A line in the constraints file | A host without `bwrap` gets a pass from a run that could write to it |
+| **[2] Refuse unless asked** | Without `bwrap` the script exits 3, unless a new flag asks for `unshare` | One more build loop, self-merged | Hosts with only `unshare` lose confined runs until someone passes the flag |
+| **[3] Always refuse** | Without `bwrap` the script exits 3; `unshare` stays only behind `--no-loopback` | One more build loop, self-merged | As [2], with no way to opt in |
+
+My recommendation is [2]: it meets H2 as written without an exception, and the weak mode stays available to someone who asks for it. It can wait until the sandbox branch (Q-267) merges, since that is when the image gains `bwrap` and the script first has something to run under. The same answer settles a smaller point: on a fallback, the script's `--probe` check exits 0 with no warning today, and under [2] or [3] it would refuse too.
+
+- **Interim:** [1], as merged.
+- **If the answer differs:** one small brief changes the fallback and its tests; nothing merged today is redone.
+
+
+### Q-270 · light-pass-between-full-cycles
+**Needs:** you: judgment · **Opened:** 2026-11-10 · **Status:** ANSWERED
+Q-270: [2], and [4] as well (owner, answers-11-11-26.txt): "[2] seems low cost to do now, but agreed that [4] is warranted as well."
+
+Between full dev-cycle iterations, should the cycle run a light pass, and if so, what brings a full cycle back?
+
+**If you say no:** nothing changes, which is also what happens if you never answer. Your earlier answer stays: a full cycle every iteration (Q-154, where you said to revisit this "once the costs are visible").
+
+**What the two are.** A full cycle runs four checking steps every time: the revisit triggers on past decisions, the watches, a spot-check of last week's merges, and the check for whether a deep audit is due. A light pass skips those four. It only collects finished build loops, writes briefs, dispatches and lands.
+
+**The numbers you asked for** are in `docs/working/research-2026-11-10-cycle-overhead-numbers.md` (merged at c70bb17a with no review; a build loop wrote it and four reviewer agents checked it). The figures below are that doc's; I re-counted only the total of iterations. From the 100 iterations recorded between 2026-10-16 and 2026-11-10:
+
+- 72 ran the checking steps. 40 found nothing, 10 only repeated "a deep audit is due" onto a task that already exists, and 22 caught something.
+- 24 were already light passes. You directed 2; the cycle chose the other 22 itself, with no rule for it in the skill, and stopped doing so after 2026-11-02.
+- Time is small: 16 hours in all. A full iteration that found nothing took a median of 3.8 minutes, a light one 2.9.
+- Tokens are not recorded anywhere in the repo, so the cost you asked about is still not visible. The doc does not estimate them.
+
+In the table, "replayed" means the doc re-ran the recorded iterations under that rule, and a "catch" is something the checking steps found (22 in 26 days).
+
+- **Why it's yours:** it changes how often past decisions get re-checked, and it replaces an answer you gave.
+- **Read:** the doc above, its Summary and section 9 · Q-154 in `docs/working/questions-archive.md`
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Full cycle every iteration** | Your Q-154 answer stays, and the cycle stops choosing light passes on its own | None | The repeats go on: 50 of 72 full iterations found nothing new, at a token cost no one has measured |
+| **[2] Full when main moved or a new day starts** | Full on each day's first iteration and whenever main gained anything but the cycle's own land; light otherwise | One merge to approve (the dev-cycle skill) | Things that are not commits wait for the next day; replayed, 4 of 22 catches waited, 2 of them really (1 hour and 3.8 hours) |
+| **[3] One full cycle a day** | The day's first iteration is full, the rest light | One merge to approve (the dev-cycle skill) | Replayed, 15 of 22 catches waited a median of 18 hours, up to 5 days; 9 might never be found |
+| **[4] Measure tokens first, then decide** | [1] stays for now; a small docs unit totals tokens from existing session transcripts, or the cycle record gains a token line | This question reaches you once more | The repeats continue meanwhile; if transcripts cannot be matched to iterations, it takes weeks of new records |
+
+The build loop recommends [4], then [2] if the tokens show the repeats cost something. Its reason: your own condition, costs visible, is not met yet. If you would rather settle it now, [2] gives up the least. I agree with that order.
+
+One thing to know either way: today the cycle's 30-minute fallback wakeup fired three times while build loops were still working. Each time I checked the loops and main, found nothing to collect, and did not run an iteration. I read that as waiting, not as a light pass, since the skill starts an iteration when a loop finishes.
+
+- **Blocks:** roadmap Next 3 (revisit the light pass).
+- **Interim:** [1], your Q-154 answer.
+- **If the answer differs:** nothing is redone; [2] or [3] becomes a brief for the dev-cycle skill, [4] a small docs brief.
+
+
+### Q-269 · deep-audit-scope-and-timing
+**Needs:** you: judgment · **Opened:** 2026-11-10 · **Status:** ANSWERED
+Q-269: [1] (owner, answers-11-11-26.txt). The small audit now.
+
+Run the deep audit the dev cycle keeps saying is due, and if so, the small one or the full one?
+
+**If you say no:** nothing runs, which is also what happens if you never answer. The cycle keeps adding a line to the roadmap each time the audit's conditions hold, and loops keep making design choices against `docs/constraints.md` as it is.
+
+**What a deep audit is.** Each cycle checks only last week's merges. A deep audit re-reads older conclusions (decision records, the decision log, the skills, the roadmap's finished items) against today's state, because a new skill, a model change or a big design decision can make them stale. The cycle only decides whether one is due; scope and timing are yours, and it runs on its own branch.
+
+**Why ask now.** It has come due in most cycles since 2026-10-02 and never run, because no one asked you. Two things are new today:
+
+- The model running these sessions changed from `claude-opus-5-5` to `claude-fable-5-2`. Past measurements of review quality and cost, and the judgment calls that rest on them, were made under older models.
+- A seventh finding of one kind. When a build loop picks between designs, it is meant to rule options out only on the hard constraints in `docs/constraints.md` (the `H` lines) and to rank what is left with the soft ones (the `S` lines). In seven design records since 2026-10-20, a soft line helped rule an option out; in three of them a rule that helped decide was not in the file at all (for example "benchmark code lives in the SWRBench fork"). Every pick still stands, since a hard line or a clearly better option decided each one. The pattern suggests some soft lines are being treated as hard, or should be.
+
+- **Why it's yours:** promoting a soft constraint to hard, or dropping one, changes what every loop may build. The full audit is also a large run, and your standing rule is no big compute until the code settles.
+- **Read:** the roadmap's Now item "Agent: scoped deep audit, constraint drift" and its Ideas item "Scoped deep audit" (`docs/roadmap.md`), which list the seven records between them · `docs/constraints.md` (4 hard lines, 10 soft)
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] The small audit now** | One build loop reads the seven flagged design records and drafts changes to `docs/constraints.md` with the `constraints-builder` skill (the skill that drafts that file; its amend mode revises it). You get one later entry: promote, keep soft or drop, per flagged line. Nothing else is re-read. | One loop's compute, then one entry with a handful of yes/no calls | The older conclusions stay unchecked under the new model; you can ask for [2] later |
+| **[2] The full audit now** | [1], plus a re-read of every decision record, log row, skill and finished roadmap item against today's state, split over several loops | Several loops' compute over a day or more, and likely several entries | Heavy spend before the A8 token measurement you deferred, and it may muddy that baseline |
+| **[3] Wait** | Nothing runs until you say. The cycle keeps recording when it comes due | None | Loops keep ruling options out on soft lines; a wrongly rigid one costs a better design somewhere, unseen |
+
+My recommendation is [1]: it is the part with evidence behind it, it is small, and it does not touch the compute you are holding back.
+
+- **Interim:** [3]. Nothing is burning: every flagged pick was checked and stands.
+- **If the answer differs:** nothing is redone; [1] or [2] becomes a brief at the next cycle.
 
 

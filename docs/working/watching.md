@@ -18,10 +18,11 @@ Maintained by `~/.claude/scripts/questions.sh` (`check` · `index` · `migrate`)
 |---|---|---|---|
 | [Q-067](#q-067--regenerate-skill-eval-reports) | deferred | When should the skill eval reports be regenerated, so that the 50 `@needs-reports` suites constrain the cur... | 2026-09-26 |
 | [Q-098](#q-098--global-allowlist-after-sandbox) | deferred | Ship a global `permissions.allow` in `hooks/wiring.json` once cc-isolated has a Bash sandbox (Q-088). Branc... | 2026-09-28 |
+| [Q-276](#q-276--q272-return-with-data) | deferred | Return the run-or-refuse question (Q-272: what the test-confinement script does when it has only its weak t... | 2026-11-11 |
 | [Q-161](#q-161--revive-hermeticity-layer2-after-q125) | trigger | When Q-125's sandbox merges (bwrap in the cc-isolated image), decision 017's T2 fires: revive hermeticity l... | 2026-10-14 |
 | [Q-262](#q-262--merge-approval-revisit) | trigger | Should merge approval be reopened? The design record picked no change on 2026-11-06, and this watch holds i... | 2026-11-06 |
 | [Q-264](#q-264--gloss-rule-falsifier) | trigger | Q-264: met — counted on 2026-11-11 at five entries opened since the install (Q-269 to Q-273): the falsifi... | 2026-11-06 |
-| [Q-275](#q-275--self-answer-plan-after-q272) | trigger | When the owner answers Q-272 (run or refuse when the test-confinement script has only its weak tool), does ... | 2026-11-11 |
+| [Q-275](#q-275--self-answer-plan-after-q272) | trigger | Q-275: met — the owner answered Q-272 on 2026-11-11 with [1] "to start" (run and warn). The exception is ... | 2026-11-11 |
 <!-- index:end -->
 
 ## Open
@@ -78,15 +79,25 @@ Should merge approval be reopened? The design record picked no change on 2026-11
 - **Read:** `docs/working/research-2026-11-06-merge-friction-design.md`, section 11.
 - **Interim:** merge entries stay as they are. The conditions are that section's list: the owner names merge entries or approvals as a blocker; merge entries exceed 11 a week in 3 of the next 4 weekly digests, which reopens the record's candidate [5]; or the record's median-wait trigger.
 
+### Q-276 · q272-return-with-data
+**Needs:** deferred · **Opened:** 2026-11-11 · **Status:** OPEN
+
+Return the run-or-refuse question (Q-272: what the test-confinement script does when it has only its weak tool) to the owner with data, a few days after 2026-11-11, as the owner asked.
+
+- **Read:** Q-272 in `docs/working/questions-archive.md` · the roadmap Now item "data for the run-or-refuse question's return" · decision-log row 87 (`docs/decisions/log.md`) · H2 in `docs/constraints.md`
+- **Interim:** the owner's answer, [1] "to start": `scripts/confine-tests.sh` runs under `unshare` after a warning when `bwrap` is missing. No exception to H2 is written into `docs/constraints.md` while the answer is provisional. The event: 2026-11-16, or the data being ready, whichever comes first. Then file a new `you: judgment` entry with Q-272's three options and the two things the owner asked for: how often `bwrap` was absent where the script ran, and how much friction a refusal would cause (how many test runs it would have stopped). If there is no data by then, the entry says so and says why; it does not wait longer.
+- **If the owner then refuses the exception:** the self-answering plan's exceptions rule (closed watch Q-275) has its first confirmed case.
+
+## Closed
+
 ### Q-275 · self-answer-plan-after-q272
-**Needs:** trigger · **Opened:** 2026-11-11 · **Status:** OPEN
+**Needs:** trigger · **Opened:** 2026-11-11 · **Status:** ANSWERED
+Q-275: met — the owner answered Q-272 on 2026-11-11 with [1] "to start" (run and warn). The exception is granted for now, so the exceptions rule has no confirmed case and is dropped, as this watch's interim says; Q-274 was answered [1] the same day (build nothing). The owner asked for Q-272 back with data in a few days, which is watch Q-276; a refusal then would be the rule's first case.
 
 When the owner answers Q-272 (run or refuse when the test-confinement script has only its weak tool), does the self-answering plan's exceptions rule have a case?
 
 - **Read:** `docs/working/research-2026-11-11-self-answer-measure.md`, sections 9.2 and 9.6 · Q-274 (how far the plan goes) · Q-272
 - **Interim:** nothing is built (Q-274's option [1]). The condition: Q-272 is answered. If the owner refuses the exception there, the rule "a brief may not scope out a hard constraint, and an entry does not ask about an exception its writer recommends against" has its first confirmed case, and one design unit can take it up, unless Q-274 says otherwise. If the owner grants it, drop the rule. This watch exists because the cycle's revisit step does not read working docs.
-
-## Closed
 
 ### Q-264 · gloss-rule-falsifier
 **Needs:** trigger · **Opened:** 2026-11-06 · **Status:** ANSWERED

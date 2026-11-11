@@ -49,6 +49,12 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   build nothing); watch Q-275 brings it back when Q-272 is answered. The doc's one positive
   step is already on the roadmap: answers that deserve to be standing rules go into
   `docs/constraints.md` at the deep audit (Q-269).
+  2026-11-11, stopped here on the owner's answer (Q-274 [1]: build nothing; look again
+  when Q-272 is answered). Q-272 was answered the same day, [1] "to start": the owner
+  granted the exception for now, so the exceptions rule has no confirmed case and watch
+  Q-275 is closed. Steps 2 to 4 are not to be briefed. The rule comes back only if the
+  owner refuses the exception when Q-272 returns with data (watch Q-276). The owner's
+  note on other repos is an Ideas item.
 
 - **Agent: Q-125 · cc-isolated Bash sandbox, live run** (filed 2026-11-01, step 6, from
   Q-234's migrate). Motive: nothing sandboxes Bash in cc-isolated. Built, unmerged
@@ -78,6 +84,11 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   Q-269 (run the small constraint-drift audit, the full audit, or wait).
   Fired again 2026-11-11: `skills/dev-cycle/SKILL.md` changed by 1f14e270 (Q-271: the
   identity check, the release paste, the free-slot line).
+  2026-11-11, scope and timing answered (Q-269 [1], the small audit now). First step is
+  now a brief for one build loop: read the seven flagged Path A records named above and
+  draft changes to `docs/constraints.md` with the `constraints-builder` skill's amend
+  mode. Its output is one owner entry with a promote, keep soft or drop call per flagged
+  line. Nothing else is re-read; the full audit stays unasked.
 
 - **Agent: `source_lines_ok` misses an unterminated last line** (filed 2026-11-05, step 7).
   Motive: the Q-147 review found the shipped self-check in `devcontainer-config/cc-verify.sh`
@@ -85,6 +96,23 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   now. It lives otherwise only as a Defer row in `docs/reviews/override-log.md`, merged with
   Q-258. First step: one change with `Host-tool-tested:` and a re-bless,
   which needs a host run, so it is not briefed for a loop yet.
+
+- **Agent: `cc-verify --clean` exits 2 and prints nothing on a run directory with no
+  `record`** (filed 2026-11-11, from the owner's Q-273 paste). Motive: it stopped the
+  release's live check. `~/cc-verify/run-1793211495-572412.d` was left by the Q-117 trial
+  script on 2026-10-28 (its teardown removes `record` last and never the directory), the
+  new-run check at `devcontainer-config/cc-verify.sh:222` counts any `run-*`, and
+  `--clean` dies at line 210: `sed` cannot read `$d/record`, exits 2, and `pipefail` with
+  `set -e` ends the script with the message sent to `/dev/null`. A non-directory `run-*`
+  dies the same way before its NOTE. Reproduced with the bats harness of
+  `test/cc-verify.bats`: `mkdir "$CC_VERIFY_ROOT/run-1-1.d"`, then `--clean` gives status
+  2, empty output, directory kept. Appending `|| p=""` to line 210 gives status 0,
+  `cleaning <dir>`, directory removed (`teardown` with no `T8` only removes the
+  directory). First step: that change and its test, in the same change as the
+  `source_lines_ok` item above, since both need `Host-tool-tested:` and a re-bless. For
+  the pre-mortem: a run between its `mkdir` and its `record` write (lines 225 to 228)
+  has no `record`, so a `--clean` in that window would remove a live run's fresh
+  directory; today the abort hides that. The owner's workaround is in Q-273's paste 1.
 
 - **Agent: confine-tests follow-ups** (filed 2026-11-07, step 7). Motive: the research
   merged at be12889c (`docs/working/research-2026-11-07-confine-tests-situation.md`) found
@@ -108,6 +136,39 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   (the comment above it now opens "Decision 018's reference pattern"), and
   `docs/failure-patterns.md` may deserve an entry for `exec "$@"` under `sh` reading a
   dash-leading word as an option where `sh` is bash.
+
+- **Agent: data for the run-or-refuse question's return (owner request, 2026-11-11).**
+  Motive: the owner answered Q-272 with [1] "to start" (the `unshare` fallback in
+  `scripts/confine-tests.sh` runs after a warning) and asked to "track the warnings and
+  return the question to me in a few days with some data about how often bwrap isn't
+  present, and how much friction inability to run tests would cause". Nothing calls the
+  script yet, so no warning is printed anywhere to count. First step: a small unit that
+  says what will be counted and from where. Candidates: where `bwrap` is present and
+  usable (the host, the image at 536b7082, the image after the Q-273 release, inside the
+  new Bash sandbox), read from `--probe` runs; a line per fallback run that the script or
+  the cycle's record keeps; and, for friction, how many test runs in briefs and cycle
+  records a refusal would have stopped. A change to the script itself is an enforcement
+  change. The question goes back to the owner by watch Q-276 (2026-11-16, or sooner if
+  the data is ready), with whatever data exists then. No exception to H2 is written into
+  `docs/constraints.md` while the answer is provisional (decision-log row 87).
+
+- **Agent: light pass between full cycles (Q-270 [2]).** Motive: the owner picked the
+  rule "full when main moved or a new day starts": a full cycle on each day's first
+  iteration and whenever main gained anything but the cycle's own land, a light pass
+  otherwise. A light pass skips the four checking steps (revisit triggers, watches, the
+  spot-check of last week's merges, the deep-audit check) and only collects build loops,
+  writes briefs, dispatches and lands. Numbers and the replay:
+  `docs/working/research-2026-11-10-cycle-overhead-numbers.md`, section 9. First step: a
+  brief for `skills/dev-cycle/SKILL.md`. It is gate code, so it ends in one merge entry,
+  as Q-270 said. This replaces the Q-154 answer (a full cycle every iteration).
+
+- **Agent: token cost of a cycle iteration (Q-270 [4]).** Motive: the owner agreed the
+  measurement is warranted as well; the cost the Q-154 answer waited on is still not
+  visible, since no record holds tokens. First step: a small docs unit that totals tokens
+  per iteration from existing session transcripts, or, if transcripts cannot be matched
+  to iterations, adds a token line to the cycle record. The numbers go in the weekly
+  digest. They become a new owner entry only if they argue against the [2] rule (this
+  session's reading: the owner chose [2] now, so [4] no longer decides it).
 
 - **Agent: the `Harness feedback` section warning** (filed 2026-11-06, step 3, trial T7).
   Motive: every health check warns that this H2 of the global instructions is missing from
@@ -181,10 +242,20 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
    first day of iterations here (after Q-156's release), total each iteration's tokens and
    wall time from its records and bring the numbers to you. That first step is done
    (c70bb17a; no token counts exist to total), and the choice is now Q-270.
+   2026-11-11: answered (Q-270: [2], and [4] as well). Both are Now items: "light pass
+   between full cycles" and "token cost of a cycle iteration". This item is finished.
 
 ## Ideas
 
 Unranked. Each names the signal that motivates it.
+
+- **Repeat the self-answer measurement in another repo.** Signal: the owner's note on
+  Q-274 (2026-11-11): "I do expect this repo to be unusually hard to answer questions in,
+  so a survey of other repos might change the numbers." The measurement doc
+  (`docs/working/research-2026-11-11-self-answer-measure.md`, section 9.5) prices it: about
+  1.3 million tokens plus review for the full count, or a read of the other repo's last 14
+  hand-written entries for the cheap one. It needs a session in that repo, since no
+  session here reads another checkout.
 
 - **`scripts/run-tests.sh` runs the confinement probe and confines itself when it can.**
   Signal: the confine-tests research (be12889c); S4 ranks a script over brief prose.
