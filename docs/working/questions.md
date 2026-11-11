@@ -39,7 +39,8 @@ The index below is generated — edit entries, not the table.
 ## Open
 
 ### Q-274 · self-answer-plan-how-far
-**Needs:** you: judgment · **Opened:** 2026-11-11 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-11 · **Status:** ANSWERED
+Q-274: [1] (owner, answers-11-11-26.txt). Build nothing; look again when Q-272 is answered. The owner adds: "I do expect this repo to be unusually hard to answer questions in, so a survey of other repos might change the numbers."
 
 The measurement you asked for found almost no question that a doc already answered. How far should the self-answering plan go?
 
@@ -78,6 +79,7 @@ For another repo, the doc reasons without reading any other checkout: a repo wit
 
 ### Q-273 · image-lag
 **Needs:** you: terminal · **Opened:** 2026-11-11 · **Status:** OPEN
+Q-273: paste 1 did not run (owner, answers-11-11-26.txt). `cc-verify` refused with "an earlier run left /home/magfrump/cc-verify/run-1793211495-572412.d; run: cc-verify --clean", and `cc-verify --clean` then exited 2 and printed nothing. Paste 2 was not run. Both pastes are still open; paste 1 below now removes that directory first.
 
 Run the two pastes below: first the live check of the Bash sandbox, then, if it passes, the install that puts today's merges on the host.
 
@@ -124,7 +126,8 @@ The `rev-parse` check runs no hook. It only confirms your checkout is at `3cd6d9
 - **Interim:** the image at `536b7082` runs.
 
 ### Q-272 · confine-tests-fallback-run-or-refuse
-**Needs:** you: judgment · **Opened:** 2026-11-10 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-10 · **Status:** ANSWERED
+Q-272: [1] to start (owner, answers-11-11-26.txt): run and warn, as merged. The owner adds: "track the warnings and return the question to me in a few days with some data about how often bwrap isn't present, and how much friction inability to run tests would cause."
 
 When the test-confinement script cannot use its strong tool, should it still run the tests under its weak one, or refuse?
 
@@ -149,7 +152,8 @@ My recommendation is [2]: it meets H2 as written without an exception, and the w
 - **If the answer differs:** one small brief changes the fallback and its tests; nothing merged today is redone.
 
 ### Q-270 · light-pass-between-full-cycles
-**Needs:** you: judgment · **Opened:** 2026-11-10 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-10 · **Status:** ANSWERED
+Q-270: [2], and [4] as well (owner, answers-11-11-26.txt): "[2] seems low cost to do now, but agreed that [4] is warranted as well."
 
 Between full dev-cycle iterations, should the cycle run a light pass, and if so, what brings a full cycle back?
 
@@ -185,7 +189,8 @@ One thing to know either way: today the cycle's 30-minute fallback wakeup fired 
 - **If the answer differs:** nothing is redone; [2] or [3] becomes a brief for the dev-cycle skill, [4] a small docs brief.
 
 ### Q-269 · deep-audit-scope-and-timing
-**Needs:** you: judgment · **Opened:** 2026-11-10 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-10 · **Status:** ANSWERED
+Q-269: [1] (owner, answers-11-11-26.txt). The small audit now.
 
 Run the deep audit the dev cycle keeps saying is due, and if so, the small one or the full one?
 
@@ -214,7 +219,7 @@ My recommendation is [1]: it is the part with evidence behind it, it is small, a
 
 ### Q-255 · herald-egress-fix-unconfirmed
 **Needs:** you: terminal · **Opened:** 2026-11-05 · **Status:** OPEN
-Q-255: first half answered 2026-11-07 (answers-11-7-26.txt): all four fronted probes through plugins-artifacts.gradle.org returned 403 Forbidden (www.google.com, www.python.org, www.cloudflare.com, github.com), so the name does not front. The herald half (probe.sh, the host-record count, a cold assembleDebug) is still open; probe.sh is now a standalone file, docs/working/feedback/herald-probe.sh.
+Q-255: first half answered 2026-11-07 (answers-11-7-26.txt): all four fronted probes through plugins-artifacts.gradle.org returned 403 Forbidden (www.google.com, www.python.org, www.cloudflare.com, github.com), so the name does not front. The herald half (probe.sh, the host-record count, a cold assembleDebug) is still open. The same answer asked what the handoff's probe.sh is and which files to copy into the herald session; that went unanswered until 2026-11-11 and is answered below: one file, docs/working/feedback/herald-probe.sh.
 
 The fix for herald's `dl.google.com` build failures was released on 2026-10-28 (Q-214), but no output was kept, so two things are still unknown: whether the fix works, and whether `plugins-artifacts.gradle.org`, the name added with it, can be used to reach other sites (domain fronting: a request that connects under an allowed name but asks for a different site). Paste this on the host, outside any container, and answer `Q-255: <output>`.
 
