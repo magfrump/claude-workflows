@@ -3,7 +3,7 @@
 - **Goal**: Measure, from this repo's own history, how often a question filed for the owner could have been answered from a doc that already existed, and turn the result into a plan for letting models answer their own questions from a repo's docs.
 - **Problem framing**: The questions doc spends the owner's attention, and at least one recent entry looked answerable from a doc on main, so the question is how large that class is before anything is designed for it. Considered and discarded: "models ask because they cannot find the doc, so build a search" (where a doc decided the question, the session had already read it and made its pick; the entry was filed because a written rule, gate or plan step said to file it).
 - **Project state**: this branch delivers one research doc, docs only · step 1 of the roadmap Now item "Models answer their own questions from the repo's docs", preparing its step 2 without building anything · not blocked (cite: docs/working/briefs/2026-11-11-self-answer-measure.md)
-- **Task status**: in-progress (round 3 fixes in; final checks next)
+- **Task status**: complete (three review rounds; see Review)
 
 Brief: `docs/working/briefs/2026-11-11-self-answer-measure.md` (self-merge, docs only).
 Everything here was read at main's commit 963dbd4d. Sections 1 to 8 are the measurement.
@@ -202,11 +202,14 @@ authority (Q-246, Q-247): each is a `stopped-` entry, written by a fixed step wi
 question, and the dev-cycle skill reserves its answer to the owner, exactly as with merge
 entries. Appendix A marks them.
 
-**What was run.** Read-only subagents only: six first-pass readers and one second-pass
-reader (169k to 220k tokens each, 1.28 million in all), three reviewers in round 1 (0.69
-million) and two in round 2 (0.36 million) and one in round 3 (0.18 million): thirteen runs, about 2.5 million tokens. The figures are the totals each run reported when it finished;
-no file holds them [observed, not reproducible]. No headless model run, no trial, no
-change to any script, skill or questions file. The brief's "no model run only to measure"
+**What was run.** Read-only subagents: six first-pass readers and one second-pass reader
+(169k to 220k tokens each, 1.28 million in all), three reviewers in round 1 (0.69
+million), two in round 2 (0.36 million) and one in round 3 (0.18 million). That is
+thirteen runs and about 2.5 million tokens. The figures are the totals each run reported
+when it finished; no file holds them [observed, not reproducible]. The review also made
+one small headless call, the lite fix-drift check on the round 3 fixes. No model was run
+on old questions, there was no trial, and no script, skill or questions file was
+changed. The brief's "no model run only to measure"
 is read as ruling out experiments (asking a model to answer old questions and scoring
 it); reading and classing the entries is the measurement itself. That reading is this
 doc's, and the brief's second pass alone would have needed one reader, not seven.
@@ -788,13 +791,20 @@ The review loop's cap is three rounds, so there was no fourth. The round 3 fixes
 re-reviewed by a subagent; each changed statement was checked against its source by the
 author with `git show` and `git log` (the plan line, the gate line in
 `workflows/review-fix-loop.md`, the first commit of each of the last 14 entries, the
-roadmap's guardrail text). The lite fix-drift check on this commit is recorded in the next one.
+roadmap's guardrail text). The lite fix-drift check (`scripts/lite-review.py --mode
+fix-drift`) on that commit, 3b89e44f, returned two Low "unverified claim" findings, on
+the Q-154 plan line and the Q-142 gate quote. Both had been checked against their sources
+(the plan at 2846f9fa^, line 96; `workflows/review-fix-loop.md` at 50fbcce2, line 69) and
+stand.
 
 Known issues left as they are: the agent-route rows are classed unevenly (section 2); the
 boundary between none and authority moves with the reader (section 7); the two rule
 changes in 9.2 are sketches, each resting on one entry.
 
-Health check (`scripts/health-check.sh`, output sent to a file): passed in full at 8e134809 ("All checks passed", exit 0, about five minutes); the run on the final content commit is recorded in the next one.
+Health check (`scripts/health-check.sh`, output sent to a file): passed in full at
+8e134809 and again at 3b89e44f, the final content commit ("All checks passed", exit 0,
+about five minutes each). The commit after 3b89e44f changes only this Review section, the
+task status line, one paragraph of section 1 and the brief's status line.
 
 ## Files read
 
