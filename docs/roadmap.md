@@ -113,6 +113,14 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   the pre-mortem: a run between its `mkdir` and its `record` write (lines 225 to 228)
   has no `record`, so a `--clean` in that window would remove a live run's fresh
   directory; today the abort hides that. The owner's workaround is in Q-273's paste 1.
+  Second defect, same day, same paste: a relative REPO fails. The script changes into its
+  run directory (line 225) before the clone at line 232, so `cc-verify --check FILE . main`
+  ends with "fatal: repository '.' does not exist" (reproduced with the harness: `cd "$R"`
+  and REPO `.` gives status 1; the absolute path passes). `--check FILE` is not affected:
+  it is read at line 220, before the `cd`. Fix in the same change: resolve REPO to an
+  absolute path before the `cd`, or refuse a relative one by name. The header of
+  `docs/working/q125-verify-check.sh` (line 7) shows the `.` form and needs the same
+  correction; `guides/cc-isolated-usage.md` and `--help` do not say REPO must be a full path.
 
 - **Agent: confine-tests follow-ups** (filed 2026-11-07, step 7). Motive: the research
   merged at be12889c (`docs/working/research-2026-11-07-confine-tests-situation.md`) found
