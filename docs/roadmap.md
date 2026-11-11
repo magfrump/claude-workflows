@@ -48,6 +48,11 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   (`feat/q125-cc-isolated-sandbox`); the host install is done (Q-222, answered 2026-11-03). The
   check file merged at 546788f2 (Q-265 [1]). The conflict merge is ready at cd6d4332 (In
   flight). First step: the owner's `cc-verify` paste in merge entry Q-267, then its answer.
+  2026-11-11: merged at 3cd6d9bb on the owner's answer (Q-267 [1]). No live-run output came
+  with the answer, so the sandbox has still never run: its commits stay `Live-verified: no`.
+  It reaches sessions at the next host install, which is the release entry Q-273; that
+  entry puts the live check first. After the install: `scripts/confine-tests.sh --probe`
+  in a session, and the leak list in watch Q-098.
 
 - **Agent: scoped deep audit, constraint drift** (filed 2026-11-05, step 4b). Motive: the
   drift check on 605d4c18 found its script-home decision resting on a soft constraint (S4
@@ -64,6 +69,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   `claude-opus-5-5` to `claude-fable-5-2`, and 546788f2's Path A record pruned its option A
   on S10 (soft) beside H4 (hard); the pick (B) stands. Scope and timing are now asked in
   Q-269 (run the small constraint-drift audit, the full audit, or wait).
+  Fired again 2026-11-11: `skills/dev-cycle/SKILL.md` changed by 1f14e270 (Q-271: the
+  identity check, the release paste, the free-slot line).
 
 - **Agent: `source_lines_ok` misses an unterminated last line** (filed 2026-11-05, step 7).
   Motive: the Q-147 review found the shipped self-check in `devcontainer-config/cc-verify.sh`
@@ -142,20 +149,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
-- Bring the Q-125 sandbox branch up to main, so the live run can start
-  (`docs/working/briefs/2026-11-07-q125-sandbox-on-main.md`; review policy). Motive: Q-265 [1].
-  Ready at cd6d4332: merge entry Q-267, answered [1] in session on 2026-11-11; it merges at
-  the next iteration. No live-run output came with the answer.
-- One canon-proposal pass now, with this repo as the subject
-  (`docs/working/briefs/2026-11-07-canon-instances-pass.md`; review policy). Motive: Q-256 [2].
-  Ready at e0f3aa84: merge entry Q-268, answered [1] in session on 2026-11-11 (the script
-  stays in this repo); it merges at the next iteration.
-- Three small dev-cycle skill fixes that waited on the release: the identity check accepts an
-  environment identity, the image-lag paste runs from main's tip, and the record says why a
-  free slot stays empty (`docs/working/briefs/2026-11-10-dev-cycle-skill-held-fixes.md`;
-  review policy, gate code). Motive: the Now agent item "after the Q-261 release".
-  Ready at 8b03c7e6: merge entry Q-271, answered [1] in session on 2026-11-11 (the new
-  paste ships); it merges at the next iteration.
 - Measure how many owner questions the repo's docs already answered, step 1 of the
   self-answering plan (`docs/working/briefs/2026-11-11-self-answer-measure.md`; self-merge,
   docs only). Motive: the owner's request of 2026-11-11 (Now).
@@ -169,6 +162,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
    First step: the live-run paste in merge entry Q-267 (the conflict merge is ready at
    cd6d4332). `~/cc-verify` is already in the agents'
    sandbox `denyWrite` (owner, 2026-11-03).
+   2026-11-11: the branch is merged (3cd6d9bb, Q-267 [1]); the live run is now the first
+   block of the release entry Q-273, run against main.
 2. **A8 post-restructure token measurement.** Motive: the user deferred big compute until
    code and prompts settle; it validates code-review lever #3 (rubric row A8 in
    `docs/reviews/code-review-rubric-2026-08-07-main.md`). First step: confirm
@@ -197,6 +192,23 @@ Unranked. Each names the signal that motivates it.
 - **Things waiting for a release need a list of their own.** Signal: Q-241's item planned to ride on Q-252's next rewrite, and the release came first, so Q-252 closed with no rewrite. A section the close step reads would stop the next one being lost.
 - **A trial needs a closing step.** Signal: the trial week reached its end date with feedback on only part of T1-T7, and nothing asks for the rest but a line in the final message.
 - **Skip the health rerun for docs-only `other` commits.** Signal: adb22f4d cost a full run.
+- **Keep a loop's tests from writing the sandbox's shell history.** Signal: the skill-fixes
+  loop's paste tests overwrote the sandbox's bash history file on 2026-11-10. Unset
+  `HISTFILE` in the test helper, or say so in the build-loop prompt (gate code if the latter).
+- **One more read when a review loop's last round changed gate code.** Signal: Q-271's
+  release paste changed shape in each of three rounds, and the third went to the owner
+  unread. A choice among remedies: flag for `divergent-design`.
+- **Size a brief against what its review costs.** Signal: three small units on 2026-11-10
+  each spent 1.3M to 2.0M subagent tokens on review. Feeds Q-270.
+- **A brief quotes a hard constraint whole.** Signal: Q-272; the fix brief quoted H2 in
+  part and the merged fallback runs where H2 refuses.
+- **The batch-routing reminder fires on a subagent's hand-back.** Signal: four hand-back
+  reports on 2026-11-10 each got the "multiple independent tasks" reminder.
+- **`test/rubric-selection.bats` looks load-sensitive.** Signal: "emits nothing when two
+  candidates tie" failed once under a loaded health check and passed alone and in a rerun.
+- **Say what a fallback wakeup does, and keep corrected trigger evidence.** Signal: the
+  cycle-overhead doc (c70bb17a): wakeups that ran no iteration, and a verdict correction
+  lost in later "as at" lines. Both wait on Q-270.
 - **Retarget the deferred review re-evaluation at the model now in use.** Signal: the
   cycle's `Model:` line changed from `claude-opus-5-5` to `claude-fable-5-2` on 2026-11-10,
   and Next 2 and watch Q-067 still describe runs under the old model. Still ask before running.
@@ -409,6 +421,18 @@ Unranked. Each names the signal that motivates it.
 ## Done
 
 Items finished since the last cycle, with the merge.
+
+- The cc-isolated Bash sandbox (Q-125), brought up to main
+  (`docs/working/briefs/closed/2026-11-07-q125-sandbox-on-main.md`). Merged 3cd6d9bb
+  (Q-267 [1], answered in session 2026-11-11). Not verified live; not on the host until the
+  release (Q-273).
+- Three dev-cycle skill fixes: the identity check accepts an environment identity, the
+  release paste runs from main's tip, the record says why a free slot stays free
+  (`docs/working/briefs/closed/2026-11-10-dev-cycle-skill-held-fixes.md`). Merged 1f14e270
+  (Q-271 [1]). Gate code: live from the next image release; the new paste from the one after.
+- One canon-proposal pass: `scripts/canon-instance.py`, its tests, and two new canon
+  instances (`docs/working/briefs/closed/2026-11-07-canon-instances-pass.md`). Merged
+  1d9d01b4 (Q-268 [1]; the script stays in this repo).
 
 - Two defects in `scripts/confine-tests.sh` fixed: a command name starting with a dash now
   runs as named, and a fallback to `unshare` prints a warning first

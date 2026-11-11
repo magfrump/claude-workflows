@@ -20,7 +20,7 @@ Maintained by `~/.claude/scripts/questions.sh` (`check` · `index` · `migrate`)
 | [Q-098](#q-098--global-allowlist-after-sandbox) | deferred | Ship a global `permissions.allow` in `hooks/wiring.json` once cc-isolated has a Bash sandbox (Q-088). Branc... | 2026-09-28 |
 | [Q-161](#q-161--revive-hermeticity-layer2-after-q125) | trigger | When Q-125's sandbox merges (bwrap in the cc-isolated image), decision 017's T2 fires: revive hermeticity l... | 2026-10-14 |
 | [Q-262](#q-262--merge-approval-revisit) | trigger | Should merge approval be reopened? The design record picked no change on 2026-11-06, and this watch holds i... | 2026-11-06 |
-| [Q-264](#q-264--gloss-rule-falsifier) | trigger | Did the rule to explain every internal reference work? Decision-log row 84 names what would show it did not. | 2026-11-06 |
+| [Q-264](#q-264--gloss-rule-falsifier) | trigger | Q-264: met — counted on 2026-11-11 at five entries opened since the install (Q-269 to Q-273): the falsifi... | 2026-11-06 |
 <!-- index:end -->
 
 ## Open
@@ -32,6 +32,7 @@ When Q-125's sandbox merges (bwrap in the cc-isolated image), decision 017's T2 
 
 - **Read:** `docs/decisions/014-secure-tool-guidance-layers.md` and `docs/decisions/017-polyglot-test-hermeticity.md` (Revisit triggers) · Q-126 in the archive · Q-125
 - **Interim:** nothing changes until Q-125 merges. The condition: `command -v bwrap` succeeds in a cc-isolated session on main's image.
+- **2026-11-11:** Q-125 merged at 3cd6d9bb (Q-267 [1]). The image a session runs is still the old one, so the condition waits on the release (Q-273) and a new sandbox launch.
 
 ### Q-067 · regenerate-skill-eval-reports
 **Needs:** deferred · **Opened:** 2026-09-26 · **Status:** OPEN
@@ -66,6 +67,7 @@ Ship a global `permissions.allow` in `hooks/wiring.json` once cc-isolated has a 
   - Not on this list because the hook now refuses them whatever the rules say: bash builtins that evaluate their arguments (`read 'a[$(cmd)]'`, `test -v`, `printf -v`, `mapfile -C`, `hash -p`) and the shell constructs in decision log 64.
 - **Trigger:** Q-125 lands (Q-124 answered [1], build the sandbox) and the sandbox denies reads of `~/.claude/.credentials.json` and writes to `~/.claude/settings*.json`. Then re-run the leak list inside it before merging any list.
 - **Interim:** no global allow list. cc-isolated sessions prompt for commands not in their project's `.claude/settings.json`.
+- **2026-11-11:** Q-125 landed at 3cd6d9bb (Q-267 [1]), with no live run on record. The second half of the trigger, the sandbox denying those reads and writes, is what the live check in Q-273 shows; the leak list waits for it.
 
 ### Q-262 · merge-approval-revisit
 **Needs:** trigger · **Opened:** 2026-11-06 · **Status:** OPEN
@@ -75,13 +77,14 @@ Should merge approval be reopened? The design record picked no change on 2026-11
 - **Read:** `docs/working/research-2026-11-06-merge-friction-design.md`, section 11.
 - **Interim:** merge entries stay as they are. The conditions are that section's list: the owner names merge entries or approvals as a blocker; merge entries exceed 11 a week in 3 of the next 4 weekly digests, which reopens the record's candidate [5]; or the record's median-wait trigger.
 
+## Closed
+
 ### Q-264 · gloss-rule-falsifier
-**Needs:** trigger · **Opened:** 2026-11-06 · **Status:** OPEN
+**Needs:** trigger · **Opened:** 2026-11-06 · **Status:** ANSWERED
+Q-264: met — counted on 2026-11-11 at five entries opened since the install (Q-269 to Q-273): the falsifier did not show. One of the five carries a numbered label without its doc (Q-269 names "the A8 token measurement" and says what it is, with no link); the one marker body filed whole (in Q-271) carries none; the owner has not named references as a problem since. Counted by the session that wrote all five, so decision-log row 84's trigger stays the standing check.
 
 Did the rule to explain every internal reference work? Decision-log row 84 names what would show it did not.
 
 - **Read:** `docs/decisions/log.md`, row 84.
 - **Interim:** the rule stands. The condition, counted once 5 or more entries have opened after the first install from a commit holding 771c84e8, with entries' own text and marker bodies counted separately: half or more still carry a bare numbered label, or filed marker bodies mostly do, or the owner again names references as the problem. Then re-run divergent design.
 - **2026-11-10:** that first install has happened. The image is at 536b7082, which holds 771c84e8 (`git merge-base --is-ancestor`), so the count starts with entries opened from today. So far: 4 (Q-269, Q-270, Q-271, Q-272); the count is made at 5.
-
-## Closed
