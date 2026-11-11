@@ -37,3 +37,5 @@ Paths: docs/working/research-2026-11-11-self-answer-measure.md docs/working/brie
 - Building any lookup, script, prompt change or trial: those are the plan's later steps, each its own unit.
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`: the dev cycle owns those.
 - Other repos' files: reason about another repo from this one's structure and from `docs/working/feedback/`, without reading outside this checkout.
+
+Dispatched: 1
