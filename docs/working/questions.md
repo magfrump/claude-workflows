@@ -26,6 +26,7 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
+| [Q-277](#q-277--install-sandbox-with-nested-worktree-gap) | you: judgment | The sandbox's live check failed on nested worktrees. Install the release anyway, with the gap written down,... | 2026-11-11 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | Q-167: (b) and (d) answered 2026-11-07 (answers-11-7-26.txt), on bless 91c5f79dd91eb7ee, which --probe-only... | 2026-10-15 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Q-255: first half answered 2026-11-07 (answers-11-7-26.txt): all four fronted probes through plugins-artifa... | 2026-11-05 |
@@ -33,6 +34,32 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
+
+### Q-277 · install-sandbox-with-nested-worktree-gap
+**Needs:** you: judgment · **Opened:** 2026-11-11 · **Status:** OPEN
+
+The sandbox's live check failed on nested worktrees. Install the release anyway, with the gap written down, or hold it?
+
+**If you say no:** nothing installs, which is also what happens if you never answer. Sessions keep running the image at `536b7082`, with no Bash sandbox at all.
+
+**What happened.** The release entry Q-273 has two pastes: a live check of the new Bash sandbox, then the install. Your check on 2026-11-11 ran to the end and failed: `VERDICT FAIL (3 not pass, 0 missing)`. Two of the three lines are on record, and both say the same thing: inside a nested worktree (`/workspace/.claude/worktrees/<name>/`) a sandboxed command can create `.claude/` and can write the worktree's `.git` pointer file. Files planted there could run code outside the sandbox later. The third line is above the tail you pasted, so I do not know what it is. Everything else in the tail passed: the git-driver check, the network checks and the builds.
+
+**What the gap is next to.** Today no session has a sandbox, so a Bash command can already write those two files and every other file a session can reach. Installing does not open the gap; it closes most of what is open and leaves this part. Holding keeps all of it open until a fix is designed, built and checked again.
+
+- **Why it's yours:** a release is yours, and the sandbox's plan said to go ahead only after this check passed.
+- **Read:** Q-273 (its 2026-11-11 paragraphs) · `docs/working/plan-q125-cc-isolated-sandbox.md`, step 6 and the table row on project files that execute later · the roadmap Now item "the sandbox leaves nested worktree paths writable"
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Install now, gap written down** | You run Q-273's paste 2. The gap goes into the guide as a known limit, and the fix follows as its own change and release | Paste 2 now; one more live check and install when the fix lands | Sessions run for some days with a sandbox that one planted file in a nested worktree could step around. If the third failed line is something that breaks normal work, one revert and a reinstall undo the sandbox |
+| **[2] Hold the release until the gap is fixed** | Nothing installs. A build loop designs and builds the fix, then you run the live check again | No paste now; the other merges in this release (the dev-cycle skill fixes, the test-confinement script's fixes, the canon script) wait too | Days more with no sandbox at all, to avoid a gap smaller than what is open today |
+| **[3] Release without the sandbox** | The sandbox merge is reverted on main, you install the rest, and the sandbox comes back with its fix | One merge entry for the revert, then a paste; later a second merge and release | The same days with no sandbox as [2], plus the work of taking it out and putting it back |
+
+My recommendation is [1], on one condition: the third failed line is another nested-worktree path, or something else that leaves normal work running. I can say which as soon as the lines above the tail are on record (Q-273 asks for them). If it turns out to be a check that shows the sandbox breaking something sessions need, I will say so here before you install.
+
+- **Blocks:** Q-273's paste 2, and with it everything that waits on the sandbox being live (watches Q-098, the global allow list, and Q-161, the test-confinement gate).
+- **Interim:** hold. Nothing is installed.
+- **If the answer differs:** nothing is redone. [1] is the paste that already exists; [3] becomes a revert brief.
 
 ### Q-273 · image-lag
 **Needs:** you: terminal · **Opened:** 2026-11-11 · **Status:** OPEN
@@ -68,15 +95,15 @@ Run the two pastes below: first the live check of the Bash sandbox, then, if it 
 
 **2026-11-11, why the second try failed.** `cc-verify` changes into its own run directory before it clones the repository, so `.` named that empty directory, not your checkout. A full path works: I reproduced both here with stand-ins for docker. The mistake was in the paste, which this entry and the check file's own header both wrote with `.`; `cc-verify` should also resolve the path itself, and that is on the same roadmap item. In my last message I said the `. main` form had run here. It had not: the test I ran passed a full path. The failed try left nothing behind (its teardown reported ok), so nothing needs removing now.
 
-**Paste 1, the live check** (host terminal in WSL, from any directory, answering y at `cc-verify`'s one prompt; 5 to 15 minutes, an estimate, since it has never run). It builds main's tip in a throwaway container and runs the check file there: no login, no LLM, nothing installed. Main's tip differs from the commit paste 2 installs only under `docs/`, so the config it checks is the one that installs.
+**2026-11-11, the check ran and failed: what it found.** The third try built main's tip (f0a55b8a) in a throwaway container and ran the check file to the end. The parts of the sandbox in the pasted tail work on your host: the git-driver check (C4), the network checks (C5: listed hosts answer, an unlisted one is refused) and the two builds (C6) all passed. Two lines failed, and both are the same gap. Inside a nested worktree (`/workspace/.claude/worktrees/<name>/`, where agents' isolated worktrees live), a sandboxed command could create `.claude/` (so it could write a `settings.json` there) and could write the worktree's `.git` pointer file. The sandbox's deny list names those files only at `/workspace` itself. The plan had marked nested worktrees "Unknown" and left it to this run (`docs/working/plan-q125-cc-isolated-sandbox.md`, the table row on project files that execute later); the run says they are not covered. Why it matters: a settings file or a `.git` pointer planted there could run code outside the sandbox later, if Claude Code or git reads it from that worktree. I have not checked whether a subagent working in a worktree loads that settings file. The fix needs a design pass and is a roadmap item.
+
+**Still needed from paste 1: the lines above the tail.** The verdict counts 3 lines that did not pass and the tail holds 2. If your terminal still has the output, paste every `RESULT` line from the first one down to `C3-nested-settings-1`. If it is gone, re-run the same command (about as long as before):
 
 ```
 cc-verify --check /home/magfrump/claude-workflows/docs/working/q125-verify-check.sh /home/magfrump/claude-workflows main; echo "cc-verify exit $?"
 ```
 
-What I could check from here, against stand-ins and the files, not on a host: this form of the command runs through to a RESULT line; the `cc-verify` on your host accepts main's `devcontainer.json` and its Dockerfile's `FROM` line; every file it stages exists on main and none is a symlink. What only your host can show: the image build, the firewall self-probe and the check file itself.
-
-Paste back every line from the first `RESULT` line through `cc-verify exit N`, or everything it printed if there is no `RESULT` line. Exit 0 and `VERDICT pass` mean go on to paste 2. A FAIL means stop: paste the output and the cycle sends it to a build loop.
+**Paste 2 is on hold.** This entry said a FAIL means stop. Whether to install anyway, with the gap written down, is yours to decide and is Q-277 (install the sandbox with the nested-worktree gap, or hold the release). Do not run the block below until that is answered.
 
 **Paste 2, the install** (same terminal; stop every session first):
 
@@ -86,7 +113,7 @@ cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = 3cd6d9bb974
 
 The `rev-parse` check runs no hook. It only confirms your checkout is at `3cd6d9bb`, the last merge. Main is already past that commit, because the cycle's own land moves it, so check out `3cd6d9bb` first. That checkout, like any other git command on the host, can run a hook a sandbox session planted, which is `install.sh`'s own trust model. If the install re-blesses, it also prints the hint that Q-167 (the post-install probes) still needs for its step (a).
 
-- **Interim:** the image at `536b7082` runs.
+- **Interim:** the image at `536b7082` runs; paste 2 waits for Q-277.
 
 ### Q-255 · herald-egress-fix-unconfirmed
 **Needs:** you: terminal · **Opened:** 2026-11-05 · **Status:** OPEN

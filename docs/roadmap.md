@@ -66,6 +66,35 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   It reaches sessions at the next host install, which is the release entry Q-273; that
   entry puts the live check first. After the install: `scripts/confine-tests.sh --probe`
   in a session, and the leak list in watch Q-098.
+  2026-11-11, later: the live check ran on the owner's host against main at f0a55b8a
+  (`cc-verify`, tree 08bf2bc9, config 1887e71a2126a27b) and failed: VERDICT FAIL, 3 not
+  pass, 0 missing. On record: C3-nested-settings-1 and C3-nested-gitfile-1 FAIL; C4, C5
+  and C6 pass. The third line and everything above C3 are not on record yet (asked in
+  Q-273). So the sandbox has now run, the commits stay `Live-verified: no`, and the
+  install waits for the owner's answer to Q-277 (install with the gap, or hold).
+
+- **Agent: the sandbox leaves nested worktree paths writable** (filed 2026-11-11, from
+  the Q-273 live check). Motive: the plan's own acceptance step
+  (`docs/working/plan-q125-cc-isolated-sandbox.md`, step 6) requires sandboxed writes to
+  be refused for a nested worktree's project settings file and for a worktree's `.git`
+  pointer file, and its residuals table left both "Unknown" for the live run. The run
+  answered: under `/workspace/.claude/worktrees/q125-probe/` a sandboxed command could
+  create the `.claude` directory and append to `.git`.
+  `devcontainer-config/managed-settings.json` denies those names only at `/workspace`
+  itself, by literal path. First step: a research and divergent-design unit seeded with
+  `docs/constraints.md`. Open facts to settle first: whether the sandbox's `denyWrite`
+  takes a pattern on Linux (not checked here; read Claude Code's sandbox documentation),
+  and whether a subagent whose working directory is a nested worktree loads that
+  worktree's settings file. Candidates to start from: a pattern entry, if supported; a
+  deny on the whole worktrees directory, which would also stop sandboxed commands doing
+  ordinary work in an agent worktree; literal entries added as worktrees are made, which
+  the root-owned build-time managed file cannot take today; agent worktrees somewhere
+  the deny list can name; or recording it as an accepted residual beside decision log
+  53, with the exit scan (`devcontainer-config/cc-exit-scan.sh` already walks worktree
+  git dirs) as the check on the `.git` side. Any change is to enforcement files: a
+  pre-mortem, a `Live-verified:` trailer, and the same `cc-verify` check re-run. Not to
+  be briefed as a build until the lines above the tail are on record, since the third
+  failed line may belong to the same fix.
 
 - **Agent: scoped deep audit, constraint drift** (filed 2026-11-05, step 4b). Motive: the
   drift check on 605d4c18 found its script-home decision resting on a soft constraint (S4
