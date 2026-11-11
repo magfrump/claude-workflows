@@ -200,3 +200,11 @@ Ran because roadmap Now held one item ready for a brief and had changed since th
 - Size a brief against what its review will cost, not only its line count: three small units today each spent 1.3M to 2.0M subagent tokens on review (signal: the loops' own reports for the skill fixes, the confine-tests test and its fix; Q-270's option [4])
 - Read a hard constraint whole when a brief cites it: the confine-tests fix brief quoted H2's "names what went unenforced" and left out "refuses" (signal: Q-272, raised by the loop's security review)
 - Let models answer their own questions from the repo's docs, measured first (signal: the owner's request of 2026-11-11; Q-272 was answerable from hard constraint H2; on the roadmap, step 1 briefed)
+
+## Brainstorm 2026-11-11
+
+Ran because 10 ideas were seeded since the last brainstorm (2026-11-10). Sources: this log's ten seeds and this iteration's signals; `docs/working/feature-ideas.md` was read on 2026-11-10 and has not changed. Seven went to roadmap Ideas, two were already acted on (the self-answering plan is Now; the cycle-overhead numbers are Q-270), and one is dropped below.
+
+- Do nothing about "move finished history out of Now" as a separate item: step 6 can do it whenever an item is fully merged (signal: seeded 2026-11-10 from the digest's count of 9 Now items)
+- After a release that changes what sessions run, the first cycle on the new image checks the watches that waited on it (signal: Q-161 and Q-098 both wait on Q-273's install, and nothing but their dated notes says so)
+
