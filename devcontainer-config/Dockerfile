@@ -375,6 +375,18 @@ RUN case "$(dpkg --print-architecture)" in \
     chown -R root:root /opt/dotnet && \
     /opt/dotnet/dotnet --version
 
+# Claude Code's Bash sandbox dependencies (Q-125). On Linux the sandbox wraps
+# each Bash call in bubblewrap and bridges its network namespace to Claude
+# Code's filtering proxy with socat; without either, sandbox.failIfUnavailable in
+# Claude Code's managed settings (/etc/claude-code) refuses to start a session.
+# bwrap here is the plain, non-setuid Debian build: it gets its namespaces from
+# the user-namespace allowance in seccomp-cc-sandbox.json, not from privilege.
+# A layer of its own, below the big toolchains, so adding it rebuilt nothing above.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    bubblewrap \
+    socat \
+  && apt-get clean && rm -rf /var/lib/apt/lists/*
+
 # Set up non-root user
 USER node
 
@@ -460,8 +472,11 @@ ARG ELAN_VERSION=v4.2.4
 ARG ELAN_SHA256_AMD64=42b94d4244e8353142c456ec0e4ca6528fd898a6c604d4059f494e706e431f63
 ARG ELAN_SHA256_ARM64=05febd124d84ebf994b2e7479922a5650b1e950c17ae3bd1ddd776b65bb72bf9
 ARG LEAN_TOOLCHAINS=""
+# elan's bin dir is node-writable, so it goes LAST on PATH: first, a file planted
+# there would shadow bash/git/python3 for every hook (Q-125 security review). It
+# only provides lean, lake and elan, which nothing else on PATH provides.
 ENV ELAN_HOME=/home/node/.elan \
-    PATH=/home/node/.elan/bin:$PATH
+    PATH=$PATH:/home/node/.elan/bin
 RUN case "$(dpkg --print-architecture)" in \
       amd64) ELAN_TARGET=x86_64-unknown-linux-gnu; ELAN_SHA="$ELAN_SHA256_AMD64" ;; \
       arm64) ELAN_TARGET=aarch64-unknown-linux-gnu; ELAN_SHA="$ELAN_SHA256_ARM64" ;; \
@@ -497,6 +512,9 @@ COPY init-firewall.sh /usr/local/bin/
 # needs no pip and no network at build time; root-owned and 0555 (decision log #41).
 COPY cc-sni-proxy.py /usr/local/bin/
 COPY link-claude-home.sh /usr/local/bin/
+# Claude Code managed-settings template and its renderer (Q-125); rendered below.
+COPY cc-sandbox-settings.sh /usr/local/bin/
+COPY managed-settings.json /usr/local/share/cc-sandbox/
 
 # The claude-workflows payload (skills, workflows, guides, patterns, hooks, and
 # the global CLAUDE.md). Assembled from the repo by install.sh, so it is part of
@@ -535,5 +553,28 @@ RUN chown root:root /usr/local/bin/init-firewall.sh /usr/local/bin/link-claude-h
   chmod 0444 /etc/cc-config-hash && \
   printf '%s\n' 'Defaults:node env_reset, !setenv' 'node ALL=(root) NOPASSWD: /usr/local/bin/init-firewall.sh ""' > /etc/sudoers.d/node-firewall && \
   chmod 0440 /etc/sudoers.d/node-firewall
+
+# Claude Code managed settings: the Bash sandbox (Q-125). Rendered from the
+# firewall's own parsed allowlist for THIS project's profile, so it lives in the
+# per-project tail. --print-entries exits before touching any rule. The entries
+# are captured first because /bin/sh has no pipefail: a failing firewall parse
+# must fail the build, not render an empty allowlist (which the renderer refuses
+# too). /etc/claude-code and the file are root-owned and not writable by node —
+# a node-owned parent would let the agent swap the file (FP-142).
+RUN chown root:root /usr/local/bin/cc-sandbox-settings.sh && \
+  chmod 0555 /usr/local/bin/cc-sandbox-settings.sh && \
+  chown -R root:root /usr/local/share/cc-sandbox && \
+  chmod 0555 /usr/local/share/cc-sandbox && \
+  chmod 0444 /usr/local/share/cc-sandbox/managed-settings.json && \
+  entries="$(/usr/local/bin/init-firewall.sh --print-entries)" && \
+  mkdir -p /etc/claude-code && \
+  printf '%s\n' "$entries" \
+    | /usr/local/bin/cc-sandbox-settings.sh /usr/local/share/cc-sandbox/managed-settings.json \
+    > /etc/claude-code/managed-settings.json && \
+  jq -e '.sandbox.enabled == true and (.sandbox.network.allowedDomains | length > 0)' \
+    /etc/claude-code/managed-settings.json >/dev/null && \
+  chown -R root:root /etc/claude-code && \
+  chmod 0555 /etc/claude-code && \
+  chmod 0444 /etc/claude-code/managed-settings.json
 
 USER node
