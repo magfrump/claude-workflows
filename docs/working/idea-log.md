@@ -208,3 +208,6 @@ Ran because 10 ideas were seeded since the last brainstorm (2026-11-10). Sources
 - Do nothing about "move finished history out of Now" as a separate item: step 6 can do it whenever an item is fully merged (signal: seeded 2026-11-10 from the digest's count of 9 Now items)
 - After a release that changes what sessions run, the first cycle on the new image checks the watches that waited on it (signal: Q-161 and Q-098 both wait on Q-273's install, and nothing but their dated notes says so)
 
+- Have an owner entry name the doc that bears on it when one does (signal: the self-answer measurement at fd325a74 found about half of the in-part entries did not; it shortens an entry even where it cannot remove one)
+- Fix the docs that contradicted each other before adding any lookup over them (signal: the same measurement: 6 entries exist only because two docs disagreed, and 4 where a doc named a different answer than the owner's)
+- A docs-only measurement unit cost about 2.5M subagent tokens in readers and reviewers (signal: the self-answer loop's report; feeds Q-270's token question)

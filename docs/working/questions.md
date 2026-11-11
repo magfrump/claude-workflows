@@ -29,6 +29,7 @@ The index below is generated — edit entries, not the table.
 | [Q-269](#q-269--deep-audit-scope-and-timing) | you: judgment | Run the deep audit the dev cycle keeps saying is due, and if so, the small one or the full one? | 2026-11-10 |
 | [Q-270](#q-270--light-pass-between-full-cycles) | you: judgment | Between full dev-cycle iterations, should the cycle run a light pass, and if so, what brings a full cycle b... | 2026-11-10 |
 | [Q-272](#q-272--confine-tests-fallback-run-or-refuse) | you: judgment | When the test-confinement script cannot use its strong tool, should it still run the tests under its weak o... | 2026-11-10 |
+| [Q-274](#q-274--self-answer-plan-how-far) | you: judgment | The measurement you asked for found almost no question that a doc already answered. How far should the self... | 2026-11-11 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | Q-167: (b) and (d) answered 2026-11-07 (answers-11-7-26.txt), on bless 91c5f79dd91eb7ee, which --probe-only... | 2026-10-15 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Q-255: first half answered 2026-11-07 (answers-11-7-26.txt): all four fronted probes through plugins-artifa... | 2026-11-05 |
@@ -36,6 +37,44 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
+
+### Q-274 · self-answer-plan-how-far
+**Needs:** you: judgment · **Opened:** 2026-11-11 · **Status:** OPEN
+
+The measurement you asked for found almost no question that a doc already answered. How far should the self-answering plan go?
+
+**If you say no:** nothing is built, which is also what happens if you never answer. The roadmap item stops after its first step, and a watch brings it back when you answer Q-272 (the open entry on whether the test-confinement script may run under its weak tool).
+
+**What was measured.** Step 1 of the plan you asked for on 2026-11-11 ("how models can answer their own questions based on existing docs in a repo"). A build loop read every judgment entry ever filed in this repo's questions files and classed each against the docs as they stood when it was filed. The doc is `docs/working/research-2026-11-11-self-answer-measure.md`, merged at fd325a74 with no review of yours (a build loop wrote it, six reviewer agents checked it, and a second blind reader agreed on 21 of 24 entries). The figures below are that doc's; I re-counted only the total of judgment entries (203, which matches).
+
+Of the 200 answered judgment entries:
+
+- **At most 4 (2%)** were answered in full by a doc that already existed. In none of the four did a model fail to look: the session had already made its pick, and a written rule, gate or plan step told it to file the entry anyway.
+- **35 (17.5%)** were answered in part: a doc narrowed the options or named the default. About half of those did not name the doc that bore on them.
+- **56 (28%)** were not answerable from any doc.
+- **105 (52.5%)** were yours by authority, whatever the docs said: merge approvals, confirming you had reviewed a commit, landing a unit, passing a review cap.
+
+Two more findings. Docs also misled: in 4 entries a doc named a different answer than yours, and 6 entries exist only because two docs contradicted each other. And the volume already fell: hand-written judgment entries ran at 13 to 28 a week until mid-October and 2 to 6 a week since, in the weeks the constraints file landed and build loops began deciding from it (the doc marks that link as inferred; other things changed in those weeks too).
+
+So a "look in the docs first" step is not shown to remove any entry. What is left are two small rule changes, each resting on a single entry.
+
+- **Why it's yours:** you asked for the plan, and options [2] to [4] change what reaches you.
+- **Read:** the doc's Summary, and its section 9 (9.2 what to build, 9.5 another repo, 9.6 this question)
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Build nothing; look again when Q-272 is answered** | The plan stops at step 1. Your Q-272 answer then shows whether the first rule change below has a case | None | One or two entries a month reach you that a rule change might have saved |
+| **[2] Design the exceptions rule now** | A brief may not put a hard constraint's requirement out of scope, and an entry does not ask about an exception its own writer recommends against. Its only case so far is Q-272 | One merge entry; live at the next image release | An exception you would have granted is never offered to you |
+| **[3] Design both rule changes now** | [2], and when a unit is cut into smaller review units with no design change, that is recorded in the commit and the session's summary, not filed as a question. This amends decision-log rows 61 and 62 (`docs/decisions/log.md`), which say such a split goes in the questions file | Two merge entries and that release | As [2]; and a wrong split shows only in a summary |
+| **[4] Build a lookup or a general self-answer rule anyway** | A search over past answers, a line on each entry naming where it looked, an index of standing answers; or letting a model act on any doc line that decides a question | Three or more merge entries and a release | No entry is shown to be one it removes, and a wrong reading acts before you see it |
+
+The build loop's tentative pick is [1], and I agree. Its reason is the soft constraint to measure before budgeting a saving (S7 in `docs/constraints.md`): the measurement came out small. The numbers point at a different place for your attention: over half of what reaches you is approval by authority, which no doc can answer. That is the subject of the merge-approval watch (Q-262), not of this plan.
+
+For another repo, the doc reasons without reading any other checkout: a repo with no constraints file probably gains more from writing one than from any lookup, and the measurement can be repeated there for about 1.3 million tokens plus review, or cheaply by reading its last 14 hand-written entries.
+
+- **Blocks:** the roadmap Now item "Models answer their own questions from the repo's docs".
+- **Interim:** [1]. Nothing is built.
+- **If the answer differs:** [2] or [3] becomes one or two small design briefs; [4] a larger one. Nothing is redone.
 
 ### Q-273 · image-lag
 **Needs:** you: terminal · **Opened:** 2026-11-11 · **Status:** OPEN
