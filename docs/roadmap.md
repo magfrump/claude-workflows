@@ -13,6 +13,36 @@ user's order).
 
 Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0002).
 
+- **Models answer their own questions from the repo's docs (owner request, 2026-11-11).**
+  Motive: the owner asked for a plan for how models can answer their own questions based on
+  existing docs in a repo. The questions doc spends the owner's attention, the binding
+  budget here, and on 2026-11-10 the cycle filed four judgment entries in one day. At least
+  one was answerable from a doc on main: Q-272 asks whether a degraded tool should refuse,
+  and hard constraint H2 in `docs/constraints.md` already says it does. The plan, in order:
+  1. **Measure before designing.** For the archived and open owner entries, record whether a
+     doc that existed when the entry was filed answered it fully, in part or not at all:
+     the constraints file, a decision record or log row, an earlier answer to the same
+     question, the owner's feedback and answer notes, the global instructions. Output: the
+     share, the examples, and which kinds of doc held the answers. If the share is small,
+     stop there and say so; the status quo is a valid result.
+  2. **Design where the lookup lives**, as a divergent-design pass seeded with
+     `docs/constraints.md`. Candidates to start from: a "look before you ask" step in the
+     build-loop prompt and in research-plan-implement's research phase; a
+     `questions.sh` search over the archive and the decision log for earlier answers; an
+     index of standing answers the cycle keeps; a `Looked in:` line every owner entry must
+     carry, so an ask that searched nothing is visible; moving answers that recur into
+     `docs/constraints.md`, where every loop already reads them.
+  3. **Guardrails.** An answer taken from a doc names the doc and quotes the line, so it can
+     be checked. It is never used for what is the owner's by authority, not information: a
+     merge entry, a change or exception to a hard constraint, a release. The weekly digest
+     lists each question a model answered for itself, one line each, so a wrong reading is
+     caught after the fact; no new stop or entry is added.
+  4. **Try it for a week as a writing trial**, with a measure that can come out negative:
+     owner entries per cycle fall, and the owner does not reverse the self-answered ones.
+  First step: step 1, briefed as a docs-only unit (In flight). It also covers repos other
+  than this one in its design step, since the request says "a repo": the four repos that
+  run these workflows each have their own docs and questions files.
+
 - **Agent: Q-125 · cc-isolated Bash sandbox, live run** (filed 2026-11-01, step 6, from
   Q-234's migrate). Motive: nothing sandboxes Bash in cc-isolated. Built, unmerged
   (`feat/q125-cc-isolated-sandbox`); the host install is done (Q-222, answered 2026-11-03). The
@@ -114,16 +144,21 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 - Bring the Q-125 sandbox branch up to main, so the live run can start
   (`docs/working/briefs/2026-11-07-q125-sandbox-on-main.md`; review policy). Motive: Q-265 [1].
-  Ready at cd6d4332: merge entry Q-267, which carries the live-run paste.
+  Ready at cd6d4332: merge entry Q-267, answered [1] in session on 2026-11-11; it merges at
+  the next iteration. No live-run output came with the answer.
 - One canon-proposal pass now, with this repo as the subject
   (`docs/working/briefs/2026-11-07-canon-instances-pass.md`; review policy). Motive: Q-256 [2].
-  Ready at e0f3aa84: merge entry Q-268 (its tentative pick keeps the script in this repo).
+  Ready at e0f3aa84: merge entry Q-268, answered [1] in session on 2026-11-11 (the script
+  stays in this repo); it merges at the next iteration.
 - Three small dev-cycle skill fixes that waited on the release: the identity check accepts an
   environment identity, the image-lag paste runs from main's tip, and the record says why a
   free slot stays empty (`docs/working/briefs/2026-11-10-dev-cycle-skill-held-fixes.md`;
   review policy, gate code). Motive: the Now agent item "after the Q-261 release".
-  Ready at 8b03c7e6: merge entry Q-271 (its tentative pick ships the new paste, whose last
-  change no reviewer read).
+  Ready at 8b03c7e6: merge entry Q-271, answered [1] in session on 2026-11-11 (the new
+  paste ships); it merges at the next iteration.
+- Measure how many owner questions the repo's docs already answered, step 1 of the
+  self-answering plan (`docs/working/briefs/2026-11-11-self-answer-measure.md`; self-merge,
+  docs only). Motive: the owner's request of 2026-11-11 (Now).
 
 ## Next
 

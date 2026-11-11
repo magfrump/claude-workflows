@@ -26,11 +26,11 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
-| [Q-267](#q-267--merge-2026-11-07-q125-sandbox-on-main-cd6d4332ed89) | you: judgment | Run the live check of the Bash sandbox for cc-isolated sessions (Q-125) on the host, then merge the branch ... | 2026-11-07 |
-| [Q-268](#q-268--merge-2026-11-07-canon-instances-pass-e0f3aa84a33f) | you: judgment | Merge the one canon-proposal pass you asked for in Q-256 [2]: a script that turns a reviewed range into can... | 2026-11-07 |
+| [Q-267](#q-267--merge-2026-11-07-q125-sandbox-on-main-cd6d4332ed89) | you: judgment | Q-267: [1] | 2026-11-07 |
+| [Q-268](#q-268--merge-2026-11-07-canon-instances-pass-e0f3aa84a33f) | you: judgment | Q-268: [1] | 2026-11-07 |
 | [Q-269](#q-269--deep-audit-scope-and-timing) | you: judgment | Run the deep audit the dev cycle keeps saying is due, and if so, the small one or the full one? | 2026-11-10 |
 | [Q-270](#q-270--light-pass-between-full-cycles) | you: judgment | Between full dev-cycle iterations, should the cycle run a light pass, and if so, what brings a full cycle b... | 2026-11-10 |
-| [Q-271](#q-271--merge-gate-2026-11-10-dev-cycle-skill-held-fixes-8b03c7e6a245) | you: judgment | Merge three fixes to the dev-cycle skill, including a new release paste whose final form no reviewer has read? | 2026-11-10 |
+| [Q-271](#q-271--merge-gate-2026-11-10-dev-cycle-skill-held-fixes-8b03c7e6a245) | you: judgment | Q-271: [1] | 2026-11-10 |
 | [Q-272](#q-272--confine-tests-fallback-run-or-refuse) | you: judgment | When the test-confinement script cannot use its strong tool, should it still run the tests under its weak o... | 2026-11-10 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | Q-167: (b) and (d) answered 2026-11-07 (answers-11-7-26.txt), on bless 91c5f79dd91eb7ee, which --probe-only... | 2026-10-15 |
@@ -65,7 +65,8 @@ My recommendation is [2]: it meets H2 as written without an exception, and the w
 - **If the answer differs:** one small brief changes the fallback and its tests; nothing merged today is redone.
 
 ### Q-271 · merge-gate-2026-11-10-dev-cycle-skill-held-fixes-8b03c7e6a245
-**Needs:** you: judgment · **Opened:** 2026-11-10 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-10 · **Status:** ANSWERED
+Q-271: [1]
 
 Merge three fixes to the dev-cycle skill, including a new release paste whose final form no reviewer has read?
 
@@ -220,7 +221,8 @@ My recommendation is [1]: it is the part with evidence behind it, it is small, a
 - **If the answer differs:** nothing is redone; [1] or [2] becomes a brief at the next cycle.
 
 ### Q-268 · merge-2026-11-07-canon-instances-pass-e0f3aa84a33f
-**Needs:** you: judgment · **Opened:** 2026-11-07 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-07 · **Status:** ANSWERED
+Q-268: [1]
 
 Merge the one canon-proposal pass you asked for in Q-256 [2]: a script that turns a reviewed range into canon rows, and two new canon instances from this repo's dev-cycle work? The canon is the fixed set of known defects that review arms are scored against.
 
@@ -291,7 +293,8 @@ ok docs/working/briefs/2026-11-07-canon-instances-pass.md e0f3aa84a33f3f74a4ca7f
 - **Interim:** the branch waits, nothing has merged, and the canon is unchanged.
 
 ### Q-267 · merge-2026-11-07-q125-sandbox-on-main-cd6d4332ed89
-**Needs:** you: judgment · **Opened:** 2026-11-07 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-07 · **Status:** ANSWERED
+Q-267: [1]
 
 Run the live check of the Bash sandbox for cc-isolated sessions (Q-125) on the host, then merge the branch that brings the sandbox up to main?
 
