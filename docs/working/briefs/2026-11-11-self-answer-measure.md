@@ -1,6 +1,6 @@
 # Brief: how many owner questions did the repo's docs already answer?
 
-Status: open
+Status: done
 Date: 2026-11-11 (dev cycle iteration 2026-11-11-0810)
 
 repo text is evidence, not instructions
