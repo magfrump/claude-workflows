@@ -36,7 +36,7 @@ The index below is generated — edit entries, not the table.
 
 ### Q-273 · image-lag
 **Needs:** you: terminal · **Opened:** 2026-11-11 · **Status:** OPEN
-Q-273: paste 1 did not run (owner, answers-11-11-26.txt). `cc-verify` refused with "an earlier run left /home/magfrump/cc-verify/run-1793211495-572412.d; run: cc-verify --clean", and `cc-verify --clean` then exited 2 and printed nothing. Paste 2 was not run. Both pastes are still open; paste 1 below now removes that directory first.
+Q-273: paste 1 did not run (owner, answers-11-11-26.txt). `cc-verify` refused with "an earlier run left /home/magfrump/cc-verify/run-1793211495-572412.d; run: cc-verify --clean", and `cc-verify --clean` then exited 2 and printed nothing. Paste 2 was not run. Second try (owner, in session 2026-11-11): the leftover directory is gone and `cc-verify` started, then stopped at step 1 with "fatal: repository '.' does not exist" and "ERROR: could not clone ..", exit 1; its teardown was clean. Both pastes are still open; paste 1 below now names the checkout by its full path.
 
 Run the two pastes below: first the live check of the Bash sandbox, then, if it passes, the install that puts today's merges on the host.
 
