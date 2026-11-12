@@ -154,3 +154,9 @@ Round 1 (one general-purpose reviewer on the diff, read-only):
 
 Round 2: the targeted suites (convention-migrations, build-loop-orchestrator,
 questions-doc: 106 cases) pass; `scripts/lib/migrations.sh check .` exits 0.
+
+Final gate: `scripts/confine-tests.sh --probe` exit 3 ("confine-tests: NO CONFINEMENT
+PRIMITIVE AVAILABLE — refusing to run."); `scripts/run-tests.sh` on e4b00ebc: 2052 of 2052
+ok, exit 0; `scripts/hermeticity-lint --root .`: exit 0.
+
+Failure-pattern skip: the branch has no fix(...) commits; round 1's registry miss was caught in review before merge, and the brief named the SKILL.md-pinning tests but not the registry check, a brief-scoping gap rather than a code bug.
