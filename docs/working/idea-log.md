@@ -211,3 +211,4 @@ Ran because 10 ideas were seeded since the last brainstorm (2026-11-10). Sources
 - Have an owner entry name the doc that bears on it when one does (signal: the self-answer measurement at fd325a74 found about half of the in-part entries did not; it shortens an entry even where it cannot remove one)
 - Fix the docs that contradicted each other before adding any lookup over them (signal: the same measurement: 6 entries exist only because two docs disagreed, and 4 where a doc named a different answer than the owner's)
 - A docs-only measurement unit cost about 2.5M subagent tokens in readers and reviewers (signal: the self-answer loop's report; feeds Q-270's token question)
+- Step 4's drift check counts a soft-line prune only when the pruned option would otherwise have won, so a ranking loss stops reading as drift (signal: the constraint-drift audit found four of six flags were only wording, research-2026-11-11-constraint-drift-audit.md)
