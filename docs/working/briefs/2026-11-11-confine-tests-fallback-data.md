@@ -35,3 +35,5 @@ Paths: docs/working/research-2026-11-11-confine-tests-fallback-data.md docs/work
 - Changing `scripts/confine-tests.sh`, its tests, `docs/constraints.md` or any instruction file.
 - Running anything on the host or in another container.
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`: the dev cycle owns those.
+
+Dispatched: 1
