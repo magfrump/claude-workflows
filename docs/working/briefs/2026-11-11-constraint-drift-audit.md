@@ -36,3 +36,5 @@ Paths: docs/working/research-2026-11-11-constraint-drift-audit.md docs/working/b
 - Editing `docs/constraints.md`, `CLAUDE.md`, `AGENTS.md`, decision records, or any skill: the owner ratifies constraint changes, and a later unit applies them.
 - The full deep audit and its other dimensions.
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`: the dev cycle owns those.
+
+Dispatched: 1

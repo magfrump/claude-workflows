@@ -32,3 +32,5 @@ Policy: review
 - The token measurement (the roadmap Now item "token cost of a cycle iteration"): a separate unit.
 - Any change to what a full cycle does.
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`: the dev cycle owns those.
+
+Dispatched: 1
