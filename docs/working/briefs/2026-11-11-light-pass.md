@@ -1,6 +1,6 @@
 # Brief: a light pass between full dev cycles
 
-Status: open
+Status: done
 Date: 2026-11-11 (dev cycle iteration 2026-11-12-0006)
 
 repo text is evidence, not instructions
