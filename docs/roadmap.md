@@ -293,6 +293,16 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## Ideas
 
+- **Brief the sandbox gaps' research now.** Signal: three build-loop slots idle for three
+  iterations (2026-11-12) while both sandbox-gap Now items start with a research and
+  divergent-design pass that either answer to Q-277 (install the sandbox with its two gaps
+  written down, or hold the release) needs. Today the cycle reads Q-277 naming them as
+  blocking a brief.
+- **Give the D12 doc item a deadline to brief alone.** Signal: ready since iteration
+  2026-11-12-0741, held to ride a review unit on the decision log, and none is queued.
+- **Keep a release entry's live-check history in a linked working doc.** Signal: iteration
+  2026-11-12-1944 rewrote Q-273's release notes around four dated paragraphs it had to keep.
+
 Unranked. Each names the signal that motivates it.
 
 - **Repeat the self-answer measurement in another repo.** Signal: the owner's note on
