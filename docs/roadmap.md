@@ -13,6 +13,13 @@ user's order).
 
 Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0002).
 
+- **Agent: the build-loop handoff plan's D12 after the light pass** (filed 2026-11-11, step 7).
+  Motive: if Q-279 merges the light pass, decision-log row 72 and D12 in
+  `docs/working/plan-build-loop-handoff.md` still say every iteration is a full cycle
+  (the light-pass loop's report). First step: once Q-279 is answered [1], one review unit
+  adds a decision-log row recording Q-270 [2] as D12's new answer and corrects the plan.
+  Waits on Q-279.
+
 - **Models answer their own questions from the repo's docs (owner request, 2026-11-11).**
   Motive: the owner asked for a plan for how models can answer their own questions based on
   existing docs in a repo. The questions doc spends the owner's attention, the binding
@@ -253,12 +260,10 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
-- **Token cost of a cycle iteration (Q-270 [4]).** Brief:
-  `docs/working/briefs/2026-11-11-cycle-token-cost.md` (self-merge, docs only). From the
-  Now item of the same name.
 - **A light pass between full cycles (Q-270 [2]).** Brief:
   `docs/working/briefs/2026-11-11-light-pass.md` (review: it changes the dev-cycle skill,
-  which is gate code, so it ends in one merge entry). From the Now item of the same name.
+  which is gate code, so it ends in one merge entry). From the Now item of the same name. Ready at 9b4f9800;
+  merge entry Q-279.
 
 ## Next
 
@@ -539,6 +544,12 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- Token cost of a cycle iteration (Q-270 [4];
+  `docs/working/briefs/closed/2026-11-11-cycle-token-cost.md`). Merged 23c0e0ae, self-merge
+  (docs only): `docs/working/research-2026-11-11-cycle-token-cost.md`. Orchestrator median
+  0.51M weighted tokens (3.8M raw) per iteration; build loops are 75% of all cycle tokens;
+  a light pass saves at most about 2%. The numbers neither argue against Q-270 [2] nor
+  support it on tokens; no owner entry.
 - The small constraint-drift audit (Q-269 [1];
   `docs/working/briefs/closed/2026-11-11-constraint-drift-audit.md`). Merged b3d3e8f4,
   self-merge (docs only): `docs/working/research-2026-11-11-constraint-drift-audit.md`.
