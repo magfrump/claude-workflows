@@ -69,9 +69,36 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   2026-11-11, later: the live check ran on the owner's host against main at f0a55b8a
   (`cc-verify`, tree 08bf2bc9, config 1887e71a2126a27b) and failed: VERDICT FAIL, 3 not
   pass, 0 missing. On record: C3-nested-settings-1 and C3-nested-gitfile-1 FAIL; C4, C5
-  and C6 pass. The third line and everything above C3 are not on record yet (asked in
-  Q-273). So the sandbox has now run, the commits stay `Live-verified: no`, and the
-  install waits for the owner's answer to Q-277 (install with the gap, or hold).
+  and C6 pass. The third line, from the owner later the same day: X4-cred-across-rename
+  FAIL (read after a rename). With none missing, every other required line passed, by
+  the verdict's count; the lines themselves are not on record. So the sandbox has now
+  run, the commits stay `Live-verified: no`, and the install waits for the owner's
+  answer to Q-277 (install with the two gaps written down, or hold).
+
+- **Agent: a sandboxed command can read the credential after a token refresh** (filed
+  2026-11-11, from the Q-273 live check). Motive: `X4-cred-across-rename FAIL (read after
+  a rename)`. The check file (`docs/working/q125-verify-check.sh`, its X4 block) replaced
+  `~/.claude/.credentials.json` by rename every half second while one sandboxed command
+  read it in a loop, and that command saw the new content. The plan's acceptance step 6
+  requires the read to stay refused across `/login` or a refresh, and its residuals table
+  had the case as "unknown" (`docs/working/plan-q125-cc-isolated-sandbox.md`). What
+  holds: reads before any rename (X1, four ways) and the first read of the next command
+  (C1-cat-credential, after the renames) passed, by the count. So the mask is put back
+  for each new command and is lost inside one command when the file is renamed over; a
+  command that waits in the background for a refresh fits through. Likely mechanism, not
+  confirmed here: `denyRead` is a bind over the file's directory entry, and a rename
+  over that entry from outside the sandbox detaches it. First step: a research and
+  divergent-design unit seeded with `docs/constraints.md`. Settle first: how Claude Code
+  applies `denyRead` (read its sandbox documentation and observe the mounts in a
+  sandboxed command), whether a directory-level deny survives a rename inside the
+  directory, and how long a sandboxed command may run (background commands included).
+  Candidates to start from: deny reading a directory that holds only the credential, if
+  the credential's place can be moved; keep the credential out of the container's files
+  (an API key helper or a proxy outside the sandbox that adds it); a cap on how long a
+  sandboxed command lives; a report to Claude Code, since the masking is its code; or an
+  accepted residual beside decision log 53. Until this is fixed, watch Q-098's trigger
+  (the sandbox denies reads of the credential) is not met. Enforcement files: a
+  pre-mortem, a `Live-verified:` trailer, and the same `cc-verify` check re-run.
 
 - **Agent: the sandbox leaves nested worktree paths writable** (filed 2026-11-11, from
   the Q-273 live check). Motive: the plan's own acceptance step
@@ -92,9 +119,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   the deny list can name; or recording it as an accepted residual beside decision log
   53, with the exit scan (`devcontainer-config/cc-exit-scan.sh` already walks worktree
   git dirs) as the check on the `.git` side. Any change is to enforcement files: a
-  pre-mortem, a `Live-verified:` trailer, and the same `cc-verify` check re-run. Not to
-  be briefed as a build until the lines above the tail are on record, since the third
-  failed line may belong to the same fix.
+  pre-mortem, a `Live-verified:` trailer, and the same `cc-verify` check re-run. The
+  third failed line is a separate gap (the item above, the credential after a refresh),
+  so the two can be designed apart and checked in one live run.
 
 - **Agent: scoped deep audit, constraint drift** (filed 2026-11-05, step 4b). Motive: the
   drift check on 605d4c18 found its script-home decision resting on a soft constraint (S4

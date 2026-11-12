@@ -70,6 +70,7 @@ Ship a global `permissions.allow` in `hooks/wiring.json` once cc-isolated has a 
 - **Trigger:** Q-125 lands (Q-124 answered [1], build the sandbox) and the sandbox denies reads of `~/.claude/.credentials.json` and writes to `~/.claude/settings*.json`. Then re-run the leak list inside it before merging any list.
 - **Interim:** no global allow list. cc-isolated sessions prompt for commands not in their project's `.claude/settings.json`.
 - **2026-11-11:** Q-125 landed at 3cd6d9bb (Q-267 [1]), with no live run on record. The second half of the trigger, the sandbox denying those reads and writes, is what the live check in Q-273 shows; the leak list waits for it.
+- **2026-11-11, later:** the live check ran on the owner's host and failed (Q-273). The trigger's second half is not met: a sandboxed command still running when the credential is replaced by rename, as a token refresh does, read the new file (`X4-cred-across-rename FAIL`). Reads before a rename and writes to the user settings files were refused, by the verdict's count. No list ships until the roadmap item "a sandboxed command can read the credential after a token refresh" is closed and the check passes, whatever the owner answers to Q-277 (install with the gaps, or hold).
 
 ### Q-262 · merge-approval-revisit
 **Needs:** trigger · **Opened:** 2026-11-06 · **Status:** OPEN
