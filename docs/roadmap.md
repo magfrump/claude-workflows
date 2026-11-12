@@ -263,7 +263,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 - **A light pass between full cycles (Q-270 [2]).** Brief:
   `docs/working/briefs/2026-11-11-light-pass.md` (review: it changes the dev-cycle skill,
   which is gate code, so it ends in one merge entry). From the Now item of the same name. Ready at 9b4f9800;
-  merge entry Q-279.
+  merge entry Q-279, answered [1] in session (merges at the next iteration).
 
 ## Next
 

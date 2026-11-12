@@ -28,7 +28,7 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-277](#q-277--install-sandbox-with-nested-worktree-gap) | you: judgment | The sandbox's live check found two gaps: nested worktrees, and the credential after a token refresh. Instal... | 2026-11-11 |
 | [Q-278](#q-278--q272-returned-run-or-refuse) | you: judgment | You asked for Q-272 back with data. When the test-confinement script (`scripts/confine-tests.sh`) cannot us... | 2026-11-11 |
-| [Q-279](#q-279--merge-gate-2026-11-11-light-pass-9b4f98000688) | you: judgment | Merge the dev-cycle skill change that skips the four checking steps between full cycles, the rule you chose... | 2026-11-11 |
+| [Q-279](#q-279--merge-gate-2026-11-11-light-pass-9b4f98000688) | you: judgment | Q-279: [1] | 2026-11-11 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | Q-167: (b) and (d) answered 2026-11-07 (answers-11-7-26.txt), on bless 91c5f79dd91eb7ee, which --probe-only... | 2026-10-15 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Q-255: first half answered 2026-11-07 (answers-11-7-26.txt): all four fronted probes through plugins-artifa... | 2026-11-05 |
@@ -38,7 +38,8 @@ The index below is generated — edit entries, not the table.
 ## Open
 
 ### Q-279 · merge-gate-2026-11-11-light-pass-9b4f98000688
-**Needs:** you: judgment · **Opened:** 2026-11-11 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-11 · **Status:** ANSWERED
+Q-279: [1]
 
 Merge the dev-cycle skill change that skips the four checking steps between full cycles, the rule you chose in Q-270 [2]?
 
