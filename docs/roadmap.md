@@ -18,7 +18,10 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   `docs/working/plan-build-loop-handoff.md` still say every iteration is a full cycle
   (the light-pass loop's report). First step: once Q-279 is answered [1], one review unit
   adds a decision-log row recording Q-270 [2] as D12's new answer and corrects the plan.
-  Waits on Q-279.
+  Q-279 was answered [1] and the light pass merged at a77bbc97, so this is ready. It edits
+  `docs/decisions/log.md`, a record the self-merge floor refuses, so it is a review unit.
+  Not briefed alone (a full loop and a merge entry for two lines); it rides the next review
+  unit that touches the decision log.
 
 - **Models answer their own questions from the repo's docs (owner request, 2026-11-11).**
   Motive: the owner asked for a plan for how models can answer their own questions based on
@@ -260,10 +263,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
-- **A light pass between full cycles (Q-270 [2]).** Brief:
-  `docs/working/briefs/2026-11-11-light-pass.md` (review: it changes the dev-cycle skill,
-  which is gate code, so it ends in one merge entry). From the Now item of the same name. Ready at 9b4f9800;
-  merge entry Q-279, answered [1] in session (merges at the next iteration).
 
 ## Next
 
@@ -544,6 +543,9 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- A light pass between full cycles (Q-270 [2];
+  `docs/working/briefs/closed/2026-11-11-light-pass.md`). Merged a77bbc97, approved in Q-279
+  [1]. Gate code: it runs from the release that carries it.
 - Token cost of a cycle iteration (Q-270 [4];
   `docs/working/briefs/closed/2026-11-11-cycle-token-cost.md`). Merged 23c0e0ae, self-merge
   (docs only): `docs/working/research-2026-11-11-cycle-token-cost.md`. Orchestrator median
