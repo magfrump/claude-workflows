@@ -145,6 +145,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   draft changes to `docs/constraints.md` with the `constraints-builder` skill's amend
   mode. Its output is one owner entry with a promote, keep soft or drop call per flagged
   line. Nothing else is re-read; the full audit stays unasked.
+  Fired again 2026-11-11 (iteration 2026-11-12-0006): the model running the cycle changed
+  from `claude-fable-5-2` to `claude-opus-5-5`; within the small audit's scope it changes
+  nothing. The small audit is briefed (In flight).
 
 - **Agent: `source_lines_ok` misses an unterminated last line** (filed 2026-11-05, step 7).
   Motive: the Q-147 review found the shipped self-check in `devcontainer-config/cc-verify.sh`
@@ -201,31 +204,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   `docs/failure-patterns.md` may deserve an entry for `exec "$@"` under `sh` reading a
   dash-leading word as an option where `sh` is bash.
 
-- **Agent: data for the run-or-refuse question's return (owner request, 2026-11-11).**
-  Motive: the owner answered Q-272 with [1] "to start" (the `unshare` fallback in
-  `scripts/confine-tests.sh` runs after a warning) and asked to "track the warnings and
-  return the question to me in a few days with some data about how often bwrap isn't
-  present, and how much friction inability to run tests would cause". Nothing calls the
-  script yet, so no warning is printed anywhere to count. First step: a small unit that
-  says what will be counted and from where. Candidates: where `bwrap` is present and
-  usable (the host, the image at 536b7082, the image after the Q-273 release, inside the
-  new Bash sandbox), read from `--probe` runs; a line per fallback run that the script or
-  the cycle's record keeps; and, for friction, how many test runs in briefs and cycle
-  records a refusal would have stopped. A change to the script itself is an enforcement
-  change. The question goes back to the owner by watch Q-276 (2026-11-16, or sooner if
-  the data is ready), with whatever data exists then. No exception to H2 is written into
-  `docs/constraints.md` while the answer is provisional (decision-log row 87).
-
-- **Agent: light pass between full cycles (Q-270 [2]).** Motive: the owner picked the
-  rule "full when main moved or a new day starts": a full cycle on each day's first
-  iteration and whenever main gained anything but the cycle's own land, a light pass
-  otherwise. A light pass skips the four checking steps (revisit triggers, watches, the
-  spot-check of last week's merges, the deep-audit check) and only collects build loops,
-  writes briefs, dispatches and lands. Numbers and the replay:
-  `docs/working/research-2026-11-10-cycle-overhead-numbers.md`, section 9. First step: a
-  brief for `skills/dev-cycle/SKILL.md`. It is gate code, so it ends in one merge entry,
-  as Q-270 said. This replaces the Q-154 answer (a full cycle every iteration).
-
 - **Agent: token cost of a cycle iteration (Q-270 [4]).** Motive: the owner agreed the
   measurement is warranted as well; the cost the Q-154 answer waited on is still not
   visible, since no record holds tokens. First step: a small docs unit that totals tokens
@@ -281,6 +259,15 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
+- **The small constraint-drift audit (Q-269 [1]).** Brief:
+  `docs/working/briefs/2026-11-11-constraint-drift-audit.md` (self-merge, docs only). From
+  the Now item "Agent: scoped deep audit, constraint drift".
+- **A light pass between full cycles (Q-270 [2]).** Brief:
+  `docs/working/briefs/2026-11-11-light-pass.md` (review: it changes the dev-cycle skill,
+  which is gate code, so it ends in one merge entry). From the Now item of the same name.
+- **Data for the run-or-refuse question's return (Q-272, watch Q-276).** Brief:
+  `docs/working/briefs/2026-11-11-confine-tests-fallback-data.md` (self-merge, docs only).
+  From the Now item of the same name.
 
 ## Next
 
