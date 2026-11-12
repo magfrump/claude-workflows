@@ -265,6 +265,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-271](#q-271--merge-gate-2026-11-10-dev-cycle-skill-held-fixes-8b03c7e6a245) | Q-271: [1] | 2026-11-10 |
 | [Q-272](#q-272--confine-tests-fallback-run-or-refuse) | Q-272: [1] to start (owner, answers-11-11-26.txt): run and warn, as merged. The owner adds: "track the warn... | 2026-11-10 |
 | [Q-274](#q-274--self-answer-plan-how-far) | Q-274: [1] (owner, answers-11-11-26.txt). Build nothing; look again when Q-272 is answered. The owner adds:... | 2026-11-11 |
+| [Q-279](#q-279--merge-gate-2026-11-11-light-pass-9b4f98000688) | Q-279: [1] | 2026-11-11 |
 <!-- index:end -->
 
 ## Answered
@@ -6552,5 +6553,62 @@ My recommendation is [1]: it is the part with evidence behind it, it is small, a
 
 - **Interim:** [3]. Nothing is burning: every flagged pick was checked and stands.
 - **If the answer differs:** nothing is redone; [1] or [2] becomes a brief at the next cycle.
+
+
+### Q-279 · merge-gate-2026-11-11-light-pass-9b4f98000688
+**Needs:** you: judgment · **Opened:** 2026-11-11 · **Status:** ANSWERED
+Q-279: [1]
+
+Merge the dev-cycle skill change that skips the four checking steps between full cycles, the rule you chose in Q-270 [2]?
+
+**If you say no:** answering [2] drops it, and every iteration stays a full cycle, re-reading all 29 revisit triggers and every watch each time. Never answering leaves the same, with the branch waiting.
+
+**What an attacker would want here:** someone outside whose text reaches a session (a web page, a dependency, a pasted document) would want main to change in a way a light pass does not look at. Here, a commit that reads as a cycle land (`chore`) on `--main-log` turns the next iteration into a light pass, which skips the trigger, watch and spot-check steps that day. The classes catch honest slips, not a disguised commit (the gate's own stance), and the day's first iteration is always a full cycle, so a disguised commit is at most a day from being checked.
+
+**What it does**, in `skills/dev-cycle/SKILL.md` (the procedure the dev cycle follows; it is gate code):
+
+1. **A new step 0.5, "Full cycle or light pass."** An iteration is a light pass only when two things hold, both read from lines the cycle already prints, with no judgment involved. First, every commit since the last iteration is a cycle land. Second, today's record already holds a full block. Anything else is a full cycle: an answers commit, a merge, a hand commit, a `--main-log` refusal, or an input that cannot be read.
+2. **What a light pass skips.** Steps 2 (revisit triggers), 3 (watches and stale agent items), 4 (the claim spot-check) and 4b (the deep-audit check), each recorded as `skipped: light pass (REASON)`. Collect, briefs, record and land, and dispatch run as before. The health check and the brainstorm already skip themselves when nothing changed.
+3. **A fix the light pass needed.** The deep-audit check's "the model changed" trigger now compares against the last *full* block's `Model:` line, because a light pass also writes one and would otherwise hide a change it saw.
+
+The other changes:
+
+- `scripts/lib/migrations.sh` gains one registry line (`record-light-pass`, no remedy) because the record template changed. Its test refuses a template change without one.
+- `test/scripts/build-loop-orchestrator.bats` gains one case pinning the rule's wording.
+- The research doc is new.
+
+**Things to weigh:**
+
+- **What waits for the day's first iteration.** Anything that isn't a commit on main: a model change, an image release, a dated watch such as a "by 2026-11-16" date, a stale agent item. You accepted that cost in Q-270. A day is the most it waits.
+- **The cycle's own merges count as main moving.** After a build loop self-merges, the next iteration is a full one. So in practice the light pass runs only while loops are working and nothing has landed.
+- **Docs left behind, outside the loop's paths:** decision-log row 72 and D12 in `docs/working/plan-build-loop-handoff.md` (the build-loop handoff plan's one-full-cycle-per-iteration point) still say every iteration is a full cycle. Those are records only you or a reviewed change edit. The cycle files them as agent work if this merges.
+- **Not live at once.** The image's copy of the skill is what runs, so this takes effect only after the release that carries it. Q-273, the pending release, is on hold for Q-277.
+- **Paths the self-merge floor would refuse** (the floor is the list of paths the cycle may not merge without you): `skills/dev-cycle/SKILL.md` and `scripts/lib/migrations.sh`, both gate code.
+- **Size and review:** 51 changed lines outside `docs/` (40 of them in the skill). The loop reports 2052 of 2052 tests passed, the hermeticity lint and `migrations.sh check` clean, and one review round whose must-fix item (the missing registry line) and three must-address items are fixed. Its `--probe` exited 3 (no confinement tool here), so the tests ran unconfined.
+
+**Tip:** `9b4f9800068848ab7b4f10c4bfcb6096f7873e3c`
+
+`--check`'s lines, as printed:
+
+```
+ok docs/working/briefs/2026-11-11-light-pass.md 9b4f9800068848ab7b4f10c4bfcb6096f7873e3c e0a9a98a202275b7c6b736cfb8cb65b1f588300c
+path docs/working/briefs/2026-11-11-light-pass.md M docs/working/briefs/2026-11-11-light-pass.md
+path docs/working/briefs/2026-11-11-light-pass.md A docs/working/research-2026-11-11-light-pass.md
+path docs/working/briefs/2026-11-11-light-pass.md M scripts/lib/migrations.sh
+path docs/working/briefs/2026-11-11-light-pass.md M skills/dev-cycle/SKILL.md
+path docs/working/briefs/2026-11-11-light-pass.md M test/scripts/build-loop-orchestrator.bats
+```
+
+`--marker` printed its `ok` line and no body: the loop found a clear winner for every choice and left nothing for you to pick.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The branch merges through the gate. A light pass runs between full cycles from the release after this | None now; it rides the next release | A day's checks wait for its first iteration; reverting is one `git revert` and a release |
+| **[2] drop** | The brief closes and every iteration stays a full cycle | None | The overhead Q-270 set out to cut stays |
+| **[3] changes needed** | Your note goes back to the loop, which revises and hands back | A note | One more loop round |
+
+- **Blocks:** nothing else.
+- **Interim:** the branch waits; every iteration is a full cycle.
+- **If the answer differs:** [2] closes the brief; [3] re-dispatches it with your note.
 
 
