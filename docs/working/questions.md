@@ -103,27 +103,34 @@ Run the two pastes below: first the live check of the Bash sandbox, then, if it 
 
 **If you say no:** nothing breaks. Sessions keep running the image at `536b7082`: no Bash sandbox, and the dev cycle keeps its old identity check and release paste. The merges stay on main, waiting.
 
-**Release notes.** The installed image is the root-owned copy of the dev-cycle scripts and skill that every session runs. It is at `536b708294d1584be3c7455d78462716ce36edce` (read from `/opt/claude-workflows/.manifest`). Main's last merge is `3cd6d9bb97436ad99e9304a0d88c0a3d4d5b961c`.
+**Release notes** (rewritten 2026-11-12 from the log). The installed image is the root-owned copy of the dev-cycle scripts and skill that every session runs. It is at C = `536b708294d1584be3c7455d78462716ce36edce` (read from `/opt/claude-workflows/.manifest`). Main is at M = `7b8b560acaaac6f57c473cbc032acb66b862aeb3`.
 
-**The one change most worth your look:** the Bash sandbox for cc-isolated sessions (`3cd6d9bb`). It changes `devcontainer-config/install.sh`, the Dockerfile and the launcher, and adds a seccomp profile and managed settings. It has never run anywhere: every commit that touches those files says `Live-verified: no`. The first paste is that live run.
+**The one change most worth your look:** the Bash sandbox for cc-isolated sessions (`3cd6d9bb`). It changes `devcontainer-config/install.sh`, the Dockerfile and the launcher, and adds a seccomp profile and managed settings. Its live check (paste 1) ran on 2026-11-11 and failed on three lines, below; whether to install it anyway is Q-277.
 
-**Merged without your review** (self-merges; no one reviewed them):
+**Merged without your review** (subjects ending "build-loop self-merge"; no one reviewed them):
 
-- `b0ebed19` Merge branch 'fix/confine-tests-dash-and-fallback' (build-loop self-merge): two fixes to `scripts/confine-tests.sh`; its open question is Q-272
+- `23c0e0ae` Merge branch 'docs/cycle-token-cost' (build-loop self-merge): one research doc
+- `b3d3e8f4` Merge branch 'docs/constraint-drift-audit' (build-loop self-merge): one research doc
+- `6d4c1af6` Merge branch 'docs/confine-tests-fallback-data' (build-loop self-merge): one research doc, the data behind Q-278
+- `fd325a74` Merge branch 'docs/self-answer-measure' (build-loop self-merge): one research doc
+- `b0ebed19` Merge branch 'fix/confine-tests-dash-and-fallback' (build-loop self-merge): two fixes to `scripts/confine-tests.sh` (the test-confinement script)
 - `9d6d6101` Merge branch 'test/confine-tests-bats' (build-loop self-merge): the first tests for that script
-- `c70bb17a` Merge branch 'docs/cycle-overhead-numbers' (build-loop self-merge): one research doc; the image carries none of it
+- `c70bb17a` Merge branch 'docs/cycle-overhead-numbers' (build-loop self-merge): one research doc
 
-**What changes for you** (the three merges you approved today):
+The four docs-only ones change nothing the image carries.
+
+**What changes for you** (the four merges you approved):
 
 - The Bash tool in cc-isolated sessions runs inside a sandbox (`3cd6d9bb`, your Q-267 answer). If it blocks normal work, one revert and a reinstall undo it.
-- The dev cycle's identity check accepts an identity from the environment, its record says why a free build-loop slot stayed free, and it writes a release paste that runs from main's tip (`1f14e270`, your Q-271 answer). The new paste appears from the release after this one, because the image's own copy of the skill wrote this entry.
+- The dev cycle can run a light pass between full cycles: when only cycle lands moved main since today's full iteration, it skips the trigger, question, spot-check and audit steps (`a77bbc97`, your Q-279 answer to the Q-270 follow-up).
+- The dev cycle's identity check accepts an identity from the environment, its record says why a free build-loop slot stayed free, and it writes a release paste that runs from main's tip (`1f14e270`, your Q-271 answer).
 - `scripts/canon-instance.py` and two new canon instances (`1d9d01b4`, your Q-268 answer). The image does not use them.
 
-**The rest:** 8 cycle lands, records only. The full list: `git -c log.showSignature=false log --first-parent --format='%h %s' 536b708294d1584be3c7455d78462716ce36edce..3cd6d9bb97436ad99e9304a0d88c0a3d4d5b961c`
+**The rest:** 17 cycle lands and 8 hand commits to the questions file (recorded answers), records only. The full list: `git -c log.showSignature=false log --first-parent --format='%h %s' 536b708294d1584be3c7455d78462716ce36edce..7b8b560acaaac6f57c473cbc032acb66b862aeb3`
 
 **Gate files changed:** `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`.
 
-**Paths outside `docs/`** (58 paths under `docs/` also changed; the image carries none of them): `devcontainer-config/Dockerfile`, `devcontainer-config/cc-isolated.sh`, `devcontainer-config/cc-sandbox-settings.sh`, `devcontainer-config/devcontainer.json`, `devcontainer-config/install.sh`, `devcontainer-config/managed-settings.json`, `devcontainer-config/seccomp-cc-sandbox.json`, `guides/devcontainer-setup.md`, `guides/test-hermeticity.md`, `hooks/live-verify-gate.sh`, `scripts/canon-instance.py`, `scripts/confine-tests.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`, `test/cc-isolated-functions.bats`, `test/cc-sandbox-settings.bats`, `test/install-host.bats`, `test/scripts/build-loop-orchestrator.bats`, `test/scripts/canon-instance.bats`, `test/scripts/confine-tests.bats`, `test/seccomp-cc-sandbox.bats`
+**Paths outside `docs/`** (68 paths under `docs/` also changed; the image carries none of them): `devcontainer-config/Dockerfile`, `devcontainer-config/cc-isolated.sh`, `devcontainer-config/cc-sandbox-settings.sh`, `devcontainer-config/devcontainer.json`, `devcontainer-config/install.sh`, `devcontainer-config/managed-settings.json`, `devcontainer-config/seccomp-cc-sandbox.json`, `guides/devcontainer-setup.md`, `guides/test-hermeticity.md`, `hooks/live-verify-gate.sh`, `scripts/canon-instance.py`, `scripts/confine-tests.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`, `test/cc-isolated-functions.bats`, `test/cc-sandbox-settings.bats`, `test/install-host.bats`, `test/scripts/build-loop-orchestrator.bats`, `test/scripts/canon-instance.bats`, `test/scripts/confine-tests.bats`, `test/seccomp-cc-sandbox.bats`
 
 **2026-11-11, why paste 1 failed.** `cc-verify` did not make the directory it named. The trial script you ran on 2026-10-28 (`q117-spike.txt`, the prototype `cc-verify` was built from) made it. That run was refused at its first step, the merge check, before it built or started anything, so no container, volume or image belongs to it. Its cleanup removed the run's `record` file and left the directory (the `ls` in paste 1 shows whether anything else is in it). `cc-verify` counts any `run-*` name in `~/cc-verify` as an unfinished run and refuses to start. Its `--clean` then fails on a directory that holds no `record` file: it exits 2 and prints nothing. That is a bug in `--clean`. I reproduced it here with stand-ins for docker, and a one-line change makes `--clean` remove such a directory. The fix is a roadmap item, and this release does not need it: you removed the directory by hand before the second try.
 
@@ -138,10 +145,10 @@ Run the two pastes below: first the live check of the Bash sandbox, then, if it 
 **Paste 2, the install** (same terminal; stop every session first):
 
 ```
-cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = 3cd6d9bb97436ad99e9304a0d88c0a3d4d5b961c && ./devcontainer-config/install.sh
+cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = 7b8b560acaaac6f57c473cbc032acb66b862aeb3 && ./devcontainer-config/install.sh
 ```
 
-The `rev-parse` check runs no hook. It only confirms your checkout is at `3cd6d9bb`, the last merge. Main is already past that commit, because the cycle's own land moves it, so check out `3cd6d9bb` first. That checkout, like any other git command on the host, can run a hook a sandbox session planted, which is `install.sh`'s own trust model. If the install re-blesses, it also prints the hint that Q-167 (the post-install probes) still needs for its step (a).
+The `rev-parse` check runs no hook. It only confirms your checkout is at `7b8b560a`, main as this entry was written. Each cycle land moves main past it, so check out `7b8b560a` first (the next cycle rewrites this entry when a later merge changes what the release ships). That checkout, like any other git command on the host, can run a hook a sandbox session planted, which is `install.sh`'s own trust model. If the install re-blesses, it also prints the hint that Q-167 (the post-install probes) still needs for its step (a).
 
 - **Interim:** the image at `536b7082` runs; paste 2 waits for Q-277.
 

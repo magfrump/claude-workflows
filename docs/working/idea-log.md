@@ -213,3 +213,12 @@ Ran because 10 ideas were seeded since the last brainstorm (2026-11-10). Sources
 - A docs-only measurement unit cost about 2.5M subagent tokens in readers and reviewers (signal: the self-answer loop's report; feeds Q-270's token question)
 - Step 4's drift check counts a soft-line prune only when the pruned option would otherwise have won, so a ranking loss stops reading as drift (signal: the constraint-drift audit found four of six flags were only wording, research-2026-11-11-constraint-drift-audit.md)
 - If cycle tokens matter, look at build-loop cost (75% of cycle tokens; median 1.88M weighted per dispatch) before orchestrator steps (signal: research-2026-11-11-cycle-token-cost.md)
+
+## Brainstorm 2026-11-12
+
+Ran because roadmap Now holds at most one item ready for a brief (the D12 doc item, held to ride a review unit) and Now changed since the last brainstorm heading. Sources: this log's five seeds since 2026-11-11 and this iteration's signals; `docs/working/feature-ideas.md` not re-read (unchanged since 2026-11-10). Three went to roadmap Ideas; "do nothing" is recorded here.
+
+- Brief the research halves of the two sandbox-gap items now, as docs-only units: Q-277 names them as reading, but either answer to it needs the same research (signal: three build-loop slots idle for three iterations while both items' first step is a research and divergent-design pass)
+- Brief the D12 doc item alone once it has waited a set time for a review unit that touches the decision log (signal: ready since iteration 2026-11-12-0741, and no such unit is queued or likely while the rest of Now waits on Q-277)
+- Keep a release entry's live-check history in a working doc the entry links, so the release notes can be rewritten whole each iteration as step 0.1 asks (signal: iteration 2026-11-12-1944 rewrote Q-273's notes around four dated paragraphs and an answer line it could not touch)
+- Do nothing with the idle slots: everything substantive waits on Q-277 or a host run, and a loop briefed only to fill a slot spends review tokens and an owner merge entry (signal: Q-277 open one day; the token-cost doc puts 75% of cycle tokens in build loops)
