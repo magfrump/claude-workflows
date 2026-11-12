@@ -80,8 +80,10 @@ Should merge approval be reopened? The design record picked no change on 2026-11
 - **Read:** `docs/working/research-2026-11-06-merge-friction-design.md`, section 11.
 - **Interim:** merge entries stay as they are. The conditions are that section's list: the owner names merge entries or approvals as a blocker; merge entries exceed 11 a week in 3 of the next 4 weekly digests, which reopens the record's candidate [5]; or the record's median-wait trigger.
 
+## Closed
+
 ### Q-276 · q272-return-with-data
-**Needs:** deferred · **Opened:** 2026-11-11 · **Status:** OPEN
+**Needs:** deferred · **Opened:** 2026-11-11 · **Status:** ANSWERED
 
 Return the run-or-refuse question (Q-272: what the test-confinement script does when it has only its weak tool) to the owner with data, a few days after 2026-11-11, as the owner asked.
 
@@ -89,7 +91,7 @@ Return the run-or-refuse question (Q-272: what the test-confinement script does 
 - **Interim:** the owner's answer, [1] "to start": `scripts/confine-tests.sh` runs under `unshare` after a warning when `bwrap` is missing. No exception to H2 is written into `docs/constraints.md` while the answer is provisional. The event: 2026-11-16, or the data being ready, whichever comes first. Then file a new `you: judgment` entry with Q-272's three options and the two things the owner asked for: how often `bwrap` was absent where the script ran, and how much friction a refusal would cause (how many test runs it would have stopped). If there is no data by then, the entry says so and says why; it does not wait longer.
 - **If the owner then refuses the exception:** the self-answering plan's exceptions rule (closed watch Q-275) has its first confirmed case.
 
-## Closed
+Q-276: met — the data is ready: docs/working/research-2026-11-11-confine-tests-fallback-data.md, merged at b9c8966a (brief 2026-11-11-confine-tests-fallback-data). Filed for the owner as Q-278.
 
 ### Q-275 · self-answer-plan-after-q272
 **Needs:** trigger · **Opened:** 2026-11-11 · **Status:** ANSWERED

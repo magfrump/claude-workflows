@@ -147,7 +147,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   line. Nothing else is re-read; the full audit stays unasked.
   Fired again 2026-11-11 (iteration 2026-11-12-0006): the model running the cycle changed
   from `claude-fable-5-2` to `claude-opus-5-5`; within the small audit's scope it changes
-  nothing. The small audit is briefed (In flight).
+  nothing. The small audit is done (b3d3e8f4, Done): it recommends no change to the
+  constraints file, and its four calls are with the owner in the cycle's final message. A
+  different pick the owner names becomes its own item. This item is finished but for that.
 
 - **Agent: `source_lines_ok` misses an unterminated last line** (filed 2026-11-05, step 7).
   Motive: the Q-147 review found the shipped self-check in `devcontainer-config/cc-verify.sh`
@@ -204,14 +206,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   `docs/failure-patterns.md` may deserve an entry for `exec "$@"` under `sh` reading a
   dash-leading word as an option where `sh` is bash.
 
-- **Agent: token cost of a cycle iteration (Q-270 [4]).** Motive: the owner agreed the
-  measurement is warranted as well; the cost the Q-154 answer waited on is still not
-  visible, since no record holds tokens. First step: a small docs unit that totals tokens
-  per iteration from existing session transcripts, or, if transcripts cannot be matched
-  to iterations, adds a token line to the cycle record. The numbers go in the weekly
-  digest. They become a new owner entry only if they argue against the [2] rule (this
-  session's reading: the owner chose [2] now, so [4] no longer decides it).
-
 - **Agent: the `Harness feedback` section warning** (filed 2026-11-06, step 3, trial T7).
   Motive: every health check warns that this H2 of the global instructions is missing from
   `AGENTS.md` and `GEMINI.md`, and T7 files any warning printed every run as a bug. First step:
@@ -259,15 +253,12 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
-- **The small constraint-drift audit (Q-269 [1]).** Brief:
-  `docs/working/briefs/2026-11-11-constraint-drift-audit.md` (self-merge, docs only). From
-  the Now item "Agent: scoped deep audit, constraint drift".
+- **Token cost of a cycle iteration (Q-270 [4]).** Brief:
+  `docs/working/briefs/2026-11-11-cycle-token-cost.md` (self-merge, docs only). From the
+  Now item of the same name.
 - **A light pass between full cycles (Q-270 [2]).** Brief:
   `docs/working/briefs/2026-11-11-light-pass.md` (review: it changes the dev-cycle skill,
   which is gate code, so it ends in one merge entry). From the Now item of the same name.
-- **Data for the run-or-refuse question's return (Q-272, watch Q-276).** Brief:
-  `docs/working/briefs/2026-11-11-confine-tests-fallback-data.md` (self-merge, docs only).
-  From the Now item of the same name.
 
 ## Next
 
@@ -548,6 +539,15 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- The small constraint-drift audit (Q-269 [1];
+  `docs/working/briefs/closed/2026-11-11-constraint-drift-audit.md`). Merged b3d3e8f4,
+  self-merge (docs only): `docs/working/research-2026-11-11-constraint-drift-audit.md`.
+  Recommends no change to `docs/constraints.md`; its four calls (A to D) are quoted in the
+  cycle record of 2026-11-11, iteration 2026-11-12-0024.
+- Data for the run-or-refuse question's return (watch Q-276;
+  `docs/working/briefs/closed/2026-11-11-confine-tests-fallback-data.md`). Merged 6d4c1af6,
+  self-merge (docs only): `docs/working/research-2026-11-11-confine-tests-fallback-data.md`.
+  The question is back with the owner as Q-278.
 - How many owner questions the repo's docs already answered, step 1 of the self-answering
   plan (`docs/working/briefs/closed/2026-11-11-self-answer-measure.md`). Merged fd325a74,
   self-merge (docs only). Its question for the owner is Q-274.
