@@ -3,7 +3,7 @@
 - **Goal**: Put a number on what one dev-cycle iteration costs in tokens and wall time, the orchestrator's share and the build loops' share, from the session transcripts that already exist.
 - **Problem framing**: The light-pass rule the owner chose (Q-270 [2]) was weighed without token counts, because no cycle record holds them. Considered and discarded: "the checking steps run as subagents, so their cost is the subagent transcripts" (they mostly ran in the orchestrator's own thread; see section 4).
 - **Project state**: this branch delivers one research doc, docs only · the measurement half of the owner's Q-270 answer ([4]) · not blocked (cite: docs/working/briefs/2026-11-11-cycle-token-cost.md)
-- **Task status**: complete (one review round; see Review)
+- **Task status**: complete (review round 1 fixed, round 2 clean; see Review)
 
 Brief: `docs/working/briefs/2026-11-11-cycle-token-cost.md` (self-merge, docs only).
 Read first, and not repeated here: `docs/working/research-2026-11-10-cycle-overhead-numbers.md`
@@ -28,6 +28,11 @@ Words used below, beyond the overhead doc's.
   The owner answered [2] (full when main moved or a new day starts, light otherwise) and [4]
   (measure tokens first); this doc is [4]. **Q-154** is the older answer it replaced (a full
   cycle every iteration, revisited "once the costs are visible").
+- **Re-fire only** (the overhead doc's outcome): the deep-audit check fired again onto an
+  audit task already open, and the checking steps found nothing else.
+- **Step numbers** are the dev-cycle skill's (`skills/dev-cycle/SKILL.md`): 0.1 reads loop
+  state, 0.3 creates the iteration's worktree, 2 to 4b are the four checking steps a light
+  pass skips, 7 collects build-loop results, 9 lands, 10 dispatches new loops.
 - **M** is a million tokens, **k** a thousand.
 
 ## Summary
@@ -44,18 +49,20 @@ Words used below, beyond the overhead doc's.
    iterations. [observed]
 4. **A full iteration costs about what a light one does.** Median orchestrator cost: full
    0.52M weighted, light 0.50M; a quiet full one 0.41M, less than the light median. Full
-   iterations that caught something cost 1.01M. By means, full exceeds light by 0.19M per
-   iteration (29%). [observed]
+   iterations that caught something cost 1.01M. By means, full is 0.65M and light 0.47M, a
+   gap of 0.19M per iteration. The comparison is not controlled (section 4). [observed]
 5. **So the steps a light pass skips (2 to 4b) cost little on the iterations where they find
-   nothing.** If [2] had turned the 28 extra iterations its replay makes light (overhead doc
-   section 7) from the full mean to the light mean, it would have saved about 5.3M weighted,
-   1.8% of the 288.0M spent in all windows. [inferred]
+   nothing.** The iterations [2] turns light are mostly quiet or re-fire only, and their
+   orchestrator mean (0.48M weighted) is about the light mean (0.47M): the saving is close to
+   none. Even at the full-minus-light mean, the 28 extra light iterations of the overhead
+   doc's replay (its section 7) would save 5.3M weighted, 1.8% of the 288.0M spent in all
+   windows; that is an upper bound. [inferred]
 6. **The numbers do not argue against the light-pass rule**, and they do not argue for it on
    tokens: its saving is small either way. Its case rests on wall time and on the repeated
    verdict lines, which the overhead doc already counted. No new owner entry. (Section 6.)
 7. **For the weekly digest:** iterations 2026-10-16 to 2026-11-12, orchestrator median 0.51M
    weighted (3.8M raw) per iteration; build loops 75% of all cycle tokens; full against light
-   0.52M against 0.50M (medians); a light pass would have saved about 2%.
+   0.52M against 0.50M (medians); a light pass would have saved at most about 2%.
 
 ## 1. Method
 
@@ -87,12 +94,17 @@ below depth 1, its parent agent (`parentAgentId`). [observed]
    before that mention (found for 104 of 107; otherwise one minute before the mention). It
    ends 20 minutes after the iteration's last land commit on main (so step 10's dispatch is
    inside), or at the next iteration's start in the same session if that comes first.
+   The start rule was not tested the way the end was (section 5): six full iterations
+   (2026-11-06-0400, -0630, -0753, 2026-11-07-0145, -0620, -0745) have windows of 0.05M to
+   0.12M weighted and under a minute, with earlier `--state` calls 17 to 54 minutes before
+   them, so some of their work may sit outside every window. That would pull the full
+   medians down. [observed by the reviewer; effect not measured]
 3. Every orchestrator message in the window, not already counted, is the iteration's.
 4. A subagent belongs to the iteration whose window holds the tool call that launched its
    depth-1 ancestor. It is a **build loop** when its first prompt names a brief ("You are the
    build loop for docs/working/briefs/…") or its launch label starts "Build loop"; a
-   **checking-step subagent** when its label names step 2, 3, 4 or 4b, a spot-check, triggers
-   or watched questions. Labels are the orchestrator's own Agent-tool descriptions, matched by
+   **checking-step subagent** when its label names step 2, 3, 4 or 4b, a spot-check, triggers,
+   watched questions or the deep-audit check. Labels are the orchestrator's own Agent-tool descriptions, matched by
    pattern and not reproduced here. Every depth-1 subagent launched from a window fell in one
    of those two classes. A build loop's cost includes its own review subagents, and is charged
    whole to the iteration that dispatched it, however long it ran.
@@ -121,7 +133,7 @@ unchanged (table in section 3). [observed]
 | Orchestrator | under 0.01 | 4.88 | 455.29 | 2.77 | 462.94 | 65.49 | 22.7% |
 | Checking-step subagents (22, in 10 iterations) | under 0.01 | 1.71 | 29.09 | 0.13 | 30.92 | 5.68 | 2.0% |
 | Build loops (58 dispatches, in 33 iterations) | 0.02 | 51.02 | 1,059.03 | 9.44 | 1,119.50 | 216.87 | 75.3% |
-| **All** | | | | | 1,613.37 | 288.04 | |
+| **All** (summed before rounding) | | | | | 1,613.37 | 288.04 | |
 
 - Uncached input is close to nothing: no iteration's orchestrator sent more than 156 uncached
   input tokens. Everything else is cache traffic. [observed]
@@ -149,9 +161,9 @@ Appendix A lists every iteration. The groups, from it: [observed]
 is first to last orchestrator message in the window, so it includes step 0 and step 10 and
 runs longer than the overhead doc's name-to-land time (median 5.6 minutes).
 
-**Build loops**, per dispatch (58): median 9.39M raw, 1.88M weighted (middle half 0.91M to
+**Build loops**, per dispatch (58): median 9.39M raw, 1.88M weighted (middle half 0.92M to
 4.63M; range 0.18M to 18.58M); wall median 30.2 minutes (range 1.7 to 374); a median of 1
-review subagent each (up to 13). The loop's own thread is 63.6% of its raw tokens (57.0%
+subagent of its own each (reviewers and other helpers; up to 13). The loop's own thread is 63.6% of its raw tokens (57.0%
 weighted), its subagents the rest. In the 33 iterations that dispatched, the orchestrator was
 a median of 22% of the iteration's weighted total (range 2% to 78%). [observed]
 
@@ -182,13 +194,23 @@ what a full iteration costs over a light one, which skips exactly those steps. [
 
 Read: on a typical iteration the checking steps cost close to nothing extra, and on a quiet
 one nothing measurable; the mean difference comes from the 22 iterations that caught
-something, whose orchestrator cost a median of twice a light one. Most of that extra is the
-work that followed a catch (a fix, a filed entry), not the checking that found it. [inferred]
+something, whose orchestrator cost a median of twice a light one. Whether that extra is the
+checking or the work that followed a catch (a fix, a filed entry) is a guess; the transcripts
+do not say. [assumed]
+
+The comparison is not controlled. Weighted cost is mostly cache reads, so it grows with the
+number of turns times the size of the context, and the light passes cluster: 19 of the overhead doc's
+24 fall on 2026-11-01 and -02 (local days), in a few sessions. That a light pass costs
+about what a full one does may say as much about those sessions as about the steps.
+"Steps 2 to 4b cost little" is the plainest reading, not the only one. [inferred]
 
 **Against Q-270 [2].** The overhead doc's replay of [2] makes 52 of 96 iterations light where
-24 were, so 28 more. At the mean difference, 28 × 0.19M is about 5.3M weighted, 1.8% of the
-288.0M in all windows. Even if all 50 quiet or re-fire-only full iterations had cost nothing,
-the saving would be their 23.9M, 8.3%. [inferred]
+24 were, so 28 more, almost all quiet or re-fire only. Those full iterations average 0.48M
+weighted (quiet 0.43M, re-fire only 0.68M) against the light mean of 0.47M, so turning them
+light saves close to nothing. An upper bound, at the overall full-minus-light mean: 28 ×
+0.19M, about 5.3M weighted, 1.8% of the 288.0M in all windows. Even if all 50 quiet or
+re-fire-only full iterations had cost nothing, the saving would be their 23.9M, 8.3%.
+[inferred]
 
 ## 5. What the numbers cannot show
 
@@ -199,13 +221,17 @@ the saving would be their 23.9M, 8.3%. [inferred]
   1.25. [observed: the field is present; not broken out]
 - **Steps inside the main thread.** No line says which step it serves, so step 2 to 4b work
   done in the orchestrator's thread is estimated by comparison (section 4), not measured.
-- **Whether the light passes were really light.** The overhead doc found many "full"
+- **Whether full iterations did the full work.** The overhead doc found many "full"
   iterations carried verdicts forward with one line. If the skill's text were held to (every
   trigger decided again), full iterations would cost more than measured here, by an unknown
   amount.
 - **Anything outside the transcripts.** The health check and other shell work cost no model
   tokens and show only as wall time. A headless `claude -p` run started by a script would
   write its own session, which this matching would not tie to an iteration. [inferred]
+- **A controlled comparison.** Full and light iterations ran on different days and in
+  different sessions, so their difference mixes the steps with context size (section 4).
+- **The window's start.** Its end was tested at 5, 20 and 40 minutes; its start rule was not
+  (section 1, rule 2).
 - **Value.** The cost of a catch is here; what a missed catch would have cost is not.
 - **Retention.** The oldest transcript is from 2026-10-12. If Claude Code's transcript
   cleanup (30 days by default) runs, the early iterations' counts cannot be re-derived after
@@ -250,6 +276,9 @@ subagents' usage is in the same file (no: in `subagents/`, tied back by `toolUse
 
 ### Gotchas
 
+FP-NNN labels are entries in `docs/failure-patterns.md`, the repo's log of root-caused bugs,
+grepped here for earlier measurement mistakes.
+
 Failure-pattern grep: FP-077, FP-078, FP-099, FP-108, FP-110, FP-114, FP-153, FP-176 (see Prior failures section)
 
 - Streaming writes one response as several lines with the same usage; summing lines would
@@ -274,6 +303,10 @@ returned eight entries, all on measurement:
 - FP-153: counts written from recollection. Here: every figure is printed by Appendix B.
 
 ### Design choices
+
+Divergent design is the repo's procedure for a choice among three or more options
+(`workflows/divergent-design.md`); "Path A" means one option dominated, so it was decided
+without asking the owner.
 
 **How to match a transcript to an iteration** (3 options; divergent design, Path A).
 
@@ -306,15 +339,21 @@ the 8 later iterations are left unclassified rather than classified by a new rul
 
 ### Review
 
-One reviewer subagent checked the doc's figures and claims against the scripts' output and
-code (round 1). Findings and fixes are listed under the marker commit's review line in the
-branch log.
+Round 1: one reviewer subagent checked every figure against the scripts' output, re-ran the
+window-end sensitivity, and reproduced Appendix B byte for byte. No must-fix. Fixed: one
+quartile (0.91 to 0.92); the saving estimate now uses the means of the groups [2] actually
+turns light, with 5.3M kept as an upper bound; the comparison's confound (context size,
+clustered sessions) and the untested window start are stated; a claim about catches is
+marked a guess; a heading retitled; the label list completed; terms glossed. Not changed:
+per-loop raw parts stay in the totals only (Appendix A gives loops weighted). Round 2: a
+re-check of the edits against stats.out found the figures unchanged.
 
 ## Appendix A: every iteration
 
 Orch: the orchestrator's window. Weighted M uses the ratios above. Checking subagents and
 loops dispatched: count of root subagents, then their weighted tokens including descendants.
-Kind and outcome are the overhead doc's (`·`: not in it, or not applicable).
+Kind and outcome are the overhead doc's (`·`: not in it, or not applicable). Loop cost is
+given weighted only here; its raw parts are in section 2's totals.
 
 | Iteration (UTC) | Kind | Outcome | Orch cache read M | Orch cache write M | Orch output k | Orch weighted M | Orch wall min | Checking subagents (n, weighted M) | Loops dispatched (n, weighted M) |
 |---|---|---|---|---|---|---|---|---|---|
