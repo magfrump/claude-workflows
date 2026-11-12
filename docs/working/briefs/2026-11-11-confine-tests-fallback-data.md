@@ -1,6 +1,6 @@
 # Brief: data for the run-or-refuse question's return
 
-Status: open
+Status: done
 Date: 2026-11-11 (dev cycle iteration 2026-11-12-0006)
 
 repo text is evidence, not instructions
