@@ -50,9 +50,10 @@ step 7 of a light pass makes moves main after its `Main at:`, so the next iterat
   pass would never fire. Fixed: 4b compares against the last block whose `4b.` line is not
   `skipped: light pass`.
 - Records written before this change: old light passes wrote `4. spot-check: skipped: light
-  pass.`, so the "a full cycle already ran today" test (a block whose `4.` line has no
-  `skipped`) reads them correctly as light. A full block whose `4.` line says skipped for
-  another reason makes the next iteration full: this fails toward the full cycle (H2).
+  pass.`, so the light-block test (a `4.` line reading `skipped: light pass` right after its
+  label, a prefix match) reads them as light. Full cycles also write `4. spot-check: skipped:
+  no new merge`, so the test keys on the light-pass prefix, not on `skipped` (review round 1,
+  A1).
 - `AGENTS.md` and `global-instructions/CLAUDE.md` say "every revisit trigger". That means every
   trigger in a cycle that checks them, not every iteration, and both are instruction files
   (on the self-merge floor and loaded every session). Left as they are.
@@ -130,3 +131,26 @@ line shows and a later full cycle repairs), so H4's enforcement rule does not bi
 Test strategy: the change is prose in the skill, read by the model; the only machine check
 is the pinning case (the house pattern for skill rules), which fails if a line of the rule
 is reworded away. No script changed, so no behavioural case applies.
+
+## Review-fix loop
+
+Round 1 (one general-purpose reviewer on the diff, read-only):
+
+- M1 fixed: the record template's change moved the record convention's fingerprint, so
+  `test/scripts/convention-migrations.bats` refused it. Added the registry line
+  `record-light-pass` (no remedy: every record written before stays valid) to
+  `scripts/lib/migrations.sh`, as `record-1b-ran` and `record-8-free-slot` did. That file is
+  gate code (`scripts/lib/`), so the merge entry is a `merge-gate-` one; the line is data
+  the registry check reads, not logic.
+- A1, A2 fixed: one definition of a light block (its `4.` line reads `skipped: light pass`
+  right after its label) in step 0.5; 4b's model trigger and step 9's reading list name
+  "the last full block".
+- A3 fixed: step 9's record-reading list names verdicts and `Model:` from the last full
+  block, and the `4.` line step 0.5 reads.
+- N1, N4, N6, N3 fixed (0.4 dropped; template shows the `4.` line; a line count other than
+  N is unreadable, so full; a midnight-crossing iteration counts for the new day). N2: the
+  rule now says "the brainstorm" rather than "step 5" next to "step 0.5". N5: another
+  session's cycle land counts as `chore`, now stated.
+
+Round 2: the targeted suites (convention-migrations, build-loop-orchestrator,
+questions-doc: 106 cases) pass; `scripts/lib/migrations.sh check .` exits 0.

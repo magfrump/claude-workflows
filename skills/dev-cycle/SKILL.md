@@ -345,17 +345,19 @@ item with the error and write **no** cycle record, so the next window still star
 last good one.
 
 5. **Full cycle or light pass** (Q-270 [2]). The iteration is a light pass only when both
-   hold, read from what steps 0.2 and 0.4 already read, never judged:
-   - step 0.2's `--main-log` printed, after its `main MAIN N` line, only `chore` lines (or
-     none): an `answers`, `gate` or `other` line is main moving, and a `refuse main-log:`
-     line or the bootstrap means what moved it is unknown;
+   hold, read from what step 0.2 already read, never judged:
+   - step 0.2's `--main-log` printed, after its `main MAIN N` line, exactly N lines, each a
+     `chore` line (another session's cycle land is one too): an `answers`, `gate` or `other`
+     line is main moving, and a `refuse main-log:` line, the bootstrap or a count that is
+     not N means what moved it is unknown;
    - step 0.2's newest record is dated today (its file name against `date +%F`, local, as
-     the record is dated) and holds an `## Iteration` block whose `4.` line has no `skipped`:
-     a full cycle already ran today (a light pass's `4.` line reads `skipped: light pass`).
+     the record is dated; an iteration that crossed midnight counts for the new day) and
+     holds a full block: an `## Iteration` block that is not a light block, one whose `4.`
+     line reads `skipped: light pass` right after its label.
 
    Anything else, an input that cannot be read included, is a full cycle. A light pass skips
-   steps 2, 3, 4 and 4b and runs every other step as written (step 1's health check and step
-   5 gate themselves); each of the four record lines reads `skipped: light pass (REASON)`,
+   steps 2, 3, 4 and 4b and runs every other step as written (step 1's health check and the
+   brainstorm gate themselves); each of the four record lines reads `skipped: light pass (REASON)`,
    REASON naming what decided it (`only chore lines since SHA12; full at DATE-HHMM`), and
    `### Trigger verdicts` stays empty. What is not a commit on main (a model change, a
    release, a dated trigger, a stale item) waits for the day's first iteration: the cost
@@ -541,8 +543,8 @@ only decides whether one is due. Its triggers, from the digest's section 7 and t
 
 - a skill or workflow file added or substantially changed in the window;
 - a decision record added or changed that is a major design decision;
-- the model running this cycle differs from the `Model:` line of the last block whose `4b.`
-  line is not `skipped: light pass` (a light pass writes its model, but checks nothing);
+- the model running this cycle differs from the `Model:` line of the last full block (step
+  0.5: a light pass writes its model, but checks nothing);
 - a drift finding from step 4.
 
 None fired: one line saying so. Any fired: add a scoped deep-audit task to the roadmap naming
@@ -796,8 +798,9 @@ optional sample below, and lands with this iteration. Keep each part short, and 
 Write the record `docs/working/cycles/cycle-YYYY-MM-DD.md`, dated as the digest dates
 (`date +%F`, local time; the branch name's DATE-HHMM is UTC): one file per day, each
 iteration appending its own block below the earlier ones and never editing them (reading
-them only for what steps 1, 2, 4b and 7 take from the last ones: `1.`, `7.` and `Model:`
-lines, verdicts, the last `Main at:`; the file grows all day):
+them only for what steps 0.5, 1, 2, 4b and 7 take from the last ones: `1.`, `4.` and `7.`
+lines, verdicts and `Model:` from the last full block, the last `Main at:`; the file grows
+all day):
 
 ```markdown
 # Cycle YYYY-MM-DD
@@ -812,6 +815,7 @@ Model: <the model id running this cycle>
 1. health and cleanup: <done>; health check <passed at MAIN / unchanged since P / failed / skipped: reason>
 1b. migrations: <none / ran ID / pending ID filed Q-NNN / pending ID open Q-NNN / not checked: why>
 ...
+4. spot-check: <what was checked / skipped: light pass (REASON)>
 4b. deep-audit check: <none fired / task filed: trigger / skipped: light pass (REASON)>
 5. brainstorm: <ran: trigger / not due>
 6. roadmap: <done>

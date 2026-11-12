@@ -628,16 +628,17 @@ shim() {
 @test "SKILL.md step 0.5 runs a light pass only on main-log's chore lines and a full cycle already in today's record, else a full cycle; the four skipped steps are recorded and 4b's model trigger skips light blocks (brief 2026-11-11-light-pass, Q-270 [2])" {
     K="$REPO_ROOT/skills/dev-cycle/SKILL.md"; q=$'\x60'
     a="$(sect '### 0. Start and digest')"
-    for f in "5. **Full cycle or light pass** (Q-270 [2])." "read from what steps 0.2 and 0.4 already read, never judged" \
-        "printed, after its ${q}main MAIN N$q line, only ${q}chore$q lines (or none): an ${q}answers$q, ${q}gate$q or ${q}other$q line is main moving" \
-        "a ${q}refuse main-log:$q line or the bootstrap means what moved it is unknown" \
-        "step 0.2's newest record is dated today" "whose ${q}4.$q line has no ${q}skipped$q: a full cycle already ran today" \
+    for f in "5. **Full cycle or light pass** (Q-270 [2])." "read from what step 0.2 already read, never judged" \
+        "printed, after its ${q}main MAIN N$q line, exactly N lines, each a ${q}chore$q line" "an ${q}answers$q, ${q}gate$q or ${q}other$q line is main moving" \
+        "a ${q}refuse main-log:$q line, the bootstrap or a count that is not N means what moved it is unknown" \
+        "step 0.2's newest record is dated today" "holds a full block: an ${q}## Iteration$q block that is not a light block, one whose ${q}4.$q line reads ${q}skipped: light pass$q right after its label" \
         "Anything else, an input that cannot be read included, is a full cycle." "A light pass skips steps 2, 3, 4 and 4b and runs every other step as written" \
         "each of the four record lines reads ${q}skipped: light pass (REASON)$q"; do
         [[ "$a" == *"$f"* ]] || { echo "step 0 lacks: $f"; return 1; }
     done
     # A light pass writes Model: but checks nothing, so it must not reset 4b's model trigger.
-    [[ "$(sect '### 4b. Deep-audit check (conditional)')" == *"line of the last block whose ${q}4b.$q line is not ${q}skipped: light pass$q"* ]] || { echo "4b compares against a light block"; return 1; }
+    [[ "$(sect '### 4b. Deep-audit check (conditional)')" == *"differs from the ${q}Model:$q line of the last full block (step 0.5"* ]] || { echo "4b compares against a light block"; return 1; }
+    grep -qxF '4. spot-check: <what was checked / skipped: light pass (REASON)>' "$K" || { echo "the record template lacks the 4. line"; return 1; }
     grep -qxF '4b. deep-audit check: <none fired / task filed: trigger / skipped: light pass (REASON)>' "$K" || { echo "the record template lacks the light line"; return 1; }
     ! grep -qF 'so it checks all of them every time' "$K" || { echo "the intro still says every time"; return 1; }
 }
