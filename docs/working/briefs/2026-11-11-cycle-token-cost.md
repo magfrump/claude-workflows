@@ -36,3 +36,5 @@ Paths: docs/working/research-2026-11-11-cycle-token-cost.md docs/working/briefs/
 - Changing the dev-cycle skill, scripts or the record's shape (the light-pass brief, `docs/working/briefs/2026-11-11-light-pass.md`, is changing the skill now).
 - Copying any transcript, or any part of one, into the repo.
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`: the dev cycle owns those.
+
+Dispatched: 1
