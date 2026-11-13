@@ -81,6 +81,16 @@ Assume this shipped and a run was harmed or a check was skipped. How:
    `host-tools.sha256`, the host runs the old `cc-verify`; the edited copy refuses to run
    un-blessed (`hash_ok`), so nothing runs half-updated.
 
+## Review
+
+Round 1 (one general-purpose reviewer, commit 3a9e162f): no red. Amber: an exported
+CDPATH made `cd -P -- repo/` pick another directory (fails at the clone, but the bug
+returns); fixed by passing a relative REPO as `./REPO`, which also stops a REPO of `-`
+meaning the last directory, with a CDPATH case in the test. Green, taken: the help and
+guide say "a URL or host:path"; the live-run test now waits on a builtin `read` from a
+FIFO, so its kill leaves no `sleep` child. Green, left: line 135's `(cd stage && ...)`
+has the same CDPATH exposure but predates this change and is out of the brief's scope.
+
 ## Gotchas
 
 - Failure-pattern grep: FP-020, FP-062, FP-129, FP-175

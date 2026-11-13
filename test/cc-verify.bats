@@ -139,7 +139,8 @@ branch_json() {  # branch_json NAME JSON: a branch whose devcontainer.json is JS
   mkdir "$CC_VERIFY_ROOT" "$CC_VERIFY_ROOT/run-1-999999999" "$CC_VERIFY_ROOT/run-1793211495-572412.d"
   touch "$CC_VERIFY_ROOT/run-2-2"
   # A live run between its mkdir and its record write: the name carries its PID.
-  bash -c 'sleep 60; :' cc-verify-live & live=$!
+  # A builtin read on a FIFO, so killing the PID leaves no child behind.
+  mkfifo "$T/fifo"; bash -c 'read -rt 60 _ <> "$1" || :' cc-verify-live "$T/fifo" & live=$!
   mkdir "$CC_VERIFY_ROOT/run-3-$live"
   run "$T/cfg/cc-verify.sh" --clean
   kill "$live"
@@ -157,8 +158,8 @@ branch_json() {  # branch_json NAME JSON: a branch whose devcontainer.json is JS
   run "$T/cfg/cc-verify.sh" --check "$T/check" . feat/x <<< y
   [ "$status" -eq 0 ]
   [[ "$output" == *"RESULT cc-verify pass tree="* ]]
-  cd "$T"
-  run "$T/cfg/cc-verify.sh" --check "$T/check" repo/ feat/x <<< y
+  cd "$T"; mkdir -p "$T/elsewhere/repo"   # an exported CDPATH must not redirect it
+  CDPATH="$T/elsewhere" run "$T/cfg/cc-verify.sh" --check "$T/check" repo/ feat/x <<< y
   [ "$status" -eq 0 ]
 }
 

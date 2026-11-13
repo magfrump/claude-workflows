@@ -6,7 +6,8 @@
 #       stage `git merge-tree --write-tree main BRANCH` from REPO's objects, run
 #       MAIN's installed cc-isolated on that stage and a scratch clone named
 #       VERIFY-<tree8>, run FILE in its container, then tear it all down
-#       REPO: a path to a git repo (a relative one is resolved first) or a URL git clones
+#       REPO: a path to a git repo (a relative one is resolved first), or a URL or
+#       host:path that git clones
 #   cc-verify --clean      remove what an interrupted run left (a new run refuses until then)
 #   cc-verify --help       this text
 # The config verified is the merge tree's devcontainer-config/, never REPO's
@@ -221,8 +222,10 @@ fi
 
 REPO="${POS[0]}" BRANCH="${POS[1]}"
 # A local path is made absolute here, before the cd into the run dir; a URL is kept.
-if [ -d "$REPO" ]; then REPO="$(cd -P -- "$REPO" && pwd)" || die "cannot resolve REPO $REPO."
-elif [ -e "$REPO" ]; then REPO="$(cd -P -- "$(dirname -- "$REPO")" && pwd)/$(basename -- "$REPO")" || die "cannot resolve REPO $REPO."; fi
+# The ./ keeps cd from reading CDPATH, or a REPO of - as the last directory.
+r="$REPO"; [[ "$r" == /* ]] || r="./$r"
+if [ -d "$r" ]; then REPO="$(cd -P -- "$r" && pwd)" || die "cannot resolve REPO $REPO."
+elif [ -e "$r" ]; then REPO="$(cd -P -- "$(dirname -- "$r")" && pwd)/$(basename -- "$r")" || die "cannot resolve REPO $REPO."; fi
 [ -f "$CHECK" ] && [ -r "$CHECK" ] || die "cannot read the check file $CHECK."
 BLOCK="$(cat -- "$CHECK")"   # read once: a later edit of FILE changes nothing
 mkdir -p -- "$ROOT"
