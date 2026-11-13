@@ -177,7 +177,8 @@ The loop's marker also said the host paste must wait for Q-277 (whether to insta
 - **If the answer differs:** n/a.
 
 ### Q-281 · constraint-s4-keep-promote-drop
-**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** ANSWERED
+**Answered:** [1] (owner, in session 2026-11-13: "Q-281: [1], Q-282: [1], Q-283: [1], Q-284: [1]"). Matches the interim; `docs/constraints.md` is unchanged.
 
 Should soft constraint S4 in `docs/constraints.md` ("mechanical steps go in tested scripts, not prose") stay soft, become hard, or go?
 
@@ -198,7 +199,8 @@ This is call A of four from the small constraint-drift audit, which you asked fo
 - **If the answer differs:** you commit the edit to `docs/constraints.md` (no build loop may); the audit doc has the text ready to paste.
 
 ### Q-282 · constraint-s8-no-growth-clause
-**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** ANSWERED
+**Answered:** [1] (owner, in session 2026-11-13: "Q-281: [1], Q-282: [1], Q-283: [1], Q-284: [1]"). Matches the interim; `docs/constraints.md` is unchanged.
 
 Should the "no growth of the 500-plus-line files" clause of soft constraint S8 stay as it is, be reworded as a preference, or become a hard line?
 
@@ -219,7 +221,8 @@ Call B of the four from the constraint-drift audit (see Q-281 for why these are 
 - **If the answer differs:** you commit the edit to `docs/constraints.md`.
 
 ### Q-283 · constraint-s10-owner-wait-clause
-**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** ANSWERED
+**Answered:** [1] (owner, in session 2026-11-13: "Q-281: [1], Q-282: [1], Q-283: [1], Q-284: [1]"). Matches the interim; `docs/constraints.md` is unchanged.
 
 Should the S10 clause "no merge or loop that waits on the user's manual action when a fail-closed alternative exists" stay soft, become a new hard constraint (H5), or go?
 
@@ -240,7 +243,8 @@ Call C of the four from the constraint-drift audit (see Q-281). It was flagged a
 - **If the answer differs:** you commit the edit to `docs/constraints.md`.
 
 ### Q-284 · constraint-instrument-code-in-fork
-**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** ANSWERED
+**Answered:** [1] (owner, in session 2026-11-13: "Q-281: [1], Q-282: [1], Q-283: [1], Q-284: [1]"). Matches the interim; `docs/constraints.md` is unchanged.
 
 Should the unwritten rule "benchmark and review-instrument code lives in the SWRBench fork" stay out of `docs/constraints.md`, or be added as a soft or hard line?
 
