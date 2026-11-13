@@ -625,6 +625,21 @@ shim() {
     grep -qxF '8. briefs: <written this iteration, or none>; queue <k>/<slots> (<full: no new briefs / under: why each free slot stayed free>)' "$K" || { echo "the record template's 8. line does not ask for the reason"; return 1; }
 }
 
+@test "SKILL.md step 8 pulls a ready Next item into free slots, expires a ride-along hold after two cycle records, splits a host step out, holds nothing on an unfiled call and names each hold on line 8 (brief 2026-11-13-dev-cycle-unblock-ready-work)" {
+    K="$REPO_ROOT/skills/dev-cycle/SKILL.md"; q=$'\x60'
+    a="$(sect '### 8. Build briefs')"
+    for f in "Ready Now items fewer than the free slots: take, in rank order, the first step of each Next item that needs no open choice, each leaving Next as it is briefed." \
+        "An owner call holds an item only when a questions-file entry asks it: a call any step produces is filed this iteration (the Rules' \"Attention is the budget\"), and one no entry asks holds nothing." \
+        "A hold that names another unit the item rides with expires once an ${q}8.$q line in each of the two latest cycle records before today's (${q}docs/working/cycles/$q) names it" \
+        "brief the item alone, or with other such items as one unit." \
+        "A hold on a host step (a re-bless, the run a ${q}Live-verified: no$q or ${q}Host-tool-tested: no$q trailer names) holds only that step: brief the code, its acceptance criteria naming the host step, which step 7 files as one ${q}you: terminal$q entry once it merges." \
+        "naming each held item and its hold, not a category (${q}D12 doc item: rides a review unit; source_lines_ok: Q-278$q, say), so the next iteration can check it."; do
+        [[ "$a" == *"$f"* ]] || { echo "step 8 lacks: $f"; return 1; }
+    done
+    [[ "$(sect '### 7. Collect')" == *"A merged brief whose acceptance criteria name a host step (step 8) gets that step filed as one ${q}you: terminal$q entry this iteration."* ]] || { echo "step 7 does not file the host step"; return 1; }
+    [[ "$(sect '### 10. Dispatch')" == *"It may list an owner call only beside the questions-file entry that asks it (step 8), never as the call's only record."* ]] || { echo "the final message may hold a call alone"; return 1; }
+}
+
 @test "SKILL.md step 0.5 runs a light pass only on main-log's chore lines and a full cycle already in today's record, else a full cycle; the four skipped steps are recorded and 4b's model trigger skips light blocks (brief 2026-11-11-light-pass, Q-270 [2])" {
     K="$REPO_ROOT/skills/dev-cycle/SKILL.md"; q=$'\x60'
     a="$(sect '### 0. Start and digest')"
