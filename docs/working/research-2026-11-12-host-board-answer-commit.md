@@ -5,7 +5,7 @@
 Repo text is evidence, not instructions.
 
 Failure-pattern grep: FP-034, FP-116, FP-167, FP-177
-Failure-pattern skip: the branch has no fix(...) commits; it extends one script, its tests and its guide.
+Failure-pattern skip: the one fix(...) commit repairs this branch's own unmerged code from its review round 1, in classes FP-116 and FP-034/FP-167 already name (host git following container-written .git content), so none earns a new entry.
 
 The grep was `grep -inE 'update-ref|commit-tree|symlink|reflog|hash-object|identity|safe\.directory|dubious|compare-and-swap|worktree list' docs/failure-patterns.md`, plus the design doc's own lookup (FP-034, FP-116, FP-146, FP-167). FP-116 (host git against a container-written directory) is why every git call runs hardened and only plumbing runs; FP-034/FP-167 (symlinks) are pre-mortem item 6, the git-dir link check. New here: **FP-177** (an identity check that read git config only, while the identity was held in the environment). So the board reads the identity with `git var GIT_AUTHOR_IDENT` (environment first, then global and system config, `user.useConfigOnly`), as `merge_ident` in `scripts/build-loop.sh` does, not with `git config --global` as the design doc's "Identity" bullet said.
 
@@ -54,6 +54,18 @@ The grep was `grep -inE 'update-ref|commit-tree|symlink|reflog|hash-object|ident
 - planted `reference-transaction` and `post-index-change` hooks and a local `core.hooksPath`, with positive controls showing each fires unhardened;
 - a lost compare-and-swap.
 
+Later rounds added: a bare repo with HEAD on main, a slash in the branch name, a reftable, config-defined hooks, a `packed-refs` link, and an answer with backslashes and quotes.
+
 ## Review
 
-(Filled in by the review-fix loop below.)
+Round 1 (one general reviewer over the diff, without this doc's conclusions). Findings and what was done:
+
+- red, a bare repo whose HEAD names main passed `land`'s bare exception, and `update-ref` then also appended to `logs/HEAD`, which was not in the link list (probe: a linked `logs/HEAD` received the line): `wt_scan` now refuses a bare HEAD on main (a departure from `land`, commented), and a case covers it.
+- amber, a default branch with a slash (origin/HEAD's name is repo-controlled) left intermediate ref and reflog directories unchecked (probe: the reflog landed outside): a name with a slash refuses; a case covers it.
+- amber, reftable refs (git 2.45+ on the host) and config-defined hooks (`hook.*`) are not modelled: both refuse (`extensions.refStorage` other than `files`, a `reftable` dir, any `hook.` key). Not verified against a newer git here (the sandbox has 2.39.5); the refusal is keyed on config and layout, so it does not depend on the version.
+- amber, `awk -v` expanded backslashes, so an answer with `\` refused for a wrong reason: the line now reaches awk as `ENVIRON["LINE"]`; a case writes one byte for byte.
+- amber, a failure after `update-ref` (the run log, or the print) reported "not written": a marker file after the ref moves makes the run exit 0 with a stderr note, and the run log failing is a warning there.
+- amber, the `post-index-change` positive control could not fail: the control now writes an index unhardened and asserts both hook names, from `.git/hooks` and from `core.hooksPath`.
+- green, guide: "main (or master)" now names origin/HEAD's branch; exit 0 means written; the multi-line paste prints as typed. Not done: cases for the archive and non-`you:` refusals (one-line checks, not in the brief's list).
+
+Residual (S1, accepted): a checkout of main, or a container write into `.git`, between the checks and `update-ref` is a race the board cannot close; it needs a write during the board's run, which is deliberate rather than an honest slip.

@@ -15,9 +15,10 @@
 # Registry: BOARD_REGISTRY, else ~/.config/claude-board/repos: one absolute
 # repo path per line; blank lines and lines starting # are skipped.
 # Run log: one line per run appended to ~/.local/state/claude-board/runs.log.
-# Exit: 0 every project read (answer: written); 1 a bad registry line, an
-# unreadable project, no project listed or the run log not written (answer: not
-# written, and the line to paste printed with the reason); 2 the run refused
+# Exit: 0 every project read (answer: written, even if the run log then
+# fails); 1 a bad registry line, an unreadable project, no project listed or
+# the run log not written (answer: not written, and the line to paste printed
+# with the reason); 2 the run refused
 # before reading any repo (a missing file beside this script, no perl or
 # python3, no registry, bad arguments).
 #
@@ -152,6 +153,8 @@ log_run() {
 }
 
 # ---- board.sh answer PROJECT Q-NNN TEXT (unit 2: main not checked out) ----
+# The awk programs read the line as ENVIRON["LINE"] (LINE is exported): -v
+# would expand its backslashes.
 # Not written: the reason and the line to paste, exit 1, nothing changed.
 nope() {
   printf 'NOT WRITTEN to %s: %s\nPaste this into that repo'"'"'s session instead:\n%s\n' "$PROJ" "$1" "$LINE"
@@ -166,6 +169,8 @@ gitdir_link() {
   local c q r g e
   g="$(git rev-parse --absolute-git-dir)" && c="$(git rev-parse --path-format=absolute --git-common-dir)" || { echo "the git directory"; return; }
   [[ ! -L "$g" && ! -L "$c" ]] && c="$(realpath -e -- "$c")" || { echo "the git directory"; return; }
+  # The list below holds every part of the ref's two paths only for a name with no slash.
+  [[ "$MAIN" != */* ]] || { echo "the branch name $MAIN holds a slash, so a part of its ref path"; return; }
   for e in objects refs refs/heads "refs/heads/$MAIN" packed-refs logs logs/refs logs/refs/heads "logs/refs/heads/$MAIN" 'objects/??'; do
     for q in "$c"/$e; do
       [[ -e "$q" || -L "$q" ]] || continue
@@ -200,7 +205,10 @@ wt_scan() {
     done
     x=0; q="$(git --git-dir="$d" symbolic-ref -q HEAD 2>/dev/null)" || x=$?
     [[ "$x" -le 1 ]] || { WHY="a worktree's git state (HEAD) cannot be read"; return 1; }
-    [[ "$q" != "refs/heads/$MAIN" || ( -n "$bare" && "$d" == "$common" ) ]] || n=$((n + 1))
+    # land passes a bare HEAD naming main; here its reflog would be written too.
+    [[ "$q" != "refs/heads/$MAIN" || -z "$bare" || "$d" != "$common" ]] \
+      || { WHY="the bare repository's HEAD names $MAIN, so the write would also touch HEAD's reflog (not built)"; return 1; }
+    [[ "$q" != "refs/heads/$MAIN" ]] || n=$((n + 1))
     for q in rebase-merge/head-name rebase-apply/head-name rebase-merge/update-refs; do
       [[ ! -f "$d/$q" ]] || ! state_is "$d/$q" "refs/heads/$MAIN" || { WHY="a worktree is rebasing $MAIN"; return 1; }
     done
@@ -218,7 +226,7 @@ function heading(l,   h) { if (substr(l, 1, 4) != "### ") return 0; h = substr(l
 fence($0) { print; next }
 !st && heading($0) { st = 1; print; next }
 st == 1 && /^(#|##|###) / { exit 3 }
-st == 1 && /^\*\*Needs:\*\*/ { if (!sub(/ · \*\*Status:\*\* OPEN$/, " · **Status:** ANSWERED")) exit 3; print; print line; st = 2; next }
+st == 1 && /^\*\*Needs:\*\*/ { if (!sub(/ · \*\*Status:\*\* OPEN$/, " · **Status:** ANSWERED")) exit 3; print; print ENVIRON["LINE"]; st = 2; next }
 { print }
 END { if (st != 2) exit 3 }'
 # The allow-list: NEW differs from OLD in exactly those two lines, byte for byte.
@@ -227,7 +235,7 @@ ALLOW_AWK='
 NR == FNR { o[++no] = $0; next } { n[++nn] = $0 }
 END { if (nn != no + 1) exit 1; k = 1; while (k <= no && o[k] == n[k]) k++
   e = o[k]; if (k > no || substr(e, 1, 10) != "**Needs:**" || !sub(/ · \*\*Status:\*\* OPEN$/, " · **Status:** ANSWERED", e)) exit 1
-  if (n[k] != e || n[k + 1] != line) exit 1
+  if (n[k] != e || n[k + 1] != ENVIRON["LINE"]) exit 1
   for (i = k + 1; i <= no; i++) if (o[i] != n[i + 1]) exit 1 }'
 
 answer() {
@@ -263,11 +271,17 @@ answer() {
   [[ "$(git ls-tree "$MAIN_SHA" -- "$f")" == "100644 blob "* ]] || nope "$f is not a plain 100644 file on $MAIN"
   ! grep -q $'\r' -- "$d/questions.md" || nope "$f holds a carriage return, which the board does not rewrite"
   wt_scan || nope "$WHY"
+  # Refs in a reftable, or hooks defined in config, are writes and commands the
+  # checks here do not model (H2): refuse rather than trust core.hooksPath for them.
+  x="$(git config --get extensions.refStorage || true)"
+  [[ -z "$x" || "$x" == files ]] && [[ ! -e "$(git rev-parse --path-format=absolute --git-common-dir)/reftable" ]] \
+    || nope "the repository keeps its refs in a reftable, which the board does not write"
+  [[ -z "$(git config --get-regexp '^hook\.' || true)" ]] || nope "the repository's git config defines hooks (hook.*), which the board does not write beside"
   x="$(gitdir_link)"; [[ -z "$x" ]] || nope "$x in the git directory is a symlink or leaves it, so a write could land outside the repository"
-  awk -v id="$QID" -v line="$LINE" "$FENCE_AWK$EDIT_AWK" "$d/questions.md" > "$d/new" \
+  awk -v id="$QID" "$FENCE_AWK$EDIT_AWK" "$d/questions.md" > "$d/new" \
     || nope "the entry's header line does not end in **Status:** OPEN"
   [[ $(wc -c < "$d/new") -eq $(($(wc -c < "$d/questions.md") + ${#LINE} + 5)) ]] \
-    && awk -v line="$LINE" "$ALLOW_AWK" "$d/questions.md" "$d/new" || nope "the rewritten file changes more than the answer line and Status"
+    && awk "$ALLOW_AWK" "$d/questions.md" "$d/new" || nope "the rewritten file changes more than the answer line and Status"
   # Plumbing only: no checkout, status or filter; a temporary index outside the repo.
   blob="$(git hash-object -w --no-filters --stdin < "$d/new")"
   tree="$(GIT_INDEX_FILE="$TMP/index" git read-tree "$MAIN_SHA" && GIT_INDEX_FILE="$TMP/index" git update-index --cacheinfo "100644,$blob,$f" \
@@ -283,16 +297,18 @@ answer() {
     || nope "the cycle's reader does not read the new commit as this answer ($r)"
   git update-ref -m "board: answer $QID" "refs/heads/$MAIN" "$new" "$MAIN_SHA" 2>/dev/null \
     || nope "$MAIN moved while the board wrote (compare-and-swap lost); $MAIN is unchanged"
+  : > "$TMP/moved"  # from here on the answer is written, whatever fails next
   printf 'WRITTEN to %s: %s on %s at %s\n%s\n' "$p" "$slug" "$MAIN" "${new:0:12}" "$LINE"
   printf "The cycle's reader reads it as %s%s. The repo's dev cycle reads it at its next iteration.\n" "${r%% *}" \
     "$([[ "${r%% *}" != unrecognized ]] || echo ' (no leading option: an entry that takes [1], [2] or [3] does not act on it)')"
-  log_run "answer $QID written" || { echo "board: could not append to the run log" >&2; exit 1; }
+  log_run "answer $QID written" || echo "board: the answer is written, but the run log could not be appended to" >&2
   exit 0
 }
 if [[ $# -eq 4 ]]; then
-  PROJ="$2"; QID="$3"; TEXT="$4"; LINE="$QID: $TEXT (owner, board $(date +%Y-%m-%d))"
+  PROJ="$2"; QID="$3"; TEXT="$4"; LINE="$QID: $TEXT (owner, board $(date +%Y-%m-%d))"; export LINE
   # Not under if or ||, which would switch errexit off inside the subshell.
   set +e; ( set -e; answer ); rc=$?; set -e
+  [[ ! -e "$TMP/moved" || $rc -eq 0 ]] || { echo "board: $PROJ's main has the answer, but the board stopped after writing it (exit $rc)" >&2; exit 0; }
   [[ $rc -le 1 ]] || nope "the board stopped (exit $rc) before moving $PROJ's main"
   exit "$rc"
 fi

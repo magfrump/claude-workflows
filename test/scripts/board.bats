@@ -277,13 +277,14 @@ refused() {
 }
 
 @test "a symlink in the git directory refuses the write, and nothing lands through it" {
-    for k in reflog heads fanout; do
+    for k in reflog heads fanout packed; do
         rm -rf "$BATS_TEST_TMPDIR/alpha" "$BATS_TEST_TMPDIR/out"; : > "$BOARD_REGISTRY"; mkdir "$BATS_TEST_TMPDIR/out"
         offmain alpha; c="$BATS_TEST_TMPDIR/alpha/.git"
         case $k in
             reflog) mv "$c/logs/refs/heads/main" "$BATS_TEST_TMPDIR/out/log"; ln -s "$BATS_TEST_TMPDIR/out/log" "$c/logs/refs/heads/main"; want="logs/refs/heads/main" ;;
             heads) mv "$c/refs/heads" "$BATS_TEST_TMPDIR/out/heads"; ln -s "$BATS_TEST_TMPDIR/out/heads" "$c/refs/heads"; want="refs/heads" ;;
             fanout) mkdir "$BATS_TEST_TMPDIR/out/ab"; ln -s "$BATS_TEST_TMPDIR/out/ab" "$c/objects/ab"; want="objects/ab" ;;
+            packed) git -C "$c/.." pack-refs --all; mv "$c/packed-refs" "$BATS_TEST_TMPDIR/out/p"; ln -s "$BATS_TEST_TMPDIR/out/p" "$c/packed-refs"; want="packed-refs" ;;
         esac
         ls -lR "$BATS_TEST_TMPDIR/out" > "$BATS_TEST_TMPDIR/out.before"
         ans alpha Q-001 x; refused alpha "$want in the git directory is a symlink or leaves it"
@@ -298,10 +299,16 @@ refused() {
         printf '#!/bin/sh\necho %s >> "%s"\n' "$h" "$hit" > "$hd/$h"; cp "$hd/$h" "$BATS_TEST_TMPDIR/hk/$h"
         chmod +x "$hd/$h" "$BATS_TEST_TMPDIR/hk/$h"
     done
-    # The positive controls: unhardened, a ref update fires each planted hook.
-    git -C "$a" update-ref refs/heads/probe main; [ -e "$hit" ]; rm "$hit"
-    git -C "$a" config core.hooksPath "$BATS_TEST_TMPDIR/hk"
-    git -C "$a" update-ref -d refs/heads/probe; [ -e "$hit" ]; rm "$hit"
+    # The positive controls: unhardened, the board's own plumbing (a ref update,
+    # an index write) fires each planted hook, from .git and from core.hooksPath.
+    ctl() {
+        git -C "$a" update-ref refs/heads/probe main && git -C "$a" update-ref -d refs/heads/probe
+        GIT_INDEX_FILE="$BATS_TEST_TMPDIR/ctl-index" git -C "$a" read-tree main
+        grep -qx reference-transaction "$hit" && grep -qx post-index-change "$hit" && rm "$hit"
+    }
+    ctl
+    git -C "$a" config core.hooksPath "$BATS_TEST_TMPDIR/hk"; rm "$hd/reference-transaction" "$hd/post-index-change"
+    ctl
     ans alpha Q-002 '[1]'
     [ "$status" -eq 0 ] || { echo "$output"; false; }
     [ "$(git -C "$a" rev-parse main~1)" = "$BEFORE" ] && [ ! -e "$hit" ]
@@ -317,4 +324,32 @@ refused() {
     PATH="$g:$PATH" board "$BOARD" answer alpha Q-001 '[1]'
     [ "$status" -eq 1 ] && [[ "$output" == *"NOT WRITTEN to alpha: main moved while the board wrote (compare-and-swap lost)"* ]] || { echo "$output"; false; }
     [ "$(git -C "$a" log -1 --format=%s main)" = race ] && [ "$(git -C "$a" rev-parse main~1)" = "$BEFORE" ]
+}
+
+@test "repository shapes the checks do not model refuse: a bare HEAD on main, a slash in the branch, a reftable, config hooks" {
+    offmain alpha; a="$BATS_TEST_TMPDIR/alpha"
+    git -C "$a" config hook.x.command "touch $BATS_TEST_TMPDIR/ran"
+    ans alpha Q-001 x; refused alpha "the repository's git config defines hooks (hook.*)"
+    git -C "$a" config --unset hook.x.command
+    git -C "$a" config extensions.refStorage reftable
+    ans alpha Q-001 x; refused alpha "the repository keeps its refs in a reftable"
+    git -C "$a" config --unset extensions.refStorage; mkdir "$a/.git/reftable"
+    ans alpha Q-001 x; refused alpha "the repository keeps its refs in a reftable"
+    rm -r "$a/.git/reftable"
+    # origin/HEAD naming dev/main makes that the default branch.
+    git -C "$a" branch -q dev/main main; git -C "$a" update-ref refs/remotes/origin/dev/main main
+    git -C "$a" symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/dev/main
+    ans alpha Q-001 x; refused alpha "the branch name dev/main holds a slash"
+    : > "$BOARD_REGISTRY"; git clone -q --bare "$a" "$BATS_TEST_TMPDIR/bare.git"; echo "$BATS_TEST_TMPDIR/bare.git" >> "$BOARD_REGISTRY"
+    git -C "$BATS_TEST_TMPDIR/bare.git" symbolic-ref HEAD refs/heads/main
+    BEFORE="$(git -C "$BATS_TEST_TMPDIR/bare.git" rev-parse main)"; board "$BOARD" answer bare.git Q-001 x; refused bare.git "the bare repository's HEAD names main"
+    [ ! -e "$BATS_TEST_TMPDIR/ran" ]
+}
+
+@test "an answer with backslashes and quotes is written byte for byte" {
+    offmain alpha; a="$BATS_TEST_TMPDIR/alpha"
+    ans alpha Q-001 '[2] use C:\temp\n "as is" & $HOME'
+    [ "$status" -eq 0 ] || { echo "$output"; false; }
+    run git -C "$a" show main:docs/working/questions.md
+    [[ "$output" == *$'\n''Q-001: [2] use C:\temp\n "as is" & $HOME (owner, board '* ]] || { echo "$output"; false; }
 }
