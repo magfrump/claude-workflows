@@ -37,3 +37,5 @@ Paths: docs/working/research-2026-11-12-host-board-answer-route.md docs/working/
 - A Kanban or other graphical view, a phone view, or the playtest proposal.
 - Running anything on the host or reading other repos (none are mounted here).
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`: the dev cycle owns those.
+
+Dispatched: 1
