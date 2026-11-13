@@ -294,6 +294,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   the answer commit when main is not checked out, then in place when it is. The
   registry's contents are the owner's (asked in the cycle's final message), needed
   before the first host check, not the build.
+  2026-11-12: unit 1, the listing, merged (763aa482, self-merge; `scripts/board.sh`,
+  `guides/cross-project-board.md`). It reaches the host at the next release. Unit 2 is In
+  flight.
 
 - **Owner feedback 2026-10-29** (`docs/human-author/feedback-10-29-26.txt`), four points:
   1. An answer given in session should approve a merge entry (the gate is too strict).
@@ -318,9 +321,10 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   `docs/working/briefs/2026-11-12-sandbox-return-research.md`. One docs-only research
   and divergent-design unit on the three requirements: worktree creation under the
   sandbox, nested worktree paths, the credential after a refresh. Self-merge.
-- **Cross-project board v1, unit 1: the listing** (owner request, 2026-11-12):
-  `docs/working/briefs/2026-11-12-host-board-listing.md`. `scripts/board.sh` lists each
-  registered repo's open `you:` questions from its main, with tests and a guide. Self-merge.
+- **Cross-project board v1, unit 2: the answer commit when main is not checked out**
+  (owner request, 2026-11-12): `docs/working/briefs/2026-11-12-host-board-answer-commit.md`.
+  `scripts/board.sh answer PROJECT Q-NNN TEXT` writes the answer as a commit on that repo's
+  main; it prints the line instead when main is checked out (unit 3). Self-merge.
 
 ## Next
 
@@ -636,6 +640,9 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- Cross-project board v1, unit 1: the listing (owner request;
+  `docs/working/briefs/closed/2026-11-12-host-board-listing.md`). Merged 763aa482,
+  self-merge: `scripts/board.sh`, `test/scripts/board.bats`, `guides/cross-project-board.md`.
 - Cross-project board v1: the design, and how an answer gets back to its repo (owner
   request; `docs/working/briefs/closed/2026-11-12-host-board-answer-route.md`). Merged
   1ca6d02b, self-merge.
