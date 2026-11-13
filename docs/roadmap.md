@@ -224,8 +224,10 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   review, gate code (a `merge-gate` entry).
 - `docs/working/briefs/2026-11-13-small-records-review.md`: D12's log row, the
   `Harness feedback` warning, decision 018's cite, the `exec "$@"` failure pattern; review.
+  2026-11-13: ready at 68b106d0; merge entry Q-287.
 - `docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md`: `--clean`, a
   relative REPO, `source_lines_ok`; review, with a host paste after the merge.
+  2026-11-13: ready at f16bbdce; merge entry Q-288 (its FP-181 clashes with Q-287's).
 
 ## Next
 

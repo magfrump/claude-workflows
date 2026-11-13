@@ -33,12 +33,98 @@ The index below is generated — edit entries, not the table.
 | [Q-284](#q-284--constraint-instrument-code-in-fork) | you: judgment | Should the unwritten rule "benchmark and review-instrument code lives in the SWRBench fork" stay out of `do... | 2026-11-13 |
 | [Q-285](#q-285--review-gap-audit-which-repo) | you: judgment | Which repo should the review-gap audit run on first, or should the item be dropped? | 2026-11-13 |
 | [Q-286](#q-286--trial-set-2-ends) | you: judgment | The second trial set (T8–T12) ends about today. Which of them should stay? | 2026-11-13 |
+| [Q-287](#q-287--merge-2026-11-13-small-records-review-68b106d0a358) | you: judgment | Merge the four small record fixes (brief `docs/working/briefs/2026-11-13-small-records-review.md`, branch `... | 2026-11-13 |
+| [Q-288](#q-288--merge-2026-11-13-cc-verify-clean-and-relative-repo-f16bbdcedaf8) | you: judgment | Merge the three `cc-verify` fixes (brief `docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.... | 2026-11-13 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | Q-167: (b) and (d) answered 2026-11-07 (answers-11-7-26.txt), on bless 91c5f79dd91eb7ee, which --probe-only... | 2026-10-15 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Q-255: first half answered 2026-11-07 (answers-11-7-26.txt): all four fronted probes through plugins-artifa... | 2026-11-05 |
 <!-- index:end -->
 
 ## Open
+
+### Q-287 · merge-2026-11-13-small-records-review-68b106d0a358
+**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** OPEN
+
+Merge the four small record fixes (brief `docs/working/briefs/2026-11-13-small-records-review.md`, branch `docs/small-records-review`)?
+
+**If you say no:** nothing merges; the health check keeps printing the `Harness feedback` warning, and the decision log still says every cycle iteration is a full cycle.
+
+The four fixes, all docs, 113 lines added and 6 removed:
+1. Decision-log row 89 records your Q-270 [2] (the light pass between full cycles) as the new answer to D12, the build-loop handoff plan's "every iteration is a full cycle", and the plan is corrected to match.
+2. `AGENTS.md` and `GEMINI.md` each gain a 2-line `## Harness feedback` section, a tool-neutral version of the global instructions' section (it names `guides/harness-feedback.md` and lets an agent run `harness-feedback.py` from `~/.claude/scripts/` or a claude-workflows clone). Those files are symlinked into other projects, which is why they need it. This ends the warning every health check printed.
+3. Decision 018 cites its reference pattern in `scripts/confine-tests.sh` by the comment's text instead of a line number that drifted.
+4. A new failure pattern, FP-181: under `sh` where `sh` is bash, `exec "$@"` reads a dash-leading word as an option (`-a NAME CMD` runs a different program; fixed in `b0ebed19`).
+
+Tip `68b106d0a358945a9341fc6a857416f48e856db3`. The gate's check, as printed:
+
+```
+ok docs/working/briefs/2026-11-13-small-records-review.md 68b106d0a358945a9341fc6a857416f48e856db3 8e504d69b7d7c841db99c1fde94761009da9f4e1
+path docs/working/briefs/2026-11-13-small-records-review.md M AGENTS.md
+path docs/working/briefs/2026-11-13-small-records-review.md M GEMINI.md
+path docs/working/briefs/2026-11-13-small-records-review.md M docs/decisions/018-argv-exec-over-shell-string-interpolation.md
+path docs/working/briefs/2026-11-13-small-records-review.md M docs/decisions/log.md
+path docs/working/briefs/2026-11-13-small-records-review.md M docs/failure-patterns.md
+path docs/working/briefs/2026-11-13-small-records-review.md M docs/working/briefs/2026-11-13-small-records-review.md
+path docs/working/briefs/2026-11-13-small-records-review.md M docs/working/plan-build-loop-handoff.md
+path docs/working/briefs/2026-11-13-small-records-review.md A docs/working/research-2026-11-13-small-records-review.md
+```
+
+Self-merge's rules would have refused `AGENTS.md` and `GEMINI.md` (instruction files other agents load) and the decision records and failure patterns (your records), which is why this one comes to you. The loop's marker had no question. Its tests, as it reported them: health check passed with the warning gone, the AGENTS/GEMINI sync test 4 of 4, the hermeticity lint clean; two review passes found nothing that had to be fixed.
+
+- **Read:** `git diff refs/heads/main...68b106d0` · `docs/working/research-2026-11-13-small-records-review.md` (on the branch)
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | the four fixes land on main | none | a wording in the new `AGENTS.md` section misleads another agent; one revert undoes it |
+| **[2] drop** | the brief closes; the four items return to the roadmap | none | the warning keeps printing every health check |
+| **[3] changes needed** | your note goes back to the loop | one line | n/a |
+
+- **Blocks:** the roadmap Now items for D12, the `Harness feedback` warning and two confine-tests records.
+- **Interim:** unmerged.
+- **If the answer differs:** n/a.
+
+### Q-288 · merge-2026-11-13-cc-verify-clean-and-relative-repo-f16bbdcedaf8
+**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** OPEN
+
+Merge the three `cc-verify` fixes (brief `docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md`, branch `fix/cc-verify-clean-and-relative-repo`)?
+
+**If you say no:** nothing merges; `cc-verify --clean` still exits 2 silently on a leftover run directory, and `cc-verify --check FILE . main` still fails to clone `.`.
+
+`cc-verify` is the host tool that runs a check file against a fresh clone in a container (`devcontainer-config/cc-verify.sh`). The fixes, 188 lines added and 6 removed, each with a test that the loop saw fail first:
+1. `--clean` cleans a run directory with no `record` file, and keeps a live run that has not written one yet, by checking whether the PID in the directory's own name is a running `cc-verify`.
+2. A relative REPO is made absolute before the script changes directory; an empty REPO is refused. `--help`, `guides/cc-isolated-usage.md` and the check file's header say what REPO must be.
+3. The launcher self-check (`source_lines_ok`) reads a last line with no newline; this closes the 2026-11-05 Defer row in `docs/reviews/override-log.md`.
+
+Tip `f16bbdcedaf8086a4b90585060a397fd8aace3b8`. The gate's check, as printed:
+
+```
+ok docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md f16bbdcedaf8086a4b90585060a397fd8aace3b8 b946d0ac33b3b18dd48e406a4f5fc2f16b5f6322
+path docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md M devcontainer-config/cc-verify.sh
+path docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md M docs/failure-patterns.md
+path docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md M docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md
+path docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md M docs/working/q125-verify-check.sh
+path docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md A docs/working/research-2026-11-13-cc-verify-clean-and-relative-repo.md
+path docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md M guides/cc-isolated-usage.md
+path docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md M test/cc-verify.bats
+```
+
+`cc-verify.sh` is an enforcement file (it reaches your host at the next install), so every code commit carries `Host-tool-tested: no (host run follows the merge)`; the host check comes after the merge as one `you: terminal` paste. The loop's tests: 418 related tests, 0 failures, the hermeticity lint clean (`scripts/confine-tests.sh --probe` exited 3 here, so unconfined); two review rounds, both ambers fixed (an exported `CDPATH`, an empty REPO).
+
+**A numbering clash to know about.** This branch adds failure patterns FP-181 and FP-182, and Q-287's branch also adds an FP-181, both written at the same time. Whichever merges second will conflict on `docs/failure-patterns.md`. If you approve both, answer this one **[3]** with "renumber to FP-182 and FP-183 after Q-287" and the loop does that one-line change, or answer [1] and the cycle files the conflict back to you as a re-dispatch.
+
+The loop's marker also said the host paste must wait for Q-277 (whether to install the Bash sandbox with its gaps). That is out of date: Q-277 was answered [3] on 2026-11-12 and the sandbox was rolled back, so an install from main carries no sandbox. The paste will be filed after the merge, at your checkout `/home/magfrump/claude-workflows` (the path Q-280's paste used).
+
+- **Read:** `git diff refs/heads/main...f16bbdce` · `docs/working/research-2026-11-13-cc-verify-clean-and-relative-repo.md` (on the branch; the design and a pre-mortem with five bypass families)
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | the fixes land on main and reach the host at the next install | the host paste after the merge | a `--clean` that keeps or removes the wrong directory; the tests cover both cases |
+| **[2] drop** | the brief closes; the two items return to the roadmap | none | the two defects stay |
+| **[3] changes needed** | your note goes back to the loop (for example, the renumbering above) | one line | n/a |
+
+- **Blocks:** the roadmap Now items for `cc-verify --clean` and `source_lines_ok`.
+- **Interim:** unmerged.
+- **If the answer differs:** n/a.
 
 ### Q-281 · constraint-s4-keep-promote-drop
 **Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** OPEN
