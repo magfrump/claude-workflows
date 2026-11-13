@@ -106,7 +106,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   from `claude-fable-5-2` to `claude-opus-5-5`; within the small audit's scope it changes
   nothing. The small audit is done (b3d3e8f4, Done): it recommends no change to the
   constraints file, and its four calls are with the owner in the cycle's final message (filed 2026-11-13 as Q-281 to Q-284). A
-  different pick the owner names becomes its own item. This item is finished but for that.
+  different pick the owner names becomes its own item. Answered 2026-11-13: [1] on all four (keep as is), so the item is finished.
   Fired again 2026-11-13 (step 4 drift check): a1121ac5's Path A record
   (`docs/working/research-2026-11-12-release-outside-entry.md`) pruned [1] on S3 and S8,
   [4] on S4 and S2 and [5] on S3, soft constraints alone; its pick ([0], status quo)
