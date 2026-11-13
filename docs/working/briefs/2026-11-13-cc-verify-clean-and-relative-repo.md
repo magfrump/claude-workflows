@@ -33,3 +33,5 @@ Policy: review
 - Any other `cc-verify` behavior, the check file's content beyond its header, or the sandbox.
 - Running anything on the host.
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`: the dev cycle owns those.
+
+Dispatched: 1
