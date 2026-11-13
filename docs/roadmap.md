@@ -286,8 +286,14 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   `questions.sh open` rather than re-parsing (S3). Then a build unit with hermetic bats
   fixtures (H3). For the owner later, when the build is briefed: which repos go in the
   registry and where they live on the host (the proposal's open question 1).
-  2026-11-12: the design unit is briefed (In flight,
-  `docs/working/briefs/2026-11-12-host-board-answer-route.md`).
+  2026-11-12: the design unit is briefed
+  (`docs/working/briefs/closed/2026-11-12-host-board-answer-route.md`) and done
+  (1ca6d02b, self-merge; `docs/working/research-2026-11-12-host-board-answer-route.md`).
+  The answer goes back as a commit the host script makes on that repo's main, which the
+  cycle reads as an owner answer. The build is three units: the listing (In flight),
+  the answer commit when main is not checked out, then in place when it is. The
+  registry's contents are the owner's (asked in the cycle's final message), needed
+  before the first host check, not the build.
 
 - **Owner feedback 2026-10-29** (`docs/human-author/feedback-10-29-26.txt`), four points:
   1. An answer given in session should approve a merge entry (the gate is too strict).
@@ -312,9 +318,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   `docs/working/briefs/2026-11-12-sandbox-return-research.md`. One docs-only research
   and divergent-design unit on the three requirements: worktree creation under the
   sandbox, nested worktree paths, the credential after a refresh. Self-merge.
-- **Cross-project board v1: the design, and how an answer gets back to its repo** (owner
-  request, 2026-11-12): `docs/working/briefs/2026-11-12-host-board-answer-route.md`. One
-  docs-only research and divergent-design unit; the build follows. Self-merge.
+- **Cross-project board v1, unit 1: the listing** (owner request, 2026-11-12):
+  `docs/working/briefs/2026-11-12-host-board-listing.md`. `scripts/board.sh` lists each
+  registered repo's open `you:` questions from its main, with tests and a guide. Self-merge.
 
 ## Next
 
@@ -630,6 +636,9 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- Cross-project board v1: the design, and how an answer gets back to its repo (owner
+  request; `docs/working/briefs/closed/2026-11-12-host-board-answer-route.md`). Merged
+  1ca6d02b, self-merge.
 - A light pass between full cycles (Q-270 [2];
   `docs/working/briefs/closed/2026-11-11-light-pass.md`). Merged a77bbc97, approved in Q-279
   [1]. Gate code: it runs from the release that carries it.
