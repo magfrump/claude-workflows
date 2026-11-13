@@ -27,12 +27,144 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-278](#q-278--q272-returned-run-or-refuse) | you: judgment | You asked for Q-272 back with data. When the test-confinement script (`scripts/confine-tests.sh`) cannot us... | 2026-11-11 |
+| [Q-281](#q-281--constraint-s4-keep-promote-drop) | you: judgment | Should soft constraint S4 in `docs/constraints.md` ("mechanical steps go in tested scripts, not prose") sta... | 2026-11-13 |
+| [Q-282](#q-282--constraint-s8-no-growth-clause) | you: judgment | Should the "no growth of the 500-plus-line files" clause of soft constraint S8 stay as it is, be reworded a... | 2026-11-13 |
+| [Q-283](#q-283--constraint-s10-owner-wait-clause) | you: judgment | Should the S10 clause "no merge or loop that waits on the user's manual action when a fail-closed alternati... | 2026-11-13 |
+| [Q-284](#q-284--constraint-instrument-code-in-fork) | you: judgment | Should the unwritten rule "benchmark and review-instrument code lives in the SWRBench fork" stay out of `do... | 2026-11-13 |
+| [Q-285](#q-285--review-gap-audit-which-repo) | you: judgment | Which repo should the review-gap audit run on first, or should the item be dropped? | 2026-11-13 |
+| [Q-286](#q-286--trial-set-2-ends) | you: judgment | The second trial set (T8–T12) ends about today. Which of them should stay? | 2026-11-13 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | Q-167: (b) and (d) answered 2026-11-07 (answers-11-7-26.txt), on bless 91c5f79dd91eb7ee, which --probe-only... | 2026-10-15 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Q-255: first half answered 2026-11-07 (answers-11-7-26.txt): all four fronted probes through plugins-artifa... | 2026-11-05 |
 <!-- index:end -->
 
 ## Open
+
+### Q-281 · constraint-s4-keep-promote-drop
+**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** OPEN
+
+Should soft constraint S4 in `docs/constraints.md` ("mechanical steps go in tested scripts, not prose") stay soft, become hard, or go?
+
+**If you say no:** S4 stays soft and unchanged, which is the audit's recommendation. The drift check keeps noting when a loop says S4 "pruned" an option.
+
+This is call A of four from the small constraint-drift audit, which you asked for on 2026-11-11 (Q-269 [1]). Its four calls only reached you in a cycle's final message, never this file, so you never had a way to answer them; that is fixed here. A soft constraint ranks options, and a hard one refuses them. S4 was flagged at 605d4c18 and 85080263, where the option it "pruned" lost only on ranking, and it was traded away twice (3dbf43cb, 1f14e270), so in practice it is soft.
+
+- **Read:** `docs/working/research-2026-11-11-constraint-drift-audit.md`, "Call A" (merged b3d3e8f4)
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Keep soft, unchanged** | no edit | none | loops keep calling a soft-line loss "pruned"; the drift check keeps flagging it |
+| **[2] Promote to hard** | needs a `success:` line, e.g. a bats case for every new mechanical step | one commit by you | the two units that rightly kept prose would have been refused |
+| **[3] Drop** | S3 and S6 still rank most of these | one commit by you | mechanical steps written only as prose come back unranked |
+
+- **Blocks:** nothing.
+- **Interim:** [1].
+- **If the answer differs:** you commit the edit to `docs/constraints.md` (no build loop may); the audit doc has the text ready to paste.
+
+### Q-282 · constraint-s8-no-growth-clause
+**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** OPEN
+
+Should the "no growth of the 500-plus-line files" clause of soft constraint S8 stay as it is, be reworded as a preference, or become a hard line?
+
+**If you say no:** S8 stays unchanged, which is the audit's recommendation.
+
+Call B of the four from the constraint-drift audit (see Q-281 for why these are only reaching you now). The clause was flagged at aeab6745 and 1f14e270, and neither time did it change the outcome. Four merges since 2026-10-19 grew those files anyway, all approved by you (one was Q-241 [1], +177/−27 to `install.sh`).
+
+- **Read:** `docs/working/research-2026-11-11-constraint-drift-audit.md`, "Call B"
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Keep soft, unchanged** | no edit | none | loops keep reading "no growth" as a prune |
+| **[2] Reword as a preference** | "prefer no growth of [...]", so it is clear it only ranks | one commit by you | none known; a softer word might let growth through more often |
+| **[3] Promote to hard** | split into its own hard line with a line-count (`numstat`) check | one commit by you | the Q-106 host-settings work would have been refused |
+
+- **Blocks:** nothing.
+- **Interim:** [1].
+- **If the answer differs:** you commit the edit to `docs/constraints.md`.
+
+### Q-283 · constraint-s10-owner-wait-clause
+**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** OPEN
+
+Should the S10 clause "no merge or loop that waits on the user's manual action when a fail-closed alternative exists" stay soft, become a new hard constraint (H5), or go?
+
+**If you say no:** the clause stays soft and unchanged, which is the audit's recommendation.
+
+Call C of the four from the constraint-drift audit (see Q-281). It was flagged at 546788f2, which was a false alarm: the option it pruned also failed hard constraint H4 (an LLM must not be the enforcement). Of all the soft clauses, this one is worded most like a hard rule, and it matches your standing rule against new owner stops.
+
+- **Read:** `docs/working/research-2026-11-11-constraint-drift-audit.md`, "Call C" (option [2]'s H5 text is in its "Proposed amendment" section)
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Keep soft, unchanged** | no edit | none | a loop may again treat it as a prune; no outcome has changed yet |
+| **[2] Promote to hard (H5), trim S10** | designs that wait on you are refused before choosing | one commit by you; one more line in every loop prompt | an owner step that is truly needed must argue past it; its check misses waits that go through a questions entry |
+| **[3] Drop the clause** | the rest of S10 still ranks your cost | one commit by you | designs that wait on you lose their explicit counterweight |
+
+- **Blocks:** nothing.
+- **Interim:** [1].
+- **If the answer differs:** you commit the edit to `docs/constraints.md`.
+
+### Q-284 · constraint-instrument-code-in-fork
+**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** OPEN
+
+Should the unwritten rule "benchmark and review-instrument code lives in the SWRBench fork" stay out of `docs/constraints.md`, or be added as a soft or hard line?
+
+**If you say no:** it stays out of the file, which is the audit's recommendation; its home stays `archive/README.md:18-19`.
+
+Call D of the four from the constraint-drift audit (see Q-281). The rule decided where 605d4c18's script went, but `docs/constraints.md` does not hold it. It matters only for benchmark or review-instrument work.
+
+- **Read:** `docs/working/research-2026-11-11-constraint-drift-audit.md`, "Call D" (option [2]'s S12 text is in its "Proposed amendment" section)
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Leave it out of the file** | the archive README stays its home; loops find it as they did | none | a future recall-run loop might miss it and put instrument code here |
+| **[2] Add it as a soft line (S12)** | every loop prompt carries it | one commit by you; one line in every prompt | a line nearly every design ignores costs context for no gain |
+| **[3] Add it as a hard line** | instrument code here is refused | one commit by you, plus a path check for its `success:` line | a small helper that belongs here gets refused |
+
+- **Blocks:** nothing.
+- **Interim:** [1].
+- **If the answer differs:** you commit the edit to `docs/constraints.md`.
+
+### Q-285 · review-gap-audit-which-repo
+**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** OPEN
+
+Which repo should the review-gap audit run on first, or should the item be dropped?
+
+**If you say no:** the item stays parked on the roadmap and nothing runs.
+
+Your 2026-10-29 feedback (`docs/human-author/feedback-10-29-26.txt`, point 3) asked for an audit of a repo that committed code-review rubrics with open amber or red rows: for each, find the merge that carried it, whether a fix round followed, and which gate or rule should have stopped it. You were asked in session that day which repo to run it on, but the question never reached this file, so the roadmap has shown it as waiting on you for two weeks with no way to answer.
+
+- **Read:** the roadmap Now item "Owner feedback 2026-10-29", point 3
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Name a repo** | answer `Q-285: [1] <repo>`; a read-only audit procedure is briefed and tried there (in this repo, or written up for that repo's own session if it lives elsewhere) | one line | the first repo may have too few rubrics to show a pattern; a second can follow |
+| **[2] This repo** | run it on claude-workflows' own `docs/reviews/` | one line | this repo's rubrics may not be the ones you were worried about |
+| **[3] Drop it** | the point closes as not needed now | one line | a review gap you suspected stays unexamined |
+
+- **Blocks:** the roadmap item's point 3.
+- **Interim:** nothing runs.
+- **If the answer differs:** n/a; each option sets what runs.
+
+### Q-286 · trial-set-2-ends
+**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** OPEN
+
+The second trial set (T8–T12) ends about today. Which of them should stay?
+
+**If you say no:** all five keep running as they are, and the cycle asks again at the next weekly digest.
+
+The trials are in `docs/working/trials/2026-11-06-attention-and-trust.md`. In short: T8, final messages open with what needs you; T9, final messages end with at most two links worth opening; T10, while a release is pending, one line on the change most worth your look; T11, one deliberate read a week in the weekly digest; T12, the weekly digest lists what the gates and reviews actually stopped. No feedback on any of them is recorded yet. To be honest about how they ran, the cycle has not kept to them every iteration: today's first final message (iteration 1925) left out T8's split, T9's links and the trials line, and the weekly digest was first written without T12's section (added in this iteration).
+
+- **Read:** the trial doc above · `docs/working/weekly/2026-11-13.md`
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Keep all five** | the cycle writes them into the skill, as T1–T7 were (one merge-gate entry later) | one line now; one merge entry later | a practice that does not help keeps costing lines in every message |
+| **[2] Keep some** | answer `Q-286: [2] T8 T11` (the ones to keep); the rest stop now | one line | a dropped one might have helped with more time |
+| **[3] Drop all** | final messages and the digest go back to the T1–T7 shape | one line | none known; nothing was relying on them |
+
+- **Blocks:** nothing.
+- **Interim:** all five keep running.
+- **If the answer differs:** dropped trials stop at the next iteration; kept ones go into one skill change.
 
 ### Q-278 · q272-returned-run-or-refuse
 **Needs:** you: judgment · **Opened:** 2026-11-11 · **Status:** OPEN

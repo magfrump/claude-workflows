@@ -13,6 +13,19 @@ user's order).
 
 Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0002).
 
+- **Agent: the cycle stops leaving ready work unbriefed** (filed 2026-11-13, step 6, on the
+  owner's question "why is the whole roadmap blocked?"). Motive: iteration 2026-11-13-1925
+  briefed nothing with three slots free and one open judgment entry. The causes were the
+  cycle's own: step 8 briefs only Now items, so Next's ready first steps were never pulled;
+  "rides the next unit that touches X" holds never expire; "needs a host run" held whole
+  items whose code needed none; and owner calls left only in a final message (the
+  constraint-drift audit's four calls, the 2026-10-29 repo ask) read as blocks while
+  nothing asked. First step: one review unit on `skills/dev-cycle/SKILL.md` (gate code, a
+  `merge-gate` entry): step 8 takes a Next item's first step when no Now item is ready; a
+  held item that rides another unit is briefed alone after two cycles; a host step splits
+  from the code; every owner call goes in the questions file, never only in a final
+  message; the `8.` line's free-slot reason names each item. Briefed when a slot frees.
+
 - **Agent: the build-loop handoff plan's D12 after the light pass** (filed 2026-11-11, step 7).
   Motive: if Q-279 merges the light pass, decision-log row 72 and D12 in
   `docs/working/plan-build-loop-handoff.md` still say every iteration is a full cycle
@@ -22,6 +35,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   `docs/decisions/log.md`, a record the self-merge floor refuses, so it is a review unit.
   Not briefed alone (a full loop and a merge entry for two lines); it rides the next review
   unit that touches the decision log.
+  2026-11-13: briefed with three other small record fixes as one review unit (In flight).
 
 - **Models answer their own questions from the repo's docs (owner request, 2026-11-11).**
   Motive: the owner asked for a plan for how models can answer their own questions based on
@@ -91,7 +105,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   Fired again 2026-11-11 (iteration 2026-11-12-0006): the model running the cycle changed
   from `claude-fable-5-2` to `claude-opus-5-5`; within the small audit's scope it changes
   nothing. The small audit is done (b3d3e8f4, Done): it recommends no change to the
-  constraints file, and its four calls are with the owner in the cycle's final message. A
+  constraints file, and its four calls are with the owner in the cycle's final message (filed 2026-11-13 as Q-281 to Q-284). A
   different pick the owner names becomes its own item. This item is finished but for that.
   Fired again 2026-11-13 (step 4 drift check): a1121ac5's Path A record
   (`docs/working/research-2026-11-12-release-outside-entry.md`) pruned [1] on S3 and S8,
@@ -104,6 +118,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   now. It lives otherwise only as a Defer row in `docs/reviews/override-log.md`, merged with
   Q-258. First step: one change with `Host-tool-tested:` and a re-bless,
   which needs a host run, so it is not briefed for a loop yet.
+  2026-11-13: briefed with the `--clean` item below (In flight); only the trailer and re-bless
+  need the host, as one paste after the merge.
 
 - **Agent: `cc-verify --clean` exits 2 and prints nothing on a run directory with no
   `record`** (filed 2026-11-11, from the owner's Q-273 paste). Motive: it stopped the
@@ -129,6 +145,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   absolute path before the `cd`, or refuse a relative one by name. The header of
   `docs/working/q125-verify-check.sh` (line 7) shows the `.` form and needs the same
   correction; `guides/cc-isolated-usage.md` and `--help` do not say REPO must be a full path.
+  2026-11-13: briefed with `source_lines_ok` (In flight).
 
 - **Agent: confine-tests follow-ups** (filed 2026-11-07, step 7). Motive: the research
   merged at be12889c (`docs/working/research-2026-11-07-confine-tests-situation.md`) found
@@ -152,6 +169,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   (the comment above it now opens "Decision 018's reference pattern"), and
   `docs/failure-patterns.md` may deserve an entry for `exec "$@"` under `sh` reading a
   dash-leading word as an option where `sh` is bash.
+  2026-11-13: those two records are briefed in the small-records review unit (In flight).
 
 - **Agent: the `Harness feedback` section warning** (filed 2026-11-06, step 3, trial T7).
   Motive: every health check warns that this H2 of the global instructions is missing from
@@ -159,6 +177,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   add the section to both files or exempt it in the check, depending on whether other agents
   need it. Those are instruction files, so it is a review merge; not briefed, since a full
   build loop outweighs a few lines while it would add another owner entry.
+  2026-11-13: briefed in the small-records review unit (In flight).
 
 - **Trial week: less friction, less habituation (2026-10-30 to about 2026-11-06).** Motive:
   the owner's 2026-10-29 brainstorm request ("try things for a few days to a week").
@@ -170,6 +189,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   some have helped so let's commit them and start a new set of trials". So T1-T7 all stay,
   T4 included, and they are written into the skill (3dbf43cb, live in the image since 2026-11-10). A1/A3/A10: no change (Done; watch Q-262). New set: T8-T12, in
   `docs/working/trials/2026-11-06-attention-and-trust.md`, running to about 2026-11-13; no owner feedback on it yet.
+  2026-11-13: the set's end is asked in Q-286 (keep all, some, or none).
 - **Questions doc becomes owner-only (Q-221 [14′], decision 040).** Motive: the owner reported
   that agent bookkeeping crowds the one page meant for them (17 open entries, 2 theirs).
   Build in three units: (1) four owner routes (`you: judgment`, `you: terminal`, new
@@ -192,7 +212,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
      `review-gap-audit` procedure (for each committed rubric with amber or red rows, find
      the merge that carried it, whether a fix round followed, and which gate or prose rule
      should have stopped it), tried on the repo the owner names. Waits for the owner to
-     name the repo (asked in session 2026-10-29).
+     name the repo (asked in session 2026-10-29; filed as Q-285 on 2026-11-13).
   4. A surface for projects to file feedback about the harness. First step (v1): a
      `docs/harness-feedback.md` file any project can append to in a fixed entry shape,
      plus how this repo ingests a copied file; v2 (GitHub issues: search, comment or star,
@@ -200,6 +220,12 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
+- `docs/working/briefs/2026-11-13-walkthrough-first-problem-measure.md`: the playtest
+  proposal's step 1 (Next item 2), self-merge.
+- `docs/working/briefs/2026-11-13-small-records-review.md`: D12's log row, the
+  `Harness feedback` warning, decision 018's cite, the `exec "$@"` failure pattern; review.
+- `docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md`: `--clean`, a
+  relative REPO, `source_lines_ok`; review, with a host paste after the merge.
 
 ## Next
 
@@ -220,6 +246,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
    per project in each project's own session; under ~20% mechanical, stop and record that.
    Its three open questions (the first trial project, automatic or on request, Chromium in
    the image) wait for that number.
+   2026-11-13: step 1 briefed (In flight).
 
 ## Ideas
 
