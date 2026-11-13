@@ -30,6 +30,16 @@ The grep was `grep -inE 'board|questions\.sh|host|registry|git_harden|scrub|sent
 
 `git_harden` sets `GIT_CONFIG_GLOBAL=/dev/null`, which also hides a `safe.directory` the owner set globally. If a registered repo is owned by another uid on the host, git refuses it as "dubious ownership" and the board prints `REGISTRY LINE N: not a git repository (git: fatal: detected dubious ownership …)`. That fails loudly, and the one host paste in the design doc (`~/.claude/scripts/board.sh; echo "board exit $?"`) will show it. Not fixed here: passing the owner's `safe.directory` through would read the global config the hardening exists to drop, a decision for unit 2's review.
 
+## Review round 1 (one general reviewer; findings and what was done)
+
+- red, board.sh committed without the executable bit: fixed, and a case runs it directly.
+- amber, footer printed `exit 0` before a failed run-log append: the append now comes first.
+- amber, python3 unchecked (questions.sh check needs it; its absence blamed every repo's content): exit-2 refusal added.
+- amber, a vacuous `&&` assertion in the bats file: split.
+- amber, test gaps: added cases for a check_answer skip, an argument, a run-log failure, command-running repo config (fsmonitor, pager, gpg.program with showSignature, hooksPath) and the output scrub. Not added: perl missing (needs a PATH without perl but with bash and git; the check is one line), the unexpected-stop path. The config case is a regression guard: the reads run today do not consult those keys.
+- amber, safe.directory missing from the guide: bullet added.
+- green: an `open` line without three fields now refuses; a failed date read refuses; the PATH-without-`.` assumption is stated in the header; the "no questions doc" wording names the file. Not done: a blob size cap (a multi-GB questions file needs a deliberate act, S1).
+
 ## Plan (done)
 
 1. `scripts/board.sh` (~150 lines): preflight, scrub, harden, registry loop, per-repo block, footer, run log.

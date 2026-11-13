@@ -13,6 +13,7 @@ setup() {
     export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
     export HOME="$BATS_TEST_TMPDIR/home" BOARD_REGISTRY="$BATS_TEST_TMPDIR/repos"
     mkdir -p "$HOME"
+    export TMPDIR="$BATS_TEST_TMPDIR"
     SENTINEL="$BATS_TEST_TMPDIR/network-called"
     S="$BATS_TEST_TMPDIR/shim"; mkdir -p "$S"
     for b in claude curl wget gh; do
@@ -24,7 +25,7 @@ setup() {
 }
 
 board() {
-    run bash "${1:-$BOARD}"
+    run bash "${1:-$BOARD}" "${@:2}"
     [ ! -e "$SENTINEL" ] || { echo "a network tool was called:"; cat "$SENTINEL"; return 1; }
 }
 
@@ -83,7 +84,7 @@ mkrepo() {
     mkrepo alpha
     board
     [ "$status" -eq 1 ]
-    [[ "$output" == *"== $BATS_TEST_TMPDIR/bare"$'\n'"   no questions doc on main (main has no docs/working/questions.md)"* ]]
+    [[ "$output" == *"== $BATS_TEST_TMPDIR/bare"$'\n'"   no questions doc on main: main has no docs/working/questions.md"* ]]
     [[ "$output" == *Q-001* && "$output" == *"2 projects, 2 open for you, 1 unreadable"* ]]
 }
 
@@ -125,8 +126,12 @@ mkrepo() {
 
 @test "no registry, or questions.sh or the lib missing beside the script, refuses the run" {
     board
-    [ "$status" -eq 2 ] && [[ "$output" == *"no registry at $BOARD_REGISTRY"* ]]
+    [ "$status" -eq 2 ] || { echo "$output"; false; }
+    [[ "$output" == *"no registry at $BOARD_REGISTRY"* ]]
     mkrepo alpha
+    board "$BOARD" answer
+    [ "$status" -eq 2 ] || { echo "$output"; false; }
+    [[ "$output" == *"takes no arguments yet"* ]]
     for gone in questions.sh lib/dev-cycle-read.sh; do
         c="$BATS_TEST_TMPDIR/copy-${gone%%/*}"; mkdir -p "$c/lib"
         cp "$BOARD" "$QS" "$c/"; cp "$REPO_ROOT/scripts/lib/dev-cycle-read.sh" "$c/lib/"; rm "$c/$gone"
@@ -144,4 +149,35 @@ mkrepo() {
     mkrepo alpha
     board
     [ "$status" -eq 0 ]
+}
+
+@test "an entry check_answer cannot read makes the repo UNREADABLE, never empty" {
+    mkrepo alpha
+    printf '\n```\nnever closed\n' >> "$BATS_TEST_TMPDIR/alpha/docs/working/questions.md"; commit "$BATS_TEST_TMPDIR/alpha"
+    board
+    [ "$status" -eq 1 ] || { echo "$output"; false; }
+    [[ "$output" == *"UNREADABLE Q-001 (check_answer: skip Q-001: the code fence opened at line"* ]]
+}
+
+@test "the run log failing makes the exit 1, and the footer says so" {
+    mkrepo alpha
+    mkdir -p "$HOME/.local/state"; : > "$HOME/.local/state/claude-board"
+    board
+    [ "$status" -eq 1 ] || { echo "$output"; false; }
+    [[ "$output" == *"could not append to $HOME/.local/state/claude-board/runs.log"*"unreadable or refused; exit 1"* ]]
+}
+
+@test "repo config that runs commands never fires, and repo text is scrubbed (installed as executable)" {
+    [ -x "$BOARD" ]
+    mkrepo alpha
+    hit="$BATS_TEST_TMPDIR/config-ran"; printf '#!/bin/sh\ntouch "%s"\n' "$hit" > "$BATS_TEST_TMPDIR/evil"; chmod +x "$BATS_TEST_TMPDIR/evil"
+    for k in core.fsmonitor core.pager pager.log gpg.program core.hooksPath; do git -C "$BATS_TEST_TMPDIR/alpha" config "$k" "$BATS_TEST_TMPDIR/evil"; done
+    git -C "$BATS_TEST_TMPDIR/alpha" config log.showSignature true
+    mkrepo beta
+    printf '\n### Q-8 \033]0;owned\007x\n' >> "$BATS_TEST_TMPDIR/beta/docs/working/questions.md"; commit "$BATS_TEST_TMPDIR/beta"
+    run "$BOARD"
+    [ "$status" -eq 1 ] || { echo "$output"; false; }
+    [[ "$output" == *Q-001* && "$output" == *"malformed entry heading: ### Q-8 ]0;ownedx"* ]]
+    [[ "$output" != *$'\e'* && "$output" != *$'\a'* ]]
+    [ ! -e "$hit" ] && [ ! -e "$SENTINEL" ]
 }

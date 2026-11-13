@@ -13,13 +13,16 @@
 # Run log: one line per run appended to ~/.local/state/claude-board/runs.log.
 # Exit: 0 every project read; 1 a bad registry line, an unreadable project, no
 # project listed or the run log not written; 2 the run refused before reading
-# any repo (a missing file beside this script, no perl, no registry, arguments).
+# any repo (a missing file beside this script, no perl or python3, no registry,
+# arguments).
 #
 # Trust (H1): the repos are container-writable, so nothing from them runs here.
 # questions.sh and the lib are the copies beside this script (the installed,
 # install-reviewed ones on the host), every git call runs under the lib's
 # git_harden, only git objects are read (no working tree, so no filter runs),
-# and everything printed passes through the lib's scrub.
+# and everything printed passes through the lib's scrub. It assumes the
+# owner's PATH holds no `.` or empty entry, since commands run with a repo as
+# the current directory.
 set -euo pipefail
 export LC_ALL=C
 HERE="$(cd -- "$(dirname -- "$0")" && pwd -P)"
@@ -32,6 +35,7 @@ for f in "$QS" "$LIB"; do
 done
 [[ $# -eq 0 ]] || die "takes no arguments yet: answering from the board is not built (units 2 and 3)"
 command -v perl >/dev/null 2>&1 || die "refusing to run: perl is missing, and the output scrub needs it"
+command -v python3 >/dev/null 2>&1 || die "refusing to run: python3 is missing, and questions.sh check needs it"
 # shellcheck source=lib/dev-cycle-read.sh
 source "$LIB"
 scrub_reexec "$SELF"
@@ -58,7 +62,7 @@ first_refusal() {
 # One project's block. Runs in its own subshell (it cds and sets MAIN_*);
 # returns 3 after printing why the project is unreadable.
 repo() {
-  local n="$1" p="$2" d="$TMP/$1" f e out id route slug r watches=0 shown=0 lines=""
+  local n="$1" p="$2" d="$TMP/$1" f e out id route slug r day watches=0 shown=0 lines=""
   mkdir "$d"
   printf '\n== %s\n' "$p"
   cd -- "$p"
@@ -70,7 +74,7 @@ repo() {
     case "$e" in
       blob) git cat-file blob "$MAIN_SHA:docs/working/$f.md" > "$d/$f.md" \
               || { echo "   UNREADABLE: docs/working/$f.md could not be read from $MAIN"; return 3; } ;;
-      absent) [[ "$f" == watching ]] || { echo "   no questions doc on main ($MAIN has no docs/working/$f.md)"; return 3; } ;;
+      absent) [[ "$f" == watching ]] || { echo "   no questions doc on main: $MAIN has no docs/working/$f.md"; return 3; } ;;
       *) echo "   UNREADABLE: $(entry_why "$e" "docs/working/$f.md")"; return 3 ;;
     esac
   done
@@ -83,6 +87,7 @@ repo() {
     echo "   UNREADABLE (questions.sh open: $(first_refusal "$(cat -- "$d/err")" "$d"))"; return 3
   fi
   while IFS=$'\t' read -r id route slug; do
+    [[ -n "$slug" ]] || { echo "   UNREADABLE (questions.sh open: a line that is not ID, route and slug: $id)"; return 3; }
     case "$route" in
       deferred|trigger) watches=$((watches + 1)); continue ;;
       you:*)
@@ -98,9 +103,11 @@ repo() {
     # Any other route (agent, say) is shown as printed rather than hidden.
     lines+="$(printf '   %s  %-16s  %s' "$id" "$route" "$slug")"$'\n'
     shown=$((shown + 1))
-  done < <(printf '%s\n' "$out" | awk -F'  +' 'NF >= 2 { print $1 "\t" $2 "\t" $3 }')
-  printf '   main %s · %d open watch%s\n' "$(git log -1 --format=%cd --date=short "$MAIN_SHA")" \
-    "$watches" "$([[ $watches -eq 1 ]] || echo es)"
+  done < <(printf '%s\n' "$out" | awk -F'  +' 'NF { print $1 "\t" $2 "\t" $3 }')
+  if ! day="$(git log -1 --format=%cd --date=short "$MAIN_SHA")" || [[ -z "$day" ]]; then
+    echo "   UNREADABLE: the date of $MAIN's last commit could not be read"; return 3
+  fi
+  printf '   main %s · %d open watch%s\n' "$day" "$watches" "$([[ $watches -eq 1 ]] || echo es)"
   if [[ $shown -eq 0 ]]; then echo "   nothing open for you"; else printf '%s' "$lines"; fi
   echo "$shown" > "$TMP/$n.count"
 }
@@ -130,12 +137,12 @@ done < "$REG"
 status=0
 [[ $bad -eq 0 && $projects -gt 0 ]] || status=1
 [[ $projects -gt 0 ]] || echo "board: the registry $REG lists no project"
-printf '\n%d project%s, %d open for you, %d unreadable or refused; exit %d\n' "$projects" \
-  "$([[ $projects -eq 1 ]] || echo s)" "$total" "$bad" "$status"
-echo "To answer, write Q-NNN: <answer> in that repo's session; answering from the board is not built yet."
 LOG_DIR="$HOME/.local/state/claude-board"
 if ! { mkdir -p -- "$LOG_DIR" && printf '%s projects=%d open=%d unreadable=%d exit=%d\n' \
          "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$projects" "$total" "$bad" "$status" >> "$LOG_DIR/runs.log"; }; then
   echo "board: could not append to $LOG_DIR/runs.log" >&2; status=1
 fi
+printf '\n%d project%s, %d open for you, %d unreadable or refused; exit %d\n' "$projects" \
+  "$([[ $projects -eq 1 ]] || echo s)" "$total" "$bad" "$status"
+echo "To answer, write Q-NNN: <answer> in that repo's session; answering from the board is not built yet."
 exit "$status"

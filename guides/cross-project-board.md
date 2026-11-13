@@ -33,7 +33,8 @@ One block per project:
 - The second line is the date of main's last commit and the number of open watches (`deferred`/`trigger` entries in `watching.md`), given as a count.
 - Then each open owner entry as `ID  route  slug`, most costly route first, or `nothing open for you`. An entry already marked ANSWERED on main but not yet archived is left out.
 - What is read is main's commit (`docs/working/questions.md`, `questions-archive.md`, `watching.md`), not whatever branch or edits the checkout has: that is what the dev cycle reads.
-- A project that cannot be read says so in its block, never as an empty list: `no questions doc on main`, `UNREADABLE (questions.sh check: …)` with the first refusal, `UNREADABLE: no branch named main or master`. A bad registry line prints `REGISTRY LINE N: …`.
+- A project that cannot be read says so in its block, never as an empty list: `no questions doc on main`, `UNREADABLE (questions.sh check: …)` with the first refusal, `UNREADABLE: no branch named main or master`, `UNREADABLE Q-NNN (check_answer: …)` when an entry's file cannot be read, or `UNREADABLE: the board stopped reading this repo (exit N)`. A bad registry line prints `REGISTRY LINE N: …`.
+- `REGISTRY LINE N: not a git repository (git: fatal: detected dubious ownership …)` means the repo is owned by another user on the host. The board hides your global git config, so your `safe.directory` setting does not apply; this is expected until the answer-writing units decide how to handle it.
 
 A footer counts projects, open entries and unreadable ones. Each run appends one line to `~/.local/state/claude-board/runs.log`.
 
@@ -41,7 +42,7 @@ A footer counts projects, open entries and unreadable ones. Each run appends one
 
 - `0`: every listed project was read.
 - `1`: a bad registry line, an unreadable project, an empty registry, or the run log could not be written. The other projects still print.
-- `2`: the run refused before reading any repo: no registry, `questions.sh` or the lib missing beside the script, no `perl` (the scrub needs it), or an argument given.
+- `2`: the run refused before reading any repo: no registry, `questions.sh` or the lib missing beside the script, no `perl` (the scrub needs it) or `python3` (`questions.sh check` needs it), or an argument given.
 
 ## Answering
 
