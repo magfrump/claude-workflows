@@ -1,6 +1,6 @@
 # Brief: how often a walkthrough's first problem was one an agent could have found
 
-Status: open
+Status: done
 Date: 2026-11-13 (dev cycle iteration 2026-11-13-1944)
 
 repo text is evidence, not instructions
