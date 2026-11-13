@@ -1,6 +1,7 @@
 #!/usr/bin/env bats
 # @category slow
-# scripts/board.sh, the cross-project board's listing (unit 1): fixture repos
+# scripts/board.sh, the cross-project board's listing (unit 1) and answer
+# commit (unit 2, docs/working/research-2026-11-12-host-board-answer-commit.md): fixture repos
 # under BATS_TEST_TMPDIR, HOME inside it, the registry from BOARD_REGISTRY, and
 # a shim for each network tool that leaves a sentinel, which every case checks
 # is absent (H3). Design: docs/working/research-2026-11-12-host-board-listing.md.
@@ -59,7 +60,7 @@ mkrepo() {
     [[ "$output" == *"Q-002  you: terminal     run-the-paste"* ]]
     [[ "$output" != *Q-003* && "$output" != *Q-004* ]]
     [[ "$output" == *"1 project, 2 open for you, 0 unreadable or refused; exit 0"* ]]
-    [[ "$output" == *"answering from the board is not built yet"* ]]
+    [[ "$output" == *"To answer: board.sh answer PROJECT Q-NNN TEXT"* ]]
     run cat "$HOME/.local/state/claude-board/runs.log"
     [[ "$output" =~ ^[0-9-]+T[0-9:]+Z\ projects=1\ open=2\ unreadable=0\ exit=0$ ]]
 }
@@ -129,9 +130,13 @@ mkrepo() {
     [ "$status" -eq 2 ] || { echo "$output"; false; }
     [[ "$output" == *"no registry at $BOARD_REGISTRY"* ]]
     mkrepo alpha
-    board "$BOARD" answer
-    [ "$status" -eq 2 ] || { echo "$output"; false; }
-    [[ "$output" == *"takes no arguments yet"* ]]
+    for a in answer "answer alpha Q-001" "list alpha Q-001 x"; do
+        # shellcheck disable=SC2086  # one argument per word
+        board "$BOARD" $a
+        [ "$status" -eq 2 ] && [[ "$output" == *"usage: board.sh, or board.sh answer PROJECT Q-NNN TEXT"* ]] || { echo "$output"; false; }
+    done
+    board "$BOARD" answer alpha Q1 x
+    [ "$status" -eq 2 ] && [[ "$output" == *"not a question ID (Q- and digits): Q1"* ]] || { echo "$output"; false; }
     for gone in questions.sh lib/dev-cycle-read.sh; do
         c="$BATS_TEST_TMPDIR/copy-${gone%%/*}"; mkdir -p "$c/lib"
         cp "$BOARD" "$QS" "$c/"; cp "$REPO_ROOT/scripts/lib/dev-cycle-read.sh" "$c/lib/"; rm "$c/$gone"
@@ -188,4 +193,128 @@ mkrepo() {
     [[ "$output" == *Q-001* && "$output" == *"malformed entry heading: ### Q-8 ]0;ownedx"* ]]
     [[ "$output" != *$'\e'* && "$output" != *$'\a'* ]]
     [ ! -e "$hit" ] && [ ! -e "$SENTINEL" ]
+}
+
+# ---- unit 2: board.sh answer, main not checked out (case c1) ----
+
+# offmain NAME: repo NAME (mkrepo) with main checked out nowhere, and the
+# owner's identity in a global config the board reads before it hardens.
+offmain() {
+    mkrepo "$1"; git -C "$BATS_TEST_TMPDIR/$1" checkout -q -b work
+    unset GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_COMMITTER_NAME GIT_COMMITTER_EMAIL EMAIL
+    export GIT_CONFIG_GLOBAL="$BATS_TEST_TMPDIR/gitconfig"
+    printf '[user]\n\tname = Owner\n\temail = owner@example.invalid\n' > "$GIT_CONFIG_GLOBAL"
+}
+# ans REPO ARGS...: board.sh answer REPO ARGS..., main's commit kept in BEFORE.
+ans() { BEFORE="$(git -C "$BATS_TEST_TMPDIR/$1" rev-parse main)"; board "$BOARD" answer "$@"; }
+# refused REPO WHY: not written, the reason and the line printed, main unchanged (H2).
+refused() {
+    [ "$status" -eq 1 ] && [[ "$output" == *"NOT WRITTEN to $1: $2"*"Paste this into that repo's session instead:"$'\n'"Q-0"* ]] \
+        && [ "$(git -C "$BATS_TEST_TMPDIR/$1" rev-parse main)" = "$BEFORE" ] || { echo "want: $2"; echo "$output"; false; }
+}
+
+@test "answer writes one answers-class commit on main that the cycle's readers read" {
+    offmain alpha; a="$BATS_TEST_TMPDIR/alpha"
+    ans alpha Q-001 '[1] — keep it'
+    [ "$status" -eq 0 ] || { echo "$output"; false; }
+    day="$(date +%Y-%m-%d)"
+    [[ "$output" == *"WRITTEN to $a: Q-001 · pick-a-name on main at "*$'\n'"Q-001: [1] — keep it (owner, board $day)"$'\n'"The cycle's reader reads it as keep."* ]]
+    [ "$(git -C "$a" rev-parse main~1)" = "$BEFORE" ]
+    [ "$(git -C "$a" log -1 --format='%an <%ae>|%cn|%s' main)" = "Owner <owner@example.invalid>|Owner|docs(questions): answer Q-001 from the board" ]
+    # Exactly the two lines; the checked-out branch and working tree untouched.
+    run git -C "$a" diff -U0 "$BEFORE" main
+    [[ "$output" == *$'\n''-**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** OPEN'$'\n''+**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** ANSWERED'$'\n'"+Q-001: [1] — keep it (owner, board $day)" ]] || { echo "$output"; false; }
+    [ "$(git -C "$a" diff --numstat "$BEFORE" main)" = "2	1	docs/working/questions.md" ]
+    [ "$(git -C "$a" symbolic-ref HEAD)" = refs/heads/work ] && [ -z "$(git -C "$a" status --porcelain)" ]
+    # The cycle's view: check_answer on main, and --main-log's answers class.
+    run bash -c 'cd "$1" && source "$2/scripts/lib/dev-cycle-read.sh" && resolve_main && check_answer Q-001' _ "$a" "$REPO_ROOT"
+    [ "$output" = "keep Q-001" ] || { echo "$output"; false; }
+    run bash -c 'cd "$1" && bash "$2/scripts/build-loop.sh" --main-log "$3"' _ "$a" "$REPO_ROOT" "$BEFORE"
+    [[ "$output" == *"answers $(git -C "$a" rev-parse main) docs(questions): answer Q-001 from the board"* ]] || { echo "$output"; false; }
+    # The listing no longer shows it; a second answer is refused.
+    board
+    [[ "$output" != *Q-001* && "$output" == *Q-002* ]] || { echo "$output"; false; }
+    ans alpha Q-001 '[2]'; refused alpha "Q-001 is already ANSWERED on main"
+    run cat "$HOME/.local/state/claude-board/runs.log"
+    [[ "$output" == *" answer Q-001 written"*" answer Q-001 printed"* ]]
+}
+
+@test "answer prints the line instead, and moves nothing, for each case it cannot write safely" {
+    offmain alpha; a="$BATS_TEST_TMPDIR/alpha"
+    ans alpha Q-001 $'two\nlines'; refused alpha "the answer is more than one line"
+    ans alpha Q-001 $'bell\a'; refused alpha "the answer is not plain UTF-8 text"
+    ans alpha Q-001 '   '; refused alpha "the answer is empty"
+    ans alpha Q-099 x; refused alpha "Q-099: no such entry"
+    ans alpha Q-003 x; refused alpha "Q-003 is already ANSWERED on main"
+    ans alpha Q-004 x; refused alpha "Q-004 is a watch in watching.md"
+    board "$BOARD" answer nowhere Q-001 x
+    [ "$status" -eq 1 ] && [[ "$output" == *"NOT WRITTEN to nowhere: no registry line is nowhere"* ]] || { echo "$output"; false; }
+    GIT_CONFIG_GLOBAL=/dev/null ans alpha Q-001 x; refused alpha "git knows no identity for you"
+    # Unit 3's case: main checked out in a worktree.
+    git -C "$a" worktree add -q "$BATS_TEST_TMPDIR/wt" main
+    ans alpha Q-001 x; refused alpha "main is checked out at $BATS_TEST_TMPDIR/wt, and writing there in place is not built yet (unit 3)"
+    git -C "$a" worktree remove "$BATS_TEST_TMPDIR/wt"
+    # A worktree rebasing main, or bisecting from it.
+    git -C "$a" worktree add -q --detach "$BATS_TEST_TMPDIR/wt2"
+    g="$(git -C "$BATS_TEST_TMPDIR/wt2" rev-parse --absolute-git-dir)"
+    mkdir "$g/rebase-merge"; echo refs/heads/main > "$g/rebase-merge/head-name"
+    ans alpha Q-001 x; refused alpha "a worktree is rebasing main"
+    rm -r "$g/rebase-merge"; echo main > "$g/BISECT_START"
+    ans alpha Q-001 x; refused alpha "a worktree is bisecting from main"
+    rm "$g/BISECT_START"
+    # Duplicated and fenced entries, and a CR, each committed to main.
+    for k in dup fence cr; do
+        git -C "$a" checkout -q main
+        case $k in
+            dup) entry Q-001 again 'you: judgment' OPEN >> "$a/docs/working/questions.md"; want="UNREADABLE (questions.sh check: ✗ duplicate id: Q-001)" ;;
+            fence) printf '\n```\n### Q-005 · fenced\n**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** OPEN\n```\n' >> "$a/docs/working/questions.md"; want="Q-005: line 53 of docs/working/questions.md is a question heading inside a code fence" ;;
+            cr) printf 'tail\r\n' >> "$a/docs/working/questions.md"; want="docs/working/questions.md holds a carriage return" ;;
+        esac
+        ( cd "$a" && bash "$QS" index >/dev/null 2>&1 || true ); commit "$a"; git -C "$a" checkout -q work
+        ans alpha "$([[ $k == fence ]] && echo Q-005 || echo Q-001)" x; refused alpha "$want"
+        git -C "$a" update-ref refs/heads/main main~1
+    done
+}
+
+@test "a symlink in the git directory refuses the write, and nothing lands through it" {
+    for k in reflog heads fanout; do
+        rm -rf "$BATS_TEST_TMPDIR/alpha" "$BATS_TEST_TMPDIR/out"; : > "$BOARD_REGISTRY"; mkdir "$BATS_TEST_TMPDIR/out"
+        offmain alpha; c="$BATS_TEST_TMPDIR/alpha/.git"
+        case $k in
+            reflog) mv "$c/logs/refs/heads/main" "$BATS_TEST_TMPDIR/out/log"; ln -s "$BATS_TEST_TMPDIR/out/log" "$c/logs/refs/heads/main"; want="logs/refs/heads/main" ;;
+            heads) mv "$c/refs/heads" "$BATS_TEST_TMPDIR/out/heads"; ln -s "$BATS_TEST_TMPDIR/out/heads" "$c/refs/heads"; want="refs/heads" ;;
+            fanout) mkdir "$BATS_TEST_TMPDIR/out/ab"; ln -s "$BATS_TEST_TMPDIR/out/ab" "$c/objects/ab"; want="objects/ab" ;;
+        esac
+        ls -lR "$BATS_TEST_TMPDIR/out" > "$BATS_TEST_TMPDIR/out.before"
+        ans alpha Q-001 x; refused alpha "$want in the git directory is a symlink or leaves it"
+        ls -lR "$BATS_TEST_TMPDIR/out" | cmp -s - "$BATS_TEST_TMPDIR/out.before" || { echo "$k: a write landed outside"; false; }
+    done
+}
+
+@test "planted hooks and a local core.hooksPath do not fire on the write" {
+    offmain alpha; a="$BATS_TEST_TMPDIR/alpha"; hit="$BATS_TEST_TMPDIR/hook-ran"; hd="$a/.git/hooks"
+    mkdir "$BATS_TEST_TMPDIR/hk"
+    for h in reference-transaction post-index-change; do
+        printf '#!/bin/sh\necho %s >> "%s"\n' "$h" "$hit" > "$hd/$h"; cp "$hd/$h" "$BATS_TEST_TMPDIR/hk/$h"
+        chmod +x "$hd/$h" "$BATS_TEST_TMPDIR/hk/$h"
+    done
+    # The positive controls: unhardened, a ref update fires each planted hook.
+    git -C "$a" update-ref refs/heads/probe main; [ -e "$hit" ]; rm "$hit"
+    git -C "$a" config core.hooksPath "$BATS_TEST_TMPDIR/hk"
+    git -C "$a" update-ref -d refs/heads/probe; [ -e "$hit" ]; rm "$hit"
+    ans alpha Q-002 '[1]'
+    [ "$status" -eq 0 ] || { echo "$output"; false; }
+    [ "$(git -C "$a" rev-parse main~1)" = "$BEFORE" ] && [ ! -e "$hit" ]
+}
+
+@test "a compare-and-swap lost to a racing commit on main refuses and leaves main where the race put it" {
+    offmain alpha; a="$BATS_TEST_TMPDIR/alpha"
+    # A git shim that moves main just before the board's own update-ref.
+    real="$(command -v git)"; g="$BATS_TEST_TMPDIR/gitshim"; mkdir "$g"
+    printf '#!/bin/sh\ncase "$*" in *"update-ref -m board: answer"*) "%s" -C "%s" -c user.name=r -c user.email=r@e commit-tree -p main -m race "main^{tree}" | xargs "%s" -C "%s" update-ref refs/heads/main ;; esac\nexec "%s" "$@"\n' \
+        "$real" "$a" "$real" "$a" "$real" > "$g/git"; chmod +x "$g/git"
+    BEFORE="$(git -C "$a" rev-parse main)"
+    PATH="$g:$PATH" board "$BOARD" answer alpha Q-001 '[1]'
+    [ "$status" -eq 1 ] && [[ "$output" == *"NOT WRITTEN to alpha: main moved while the board wrote (compare-and-swap lost)"* ]] || { echo "$output"; false; }
+    [ "$(git -C "$a" log -1 --format=%s main)" = race ] && [ "$(git -C "$a" rev-parse main~1)" = "$BEFORE" ]
 }
