@@ -268,6 +268,25 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   unit is a `merge-gate` entry. Unit 1 merged at 236f21ee (Q-224 [1]); unit 2 merged at 6ee39f24 (Q-229 [1]). Unit 3 merged at 01022de2 (Q-235 [1]). Next: the release (Q-227), then the owner's one-time `questions.sh migrate` run (Q-234). Follow-ups: entry clarity (gloss every internal reference) and a
   `questions.sh record <answers-file>`.
 
+- **Cross-project board, v1: a host script for active projects and their questions**
+  (owner request, 2026-11-12; proposal `docs/thoughts/proposal-2026-11-12-cross-project-board.md`).
+  Motive: the owner's attention is spread over several repos, each keeping its own
+  roadmap and questions files, and the only way to see which project needs them is to open
+  every workspace. The owner's scope for v1: a script that keeps a list of active
+  projects, fetches each one's open questions, and takes answers back to the right repo.
+  It runs on the host, so it has no LLM component at all (no `claude` call, no model in
+  the loop): python3 stdlib or bash, read-only except for the answer write. A board or
+  Kanban-like view may grow from it later, not in v1. The proposal's host-vs-container
+  table is settled by this: [1] host only.
+  First step: a docs-only research and divergent-design unit, seeded with
+  `docs/constraints.md`, on the one write, how an answer gets back to its repo (for
+  example a `Q-NNN: answer` line in that repo's answers file under
+  `docs/human-author/`, an edit of the entry in its questions file, or a commit the
+  script makes on the host), and on reading questions through each repo's own
+  `questions.sh open` rather than re-parsing (S3). Then a build unit with hermetic bats
+  fixtures (H3). For the owner later, when the build is briefed: which repos go in the
+  registry and where they live on the host (the proposal's open question 1).
+
 - **Owner feedback 2026-10-29** (`docs/human-author/feedback-10-29-26.txt`), four points:
   1. An answer given in session should approve a merge entry (the gate is too strict).
      Merged at 014e5219 (Q-230 [1]); the orchestrator follows it once the next release
@@ -320,6 +339,16 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
    (c70bb17a; no token counts exist to total), and the choice is now Q-270.
    2026-11-11: answered (Q-270: [2], and [4] as well). Both are Now items: "light pass
    between full cycles" and "token cost of a cycle iteration". This item is finished.
+4. **Agent first-pass playtest before each `you: walkthrough`** (owner request, 2026-11-12;
+   proposal `docs/thoughts/proposal-2026-11-12-agent-first-pass-playtest.md`). Motive: a
+   walkthrough spends the owner's most expensive time, and its first stretch may go on
+   problems an agent could have found (a launch that fails, a README step missing). The
+   owner says it needs consideration, so nothing is built yet. First step: the proposal's
+   step 1, measure first: classify the first reported problem of each answered
+   `you: walkthrough` entry (mechanical, a finding only a person makes, or none), here and
+   per project in each project's own session; under ~20% mechanical, stop and record that.
+   Its three open questions (the first trial project, automatic or on request, Chromium in
+   the image) wait for that number.
 
 ## Ideas
 
