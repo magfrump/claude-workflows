@@ -628,16 +628,16 @@ shim() {
 @test "SKILL.md step 8 pulls a ready Next item into free slots, expires a ride-along hold after two cycle records, splits a host step out, holds nothing on an unfiled call and names each hold on line 8 (brief 2026-11-13-dev-cycle-unblock-ready-work)" {
     K="$REPO_ROOT/skills/dev-cycle/SKILL.md"; q=$'\x60'
     a="$(sect '### 8. Build briefs')"
-    for f in "Ready Now items fewer than the free slots: take the first step of the highest-ranked Next item that needs no open choice, which leaves Next as it is briefed." \
-        "A hold is a choice only when an entry asks it: an owner call any step produces is filed in the questions file this iteration (the Rules' \"Attention is the budget\"), and one that no entry asks holds nothing." \
-        "A hold that names another unit the item rides with expires once the ${q}8.$q lines of the two latest earlier cycle records" \
+    for f in "Ready Now items fewer than the free slots: take, in rank order, the first step of each Next item that needs no open choice, each leaving Next as it is briefed." \
+        "An owner call holds an item only when a questions-file entry asks it: a call any step produces is filed this iteration (the Rules' \"Attention is the budget\"), and one no entry asks holds nothing." \
+        "A hold that names another unit the item rides with expires once an ${q}8.$q line in each of the two latest cycle records before today's (${q}docs/working/cycles/$q) names it" \
         "brief the item alone, or with other such items as one unit." \
-        "A hold on a host step (a trailer, a re-bless) holds only that step: brief the code, the brief naming the host step, which step 7 files as one ${q}you: terminal$q entry once it merges." \
-        "naming each held item and its hold, not a category"; do
+        "A hold on a host step (a re-bless, the live run a ${q}Live-verified: no — WHY$q trailer names) holds only that step: brief the code, its acceptance criteria naming the host step, which step 7 files as one ${q}you: terminal$q entry once it merges." \
+        "naming each held item and its hold, not a category (${q}D12 doc item: rides a review unit; source_lines_ok: Q-278$q, say), so the next iteration can check it."; do
         [[ "$a" == *"$f"* ]] || { echo "step 8 lacks: $f"; return 1; }
     done
-    [[ "$(sect '### 7. Collect')" == *"A merged brief that names a host step (step 8) gets that step filed as one ${q}you: terminal$q entry this iteration."* ]] || { echo "step 7 does not file the host step"; return 1; }
-    [[ "$(sect '### 10. Dispatch')" == *"An owner call it names is one an entry asks (step 8): it may list a call, never hold one alone."* ]] || { echo "the final message may hold a call alone"; return 1; }
+    [[ "$(sect '### 7. Collect')" == *"A merged brief whose acceptance criteria name a host step (step 8) gets that step filed as one ${q}you: terminal$q entry this iteration."* ]] || { echo "step 7 does not file the host step"; return 1; }
+    [[ "$(sect '### 10. Dispatch')" == *"It may list an owner call only beside the questions-file entry that asks it (step 8), never as the call's only record."* ]] || { echo "the final message may hold a call alone"; return 1; }
 }
 
 @test "SKILL.md step 0.5 runs a light pass only on main-log's chore lines and a full cycle already in today's record, else a full cycle; the four skipped steps are recorded and 4b's model trigger skips light blocks (brief 2026-11-11-light-pass, Q-270 [2])" {

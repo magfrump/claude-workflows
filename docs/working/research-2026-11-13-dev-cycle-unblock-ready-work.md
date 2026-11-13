@@ -54,3 +54,21 @@ Failure-pattern skip: no fix(...) commits; this is a wording change to a procedu
 - `scripts/confine-tests.sh --probe`: exit 3, first line "confine-tests: NO CONFINEMENT
   PRIMITIVE AVAILABLE — refusing to run." So: `bats test/scripts/build-loop-orchestrator.bats`
   (50 ok), `scripts/hermeticity-lint --root .` (exit 0), and `scripts/run-tests.sh`.
+
+## Review round 1 (one read-only reviewer)
+
+- Red, brief status still open: set in the final change, as the brief asks.
+- Fixed: the Next fallback takes items in rank order, not one; "entry" is now
+  "questions-file entry" (a watch in `docs/working/watching.md` is not an owner call);
+  the expiry reads "an `8.` line in each of the two latest cycle records before today's";
+  the final-message line moved next to its "Gloss every reference" sentence, so "it" is the
+  message, not `⚠ SECURITY`; step 7 keys on the brief's acceptance criteria naming the host
+  step.
+- Fixed: the host-step example "a trailer" conflicted with the live-verify commit gate,
+  which refuses an enforcement-file commit without a `Live-verified:` trailer. The gate
+  accepts `Live-verified: no — WHY`, so the code merges with that trailer and the host step
+  is the live run it names; the example now says so.
+- Accepted, noted: records written before this change use category wording, so the first
+  ride-along expiry comes two cycle days after this merges. Filing every owner call raises
+  entry volume; the brief asks for it (a call no entry asks was read as a block), and the
+  Rules' "only real choices" still decides whether a call is one.
