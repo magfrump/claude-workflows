@@ -34,3 +34,5 @@ Paths: docs/working/research-2026-11-12-release-outside-entry.md docs/working/br
 - Changing `skills/dev-cycle/SKILL.md`, `devcontainer-config/install.sh`, `scripts/` or the decision log.
 - Running anything on the host.
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`: the dev cycle owns those.
+
+Dispatched: 1
