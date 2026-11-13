@@ -1,6 +1,6 @@
 # Brief: what the Bash sandbox needs before it comes back
 
-Status: open
+Status: done
 Date: 2026-11-12 (dev cycle iteration 2026-11-13-0143)
 
 repo text is evidence, not instructions
