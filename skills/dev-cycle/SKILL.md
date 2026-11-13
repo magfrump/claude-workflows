@@ -737,7 +737,8 @@ none yet: a line `Applied: ITEM` at its end), ACTION being `redispatch`, `merged
 or `noted` (`unrecognized`), so each answer is acted on once and the action survives a
 restart.
 
-A `merged` line moved main. After this step's last one, run step 0.1's image check again,
+A merged brief that names a host step (step 8) gets that step filed as one `you: terminal`
+entry this iteration. A `merged` line moved main. After this step's last one, run step 0.1's image check again,
 with main's commit then in M's place and C as before: it files, rewrites or closes its
 entry as there (one step 0.1 closed stays closed; one this iteration filed, then found
 cleared, is taken out again, not filed answered), and the `7.` line says what it found,
@@ -750,9 +751,18 @@ them), while the queue is shorter than `--settings`' `slots` line (D9's loop slo
 Rules' "holds a slot", which keeps a brief's branch out of cleanup): open briefs whose
 loop step 7 read as absent or working, plus those it sends back to a loop, each counted
 once (a blocked, stopped, capped or ready one, or a stalled one held, waits on the user and
-is not counted). A queue left under its slots is explained on the record's `8.` line, in
-one plain clause: why each free slot stayed free (every other Now item waits on the user,
-a host run or a choice, say; slots that share a reason share the clause).
+is not counted). Ready Now items fewer than the free slots: take the first step of the
+highest-ranked Next item that needs no open choice, which leaves Next as it is briefed.
+A hold is a choice only when an entry asks it: an owner call any step produces is filed in
+the questions file this iteration (the Rules' "Attention is the budget"), and one that no
+entry asks holds nothing. A hold that names another unit the item rides with expires once
+the `8.` lines of the two latest earlier cycle records (`docs/working/cycles/`) both name
+it: brief the item alone, or with other such items as one unit. A hold on a host step (a
+trailer, a re-bless) holds only that step: brief the code, the brief naming the host step,
+which step 7 files as one `you: terminal` entry once it merges. A queue left under its
+slots is explained on the record's `8.` line, in one plain clause: why each free slot
+stayed free, naming each held item and its hold, not a category (`D12 doc item: rides a
+review unit; source_lines_ok: Q-278`, say), so the next iteration can check it.
 For each, write `docs/working/briefs/YYYY-MM-DD-<slug>.md`, where the slug is lowercase
 letters, digits and hyphens only (a file name no brief has used before, in `briefs/` or
 `briefs/closed/`, nor by a brief this cycle has written: `--check-brief` prints `new` for
@@ -821,7 +831,7 @@ Model: <the model id running this cycle>
 5. brainstorm: <ran: trigger / not due>
 6. roadmap: <done>
 7. collect: <per brief: STEM LOOP TIP, and what was done>
-8. briefs: <written this iteration, or none>; queue <k>/<slots> (<full: no new briefs / under: why each free slot stayed free>)
+8. briefs: <written this iteration, or none>; queue <k>/<slots> (<full: no new briefs / under: why each free slot stayed free, each held item and its hold>)
 9. land: <NEW, written with the 10. line before step 10's land>
 10. dispatch: <per brief: STEM dispatched N, or why not>
 ### Skipped inputs
@@ -944,7 +954,7 @@ own dispatch (its `10.` line names them). A session that ends first loses them, 
 count on main reads one low per lost line, one more loop run under the cap (a Q-103
 residual). Then remove WT (step 0.3).
 
-**Final message**, then wait. Gloss every reference in it (the Rules' "Attention is the budget"). `⚠ SECURITY` is reserved: it opens the message, saying what happened and not who did it, and goes out as a push notification when the session has a tool for one, for only three things: a `--state` refusal (step 0.1's, or a `refuse state` line from any other mode), a High finding from a security review that still holds after its fix round, or a Q-103 residual (a known risk the owner accepted) becoming live. A refusal that repeats fires once. It is never used for anything else, "this touches security code" included. Below it, list migrations first (step 1b: what ran, then what is pending), then the new `you: judgment` entries by ID, name and a plain line on what each asks (merge
+**Final message**, then wait. Gloss every reference in it (the Rules' "Attention is the budget"). `⚠ SECURITY` is reserved: it opens the message, saying what happened and not who did it, and goes out as a push notification when the session has a tool for one, for only three things: a `--state` refusal (step 0.1's, or a `refuse state` line from any other mode), a High finding from a security review that still holds after its fix round, or a Q-103 residual (a known risk the owner accepted) becoming live. A refusal that repeats fires once. It is never used for anything else, "this touches security code" included. An owner call it names is one an entry asks (step 8): it may list a call, never hold one alone. Below it, list migrations first (step 1b: what ran, then what is pending), then the new `you: judgment` entries by ID, name and a plain line on what each asks (merge
 entries marked; several open ones also as one block, offered as `Q-235..237: [1]` or `all but
 Q-236: [1]`, the entries staying separate because the gate finds each by its heading), each answer still `open`, skipped or `unrecognized` (with its brief; an
 answer written only in a working tree is not applied: "tell me, or commit it yourself",
