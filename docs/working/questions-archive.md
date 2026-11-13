@@ -265,6 +265,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-271](#q-271--merge-gate-2026-11-10-dev-cycle-skill-held-fixes-8b03c7e6a245) | Q-271: [1] | 2026-11-10 |
 | [Q-272](#q-272--confine-tests-fallback-run-or-refuse) | Q-272: [1] to start (owner, answers-11-11-26.txt): run and warn, as merged. The owner adds: "track the warn... | 2026-11-10 |
 | [Q-274](#q-274--self-answer-plan-how-far) | Q-274: [1] (owner, answers-11-11-26.txt). Build nothing; look again when Q-272 is answered. The owner adds:... | 2026-11-11 |
+| [Q-277](#q-277--install-sandbox-with-nested-worktree-gap) | The sandbox's live check found two gaps: nested worktrees, and the credential after a token refresh. Instal... | 2026-11-11 |
 | [Q-279](#q-279--merge-gate-2026-11-11-light-pass-9b4f98000688) | Q-279: [1] | 2026-11-11 |
 <!-- index:end -->
 
@@ -6610,5 +6611,39 @@ path docs/working/briefs/2026-11-11-light-pass.md M test/scripts/build-loop-orch
 - **Blocks:** nothing else.
 - **Interim:** the branch waits; every iteration is a full cycle.
 - **If the answer differs:** [2] closes the brief; [3] re-dispatches it with your note.
+
+
+### Q-277 · install-sandbox-with-nested-worktree-gap
+**Needs:** you: judgment · **Opened:** 2026-11-11 · **Status:** ANSWERED
+
+The sandbox's live check found two gaps: nested worktrees, and the credential after a token refresh. Install the release anyway, with the gaps written down, or hold it?
+
+**If you say no:** nothing installs, which is also what happens if you never answer. Sessions keep running the image at `536b7082`, with no Bash sandbox at all.
+
+**What happened.** The release entry Q-273 has two pastes: a live check of the new Bash sandbox, then the install. Your check on 2026-11-11 ran to the end and failed: `VERDICT FAIL (3 not pass, 0 missing)`. The three lines are two gaps:
+
+- **Nested worktrees (two lines).** Inside a nested worktree (`/workspace/.claude/worktrees/<name>/`) a sandboxed command can create `.claude/` and can write the worktree's `.git` pointer file. Files planted there could run code outside the sandbox later.
+- **The credential after a refresh (one line, `X4-cred-across-rename`).** A sandboxed command that is still running when the login token is refreshed can read the new token. A command that starts after the refresh cannot: the file is covered again for it. This is the more serious of the two, because hiding the credential is the sandbox's first job, and a command can simply wait for a refresh.
+
+Every other required check passed, by the verdict's count (3 not pass, none missing): the credential read four ways before any refresh, the settings and git-config writes, the git drivers, the network rules and the builds.
+
+**What the gaps are next to.** Today no session has a sandbox, so a Bash command can already read the credential at any moment and write every file a session can reach. Installing opens neither gap; it closes most of what is open and leaves these two. Holding keeps all of it open until fixes are designed, built and checked again. The risk particular to installing is treating the sandbox as finished: nothing that depends on "the sandbox keeps the credential from Bash" may go ahead on this result. The global allow list (watch Q-098) is the one thing waiting on exactly that, and it stays waiting.
+
+- **Why it's yours:** a release is yours, and the sandbox's plan said to go ahead only after this check passed.
+- **Read:** Q-273 (its 2026-11-11 paragraphs) · `docs/working/plan-q125-cc-isolated-sandbox.md`, step 6 and the table row on project files that execute later · the roadmap Now item "the sandbox leaves nested worktree paths writable"
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Install now, gaps written down** | You run Q-273's paste 2. Both gaps go into the guide as known limits, the allow list keeps waiting, and the fixes follow as their own changes and release | Paste 2 now; one more live check and install when the fixes land | Sessions run for some days with a sandbox that a waiting command, or one planted file in a nested worktree, can step around, and someone reads "sandboxed" as "safe". If the sandbox gets in the way of normal work, one revert and a reinstall undo it |
+| **[2] Hold the release until the gaps are fixed** | Nothing installs. Build loops design and build the fixes, then you run the live check again | No paste now; the other merges in this release (the dev-cycle skill fixes, the test-confinement script's fixes, the canon script) wait too | Days or weeks more with no sandbox at all. The credential fix may not be ours to make: the covering is done by Claude Code, not by this repo's files |
+| **[3] Release without the sandbox** | The sandbox merge is reverted on main, you install the rest, and the sandbox comes back with its fixes | One merge entry for the revert, then a paste; later a second merge and release | The same time with no sandbox as [2], plus the work of taking it out and putting it back |
+
+My recommendation is still [1], now that the third line is known. Neither gap breaks normal work, and both are narrower than having no sandbox. It is a closer call than it was with only the nested-worktree lines: the credential gap is one a deliberate command can use. If you would rather not run anything called a sandbox while that is true, [3] gets you the rest of the release.
+
+- **Blocks:** Q-273's paste 2, and with it everything that waits on the sandbox being live (watches Q-098, the global allow list, and Q-161, the test-confinement gate).
+- **Interim:** hold. Nothing is installed.
+- **If the answer differs:** nothing is redone. [1] is the paste that already exists; [3] becomes a revert brief.
+
+**Answered:** [3] (owner, in session 2026-11-12). The sandboxed image was running by then, and in it a sandboxed `git worktree add` fails, because Claude Code's sandbox makes `.git/worktrees` read-only. Agent `isolation: "worktree"` also refuses this container ("could not confirm that this repository's .git entry belongs to the folder it is in"). The owner: "agents can't create worktrees" is an unacceptable limitation for the harness, so main rolls back the sandbox merge `3cd6d9bb` (code, config and tests reverted; the Q-125 plan, research, checkpoint and live-check docs kept). The sandbox comes back only when agents can create worktrees under it, as a third requirement next to the nested-worktree and credential gaps. Bringing it back means reverting the revert commit, not re-merging `feat/q125-sandbox-on-main`.
 
 
