@@ -39,7 +39,7 @@
 | Option | What it means | Constraints |
 |---|---|---|
 | A. Copy the section verbatim to both files | Same text as the global instructions | Points at `~/.claude/scripts/...` that an AGENTS.md user may lack (S11 portability, S5 real use) |
-| B. A tool-neutral copy in both files | Same rule; grammar pointer to `guides/harness-feedback.md` (symlinked into projects); the checker run "where installed" | S5: feedback from real use outside this repo is the section's whole value. S11: plain text. S3: restates a rule as AGENTS.md already does for every shared section; the grammar keeps one source. S2: AGENTS.md is not loaded here (the root CLAUDE.md is), 4 lines elsewhere |
+| B. A tool-neutral copy in both files | Same rule; grammar pointer to `guides/harness-feedback.md` (symlinked into projects); the checker run from `~/.claude/scripts/` or the clone's `scripts/` (the clone fallback added in review, item 6) | S5: feedback from real use outside this repo is the section's whole value. S11: plain text. S3: restates a rule as AGENTS.md already does for every shared section; the grammar keeps one source. S2: AGENTS.md is not loaded here (the root CLAUDE.md is), 4 lines elsewhere |
 | C. Exempt `Harness feedback` in `expected_claude_only` | Warning stops; AGENTS.md agents never file feedback | Fails the brief's own criterion: those agents do work in such projects (README:75-96). Loses S5 signal |
 
 No hard constraint prunes any. B dominates: it meets the brief's criterion, which C fails, and avoids A's dangling path. **Path A: B.**
@@ -67,7 +67,7 @@ Other choices (one line each):
 
 ## Review
 
-One fact-check-style reviewer (code-review's fact-check pass; the diff is docs only, so the security, performance and API critics have no surface) found no Must Fix. Addressed: (1) row 89 now names row 72's D12 clause, which still states the old answer; (2) the after-run above replaces a pointer to a commit that did not exist; (3) row 89 no longer cites the untracked answers file; (4) plan D12's blocked-thread bullet says "an iteration", not "a full cycle"; (6) the AGENTS.md section names the clone's `scripts/harness-feedback.py` and its `init`; (7) the task status. Kept: (5) FP-181's `+`-joined ref, a single grep-able token that cites both sources the brief names; no precedent, disclosed here and in the commit body. A second pass re-checked the fixes.
+One fact-check-style reviewer (code-review's fact-check pass; the diff is docs only, so the security, performance and API critics have no surface) found no Must Fix. Addressed: (1) row 89 now names row 72's D12 clause, which still states the old answer; (2) the after-run above replaces a pointer to a commit that did not exist; (3) row 89 no longer cites the untracked answers file; (4) plan D12's blocked-thread bullet says "an iteration", not "a full cycle"; (6) the AGENTS.md section names the clone's `scripts/harness-feedback.py` and its `init`; (7) the task status. Kept: (5) FP-181's `+`-joined ref, a single grep-able token that cites both sources the brief names; no precedent, disclosed here and in the commit body. A second pass re-checked the fixes and found no Must Fix or Must Address; two of its three Considers were applied (the option-B row above, and naming `docs/harness-feedback.md` in the section), the third (this line's timing) is resolved by this sentence.
 
 Failure-pattern skip: this branch has no fix(...) commits; FP-181 is added as the brief's item 4, not for a fix here.
 
