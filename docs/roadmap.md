@@ -303,6 +303,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   2026-11-12: unit 1, the listing, merged (763aa482, self-merge; `scripts/board.sh`,
   `guides/cross-project-board.md`). It reaches the host at the next release. Unit 2 is In
   flight.
+  2026-11-12: unit 2, `board.sh answer`, merged (cb32b381, self-merge): it writes when
+  main is checked out nowhere and prints otherwise. Unit 3 is In flight.
 
 - **Owner feedback 2026-10-29** (`docs/human-author/feedback-10-29-26.txt`), four points:
   1. An answer given in session should approve a merge entry (the gate is too strict).
@@ -323,10 +325,10 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
-- **Cross-project board v1, unit 2: the answer commit when main is not checked out**
-  (owner request, 2026-11-12): `docs/working/briefs/2026-11-12-host-board-answer-commit.md`.
-  `scripts/board.sh answer PROJECT Q-NNN TEXT` writes the answer as a commit on that repo's
-  main; it prints the line instead when main is checked out (unit 3). Self-merge.
+- **Cross-project board v1, unit 3: the answer commit when main is checked out** (owner
+  request, 2026-11-12): `docs/working/briefs/2026-11-12-host-board-answer-in-place.md`.
+  The board writes in place when main is checked out and its questions file is clean,
+  the common one-checkout repo. Self-merge.
 
 ## Next
 
@@ -642,6 +644,9 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- Cross-project board v1, unit 2: the answer commit when main is not checked out (owner
+  request; `docs/working/briefs/closed/2026-11-12-host-board-answer-commit.md`). Merged
+  cb32b381, self-merge.
 - What the Bash sandbox needs before it comes back (Q-277 [3];
   `docs/working/briefs/closed/2026-11-12-sandbox-return-research.md`). Merged d6b9206e,
   self-merge.
