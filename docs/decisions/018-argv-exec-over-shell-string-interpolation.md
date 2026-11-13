@@ -40,7 +40,8 @@ Concretely:
 2. When a shell genuinely must run a script body, keep the body **static and
    single-quoted** and pass every dynamic value as a **positional argument** so it
    expands *inside* the target shell as `"$1"`, `"$2"`, … — never spliced into the
-   source. (`scripts/confine-tests.sh:220` is the reference for this pattern.)
+   source. (The reference for this pattern is in `scripts/confine-tests.sh`, at the
+   comment that opens "Decision 018's reference pattern".)
 3. Word-split only *trusted* values (e.g. `set -- $EDITOR` to honour
    `EDITOR="code -w"`); never word-split the untrusted datum.
 4. Defeat *option* injection at the argv layer: prefix a relative path with `./`
@@ -114,5 +115,5 @@ write) occurred.
 - CVE-2026-35021 / GHSA-72p2-f44p-v65f — Claude Code CLI & Agent SDK OS command
   injection via the prompt-editor invocation (`promptEditor.ts`, `execSync`).
   Affected ≤ 2.1.91 (CLI), ≤ 0.1.55 (Python Agent SDK); fixed 2.1.92+.
-- `scripts/confine-tests.sh:220` — reference argv-passthrough pattern.
+- `scripts/confine-tests.sh`, the comment that opens "Decision 018's reference pattern" — reference argv-passthrough pattern.
 - Decision 017 — polyglot test hermeticity (why the lint stays single-purpose).

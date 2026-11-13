@@ -27,102 +27,48 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-278](#q-278--q272-returned-run-or-refuse) | you: judgment | You asked for Q-272 back with data. When the test-confinement script (`scripts/confine-tests.sh`) cannot us... | 2026-11-11 |
-| [Q-281](#q-281--constraint-s4-keep-promote-drop) | you: judgment | Should soft constraint S4 in `docs/constraints.md` ("mechanical steps go in tested scripts, not prose") sta... | 2026-11-13 |
-| [Q-282](#q-282--constraint-s8-no-growth-clause) | you: judgment | Should the "no growth of the 500-plus-line files" clause of soft constraint S8 stay as it is, be reworded a... | 2026-11-13 |
-| [Q-283](#q-283--constraint-s10-owner-wait-clause) | you: judgment | Should the S10 clause "no merge or loop that waits on the user's manual action when a fail-closed alternati... | 2026-11-13 |
-| [Q-284](#q-284--constraint-instrument-code-in-fork) | you: judgment | Should the unwritten rule "benchmark and review-instrument code lives in the SWRBench fork" stay out of `do... | 2026-11-13 |
 | [Q-285](#q-285--review-gap-audit-which-repo) | you: judgment | Which repo should the review-gap audit run on first, or should the item be dropped? | 2026-11-13 |
 | [Q-286](#q-286--trial-set-2-ends) | you: judgment | The second trial set (T8–T12) ends about today. Which of them should stay? | 2026-11-13 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | Q-167: (b) and (d) answered 2026-11-07 (answers-11-7-26.txt), on bless 91c5f79dd91eb7ee, which --probe-only... | 2026-10-15 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Q-255: first half answered 2026-11-07 (answers-11-7-26.txt): all four fronted probes through plugins-artifa... | 2026-11-05 |
+| [Q-290](#q-290--image-lag) | you: terminal | Run the release paste below on the host, from your claude-workflows checkout at main's tip, then start a ne... | 2026-11-13 |
 <!-- index:end -->
 
 ## Open
 
-### Q-281 · constraint-s4-keep-promote-drop
-**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** OPEN
+### Q-290 · image-lag
+**Needs:** you: terminal · **Opened:** 2026-11-13 · **Status:** OPEN
 
-Should soft constraint S4 in `docs/constraints.md` ("mechanical steps go in tested scripts, not prose") stay soft, become hard, or go?
+Run the release paste below on the host, from your claude-workflows checkout at main's tip, then start a new sandbox session.
 
-**If you say no:** S4 stays soft and unchanged, which is the audit's recommendation. The drift check keeps noting when a loop says S4 "pruned" an option.
+**If you say no:** nothing breaks. Sessions keep running the installed image at C, whose dev-cycle skill lacks today's change to step 8 (below). The merges stay on main, waiting.
 
-This is call A of four from the small constraint-drift audit, which you asked for on 2026-11-11 (Q-269 [1]). Its four calls only reached you in a cycle's final message, never this file, so you never had a way to answer them; that is fixed here. A soft constraint ranks options, and a hard one refuses them. S4 was flagged at 605d4c18 and 85080263, where the option it "pruned" lost only on ranking, and it was traded away twice (3dbf43cb, 1f14e270), so in practice it is soft.
+**Release notes** (written 2026-11-13 from the log). The installed image is the root-owned copy of the dev-cycle scripts and skill that every session runs as the gate. It is at C = `107cba32d271132361bc4a74a2ebf851e4398b97` (read from `/opt/claude-workflows/.manifest`). Main is at M = `f1238bdb83e6882b0f6db71ae904923555bb8583`.
 
-- **Read:** `docs/working/research-2026-11-11-constraint-drift-audit.md`, "Call A" (merged b3d3e8f4)
+**Merged without your review** (subject ends "build-loop self-merge"; a hand commit with that subject would read the same, so this is a pointer, not proof):
 
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Keep soft, unchanged** | no edit | none | loops keep calling a soft-line loss "pruned"; the drift check keeps flagging it |
-| **[2] Promote to hard** | needs a `success:` line, e.g. a bats case for every new mechanical step | one commit by you | the two units that rightly kept prose would have been refused |
-| **[3] Drop** | S3 and S6 still rank most of these | one commit by you | mechanical steps written only as prose come back unranked |
+- `a91d42af` Merge branch 'docs/walkthrough-first-problem-measure' (build-loop self-merge): a brief and one research doc; the image carries neither.
 
-- **Blocks:** nothing.
-- **Interim:** [1].
-- **If the answer differs:** you commit the edit to `docs/constraints.md` (no build loop may); the audit doc has the text ready to paste.
+**What changes for you** (the two merges you approved today):
 
-### Q-282 · constraint-s8-no-growth-clause
-**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** OPEN
+- The dev cycle stops leaving ready work unbriefed (`f1238bdb`, your Q-289 answer): step 8 takes a Next item's first step when no Now item is ready, a held item that rides another unit is briefed alone after two cycles, a host step is split from its code, every owner call goes in the questions file, and the record's `8.` line names why each free slot stayed free. This is the gate-code change that makes this release due.
+- Four small record fixes (`00e2e663`, your Q-287 answer): the decision log's row for D12 after the light pass, a `Harness feedback` section added to `AGENTS.md` and `GEMINI.md` (the health check's every-run warning), decision 018's moved line cite, and two failure-pattern records. The image carries none of these; `AGENTS.md` and `GEMINI.md` are what other agents read.
 
-Should the "no growth of the 500-plus-line files" clause of soft constraint S8 stay as it is, be reworded as a preference, or become a hard line?
+**The rest:** 10 commits, cycle lands and recorded answers, records only. The full list: `git -c log.showSignature=false log --first-parent --format='%h %s' 107cba32d271132361bc4a74a2ebf851e4398b97..f1238bdb83e6882b0f6db71ae904923555bb8583`
 
-**If you say no:** S8 stays unchanged, which is the audit's recommendation.
+**Gate files changed:** `skills/dev-cycle/SKILL.md`.
 
-Call B of the four from the constraint-drift audit (see Q-281 for why these are only reaching you now). The clause was flagged at aeab6745 and 1f14e270, and neither time did it change the outcome. Four merges since 2026-10-19 grew those files anyway, all approved by you (one was Q-241 [1], +177/−27 to `install.sh`).
+**Paths outside `docs/`** (17 paths under `docs/` also changed; the image carries none of them): `AGENTS.md`, `GEMINI.md`, `skills/dev-cycle/SKILL.md`, `test/scripts/build-loop-orchestrator.bats`
 
-- **Read:** `docs/working/research-2026-11-11-constraint-drift-audit.md`, "Call B"
+The paste (one line; it refuses, saying why, unless the checkout is at main's tip and the gate code and installer are still M's):
 
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Keep soft, unchanged** | no edit | none | loops keep reading "no growth" as a prune |
-| **[2] Reword as a preference** | "prefer no growth of [...]", so it is clear it only ranks | one commit by you | none known; a softer word might let growth through more often |
-| **[3] Promote to hard** | split into its own hard line with a line-count (`numstat`) check | one commit by you | the Q-106 host-settings work would have been refused |
+```
+sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "f1238bdb83e6882b0f6db71ae904923555bb8583:$p")"; then n=$((n+1)); else echo "release refused: $p changed after M: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
+```
 
-- **Blocks:** nothing.
-- **Interim:** [1].
-- **If the answer differs:** you commit the edit to `docs/constraints.md`.
-
-### Q-283 · constraint-s10-owner-wait-clause
-**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** OPEN
-
-Should the S10 clause "no merge or loop that waits on the user's manual action when a fail-closed alternative exists" stay soft, become a new hard constraint (H5), or go?
-
-**If you say no:** the clause stays soft and unchanged, which is the audit's recommendation.
-
-Call C of the four from the constraint-drift audit (see Q-281). It was flagged at 546788f2, which was a false alarm: the option it pruned also failed hard constraint H4 (an LLM must not be the enforcement). Of all the soft clauses, this one is worded most like a hard rule, and it matches your standing rule against new owner stops.
-
-- **Read:** `docs/working/research-2026-11-11-constraint-drift-audit.md`, "Call C" (option [2]'s H5 text is in its "Proposed amendment" section)
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Keep soft, unchanged** | no edit | none | a loop may again treat it as a prune; no outcome has changed yet |
-| **[2] Promote to hard (H5), trim S10** | designs that wait on you are refused before choosing | one commit by you; one more line in every loop prompt | an owner step that is truly needed must argue past it; its check misses waits that go through a questions entry |
-| **[3] Drop the clause** | the rest of S10 still ranks your cost | one commit by you | designs that wait on you lose their explicit counterweight |
-
-- **Blocks:** nothing.
-- **Interim:** [1].
-- **If the answer differs:** you commit the edit to `docs/constraints.md`.
-
-### Q-284 · constraint-instrument-code-in-fork
-**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** OPEN
-
-Should the unwritten rule "benchmark and review-instrument code lives in the SWRBench fork" stay out of `docs/constraints.md`, or be added as a soft or hard line?
-
-**If you say no:** it stays out of the file, which is the audit's recommendation; its home stays `archive/README.md:18-19`.
-
-Call D of the four from the constraint-drift audit (see Q-281). The rule decided where 605d4c18's script went, but `docs/constraints.md` does not hold it. It matters only for benchmark or review-instrument work.
-
-- **Read:** `docs/working/research-2026-11-11-constraint-drift-audit.md`, "Call D" (option [2]'s S12 text is in its "Proposed amendment" section)
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Leave it out of the file** | the archive README stays its home; loops find it as they did | none | a future recall-run loop might miss it and put instrument code here |
-| **[2] Add it as a soft line (S12)** | every loop prompt carries it | one commit by you; one line in every prompt | a line nearly every design ignores costs context for no gain |
-| **[3] Add it as a hard line** | instrument code here is refused | one commit by you, plus a path check for its `success:` line | a small helper that belongs here gets refused |
-
-- **Blocks:** nothing.
-- **Interim:** [1].
-- **If the answer differs:** you commit the edit to `docs/constraints.md`.
+- **Interim:** the image's gate (C) runs.
+- **Blocks:** nothing; the dev cycle runs on the old gate meanwhile.
 
 ### Q-285 · review-gap-audit-which-repo
 **Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** OPEN

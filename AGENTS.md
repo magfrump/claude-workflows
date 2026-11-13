@@ -63,6 +63,10 @@ These are living documents. Update them when you learn something new about the c
 
 Long-lived documents (onboarding docs, spike records, shared thoughts) support **freshness tracking** via `Last verified` and `Relevant paths` fields. Before relying on these documents, check whether tracked paths have changed using `git log --since`. See `guides/doc-freshness.md` for the full heuristic.
 
+## Harness feedback
+
+When a feature of these workflows (a skill, workflow, guide or one of these instructions) fails, causes friction, or catches something real in a project other than claude-workflows, append one entry to that project's `docs/harness-feedback.md`: what happened here, expected vs observed, evidence. The owner copies the file to claude-workflows, where it becomes dev-cycle ideas. The entry grammar is in `guides/harness-feedback.md`; run `harness-feedback.py check` before committing, from `~/.claude/scripts/` where it is installed or from `scripts/` in your claude-workflows clone (its `init` creates `docs/harness-feedback.md`). No secrets in entries: the file leaves the project.
+
 ## General Principles
 
 - **Commit triggers (mechanical, not vibes-based).** "Logical unit of work" defers indefinitely. Instead, commit whenever any of these is true:
