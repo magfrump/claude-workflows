@@ -135,6 +135,40 @@ branch_json() {  # branch_json NAME JSON: a branch whose devcontainer.json is JS
   [ ! -e "$STUB/vol-cc-$pid-claude-config" ]
 }
 
+@test "--clean: a run dir with no record is cleaned, a non-directory gets its NOTE, a live run without a record is kept" {
+  mkdir "$CC_VERIFY_ROOT" "$CC_VERIFY_ROOT/run-1-999999999" "$CC_VERIFY_ROOT/run-1793211495-572412.d"
+  touch "$CC_VERIFY_ROOT/run-2-2"
+  # A live run between its mkdir and its record write: the name carries its PID.
+  bash -c 'sleep 60; :' cc-verify-live & live=$!
+  mkdir "$CC_VERIFY_ROOT/run-3-$live"
+  run "$T/cfg/cc-verify.sh" --clean
+  kill "$live"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"cleaning $CC_VERIFY_ROOT/run-1-999999999"* ]]
+  [[ "$output" == *"cleaning $CC_VERIFY_ROOT/run-1793211495-572412.d"* ]]
+  [[ "$output" == *"NOTE: skipped $CC_VERIFY_ROOT/run-2-2: not a directory."* ]]
+  [[ "$output" == *"NOTE: skipped $CC_VERIFY_ROOT/run-3-$live: run $live is still going."* ]]
+  [ ! -e "$CC_VERIFY_ROOT/run-1-999999999" ] && [ ! -e "$CC_VERIFY_ROOT/run-1793211495-572412.d" ]
+  [ -d "$CC_VERIFY_ROOT/run-3-$live" ] && [ -f "$CC_VERIFY_ROOT/run-2-2" ]
+}
+
+@test "a relative REPO is resolved before cc-verify changes into its run dir" {
+  cd "$R"
+  run "$T/cfg/cc-verify.sh" --check "$T/check" . feat/x <<< y
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"RESULT cc-verify pass tree="* ]]
+  cd "$T"
+  run "$T/cfg/cc-verify.sh" --check "$T/check" repo/ feat/x <<< y
+  [ "$status" -eq 0 ]
+}
+
+@test "self-check: a source line with no newline at the end of the launcher is still read (5)" {
+  printf 'source "$(config_dir)/cc-exit-scan.sh"' >> "$T/cfg/cc-isolated.sh"; bless_main
+  run "$T/cfg/cc-verify.sh" --clean
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'may load code from its config dir'*'source "$(config_dir)/cc-exit-scan.sh"'* ]]
+}
+
 @test "n at the prompt declines: nothing is built and the run dir is gone (3)" {
   verify feat/x n
   [ "$status" -eq 1 ]
