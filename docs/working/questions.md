@@ -30,9 +30,32 @@ The index below is generated — edit entries, not the table.
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | Q-167: (b) and (d) answered 2026-11-07 (answers-11-7-26.txt), on bless 91c5f79dd91eb7ee, which --probe-only... | 2026-10-15 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Q-255: first half answered 2026-11-07 (answers-11-7-26.txt): all four fronted probes through plugins-artifa... | 2026-11-05 |
+| [Q-280](#q-280--board-first-host-run) | you: terminal | The cross-project board you asked for on 2026-11-12 is built; install it on the host, list your repos, and ... | 2026-11-12 |
 <!-- index:end -->
 
 ## Open
+
+### Q-280 · board-first-host-run
+**Needs:** you: terminal · **Opened:** 2026-11-12 · **Status:** OPEN
+
+The cross-project board you asked for on 2026-11-12 is built; install it on the host, list your repos, and run it once.
+
+**If you say no:** nothing breaks. The board stays on main and reaches the host whenever you next run `install.sh` for another reason; until then you see each project's questions by opening it, as today.
+
+**What it is.** `scripts/board.sh` (guide: `guides/cross-project-board.md`) runs on the host only and calls no model. With no arguments it lists every registered repo's open `you:` questions, read from that repo's main. `board.sh answer PROJECT Q-NNN "TEXT"` commits your one-line answer on that repo's main, which its dev cycle reads as your answer at its next iteration; when it cannot write safely it prints the line for you to paste instead. It merged in three self-merged units with no review by you: 763aa482 (listing), cb32b381 (answer when main is checked out nowhere), 94ace1f2 (answer in place when main is checked out and its questions file is clean).
+
+**The registry** is `~/.config/claude-board/repos`, one absolute repo path per line. The paste below starts it with the two host paths this repo's records name; add your other repos' lines, then run `board.sh` again. A repo owned by another host user shows as "dubious ownership", since the board ignores your global git config, `safe.directory` included.
+
+Stop every session first (the install replaces the image), then on the host:
+
+```
+cd /home/magfrump/claude-workflows && test "$(git rev-parse --abbrev-ref HEAD)" = main && ./devcontainer-config/install.sh && mkdir -p ~/.config/claude-board && { test -e ~/.config/claude-board/repos || printf '%s\n' /home/magfrump/claude-workflows /home/magfrump/belegarth-herald > ~/.config/claude-board/repos; } && ~/.claude/scripts/board.sh; echo "board exit $?"
+```
+
+Answer `Q-280:` with the board's output (exit 0: every project read; 1: one could not be read or a registry line is bad, each named in the output; 2: it refused before reading, with the reason). The listing writes nothing; the answer subcommand is first used when you answer something with it.
+
+- **Interim:** the board is on main only; the dev cycle carries on as now.
+- **If the answer differs:** an unreadable project or a refusal becomes a fix item on the roadmap.
 
 ### Q-278 · q272-returned-run-or-refuse
 **Needs:** you: judgment · **Opened:** 2026-11-11 · **Status:** OPEN

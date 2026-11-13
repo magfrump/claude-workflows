@@ -305,6 +305,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   flight.
   2026-11-12: unit 2, `board.sh answer`, merged (cb32b381, self-merge): it writes when
   main is checked out nowhere and prints otherwise. Unit 3 is In flight.
+  2026-11-12: unit 3, the in-place write, merged (94ace1f2, self-merge). v1 is built. Next:
+  the owner's first host run (Q-280: install, the registry, one `board.sh` run). After
+  that, the Kanban-like view stays an idea until the board is used.
 
 - **Owner feedback 2026-10-29** (`docs/human-author/feedback-10-29-26.txt`), four points:
   1. An answer given in session should approve a merge entry (the gate is too strict).
@@ -325,10 +328,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
-- **Cross-project board v1, unit 3: the answer commit when main is checked out** (owner
-  request, 2026-11-12): `docs/working/briefs/2026-11-12-host-board-answer-in-place.md`.
-  The board writes in place when main is checked out and its questions file is clean,
-  the common one-checkout repo. Self-merge.
 
 ## Next
 
@@ -644,6 +643,9 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- Cross-project board v1, unit 3: the answer commit when main is checked out (owner
+  request; `docs/working/briefs/closed/2026-11-12-host-board-answer-in-place.md`). Merged
+  94ace1f2, self-merge.
 - Cross-project board v1, unit 2: the answer commit when main is not checked out (owner
   request; `docs/working/briefs/closed/2026-11-12-host-board-answer-commit.md`). Merged
   cb32b381, self-merge.
