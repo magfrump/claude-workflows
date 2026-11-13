@@ -1,7 +1,7 @@
 # Research: how often a walkthrough's first problem was one an agent could have found
 
 - **Goal**: Do step 1 of `docs/thoughts/proposal-2026-11-12-agent-first-pass-playtest.md` for this repo: classify the first problem reported in each answered `you: walkthrough` entry as mechanical, a person-only finding, or none, and give the mechanical share.
-- **Problem framing**: Count the answered entries routed `you: walkthrough`, plus any earlier entry that was plainly a walkthrough. Considered and discarded: counting every owner-run `you: terminal` paste as a walkthrough. That would fill the denominator with scripted host checks the playtest proposal does not target, and would pick the denominator from whatever produced output (FP-114).
+- **Problem framing**: Count the answered entries routed `you: walkthrough`, plus any earlier entry that was plainly a walkthrough. Considered and discarded: counting every owner-run `you: terminal` paste as a walkthrough. That would fill the denominator with scripted host checks the playtest proposal does not target, and would pick the denominator from whatever produced output (FP-114, a past bug where a measurement counted only the cases that produced output; see Prior failures).
 - **Project state**: Step 1 of the playtest proposal, this repo only; other repos are measured in their own sessions · unblocks the roadmap Next item "Agent first-pass playtest" (cite: docs/roadmap.md, Next item 2)
 - **Task status**: complete (measurement done; result is "too few to decide")
 
@@ -16,7 +16,7 @@
 
 The only matches for `you: walkthrough` in the two files are the route table, `docs/working/questions.md:16`, and two prose lines that describe the route, `docs/working/questions-archive.md:4538` and `:4661`. None is an entry's `**Needs:**` line.
 
-The route has existed since commit `9a12425a` (2026-10-28, decision 040 unit 1). Since then this repo has opened 62 owner entries: 54 `you: judgment` and 8 `you: terminal`. That is enough traffic for a walkthrough to have shown up if one had been needed [observed count; the reason below is inference].
+The route has existed since commit `9a12425a` (2026-10-28; the first unit of decision 040, which split the owner routes). Since then this repo has opened 62 owner entries: 54 `you: judgment` and 8 `you: terminal`. That is enough traffic for a walkthrough to have shown up if one had been needed [observed count; the reason below is inference].
 
 **Why there are none (inference):** this repo is the harness itself, with no player- or user-facing product to sit down with. What the owner runs by hand here is a scripted host check, and those are routed `you: terminal` by design.
 
@@ -28,7 +28,10 @@ The brief asks for entries that predate the route but were plainly walkthroughs:
 |---|---|---|
 | Q-176 · q092-deny-matcher-live-check | "1. denied / 2. model refusal, then allowed / … / 9. allowed but error: no configured push destination" (`docs/human-author/answers-10-16-26.txt:25-33`) | The nearest case, since it opens an interactive `claude` session (`docs/working/questions-archive.md:4075`). But the owner typed nine fixed probe spellings to test a deny matcher. That is a security probe, not product use. |
 | Q-170 · decision-015-isolation-rerun | "When I fell back to running host sessions, it was because I installed a new devcontainer config that was unable to launch cc-isolated." (`answers-10-16-26.txt:18`) | It recalls failures in everyday use, given as background for a `you: judgment` answer. It is not a session the owner sat down for. |
+| Q-082 | "When I ran the same two lines, the harness refused with \"Permission to use Bash with command … has been denied.\"" (`docs/human-author/answers-9-28-26.txt:21`) | Like Q-176: an interactive `claude` session, but running fixed probe lines to test a hook. |
 | Q-162 · merges-and-cleanup-2026-10-14 | "Ran this, had some error messages like \"wt-build-loop-u3a1 is not a working tree\"" (`answers-10-16-26.txt:5`) | A `you: terminal` merge paste. |
+
+Owner notes that answer no entry are also out. `docs/human-author/feedback.md:31` (H-05) reports hands-on use in another repo ("I spent a full day running ui-visual-review on Behemoth Arsenal…"), and `feedback.md:28` (H-04) and `feedback-10-29-26.txt:5` are similar. They describe other repos' builds and answer no `you: walkthrough` entry. The brief says those repos are measured in their own sessions, so they are not counted here.
 
 ## Not counted: what the owner's hand-run pastes hit first
 
@@ -48,9 +51,9 @@ Reading (inference, six cases): when the owner's hand-run work fails first, it i
 ## The proposal's rule, applied
 
 - Brief rule: fewer than five entries means "too few to decide", not a share. Here there are 0.
-- Proposal rule (step 1): under about 20% mechanical, stop. With too few to tell (under about 8), "say so and treat steps 2–4 as a trial".
+- Proposal rule (step 1): stop if mechanical problems are under about 20% of the answers that reported any problem. With too few to tell (under about 8), "say so and treat steps 2–4 as a trial".
 - So this repo neither supports nor refutes the hunch, and gives no reason to stop. It adds 0 to the pooled cross-repo count. The decision belongs to the other repos' counts (belegarth-herald, philosophy-research and the rest, each in its own session).
-- Per the brief, a result that is not "under 20%" lists the proposal's three open questions in the marker body, in questions-entry shape, for the cycle to file. The cycle may hold them until another repo reports a count: Q1 especially depends on which repo has walkthroughs.
+- Per the brief, a result that is not "under 20%" lists the proposal's three open questions in the marker body (the handoff commit message this loop leaves for the dev cycle), in questions-entry shape, for the cycle to file. The cycle may hold them until another repo reports a count: Q1 especially depends on which repo has walkthroughs.
 
 ### The three open questions (for the marker body)
 
