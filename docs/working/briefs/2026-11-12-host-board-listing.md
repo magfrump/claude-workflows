@@ -38,3 +38,5 @@ Paths: scripts/board.sh test/scripts/board.bats guides/cross-project-board.md gu
 - A registry file, a Kanban or other view, `~/board.md`, the playtest proposal.
 - Running anything on the host.
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`: the dev cycle owns those.
+
+Dispatched: 1
