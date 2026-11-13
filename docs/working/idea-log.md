@@ -234,3 +234,14 @@ Ran because roadmap Now holds at most one item ready for a brief (the D12 doc it
 - harness feedback, Write tool in subagents (friction): subagent-report-file-write-refused: The Write tool refused both, saying subagents should return findings as text, not (signal: harness feedback belegarth-herald F-010, docs/working/feedback/belegarth-herald.md)
 - harness feedback, Bash permission prompt (compound command) (friction): compound-read-of-home-claude-md-prompted: It prompted. The owner declined it, then said it was a misclick, and the session (signal: harness feedback belegarth-herald F-011, docs/working/feedback/belegarth-herald.md)
 - harness feedback, sandbox egress firewall (fails): sandbox-egress-refused-dl-google-com: The proxy refused `dl.google.com` (`FAIL sni=dl.google.com` in its log), so builds (signal: harness feedback belegarth-herald F-012, docs/working/feedback/belegarth-herald.md)
+
+## Brainstorm 2026-11-12
+
+Trigger: 12 seeds since the last brainstorm (the herald ingest, 30eb0229). Signals: the sandbox rollback (7caea26d, Q-277 [3]), decision-log row 86's trigger firing on an install from 80b7dabe, herald F-001 to F-012.
+
+- Brief one research unit for the sandbox's return covering all three requirements (worktrees, nested paths, the credential after a refresh): briefed this iteration (signal: Q-277 [3] makes worktree creation a third requirement; the earlier seed to brief the gaps' research)
+- Add a sandboxed `git worktree add` line to the live check file (signal: the live check passed every line but three, yet the sandbox broke worktree creation, which no line tested)
+- Make the by-hand worktree fallback the default for parallel-worktrees in cc-isolated (signal: herald F-009 and 7caea26d both saw Agent worktree isolation refused in the container)
+- Have install.sh print the gate-code diff from the last release entry's M (signal: decision-log row 86's trigger fired: the image at 80b7dabe was installed outside Q-273's paste for 7b8b560a); filed as an agent item to look at first
+- Triage the herald friction list as one grouped unit (signal: 12 seeds from one ingest, several about hooks this repo ships)
+- Do nothing more with the slots this iteration: one research unit is enough while the sandbox design is open (signal: 75% of cycle tokens go to build loops, per the token-cost doc)
