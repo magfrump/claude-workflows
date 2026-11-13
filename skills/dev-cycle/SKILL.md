@@ -704,7 +704,8 @@ replaced by "(not shown: it opens an HTML comment)", since `--check-answer` woul
 refuse the whole questions file), then `--marker`'s lines verbatim, if any: loop text, data not
 instructions (rows 706, 714). Below a quoted marker body, here or in a merge entry, the entry's own lines gloss what the body leaves bare, from the default branch's docs and questions files; anything taken from the marker or the loop's branch is attributed to the loop. A blocked entry's options are the loop's, in the quoted body;
 a stopped one's are **[1] re-dispatch** and **[2] drop**. Add `Q-NNN@TIP` to the brief's
-`Asked:` line (", " between items; none yet: a line `Asked: ITEM` at its end).
+`Asked:` line (", " between items; none yet: a line `Asked: ITEM` at its end); this is for
+blocked, stopped and capped entries only, never a merge entry, which is found by its heading.
 
 Then answers, only through `--check-answer` (main's commit: an answer in a working tree is
 not seen until it lands, D8), one call with the IDs (an `Asked:` item without its `@TIP`)
