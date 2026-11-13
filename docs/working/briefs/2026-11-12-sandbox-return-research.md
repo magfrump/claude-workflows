@@ -21,7 +21,7 @@ Requirements 1 and 2 pull against each other: worktrees must be writable for age
 
 ## Acceptance criteria
 
-- The deliverable is `docs/working/research-2026-11-12-sandbox-return.md`. Change no other file except this brief's status line. Change no enforcement file, no `devcontainer-config/` file and no test in this unit.
+- The deliverable is `docs/working/research-2026-11-12-sandbox-return-research.md`. Change no other file except this brief's status line. Change no enforcement file, no `devcontainer-config/` file and no test in this unit.
 - Read the sandbox as it was: `git show 7caea26d^:devcontainer-config/managed-settings.json` and the other files 7caea26d removed, `docs/working/plan-q125-cc-isolated-sandbox.md` and `docs/working/q125-verify-check.sh`. Quote with file:line or commit.
 - For each requirement, settle what can be settled without the host: how Claude Code's sandbox applies `allowWrite`, `denyWrite` and `denyRead` on Linux (patterns or literal paths only; per-path binds or directory binds), from its documentation (WebSearch works here; WebFetch does not, so mark web-sourced facts unverified and say what a host check would confirm), and where git writes during `worktree add` (`.git/worktrees/<name>/`, the new tree, the pointer file). Say for each fact whether it was observed, read in documentation, or inferred.
 - Run divergent design per requirement, seeded with `docs/constraints.md`, with at least these candidates: for 1, an `allowWrite` on `.git/worktrees`, agent worktrees outside `.git`'s parent, or worktree creation outside the sandbox (an excluded command or a hook); for 2, a pattern deny, agent worktrees where a literal deny can name them, or an accepted residual with the exit scan (`devcontainer-config/cc-exit-scan.sh`) as the check; for 3, a directory-level deny, keeping the credential out of the container's files, or an accepted residual beside decision-log row 53. Say how the picks for 1 and 2 fit together.
@@ -36,10 +36,12 @@ Branch: docs/sandbox-return-research
 
 Policy: self-merge
 
-Paths: docs/working/research-2026-11-12-sandbox-return.md docs/working/briefs/2026-11-12-sandbox-return-research.md
+Paths: docs/working/research-2026-11-12-sandbox-return-research.md docs/working/briefs/2026-11-12-sandbox-return-research.md
 
 ## Out of scope
 
 - Restoring the sandbox, reverting 7caea26d, or changing `devcontainer-config/`, hooks, tests, `docs/constraints.md` or any instruction file.
 - Running anything on the host, in another container, or under `cc-verify`.
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`: the dev cycle owns those.
+
+Dispatched: 1
