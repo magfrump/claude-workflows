@@ -162,6 +162,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   2026-11-13: ready at f16bbdce; merge entry Q-288 (its FP-181 clashes with Q-287's).
   2026-11-13: Q-288 answered [3] in session (renumber to FP-182 and FP-183 after Q-287); goes back to its loop next iteration.
   2026-11-13: Q-287 merged (00e2e663); sent back to its loop for the renumber (iteration 2237).
+  2026-11-13: ready at 7611797b (FP-182 and FP-183); merge entry Q-291.
 
 ## Next
 
@@ -190,6 +191,11 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## Ideas
 
+- **The next deep audit's sample.** Signal: step 4b fired 2026-11-13 (iteration 2250) on
+  `skills/dev-cycle/SKILL.md` as f1238bdb (Q-289) changed it, after the constraint-drift item
+  closed; with a1121ac5's Path A record (Done item above), it is what the next deep audit
+  reads first. No audit is asked for now: the owner starts one by hand, or the cycle asks
+  when a major design decision fires step 4b.
 - **Record out-of-cycle session answers through `--answered`.** Signal: 4306aa88 (the owner's
   Q-281..284 answers, recorded on a hand branch) read as `other` in `--main-log`, making
   iteration 2026-11-13-2237 a full cycle with a health run.

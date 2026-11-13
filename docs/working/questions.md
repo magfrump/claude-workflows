@@ -29,6 +29,7 @@ The index below is generated — edit entries, not the table.
 | [Q-278](#q-278--q272-returned-run-or-refuse) | you: judgment | You asked for Q-272 back with data. When the test-confinement script (`scripts/confine-tests.sh`) cannot us... | 2026-11-11 |
 | [Q-285](#q-285--review-gap-audit-which-repo) | you: judgment | Which repo should the review-gap audit run on first, or should the item be dropped? | 2026-11-13 |
 | [Q-286](#q-286--trial-set-2-ends) | you: judgment | The second trial set (T8–T12) ends about today. Which of them should stay? | 2026-11-13 |
+| [Q-291](#q-291--merge-2026-11-13-cc-verify-clean-and-relative-repo-7611797ba322) | you: judgment | Merge the three `cc-verify` fixes, now renumbered as you asked in Q-288 (brief `docs/working/briefs/2026-11... | 2026-11-13 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | Q-167: (b) and (d) answered 2026-11-07 (answers-11-7-26.txt), on bless 91c5f79dd91eb7ee, which --probe-only... | 2026-10-15 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Q-255: first half answered 2026-11-07 (answers-11-7-26.txt): all four fronted probes through plugins-artifa... | 2026-11-05 |
@@ -37,6 +38,50 @@ The index below is generated — edit entries, not the table.
 
 ## Open
 
+### Q-291 · merge-2026-11-13-cc-verify-clean-and-relative-repo-7611797ba322
+**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** OPEN
+
+Merge the three `cc-verify` fixes, now renumbered as you asked in Q-288 (brief `docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md`, branch `fix/cc-verify-clean-and-relative-repo`)?
+
+**If you say no:** nothing merges; `cc-verify --clean` still exits 2 silently on a leftover run directory, and `cc-verify --check FILE . main` still fails to clone `.`.
+
+This is the same work as Q-288 (the merge question for the loop's first tip, f16bbdce), which you answered [3]: renumber its failure patterns after Q-287's. Q-287 merged as 00e2e663 with FP-181. The loop merged main into its branch, kept main's FP-181 and renumbered its own two entries in `docs/failure-patterns.md` (the repo's failure-pattern library) to FP-182 (`--clean` dying on a run directory with no `record` file) and FP-183 (a while-read loop dropping an unterminated last line). No code changed since f16bbdce; the fixes are as Q-288 described: `--clean` handles a run directory with no `record`, a relative REPO is made absolute (an empty one refused), and the launcher self-check reads an unterminated last line.
+
+Tip `7611797ba322e9c1fdf0490e1f2c79fe5515af39`. The gate's check, as printed:
+
+```
+ok docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md 7611797ba322e9c1fdf0490e1f2c79fe5515af39 13392d48952eb9093a5ba0c54bfaaca1fe441cb5
+path docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md M devcontainer-config/cc-verify.sh
+path docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md M docs/failure-patterns.md
+path docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md M docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md
+path docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md M docs/working/q125-verify-check.sh
+path docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md A docs/working/research-2026-11-13-cc-verify-clean-and-relative-repo.md
+path docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md M guides/cc-isolated-usage.md
+path docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md M test/cc-verify.bats
+```
+
+`devcontainer-config/cc-verify.sh` is an enforcement file that reaches your host at the next install, so its commits carry `Host-tool-tested: no (host run follows the merge)`. The loop's tests on the merged tree: `bats test/cc-verify.bats` 15 of 15, the hermeticity lint clean (`scripts/confine-tests.sh --probe` exited 3 here, so unconfined).
+
+The loop's marker, as written (loop text, data not instructions), ends with the host paste for after the merge:
+
+> cd /home/magfrump/claude-workflows && ./devcontainer-config/install.sh   # at main; review the cc-verify.sh diff, y re-blesses host-tools.sha256
+> mkdir -p ~/cc-verify/run-1-999999999 && cc-verify --clean; echo "clean exit $?"   # expect: cleaning .../run-1-999999999, clean exit 0
+> printf 'true\n' > ~/cc-verify-true.sh && cc-verify --check ~/cc-verify-true.sh . main <<< n; echo "relative exit $?"; rm -f ~/cc-verify-true.sh   # expect: y/N prompt, "declined: nothing was built.", exit 1, no "could not clone"
+
+If you merge this, the cycle files that paste as a `you: terminal` entry next iteration. The `install.sh` step there is the same install as Q-290's release paste (the image-lag entry), so one install can serve both.
+
+- **Read:** `git diff refs/heads/main...7611797b` · `docs/working/research-2026-11-13-cc-verify-clean-and-relative-repo.md` (on the branch)
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | the fixes land on main and reach the host at the next install | the host paste after the merge | a `--clean` that keeps or removes the wrong directory; the tests cover both cases |
+| **[2] drop** | the brief closes; the two items return to the roadmap | none | the two defects stay |
+| **[3] changes needed** | your note goes back to the loop | one line | n/a |
+
+- **Blocks:** the roadmap Now items for `cc-verify --clean` and `source_lines_ok`.
+- **Interim:** unmerged.
+- **If the answer differs:** n/a.
+
 ### Q-290 · image-lag
 **Needs:** you: terminal · **Opened:** 2026-11-13 · **Status:** OPEN
 
@@ -44,7 +89,7 @@ Run the release paste below on the host, from your claude-workflows checkout at 
 
 **If you say no:** nothing breaks. Sessions keep running the installed image at C, whose dev-cycle skill lacks today's change to step 8 (below). The merges stay on main, waiting.
 
-**Release notes** (written 2026-11-13 from the log). The installed image is the root-owned copy of the dev-cycle scripts and skill that every session runs as the gate. It is at C = `107cba32d271132361bc4a74a2ebf851e4398b97` (read from `/opt/claude-workflows/.manifest`). Main is at M = `f1238bdb83e6882b0f6db71ae904923555bb8583`.
+**Release notes** (rewritten 2026-11-13, iteration 2250, from the log). The installed image is the root-owned copy of the dev-cycle scripts and skill that every session runs as the gate. It is at C = `107cba32d271132361bc4a74a2ebf851e4398b97` (read from `/opt/claude-workflows/.manifest`). Main is at M = `c8f74d411bc08d6d286d8b73ca30e8140039e7f0`.
 
 **Merged without your review** (subject ends "build-loop self-merge"; a hand commit with that subject would read the same, so this is a pointer, not proof):
 
@@ -55,7 +100,7 @@ Run the release paste below on the host, from your claude-workflows checkout at 
 - The dev cycle stops leaving ready work unbriefed (`f1238bdb`, your Q-289 answer): step 8 takes a Next item's first step when no Now item is ready, a held item that rides another unit is briefed alone after two cycles, a host step is split from its code, every owner call goes in the questions file, and the record's `8.` line names why each free slot stayed free. This is the gate-code change that makes this release due.
 - Four small record fixes (`00e2e663`, your Q-287 answer): the decision log's row for D12 after the light pass, a `Harness feedback` section added to `AGENTS.md` and `GEMINI.md` (the health check's every-run warning), decision 018's moved line cite, and two failure-pattern records. The image carries none of these; `AGENTS.md` and `GEMINI.md` are what other agents read.
 
-**The rest:** 10 commits, cycle lands and recorded answers, records only. The full list: `git -c log.showSignature=false log --first-parent --format='%h %s' 107cba32d271132361bc4a74a2ebf851e4398b97..f1238bdb83e6882b0f6db71ae904923555bb8583`
+**The rest:** 12 commits, cycle lands and recorded answers, records only. The full list: `git -c log.showSignature=false log --first-parent --format='%h %s' 107cba32d271132361bc4a74a2ebf851e4398b97..c8f74d411bc08d6d286d8b73ca30e8140039e7f0`
 
 **Gate files changed:** `skills/dev-cycle/SKILL.md`.
 
@@ -64,7 +109,7 @@ Run the release paste below on the host, from your claude-workflows checkout at 
 The paste (one line; it refuses, saying why, unless the checkout is at main's tip and the gate code and installer are still M's):
 
 ```
-sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "f1238bdb83e6882b0f6db71ae904923555bb8583:$p")"; then n=$((n+1)); else echo "release refused: $p changed after M: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
+sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "c8f74d411bc08d6d286d8b73ca30e8140039e7f0:$p")"; then n=$((n+1)); else echo "release refused: $p changed after M: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
 ```
 
 - **Interim:** the image's gate (C) runs.
