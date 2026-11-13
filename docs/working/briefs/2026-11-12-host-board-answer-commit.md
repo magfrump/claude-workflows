@@ -40,3 +40,5 @@ Paths: scripts/board.sh test/scripts/board.bats guides/cross-project-board.md do
 - Extracting `land`'s worktree scan into the lib, or any change to `scripts/build-loop.sh`, `scripts/questions.sh`, `scripts/lib/` or `devcontainer-config/install.sh`.
 - Running anything on the host.
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`: the dev cycle owns those.
+
+Dispatched: 1
