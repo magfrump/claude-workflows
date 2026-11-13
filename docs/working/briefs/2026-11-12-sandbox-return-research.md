@@ -44,4 +44,4 @@ Paths: docs/working/research-2026-11-12-sandbox-return-research.md docs/working/
 - Running anything on the host, in another container, or under `cc-verify`.
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`: the dev cycle owns those.
 
-Dispatched: 1
+Dispatched: 2
