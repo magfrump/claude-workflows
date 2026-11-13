@@ -35,6 +35,7 @@ The index below is generated — edit entries, not the table.
 | [Q-286](#q-286--trial-set-2-ends) | you: judgment | The second trial set (T8–T12) ends about today. Which of them should stay? | 2026-11-13 |
 | [Q-287](#q-287--merge-2026-11-13-small-records-review-68b106d0a358) | you: judgment | Merge the four small record fixes (brief `docs/working/briefs/2026-11-13-small-records-review.md`, branch `... | 2026-11-13 |
 | [Q-288](#q-288--merge-2026-11-13-cc-verify-clean-and-relative-repo-f16bbdcedaf8) | you: judgment | Merge the three `cc-verify` fixes (brief `docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.... | 2026-11-13 |
+| [Q-289](#q-289--merge-gate-2026-11-13-dev-cycle-unblock-ready-work-1fbcad02861d) | you: judgment | Merge the dev-cycle change that stops it leaving ready work unbriefed (brief `docs/working/briefs/2026-11-1... | 2026-11-13 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | Q-167: (b) and (d) answered 2026-11-07 (answers-11-7-26.txt), on bless 91c5f79dd91eb7ee, which --probe-only... | 2026-10-15 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Q-255: first half answered 2026-11-07 (answers-11-7-26.txt): all four fronted probes through plugins-artifa... | 2026-11-05 |
@@ -81,6 +82,52 @@ Self-merge's rules would have refused `AGENTS.md` and `GEMINI.md` (instruction f
 
 - **Blocks:** the roadmap Now items for D12, the `Harness feedback` warning and two confine-tests records.
 - **Interim:** unmerged.
+- **If the answer differs:** n/a.
+
+### Q-289 · merge-gate-2026-11-13-dev-cycle-unblock-ready-work-1fbcad02861d
+**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** OPEN
+
+Merge the dev-cycle change that stops it leaving ready work unbriefed (brief `docs/working/briefs/2026-11-13-dev-cycle-unblock-ready-work.md`, branch `feat/dev-cycle-unblock-ready-work`)?
+
+**If you say no:** the cycle keeps its current step 8. With free slots and no ready Now item it briefs nothing, which is the stall you asked about today; I would keep catching it by hand, as I did this afternoon.
+
+This is the fix for your question "why is the whole roadmap blocked?". It changes `skills/dev-cycle/SKILL.md` (+21/−6) and pins the new wording in `test/scripts/build-loop-orchestrator.bats`:
+- **Step 8, Next fallback:** when fewer Now items are ready than slots are free, brief, in rank order, the first step of each Next item that needs no open choice.
+- **Owner calls hold work only if they are filed:** an owner call holds an item only when a questions-file entry asks it, and any call a step produces is filed in the same iteration. The final message may list a call only beside its entry. This is what kept the drift audit's four calls and the review-gap repo question invisible.
+- **Ride-along holds expire:** "rides the next unit that touches X" expires once the `8.` lines of the two latest earlier cycle records (one per day) name it; the item is then briefed alone or bundled.
+- **Host steps hold only themselves:** the code is briefed with the `Live-verified: no` or `Host-tool-tested: no` trailer the commit gate accepts, and step 7 files the host step as one `you: terminal` entry after the merge.
+- **The `8.` line names each held item and its hold**, not a category, so the next iteration can check it.
+
+No new owner stop and no new entry type.
+
+Tip `1fbcad02861d87ee555035e8ab49d385f555d3a8`. The gate's check, as printed:
+
+```
+ok docs/working/briefs/2026-11-13-dev-cycle-unblock-ready-work.md 1fbcad02861d87ee555035e8ab49d385f555d3a8 228eddb1794140150d85a0058812d32536d56904
+path docs/working/briefs/2026-11-13-dev-cycle-unblock-ready-work.md M docs/working/briefs/2026-11-13-dev-cycle-unblock-ready-work.md
+path docs/working/briefs/2026-11-13-dev-cycle-unblock-ready-work.md A docs/working/research-2026-11-13-dev-cycle-unblock-ready-work.md
+path docs/working/briefs/2026-11-13-dev-cycle-unblock-ready-work.md M skills/dev-cycle/SKILL.md
+path docs/working/briefs/2026-11-13-dev-cycle-unblock-ready-work.md M test/scripts/build-loop-orchestrator.bats
+```
+
+`skills/dev-cycle/SKILL.md` is gate code: the skill the orchestrator follows. Self-merge's rules refuse it, and it runs from the next image release, so after the merge an image-lag (release) entry will follow. The loop's marker had no question.
+
+**What an attacker would want here:** text that reaches a session from outside (a fetched page, another repo's file quoted into a brief) getting the cycle to brief and dispatch work nobody asked for. The new Next fallback widens what step 8 may brief on its own, but only to items already on the roadmap's Next list, which only the cycle and you write.
+
+Two things to know:
+- **One template line kept its old wording.** Changing the record template's `8.` line would need a convention-migration line (`scripts/lib/migrations.sh`), which the brief kept out of scope. Step 8's prose carries the rule instead; a follow-up can align the template.
+- **The full suite was not rerun after the loop's last one-line revert.** Before it: 2061 ok, 3 failing in `test/scripts/convention-migrations.bats`, which the revert fixed. After it, that file and `test/scripts/build-loop-orchestrator.bats` gave 65 ok. The cycle's health check runs the full suite on main once this merges. The loop's design choice: "held two cycles" counts daily cycle records, not iterations, since iterations run minutes apart.
+
+- **Read:** `git diff refs/heads/main...1fbcad02 -- skills/dev-cycle/SKILL.md` · `docs/working/research-2026-11-13-dev-cycle-unblock-ready-work.md` (on the branch)
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | the rule lands on main; it runs from the next release | the release paste, later | the cycle briefs Next items you wanted held; holds them by filing an entry instead |
+| **[2] drop** | the brief closes; I keep checking holds by hand | none now | stalls like today's recur until someone asks |
+| **[3] changes needed** | your note goes back to the loop | one line | n/a |
+
+- **Blocks:** the roadmap Now item "the cycle stops leaving ready work unbriefed".
+- **Interim:** unmerged; until it lands, I apply the same checks by hand.
 - **If the answer differs:** n/a.
 
 ### Q-288 · merge-2026-11-13-cc-verify-clean-and-relative-repo-f16bbdcedaf8
