@@ -13,30 +13,6 @@ user's order).
 
 Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0002).
 
-- **Agent: the cycle stops leaving ready work unbriefed** (filed 2026-11-13, step 6, on the
-  owner's question "why is the whole roadmap blocked?"). Motive: iteration 2026-11-13-1925
-  briefed nothing with three slots free and one open judgment entry. The causes were the
-  cycle's own: step 8 briefs only Now items, so Next's ready first steps were never pulled;
-  "rides the next unit that touches X" holds never expire; "needs a host run" held whole
-  items whose code needed none; and owner calls left only in a final message (the
-  constraint-drift audit's four calls, the 2026-10-29 repo ask) read as blocks while
-  nothing asked. First step: one review unit on `skills/dev-cycle/SKILL.md` (gate code, a
-  `merge-gate` entry): step 8 takes a Next item's first step when no Now item is ready; a
-  held item that rides another unit is briefed alone after two cycles; a host step splits
-  from the code; every owner call goes in the questions file, never only in a final
-  message; the `8.` line's free-slot reason names each item. Briefed 2026-11-13 (In flight).
-
-- **Agent: the build-loop handoff plan's D12 after the light pass** (filed 2026-11-11, step 7).
-  Motive: if Q-279 merges the light pass, decision-log row 72 and D12 in
-  `docs/working/plan-build-loop-handoff.md` still say every iteration is a full cycle
-  (the light-pass loop's report). First step: once Q-279 is answered [1], one review unit
-  adds a decision-log row recording Q-270 [2] as D12's new answer and corrects the plan.
-  Q-279 was answered [1] and the light pass merged at a77bbc97, so this is ready. It edits
-  `docs/decisions/log.md`, a record the self-merge floor refuses, so it is a review unit.
-  Not briefed alone (a full loop and a merge entry for two lines); it rides the next review
-  unit that touches the decision log.
-  2026-11-13: briefed with three other small record fixes as one review unit (In flight).
-
 - **Models answer their own questions from the repo's docs (owner request, 2026-11-11).**
   Motive: the owner asked for a plan for how models can answer their own questions based on
   existing docs in a repo. The questions doc spends the owner's attention, the binding
@@ -79,38 +55,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   Q-275 is closed. Steps 2 to 4 are not to be briefed. The rule comes back only if the
   owner refuses the exception when Q-272 returns with data (watch Q-276). The owner's
   note on other repos is an Ideas item.
-
-- **Agent: scoped deep audit, constraint drift** (filed 2026-11-05, step 4b). Motive: the
-  drift check on 605d4c18 found its script-home decision resting on a soft constraint (S4
-  pruned the checklist option) and on a rule `docs/constraints.md` does not hold (instrument
-  code lives in the SWRBench fork). Scope: Path A records since the last audit, using the
-  `constraints-builder` skill's amend mode to revise the file. First step: the owner confirms
-  scope and timing; it runs on its own branch, outside the cycle. It also covers
-  `skills/dev-cycle/SKILL.md` as Q-259 and Q-260 changed it (step 4b, 2026-11-06). Also 85080263's
-  Path A record, where S4 (soft) shared the pruning of candidate D with H1 (step 4, 2026-11-06).
-  Also aeab6745's Path A record, where S8 (soft) shared the pruning of `bin/d6` with the
-  enforcement-file cost, while H1 pruned `/usr/local/bin` (step 4, 2026-11-07); and
-  `skills/dev-cycle/SKILL.md` as 3dbf43cb (Q-266) changed it.
-  Fired again 2026-11-10 on two more triggers: the model running the cycle changed from
-  `claude-opus-5-5` to `claude-fable-5-2`, and 546788f2's Path A record pruned its option A
-  on S10 (soft) beside H4 (hard); the pick (B) stands. Scope and timing are now asked in
-  Q-269 (run the small constraint-drift audit, the full audit, or wait).
-  Fired again 2026-11-11: `skills/dev-cycle/SKILL.md` changed by 1f14e270 (Q-271: the
-  identity check, the release paste, the free-slot line).
-  2026-11-11, scope and timing answered (Q-269 [1], the small audit now). First step is
-  now a brief for one build loop: read the seven flagged Path A records named above and
-  draft changes to `docs/constraints.md` with the `constraints-builder` skill's amend
-  mode. Its output is one owner entry with a promote, keep soft or drop call per flagged
-  line. Nothing else is re-read; the full audit stays unasked.
-  Fired again 2026-11-11 (iteration 2026-11-12-0006): the model running the cycle changed
-  from `claude-fable-5-2` to `claude-opus-5-5`; within the small audit's scope it changes
-  nothing. The small audit is done (b3d3e8f4, Done): it recommends no change to the
-  constraints file, and its four calls are with the owner in the cycle's final message (filed 2026-11-13 as Q-281 to Q-284). A
-  different pick the owner names becomes its own item. Answered 2026-11-13: [1] on all four (keep as is), so the item is finished.
-  Fired again 2026-11-13 (step 4 drift check): a1121ac5's Path A record
-  (`docs/working/research-2026-11-12-release-outside-entry.md`) pruned [1] on S3 and S8,
-  [4] on S4 and S2 and [5] on S3, soft constraints alone; its pick ([0], status quo)
-  rests on the motive test (S5) and stands. Add it to the next audit's sample.
 
 - **Agent: `source_lines_ok` misses an unterminated last line** (filed 2026-11-05, step 7).
   Motive: the Q-147 review found the shipped self-check in `devcontainer-config/cc-verify.sh`
@@ -169,15 +113,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   (the comment above it now opens "Decision 018's reference pattern"), and
   `docs/failure-patterns.md` may deserve an entry for `exec "$@"` under `sh` reading a
   dash-leading word as an option where `sh` is bash.
-  2026-11-13: those two records are briefed in the small-records review unit (In flight).
-
-- **Agent: the `Harness feedback` section warning** (filed 2026-11-06, step 3, trial T7).
-  Motive: every health check warns that this H2 of the global instructions is missing from
-  `AGENTS.md` and `GEMINI.md`, and T7 files any warning printed every run as a bug. First step:
-  add the section to both files or exempt it in the check, depending on whether other agents
-  need it. Those are instruction files, so it is a review merge; not briefed, since a full
-  build loop outweighs a few lines while it would add another owner entry.
-  2026-11-13: briefed in the small-records review unit (In flight).
+  2026-11-13: those two records merged with the small-records review unit (00e2e663, Done);
+  what remains here is the first live `--probe` run.
 
 - **Trial week: less friction, less habituation (2026-10-30 to about 2026-11-06).** Motive:
   the owner's 2026-10-29 brainstorm request ("try things for a few days to a week").
@@ -220,18 +157,11 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
-- `docs/working/briefs/2026-11-13-dev-cycle-unblock-ready-work.md`: the cycle-fix Now item;
-  review, gate code (a `merge-gate` entry).
-  2026-11-13: ready at 1fbcad02; merge entry Q-289.
-  2026-11-13: Q-289 answered [1] in session; merges next iteration.
-- `docs/working/briefs/2026-11-13-small-records-review.md`: D12's log row, the
-  `Harness feedback` warning, decision 018's cite, the `exec "$@"` failure pattern; review.
-  2026-11-13: ready at 68b106d0; merge entry Q-287.
-  2026-11-13: Q-287 answered [1] in session; merges next iteration.
 - `docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md`: `--clean`, a
   relative REPO, `source_lines_ok`; review, with a host paste after the merge.
   2026-11-13: ready at f16bbdce; merge entry Q-288 (its FP-181 clashes with Q-287's).
   2026-11-13: Q-288 answered [3] in session (renumber to FP-182 and FP-183 after Q-287); goes back to its loop next iteration.
+  2026-11-13: Q-287 merged (00e2e663); sent back to its loop for the renumber (iteration 2237).
 
 ## Next
 
@@ -260,6 +190,11 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## Ideas
 
+- **Record out-of-cycle session answers through `--answered`.** Signal: 4306aa88 (the owner's
+  Q-281..284 answers, recorded on a hand branch) read as `other` in `--main-log`, making
+  iteration 2026-11-13-2237 a full cycle with a health run.
+- **Say what "a cycle" is in decision 040's ask-count trigger** (per day or per full block).
+  Signal: 9 asks opened 2026-11-13 (Q-281..289), counted as one cycle.
 - **Align the record template's `8.` line with step 8's new rule.** Signal: Q-289's loop kept
   the template's old wording because changing it needs a migration line in
   `scripts/lib/migrations.sh`; `docs/working/seed-build-loop-handoff.md:81` also restates the
@@ -541,6 +476,18 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- The cycle stops leaving ready work unbriefed (Now item, filed 2026-11-13;
+  `docs/working/briefs/closed/2026-11-13-dev-cycle-unblock-ready-work.md`). Merged f1238bdb,
+  approved (Q-289 [1]); gate code, so it runs from the next image release (Q-290).
+- Small records review (`docs/working/briefs/closed/2026-11-13-small-records-review.md`):
+  D12's log row after the light pass, the `Harness feedback` warning (the section added to
+  `AGENTS.md` and `GEMINI.md`), decision 018's cite and the `exec "$@"` failure pattern.
+  Merged 00e2e663, approved (Q-287 [1]). It closes the Now items for D12 and the warning.
+- Scoped deep audit, constraint drift (filed 2026-11-05, step 4b): the small audit merged
+  b3d3e8f4 and recommended no change to `docs/constraints.md`; the owner answered its four
+  calls [1], keep as is (Q-281 to Q-284, 2026-11-13, merged 4306aa88). a1121ac5's Path A
+  record, flagged 2026-11-13 (soft constraints alone pruned [1], [4] and [5]), joins the next
+  audit's sample. Moved out of Now 2026-11-13 (branch chore/dev-cycle-2026-11-13-2237).
 - Walkthrough first-problem measure (Next item 2's step 1;
   `docs/working/briefs/closed/2026-11-13-walkthrough-first-problem-measure.md`). Merged
   a91d42af, self-merge: too few entries to decide.

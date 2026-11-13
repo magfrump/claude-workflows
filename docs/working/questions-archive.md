@@ -269,6 +269,13 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-277](#q-277--install-sandbox-with-nested-worktree-gap) | The sandbox's live check found two gaps: nested worktrees, and the credential after a token refresh. Instal... | 2026-11-11 |
 | [Q-279](#q-279--merge-gate-2026-11-11-light-pass-9b4f98000688) | Q-279: [1] | 2026-11-11 |
 | [Q-280](#q-280--board-first-host-run) | Q-280: ran (owner, in session 2026-11-13). With the two seeded registry lines the board exited 0. After the... | 2026-11-12 |
+| [Q-281](#q-281--constraint-s4-keep-promote-drop) | Should soft constraint S4 in `docs/constraints.md` ("mechanical steps go in tested scripts, not prose") sta... | 2026-11-13 |
+| [Q-282](#q-282--constraint-s8-no-growth-clause) | Should the "no growth of the 500-plus-line files" clause of soft constraint S8 stay as it is, be reworded a... | 2026-11-13 |
+| [Q-283](#q-283--constraint-s10-owner-wait-clause) | Should the S10 clause "no merge or loop that waits on the user's manual action when a fail-closed alternati... | 2026-11-13 |
+| [Q-284](#q-284--constraint-instrument-code-in-fork) | Should the unwritten rule "benchmark and review-instrument code lives in the SWRBench fork" stay out of `do... | 2026-11-13 |
+| [Q-287](#q-287--merge-2026-11-13-small-records-review-68b106d0a358) | Q-287: [1] | 2026-11-13 |
+| [Q-288](#q-288--merge-2026-11-13-cc-verify-clean-and-relative-repo-f16bbdcedaf8) | Q-288: [3] renumber to FP-182 and FP-183 after Q-287 | 2026-11-13 |
+| [Q-289](#q-289--merge-gate-2026-11-13-dev-cycle-unblock-ready-work-1fbcad02861d) | Q-289: [1] | 2026-11-13 |
 <!-- index:end -->
 
 ## Answered
@@ -6730,5 +6737,233 @@ Answer `Q-280:` with the board's output (exit 0: every project read; 1: one coul
 
 - **Interim:** the board is on main only; the dev cycle carries on as now.
 - **If the answer differs:** an unreadable project or a refusal becomes a fix item on the roadmap.
+
+
+### Q-287 · merge-2026-11-13-small-records-review-68b106d0a358
+**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** ANSWERED
+Q-287: [1]
+
+Merge the four small record fixes (brief `docs/working/briefs/2026-11-13-small-records-review.md`, branch `docs/small-records-review`)?
+
+**If you say no:** nothing merges; the health check keeps printing the `Harness feedback` warning, and the decision log still says every cycle iteration is a full cycle.
+
+The four fixes, all docs, 113 lines added and 6 removed:
+1. Decision-log row 89 records your Q-270 [2] (the light pass between full cycles) as the new answer to D12, the build-loop handoff plan's "every iteration is a full cycle", and the plan is corrected to match.
+2. `AGENTS.md` and `GEMINI.md` each gain a 2-line `## Harness feedback` section, a tool-neutral version of the global instructions' section (it names `guides/harness-feedback.md` and lets an agent run `harness-feedback.py` from `~/.claude/scripts/` or a claude-workflows clone). Those files are symlinked into other projects, which is why they need it. This ends the warning every health check printed.
+3. Decision 018 cites its reference pattern in `scripts/confine-tests.sh` by the comment's text instead of a line number that drifted.
+4. A new failure pattern, FP-181: under `sh` where `sh` is bash, `exec "$@"` reads a dash-leading word as an option (`-a NAME CMD` runs a different program; fixed in `b0ebed19`).
+
+Tip `68b106d0a358945a9341fc6a857416f48e856db3`. The gate's check, as printed:
+
+```
+ok docs/working/briefs/2026-11-13-small-records-review.md 68b106d0a358945a9341fc6a857416f48e856db3 8e504d69b7d7c841db99c1fde94761009da9f4e1
+path docs/working/briefs/2026-11-13-small-records-review.md M AGENTS.md
+path docs/working/briefs/2026-11-13-small-records-review.md M GEMINI.md
+path docs/working/briefs/2026-11-13-small-records-review.md M docs/decisions/018-argv-exec-over-shell-string-interpolation.md
+path docs/working/briefs/2026-11-13-small-records-review.md M docs/decisions/log.md
+path docs/working/briefs/2026-11-13-small-records-review.md M docs/failure-patterns.md
+path docs/working/briefs/2026-11-13-small-records-review.md M docs/working/briefs/2026-11-13-small-records-review.md
+path docs/working/briefs/2026-11-13-small-records-review.md M docs/working/plan-build-loop-handoff.md
+path docs/working/briefs/2026-11-13-small-records-review.md A docs/working/research-2026-11-13-small-records-review.md
+```
+
+Self-merge's rules would have refused `AGENTS.md` and `GEMINI.md` (instruction files other agents load) and the decision records and failure patterns (your records), which is why this one comes to you. The loop's marker had no question. Its tests, as it reported them: health check passed with the warning gone, the AGENTS/GEMINI sync test 4 of 4, the hermeticity lint clean; two review passes found nothing that had to be fixed.
+
+- **Read:** `git diff refs/heads/main...68b106d0` · `docs/working/research-2026-11-13-small-records-review.md` (on the branch)
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | the four fixes land on main | none | a wording in the new `AGENTS.md` section misleads another agent; one revert undoes it |
+| **[2] drop** | the brief closes; the four items return to the roadmap | none | the warning keeps printing every health check |
+| **[3] changes needed** | your note goes back to the loop | one line | n/a |
+
+- **Blocks:** the roadmap Now items for D12, the `Harness feedback` warning and two confine-tests records.
+- **Interim:** unmerged.
+- **If the answer differs:** n/a.
+
+
+### Q-289 · merge-gate-2026-11-13-dev-cycle-unblock-ready-work-1fbcad02861d
+**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** ANSWERED
+Q-289: [1]
+
+Merge the dev-cycle change that stops it leaving ready work unbriefed (brief `docs/working/briefs/2026-11-13-dev-cycle-unblock-ready-work.md`, branch `feat/dev-cycle-unblock-ready-work`)?
+
+**If you say no:** the cycle keeps its current step 8. With free slots and no ready Now item it briefs nothing, which is the stall you asked about today; I would keep catching it by hand, as I did this afternoon.
+
+This is the fix for your question "why is the whole roadmap blocked?". It changes `skills/dev-cycle/SKILL.md` (+21/−6) and pins the new wording in `test/scripts/build-loop-orchestrator.bats`:
+- **Step 8, Next fallback:** when fewer Now items are ready than slots are free, brief, in rank order, the first step of each Next item that needs no open choice.
+- **Owner calls hold work only if they are filed:** an owner call holds an item only when a questions-file entry asks it, and any call a step produces is filed in the same iteration. The final message may list a call only beside its entry. This is what kept the drift audit's four calls and the review-gap repo question invisible.
+- **Ride-along holds expire:** "rides the next unit that touches X" expires once the `8.` lines of the two latest earlier cycle records (one per day) name it; the item is then briefed alone or bundled.
+- **Host steps hold only themselves:** the code is briefed with the `Live-verified: no` or `Host-tool-tested: no` trailer the commit gate accepts, and step 7 files the host step as one `you: terminal` entry after the merge.
+- **The `8.` line names each held item and its hold**, not a category, so the next iteration can check it.
+
+No new owner stop and no new entry type.
+
+Tip `1fbcad02861d87ee555035e8ab49d385f555d3a8`. The gate's check, as printed:
+
+```
+ok docs/working/briefs/2026-11-13-dev-cycle-unblock-ready-work.md 1fbcad02861d87ee555035e8ab49d385f555d3a8 228eddb1794140150d85a0058812d32536d56904
+path docs/working/briefs/2026-11-13-dev-cycle-unblock-ready-work.md M docs/working/briefs/2026-11-13-dev-cycle-unblock-ready-work.md
+path docs/working/briefs/2026-11-13-dev-cycle-unblock-ready-work.md A docs/working/research-2026-11-13-dev-cycle-unblock-ready-work.md
+path docs/working/briefs/2026-11-13-dev-cycle-unblock-ready-work.md M skills/dev-cycle/SKILL.md
+path docs/working/briefs/2026-11-13-dev-cycle-unblock-ready-work.md M test/scripts/build-loop-orchestrator.bats
+```
+
+`skills/dev-cycle/SKILL.md` is gate code: the skill the orchestrator follows. Self-merge's rules refuse it, and it runs from the next image release, so after the merge an image-lag (release) entry will follow. The loop's marker had no question.
+
+**What an attacker would want here:** text that reaches a session from outside (a fetched page, another repo's file quoted into a brief) getting the cycle to brief and dispatch work nobody asked for. The new Next fallback widens what step 8 may brief on its own, but only to items already on the roadmap's Next list, which only the cycle and you write.
+
+Two things to know:
+- **One template line kept its old wording.** Changing the record template's `8.` line would need a convention-migration line (`scripts/lib/migrations.sh`), which the brief kept out of scope. Step 8's prose carries the rule instead; a follow-up can align the template.
+- **The full suite was not rerun after the loop's last one-line revert.** Before it: 2061 ok, 3 failing in `test/scripts/convention-migrations.bats`, which the revert fixed. After it, that file and `test/scripts/build-loop-orchestrator.bats` gave 65 ok. The cycle's health check runs the full suite on main once this merges. The loop's design choice: "held two cycles" counts daily cycle records, not iterations, since iterations run minutes apart.
+
+- **Read:** `git diff refs/heads/main...1fbcad02 -- skills/dev-cycle/SKILL.md` · `docs/working/research-2026-11-13-dev-cycle-unblock-ready-work.md` (on the branch)
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | the rule lands on main; it runs from the next release | the release paste, later | the cycle briefs Next items you wanted held; holds them by filing an entry instead |
+| **[2] drop** | the brief closes; I keep checking holds by hand | none now | stalls like today's recur until someone asks |
+| **[3] changes needed** | your note goes back to the loop | one line | n/a |
+
+- **Blocks:** the roadmap Now item "the cycle stops leaving ready work unbriefed".
+- **Interim:** unmerged; until it lands, I apply the same checks by hand.
+- **If the answer differs:** n/a.
+
+
+### Q-288 · merge-2026-11-13-cc-verify-clean-and-relative-repo-f16bbdcedaf8
+**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** ANSWERED
+Q-288: [3] renumber to FP-182 and FP-183 after Q-287
+
+Merge the three `cc-verify` fixes (brief `docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md`, branch `fix/cc-verify-clean-and-relative-repo`)?
+
+**If you say no:** nothing merges; `cc-verify --clean` still exits 2 silently on a leftover run directory, and `cc-verify --check FILE . main` still fails to clone `.`.
+
+`cc-verify` is the host tool that runs a check file against a fresh clone in a container (`devcontainer-config/cc-verify.sh`). The fixes, 188 lines added and 6 removed, each with a test that the loop saw fail first:
+1. `--clean` cleans a run directory with no `record` file, and keeps a live run that has not written one yet, by checking whether the PID in the directory's own name is a running `cc-verify`.
+2. A relative REPO is made absolute before the script changes directory; an empty REPO is refused. `--help`, `guides/cc-isolated-usage.md` and the check file's header say what REPO must be.
+3. The launcher self-check (`source_lines_ok`) reads a last line with no newline; this closes the 2026-11-05 Defer row in `docs/reviews/override-log.md`.
+
+Tip `f16bbdcedaf8086a4b90585060a397fd8aace3b8`. The gate's check, as printed:
+
+```
+ok docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md f16bbdcedaf8086a4b90585060a397fd8aace3b8 b946d0ac33b3b18dd48e406a4f5fc2f16b5f6322
+path docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md M devcontainer-config/cc-verify.sh
+path docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md M docs/failure-patterns.md
+path docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md M docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md
+path docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md M docs/working/q125-verify-check.sh
+path docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md A docs/working/research-2026-11-13-cc-verify-clean-and-relative-repo.md
+path docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md M guides/cc-isolated-usage.md
+path docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md M test/cc-verify.bats
+```
+
+`cc-verify.sh` is an enforcement file (it reaches your host at the next install), so every code commit carries `Host-tool-tested: no (host run follows the merge)`; the host check comes after the merge as one `you: terminal` paste. The loop's tests: 418 related tests, 0 failures, the hermeticity lint clean (`scripts/confine-tests.sh --probe` exited 3 here, so unconfined); two review rounds, both ambers fixed (an exported `CDPATH`, an empty REPO).
+
+**A numbering clash to know about.** This branch adds failure patterns FP-181 and FP-182, and Q-287's branch also adds an FP-181, both written at the same time. Whichever merges second will conflict on `docs/failure-patterns.md`. If you approve both, answer this one **[3]** with "renumber to FP-182 and FP-183 after Q-287" and the loop does that one-line change, or answer [1] and the cycle files the conflict back to you as a re-dispatch.
+
+The loop's marker also said the host paste must wait for Q-277 (whether to install the Bash sandbox with its gaps). That is out of date: Q-277 was answered [3] on 2026-11-12 and the sandbox was rolled back, so an install from main carries no sandbox. The paste will be filed after the merge, at your checkout `/home/magfrump/claude-workflows` (the path Q-280's paste used).
+
+- **Read:** `git diff refs/heads/main...f16bbdce` · `docs/working/research-2026-11-13-cc-verify-clean-and-relative-repo.md` (on the branch; the design and a pre-mortem with five bypass families)
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | the fixes land on main and reach the host at the next install | the host paste after the merge | a `--clean` that keeps or removes the wrong directory; the tests cover both cases |
+| **[2] drop** | the brief closes; the two items return to the roadmap | none | the two defects stay |
+| **[3] changes needed** | your note goes back to the loop (for example, the renumbering above) | one line | n/a |
+
+- **Blocks:** the roadmap Now items for `cc-verify --clean` and `source_lines_ok`.
+- **Interim:** unmerged.
+- **If the answer differs:** n/a.
+
+
+### Q-281 · constraint-s4-keep-promote-drop
+**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** ANSWERED
+**Answered:** [1] (owner, in session 2026-11-13: "Q-281: [1], Q-282: [1], Q-283: [1], Q-284: [1]"). Matches the interim; `docs/constraints.md` is unchanged.
+
+Should soft constraint S4 in `docs/constraints.md` ("mechanical steps go in tested scripts, not prose") stay soft, become hard, or go?
+
+**If you say no:** S4 stays soft and unchanged, which is the audit's recommendation. The drift check keeps noting when a loop says S4 "pruned" an option.
+
+This is call A of four from the small constraint-drift audit, which you asked for on 2026-11-11 (Q-269 [1]). Its four calls only reached you in a cycle's final message, never this file, so you never had a way to answer them; that is fixed here. A soft constraint ranks options, and a hard one refuses them. S4 was flagged at 605d4c18 and 85080263, where the option it "pruned" lost only on ranking, and it was traded away twice (3dbf43cb, 1f14e270), so in practice it is soft.
+
+- **Read:** `docs/working/research-2026-11-11-constraint-drift-audit.md`, "Call A" (merged b3d3e8f4)
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Keep soft, unchanged** | no edit | none | loops keep calling a soft-line loss "pruned"; the drift check keeps flagging it |
+| **[2] Promote to hard** | needs a `success:` line, e.g. a bats case for every new mechanical step | one commit by you | the two units that rightly kept prose would have been refused |
+| **[3] Drop** | S3 and S6 still rank most of these | one commit by you | mechanical steps written only as prose come back unranked |
+
+- **Blocks:** nothing.
+- **Interim:** [1].
+- **If the answer differs:** you commit the edit to `docs/constraints.md` (no build loop may); the audit doc has the text ready to paste.
+
+
+### Q-282 · constraint-s8-no-growth-clause
+**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** ANSWERED
+**Answered:** [1] (owner, in session 2026-11-13: "Q-281: [1], Q-282: [1], Q-283: [1], Q-284: [1]"). Matches the interim; `docs/constraints.md` is unchanged.
+
+Should the "no growth of the 500-plus-line files" clause of soft constraint S8 stay as it is, be reworded as a preference, or become a hard line?
+
+**If you say no:** S8 stays unchanged, which is the audit's recommendation.
+
+Call B of the four from the constraint-drift audit (see Q-281 for why these are only reaching you now). The clause was flagged at aeab6745 and 1f14e270, and neither time did it change the outcome. Four merges since 2026-10-19 grew those files anyway, all approved by you (one was Q-241 [1], +177/−27 to `install.sh`).
+
+- **Read:** `docs/working/research-2026-11-11-constraint-drift-audit.md`, "Call B"
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Keep soft, unchanged** | no edit | none | loops keep reading "no growth" as a prune |
+| **[2] Reword as a preference** | "prefer no growth of [...]", so it is clear it only ranks | one commit by you | none known; a softer word might let growth through more often |
+| **[3] Promote to hard** | split into its own hard line with a line-count (`numstat`) check | one commit by you | the Q-106 host-settings work would have been refused |
+
+- **Blocks:** nothing.
+- **Interim:** [1].
+- **If the answer differs:** you commit the edit to `docs/constraints.md`.
+
+
+### Q-283 · constraint-s10-owner-wait-clause
+**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** ANSWERED
+**Answered:** [1] (owner, in session 2026-11-13: "Q-281: [1], Q-282: [1], Q-283: [1], Q-284: [1]"). Matches the interim; `docs/constraints.md` is unchanged.
+
+Should the S10 clause "no merge or loop that waits on the user's manual action when a fail-closed alternative exists" stay soft, become a new hard constraint (H5), or go?
+
+**If you say no:** the clause stays soft and unchanged, which is the audit's recommendation.
+
+Call C of the four from the constraint-drift audit (see Q-281). It was flagged at 546788f2, which was a false alarm: the option it pruned also failed hard constraint H4 (an LLM must not be the enforcement). Of all the soft clauses, this one is worded most like a hard rule, and it matches your standing rule against new owner stops.
+
+- **Read:** `docs/working/research-2026-11-11-constraint-drift-audit.md`, "Call C" (option [2]'s H5 text is in its "Proposed amendment" section)
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Keep soft, unchanged** | no edit | none | a loop may again treat it as a prune; no outcome has changed yet |
+| **[2] Promote to hard (H5), trim S10** | designs that wait on you are refused before choosing | one commit by you; one more line in every loop prompt | an owner step that is truly needed must argue past it; its check misses waits that go through a questions entry |
+| **[3] Drop the clause** | the rest of S10 still ranks your cost | one commit by you | designs that wait on you lose their explicit counterweight |
+
+- **Blocks:** nothing.
+- **Interim:** [1].
+- **If the answer differs:** you commit the edit to `docs/constraints.md`.
+
+
+### Q-284 · constraint-instrument-code-in-fork
+**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** ANSWERED
+**Answered:** [1] (owner, in session 2026-11-13: "Q-281: [1], Q-282: [1], Q-283: [1], Q-284: [1]"). Matches the interim; `docs/constraints.md` is unchanged.
+
+Should the unwritten rule "benchmark and review-instrument code lives in the SWRBench fork" stay out of `docs/constraints.md`, or be added as a soft or hard line?
+
+**If you say no:** it stays out of the file, which is the audit's recommendation; its home stays `archive/README.md:18-19`.
+
+Call D of the four from the constraint-drift audit (see Q-281). The rule decided where 605d4c18's script went, but `docs/constraints.md` does not hold it. It matters only for benchmark or review-instrument work.
+
+- **Read:** `docs/working/research-2026-11-11-constraint-drift-audit.md`, "Call D" (option [2]'s S12 text is in its "Proposed amendment" section)
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Leave it out of the file** | the archive README stays its home; loops find it as they did | none | a future recall-run loop might miss it and put instrument code here |
+| **[2] Add it as a soft line (S12)** | every loop prompt carries it | one commit by you; one line in every prompt | a line nearly every design ignores costs context for no gain |
+| **[3] Add it as a hard line** | instrument code here is refused | one commit by you, plus a path check for its `success:` line | a small helper that belongs here gets refused |
+
+- **Blocks:** nothing.
+- **Interim:** [1].
+- **If the answer differs:** you commit the edit to `docs/constraints.md`.
 
 

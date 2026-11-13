@@ -256,3 +256,11 @@ Trigger: Now changed since the last brainstorm (the owner added the cross-projec
 - Do nothing more: the playtest waits on its own measurement, and the sandbox research is held on its lock (signal: queue 2/3 with no other ready Now item)
 - The board treats a repo with no docs/working/ as not tracked, exit 0 (signal: Q-280 host run exited 1 on a non-project repo)
 - Align the record template's 8. line with step 8's new rule, via a migration line (signal: Q-289's loop kept the old template wording)
+
+## Brainstorm 2026-11-13 (iteration 2026-11-13-2237)
+
+Trigger: Now holds no item ready for a brief and changed since the last brainstorm. Signals: this iteration's `--main-log` (an owner-answers commit read as `other`), decision 040's ask-count trigger, Now's remaining items all waiting on the owner.
+
+- Record an owner's in-session answers given outside a cycle run through the cycle's `--answered` route (or a commit shape `--main-log` classes `answers`), not a hand branch (signal: 4306aa88, the owner's Q-281..284 answers recorded by hand, read as `other`, which made iteration 2237 a full cycle with a health run)
+- Define what "a cycle" counts as in decision 040's "you: asks exceed ~5 per cycle for 3 cycles" now that a day holds many iterations: per day, or per full block (signal: 9 asks opened 2026-11-13, Q-281..289, counted as one cycle in iteration 2007)
+- Do nothing more: the three in-flight briefs resolve this iteration, and every other Now item waits on Q-278, Q-285 or Q-286 (signal: queue and Now after step 7)
