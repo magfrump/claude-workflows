@@ -33,9 +33,9 @@ The index below is generated — edit entries, not the table.
 | [Q-284](#q-284--constraint-instrument-code-in-fork) | you: judgment | Should the unwritten rule "benchmark and review-instrument code lives in the SWRBench fork" stay out of `do... | 2026-11-13 |
 | [Q-285](#q-285--review-gap-audit-which-repo) | you: judgment | Which repo should the review-gap audit run on first, or should the item be dropped? | 2026-11-13 |
 | [Q-286](#q-286--trial-set-2-ends) | you: judgment | The second trial set (T8–T12) ends about today. Which of them should stay? | 2026-11-13 |
-| [Q-287](#q-287--merge-2026-11-13-small-records-review-68b106d0a358) | you: judgment | Merge the four small record fixes (brief `docs/working/briefs/2026-11-13-small-records-review.md`, branch `... | 2026-11-13 |
-| [Q-288](#q-288--merge-2026-11-13-cc-verify-clean-and-relative-repo-f16bbdcedaf8) | you: judgment | Merge the three `cc-verify` fixes (brief `docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.... | 2026-11-13 |
-| [Q-289](#q-289--merge-gate-2026-11-13-dev-cycle-unblock-ready-work-1fbcad02861d) | you: judgment | Merge the dev-cycle change that stops it leaving ready work unbriefed (brief `docs/working/briefs/2026-11-1... | 2026-11-13 |
+| [Q-287](#q-287--merge-2026-11-13-small-records-review-68b106d0a358) | you: judgment | Q-287: [1] | 2026-11-13 |
+| [Q-288](#q-288--merge-2026-11-13-cc-verify-clean-and-relative-repo-f16bbdcedaf8) | you: judgment | Q-288: [3] renumber to FP-182 and FP-183 after Q-287 | 2026-11-13 |
+| [Q-289](#q-289--merge-gate-2026-11-13-dev-cycle-unblock-ready-work-1fbcad02861d) | you: judgment | Q-289: [1] | 2026-11-13 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | Q-167: (b) and (d) answered 2026-11-07 (answers-11-7-26.txt), on bless 91c5f79dd91eb7ee, which --probe-only... | 2026-10-15 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Q-255: first half answered 2026-11-07 (answers-11-7-26.txt): all four fronted probes through plugins-artifa... | 2026-11-05 |
@@ -44,7 +44,8 @@ The index below is generated — edit entries, not the table.
 ## Open
 
 ### Q-287 · merge-2026-11-13-small-records-review-68b106d0a358
-**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** ANSWERED
+Q-287: [1]
 
 Merge the four small record fixes (brief `docs/working/briefs/2026-11-13-small-records-review.md`, branch `docs/small-records-review`)?
 
@@ -85,7 +86,8 @@ Self-merge's rules would have refused `AGENTS.md` and `GEMINI.md` (instruction f
 - **If the answer differs:** n/a.
 
 ### Q-289 · merge-gate-2026-11-13-dev-cycle-unblock-ready-work-1fbcad02861d
-**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** ANSWERED
+Q-289: [1]
 
 Merge the dev-cycle change that stops it leaving ready work unbriefed (brief `docs/working/briefs/2026-11-13-dev-cycle-unblock-ready-work.md`, branch `feat/dev-cycle-unblock-ready-work`)?
 
@@ -131,7 +133,8 @@ Two things to know:
 - **If the answer differs:** n/a.
 
 ### Q-288 · merge-2026-11-13-cc-verify-clean-and-relative-repo-f16bbdcedaf8
-**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** ANSWERED
+Q-288: [3] renumber to FP-182 and FP-183 after Q-287
 
 Merge the three `cc-verify` fixes (brief `docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md`, branch `fix/cc-verify-clean-and-relative-repo`)?
 
