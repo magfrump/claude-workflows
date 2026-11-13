@@ -40,3 +40,5 @@ Policy: review
 - `scripts/` and the gate's code paths other than `skills/dev-cycle/SKILL.md`.
 - Changing the light pass, the brainstorm gate or slot counts.
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`: the dev cycle owns those.
+
+Dispatched: 1
