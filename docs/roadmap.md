@@ -167,6 +167,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   path needs a change (for example install.sh printing the gate-code diff from the last
   release entry's M) or the case is an owner-directed install the design already allows.
   Only a proposed change becomes an owner entry.
+  2026-11-12: briefed (In flight, `docs/working/briefs/2026-11-12-release-outside-entry.md`).
 
 - **Agent: scoped deep audit, constraint drift** (filed 2026-11-05, step 4b). Motive: the
   drift check on 605d4c18 found its script-home decision resting on a soft constraint (S4
@@ -333,6 +334,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
+- **A release installed from a commit its entry did not describe** (log row 86's
+  trigger): `docs/working/briefs/2026-11-12-release-outside-entry.md`. One docs-only
+  research unit; status quo is a valid result. Self-merge.
 
 ## Next
 
