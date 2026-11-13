@@ -245,3 +245,4 @@ Trigger: 12 seeds since the last brainstorm (the herald ingest, 30eb0229). Signa
 - Have install.sh print the gate-code diff from the last release entry's M (signal: decision-log row 86's trigger fired: the image at 80b7dabe was installed outside Q-273's paste for 7b8b560a); filed as an agent item to look at first
 - Triage the herald friction list as one grouped unit (signal: 12 seeds from one ingest, several about hooks this repo ships)
 - Do nothing more with the slots this iteration: one research unit is enough while the sandbox design is open (signal: 75% of cycle tokens go to build loops, per the token-cost doc)
+- A brief template line that a self-merge brief's research doc is `docs/working/research-STEM.md`, the name the gate reads (signal: iteration 2026-11-13-0143 wrote a brief naming another file in Paths:, caught only by reading the --start prompt)
