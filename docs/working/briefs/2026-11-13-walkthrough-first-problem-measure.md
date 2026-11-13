@@ -33,3 +33,5 @@ Paths: docs/working/research-2026-11-13-walkthrough-first-problem-measure.md doc
 
 - Building any playtest step, or changing the proposal doc.
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`: the dev cycle owns those.
+
+Dispatched: 1
