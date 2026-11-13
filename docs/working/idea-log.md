@@ -246,3 +246,11 @@ Trigger: 12 seeds since the last brainstorm (the herald ingest, 30eb0229). Signa
 - Triage the herald friction list as one grouped unit (signal: 12 seeds from one ingest, several about hooks this repo ships)
 - Do nothing more with the slots this iteration: one research unit is enough while the sandbox design is open (signal: 75% of cycle tokens go to build loops, per the token-cost doc)
 - A brief template line that a self-merge brief's research doc is `docs/working/research-STEM.md`, the name the gate reads (signal: iteration 2026-11-13-0143 wrote a brief naming another file in Paths:, caught only by reading the --start prompt)
+
+## Brainstorm 2026-11-12 (iteration 2026-11-13-0254)
+
+Trigger: Now changed since the last brainstorm (the owner added the cross-project board) and holds one item ready for a brief. Signals: the owner's board scope (host only, no LLM, answers back to each repo); the playtest proposal in Next.
+
+- Brief the board's design unit now, the one ready Now item: briefed this iteration (signal: the owner's request, 2026-11-12)
+- Let the board's answer write reuse each repo's `questions.sh` rather than a second grammar (signal: S3, and the proposal's own `questions.sh open` row); left to the design unit
+- Do nothing more: the playtest waits on its own measurement, and the sandbox research is held on its lock (signal: queue 2/3 with no other ready Now item)

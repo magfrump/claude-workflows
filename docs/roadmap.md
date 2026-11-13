@@ -286,6 +286,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   `questions.sh open` rather than re-parsing (S3). Then a build unit with hermetic bats
   fixtures (H3). For the owner later, when the build is briefed: which repos go in the
   registry and where they live on the host (the proposal's open question 1).
+  2026-11-12: the design unit is briefed (In flight,
+  `docs/working/briefs/2026-11-12-host-board-answer-route.md`).
 
 - **Owner feedback 2026-10-29** (`docs/human-author/feedback-10-29-26.txt`), four points:
   1. An answer given in session should approve a merge entry (the gate is too strict).
@@ -310,6 +312,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   `docs/working/briefs/2026-11-12-sandbox-return-research.md`. One docs-only research
   and divergent-design unit on the three requirements: worktree creation under the
   sandbox, nested worktree paths, the credential after a refresh. Self-merge.
+- **Cross-project board v1: the design, and how an answer gets back to its repo** (owner
+  request, 2026-11-12): `docs/working/briefs/2026-11-12-host-board-answer-route.md`. One
+  docs-only research and divergent-design unit; the build follows. Self-merge.
 
 ## Next
 
