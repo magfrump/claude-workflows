@@ -6,8 +6,9 @@
 # writes one owner answer back to a repo's main as an answers-class commit.
 # Design: docs/working/research-2026-11-12-host-board-answer-route.md sections
 # 3 to 6, docs/working/research-2026-11-12-host-board-listing.md (unit 1) and
-# docs/working/research-2026-11-12-host-board-answer-commit.md (unit 2); owner
-# guide: guides/cross-project-board.md.
+# docs/working/research-2026-11-12-host-board-answer-commit.md (unit 2) and
+# docs/working/research-2026-11-12-host-board-answer-in-place.md (unit 3);
+# owner guide: guides/cross-project-board.md.
 #
 # Usage: ~/.claude/scripts/board.sh                          (the listing)
 #        ~/.claude/scripts/board.sh answer PROJECT Q-NNN TEXT (one answer)
@@ -18,7 +19,8 @@
 # Exit: 0 every project read (answer: written, even if the run log then
 # fails); 1 a bad registry line, an unreadable project, no project listed or
 # the run log not written (answer: not written, and the line to paste printed
-# with the reason); 2 the run refused
+# with the reason); 3 (answer only) written to main, but the checkout with
+# main checked out is behind it, and the repair is printed; 2 the run refused
 # before reading any repo (a missing file beside this script, no perl or
 # python3, no registry, bad arguments).
 #
@@ -152,7 +154,8 @@ log_run() {
   mkdir -p -- "$d" && printf '%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$1" >> "$d/runs.log"
 }
 
-# ---- board.sh answer PROJECT Q-NNN TEXT (unit 2: main not checked out) ----
+# ---- board.sh answer PROJECT Q-NNN TEXT (unit 2: main not checked out, c1;
+# unit 3: main checked out in one worktree W with questions.md unmodified, c2) ----
 # The awk programs read the line as ENVIRON["LINE"] (LINE is exported): -v
 # would expand its backslashes.
 # Not written: the reason and the line to paste, exit 1, nothing changed.
@@ -166,22 +169,36 @@ nope() {
 # follows a link planted in .git, so a write (a reflog line, an object) could
 # land outside the repository. Prints the first one that is not.
 gitdir_link() {
-  local c q r g e
-  g="$(git rev-parse --absolute-git-dir)" && c="$(git rev-parse --path-format=absolute --git-common-dir)" || { echo "the git directory"; return; }
-  [[ ! -L "$g" && ! -L "$c" ]] && c="$(realpath -e -- "$c")" || { echo "the git directory"; return; }
+  local c u q r g e x
+  local -a qs=() wg=()
+  g="$(git rev-parse --absolute-git-dir)" && u="$(git rev-parse --path-format=absolute --git-common-dir)" || { echo "the git directory"; return; }
+  [[ ! -L "$g" && ! -L "$u" ]] && c="$(realpath -e -- "$u")" || { echo "the git directory"; return; }
+  # With main checked out (c2), also W's own git dir with its index and HEAD's
+  # reflog (moving the branch HEAD names appends there too), by their paths
+  # under the resolved common dir, so a link in worktrees/ or below shows.
+  if [[ -n "$W" ]]; then
+    x="${WGD#"$u/worktrees/"}"
+    [[ "$WGD" == "$u" || ( "$WGD" == "$u/worktrees/$x" && "$x" != */* ) ]] || { echo "the checkout's git directory"; return; }
+    if [[ "$WGD" == "$u" ]]; then wg=(index logs/HEAD); else wg=(worktrees "worktrees/$x" "worktrees/$x/index" "worktrees/$x/logs" "worktrees/$x/logs/HEAD"); fi
+  fi
   for e in objects refs refs/heads "refs/heads/$MAIN" packed-refs logs logs/refs logs/refs/heads "logs/refs/heads/$MAIN" 'objects/??'; do
-    for q in "$c"/$e; do
-      [[ -e "$q" || -L "$q" ]] || continue
-      r="$(realpath -e -- "$q" 2>/dev/null)" && [[ ! -L "$q" && "$r" == "$q" ]] || { echo "${q#"$c"/}"; return; }
-    done
+    # shellcheck disable=SC2206  # the glob in objects/?? is meant; no name here holds a blank
+    qs+=("$c"/$e)
+  done
+  for e in "${wg[@]}"; do qs+=("$c/$e"); done
+  for q in "${qs[@]}"; do
+    [[ -e "$q" || -L "$q" ]] || continue
+    r="$(realpath -e -- "$q" 2>/dev/null)" && [[ ! -L "$q" && "$r" == "$q" ]] || { echo "${q#"$c"/}"; return; }
   done
 }
 # Whether main is checked out or being moved in any worktree: a stated copy of
 # the worktree scan in land (scripts/build-loop.sh), which this unit may not
 # edit or extract (brief 2026-11-12-host-board-answer-commit); keep the two
-# alike. Sets WHY and returns 1 for a refusal, unit 3's case included.
+# alike. Sets WHY and returns 1 for a refusal; when main is checked out, sets
+# W to that worktree and WGD to its git directory (unit 3's case, case c2).
 wt_scan() {
-  local x w="" p q d common n=0 bare=""
+  local x w="" p q d common n=0 bare="" hd=""
+  W=""; WGD=""
   git worktree list --porcelain -z > "$TMP/wts" || { WHY="the worktrees could not be listed"; return 1; }
   while IFS= read -r -d '' x; do
     case "$x" in
@@ -206,14 +223,51 @@ wt_scan() {
     # land passes a bare HEAD naming main; here its reflog would be written too.
     [[ "$q" != "refs/heads/$MAIN" || -z "$bare" || "$d" != "$common" ]] \
       || { WHY="the bare repository's HEAD names $MAIN, so the write would also touch HEAD's reflog (not built)"; return 1; }
-    [[ "$q" != "refs/heads/$MAIN" ]] || n=$((n + 1))
+    [[ "$q" != "refs/heads/$MAIN" ]] || { n=$((n + 1)); hd="$d"; }
     for q in rebase-merge/head-name rebase-apply/head-name rebase-merge/update-refs; do
       [[ ! -f "$d/$q" ]] || ! state_is "$d/$q" "refs/heads/$MAIN" || { WHY="a worktree is rebasing $MAIN"; return 1; }
     done
     [[ ! -f "$d/BISECT_START" ]] || ! state_is "$d/BISECT_START" "$MAIN" || { WHY="a worktree is bisecting from $MAIN"; return 1; }
   done
   [[ "$n" -eq "$([[ -n "$w" ]] && echo 1 || echo 0)" ]] || { WHY="a worktree has $MAIN checked out that git worktree list does not show"; return 1; }
-  [[ -z "$w" ]] || { WHY="$MAIN is checked out at $w, and writing there in place is not built yet (unit 3)"; return 1; }
+  W="$w"; WGD="$hd"
+}
+# Case c2, main checked out in W: W is what land requires of it (its own top
+# level, the worktree whose git dir names main, on main at MAIN_SHA, no merge or
+# other operation under way); no symlink from W's resolved top level down to
+# the file, nor at W's .git (pre-mortem item 2; W's git dir is gitdir_link's);
+# and the file is byte for byte main's blob ($1) and W's index entry (item 3),
+# read from objects and raw bytes, never with git status, so no filter runs.
+# Sets R (W resolved), or WHY and returns 1.
+w_check() {
+  local q x f=docs/working/questions.md
+  R="$(realpath -e -- "$W" 2>/dev/null)" && [[ -d "$R" ]] || { WHY="$MAIN's checkout at $W is missing"; return 1; }
+  for q in .git docs docs/working "$f"; do
+    [[ ! -L "$R/$q" ]] || { WHY="$q in $MAIN's checkout $R is a symlink, so the write could land outside it"; return 1; }
+  done
+  [[ "$(git -C "$R" rev-parse --show-toplevel)" -ef "$R" && "$(git -C "$R" rev-parse --absolute-git-dir)" -ef "$WGD" \
+    && "$(git -C "$R" symbolic-ref -q HEAD)" == "refs/heads/$MAIN" && "$(git -C "$R" rev-parse --verify -q 'HEAD^{commit}')" == "$MAIN_SHA" ]] \
+    || { WHY="$MAIN's checkout $R is not its own top level, not the one whose git directory names $MAIN, or not on it at $MAIN_SHA"; return 1; }
+  for q in MERGE_HEAD CHERRY_PICK_HEAD REVERT_HEAD BISECT_START rebase-merge rebase-apply sequencer; do
+    x="$(git -C "$R" rev-parse --path-format=absolute --git-path "$q")" && [[ ! -e "$x" && ! -L "$x" ]] \
+      || { WHY="$MAIN's checkout $R is in the middle of a merge, cherry-pick, revert, rebase or bisect ($q)"; return 1; }
+  done
+  [[ "$(git -C "$R" ls-files -s -v -- "$f")" == "H 100644 $(git rev-parse "$MAIN_SHA:$f") 0"$'\t'"$f" ]] \
+    || { WHY="$f in $MAIN's checkout $R has a staged change or an index flag (its index entry is not $MAIN's blob)"; return 1; }
+  [[ -f "$R/$f" ]] && cmp -s -- "$R/$f" "$1" || { WHY="$f in $MAIN's checkout $R is modified (its bytes are not $MAIN's)"; return 1; }
+  [[ -w "$R/docs/working" ]] || { WHY="$R/docs/working is not writable"; return 1; }
+}
+# After the ref moved (c2): main has the answer, W's index entry or file does
+# not. Says so, and names the repair; exit 3, never "not written".
+behind() {
+  printf 'WRITTEN to %s on %s, but its checkout %s is behind: %s.
+%s
+If %s there holds no edit of yours, bring it level with main:
+  git -C %q checkout HEAD -- %s
+' \
+    "$p" "$MAIN" "$R" "$1" "$LINE" "$f" "$R" "$f"
+  log_run "answer $QID written, checkout behind" || echo "board: the run log could not be appended to" >&2
+  exit 3
 }
 state_is() { awk -v w="$2" '{ sub(/^[ \t\r]+/, ""); sub(/[ \t\r]+$/, "") } $0 == w { f = 1 } END { exit !f }' "$1"; }
 # The entry's Needs line with Status OPEN made ANSWERED and LINE after it; the
@@ -278,6 +332,7 @@ answer() {
     || nope "the repository keeps its refs in a reftable, which the board does not write"
   [[ -z "$(git config --get-regexp '^hook\.' || true)" ]] || nope "the repository's git config defines hooks (hook.*), which the board does not write beside"
   x="$(gitdir_link)"; [[ -z "$x" ]] || nope "$x in the git directory is a symlink or leaves it, so a write could land outside the repository"
+  [[ -z "$W" ]] || w_check "$d/questions.md" || nope "$WHY"
   awk -v id="$QID" "$FENCE_AWK$EDIT_AWK" "$d/questions.md" > "$d/new" \
     || nope "the entry's header line does not end in **Status:** OPEN"
   [[ $(wc -c < "$d/new") -eq $(($(wc -c < "$d/questions.md") + ${#LINE} + 5)) ]] \
@@ -298,18 +353,27 @@ answer() {
   git update-ref -m "board: answer $QID" "refs/heads/$MAIN" "$new" "$MAIN_SHA" 2>/dev/null \
     || nope "$MAIN moved while the board wrote (compare-and-swap lost); $MAIN is unchanged"
   : > "$TMP/moved"  # from here on the answer is written, whatever fails next
+  # c2: W's index entry, then its file (a temp file beside it, renamed over it
+  # once the bytes are still main's old ones), so W never runs ahead of main.
+  if [[ -n "$W" ]]; then
+    git -C "$R" update-index --cacheinfo "100644,$blob,$f" || behind "its index entry could not be updated"
+    x="$(mktemp -- "$R/docs/working/.questions.XXXXXX")" && cat -- "$d/new" > "$x" && chmod --reference="$R/$f" -- "$x" \
+      && [[ ! -L "$R/docs" && ! -L "$R/docs/working" && ! -L "$R/$f" ]] && cmp -s -- "$R/$f" "$d/questions.md" && mv -fT -- "$x" "$R/$f" \
+      || { rm -f -- "$x" 2>/dev/null; behind "its file could not be replaced, or changed while the board wrote"; }
+  fi
   printf 'WRITTEN to %s: %s on %s at %s\n%s\n' "$p" "$slug" "$MAIN" "${new:0:12}" "$LINE"
   printf "The cycle's reader reads it as %s%s. The repo's dev cycle reads it at its next iteration.\n" "${r%% *}" \
     "$([[ "${r%% *}" != unrecognized ]] || echo ' (no leading option: an entry that takes [1], [2] or [3] does not act on it)')"
-  log_run "answer $QID written" || echo "board: the answer is written, but the run log could not be appended to" >&2
+  [[ -z "$W" ]] || printf 'Its checkout %s has it too: that one index entry and file were replaced, nothing else there.\n' "$R"
+  log_run "answer $QID written${W:+ in place}" || echo "board: the answer is written, but the run log could not be appended to" >&2
   exit 0
 }
 if [[ $# -eq 4 ]]; then
   PROJ="$2"; QID="$3"; TEXT="$4"; LINE="$QID: $TEXT (owner, board $(date +%Y-%m-%d))"; export LINE
   # Not under if or ||, which would switch errexit off inside the subshell.
   set +e; ( set -e; answer ); rc=$?; set -e
-  [[ ! -e "$TMP/moved" || $rc -eq 0 ]] || { echo "board: $PROJ's main has the answer, but the board stopped after writing it (exit $rc)" >&2; exit 0; }
-  [[ $rc -le 1 ]] || nope "the board stopped (exit $rc) before moving $PROJ's main"
+  [[ ! -e "$TMP/moved" || $rc -eq 0 || $rc -eq 3 ]] || { echo "board: $PROJ's main has the answer, but the board stopped after writing it (exit $rc)" >&2; exit 0; }
+  [[ $rc -le 1 || ( $rc -eq 3 && -e "$TMP/moved" ) ]] || nope "the board stopped (exit $rc) before moving $PROJ's main"
   exit "$rc"
 fi
 

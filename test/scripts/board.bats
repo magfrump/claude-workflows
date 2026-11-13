@@ -1,7 +1,8 @@
 #!/usr/bin/env bats
 # @category slow
 # scripts/board.sh, the cross-project board's listing (unit 1) and answer
-# commit (unit 2, docs/working/research-2026-11-12-host-board-answer-commit.md): fixture repos
+# commit (unit 2, docs/working/research-2026-11-12-host-board-answer-commit.md;
+# unit 3, in place, docs/working/research-2026-11-12-host-board-answer-in-place.md): fixture repos
 # under BATS_TEST_TMPDIR, HOME inside it, the registry from BOARD_REGISTRY, and
 # a shim for each network tool that leaves a sentinel, which every case checks
 # is absent (H3). Design: docs/working/research-2026-11-12-host-board-listing.md.
@@ -199,8 +200,8 @@ mkrepo() {
 
 # offmain NAME: repo NAME (mkrepo) with main checked out nowhere, and the
 # owner's identity in a global config the board reads before it hardens.
-offmain() {
-    mkrepo "$1"; git -C "$BATS_TEST_TMPDIR/$1" checkout -q -b work
+offmain() { mkrepo "$1"; git -C "$BATS_TEST_TMPDIR/$1" checkout -q -b work; ident; }
+ident() {
     unset GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_COMMITTER_NAME GIT_COMMITTER_EMAIL EMAIL
     export GIT_CONFIG_GLOBAL="$BATS_TEST_TMPDIR/gitconfig"
     printf '[user]\n\tname = Owner\n\temail = owner@example.invalid\n' > "$GIT_CONFIG_GLOBAL"
@@ -250,10 +251,6 @@ refused() {
     board "$BOARD" answer nowhere Q-001 x
     [ "$status" -eq 1 ] && [[ "$output" == *"NOT WRITTEN to nowhere: no registry line is nowhere"* ]] || { echo "$output"; false; }
     GIT_CONFIG_GLOBAL=/dev/null ans alpha Q-001 x; refused alpha "git knows no identity for you"
-    # Unit 3's case: main checked out in a worktree.
-    git -C "$a" worktree add -q "$BATS_TEST_TMPDIR/wt" main
-    ans alpha Q-001 x; refused alpha "main is checked out at $BATS_TEST_TMPDIR/wt, and writing there in place is not built yet (unit 3)"
-    git -C "$a" worktree remove "$BATS_TEST_TMPDIR/wt"
     # A worktree rebasing main, or bisecting from it.
     git -C "$a" worktree add -q --detach "$BATS_TEST_TMPDIR/wt2"
     g="$(git -C "$BATS_TEST_TMPDIR/wt2" rev-parse --absolute-git-dir)"
@@ -352,4 +349,109 @@ refused() {
     [ "$status" -eq 0 ] || { echo "$output"; false; }
     run git -C "$a" show main:docs/working/questions.md
     [[ "$output" == *$'\n''Q-001: [2] use C:\temp\n "as is" & $HOME (owner, board '* ]] || { echo "$output"; false; }
+}
+
+# ---- unit 3: board.sh answer, main checked out in worktree W (case c2) ----
+
+# onmain NAME [wt]: repo NAME with main checked out in it, or (wt) in a linked
+# worktree $BATS_TEST_TMPDIR/wt while NAME has another branch; sets W, R (W
+# resolved, as the board prints it) and F (W's questions.md).
+onmain() {
+    if [ "${2:-}" = wt ]; then offmain "$1"; git -C "$BATS_TEST_TMPDIR/$1" worktree add -q "$BATS_TEST_TMPDIR/wt" main; W="$BATS_TEST_TMPDIR/wt"
+    else mkrepo "$1"; ident; W="$BATS_TEST_TMPDIR/$1"; fi
+    R="$(realpath "$W")"; F="$W/docs/working/questions.md"
+}
+# inplace: main, W's index entry and W's file all hold main's new questions.md.
+inplace() {
+    local b; b="$(git -C "$W" rev-parse main:docs/working/questions.md)"
+    [ "$(git -C "$W" rev-parse main~1)" = "$BEFORE" ] && git -C "$W" show main:docs/working/questions.md | cmp -s - "$F" \
+        && [ "$(git -C "$W" ls-files -s docs/working/questions.md)" = "100644 $b 0	docs/working/questions.md" ] || { echo "not in place"; false; }
+}
+# notemp DIR: no temp file of the board's is left in DIR.
+notemp() { ! ls -A "$1" | grep -q '^\.questions\.'; }
+
+@test "answer writes in place when main is checked out and its questions.md is clean" {
+    for shape in main wt; do
+        rm -rf "$BATS_TEST_TMPDIR/alpha" "$BATS_TEST_TMPDIR/wt" "$BATS_TEST_TMPDIR/hook-ran"; : > "$BOARD_REGISTRY"
+        onmain alpha "$shape"; a="$BATS_TEST_TMPDIR/alpha"
+        # An index hook planted in the repo never fires (hardened update-index).
+        h="$a/.git/hooks/post-index-change"; printf '#!/bin/sh\ntouch "%s"\n' "$BATS_TEST_TMPDIR/hook-ran" > "$h"; chmod +x "$h"
+        # Another file's edit in W is left as it is.
+        [ "$shape" = main ] || echo edit >> "$W/docs/working/questions-archive.md"
+        ans alpha Q-001 '[1] yes'
+        [ "$status" -eq 0 ] || { echo "$shape: $output"; false; }
+        [[ "$output" == *"WRITTEN to $a: Q-001 · pick-a-name on main at "*"Its checkout $R has it too: that one index entry and file were replaced, nothing else there."* ]] || { echo "$output"; false; }
+        inplace
+        if [ "$shape" = main ]; then [ -z "$(git -C "$W" status --porcelain)" ]
+        else [ "$(git -C "$W" status --porcelain)" = " M docs/working/questions-archive.md" ] && [ -z "$(git -C "$a" status --porcelain)" ]; fi
+        [ ! -e "$BATS_TEST_TMPDIR/hook-ran" ] && notemp "$W/docs/working"
+        run bash -c 'cd "$1" && source "$2/scripts/lib/dev-cycle-read.sh" && resolve_main && check_answer Q-001' _ "$a" "$REPO_ROOT"
+        [ "$output" = "keep Q-001" ] || { echo "$output"; false; }
+        run bash -c 'cd "$1" && bash "$2/scripts/build-loop.sh" --main-log "$3"' _ "$a" "$REPO_ROOT" "$BEFORE"
+        [[ "$output" == *"answers $(git -C "$a" rev-parse main) docs(questions): answer Q-001 from the board"* ]] || { echo "$output"; false; }
+    done
+    run cat "$HOME/.local/state/claude-board/runs.log"
+    [[ "$output" == *" answer Q-001 written in place"* ]]
+}
+
+@test "in place, a modified questions.md, a staged change, a merge under way or a symlinked docs/ refuses and changes nothing" {
+    onmain alpha; a="$BATS_TEST_TMPDIR/alpha"; cp "$F" "$BATS_TEST_TMPDIR/orig"
+    echo "a session's edit" >> "$F"; cp "$F" "$BATS_TEST_TMPDIR/dirty"
+    ans alpha Q-001 x; refused alpha "docs/working/questions.md in main's checkout $R is modified"
+    cmp -s "$F" "$BATS_TEST_TMPDIR/dirty"
+    git -C "$a" add docs/working/questions.md; cp "$BATS_TEST_TMPDIR/orig" "$F"
+    ans alpha Q-001 x; refused alpha "docs/working/questions.md in main's checkout $R has a staged change"
+    git -C "$a" reset -q
+    git -C "$a" rev-parse main > "$a/.git/MERGE_HEAD"
+    ans alpha Q-001 x; refused alpha "main's checkout $R is in the middle of a merge, cherry-pick, revert, rebase or bisect (MERGE_HEAD)"
+    rm "$a/.git/MERGE_HEAD"
+    for l in docs docs/working; do
+        rm -rf "$BATS_TEST_TMPDIR/out"; mkdir "$BATS_TEST_TMPDIR/out"; mv "$a/$l" "$BATS_TEST_TMPDIR/out/d"; ln -s "$BATS_TEST_TMPDIR/out/d" "$a/$l"
+        ls -lR "$BATS_TEST_TMPDIR/out" > "$BATS_TEST_TMPDIR/out.before"
+        ans alpha Q-001 x; refused alpha "$l in main's checkout $R is a symlink"
+        q="$BATS_TEST_TMPDIR/out/d/questions.md"; [ "$l" = docs/working ] || q="$BATS_TEST_TMPDIR/out/d/working/questions.md"
+        ls -lR "$BATS_TEST_TMPDIR/out" | cmp -s - "$BATS_TEST_TMPDIR/out.before" && cmp -s "$q" "$BATS_TEST_TMPDIR/orig" || { echo "$l: a write landed outside"; false; }
+        rm "$a/$l"; mv "$BATS_TEST_TMPDIR/out/d" "$a/$l"
+    done
+    # The control: with each cause undone, the same answer writes.
+    ans alpha Q-001 x; [ "$status" -eq 0 ] || { echo "the clean control: $output"; false; }
+}
+
+@test "in place, a symlink at W's .git, git dir, index or HEAD reflog refuses, and nothing lands through it" {
+    # link PATH: PATH moved outside and replaced by a symlink to it.
+    link() { mv "$1" "$BATS_TEST_TMPDIR/out/x"; ln -s "$BATS_TEST_TMPDIR/out/x" "$1"; }
+    for k in gitfile wtdir wtindex wtlog index log; do
+        rm -rf "$BATS_TEST_TMPDIR/alpha" "$BATS_TEST_TMPDIR/wt" "$BATS_TEST_TMPDIR/out"; : > "$BOARD_REGISTRY"; mkdir "$BATS_TEST_TMPDIR/out"
+        case $k in gitfile|wt*) onmain alpha wt ;; *) onmain alpha ;; esac
+        c="$BATS_TEST_TMPDIR/alpha/.git"
+        case $k in
+            gitfile) link "$W/.git"; want=".git in main's checkout $R is a symlink" ;;
+            wtdir) link "$c/worktrees/wt"; want="a worktree's git directory or rebase state cannot be read" ;;
+            wtindex) link "$c/worktrees/wt/index"; want="worktrees/wt/index in the git directory is a symlink" ;;
+            wtlog) link "$c/worktrees/wt/logs/HEAD"; want="worktrees/wt/logs/HEAD in the git directory is a symlink" ;;
+            index) link "$c/index"; want="index in the git directory is a symlink" ;;
+            log) link "$c/logs/HEAD"; want="logs/HEAD in the git directory is a symlink" ;;
+        esac
+        ls -lR "$BATS_TEST_TMPDIR/out" > "$BATS_TEST_TMPDIR/out.before"
+        ans alpha Q-001 x; refused alpha "$want"
+        ls -lR "$BATS_TEST_TMPDIR/out" | cmp -s - "$BATS_TEST_TMPDIR/out.before" || { echo "$k: a write landed outside"; false; }
+    done
+}
+
+@test "in place, a file write that fails after main moved says main has the answer and names the repair (exit 3)" {
+    onmain alpha; a="$BATS_TEST_TMPDIR/alpha"; cp "$F" "$BATS_TEST_TMPDIR/orig"
+    # An mv that fails for the questions file only; any other mv runs as usual.
+    m="$BATS_TEST_TMPDIR/mvshim"; mkdir "$m"
+    printf '#!/bin/sh\ncase "$*" in *docs/working/questions.md) exit 1 ;; esac\nexec "%s" "$@"\n' "$(command -v mv)" > "$m/mv"; chmod +x "$m/mv"
+    BEFORE="$(git -C "$a" rev-parse main)"
+    PATH="$m:$PATH" board "$BOARD" answer alpha Q-001 '[1]'
+    [ "$status" -eq 3 ] || { echo "$output"; false; }
+    [[ "$output" == *"WRITTEN to $a on main, but its checkout $R is behind: its file could not be replaced"* ]] || { echo "$output"; false; }
+    [[ "$output" == *"  git -C $R checkout HEAD -- docs/working/questions.md"* && "$output" != *"NOT WRITTEN"* ]] || { echo "$output"; false; }
+    [ "$(git -C "$a" rev-parse main~1)" = "$BEFORE" ] && cmp -s "$F" "$BATS_TEST_TMPDIR/orig" && notemp "$a/docs/working"
+    # The printed repair brings the checkout level: in place, and clean.
+    git -C "$R" checkout HEAD -- docs/working/questions.md
+    inplace && [ -z "$(git -C "$a" status --porcelain)" ]
+    run cat "$HOME/.local/state/claude-board/runs.log"
+    [[ "$output" == *" answer Q-001 written, checkout behind"* ]]
 }
