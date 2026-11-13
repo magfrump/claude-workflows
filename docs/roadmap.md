@@ -24,7 +24,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   `merge-gate` entry): step 8 takes a Next item's first step when no Now item is ready; a
   held item that rides another unit is briefed alone after two cycles; a host step splits
   from the code; every owner call goes in the questions file, never only in a final
-  message; the `8.` line's free-slot reason names each item. Briefed when a slot frees.
+  message; the `8.` line's free-slot reason names each item. Briefed 2026-11-13 (In flight).
 
 - **Agent: the build-loop handoff plan's D12 after the light pass** (filed 2026-11-11, step 7).
   Motive: if Q-279 merges the light pass, decision-log row 72 and D12 in
@@ -220,8 +220,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
-- `docs/working/briefs/2026-11-13-walkthrough-first-problem-measure.md`: the playtest
-  proposal's step 1 (Next item 2), self-merge.
+- `docs/working/briefs/2026-11-13-dev-cycle-unblock-ready-work.md`: the cycle-fix Now item;
+  review, gate code (a `merge-gate` entry).
 - `docs/working/briefs/2026-11-13-small-records-review.md`: D12's log row, the
   `Harness feedback` warning, decision 018's cite, the `exec "$@"` failure pattern; review.
 - `docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md`: `--clean`, a
@@ -246,7 +246,11 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
    per project in each project's own session; under ~20% mechanical, stop and record that.
    Its three open questions (the first trial project, automatic or on request, Chromium in
    the image) wait for that number.
-   2026-11-13: step 1 briefed (In flight).
+   2026-11-13: step 1 done (a91d42af, self-merge;
+   `docs/working/research-2026-11-13-walkthrough-first-problem-measure.md`): this repo has
+   no answered `you: walkthrough` entry, so "too few to decide". The three open questions
+   are drafted in the loop's marker and held until another repo reports its own count,
+   since the first (which project to try first) depends on which repos have walkthroughs.
 
 ## Ideas
 
@@ -527,6 +531,9 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- Walkthrough first-problem measure (Next item 2's step 1;
+  `docs/working/briefs/closed/2026-11-13-walkthrough-first-problem-measure.md`). Merged
+  a91d42af, self-merge: too few entries to decide.
 - Q-125, the cc-isolated Bash sandbox (filed 2026-11-01): merged 3cd6d9bb (Q-267 [1]), live
   check failed three lines, rolled back 7caea26d (Q-277 [3]); the owner then chose no
   sandbox (decision-log row 88). Its two gap items (the credential after a token refresh,
