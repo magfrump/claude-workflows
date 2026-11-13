@@ -66,115 +66,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   owner refuses the exception when Q-272 returns with data (watch Q-276). The owner's
   note on other repos is an Ideas item.
 
-- **Agent: Q-125 · cc-isolated Bash sandbox, live run** (filed 2026-11-01, step 6, from
-  Q-234's migrate). Motive: nothing sandboxes Bash in cc-isolated. Built, unmerged
-  (`feat/q125-cc-isolated-sandbox`); the host install is done (Q-222, answered 2026-11-03). The
-  check file merged at 546788f2 (Q-265 [1]). The conflict merge is ready at cd6d4332 (In
-  flight). First step: the owner's `cc-verify` paste in merge entry Q-267, then its answer.
-  2026-11-11: merged at 3cd6d9bb on the owner's answer (Q-267 [1]). No live-run output came
-  with the answer, so the sandbox has still never run: its commits stay `Live-verified: no`.
-  It reaches sessions at the next host install, which is the release entry Q-273; that
-  entry puts the live check first. After the install: `scripts/confine-tests.sh --probe`
-  in a session, and the leak list in watch Q-098.
-  2026-11-11, later: the live check ran on the owner's host against main at f0a55b8a
-  (`cc-verify`, tree 08bf2bc9, config 1887e71a2126a27b) and failed: VERDICT FAIL, 3 not
-  pass, 0 missing. On record: C3-nested-settings-1 and C3-nested-gitfile-1 FAIL; C4, C5
-  and C6 pass. The third line, from the owner later the same day: X4-cred-across-rename
-  FAIL (read after a rename). With none missing, every other required line passed, by
-  the verdict's count; the lines themselves are not on record. So the sandbox has now
-  run, the commits stay `Live-verified: no`, and the install waits for the owner's
-  answer to Q-277 (install with the two gaps written down, or hold).
-  2026-11-12: Q-277 answered [3]. Under the sandbox a `git worktree add` fails
-  (`.git/worktrees` read-only), so main rolled the sandbox back (7caea26d; docs kept), and
-  the owner installed the image from 80b7dabe without it. It comes back only when agents
-  can create worktrees under it, beside the two gaps below; to restore it, revert 7caea26d.
-  The first step for all three was the research brief
-  (`docs/working/briefs/closed/2026-11-12-sandbox-return-research.md`), done at d6b9206e
-  (`docs/working/research-2026-11-12-sandbox-return-research.md`). Findings: Claude Code
-  itself makes `.git/worktrees` read-only in the sandbox and `allowWrite` cannot lift it;
-  an `excludedCommands` entry never matches a call holding `cd`. Recommended return:
-  revert 7caea26d, then a root-owned `cc-worktree` helper outside the sandbox and a deny
-  on the whole `~/.claude` directory, in three units with one `cc-verify` run. Its three
-  questions (the helper, the nested-worktree residual, a credential fallback) are with the
-  owner in the cycle's final message; nothing is briefed until they answer.
-  2026-11-12: the owner answered: keep no sandbox; worktree usage is too important
-  (decision-log row 88). The return is not pursued, and the two sandbox-gap items below
-  are closed with it. This item is finished.
-
-- **Agent: a sandboxed command can read the credential after a token refresh** (filed
-  2026-11-11, from the Q-273 live check). Motive: `X4-cred-across-rename FAIL (read after
-  a rename)`. The check file (`docs/working/q125-verify-check.sh`, its X4 block) replaced
-  `~/.claude/.credentials.json` by rename every half second while one sandboxed command
-  read it in a loop, and that command saw the new content. The plan's acceptance step 6
-  requires the read to stay refused across `/login` or a refresh, and its residuals table
-  had the case as "unknown" (`docs/working/plan-q125-cc-isolated-sandbox.md`). What
-  holds: reads before any rename (X1, four ways) and the first read of the next command
-  (C1-cat-credential, after the renames) passed, by the count. So the mask is put back
-  for each new command and is lost inside one command when the file is renamed over; a
-  command that waits in the background for a refresh fits through. Likely mechanism, not
-  confirmed here: `denyRead` is a bind over the file's directory entry, and a rename
-  over that entry from outside the sandbox detaches it. First step: a research and
-  divergent-design unit seeded with `docs/constraints.md`. Settle first: how Claude Code
-  applies `denyRead` (read its sandbox documentation and observe the mounts in a
-  sandboxed command), whether a directory-level deny survives a rename inside the
-  directory, and how long a sandboxed command may run (background commands included).
-  Candidates to start from: deny reading a directory that holds only the credential, if
-  the credential's place can be moved; keep the credential out of the container's files
-  (an API key helper or a proxy outside the sandbox that adds it); a cap on how long a
-  sandboxed command lives; a report to Claude Code, since the masking is its code; or an
-  accepted residual beside decision log 53. Until this is fixed, watch Q-098's trigger
-  (the sandbox denies reads of the credential) is not met. Enforcement files: a
-  pre-mortem, a `Live-verified:` trailer, and the same `cc-verify` check re-run.
-  2026-11-12: the sandbox is rolled back (7caea26d); this gap is now one of three
-  requirements for its return, researched together in the brief In flight.
-  2026-11-12, later: closed: the owner chose no sandbox (decision-log row 88).
-
-- **Agent: the sandbox leaves nested worktree paths writable** (filed 2026-11-11, from
-  the Q-273 live check). Motive: the plan's own acceptance step
-  (`docs/working/plan-q125-cc-isolated-sandbox.md`, step 6) requires sandboxed writes to
-  be refused for a nested worktree's project settings file and for a worktree's `.git`
-  pointer file, and its residuals table left both "Unknown" for the live run. The run
-  answered: under `/workspace/.claude/worktrees/q125-probe/` a sandboxed command could
-  create the `.claude` directory and append to `.git`.
-  `devcontainer-config/managed-settings.json` denies those names only at `/workspace`
-  itself, by literal path. First step: a research and divergent-design unit seeded with
-  `docs/constraints.md`. Open facts to settle first: whether the sandbox's `denyWrite`
-  takes a pattern on Linux (not checked here; read Claude Code's sandbox documentation),
-  and whether a subagent whose working directory is a nested worktree loads that
-  worktree's settings file. Candidates to start from: a pattern entry, if supported; a
-  deny on the whole worktrees directory, which would also stop sandboxed commands doing
-  ordinary work in an agent worktree; literal entries added as worktrees are made, which
-  the root-owned build-time managed file cannot take today; agent worktrees somewhere
-  the deny list can name; or recording it as an accepted residual beside decision log
-  53, with the exit scan (`devcontainer-config/cc-exit-scan.sh` already walks worktree
-  git dirs) as the check on the `.git` side. Any change is to enforcement files: a
-  pre-mortem, a `Live-verified:` trailer, and the same `cc-verify` check re-run. The
-  third failed line is a separate gap (the item above, the credential after a refresh),
-  so the two can be designed apart and checked in one live run.
-  2026-11-12: the sandbox is rolled back (7caea26d); this gap is now one of three
-  requirements for its return, researched together in the brief In flight.
-  2026-11-12, later: closed: the owner chose no sandbox (decision-log row 88).
-
-- **Agent: a release installed from a commit its entry did not describe** (filed
-  2026-11-12, step 2). Motive: decision-log row 86's revisit trigger ("if an image's
-  `commit=` names gate code other than its entry's M") fired. The image is at 80b7dabe,
-  while release entry Q-273 named M = 7b8b560a; between them 30eb0229 changed
-  `skills/dev-cycle/SKILL.md` (gate code; one sentence of step 7, owner-requested in
-  session) and 7caea26d rolled back the sandbox (Q-277 [3]). Both were the owner's own
-  asks, so nothing unreviewed shipped, but the install ran outside the entry's paste,
-  which only a later cycle could have rewritten. First step: read the two commits'
-  sessions' records and `devcontainer-config/install.sh`, and say whether the release
-  path needs a change (for example install.sh printing the gate-code diff from the last
-  release entry's M) or the case is an owner-directed install the design already allows.
-  Only a proposed change becomes an owner entry.
-  2026-11-12: briefed (`docs/working/briefs/closed/2026-11-12-release-outside-entry.md`)
-  and done (a1121ac5, self-merge; `docs/working/research-2026-11-12-release-outside-entry.md`):
-  no change to the release path. The install most likely ran as a plain `install.sh` at
-  80b7dabe (inference; nothing records the command); nothing unreviewed shipped. When row
-  86's first trigger fires again, the cycle answers it from the log, as iteration 0143
-  did, unless the install carried a self-merge or a commit the owner did not ask for.
-  This item is finished.
-
 - **Agent: scoped deep audit, constraint drift** (filed 2026-11-05, step 4b). Motive: the
   drift check on 605d4c18 found its script-home decision resting on a soft constraint (S4
   pruned the checklist option) and on a rule `docs/constraints.md` does not hold (instrument
@@ -202,6 +93,10 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   nothing. The small audit is done (b3d3e8f4, Done): it recommends no change to the
   constraints file, and its four calls are with the owner in the cycle's final message. A
   different pick the owner names becomes its own item. This item is finished but for that.
+  Fired again 2026-11-13 (step 4 drift check): a1121ac5's Path A record
+  (`docs/working/research-2026-11-12-release-outside-entry.md`) pruned [1] on S3 and S8,
+  [4] on S4 and S2 and [5] on S3, soft constraints alone; its pick ([0], status quo)
+  rests on the motive test (S5) and stands. Add it to the next audit's sample.
 
 - **Agent: `source_lines_ok` misses an unterminated last line** (filed 2026-11-05, step 7).
   Motive: the Q-147 review found the shipped self-check in `devcontainer-config/cc-verify.sh`
@@ -286,41 +181,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   unit is a `merge-gate` entry. Unit 1 merged at 236f21ee (Q-224 [1]); unit 2 merged at 6ee39f24 (Q-229 [1]). Unit 3 merged at 01022de2 (Q-235 [1]). Next: the release (Q-227), then the owner's one-time `questions.sh migrate` run (Q-234). Follow-ups: entry clarity (gloss every internal reference) and a
   `questions.sh record <answers-file>`.
 
-- **Cross-project board, v1: a host script for active projects and their questions**
-  (owner request, 2026-11-12; proposal `docs/thoughts/proposal-2026-11-12-cross-project-board.md`).
-  Motive: the owner's attention is spread over several repos, each keeping its own
-  roadmap and questions files, and the only way to see which project needs them is to open
-  every workspace. The owner's scope for v1: a script that keeps a list of active
-  projects, fetches each one's open questions, and takes answers back to the right repo.
-  It runs on the host, so it has no LLM component at all (no `claude` call, no model in
-  the loop): python3 stdlib or bash, read-only except for the answer write. A board or
-  Kanban-like view may grow from it later, not in v1. The proposal's host-vs-container
-  table is settled by this: [1] host only.
-  First step: a docs-only research and divergent-design unit, seeded with
-  `docs/constraints.md`, on the one write, how an answer gets back to its repo (for
-  example a `Q-NNN: answer` line in that repo's answers file under
-  `docs/human-author/`, an edit of the entry in its questions file, or a commit the
-  script makes on the host), and on reading questions through each repo's own
-  `questions.sh open` rather than re-parsing (S3). Then a build unit with hermetic bats
-  fixtures (H3). For the owner later, when the build is briefed: which repos go in the
-  registry and where they live on the host (the proposal's open question 1).
-  2026-11-12: the design unit is briefed
-  (`docs/working/briefs/closed/2026-11-12-host-board-answer-route.md`) and done
-  (1ca6d02b, self-merge; `docs/working/research-2026-11-12-host-board-answer-route.md`).
-  The answer goes back as a commit the host script makes on that repo's main, which the
-  cycle reads as an owner answer. The build is three units: the listing (In flight),
-  the answer commit when main is not checked out, then in place when it is. The
-  registry's contents are the owner's (asked in the cycle's final message), needed
-  before the first host check, not the build.
-  2026-11-12: unit 1, the listing, merged (763aa482, self-merge; `scripts/board.sh`,
-  `guides/cross-project-board.md`). It reaches the host at the next release. Unit 2 is In
-  flight.
-  2026-11-12: unit 2, `board.sh answer`, merged (cb32b381, self-merge): it writes when
-  main is checked out nowhere and prints otherwise. Unit 3 is In flight.
-  2026-11-12: unit 3, the in-place write, merged (94ace1f2, self-merge). v1 is built. Next:
-  the owner's first host run (Q-280: install, the registry, one `board.sh` run). After
-  that, the Kanban-like view stays an idea until the board is used.
-
 - **Owner feedback 2026-10-29** (`docs/human-author/feedback-10-29-26.txt`), four points:
   1. An answer given in session should approve a merge entry (the gate is too strict).
      Merged at 014e5219 (Q-230 [1]); the orchestrator follows it once the next release
@@ -343,33 +203,14 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## Next
 
-1. **Q-125's host live run, now that `cc-verify` is merged.** Motive: Q-125 (the
-   cc-isolated Bash sandbox), and behind it Q-098 (global allowlist) and Q-161 (hermeticity
-   layer 2), waited on `cc-verify` (merged at 37b24c02, Q-217 [1]). The host install has
-   `cc-verify` (Q-222, answered 2026-11-03). The check file merged at 546788f2 (Q-265 [1]).
-   First step: the live-run paste in merge entry Q-267 (the conflict merge is ready at
-   cd6d4332). `~/cc-verify` is already in the agents'
-   sandbox `denyWrite` (owner, 2026-11-03).
-   2026-11-11: the branch is merged (3cd6d9bb, Q-267 [1]); the live run is now the first
-   block of the release entry Q-273, run against main.
-   2026-11-12: the sandbox is rolled back (7caea26d, Q-277 [3]); its return is researched
-   in the brief In flight, and a new live run follows that design, not this one.
-2. **A8 post-restructure token measurement.** Motive: the user deferred big compute until
+1. **A8 post-restructure token measurement.** Motive: the user deferred big compute until
    code and prompts settle; it validates code-review lever #3 (rubric row A8 in
    `docs/reviews/code-review-rubric-2026-08-07-main.md`). First step: confirm
    settlement (no open code-review SKILL changes), then re-run one canon cell. The
    user's 2026-10-20 feedback adds re-evaluating review k and the lite review under Opus
    5.5; deferred, ask before running. (2026-11-10: sessions here now run
    `claude-fable-5-2`, so a re-evaluation, when you ask for it, would be under that model.)
-3. **Revisit the light pass between full cycles (C5, Q-154).** Motive: you answered C5 with a
-   full cycle every iteration for now and a light pass of steps 7, 8 and 10 between full
-   cycles once the costs are visible (plan D12, F53). First step: after the orchestrator's
-   first day of iterations here (after Q-156's release), total each iteration's tokens and
-   wall time from its records and bring the numbers to you. That first step is done
-   (c70bb17a; no token counts exist to total), and the choice is now Q-270.
-   2026-11-11: answered (Q-270: [2], and [4] as well). Both are Now items: "light pass
-   between full cycles" and "token cost of a cycle iteration". This item is finished.
-4. **Agent first-pass playtest before each `you: walkthrough`** (owner request, 2026-11-12;
+2. **Agent first-pass playtest before each `you: walkthrough`** (owner request, 2026-11-12;
    proposal `docs/thoughts/proposal-2026-11-12-agent-first-pass-playtest.md`). Motive: a
    walkthrough spends the owner's most expensive time, and its first stretch may go on
    problems an agent could have found (a launch that fails, a README step missing). The
@@ -382,6 +223,10 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## Ideas
 
+- **The board treats a repo with no `docs/working/` as not tracked.** Signal: Q-280's
+  first host run exited 1 on a registered repo that is not a coding project. Status quo
+  first: the owner comments that registry line out with `#`; build only if a second such
+  repo appears.
 - **A sandboxed worktree line in the live check** (brainstorm 2026-11-12). Signal: the
   sandbox's live check passed every line but three, yet the sandbox broke worktree creation,
   which no line tested (7caea26d). It would add a sandboxed `git worktree add` and
@@ -655,6 +500,16 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- Q-125, the cc-isolated Bash sandbox (filed 2026-11-01): merged 3cd6d9bb (Q-267 [1]), live
+  check failed three lines, rolled back 7caea26d (Q-277 [3]); the owner then chose no
+  sandbox (decision-log row 88). Its two gap items (the credential after a token refresh,
+  nested worktree paths writable) closed with it. Moved out of Now 2026-11-13.
+- Cross-project board v1 (owner request, 2026-11-12;
+  `docs/working/briefs/closed/2026-11-12-host-board-answer-route.md` and units 1-3 below):
+  built, and the first host run is done (Q-280, answered a5fe5de7: exit 0 on the seeded
+  registry, exit 1 once a repo with no questions doc was added, which is by design).
+  Moved out of Now 2026-11-13; the Kanban-like view stays an idea until the board is used.
+- The release-outside-entry item (log row 86) moved out of Now 2026-11-13 (its merge is below).
 - A release installed from a commit its entry did not describe (log row 86's trigger;
   `docs/working/briefs/closed/2026-11-12-release-outside-entry.md`). Merged a1121ac5,
   self-merge: no change.
