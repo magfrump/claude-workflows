@@ -222,6 +222,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 - `docs/working/briefs/2026-11-13-dev-cycle-unblock-ready-work.md`: the cycle-fix Now item;
   review, gate code (a `merge-gate` entry).
+  2026-11-13: ready at 1fbcad02; merge entry Q-289.
 - `docs/working/briefs/2026-11-13-small-records-review.md`: D12's log row, the
   `Harness feedback` warning, decision 018's cite, the `exec "$@"` failure pattern; review.
   2026-11-13: ready at 68b106d0; merge entry Q-287.
@@ -256,6 +257,10 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## Ideas
 
+- **Align the record template's `8.` line with step 8's new rule.** Signal: Q-289's loop kept
+  the template's old wording because changing it needs a migration line in
+  `scripts/lib/migrations.sh`; `docs/working/seed-build-loop-handoff.md:81` also restates the
+  old "Take the Now items" rule. After Q-289 merges.
 - **The board treats a repo with no `docs/working/` as not tracked.** Signal: Q-280's
   first host run exited 1 on a registered repo that is not a coding project. Status quo
   first: the owner comments that registry line out with `#`; build only if a second such
