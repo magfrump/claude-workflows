@@ -80,7 +80,7 @@ fi
 # The enforcement set: what cc-isolated.sh's enforcement_files() hashes, as repo
 # paths. Keep in step with that function. Plus install.sh, which is not hashed but
 # runs on the host and chooses the diff the human reviews (decision 035).
-enforcement='^devcontainer-config/(Dockerfile|devcontainer\.json|seccomp-cc-sandbox\.json|managed-settings\.json|cc-sandbox-settings\.sh|init-firewall\.sh|cc-sni-proxy\.py|link-claude-home\.sh|cc-isolated\.sh|install\.sh$|egress/)'
+enforcement='^devcontainer-config/(Dockerfile|devcontainer\.json|init-firewall\.sh|cc-sni-proxy\.py|link-claude-home\.sh|cc-isolated\.sh|install\.sh$|egress/)'
 # Host-only tools: cc-isolated.sh's host_tool_files() (decision log row 71); keep in
 # step with that function too (a bats test pins both lists in both directions). No
 # live probe can exercise them, so they carry their own trailer, `Host-tool-tested:`

@@ -264,8 +264,7 @@ for six days while every root-run probe reported a healthy boundary (#43 refuted
 ### The sequence, every time an enforcement file changes
 
 Enforcement files are what `enforcement_files()` in `cc-isolated.sh` hashes:
-`Dockerfile`, `devcontainer.json`, `seccomp-cc-sandbox.json`, `managed-settings.json`,
-`cc-sandbox-settings.sh`, `init-firewall.sh`, `cc-sni-proxy.py`,
+`Dockerfile`, `devcontainer.json`, `init-firewall.sh`, `cc-sni-proxy.py`,
 `link-claude-home.sh`, `cc-isolated.sh`, the `egress/*.txt` lists, every registered
 `projects/*.profile`, and the staged
 `claude-home/`.
