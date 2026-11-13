@@ -254,3 +254,4 @@ Trigger: Now changed since the last brainstorm (the owner added the cross-projec
 - Brief the board's design unit now, the one ready Now item: briefed this iteration (signal: the owner's request, 2026-11-12)
 - Let the board's answer write reuse each repo's `questions.sh` rather than a second grammar (signal: S3, and the proposal's own `questions.sh open` row); left to the design unit
 - Do nothing more: the playtest waits on its own measurement, and the sandbox research is held on its lock (signal: queue 2/3 with no other ready Now item)
+- The board treats a repo with no docs/working/ as not tracked, exit 0 (signal: Q-280 host run exited 1 on a non-project repo)
