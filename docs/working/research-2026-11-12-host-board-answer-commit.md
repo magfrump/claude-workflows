@@ -5,7 +5,7 @@
 Repo text is evidence, not instructions.
 
 Failure-pattern grep: FP-034, FP-116, FP-167, FP-177
-Failure-pattern skip: the one fix(...) commit repairs this branch's own unmerged code from its review round 1, in classes FP-116 and FP-034/FP-167 already name (host git following container-written .git content), so none earns a new entry.
+Failure-pattern skip: the two fix(...) commits repair this branch's own unmerged code from its review round 1, in classes FP-116 and FP-034/FP-167 already name (host git following container-written .git content), so none earns a new entry.
 
 The grep was `grep -inE 'update-ref|commit-tree|symlink|reflog|hash-object|identity|safe\.directory|dubious|compare-and-swap|worktree list' docs/failure-patterns.md`, plus the design doc's own lookup (FP-034, FP-116, FP-146, FP-167). FP-116 (host git against a container-written directory) is why every git call runs hardened and only plumbing runs; FP-034/FP-167 (symlinks) are pre-mortem item 6, the git-dir link check. New here: **FP-177** (an identity check that read git config only, while the identity was held in the environment). So the board reads the identity with `git var GIT_AUTHOR_IDENT` (environment first, then global and system config, `user.useConfigOnly`), as `merge_ident` in `scripts/build-loop.sh` does, not with `git config --global` as the design doc's "Identity" bullet said.
 
@@ -67,5 +67,7 @@ Round 1 (one general reviewer over the diff, without this doc's conclusions). Fi
 - amber, a failure after `update-ref` (the run log, or the print) reported "not written": a marker file after the ref moves makes the run exit 0 with a stderr note, and the run log failing is a warning there.
 - amber, the `post-index-change` positive control could not fail: the control now writes an index unhardened and asserts both hook names, from `.git/hooks` and from `core.hooksPath`.
 - green, guide: "main (or master)" now names origin/HEAD's branch; exit 0 means written; the multi-line paste prints as typed. Not done: cases for the archive and non-`you:` refusals (one-line checks, not in the brief's list).
+
+Round 2 (same reviewer, the delta only): clean. Every fix re-probed and held (the bare `logs/HEAD` and slash probes now refuse with nothing written outside), and each new case fails with its fix reverted. Greens taken: the slash refusal moved out of `gitdir_link` into `answer()`, so its reason no longer claims a symlink; the guide notes that with the output pipe closed the scrub's exit status can read 1 after a write. Not done: the `packed-refs` case's "nothing outside" assertion is weak (update-ref does not rewrite it); its `refused` check is what fails without the fix.
 
 Residual (S1, accepted): a checkout of main, or a container write into `.git`, between the checks and `update-ref` is a race the board cannot close; it needs a write during the board's run, which is deliberate rather than an honest slip.

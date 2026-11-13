@@ -169,8 +169,6 @@ gitdir_link() {
   local c q r g e
   g="$(git rev-parse --absolute-git-dir)" && c="$(git rev-parse --path-format=absolute --git-common-dir)" || { echo "the git directory"; return; }
   [[ ! -L "$g" && ! -L "$c" ]] && c="$(realpath -e -- "$c")" || { echo "the git directory"; return; }
-  # The list below holds every part of the ref's two paths only for a name with no slash.
-  [[ "$MAIN" != */* ]] || { echo "the branch name $MAIN holds a slash, so a part of its ref path"; return; }
   for e in objects refs refs/heads "refs/heads/$MAIN" packed-refs logs logs/refs logs/refs/heads "logs/refs/heads/$MAIN" 'objects/??'; do
     for q in "$c"/$e; do
       [[ -e "$q" || -L "$q" ]] || continue
@@ -271,6 +269,8 @@ answer() {
   [[ "$(git ls-tree "$MAIN_SHA" -- "$f")" == "100644 blob "* ]] || nope "$f is not a plain 100644 file on $MAIN"
   ! grep -q $'\r' -- "$d/questions.md" || nope "$f holds a carriage return, which the board does not rewrite"
   wt_scan || nope "$WHY"
+  # gitdir_link's list holds every part of the ref's two paths only for a name with no slash.
+  [[ "$MAIN" != */* ]] || nope "the branch name $MAIN holds a slash, and the board checks only a ref path without one"
   # Refs in a reftable, or hooks defined in config, are writes and commands the
   # checks here do not model (H2): refuse rather than trust core.hooksPath for them.
   x="$(git config --get extensions.refStorage || true)"

@@ -58,7 +58,7 @@ The confirmation names the entry's slug, so a mistyped project or ID shows, and 
 
 **When the cycle sees it.** The repo's dev cycle reads answers from main's commit, so it picks this one up at its next iteration, lists the commit among the `answers` it saw, and archives the entry. Nothing needs to be told.
 
-**When it prints instead.** If the board cannot write safely, it moves no branch, prints `NOT WRITTEN to PROJECT: REASON` and the line to paste into that repo's session (a multi-line answer prints as typed), and exits 1. Exit 0 always means main has the answer, even if the run log could not be written after. It prints instead when:
+**When it prints instead.** If the board cannot write safely, it moves no branch, prints `NOT WRITTEN to PROJECT: REASON` and the line to paste into that repo's session (a multi-line answer prints as typed), and exits 1. Exit 0 always means main has the answer, even if the run log could not be written after. If the board's own output cannot be written (a closed pipe), trust the `WRITTEN` line or the repo's log over the exit code. It prints instead when:
 
 - `main` is checked out in a worktree (writing in place there is the design's unit 3, not built yet); the common case for a repo with one checkout;
 - the answer is more than one line, empty, or holds a control character or invalid UTF-8: a multi-line answer needs a session's judgment to record;
