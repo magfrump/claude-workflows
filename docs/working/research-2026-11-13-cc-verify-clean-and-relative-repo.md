@@ -91,6 +91,12 @@ guide say "a URL or host:path"; the live-run test now waits on a builtin `read` 
 FIFO, so its kill leaves no `sleep` child. Green, left: line 135's `(cd stage && ...)`
 has the same CDPATH exposure but predates this change and is out of the brief's scope.
 
+Round 2 (same reviewer, commit c94bc0b6): no red. Amber: an empty REPO became `./`
+and verified the current directory, where `git clone ""` used to fail; fixed by a usage
+refusal (exit 2, "REPO is empty.") at argument parsing, with a bats case. Green, taken:
+--help says a path that exists is read as a path (a local `host:path` directory is a
+path, which round 1 already did). Nothing else open; the loop ends clean.
+
 ## Gotchas
 
 - Failure-pattern grep: FP-020, FP-062, FP-129, FP-175

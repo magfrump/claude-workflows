@@ -7,7 +7,7 @@
 #       MAIN's installed cc-isolated on that stage and a scratch clone named
 #       VERIFY-<tree8>, run FILE in its container, then tear it all down
 #       REPO: a path to a git repo (a relative one is resolved first), or a URL or
-#       host:path that git clones
+#       host:path that git clones; a path that exists is read as a path
 #   cc-verify --clean      remove what an interrupted run left (a new run refuses until then)
 #   cc-verify --help       this text
 # The config verified is the merge tree's devcontainer-config/, never REPO's
@@ -196,7 +196,8 @@ while [ $# -gt 0 ]; do
   esac
 done
 if [ "$MODE" = clean ]; then [ "${#POS[@]}" -eq 0 ] && [ -z "$CHECK" ] || usage_error "--clean takes no other arguments."
-else [ "${#POS[@]}" -eq 2 ] && [ -n "$CHECK" ] || usage_error "give --check FILE, REPO and BRANCH."; fi
+else [ "${#POS[@]}" -eq 2 ] && [ -n "$CHECK" ] || usage_error "give --check FILE, REPO and BRANCH."
+  [ -n "${POS[0]}" ] || usage_error "REPO is empty."; fi   # it would resolve to the current directory
 
 [ -z "${CLAUDECODE:-}" ] || die "run cc-verify from your own terminal, not from a Claude Code session."
 for c in git docker devcontainer python3 sha256sum tar find; do command -v "$c" >/dev/null || die "'$c' not found on PATH."; done

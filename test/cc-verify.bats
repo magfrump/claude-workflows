@@ -262,6 +262,9 @@ branch_json() {  # branch_json NAME JSON: a branch whose devcontainer.json is JS
   [[ "$output" == *"runs from its installed copy"* ]]
   run "$T/cfg/cc-verify.sh" "$R"
   [ "$status" -eq 2 ]
+  cd "$R"; run "$T/cfg/cc-verify.sh" --check "$T/check" "" feat/x <<< y
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"REPO is empty."* ]]
   [ ! -e "$CC_VERIFY_ROOT" ]
   [ ! -e "$STUB/docker.log" ]
 }
