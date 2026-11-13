@@ -268,6 +268,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-274](#q-274--self-answer-plan-how-far) | Q-274: [1] (owner, answers-11-11-26.txt). Build nothing; look again when Q-272 is answered. The owner adds:... | 2026-11-11 |
 | [Q-277](#q-277--install-sandbox-with-nested-worktree-gap) | The sandbox's live check found two gaps: nested worktrees, and the credential after a token refresh. Instal... | 2026-11-11 |
 | [Q-279](#q-279--merge-gate-2026-11-11-light-pass-9b4f98000688) | Q-279: [1] | 2026-11-11 |
+| [Q-280](#q-280--board-first-host-run) | Q-280: ran (owner, in session 2026-11-13). With the two seeded registry lines the board exited 0. After the... | 2026-11-12 |
 <!-- index:end -->
 
 ## Answered
@@ -6705,5 +6706,29 @@ cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = 7b8b560acaa
 The `rev-parse` check runs no hook. It only confirms your checkout is at `7b8b560a`, main as this entry was written. Each cycle land moves main past it, so check out `7b8b560a` first (the next cycle rewrites this entry when a later merge changes what the release ships). That checkout, like any other git command on the host, can run a hook a sandbox session planted, which is `install.sh`'s own trust model. If the install re-blesses, it also prints the hint that Q-167 (the post-install probes) still needs for its step (a).
 
 - **Interim:** the image at `536b7082` runs; paste 2 waits for Q-277.
+
+
+### Q-280 · board-first-host-run
+**Needs:** you: terminal · **Opened:** 2026-11-12 · **Status:** ANSWERED
+Q-280: ran (owner, in session 2026-11-13). With the two seeded registry lines the board exited 0. After the owner added their other repos it exited 1; the owner reads the one cause as a repo with no `docs/working/questions.md`, which is not an active coding project (the output itself was not pasted). That exit is by design: `no questions doc on main` counts as unreadable (`test/scripts/board.bats:81`). Follow-up: comment that registry line out with `#`, or a roadmap item to treat a repo with no `docs/working/` as "not tracked" (exit 0) while a missing `questions.md` under an existing `docs/working/` stays an error.
+
+The cross-project board you asked for on 2026-11-12 is built; install it on the host, list your repos, and run it once.
+
+**If you say no:** nothing breaks. The board stays on main and reaches the host whenever you next run `install.sh` for another reason; until then you see each project's questions by opening it, as today.
+
+**What it is.** `scripts/board.sh` (guide: `guides/cross-project-board.md`) runs on the host only and calls no model. With no arguments it lists every registered repo's open `you:` questions, read from that repo's main. `board.sh answer PROJECT Q-NNN "TEXT"` commits your one-line answer on that repo's main, which its dev cycle reads as your answer at its next iteration; when it cannot write safely it prints the line for you to paste instead. It merged in three self-merged units with no review by you: 763aa482 (listing), cb32b381 (answer when main is checked out nowhere), 94ace1f2 (answer in place when main is checked out and its questions file is clean).
+
+**The registry** is `~/.config/claude-board/repos`, one absolute repo path per line. The paste below starts it with the two host paths this repo's records name; add your other repos' lines, then run `board.sh` again. A repo owned by another host user shows as "dubious ownership", since the board ignores your global git config, `safe.directory` included.
+
+Stop every session first (the install replaces the image), then on the host:
+
+```
+cd /home/magfrump/claude-workflows && test "$(git rev-parse --abbrev-ref HEAD)" = main && ./devcontainer-config/install.sh && mkdir -p ~/.config/claude-board && { test -e ~/.config/claude-board/repos || printf '%s\n' /home/magfrump/claude-workflows /home/magfrump/belegarth-herald > ~/.config/claude-board/repos; } && ~/.claude/scripts/board.sh; echo "board exit $?"
+```
+
+Answer `Q-280:` with the board's output (exit 0: every project read; 1: one could not be read or a registry line is bad, each named in the output; 2: it refused before reading, with the reason). The listing writes nothing; the answer subcommand is first used when you answer something with it.
+
+- **Interim:** the board is on main only; the dev cycle carries on as now.
+- **If the answer differs:** an unreadable project or a refusal becomes a fix item on the roadmap.
 
 
