@@ -88,9 +88,15 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   (`.git/worktrees` read-only), so main rolled the sandbox back (7caea26d; docs kept), and
   the owner installed the image from 80b7dabe without it. It comes back only when agents
   can create worktrees under it, beside the two gaps below; to restore it, revert 7caea26d.
-  The first step for all three is the research brief In flight
-  (`docs/working/briefs/2026-11-12-sandbox-return-research.md`). This item is finished
-  but for that return.
+  The first step for all three was the research brief
+  (`docs/working/briefs/closed/2026-11-12-sandbox-return-research.md`), done at d6b9206e
+  (`docs/working/research-2026-11-12-sandbox-return-research.md`). Findings: Claude Code
+  itself makes `.git/worktrees` read-only in the sandbox and `allowWrite` cannot lift it;
+  an `excludedCommands` entry never matches a call holding `cd`. Recommended return:
+  revert 7caea26d, then a root-owned `cc-worktree` helper outside the sandbox and a deny
+  on the whole `~/.claude` directory, in three units with one `cc-verify` run. Its three
+  questions (the helper, the nested-worktree residual, a credential fallback) are with the
+  owner in the cycle's final message; nothing is briefed until they answer.
 
 - **Agent: a sandboxed command can read the credential after a token refresh** (filed
   2026-11-11, from the Q-273 live check). Motive: `X4-cred-across-rename FAIL (read after
@@ -317,10 +323,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
-- **What the Bash sandbox needs before it comes back** (Q-277 [3]):
-  `docs/working/briefs/2026-11-12-sandbox-return-research.md`. One docs-only research
-  and divergent-design unit on the three requirements: worktree creation under the
-  sandbox, nested worktree paths, the credential after a refresh. Self-merge.
 - **Cross-project board v1, unit 2: the answer commit when main is not checked out**
   (owner request, 2026-11-12): `docs/working/briefs/2026-11-12-host-board-answer-commit.md`.
   `scripts/board.sh answer PROJECT Q-NNN TEXT` writes the answer as a commit on that repo's
@@ -640,6 +642,9 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- What the Bash sandbox needs before it comes back (Q-277 [3];
+  `docs/working/briefs/closed/2026-11-12-sandbox-return-research.md`). Merged d6b9206e,
+  self-merge.
 - Cross-project board v1, unit 1: the listing (owner request;
   `docs/working/briefs/closed/2026-11-12-host-board-listing.md`). Merged 763aa482,
   self-merge: `scripts/board.sh`, `test/scripts/board.bats`, `guides/cross-project-board.md`.
