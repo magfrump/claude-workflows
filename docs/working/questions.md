@@ -30,7 +30,6 @@ The index below is generated — edit entries, not the table.
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | Q-167: (b) and (d) answered 2026-11-07 (answers-11-7-26.txt), on bless 91c5f79dd91eb7ee, which --probe-only... | 2026-10-15 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Q-255: first half answered 2026-11-07 (answers-11-7-26.txt): all four fronted probes through plugins-artifa... | 2026-11-05 |
-| [Q-273](#q-273--image-lag) | you: terminal | Q-273: paste 1 did not run (owner, answers-11-11-26.txt). `cc-verify` refused with "an earlier run left /ho... | 2026-11-11 |
 <!-- index:end -->
 
 ## Open
@@ -46,6 +45,7 @@ You asked for Q-272 back with data. When the test-confinement script (`scripts/c
 
 - **How often `bwrap` is missing.** Not enough data yet. In this sandbox, and in the image sessions run today (536b7082), neither tool works: `bwrap` is not installed, and Docker's default seccomp refuses user namespaces, so `--probe` exits 3 here. The image after the release (Q-273, on hold for Q-277) installs `bwrap`. But in a session, that `bwrap` would run inside Claude Code's own sandbox, and nobody has tried that yet. Your host is not on record.
 - **How much friction a refusal would cause.** None so far. 7 build loops ran the script (2026-11-05 to 2026-11-11), plus their reviewers. Every run exited 3 because neither tool worked, so the `unshare` fallback has never run and its warning has never printed. A refusal would have stopped 0 more runs. On exit 3 a loop already runs `scripts/run-tests.sh` unconfined, plus the hermeticity lint (a static check for tests that could reach the network). That fallback is weaker than `unshare`: it loses the network denial.
+- **2026-11-12, one change to the first point.** The release that was to install `bwrap` did not ship it: main rolled the Bash sandbox back (7caea26d, your Q-277 answer [3]), and that revert also took `bwrap` out of the image. Sessions now run the image built from 80b7dabe, which has neither tool working, so the script still exits 3 here and nothing above has changed in practice.
 - **One gap.** Every full test run already calls the real `--probe` (`test/scripts/confine-tests.bats:228-245`), and nothing records which tool it found.
 
 - **Why it's yours:** it is an exception to a hard constraint, which only you grant.
@@ -62,63 +62,6 @@ The loop's tentative pick is [2], because it follows H2 as written with no excep
 - **Blocks:** nothing. The script has no caller that the fallback would change today.
 - **Interim:** [1], your Q-272 answer.
 - **If the answer differs:** [2] or [3] becomes a brief for one build loop; [1] becomes one line in `docs/constraints.md`, which you commit.
-
-### Q-273 · image-lag
-**Needs:** you: terminal · **Opened:** 2026-11-11 · **Status:** OPEN
-Q-273: paste 1 did not run (owner, answers-11-11-26.txt). `cc-verify` refused with "an earlier run left /home/magfrump/cc-verify/run-1793211495-572412.d; run: cc-verify --clean", and `cc-verify --clean` then exited 2 and printed nothing. Paste 2 was not run. Second try (owner, in session 2026-11-11): the leftover directory is gone and `cc-verify` started, then stopped at step 1 with "fatal: repository '.' does not exist" and "ERROR: could not clone ..", exit 1; its teardown was clean. Third try (owner, in session 2026-11-11), with full paths: the check ran to the end and failed. `VERDICT FAIL (3 not pass, 0 missing)`, `RESULT cc-verify fail tree=08bf2bc92519798b12322d123e65eab5ed2bea31 config=1887e71a2126a27b (check exit 1)`, `cc-verify exit 3`, teardown ok. The pasted tail shows two of the three: `C3-nested-settings-1 FAIL (could create /workspace/.claude/worktrees/q125-probe/.claude)` and `C3-nested-gitfile-1 FAIL (writable: /workspace/.claude/worktrees/q125-probe/.git)`; C4, the five C5 lines and both C6 lines passed. The third line (owner, in session, later the same day): `X4-cred-across-rename FAIL (read after a rename)`. All three lines that did not pass are now on record. Paste 2 was not run and is on hold for Q-277. Still open: paste 2.
-
-Run the two pastes below: first the live check of the Bash sandbox, then, if it passes, the install that puts today's merges on the host.
-
-**If you say no:** nothing breaks. Sessions keep running the image at `536b7082`: no Bash sandbox, and the dev cycle keeps its old identity check and release paste. The merges stay on main, waiting.
-
-**Release notes** (rewritten 2026-11-12 from the log). The installed image is the root-owned copy of the dev-cycle scripts and skill that every session runs. It is at C = `536b708294d1584be3c7455d78462716ce36edce` (read from `/opt/claude-workflows/.manifest`). Main is at M = `7b8b560acaaac6f57c473cbc032acb66b862aeb3`.
-
-**The one change most worth your look:** the Bash sandbox for cc-isolated sessions (`3cd6d9bb`). It changes `devcontainer-config/install.sh`, the Dockerfile and the launcher, and adds a seccomp profile and managed settings. Its live check (paste 1) ran on 2026-11-11 and failed on three lines, below; whether to install it anyway is Q-277.
-
-**Merged without your review** (subjects ending "build-loop self-merge"; no one reviewed them):
-
-- `23c0e0ae` Merge branch 'docs/cycle-token-cost' (build-loop self-merge): one research doc
-- `b3d3e8f4` Merge branch 'docs/constraint-drift-audit' (build-loop self-merge): one research doc
-- `6d4c1af6` Merge branch 'docs/confine-tests-fallback-data' (build-loop self-merge): one research doc, the data behind Q-278
-- `fd325a74` Merge branch 'docs/self-answer-measure' (build-loop self-merge): one research doc
-- `b0ebed19` Merge branch 'fix/confine-tests-dash-and-fallback' (build-loop self-merge): two fixes to `scripts/confine-tests.sh` (the test-confinement script)
-- `9d6d6101` Merge branch 'test/confine-tests-bats' (build-loop self-merge): the first tests for that script
-- `c70bb17a` Merge branch 'docs/cycle-overhead-numbers' (build-loop self-merge): one research doc
-
-The four docs-only ones change nothing the image carries.
-
-**What changes for you** (the four merges you approved):
-
-- The Bash tool in cc-isolated sessions runs inside a sandbox (`3cd6d9bb`, your Q-267 answer). If it blocks normal work, one revert and a reinstall undo it.
-- The dev cycle can run a light pass between full cycles: when only cycle lands moved main since today's full iteration, it skips the trigger, question, spot-check and audit steps (`a77bbc97`, your Q-279 answer to the Q-270 follow-up).
-- The dev cycle's identity check accepts an identity from the environment, its record says why a free build-loop slot stayed free, and it writes a release paste that runs from main's tip (`1f14e270`, your Q-271 answer).
-- `scripts/canon-instance.py` and two new canon instances (`1d9d01b4`, your Q-268 answer). The image does not use them.
-
-**The rest:** 17 cycle lands and 8 hand commits to the questions file (recorded answers), records only. The full list: `git -c log.showSignature=false log --first-parent --format='%h %s' 536b708294d1584be3c7455d78462716ce36edce..7b8b560acaaac6f57c473cbc032acb66b862aeb3`
-
-**Gate files changed:** `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`.
-
-**Paths outside `docs/`** (68 paths under `docs/` also changed; the image carries none of them): `devcontainer-config/Dockerfile`, `devcontainer-config/cc-isolated.sh`, `devcontainer-config/cc-sandbox-settings.sh`, `devcontainer-config/devcontainer.json`, `devcontainer-config/install.sh`, `devcontainer-config/managed-settings.json`, `devcontainer-config/seccomp-cc-sandbox.json`, `guides/devcontainer-setup.md`, `guides/test-hermeticity.md`, `hooks/live-verify-gate.sh`, `scripts/canon-instance.py`, `scripts/confine-tests.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`, `test/cc-isolated-functions.bats`, `test/cc-sandbox-settings.bats`, `test/install-host.bats`, `test/scripts/build-loop-orchestrator.bats`, `test/scripts/canon-instance.bats`, `test/scripts/confine-tests.bats`, `test/seccomp-cc-sandbox.bats`
-
-**2026-11-11, why paste 1 failed.** `cc-verify` did not make the directory it named. The trial script you ran on 2026-10-28 (`q117-spike.txt`, the prototype `cc-verify` was built from) made it. That run was refused at its first step, the merge check, before it built or started anything, so no container, volume or image belongs to it. Its cleanup removed the run's `record` file and left the directory (the `ls` in paste 1 shows whether anything else is in it). `cc-verify` counts any `run-*` name in `~/cc-verify` as an unfinished run and refuses to start. Its `--clean` then fails on a directory that holds no `record` file: it exits 2 and prints nothing. That is a bug in `--clean`. I reproduced it here with stand-ins for docker, and a one-line change makes `--clean` remove such a directory. The fix is a roadmap item, and this release does not need it: you removed the directory by hand before the second try.
-
-**2026-11-11, why the second try failed.** `cc-verify` changes into its own run directory before it clones the repository, so `.` named that empty directory, not your checkout. A full path works: I reproduced both here with stand-ins for docker. The mistake was in the paste, which this entry and the check file's own header both wrote with `.`; `cc-verify` should also resolve the path itself, and that is on the same roadmap item. In my last message I said the `. main` form had run here. It had not: the test I ran passed a full path. The failed try left nothing behind (its teardown reported ok), so nothing needs removing now.
-
-**2026-11-11, the check ran and failed: what it found.** The third try built main's tip (f0a55b8a) in a throwaway container and ran the check file to the end. The parts of the sandbox in the pasted tail work on your host: the git-driver check (C4), the network checks (C5: listed hosts answer, an unlisted one is refused) and the two builds (C6) all passed. Two lines failed, and both are the same gap. Inside a nested worktree (`/workspace/.claude/worktrees/<name>/`, where agents' isolated worktrees live), a sandboxed command could create `.claude/` (so it could write a `settings.json` there) and could write the worktree's `.git` pointer file. The sandbox's deny list names those files only at `/workspace` itself. The plan had marked nested worktrees "Unknown" and left it to this run (`docs/working/plan-q125-cc-isolated-sandbox.md`, the table row on project files that execute later); the run says they are not covered. Why it matters: a settings file or a `.git` pointer planted there could run code outside the sandbox later, if Claude Code or git reads it from that worktree. I have not checked whether a subagent working in a worktree loads that settings file. The fix needs a design pass and is a roadmap item.
-
-**The third failed line: the credential can be read after it is replaced.** `X4-cred-across-rename FAIL (read after a rename)`. The sandbox hides the login credential file from sandboxed commands by covering it when a command starts. The check replaced the file by rename every half second while one sandboxed command kept reading it, as a token refresh or `/login` replaces it, and that command read the new file's content. So a command that is still running when the token refreshes can read the new token. The plan had this as its other "unknown" for the live run (same table, the row on a credential replaced by rename). What still holds, by inference from the count: the verdict has 3 lines that did not pass and none missing, and all three are now named, so every other required line passed. That includes the four ways of reading the credential before any rename, and the first credential read of the second command, which started after the renames. A new command is covered again; the hole is inside one command that outlives a refresh. A command that waits in the background for the next refresh would fit through it. Nothing more is needed from paste 1.
-
-**Paste 2 is on hold.** This entry said a FAIL means stop. Whether to install anyway, with the gap written down, is yours to decide and is Q-277 (install the sandbox with the nested-worktree gap, or hold the release). Do not run the block below until that is answered.
-
-**Paste 2, the install** (same terminal; stop every session first):
-
-```
-cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = 7b8b560acaaac6f57c473cbc032acb66b862aeb3 && ./devcontainer-config/install.sh
-```
-
-The `rev-parse` check runs no hook. It only confirms your checkout is at `7b8b560a`, main as this entry was written. Each cycle land moves main past it, so check out `7b8b560a` first (the next cycle rewrites this entry when a later merge changes what the release ships). That checkout, like any other git command on the host, can run a hook a sandbox session planted, which is `install.sh`'s own trust model. If the install re-blesses, it also prints the hint that Q-167 (the post-install probes) still needs for its step (a).
-
-- **Interim:** the image at `536b7082` runs; paste 2 waits for Q-277.
 
 ### Q-255 · herald-egress-fix-unconfirmed
 **Needs:** you: terminal · **Opened:** 2026-11-05 · **Status:** OPEN

@@ -84,6 +84,13 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   the verdict's count; the lines themselves are not on record. So the sandbox has now
   run, the commits stay `Live-verified: no`, and the install waits for the owner's
   answer to Q-277 (install with the two gaps written down, or hold).
+  2026-11-12: Q-277 answered [3]. Under the sandbox a `git worktree add` fails
+  (`.git/worktrees` read-only), so main rolled the sandbox back (7caea26d; docs kept), and
+  the owner installed the image from 80b7dabe without it. It comes back only when agents
+  can create worktrees under it, beside the two gaps below; to restore it, revert 7caea26d.
+  The first step for all three is the research brief In flight
+  (`docs/working/briefs/2026-11-12-sandbox-return-research.md`). This item is finished
+  but for that return.
 
 - **Agent: a sandboxed command can read the credential after a token refresh** (filed
   2026-11-11, from the Q-273 live check). Motive: `X4-cred-across-rename FAIL (read after
@@ -109,6 +116,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   accepted residual beside decision log 53. Until this is fixed, watch Q-098's trigger
   (the sandbox denies reads of the credential) is not met. Enforcement files: a
   pre-mortem, a `Live-verified:` trailer, and the same `cc-verify` check re-run.
+  2026-11-12: the sandbox is rolled back (7caea26d); this gap is now one of three
+  requirements for its return, researched together in the brief In flight.
 
 - **Agent: the sandbox leaves nested worktree paths writable** (filed 2026-11-11, from
   the Q-273 live check). Motive: the plan's own acceptance step
@@ -132,6 +141,21 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   pre-mortem, a `Live-verified:` trailer, and the same `cc-verify` check re-run. The
   third failed line is a separate gap (the item above, the credential after a refresh),
   so the two can be designed apart and checked in one live run.
+  2026-11-12: the sandbox is rolled back (7caea26d); this gap is now one of three
+  requirements for its return, researched together in the brief In flight.
+
+- **Agent: a release installed from a commit its entry did not describe** (filed
+  2026-11-12, step 2). Motive: decision-log row 86's revisit trigger ("if an image's
+  `commit=` names gate code other than its entry's M") fired. The image is at 80b7dabe,
+  while release entry Q-273 named M = 7b8b560a; between them 30eb0229 changed
+  `skills/dev-cycle/SKILL.md` (gate code; one sentence of step 7, owner-requested in
+  session) and 7caea26d rolled back the sandbox (Q-277 [3]). Both were the owner's own
+  asks, so nothing unreviewed shipped, but the install ran outside the entry's paste,
+  which only a later cycle could have rewritten. First step: read the two commits'
+  sessions' records and `devcontainer-config/install.sh`, and say whether the release
+  path needs a change (for example install.sh printing the gate-code diff from the last
+  release entry's M) or the case is an owner-directed install the design already allows.
+  Only a proposed change becomes an owner entry.
 
 - **Agent: scoped deep audit, constraint drift** (filed 2026-11-05, step 4b). Motive: the
   drift check on 605d4c18 found its script-home decision resting on a soft constraint (S4
@@ -263,6 +287,10 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
+- **What the Bash sandbox needs before it comes back** (Q-277 [3]):
+  `docs/working/briefs/2026-11-12-sandbox-return-research.md`. One docs-only research
+  and divergent-design unit on the three requirements: worktree creation under the
+  sandbox, nested worktree paths, the credential after a refresh. Self-merge.
 
 ## Next
 
@@ -275,6 +303,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
    sandbox `denyWrite` (owner, 2026-11-03).
    2026-11-11: the branch is merged (3cd6d9bb, Q-267 [1]); the live run is now the first
    block of the release entry Q-273, run against main.
+   2026-11-12: the sandbox is rolled back (7caea26d, Q-277 [3]); its return is researched
+   in the brief In flight, and a new live run follows that design, not this one.
 2. **A8 post-restructure token measurement.** Motive: the user deferred big compute until
    code and prompts settle; it validates code-review lever #3 (rubric row A8 in
    `docs/reviews/code-review-rubric-2026-08-07-main.md`). First step: confirm
@@ -293,6 +323,19 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## Ideas
 
+- **A sandboxed worktree line in the live check** (brainstorm 2026-11-12). Signal: the
+  sandbox's live check passed every line but three, yet the sandbox broke worktree creation,
+  which no line tested (7caea26d). It would add a sandboxed `git worktree add` and
+  remove to `docs/working/q125-verify-check.sh`; the research brief proposes the lines.
+- **cc-isolated's manual worktree fallback as the default** (brainstorm 2026-11-12).
+  Signal: herald F-009 and 7caea26d both saw Agent `isolation: "worktree"` refused in the
+  container. It would change `workflows/parallel-worktrees.md` to start with the
+  by-hand `git worktree add` there, once the research says whether the refusal is the
+  sandbox's or the container's.
+- **Triage the herald friction list as one unit** (brainstorm 2026-11-12). Signal: 12
+  seeds from one ingest (F-001 to F-012, `docs/working/feedback/belegarth-herald.md`),
+  several about hooks and permission prompts this repo ships. It would group them by
+  cause and file the few with a fix in this repo; do nothing until a slot is free.
 - **Brief the sandbox gaps' research now.** Signal: three build-loop slots idle for three
   iterations (2026-11-12) while both sandbox-gap Now items start with a research and
   divergent-design pass that either answer to Q-277 (install the sandbox with its two gaps
