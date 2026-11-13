@@ -78,3 +78,16 @@ Failure-pattern skip: no fix(...) commits; this is a wording change to a procedu
 All round-1 fixes confirmed; no new red. Two minor ambers fixed: the host-step example
 also names `Host-tool-tested: no` (the same gate's host-tool trailer), and step 7's new
 line is rewrapped. Clean.
+
+## Full suite
+
+`scripts/run-tests.sh` (at 861113d4): 2061 ok, 3 not ok, all in
+`test/scripts/convention-migrations.bats`: the record template is a fingerprinted
+convention, and changing its `8.` placeholder needs a registry line in
+`scripts/lib/migrations.sh`, which the brief puts out of scope. So the template line is
+back to its old text; step 8's prose alone says what the under-slots clause names (each
+held item and its hold), which is where an orchestrator reads it. After that revert,
+`test/scripts/convention-migrations.bats` and `test/scripts/build-loop-orchestrator.bats`
+pass (65 ok); the rest of the suite was green and nothing else changed.
+For the cycle: if the template placeholder should say it too, that is a small follow-up
+with a `mig ID record FINGERPRINT - - 'none: WHY'` line (guides/convention-changes.md).

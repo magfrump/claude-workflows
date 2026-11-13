@@ -832,7 +832,7 @@ Model: <the model id running this cycle>
 5. brainstorm: <ran: trigger / not due>
 6. roadmap: <done>
 7. collect: <per brief: STEM LOOP TIP, and what was done>
-8. briefs: <written this iteration, or none>; queue <k>/<slots> (<full: no new briefs / under: why each free slot stayed free, each held item and its hold>)
+8. briefs: <written this iteration, or none>; queue <k>/<slots> (<full: no new briefs / under: why each free slot stayed free>)
 9. land: <NEW, written with the 10. line before step 10's land>
 10. dispatch: <per brief: STEM dispatched N, or why not>
 ### Skipped inputs

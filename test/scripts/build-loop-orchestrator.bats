@@ -622,7 +622,7 @@ shim() {
     done
     # One clause, in the step that leaves the slot free and on the line that records it.
     [[ "$(sect '### 8. Build briefs')" == *"is explained on the record's ${q}8.$q line, in one plain clause: why each free slot stayed free"* ]] || { echo "step 8 is silent"; return 1; }
-    grep -qxF '8. briefs: <written this iteration, or none>; queue <k>/<slots> (<full: no new briefs / under: why each free slot stayed free, each held item and its hold>)' "$K" || { echo "the record template's 8. line does not ask for the reason"; return 1; }
+    grep -qxF '8. briefs: <written this iteration, or none>; queue <k>/<slots> (<full: no new briefs / under: why each free slot stayed free>)' "$K" || { echo "the record template's 8. line does not ask for the reason"; return 1; }
 }
 
 @test "SKILL.md step 8 pulls a ready Next item into free slots, expires a ride-along hold after two cycle records, splits a host step out, holds nothing on an unfiled call and names each hold on line 8 (brief 2026-11-13-dev-cycle-unblock-ready-work)" {
