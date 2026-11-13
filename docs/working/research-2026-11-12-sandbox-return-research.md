@@ -52,10 +52,11 @@ The results are in Q-273's archived entry (`docs/working/questions-archive.md`, 
 | F1.3 | An `allowWrite` entry cannot lift a protected path; writes to `.git/hooks` and `.git/config` stay denied whatever `allowWrite` says. When the session's working directory is a linked worktree, the main repository's shared `.git` is writable except `hooks/` and `config`. | [docs] code.claude.com sandboxing and settings-reference pages via search; issues #61596, #97839 |
 | F1.4 | `git worktree add` writes `.git/worktrees/<name>/{HEAD,ORIG_HEAD,commondir,gitdir,index,logs/HEAD}`, plus `refs/heads/<branch>` and its reflog, plus the new tree and its `.git` pointer file (`gitdir: <common>/.git/worktrees/<name>`). It writes there **wherever the tree lives**: a worktree added at a path outside the repository wrote `.git/worktrees/o/` just the same. It never wrote `.git/config`. `lock` adds `.git/worktrees/<name>/locked`; `remove` and `prune` delete the admin dir. | [observed] git 2.39.5, scratch repo in the scratchpad |
 | F1.5 | **A commit inside a linked worktree also writes there**: `git add` and `git commit` in the worktree changed `.git/worktrees/w1/{index,COMMIT_EDITMSG,logs/HEAD}`. So `.git/worktrees` being read-only can break all git work in a worktree, not only its creation. Unless Claude Code's per-session exception (F1.1, "apart from this session's own worktrees") covers worktrees the harness made, a build loop could not commit in its worktree. Nobody has observed this either way: the live check never committed in a worktree. | [observed] for git's writes; [inferred] for the sandbox outcome |
-| F1.6 | The harness's worktree operations: `skills/dev-cycle/SKILL.md` l.315 (`git -C MAIN_WT worktree add` for WT), l.377 (HC), l.656 (GT), l.322/384 (remove), l.408 (`list`, `prune`); `scripts/build-loop.sh` l.1778 (`lock`/`unlock`), l.1786 (`add --lock`), l.1826 (`remove`, `--free-worktrees`); `scripts/lib/si-functions.sh` l.140-145; `scripts/self-improvement.sh` l.159; `workflows/parallel-worktrees.md` l.39-43 (the by-hand fallback, in any repository). | [observed] |
-| F1.7 | Every gate call runs as one top-level line, `cd WT && bash /opt/claude-workflows/scripts/d6.sh SCRIPT ARG...` (`skills/dev-cycle/SKILL.md` l.37-40), from root-owned image code. `build-loop.sh` sources only its own image libraries and reads branch content through git objects; it runs no branch script or test (grep for `bats`, `source`, `health-check`: only `$READ_LIB` and `$SCRIPT_DIR/lib/migrations.sh`). | [observed] |
-| F1.8 | Under managed `allowUnsandboxedCommands: false`, `dangerouslyDisableSandbox` is ignored, but commands in `excludedCommands` still run outside the sandbox. The plan's bypass table (l.91) already treats user-tier `excludedCommands` as honoured under the managed file. The match syntax (prefix or glob) is not documented in anything found. | [docs] sandboxing page; makandracards example; [observed] plan l.91 |
-| F1.9 | Exclusion is decided on the Bash tool's command line. A script's own children inherit the sandbox, so `build-loop.sh`'s internal `git worktree add` stays sandboxed unless the `build-loop.sh` line itself is excluded. | [inferred] (bwrap wraps the whole process tree) |
+| F1.6 | The harness's worktree operations: `skills/dev-cycle/SKILL.md` l.315 (`git -C MAIN_WT worktree add` for WT), l.377 (HC), l.656 (GT), l.322/384 (remove), l.408 (`list`, `prune`); `scripts/build-loop.sh` l.1778 and l.1824/1828 (`lock`/`unlock`), l.1786 (`add --lock`), l.1826 (`remove`, `--free-worktrees`); `scripts/lib/si-functions.sh` l.140-145; `scripts/self-improvement.sh` l.104, l.111 (trap `remove`/`prune`) and l.159 (`add`); `workflows/parallel-worktrees.md` l.39-43 (the by-hand fallback, in any repository). The skill always uses the `git -C MAIN_WT worktree …` form, never a bare `git worktree`. | [observed] |
+| F1.7 | Every gate call runs as one top-level line, `cd WT && bash /opt/claude-workflows/scripts/d6.sh SCRIPT ARG...` (`skills/dev-cycle/SKILL.md` l.37-40), from root-owned image code. `build-loop.sh` sources only its own image libraries and runs no branch script or test (grep for `bats`, `source`, `health-check`: only `$READ_LIB` and `$SCRIPT_DIR/lib/migrations.sh`). It does run git from its working directory: `ROOT="$(git rev-parse --show-toplevel)"` (l.832) and `git -C "$w" status`/`merge` in worktrees (l.1650-1685). `d6.sh`'s header says it "still trusts" the checkout's `.git` entry. | [observed] |
+| F1.8 | Claude Code's own schema text for `excludedCommands`: "Command patterns (Bash permission-rule syntax) … An entry takes a call out of the sandbox only when every command in the call matches an entry: in a Bash pipe or a chain such as `a && b`, each part needs its own match. Some calls stay sandboxed whatever the entries, such as one with a `cd`, a command substitution, or a redirect other than a file-descriptor duplication … A convenience, not a security boundary: excluded commands still go through the permission flow. Merged across settings sources." Under managed `allowUnsandboxedCommands: false`, `dangerouslyDisableSandbox` is ignored, but excluded commands still run outside the sandbox. | [observed, binary]; [docs] sandboxing page |
+| F1.9 | So the d6 gate line, which starts with `cd WT &&`, **can never be excluded**. A script's own children inherit the sandbox, so `build-loop.sh`'s internal `git worktree add`, `lock`, `unlock` and `remove`, and `self-improvement.sh`'s, stay sandboxed whatever the entries say. | [observed] F1.8 for the `cd` rule; [inferred] for children (bwrap wraps the whole process tree) |
+| F1.9b | An excluded `git -C <dir> worktree add` runs the hooks and config of whatever repository `<dir>` names. A sandboxed command can make a repository in `/tmp` with a `post-checkout` hook and then call the excluded form on it. That is a way out of the sandbox, though a deliberate one, not an honest slip. | [inferred] git behaviour; F1.8 "not a security boundary" |
 | F1.10 | A planted `.git` pointer does not fool `git worktree remove`: with the pointer rewritten to a gitdir whose config sets `core.fsmonitor`, `remove` refused ("does not point back to '.git/worktrees/w2'") and the monitor never ran. | [observed] git 2.39.5, scratch repo |
 
 ### Divergent design
@@ -67,15 +68,15 @@ The results are in Q-273's archived entry (`docs/working/questions-archive.md`, 
 | **1A** `allowWrite` on `/workspace/.git/worktrees` | One managed line | **Eliminated.** `allowWrite` cannot lift a protected path (F1.3), and the deny is flag-controlled (F1.2), so the line could be present but inert (H2). Even if it worked, it would make `commondir` and `gitdir` sandbox-writable. Those files redirect a later unsandboxed git to any config, which is requirement 2's FP-047 family, widened. |
 | **1B** agent worktrees outside `.git`'s parent | Move `wt-*` elsewhere | **Eliminated.** git writes the admin dir in the common `.git` wherever the tree lives (F1.4, observed). |
 | **1B′** separate clones instead of worktrees | An unsandboxed helper makes `git clone --shared` copies; landing fetches back, as cc-push does | Viable. Commits stay sandboxed in the clone's own `.git` (assuming only nested `hooks`/`config` are denied there: [inferred]). Cost: it rewrites dispatch, status, free and land in `build-loop.sh` and the dev-cycle skill, so several units, against S8 and the brief's one-unit goal. A clone's `.git/config` sits inside a sandbox-writable tree, so requirement 2 gets wider. |
-| **1C** worktree operations outside the sandbox, through Claude Code's own `excludedCommands` | Two managed entries: `git worktree` (any repository, the by-hand fallback) and the d6 gate line for `build-loop.sh` | **Tentative pick.** Uses Claude Code's mechanism (S3). It is a few managed lines that one revert undoes (S8) and needs no host step (S10). The unsandboxed parts are root-owned gate code (H1, F1.7) and `git worktree` itself. `remove` refuses a redirected pointer (F1.10), and `add`, `lock` and `prune` read only the main repo's admin dir [inferred], so the excluded commands do not consume the files requirement 2 leaves writable. |
-| **1C′** as 1C, through a root-owned `cc-worktree` helper that confines paths to `.claude/wt-*` and `.claude/worktrees/*` | One excluded helper instead of raw `git worktree` | Viable, ranked below 1C. It confines an unsandboxed checkout's target path, but S1 weighs that against what is already allowed: the Edit and Write tools are not sandboxed and can already write those paths. It adds new boundary code (about 60-80 lines) and a second path for one job (S3). |
+| **1C** raw git forms in `excludedCommands` (`git worktree *`, `git -C * worktree *`), plus the d6 gate line | Managed entries only | **Eliminated as first drafted.** The gate line starts with `cd`, so it can never be excluded (F1.8, F1.9). The raw git entries are a way out of the sandbox through `-C` and a planted repository (F1.9b). An excluded gate would also act on WT's sandbox-writable `.git` entry (F1.7), the very coupling requirement 2 must avoid. |
+| **1C′** one root-owned helper, `cc-worktree add\|remove\|lock\|unlock\|prune`, named in managed `excludedCommands` and called as its own top-level Bash call | The helper pins the repository to the session's main checkout. It confines targets to `.claude/wt-*` and `.claude/worktrees/*` with no symlinked part, runs git with `-c core.hooksPath=/dev/null -c core.fsmonitor=false` from the main checkout only, and refuses loudly otherwise (H2). The skill's worktree steps call it. `build-loop.sh --dispatch` and `--free-worktrees` stop mutating worktrees themselves; they print the `cc-worktree` call for the session to run, then check its result. `self-improvement.sh` does the same or refuses under the sandbox. The gate itself stays sandboxed. | **Tentative pick.** It closes F1.9b (no `-C`, no chosen repository) and keeps the gate sandboxed, so nothing unsandboxed acts on a worktree's `.git` entry. The excluded part reads only the main repo's admin dir, which stays read-only to the sandbox (F1.1); `remove` refuses a redirected pointer (F1.10). Cost: about 60-80 lines of root-owned helper (S8 fine) and gate-code changes in dispatch and free. It is one helper for one job (S3). |
 | **1C″** the harness route: Agent `isolation: "worktree"` / `EnterWorktree`, optionally a `WorktreeCreate` hook | Claude Code makes the worktrees, so the "session's own" exception covers them | **Not viable now.** Isolation is refused in this container with no sandbox installed (see F-009 below), and whether the exception reaches a subagent is unknown. Revisit once F-009 is understood. |
 | **1D** `allowUnsandboxedCommands: true` plus allow rules for git | The model opts out per call | **Eliminated.** It reopens the model-chosen escape for every command an allow rule matches, which removes the premise watch Q-098 (the global allowlist) waits on. |
 
-**Path C (tentative pick: 1C; tiebreaker: S8 and S3).** 1C and 1B′ both survive the hard lines. 1C is a few managed lines with residual "`git worktree` and the gate run outside the sandbox". 1B′ keeps everything sandboxed but is a multi-unit rewrite of gate code. Two facts can still change the pick (U1, U2 under "Thin facts"):
+**Path C (tentative pick: 1C′; tiebreaker: S8, one helper versus a multi-unit rewrite).** 1C′ and 1B′ both survive the hard lines. 1C′ leaves the residual "worktree administration runs outside the sandbox, through one root-owned helper". 1B′ keeps everything sandboxed but rewrites dispatch and landing in gate code. Two facts can still change the pick (U1, U2 under "Thin facts"):
 
-- If a sandboxed commit inside a harness-made worktree is refused (U1), 1C must also exclude git's write subcommands in worktrees. That is a much wider residual, and then 1B′ is probably the better design.
-- If `excludedCommands` does not match these command lines (U2), 1C′'s single helper name is the fallback.
+- If a sandboxed commit inside a harness-made worktree is refused (U1), the helper would also have to do git's writes inside worktrees. That is a much wider residual, and then 1B′ is probably the better design.
+- If the entry does not match a bare `cc-worktree …` call (U2), the design needs another way out.
 
 The residual is the owner's call (question 1 below).
 
@@ -86,10 +87,10 @@ The residual is the owner's call (question 1 below).
 | # | Fact | Source |
 |---|---|---|
 | F2.1 | Under `/workspace/.claude/worktrees/q125-probe/`, a sandboxed command could create `.claude/` and append to the `.git` pointer file. | [observed] Q-273 live run |
-| F2.2 | On Linux, write rules that contain a glob are dropped (`[Sandbox] Skipping glob write pattern on Linux: …`) unless the pattern has a literal form. Read-deny globs are expanded to the paths that exist when the command starts. Claude Code's own doctor text: "On Linux, glob patterns in Edit/Read rules will be ignored". So a pattern `denyWrite` cannot name every nested worktree, and it cannot stop the **creation** of a `.claude/` that does not exist yet. | [observed, binary]; [docs] issues #92684, #74081 |
+| F2.2 | On Linux, write rules that contain a glob are dropped (`[Sandbox] Skipping glob write pattern on Linux: …`) unless the pattern has a literal form. Claude Code's own doctor text: "On Linux, glob patterns in Edit/Read rules will be ignored". So a pattern `denyWrite` cannot name every nested worktree, and it cannot stop the **creation** of a `.claude/` that does not exist yet. Read globs are expanded to paths that exist (the binary logs this for allowRead; issue #74081 reports it for read denies). | [observed, binary] for writes; [docs] issues #92684, #74081 for reads |
 | F2.3 | The harness's worktrees live at `/workspace/.claude/wt-*` (dev-cycle WT/HC/GT, build-loop's default `--dir`, the by-hand fallback) **and** at `/workspace/.claude/worktrees/*` (Claude Code's own location). The live check's C3 loop walks only `.claude/worktrees/*/` (`live-check-q125.sh` l.100), so it never tested the `wt-*` worktrees this harness actually uses. | [observed] |
 | F2.4 | The managed file is rendered at image build and is root-owned, so its literal list cannot name a worktree made at run time. | [observed] 7caea26d^ managed-settings.json l.2-7 |
-| F2.5 | Claude Code's built-in write protections (`.git/hooks`, `.git/config`, shell rc files, `.mcp.json`, `.vscode`/`.idea`, `.claude/commands`, `.claude/agents`) are applied at the project root. A nested `.claude/settings.json` was writable in the live run. | [observed, binary]; F2.1 |
+| F2.5 | Claude Code's built-in write protections (`.git/hooks`, `.git/config`, shell rc files, `.mcp.json`, `.vscode`/`.idea`, `.claude/commands`, `.claude/agents`) are placed "in the working directory and the folders above it" (the binary's placeholder text). A worktree below the session's working directory is not covered; a nested `.claude/settings.json` was writable in the live run. | [observed, binary]; F2.1 |
 | F2.6 | Claude's Edit and Write tools are not sandboxed. This repo's permission denies cover `~/.claude` files only (`hooks/wiring.json`: `Edit(/{{CLAUDE_DIR}}/settings*.json)` and the like). The repo's shell guard even tells agents to use Edit/Write for "a project's or worktree's own .claude/ files" (seen in this session's hook refusal). So an agent can already write a worktree's `.claude/settings.json` or `.git` file without Bash. | [observed] |
 | F2.7 | What reads those files later: (a) the `.git` pointer is followed by any git run with that worktree as its working directory, so a pointer to a planted gitdir runs that gitdir's `core.fsmonitor`, filters or hooks for whoever runs git there; (b) `.claude/settings*.json` is loaded by a Claude Code session or `claude -p` whose project is that worktree (`self-improvement.sh` runs task work in its worktrees), and its hooks, `statusLine` and `env` run outside any sandbox. `git worktree remove` is not fooled (F1.10). | [inferred] (a, b); [observed] F1.10 |
 | F2.8 | The host-side exit scan (`devcontainer-config/cc-exit-scan.sh`, header l.49-99) already walks every linked worktree's `.git` entry and its git dir on session exit, as a tripwire for the host. | [observed] |
@@ -102,7 +103,7 @@ The residual is the owner's call (question 1 below).
 | Candidate | Verdict |
 |---|---|
 | **2A** pattern deny (`/workspace/.claude/*/.git`, `…/*/.claude`) | **Eliminated** on Linux: write globs are skipped (F2.2). The rule would be present but inert (H2). |
-| **2B** worktrees at fixed, literal slot paths (`/workspace/.claude/wt/slot-1..N`) named in the managed list | Viable but costly. It renames every worktree path the gate parses (F1.6), against S8. Literal denies of missing paths leave 0-byte placeholder files that block `git worktree add` into the slot ([docs] issues #54232, #81602; [observed, binary] text "A 0-byte one belongs to the sandbox"). It is still bypassed by Edit/Write (F2.6), so S1 says do not add it. |
+| **2B** worktrees at fixed, literal slot paths (`/workspace/.claude/wt/slot-1..N`) named in the managed list | Viable but costly. It renames every worktree path the gate parses (F1.6), against S8. Literal denies of missing paths reportedly leave 0-byte placeholder files that would block `git worktree add` into the slot ([docs] issues #54232, #81602; the binary's text "A 0-byte one belongs to the sandbox" describes Claude Code's own placeholders). It is still bypassed by Edit/Write (F2.6), so S1 says do not add it. |
 | **2C** accepted residual, with the exit scan as the `.git`-side check | **Tentative pick.** No new mechanism. The `.git` side is already tripwired for the host (F2.8), and 1C's unsandboxed commands do not follow a planted pointer (F1.10). The `.claude/` side is a residual equal to what Edit/Write allow today. The live check's C3-nested lines become INFO lines that record the residual, and the walk extends to `.claude/wt-*`. |
 | **2D** neutralise instead of deny: managed `allowManagedHooksOnly` and its siblings | Partial (F2.9). It also means moving the harness's own hooks from `hooks/wiring.json` into the managed file, a large change for a partial cover. Noted for a later unit, not this return. |
 | **2E** root-owned pins: a sudo helper makes each new worktree's `.git` and `.claude/` root-owned | Viable, but it adds a sudo rule and a root helper (a new trust regime, S3). It breaks repositories that track `.claude/` files. A sandboxed rename of the worktree's parent directory gets around it anyway. |
@@ -111,7 +112,11 @@ The residual is the owner's call (question 1 below).
 
 ### How 1 and 2 fit
 
-1C takes worktree administration, and only that, out of the sandbox. 2C leaves the worktree's contents sandbox-writable, as work needs. The two meet at one point: the unsandboxed side must never act on a file the sandboxed side can write. That holds for `git worktree remove` (F1.10). For `add`, `lock`, `unlock` and `prune` it is [inferred] from where they read (the main repo's admin dir, which stays read-only to the sandbox, F1.1). The gate's own git calls run from the main checkout or with `GIT_DIR` set (F1.7). If U1 shows that commits in a worktree need `.git/worktrees/<name>/` writable, the fit breaks: those admin dirs hold `commondir` and `gitdir`, which redirect git. That is why the proposed live lines include a must-stay-refused write to them.
+1C′ takes worktree administration, and only that, out of the sandbox. 2C leaves the worktree's contents sandbox-writable, as work needs. The two meet at one point: **the unsandboxed side must never act on a file the sandboxed side can write**.
+
+- The helper runs git only from the main checkout and never with a worktree as its working directory. `remove` refuses a redirected pointer (F1.10). That `add`, `lock`, `unlock` and `prune` read only the main repo's admin dir, which stays read-only to the sandbox (F1.1), is [inferred].
+- The gate stays sandboxed for this reason too. It runs git with cwd WT and trusts WT's `.git` entry (F1.7), so excluding it would hand a sandbox-writable pointer to unsandboxed code.
+- If U1 shows that commits in a worktree need `.git/worktrees/<name>/` writable, the fit breaks: those admin dirs hold `commondir` and `gitdir`, which redirect git. That is why the proposed live lines include a must-stay-refused write to them.
 
 ## Requirement 3: the credential after a refresh
 
@@ -127,6 +132,7 @@ The residual is the owner's call (question 1 below).
 | F3.6 | The credential sits in `~/.claude` with `shell-snapshots/`, `session-env/`, `.claude.json`, `ssh/`, `projects/` and symlinks to `/opt/claude-workflows/{scripts,skills,guides,hooks}`. Sandboxed Bash likely sources a file from `shell-snapshots/`, and the global instructions call `~/.claude/scripts/*.sh`. | [observed] `ls -la ~/.claude`; [inferred] that the snapshot is sourced inside the sandbox |
 | F3.7 | `sandbox.credentials.files` (`deny` or `mask`, a file or a directory) and `sandbox.credentials.envVars` exist; a read-deny inside an allowed area (`allowRead`/`allowWithinDeny`) exists. How `credentials.files` handles a rename is not stated. | [observed, binary]; [docs] issue #70440 (setting added in 2.1.187) |
 | F3.8 | A sandboxed Bash call may run up to 600000 ms in the foreground. A background command keeps running across turns with no stated cap. | [observed] this session's Bash tool schema |
+| F3.9 | The sandbox has a `filesystemPolicy` setting (`strict`, `relaxed`, `relaxedIfForced`; default `strict`). Under `relaxed`, the `.git/worktrees` deny is not applied, and the binary says "the relaxed filesystem policy drops every denyRead at wrap time" (`credentials.files` mask entries are said to be unaffected). The Q-125 managed file never pinned this key, against its own rule (l.8-10) that every switch a lower tier could flip toward weaker is stated. | [observed, binary] |
 
 ### Divergent design
 
@@ -134,7 +140,7 @@ The residual is the owner's call (question 1 below).
 
 | Candidate | Verdict |
 |---|---|
-| **3A** directory deny: managed `denyRead: ["~/.claude"]` plus `allowRead` back-entries for what sandboxed Bash needs (`shell-snapshots`, `session-env`, the `/opt` symlinks or their targets) | **Tentative pick.** Uses Claude Code's own mechanism (S3). It is one or two managed lines (S8) with no host chore (S10). It also hides `~/.claude/ssh` and `.claude.json` from sandboxed commands. If a needed path is missed, every sandboxed command fails, visibly (H2's loud side). The existing X4 line tests it unchanged. Open: U4, U5. |
+| **3A** directory deny: managed `denyRead: ["~/.claude"]` plus `allowRead` back-entries for what sandboxed Bash needs (`shell-snapshots`, `session-env`, the `/opt` symlinks or their targets), with managed `filesystemPolicy: "strict"` pinned so the deny cannot be dropped (F3.9) | **Tentative pick.** Uses Claude Code's own mechanism (S3). It is one or two managed lines (S8) with no host chore (S10). It also hides `~/.claude/ssh` and `.claude.json` from sandboxed commands. If a needed path is missed, every sandboxed command fails, visibly (H2's loud side). The existing X4 line tests it unchanged. Open: U4, U5. |
 | **3A′** credential alone in its own directory (symlink) | **Eliminated**: the writer refuses or replaces symlinks (F3.4). |
 | **3B** keep the credential out of the container's files: `CLAUDE_CODE_OAUTH_TOKEN` from a long-lived token, stripped from sandboxed commands by `sandbox.credentials.envVars` | Viable but against S10. A yearly host chore mints and supplies the token, a new host secret is a new trust decision, and headless subscription runs depend on the file today (`claude_headless_flags`). Fallback only. |
 | **3C** accepted residual beside decision-log row 53 | Viable. Under S1, waiting through a refresh is a deliberate act, not an honest slip. But hiding the credential is the sandbox's first job, and watch Q-098 waits on exactly that. Fallback, and the owner's call. |
@@ -145,11 +151,11 @@ The residual is the owner's call (question 1 below).
 
 ## F-009: whose is it?
 
-F-009 (`docs/working/feedback/belegarth-herald.md` l.238-250, 2026-11-06): "Both Agent calls failed: Claude Code could not confirm that the repository's `.git` entry belongs to its folder". 7caea26d's message reports the same refusal with the sandbox installed.
+F-009 (`docs/working/feedback/belegarth-herald.md` l.238-250, 2026-11-06): "Both Agent calls failed: Claude Code could not confirm that the repository's `.git` entry belongs to its folder". 7caea26d's message says Agent isolation "refuses this container", and Q-277's answer quotes the same refusal, written when "The sandboxed image was running by then".
 
 **It is not the sandbox's:**
 
-- [observed] F-009 is dated 2026-11-06. The sandbox merge 3cd6d9bb is dated 2026-11-11, and Q-277 says the sandboxed image ran only on 2026-11-12. So herald's container had no Bash sandbox.
+- [observed] F-009 is dated 2026-11-06. The sandbox merge 3cd6d9bb is dated 2026-11-11, so herald's container had no Bash sandbox.
 - [observed] `workflows/parallel-worktrees.md` l.39: in cc-isolated, Agent isolation "has failed outright since 2026-09-18".
 - [observed] Reproduced today: `/etc/claude-code/` does not exist in this container (no managed sandbox), and an Agent call with `isolation: "worktree"` failed at once with "Failed to resolve base branch "HEAD": Claude Code could not confirm that this repository's .git entry belongs to the folder it is in (for example a symlinked .git, …)". No worktree or branch was left behind.
 
@@ -163,10 +169,10 @@ All of these can ride the one `cc-verify` run the return needs.
 
 | # | Unknown | Settles | Command (in a session built from the return branch) |
 |---|---|---|---|
-| U1 | Does a sandboxed `git add`/`git commit` succeed inside a worktree made outside the sandbox? | Whether 1C is enough or 1B′ is needed | W2 below |
-| U2 | Does managed `excludedCommands` match `git worktree add …` and `cd /workspace && bash /opt/claude-workflows/scripts/d6.sh build-loop.sh …`? What is the entry syntax? | 1C versus 1C′ | W1/W3 below; `claude --debug` shows the decision |
-| U3 | Does the sandbox drop a write glob in `denyWrite`? | Confirms 2A's elimination | `claude --debug` with a trial `denyWrite` glob; grep the log for `Skipping glob write pattern` |
-| U4 | Does a directory `denyRead` survive a rename inside the directory? | 3A | X4, unchanged, with `denyRead: ["~/.claude"]` |
+| U1 | Does a sandboxed `git add`/`git commit` succeed inside a worktree made outside the sandbox? | Whether 1C′ is enough or 1B′ is needed | W2 below |
+| U2 | Does a managed `excludedCommands` entry `cc-worktree *` take a bare `cc-worktree add …` call out of the sandbox, and does that call still pass the permission flow in `-p` mode? The syntax itself is answered by the binary (F1.8). | 1C′ | W1/W3 below |
+| U3 | Does the sandbox drop a write glob in `denyWrite`? | Already answered by the binary (F2.2); a host run would only confirm it | `claude --debug` with a trial `denyWrite` glob; grep the log for `Skipping glob write pattern` |
+| U4 | Does a directory `denyRead` survive a rename inside the directory? | 3A | X4, unchanged, with `denyRead: ["~/.claude"]` and `filesystemPolicy: "strict"` |
 | U5 | What does sandboxed Bash need under `~/.claude`? | 3A's `allowRead` list | Every tool call in the check passing (Q0 lines), plus R1 below |
 | U6 | Why does Claude Code refuse to confirm `/workspace/.git` in cc-isolated? | 1C″, F-009 | `claude --debug` in cc-isolated, one Agent call with `isolation: "worktree"`, read the git command it ran |
 
@@ -174,25 +180,27 @@ All of these can ride the one `cc-verify` run the return needs.
 
 ### Requirement 1
 
-Exclusions apply to top-level tool calls (F1.9), so the worktree steps must be their own Bash calls. `q125-verify-check.sh` would add three entries to the stub's command list and to `--allowedTools`, plus a sandboxed script `w.sh` written the way `x.sh` is:
+Exclusions apply only to whole top-level calls with no `cd` (F1.8), so the worktree steps are their own Bash calls, in exactly the form the skill would use. `q125-verify-check.sh` would change as follows.
 
 ```bash
-# After C1/C2 (the stub hands them out in order; claude -p runs with cwd /workspace):
+# After C1/C2 (claude -p runs with cwd /workspace, so no cd is needed):
 W="$WS/.claude/wt-q125-w"
-C3="git worktree add --detach $W HEAD"   # excluded: must succeed (W1)
-C4="bash $D/w.sh $W"                      # sandboxed: W0, W2, W5 below
-C5="git worktree remove --force $W"      # excluded: must succeed (W3)
+C3="cc-worktree add --detach $W HEAD"   # excluded helper: must succeed (W1)
+C4="bash $D/w.sh $W"                     # sandboxed: W0, W2, W5
+C5="cc-worktree remove --force $W"      # excluded helper: must succeed (W3)
 python3 -I "$D/stub.py" "$D" "$C1" "$C2" "$C3" "$C4" "$C5" &
-# ... --allowedTools "Bash($C1)" "Bash($C2)" "Bash($C3)" "Bash($C4)" "Bash($C5)"
+# --allowedTools gains "Bash($C3)" "Bash($C4)" "Bash($C5)"; --max-turns 6 becomes 10,
+# since five tool calls and the closing text need more than six turns.
 ```
 
 ```bash
-# w.sh (sandboxed; $1 is the worktree)
+cat > "$D/w.sh" <<'WEOF'
+set -u
 w="$1" n="$(basename "$1")"; adm=/workspace/.git/worktrees/$n
+res() { printf 'RESULT %-28s %s\n' "$1" "$2"; }
 [ -f "$w/.git" ] && res W1-excluded-add pass || res W1-excluded-add "FAIL (no worktree at $w)"
-# W0: the deny is live, so the passes above and below are not vacuous.
+# W0: the deny is live, so the passes here are not vacuous.
 if git -C /workspace worktree add -q --detach /workspace/.claude/wt-q125-raw HEAD 2>/dev/null; then
-  git -C /workspace worktree remove --force /workspace/.claude/wt-q125-raw 2>/dev/null
   res W0-sandboxed-add-refused "FAIL (a sandboxed worktree add succeeded)"
 else res W0-sandboxed-add-refused pass; fi
 # W2 (U1): ordinary work inside the worktree.
@@ -203,35 +211,47 @@ else res W0-sandboxed-add-refused pass; fi
 for f in commondir gitdir config.worktree; do
   if ( : >> "$adm/$f" ) 2>/dev/null; then res "W5-admin-$f" "FAIL (writable: $adm/$f)"; else res "W5-admin-$f" pass; fi
 done
+WEOF
 ```
 
-- The host side checks W3 after `claude -p`: `git -C "$WS" worktree list --porcelain` no longer names `$W`, and `$W` is gone.
-- REQUIRED gains `Q0-tool-call-3..5 W0-sandboxed-add-refused W1-excluded-add W2-commit-in-worktree W3-excluded-remove W5-admin-commondir W5-admin-gitdir W5-admin-config.worktree`.
-- The setup block at l.83-88 (the unsandboxed pre-made worktree) stays for the C3 lines.
-- W2 FAIL with W5 pass is U1's bad case: 1C alone is not enough. W2 pass with W5 FAIL means the admin dirs opened wholesale, and requirement 2 is wider than this doc assumes. Both send the design back.
-- An INFO-only W4 line runs `cd /workspace && bash /opt/claude-workflows/scripts/d6.sh build-loop.sh --free-worktrees` as a sixth call and reports its first line. That settles U2 for the d6 entry's compound form without changing state: a fresh verify container has no finished loops.
+- **Host side, after `claude -p`:** W3 passes when `git -C "$WS" worktree list --porcelain` no longer names `$W` and `$W` is gone. Cleanup removes any half-made `wt-q125-raw` that W0 left, then runs `git worktree prune`. The binary says a sandboxed add fails "halfway", and the throwaway container is discarded anyway.
+- **Q0 lines:** the loop becomes `for i in 0 1 2 3 4`.
+- **REQUIRED gains:** `Q0-tool-call-3 Q0-tool-call-4 Q0-tool-call-5 W0-sandboxed-add-refused W1-excluded-add W2-commit-in-worktree W3-excluded-remove W5-admin-commondir W5-admin-gitdir W5-admin-config.worktree`.
+- **Reading the results:**
+  - W2 FAIL with W5 pass is U1's bad case: the helper alone is not enough.
+  - W2 pass with W5 FAIL means the admin dirs opened wholesale, so requirement 2 is wider than this doc assumes.
+  - Either one sends the design back.
+- **The gate:** a line for `build-loop.sh --dispatch` belongs in the build unit's own tests. Under 1C′ it no longer mutates worktrees; it prints the `cc-worktree` call. Hermetic bats can check that (H3).
 
 ### Requirement 2
 
-- `live-check-q125.sh` l.100: walk `/workspace/.claude/worktrees/*/ /workspace/.claude/wt-*/`.
-- Under 2C, print the nested lines as `INFO C3-nested-… writable (accepted residual, decision-log row 53)`, and drop `C3-nested-settings-1` from REQUIRED.
+- `live-check-q125.sh` l.100: walk `/workspace/.claude/worktrees/*/ /workspace/.claude/wt-*/`. The setup block (l.83-88) also pre-creates a `.claude/wt-q125-probe` worktree, so the `wt-*` walk has something to test before C2 runs.
+- Under 2C, the nested lines print as `INFO C3-nested-… writable (accepted residual, decision-log row 53)`, and `C3-nested-settings-1` leaves REQUIRED.
 - Under 2B or 2E they stay `RESULT` lines that must pass.
 
 ### Requirement 3
 
-No new line. X4 is unchanged and must pass with 3A. `X1-credential-present` currently expects the path to exist inside the sandbox. Under a directory deny the path is absent, so that line becomes "pass when absent or a character device", with the X1 reads still judged by content.
+- X4 is unchanged and must pass with 3A.
+- `X1-credential-present` expects the path to exist inside the sandbox. Under a directory deny the path may be absent, so the line passes when it is absent or a character device; the X1 reads are still judged by content.
+- A new `X5-filesystem-policy` line passes when `/etc/claude-code/managed-settings.json` sets `sandbox.filesystemPolicy` to `strict`, read with `jq`. It runs on the host side, like the preflight's `sandbox.enabled` test (l.65).
 
 ## Recommended design for the return
 
-One build unit on top of `git revert 7caea26d` (the revert of the revert, as 7caea26d's message says):
+One build effort on top of `git revert 7caea26d` (the revert of the revert, as 7caea26d's message says):
 
-1. Managed `excludedCommands`: `git worktree` and the d6 `build-loop.sh` line, in whatever syntax U2 shows (1C).
-2. Managed `denyRead: ["~/.claude"]` with `allowRead` back-entries for what sandboxed Bash needs (3A). The single-file entry goes.
-3. Nested worktree paths are an accepted residual, recorded beside decision-log row 53, with the exit scan as the `.git`-side tripwire (2C).
-4. The check-file lines above. One `cc-verify` run, which also settles U1-U5.
-5. Enforcement-file rules apply: a pre-mortem listing the bypass families (the plan's table plus "excluded command acts on a sandbox-written file", F1.10), and `Live-verified:`.
+1. **The helper (1C′).** A root-owned `cc-worktree` helper in the image, named in managed `excludedCommands`. The dev-cycle skill, `build-loop.sh --dispatch`/`--free-worktrees` and `self-improvement.sh` route worktree add, lock, unlock, remove and prune through it as top-level calls. The gate stays sandboxed.
+2. **The credential (3A).** Managed `denyRead: ["~/.claude"]`, with `allowRead` back-entries for what sandboxed Bash needs, and `filesystemPolicy: "strict"`. The single-file entry goes.
+3. **Nested worktrees (2C).** An accepted residual, recorded beside decision-log row 53, with the exit scan as the `.git`-side tripwire.
+4. **The live check.** The check-file lines above, in one `cc-verify` run. It settles U1, U2, U4 and U5; U3 is already answered by the binary.
+5. **Enforcement rules.** A pre-mortem listing the bypass families: the plan's table, plus "an excluded command acts on a sandbox-written file" (F1.10, F1.9b) and "a lower tier relaxes the filesystem policy" (F3.9). Commits carry `Live-verified:`.
 
-Size: the revert is about 480 lines back. The new delta is perhaps 10 managed-settings lines, their bats cases, and about 40 check-file lines. The revert plus delta may pass the ~400-line cap (log row 62). If so, split it as Q-125 did: U1 is the seccomp layer, U2 the settings and check.
+Size: the revert puts about 480 lines back. The helper adds about 60-80 lines, the gate changes perhaps 50, plus their bats and about 50 check-file lines. That is over the ~400-line cap (log row 62), so it splits as Q-125 did:
+
+- **Unit A:** the revert's seccomp layer.
+- **Unit B:** managed settings and the helper.
+- **Unit C:** the gate and skill call sites.
+
+One live check covers all three.
 
 ## Questions for the owner (for the cycle to file; a build loop does not write the questions files)
 
@@ -241,12 +261,12 @@ The three sandbox gaps this research covers:
 - **2, nested worktree paths.** Inside a worktree, a sandboxed command can write the `.git` pointer file and create `.claude/`.
 - **3, the credential after a refresh.** A command already running when the login token is refreshed can read the new token.
 
-**Q1 · sandbox-return-worktrees-outside-sandbox** (you: judgment). Let `git worktree` and the gate's `build-loop.sh` line run outside the Bash sandbox, so agents can make worktrees under it?
+**Q1 · sandbox-return-worktrees-outside-sandbox** (you: judgment). Let worktree administration run outside the Bash sandbox, through one root-owned helper, so agents can make worktrees under it?
 
 | Option | What it means | Cost to you | If it's wrong |
 |---|---|---|---|
-| **[1] Exclude them (pick)** | Two managed `excludedCommands` entries; root-owned gate code and `git worktree` run unsandboxed | The one live check the return needs | An unsandboxed `git worktree add` can check a branch out anywhere node can write; Edit/Write can already write those paths |
-| **[2] Clones, not worktrees** | Everything stays sandboxed; dispatch, status, free and land are rewritten around clones | Several units and reviews before the sandbox returns | Weeks more with no sandbox; the gate's largest file is rewritten |
+| **[1] One helper (pick)** | `cc-worktree` runs outside the sandbox: fixed repository, paths confined to the worktree folders | The one live check the return needs | The helper's checks are the only thing between a sandboxed command and an unsandboxed git |
+| **[2] Clones, not worktrees** | Everything stays sandboxed; dispatch, status, free and land are rewritten around clones | Several more units and reviews before the sandbox returns | Weeks more with no sandbox; the gate's largest file is rewritten |
 | **[3] No sandbox** | Stay as now | Nothing | Bash can read the credential and write every file a session reaches |
 
 - **Blocks:** the return brief.
@@ -260,6 +280,9 @@ The three sandbox gaps this research covers:
 | **[2] Fixed worktree slots** | Worktrees move to named slots the managed file denies by literal path | A larger unit; every worktree path the gate parses changes | Still open to Edit/Write; placeholder files can block worktree creation |
 | **[3] Root-owned pins** | A sudo helper makes each worktree's `.git` and `.claude/` root-owned | A new sudo rule and root helper in the image | Breaks repos that track `.claude/` files; a rename of the parent directory gets around it |
 
+- **Blocks:** the return brief's residual record.
+- **Interim:** [1] in the design.
+
 **Q3 · sandbox-return-credential-fallback** (you: judgment). **File only if the live check's X4 line still fails with `~/.claude` denied.** Then: accept the gap, or keep the credential out of the container?
 
 | Option | What it means | Cost to you | If it's wrong |
@@ -267,6 +290,9 @@ The three sandbox gaps this research covers:
 | **[1] Accept, recorded beside row 53** | A command running across a token refresh can read the new token | Nothing | A deliberately waiting command gets the token; watch Q-098 (the global allowlist) keeps waiting |
 | **[2] Token in the environment** | A long-lived token replaces the file; the sandbox strips it from commands | A yearly host step to mint the token, and a new host secret | Headless runs that need the file break until reworked |
 | **[3] Hold the sandbox** | Wait for Claude Code to mask the directory itself | Nothing now | No sandbox until an upstream fix |
+
+- **Blocks:** the return, only if X4 fails.
+- **Interim:** none needed until then; 3A is the design.
 
 ## Other choices (one-line notes)
 
