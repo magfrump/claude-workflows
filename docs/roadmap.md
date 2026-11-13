@@ -80,38 +80,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   owner refuses the exception when Q-272 returns with data (watch Q-276). The owner's
   note on other repos is an Ideas item.
 
-- **Agent: scoped deep audit, constraint drift** (filed 2026-11-05, step 4b). Motive: the
-  drift check on 605d4c18 found its script-home decision resting on a soft constraint (S4
-  pruned the checklist option) and on a rule `docs/constraints.md` does not hold (instrument
-  code lives in the SWRBench fork). Scope: Path A records since the last audit, using the
-  `constraints-builder` skill's amend mode to revise the file. First step: the owner confirms
-  scope and timing; it runs on its own branch, outside the cycle. It also covers
-  `skills/dev-cycle/SKILL.md` as Q-259 and Q-260 changed it (step 4b, 2026-11-06). Also 85080263's
-  Path A record, where S4 (soft) shared the pruning of candidate D with H1 (step 4, 2026-11-06).
-  Also aeab6745's Path A record, where S8 (soft) shared the pruning of `bin/d6` with the
-  enforcement-file cost, while H1 pruned `/usr/local/bin` (step 4, 2026-11-07); and
-  `skills/dev-cycle/SKILL.md` as 3dbf43cb (Q-266) changed it.
-  Fired again 2026-11-10 on two more triggers: the model running the cycle changed from
-  `claude-opus-5-5` to `claude-fable-5-2`, and 546788f2's Path A record pruned its option A
-  on S10 (soft) beside H4 (hard); the pick (B) stands. Scope and timing are now asked in
-  Q-269 (run the small constraint-drift audit, the full audit, or wait).
-  Fired again 2026-11-11: `skills/dev-cycle/SKILL.md` changed by 1f14e270 (Q-271: the
-  identity check, the release paste, the free-slot line).
-  2026-11-11, scope and timing answered (Q-269 [1], the small audit now). First step is
-  now a brief for one build loop: read the seven flagged Path A records named above and
-  draft changes to `docs/constraints.md` with the `constraints-builder` skill's amend
-  mode. Its output is one owner entry with a promote, keep soft or drop call per flagged
-  line. Nothing else is re-read; the full audit stays unasked.
-  Fired again 2026-11-11 (iteration 2026-11-12-0006): the model running the cycle changed
-  from `claude-fable-5-2` to `claude-opus-5-5`; within the small audit's scope it changes
-  nothing. The small audit is done (b3d3e8f4, Done): it recommends no change to the
-  constraints file, and its four calls are with the owner in the cycle's final message (filed 2026-11-13 as Q-281 to Q-284). A
-  different pick the owner names becomes its own item. Answered 2026-11-13: [1] on all four (keep as is), so the item is finished.
-  Fired again 2026-11-13 (step 4 drift check): a1121ac5's Path A record
-  (`docs/working/research-2026-11-12-release-outside-entry.md`) pruned [1] on S3 and S8,
-  [4] on S4 and S2 and [5] on S3, soft constraints alone; its pick ([0], status quo)
-  rests on the motive test (S5) and stands. Add it to the next audit's sample.
-
 - **Agent: `source_lines_ok` misses an unterminated last line** (filed 2026-11-05, step 7).
   Motive: the Q-147 review found the shipped self-check in `devcontainer-config/cc-verify.sh`
   can miss a final line with no newline; every file ends in one today, so nothing is exposed
@@ -260,6 +228,11 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## Ideas
 
+- **Record out-of-cycle session answers through `--answered`.** Signal: 4306aa88 (the owner's
+  Q-281..284 answers, recorded on a hand branch) read as `other` in `--main-log`, making
+  iteration 2026-11-13-2237 a full cycle with a health run.
+- **Say what "a cycle" is in decision 040's ask-count trigger** (per day or per full block).
+  Signal: 9 asks opened 2026-11-13 (Q-281..289), counted as one cycle.
 - **Align the record template's `8.` line with step 8's new rule.** Signal: Q-289's loop kept
   the template's old wording because changing it needs a migration line in
   `scripts/lib/migrations.sh`; `docs/working/seed-build-loop-handoff.md:81` also restates the
@@ -541,6 +514,11 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- Scoped deep audit, constraint drift (filed 2026-11-05, step 4b): the small audit merged
+  b3d3e8f4 and recommended no change to `docs/constraints.md`; the owner answered its four
+  calls [1], keep as is (Q-281 to Q-284, 2026-11-13, merged 4306aa88). a1121ac5's Path A
+  record, flagged 2026-11-13 (soft constraints alone pruned [1], [4] and [5]), joins the next
+  audit's sample. Moved out of Now 2026-11-13 (branch chore/dev-cycle-2026-11-13-2237).
 - Walkthrough first-problem measure (Next item 2's step 1;
   `docs/working/briefs/closed/2026-11-13-walkthrough-first-problem-measure.md`). Merged
   a91d42af, self-merge: too few entries to decide.
