@@ -105,7 +105,8 @@ path, which round 1 already did). Nothing else open; the loop ends clean.
   - FP-129 / FP-175: a pipe's exit status under `pipefail` deciding control flow; defect 1
     is the same family (an absent file read ending the script under `set -e`).
 - Grep: `grep -inE 'cc-verify|pipefail|set-e|no-newline|unterminated|last-line|relative|cd-before|cwd' docs/failure-patterns.md`.
-- New entries: FP-181 (defect 1) and FP-182 (defect 3). Defect 2 is FP-020's pattern again
+- New entries: FP-182 (defect 1) and FP-183 (defect 3); written as FP-181 and FP-182 in
+  dispatch 1, renumbered in dispatch 2 because Q-287's branch took FP-181 on main first. Defect 2 is FP-020's pattern again
   and gets no new entry.
 
 ## Verification
@@ -118,11 +119,21 @@ path, which round 1 already did). Nothing else open; the loop ends clean.
 
 ## Host paste (after the merge, for a `you: terminal` entry)
 
-It rides on the next `install.sh`, which installs all of main: file it with, or after, the
-release decision that is holding the install (Q-277), not as a separate install.
+It rides on the next `install.sh`, which installs all of main. (Dispatch 1 said to wait for
+Q-277; that was answered [3] on 2026-11-12 and the sandbox rolled back, so nothing holds it.)
 
 ```
-cd ~/claude-workflows && ./devcontainer-config/install.sh   # your checkout at main; review the cc-verify.sh diff, y re-blesses host-tools.sha256
+cd /home/magfrump/claude-workflows && ./devcontainer-config/install.sh   # your checkout at main; review the cc-verify.sh diff, y re-blesses host-tools.sha256
 mkdir -p ~/cc-verify/run-1-999999999 && cc-verify --clean; echo "clean exit $?"   # expect: cleaning .../run-1-999999999, clean exit 0
 printf 'true\n' > ~/cc-verify-true.sh && cc-verify --check ~/cc-verify-true.sh . main <<< n; echo "relative exit $?"; rm -f ~/cc-verify-true.sh   # expect: the y/N prompt, "declined: nothing was built.", relative exit 1, no "could not clone"
 ```
+
+## Dispatch 2 (Q-288 [3])
+
+Q-288 is the owner's merge question for dispatch 1's tip f16bbdce; the answer was [3],
+"renumber to FP-182 and FP-183 after Q-287". Q-287's branch merged first and holds FP-181 on
+main. Done here: merged main (d9813500) into the branch, kept main's FP-181, and renumbered
+this branch's two entries to FP-182 and FP-183, here and in `docs/failure-patterns.md`. No
+code changed, so no new design choice; the only conflict was that one file. Tests re-run on
+the merged tree (see the marker).
+
