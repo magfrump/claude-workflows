@@ -368,7 +368,7 @@ inplace() {
         && [ "$(git -C "$W" ls-files -s docs/working/questions.md)" = "100644 $b 0	docs/working/questions.md" ] || { echo "not in place"; false; }
 }
 # notemp DIR: no temp file of the board's is left in DIR.
-notemp() { ! ls -A "$1" | grep -q '^\.questions\.'; }
+notemp() { local x; for x in "$1"/.questions.*; do [ ! -e "$x" ] || return 1; done; }
 
 @test "answer writes in place when main is checked out and its questions.md is clean" {
     for shape in main wt; do
@@ -394,7 +394,7 @@ notemp() { ! ls -A "$1" | grep -q '^\.questions\.'; }
     [[ "$output" == *" answer Q-001 written in place"* ]]
 }
 
-@test "in place, a modified questions.md, a staged change, a merge under way or a symlinked docs/ refuses and changes nothing" {
+@test "in place, a modified questions.md, a staged change or index flag, a merge under way or a symlinked docs/ or file refuses and changes nothing" {
     onmain alpha; a="$BATS_TEST_TMPDIR/alpha"; cp "$F" "$BATS_TEST_TMPDIR/orig"
     echo "a session's edit" >> "$F"; cp "$F" "$BATS_TEST_TMPDIR/dirty"
     ans alpha Q-001 x; refused alpha "docs/working/questions.md in main's checkout $R is modified"
@@ -405,6 +405,14 @@ notemp() { ! ls -A "$1" | grep -q '^\.questions\.'; }
     git -C "$a" rev-parse main > "$a/.git/MERGE_HEAD"
     ans alpha Q-001 x; refused alpha "main's checkout $R is in the middle of a merge, cherry-pick, revert, rebase or bisect (MERGE_HEAD)"
     rm "$a/.git/MERGE_HEAD"
+    for fl in skip-worktree assume-unchanged; do
+        git -C "$a" update-index "--$fl" docs/working/questions.md
+        ans alpha Q-001 x; refused alpha "docs/working/questions.md in main's checkout $R has a staged change or an index flag"
+        git -C "$a" update-index "--no-$fl" docs/working/questions.md
+    done
+    mv "$F" "$BATS_TEST_TMPDIR/qlink"; ln -s "$BATS_TEST_TMPDIR/qlink" "$F"
+    ans alpha Q-001 x; refused alpha "docs/working/questions.md in main's checkout $R is a symlink"
+    cmp -s "$BATS_TEST_TMPDIR/qlink" "$BATS_TEST_TMPDIR/orig"; rm "$F"; mv "$BATS_TEST_TMPDIR/qlink" "$F"
     for l in docs docs/working; do
         rm -rf "$BATS_TEST_TMPDIR/out"; mkdir "$BATS_TEST_TMPDIR/out"; mv "$a/$l" "$BATS_TEST_TMPDIR/out/d"; ln -s "$BATS_TEST_TMPDIR/out/d" "$a/$l"
         ls -lR "$BATS_TEST_TMPDIR/out" > "$BATS_TEST_TMPDIR/out.before"
@@ -454,4 +462,27 @@ notemp() { ! ls -A "$1" | grep -q '^\.questions\.'; }
     inplace && [ -z "$(git -C "$a" status --porcelain)" ]
     run cat "$HOME/.local/state/claude-board/runs.log"
     [[ "$output" == *" answer Q-001 written, checkout behind"* ]]
+    # An index update that fails (a session holds index.lock): the same report,
+    # and the same repair brings index and file level.
+    : > "$a/.git/index.lock"; BEFORE="$(git -C "$a" rev-parse main)"
+    board "$BOARD" answer alpha Q-002 '[1]'
+    [ "$status" -eq 3 ] && [[ "$output" == *"WRITTEN to $a on main, but its checkout $R is behind: its index entry could not be updated"* ]] || { echo "$output"; false; }
+    rm "$a/.git/index.lock"; git -C "$R" checkout HEAD -- docs/working/questions.md
+    inplace && [ -z "$(git -C "$a" status --porcelain)" ]
+}
+
+@test "in place, a clean filter in the repo never runs, though writing W's index re-checks racily clean entries" {
+    onmain alpha; a="$BATS_TEST_TMPDIR/alpha"; hit="$BATS_TEST_TMPDIR/filter-ran"
+    # Main checked out in the registry line itself, so the board's cwd is W; every
+    # other entry racily clean for good (its file's mtime ahead of any index write).
+    touch -d '+1 hour' "$a/docs/working/questions-archive.md" "$a/docs/working/watching.md"
+    git -C "$a" update-index --refresh >/dev/null
+    printf '#!/bin/sh\ntouch "%s"\ncat\n' "$hit" > "$BATS_TEST_TMPDIR/flt"; chmod +x "$BATS_TEST_TMPDIR/flt"
+    git -C "$a" config filter.x.clean "$BATS_TEST_TMPDIR/flt"; echo '* filter=x' > "$a/.git/info/attributes"
+    ans alpha Q-001 '[1]'
+    [ "$status" -eq 0 ] || { echo "$output"; false; }
+    inplace && [ ! -e "$hit" ]
+    # The positive control: an index write in W, unhardened, runs the filter.
+    git -C "$a" update-index --cacheinfo "100644,$(git -C "$a" rev-parse main:docs/working/questions.md),docs/working/questions.md"
+    [ -e "$hit" ]
 }

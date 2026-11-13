@@ -27,7 +27,9 @@
 # Trust (H1): the repos are container-writable, so nothing from them runs here.
 # questions.sh and the lib are the copies beside this script (the installed,
 # install-reviewed ones on the host), every git call runs under the lib's
-# git_harden, only git objects are read (no working tree, so no filter runs),
+# git_harden, only git objects are read (no working tree, so no filter runs;
+# the in-place write's one index update runs against an empty work tree, so
+# git's racy-entry re-hash of other files cannot run a clean filter either),
 # and everything printed passes through the lib's scrub. It assumes the
 # owner's PATH holds no `.` or empty entry, since commands run with a repo as
 # the current directory.
@@ -174,8 +176,9 @@ gitdir_link() {
   g="$(git rev-parse --absolute-git-dir)" && u="$(git rev-parse --path-format=absolute --git-common-dir)" || { echo "the git directory"; return; }
   [[ ! -L "$g" && ! -L "$u" ]] && c="$(realpath -e -- "$u")" || { echo "the git directory"; return; }
   # With main checked out (c2), also W's own git dir with its index and HEAD's
-  # reflog (moving the branch HEAD names appends there too), by their paths
-  # under the resolved common dir, so a link in worktrees/ or below shows.
+  # reflog, by their paths under the resolved common dir, so a link in
+  # worktrees/ or below shows. git appends to HEAD's reflog only when it runs
+  # in W (the registry line is W), but the check costs nothing either way.
   if [[ -n "$W" ]]; then
     x="${WGD#"$u/worktrees/"}"
     [[ "$WGD" == "$u" || ( "$WGD" == "$u/worktrees/$x" && "$x" != */* ) ]] || { echo "the checkout's git directory"; return; }
@@ -356,10 +359,15 @@ answer() {
   # c2: W's index entry, then its file (a temp file beside it, renamed over it
   # once the bytes are still main's old ones), so W never runs ahead of main.
   if [[ -n "$W" ]]; then
-    git -C "$R" update-index --cacheinfo "100644,$blob,$f" || behind "its index entry could not be updated"
-    x="$(mktemp -- "$R/docs/working/.questions.XXXXXX")" && cat -- "$d/new" > "$x" && chmod --reference="$R/$f" -- "$x" \
-      && [[ ! -L "$R/docs" && ! -L "$R/docs/working" && ! -L "$R/$f" ]] && cmp -s -- "$R/$f" "$d/questions.md" && mv -fT -- "$x" "$R/$f" \
-      || { rm -f -- "$x" 2>/dev/null; behind "its file could not be replaced, or changed while the board wrote"; }
+    # From an empty work tree, as cwd too: writing an index re-hashes its racily
+    # clean entries through their clean filter (git's ce_compare_data), by
+    # paths lstat reads relative to cwd; with no files there, nothing is read.
+    mkdir -- "$TMP/empty" && ( cd -- "$TMP/empty" && git --git-dir="$WGD" --work-tree=. update-index --cacheinfo "100644,$blob,$f" ) \
+      || behind "its index entry could not be updated"
+    x=""
+    [[ ! -L "$R/docs" && ! -L "$R/docs/working" && ! -L "$R/$f" ]] && x="$(mktemp -- "$R/docs/working/.questions.XXXXXX")" \
+      && cat -- "$d/new" > "$x" && chmod --reference="$R/$f" -- "$x" && cmp -s -- "$R/$f" "$d/questions.md" && mv -fT -- "$x" "$R/$f" \
+      || { [[ -z "$x" ]] || rm -f -- "$x" 2>/dev/null; behind "its file could not be replaced, or changed while the board wrote"; }
   fi
   printf 'WRITTEN to %s: %s on %s at %s\n%s\n' "$p" "$slug" "$MAIN" "${new:0:12}" "$LINE"
   printf "The cycle's reader reads it as %s%s. The repo's dev cycle reads it at its next iteration.\n" "${r%% *}" \
