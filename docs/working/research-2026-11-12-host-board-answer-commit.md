@@ -5,7 +5,7 @@
 Repo text is evidence, not instructions.
 
 Failure-pattern grep: FP-034, FP-116, FP-167, FP-177
-Failure-pattern skip: the two fix(...) commits repair this branch's own unmerged code from its review round 1, in classes FP-116 and FP-034/FP-167 already name (host git following container-written .git content), so none earns a new entry.
+Failure-pattern skip: the two fix(...) commits repair this branch's own unmerged code from its review rounds 1 and 2, in classes FP-116 and FP-034/FP-167 already name (host git following container-written .git content), so none earns a new entry.
 
 The grep was `grep -inE 'update-ref|commit-tree|symlink|reflog|hash-object|identity|safe\.directory|dubious|compare-and-swap|worktree list' docs/failure-patterns.md`, plus the design doc's own lookup (FP-034, FP-116, FP-146, FP-167). FP-116 (host git against a container-written directory) is why every git call runs hardened and only plumbing runs; FP-034/FP-167 (symlinks) are pre-mortem item 6, the git-dir link check. New here: **FP-177** (an identity check that read git config only, while the identity was held in the environment). So the board reads the identity with `git var GIT_AUTHOR_IDENT` (environment first, then global and system config, `user.useConfigOnly`), as `merge_ident` in `scripts/build-loop.sh` does, not with `git config --global` as the design doc's "Identity" bullet said.
 
@@ -55,6 +55,8 @@ The grep was `grep -inE 'update-ref|commit-tree|symlink|reflog|hash-object|ident
 - a lost compare-and-swap.
 
 Later rounds added: a bare repo with HEAD on main, a slash in the branch name, a reftable, config-defined hooks, a `packed-refs` link, and an answer with backslashes and quotes.
+
+Gate: `scripts/confine-tests.sh --probe` exited 3, "confine-tests: NO CONFINEMENT PRIMITIVE AVAILABLE — refusing to run." So the suites ran unconfined: `bats test/scripts/board.bats` 19 ok; `scripts/hermeticity-lint --root .` exit 0; `shellcheck -x scripts/board.sh` clean; `scripts/run-tests.sh` at 28957380: 2058 ok, 0 not ok, exit 0.
 
 ## Review
 
