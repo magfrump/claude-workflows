@@ -65,7 +65,7 @@ Long-lived documents (onboarding docs, spike records, shared thoughts) support *
 
 ## Harness feedback
 
-When a feature of these workflows (a skill, workflow, guide or one of these instructions) fails, causes friction, or catches something real in a project other than claude-workflows, append one entry to that project's `docs/harness-feedback.md`: what happened here, expected vs observed, evidence. The owner copies the file to claude-workflows, where it becomes dev-cycle ideas. The entry grammar is in `guides/harness-feedback.md`; where `~/.claude/scripts/harness-feedback.py` is installed, run its `check` before committing. No secrets in entries: the file leaves the project.
+When a feature of these workflows (a skill, workflow, guide or one of these instructions) fails, causes friction, or catches something real in a project other than claude-workflows, append one entry to that project's `docs/harness-feedback.md`: what happened here, expected vs observed, evidence. The owner copies the file to claude-workflows, where it becomes dev-cycle ideas. The entry grammar is in `guides/harness-feedback.md`; run `harness-feedback.py check` before committing, from `~/.claude/scripts/` where it is installed or from `scripts/` in your claude-workflows clone (its `init` creates the file). No secrets in entries: the file leaves the project.
 
 ## General Principles
 

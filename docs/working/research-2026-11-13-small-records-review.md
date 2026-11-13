@@ -7,7 +7,7 @@
 
 ## What exists
 
-1. **D12.** `docs/working/plan-build-loop-handoff.md` D12 said "Each iteration is one full cycle", and its summary table row said "a full cycle every iteration for now" [observed]. The owner replaced that answer with Q-270 [2] (2026-11-11, `docs/human-author/answers-11-11-26.txt`), built by `docs/working/briefs/closed/2026-11-11-light-pass.md`, merged a77bbc97, approved in Q-279 [1] [observed: `docs/working/questions-archive.md`, `git log -1 a77bbc97`]. The rule's text is step 0.5 of `skills/dev-cycle/SKILL.md`: light only when `--main-log` shows only `chore` lines and the newest record is dated today and holds a full block; it skips steps 2, 3, 4 and 4b [observed]. The decision log's rows end at 88 [observed]; row shape is `| N | date | **decision** | rationale | source |`, and amendments to the plan are written into it as an indented "**Amended DATE (...)**" bullet (D8, D11) [observed].
+1. **D12.** `docs/working/plan-build-loop-handoff.md` D12 said "Each iteration is one full cycle", and its summary table row said "a full cycle every iteration for now" [observed]. The owner replaced that answer with Q-270 [2] (2026-11-11; the owner's answers file of that date is untracked, so the Q-270 archive entry is the tracked source), built by `docs/working/briefs/closed/2026-11-11-light-pass.md`, merged a77bbc97, approved in Q-279 [1] [observed: `docs/working/questions-archive.md`, `git log -1 a77bbc97`]. The rule's text is step 0.5 of `skills/dev-cycle/SKILL.md`: light only when `--main-log` shows only `chore` lines and the newest record is dated today and holds a full block; it skips steps 2, 3, 4 and 4b [observed]. The decision log's rows end at 88 [observed]; row shape is `| N | date | **decision** | rationale | source |`, and amendments to the plan are written into it as an indented "**Amended DATE (...)**" bullet (D8, D11) [observed].
 2. **The warning.** `scripts/health-check.sh` gate 13, `check_md_semantic_divergence`, warns "H2 sections in global-instructions/CLAUDE.md not in AGENTS.md/GEMINI.md" for any H2 not in `expected_claude_only` [observed]. `## Harness feedback` (global-instructions/CLAUDE.md:169) was the one such H2. README's "Cursor, Copilot, Cline, and other AGENTS.md-compatible tools" symlinks `AGENTS.md`, `guides/` and the rest into each project [observed: README.md:75-96], so AGENTS.md readers work in other projects, which is exactly where `docs/harness-feedback.md` lives (`guides/harness-feedback.md`; `guides/cross-project-setup.md`:36). They have `guides/harness-feedback.md` through the symlink; they may not have `~/.claude/scripts/harness-feedback.py`, which the install puts in `~/.claude` [inferred].
 3. **Decision 018's cite.** Two places in `docs/decisions/018-argv-exec-over-shell-string-interpolation.md` cited `scripts/confine-tests.sh:220` (Concretely item 2, and References) [observed]. The pattern now sits under the comment "# Decision 018's reference pattern" (line 274, body at 285-290) [observed]. `docs/roadmap.md`:168 cites the old line too, but the roadmap is the cycle's.
 4. **The failure pattern.** `docs/failure-patterns.md` has no `exec` / option-injection entry [observed: grep below]; last entry FP-180. The fix is bd657ce8 ("run a command named "-something" on the unshare path"), inside merge b0ebed19, which runs the body under `"$BASH"` with `exec -- "$@"`. Finding 2 of `docs/reviews/security-review-final-2026-11-10-confine-tests-bats.md` records the reproduction; re-run here: `bash -c 'exec "$@"' sh -a x echo hi` prints `hi`, rc 0 [observed].
@@ -53,7 +53,21 @@ Other choices (one line each):
 
 - `scripts/confine-tests.sh --probe`: exit 3, first line "confine-tests: NO CONFINEMENT PRIMITIVE AVAILABLE — refusing to run." So the tests run through `scripts/health-check.sh` (which runs the bats suite) and `scripts/hermeticity-lint --root .`.
 - `bats test/agents-gemini-sync.bats`: 4 of 4 ok.
-- Health check's gate 13 before: "H2 sections in global-instructions/CLAUDE.md not in AGENTS.md: Harness feedback" (and GEMINI.md), per the roadmap item and the check's code; after: see the commit body of the review commit.
+- Health check's gate 13 before: not re-run on the base; the warning's text is reconstructed from the check's code (`warn "H2 sections in $GLOBAL_MD not in $sibling: ..."`, health-check.sh:1079) and the roadmap item that reports it every run. After (full `scripts/health-check.sh` on this branch, exit 0, "All checks passed."):
+
+      ── MD file semantic divergence ──
+        global-instructions/CLAUDE.md: 333 lines, 9 H2 + 16 H3 sections, 26 skill ref(s)
+        AGENTS.md: 81 lines, 6 H2 + 0 H3 sections, 26 skill ref(s)
+        GEMINI.md: 81 lines, 6 H2 + 0 H3 sections, 26 skill ref(s)
+        ✓ AGENTS.md and GEMINI.md have identical section structure
+        ✓ No semantic divergence detected across MD files
+
+  The run's other warnings (unrun report-dependent suites, skills lacking fixtures, stale spikes, thoughts and personas) predate this branch and are outside it.
+- `scripts/hermeticity-lint --root .`: exit 0, 145 test files, no unstubbed network spawns.
+
+## Review
+
+One fact-check-style reviewer (code-review's fact-check pass; the diff is docs only, so the security, performance and API critics have no surface) found no Must Fix. Addressed: (1) row 89 now names row 72's D12 clause, which still states the old answer; (2) the after-run above replaces a pointer to a commit that did not exist; (3) row 89 no longer cites the untracked answers file; (4) plan D12's blocked-thread bullet says "an iteration", not "a full cycle"; (6) the AGENTS.md section names the clone's `scripts/harness-feedback.py` and its `init`; (7) the task status. Kept: (5) FP-181's `+`-joined ref, a single grep-able token that cites both sources the brief names; no precedent, disclosed here and in the commit body. A second pass re-checked the fixes.
 
 Failure-pattern skip: this branch has no fix(...) commits; FP-181 is added as the brief's item 4, not for a fix here.
 
