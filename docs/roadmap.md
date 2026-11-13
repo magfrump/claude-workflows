@@ -167,7 +167,13 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   path needs a change (for example install.sh printing the gate-code diff from the last
   release entry's M) or the case is an owner-directed install the design already allows.
   Only a proposed change becomes an owner entry.
-  2026-11-12: briefed (In flight, `docs/working/briefs/2026-11-12-release-outside-entry.md`).
+  2026-11-12: briefed (`docs/working/briefs/closed/2026-11-12-release-outside-entry.md`)
+  and done (a1121ac5, self-merge; `docs/working/research-2026-11-12-release-outside-entry.md`):
+  no change to the release path. The install most likely ran as a plain `install.sh` at
+  80b7dabe (inference; nothing records the command); nothing unreviewed shipped. When row
+  86's first trigger fires again, the cycle answers it from the log, as iteration 0143
+  did, unless the install carried a self-merge or a commit the owner did not ask for.
+  This item is finished.
 
 - **Agent: scoped deep audit, constraint drift** (filed 2026-11-05, step 4b). Motive: the
   drift check on 605d4c18 found its script-home decision resting on a soft constraint (S4
@@ -334,9 +340,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
-- **A release installed from a commit its entry did not describe** (log row 86's
-  trigger): `docs/working/briefs/2026-11-12-release-outside-entry.md`. One docs-only
-  research unit; status quo is a valid result. Self-merge.
 
 ## Next
 
@@ -652,6 +655,9 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- A release installed from a commit its entry did not describe (log row 86's trigger;
+  `docs/working/briefs/closed/2026-11-12-release-outside-entry.md`). Merged a1121ac5,
+  self-merge: no change.
 - Cross-project board v1, unit 3: the answer commit when main is checked out (owner
   request; `docs/working/briefs/closed/2026-11-12-host-board-answer-in-place.md`). Merged
   94ace1f2, self-merge.
