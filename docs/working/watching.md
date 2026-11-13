@@ -35,6 +35,7 @@ When Q-125's sandbox merges (bwrap in the cc-isolated image), decision 017's T2 
 - **Read:** `docs/decisions/014-secure-tool-guidance-layers.md` and `docs/decisions/017-polyglot-test-hermeticity.md` (Revisit triggers) · Q-126 in the archive · Q-125
 - **Interim:** nothing changes until Q-125 merges. The condition: `command -v bwrap` succeeds in a cc-isolated session on main's image.
 - **2026-11-11:** Q-125 merged at 3cd6d9bb (Q-267 [1]). The image a session runs is still the old one, so the condition waits on the release (Q-273) and a new sandbox launch.
+- **2026-11-12, later:** the owner chose to keep no sandbox (decision-log row 88). This watch is dormant unless `bwrap` returns to the image some other way.
 - **2026-11-12:** the sandbox was rolled back (7caea26d, Q-277 [3]), and the revert took `bwrap` out of the image, so the condition cannot be met until the sandbox returns. The image sessions run (80b7dabe) has no `bwrap`.
 
 ### Q-067 · regenerate-skill-eval-reports
@@ -72,6 +73,7 @@ Ship a global `permissions.allow` in `hooks/wiring.json` once cc-isolated has a 
 - **Interim:** no global allow list. cc-isolated sessions prompt for commands not in their project's `.claude/settings.json`.
 - **2026-11-11:** Q-125 landed at 3cd6d9bb (Q-267 [1]), with no live run on record. The second half of the trigger, the sandbox denying those reads and writes, is what the live check in Q-273 shows; the leak list waits for it.
 - **2026-11-11, later:** the live check ran on the owner's host and failed (Q-273). The trigger's second half is not met: a sandboxed command still running when the credential is replaced by rename, as a token refresh does, read the new file (`X4-cred-across-rename FAIL`). Reads before a rename and writes to the user settings files were refused, by the verdict's count. No list ships until the roadmap item "a sandboxed command can read the credential after a token refresh" is closed and the check passes, whatever the owner answers to Q-277 (install with the gaps, or hold).
+- **2026-11-12, later:** the owner chose to keep no sandbox (decision-log row 88: "worktree usage is too important"). This watch is dormant: nothing is expected to meet it unless a sandbox is proposed again.
 - **2026-11-12:** Q-277 was answered [3] and main rolled the sandbox back (7caea26d), so no sandbox exists to meet the trigger. It now waits for the sandbox's return, which needs worktree creation under it as well as the two gaps closed (research brief `docs/working/briefs/2026-11-12-sandbox-return-research.md`).
 
 ### Q-262 · merge-approval-revisit

@@ -97,6 +97,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   on the whole `~/.claude` directory, in three units with one `cc-verify` run. Its three
   questions (the helper, the nested-worktree residual, a credential fallback) are with the
   owner in the cycle's final message; nothing is briefed until they answer.
+  2026-11-12: the owner answered: keep no sandbox; worktree usage is too important
+  (decision-log row 88). The return is not pursued, and the two sandbox-gap items below
+  are closed with it. This item is finished.
 
 - **Agent: a sandboxed command can read the credential after a token refresh** (filed
   2026-11-11, from the Q-273 live check). Motive: `X4-cred-across-rename FAIL (read after
@@ -124,6 +127,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   pre-mortem, a `Live-verified:` trailer, and the same `cc-verify` check re-run.
   2026-11-12: the sandbox is rolled back (7caea26d); this gap is now one of three
   requirements for its return, researched together in the brief In flight.
+  2026-11-12, later: closed: the owner chose no sandbox (decision-log row 88).
 
 - **Agent: the sandbox leaves nested worktree paths writable** (filed 2026-11-11, from
   the Q-273 live check). Motive: the plan's own acceptance step
@@ -149,6 +153,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   so the two can be designed apart and checked in one live run.
   2026-11-12: the sandbox is rolled back (7caea26d); this gap is now one of three
   requirements for its return, researched together in the brief In flight.
+  2026-11-12, later: closed: the owner chose no sandbox (decision-log row 88).
 
 - **Agent: a release installed from a commit its entry did not describe** (filed
   2026-11-12, step 2). Motive: decision-log row 86's revisit trigger ("if an image's
