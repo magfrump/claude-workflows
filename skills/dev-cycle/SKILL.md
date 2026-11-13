@@ -737,8 +737,8 @@ none yet: a line `Applied: ITEM` at its end), ACTION being `redispatch`, `merged
 or `noted` (`unrecognized`), so each answer is acted on once and the action survives a
 restart.
 
-A merged brief whose acceptance criteria name a host step (step 8) gets that step filed as one `you: terminal`
-entry this iteration. A `merged` line moved main. After this step's last one, run step 0.1's image check again,
+A merged brief whose acceptance criteria name a host step (step 8) gets that step filed as
+one `you: terminal` entry this iteration. A `merged` line moved main. After this step's last one, run step 0.1's image check again,
 with main's commit then in M's place and C as before: it files, rewrites or closes its
 entry as there (one step 0.1 closed stays closed; one this iteration filed, then found
 cleared, is taken out again, not filed answered), and the `7.` line says what it found,
@@ -758,8 +758,8 @@ produces is filed this iteration (the Rules' "Attention is the budget"), and one
 asks holds nothing. A hold that names another unit the item rides with expires once an
 `8.` line in each of the two latest cycle records before today's (`docs/working/cycles/`)
 names it: brief the item alone, or with other such items as one unit. A hold on a host
-step (a re-bless, the live run a `Live-verified: no — WHY` trailer names) holds only that
-step: brief the code, its acceptance criteria naming the host step, which step 7 files as
+step (a re-bless, the run a `Live-verified: no` or `Host-tool-tested: no` trailer names)
+holds only that step: brief the code, its acceptance criteria naming the host step, which step 7 files as
 one `you: terminal` entry once it merges. A queue left under its slots is explained on the
 record's `8.` line, in one plain clause: why each free slot stayed free, naming each held
 item and its hold, not a category (`D12 doc item: rides a review unit; source_lines_ok:

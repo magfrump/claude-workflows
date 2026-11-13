@@ -632,7 +632,7 @@ shim() {
         "An owner call holds an item only when a questions-file entry asks it: a call any step produces is filed this iteration (the Rules' \"Attention is the budget\"), and one no entry asks holds nothing." \
         "A hold that names another unit the item rides with expires once an ${q}8.$q line in each of the two latest cycle records before today's (${q}docs/working/cycles/$q) names it" \
         "brief the item alone, or with other such items as one unit." \
-        "A hold on a host step (a re-bless, the live run a ${q}Live-verified: no — WHY$q trailer names) holds only that step: brief the code, its acceptance criteria naming the host step, which step 7 files as one ${q}you: terminal$q entry once it merges." \
+        "A hold on a host step (a re-bless, the run a ${q}Live-verified: no$q or ${q}Host-tool-tested: no$q trailer names) holds only that step: brief the code, its acceptance criteria naming the host step, which step 7 files as one ${q}you: terminal$q entry once it merges." \
         "naming each held item and its hold, not a category (${q}D12 doc item: rides a review unit; source_lines_ok: Q-278$q, say), so the next iteration can check it."; do
         [[ "$a" == *"$f"* ]] || { echo "step 8 lacks: $f"; return 1; }
     done

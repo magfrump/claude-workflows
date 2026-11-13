@@ -72,3 +72,9 @@ Failure-pattern skip: no fix(...) commits; this is a wording change to a procedu
   ride-along expiry comes two cycle days after this merges. Filing every owner call raises
   entry volume; the brief asks for it (a call no entry asks was read as a block), and the
   Rules' "only real choices" still decides whether a call is one.
+
+## Review round 2
+
+All round-1 fixes confirmed; no new red. Two minor ambers fixed: the host-step example
+also names `Host-tool-tested: no` (the same gate's host-tool trailer), and step 7's new
+line is rewrapped. Clean.
