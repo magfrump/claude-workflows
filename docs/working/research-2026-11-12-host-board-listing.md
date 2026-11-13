@@ -50,4 +50,4 @@ Round 2 (same reviewer, the delta only): every round-1 fix landed; the config ca
 
 ## Tests
 
-`scripts/confine-tests.sh --probe` exited 3: "confine-tests: NO CONFINEMENT PRIMITIVE AVAILABLE — refusing to run." So the suites ran unconfined with `scripts/run-tests.sh`, plus `scripts/hermeticity-lint --root .` (145 files, no unstubbed network spawns) and `shellcheck -x scripts/board.sh` (clean).
+`scripts/confine-tests.sh --probe` exited 3: "confine-tests: NO CONFINEMENT PRIMITIVE AVAILABLE — refusing to run." So the suites ran unconfined with `scripts/run-tests.sh`, plus `scripts/hermeticity-lint --root .` (145 files, no unstubbed network spawns) and `shellcheck -x scripts/board.sh` (clean). Final full run at 6d68228c: 2051 ok, 0 not ok, exit 0.
