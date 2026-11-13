@@ -36,9 +36,11 @@ The grep was `grep -inE 'board|questions\.sh|host|registry|git_harden|scrub|sent
 - amber, footer printed `exit 0` before a failed run-log append: the append now comes first.
 - amber, python3 unchecked (questions.sh check needs it; its absence blamed every repo's content): exit-2 refusal added.
 - amber, a vacuous `&&` assertion in the bats file: split.
-- amber, test gaps: added cases for a check_answer skip, an argument, a run-log failure, command-running repo config (fsmonitor, pager, gpg.program with showSignature, hooksPath) and the output scrub. Not added: perl missing (needs a PATH without perl but with bash and git; the check is one line), the unexpected-stop path. The config case is a regression guard: the reads run today do not consult those keys.
+- amber, test gaps: added cases for a check_answer skip, an argument, a run-log failure, command-running repo config (fsmonitor, pager, gpg.program with showSignature, hooksPath) and the output scrub. Not added: perl missing (needs a PATH without perl but with bash and git; the check is one line), the unexpected-stop path. Round 2 found the config case could not fail; it now signs main's tip with a fake `gpgsig` header, so an unhardened `git log` runs `gpg.program` (a positive control in the case shows it does), and the board run must not.
 - amber, safe.directory missing from the guide: bullet added.
 - green: an `open` line without three fields now refuses; a failed date read refuses; the PATH-without-`.` assumption is stated in the header; the "no questions doc" wording names the file. Not done: a blob size cap (a multi-GB questions file needs a deliberate act, S1).
+
+Round 2 (same reviewer, the delta only): every round-1 fix landed; the config case was made to fail without the hardening, and the run-log case no longer depends on the order of stdout and stderr. Green, not done: no test of the python3 or perl refusals (one-line checks; a PATH without them needs a symlink farm).
 
 ## Plan (done)
 

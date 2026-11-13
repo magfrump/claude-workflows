@@ -164,7 +164,9 @@ mkrepo() {
     mkdir -p "$HOME/.local/state"; : > "$HOME/.local/state/claude-board"
     board
     [ "$status" -eq 1 ] || { echo "$output"; false; }
-    [[ "$output" == *"could not append to $HOME/.local/state/claude-board/runs.log"*"unreadable or refused; exit 1"* ]]
+    # Two streams through two scrubs: their order in $output is not fixed.
+    [[ "$output" == *"could not append to $HOME/.local/state/claude-board/runs.log"* ]]
+    [[ "$output" == *"unreadable or refused; exit 1"* ]]
 }
 
 @test "repo config that runs commands never fires, and repo text is scrubbed (installed as executable)" {
@@ -173,6 +175,12 @@ mkrepo() {
     hit="$BATS_TEST_TMPDIR/config-ran"; printf '#!/bin/sh\ntouch "%s"\n' "$hit" > "$BATS_TEST_TMPDIR/evil"; chmod +x "$BATS_TEST_TMPDIR/evil"
     for k in core.fsmonitor core.pager pager.log gpg.program core.hooksPath; do git -C "$BATS_TEST_TMPDIR/alpha" config "$k" "$BATS_TEST_TMPDIR/evil"; done
     git -C "$BATS_TEST_TMPDIR/alpha" config log.showSignature true
+    # Main's tip carries a gpgsig header, so an unhardened `git log` runs gpg.program.
+    a="$BATS_TEST_TMPDIR/alpha"; tree="$(git -C "$a" rev-parse 'HEAD^{tree}')"
+    sig="$(printf 'tree %s\nparent %s\nauthor t <t@e> 1700000000 +0000\ncommitter t <t@e> 1700000000 +0000\ngpgsig -----BEGIN PGP SIGNATURE-----\n \n abc\n -----END PGP SIGNATURE-----\n\nsigned\n' "$tree" "$(git -C "$a" rev-parse HEAD)" | git -C "$a" hash-object -t commit -w --stdin)"
+    git -C "$a" update-ref refs/heads/main "$sig"
+    git -C "$a" log -1 --format=%cd >/dev/null 2>&1 || true
+    [ -e "$hit" ]; rm -f "$hit"   # the positive control: the planted config does fire unhardened
     mkrepo beta
     printf '\n### Q-8 \033]0;owned\007x\n' >> "$BATS_TEST_TMPDIR/beta/docs/working/questions.md"; commit "$BATS_TEST_TMPDIR/beta"
     run "$BOARD"
