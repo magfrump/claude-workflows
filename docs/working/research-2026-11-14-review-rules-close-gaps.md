@@ -69,6 +69,7 @@ Docs-only diff, so a single read-only reviewer ran a combined fact-check and con
   - MA5, a red needs the owner's Q-ID: an override-log row or trigger alone does not close one. The sibling gate brief (`docs/working/briefs/2026-11-14-merge-rubric-gate.md`, criterion 2) accepts either, which would re-admit U2a2 D1. That is relayed in the marker for the cycle, since this brief cannot edit another;
   - MA6, `Accepted-immutable` is a 🟡 row; MA7, the new sections moved after the Legibility-target paragraph;
   - C1, SKILL.md's Step 3.5 pointer; C2, a self-merge deferral keeps its Reason in the Author note; C3, "eight known-issue rows"; C4, the landing check excludes build-loop merges.
+- **Iteration 2 of 3** (at 44724747, the fix diff, then the whole diff): every iteration-1 finding resolved, 0 Must Fix, 0 Must Address, 3 Consider. The reviewer probed the landing check: an unset `ORIG_HEAD` fails closed, and an unedited `<branch>` is a shell syntax error, not a false pass. The fix-drift lite check returned one Low `unverified claim` on the MA5 bullet; it checks out (the gate brief's criterion 2 accepts "a Q-ID with an answer, an override-log row ... or a named revisit trigger"), so no edit. The three Considers were taken in the final commit: the snippet sets `B=<branch>` once and uses `-q --verify` on every rev-parse; the check runs in the merge's own worktree, since `ORIG_HEAD` is per-worktree; and the immutable-history self-merge route now reads as an explicit exception. The loop closes by exit condition 1 (clean).
 
 ## Gotchas
 

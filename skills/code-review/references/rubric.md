@@ -401,7 +401,7 @@ about a claim in an *already-merged commit message* (or any artifact no new comm
 edit) is not a tier at all — the orchestrator appends an `Accepted-immutable` row to
 `docs/reviews/override-log.md` (the one kind of row it may write mid-run; format and
 machine-row marking in [override-log.md](override-log.md#capture-format)) and does not
-raise it as 🔴/🟡; blocking merge on unfixable history is a category error. Where the log
+raise it as 🔴/🟡; blocking merge on unfixable history is a category error. The one exception: where the log
 cannot be edited (a self-merge build-loop branch, whose floor refuses `docs/reviews/override-log.md`),
 the rubric row is the record instead: a 🟡 Must Address row whose Status cell reads `Accepted-immutable` and whose
 Author note starts with the `[auto: code-review]` reason the log row would carry. Rationale and the measured driver (verdict-draw

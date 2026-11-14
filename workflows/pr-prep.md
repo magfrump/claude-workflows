@@ -496,12 +496,13 @@ After the PR is opened, take 2 minutes to close the loop on the workflow that pr
 
 ## Step 7: Post-merge follow-up (optional)
 
-**Landing check (required on the local-merge path).** Right after a merge you ran by the local-merge bullet above (a build-loop merge writes its own commit and is not covered here), check that `main`'s tip is a `--no-ff` merge of the branch onto the old `main` (`ORIG_HEAD`, which `git merge` sets) and that its message carries the description. Comparing parents catches a fast-forward even when the branch's own tip is a merge:
+**Landing check (required on the local-merge path).** Right after a merge you ran by the local-merge bullet above (a build-loop merge writes its own commit and is not covered here), and in the same worktree (`ORIG_HEAD` is per-worktree, and a later reset, rebase or pull overwrites it), check that `main`'s tip is a `--no-ff` merge of the branch onto the old `main` (`ORIG_HEAD`, which `git merge` sets) and that its message carries the description. Comparing parents catches a fast-forward even when the branch's own tip is a merge:
 
 ```bash
-[ "$(git rev-parse -q --verify 'main^1')" = "$(git rev-parse ORIG_HEAD)" ] &&
-  [ "$(git rev-parse -q --verify 'main^2')" = "$(git rev-parse <branch>)" ] ||
-  echo "main's tip is not a --no-ff merge of <branch>"
+B=<branch>   # edit this line only
+[ "$(git rev-parse -q --verify 'main^1')" = "$(git rev-parse -q --verify ORIG_HEAD)" ] &&
+  [ "$(git rev-parse -q --verify 'main^2')" = "$(git rev-parse -q --verify "$B")" ] ||
+  echo "main's tip is not a --no-ff merge of $B"
 git log -1 --format=%B main | grep -q '^## Areas of uncertainty' || echo "merge message lacks Areas of uncertainty"
 ```
 
