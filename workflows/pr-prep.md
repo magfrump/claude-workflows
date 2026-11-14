@@ -496,14 +496,16 @@ After the PR is opened, take 2 minutes to close the loop on the workflow that pr
 
 ## Step 7: Post-merge follow-up (optional)
 
-**Landing check (required on the local-merge path).** Right after the merge, check that `main`'s tip is a merge and that its message carries the description:
+**Landing check (required on the local-merge path).** Right after a merge you ran by the local-merge bullet above (a build-loop merge writes its own commit and is not covered here), check that `main`'s tip is a `--no-ff` merge of the branch onto the old `main` (`ORIG_HEAD`, which `git merge` sets) and that its message carries the description. Comparing parents catches a fast-forward even when the branch's own tip is a merge:
 
 ```bash
-git rev-parse -q --verify 'main^2' >/dev/null || echo "main's tip is not a merge"
+[ "$(git rev-parse -q --verify 'main^1')" = "$(git rev-parse ORIG_HEAD)" ] &&
+  [ "$(git rev-parse -q --verify 'main^2')" = "$(git rev-parse <branch>)" ] ||
+  echo "main's tip is not a --no-ff merge of <branch>"
 git log -1 --format=%B main | grep -q '^## Areas of uncertainty' || echo "merge message lacks Areas of uncertainty"
 ```
 
-If either line prints, the known issues have no record on `main`. Do not move `main` back; add the missing record as an empty commit on `main` (`git commit --allow-empty -F <message-file>`) that names the landed range and holds the Step 6 description. At 3a98f9e5 an integration branch was fast-forwarded, and eight known issues landed with no message (review-gap audit, landing 3).
+If either line prints, the known issues have no record on `main`. Do not move `main` back; add the missing record as an empty commit on `main` (`git commit --allow-empty -F <message-file>`) that names the landed range and holds the Step 6 description. That commit is the record, and the check counts as passed once it lands. At 3a98f9e5 an integration branch was fast-forwarded, and eight known-issue rows landed with no message (review-gap audit, landing 3).
 
 *The items below are not required for every PR. Review the list after merge and act on whichever apply. Skip items that don't fit the change.*
 

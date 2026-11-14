@@ -45,7 +45,7 @@ Path A: option A dominates (it is the only one that is in scope, needs no new me
 - **Carried-forward table in the template, or a conditional section:** conditional (only when an earlier rubric file for the branch leaves rows open). In the template it would need a "No prior rubric" line in every rubric and a golden fixture change for a case most rubrics never hit.
 - **Remedy when the landing check finds a fast-forward:** an empty commit on `main` carrying the missing message. The other option, moving `main` back and re-merging, is a history rewrite the global rules put behind the user's approval.
 - **Where "review before landing" lives:** rubric.md, since a review of code already on `main` runs code-review without pr-prep or the loop; pr-prep's "When to use" gets one pointer line.
-- **Split follow-ups in a build loop:** a build loop cannot write the questions file or the roadmap, so its follow-up goes in the marker body for the cycle to file; the early split trigger's existing "record the split in questions.md" line is covered by the same sentence.
+- **Split follow-ups in a build loop:** a build loop cannot write the questions file or the roadmap, so its follow-up goes in the marker body for the cycle to file. The early split trigger and the size re-check each get the same parenthetical where they say to record the split in questions.md.
 - **Escalate and the "no new human stops" memory:** `escalate` already hands the loop to a human and is the default only when no split exists; the rule adds a record of the wait, not a new wait.
 - **Build-loop merges:** the Step 7 landing check covers merges run by pr-prep's local-merge path. A build-loop self-merge writes its own merge commit; what its message holds is the sibling gate brief's business.
 
@@ -56,6 +56,19 @@ Path A: option A dominates (it is the only one that is in scope, needs no new me
 3. rubric.md: Status words, Carried forward table, Review of code already on main, the self-merge route in the immutable-history exception, a pointer from the status line and the new-file paragraph.
 4. override-log.md and SKILL.md: one pointer each.
 5. Tests: no test pins the edited lines outside the template fence (searched `test/` for each edited sentence); run the code-review format contract and workflow section tests, then the confined suite per the brief.
+
+## Review
+
+Docs-only diff, so a single read-only reviewer ran a combined fact-check and consistency review against the brief (no code critics).
+
+- **Iteration 1 of 3** (at de08ed8d, full scope): 1 Must Fix, 8 Must Address, 4 Consider. All fixed in the next commit:
+  - F1, the f6dc3f15 wording: four loop-1 rows were dropped, and the merge's "6 amber carried" named none, so "never accounted for" overstated it;
+  - MA1, the landing check: `main^2` exists after a fast-forward of a merge-tipped integration branch. It now compares `main^1` with `ORIG_HEAD` and `main^2` with the branch tip. A hermetic probe in the scratchpad showed a `--no-ff` merge passing and a fast-forward of a merge-tipped `answers` branch failing. The record commit counts as passing;
+  - MA2, emoji placement ("after any leading emoji"), plus a note that the format contract test pins only the template's subset; MA8, legacy `Resolved` and `Defer` mapped;
+  - MA3, the early split trigger and size re-check now route a build loop's split record to its marker body; MA4, the escalate entry follows the questions-doc grammar and links the summary;
+  - MA5, a red needs the owner's Q-ID: an override-log row or trigger alone does not close one. The sibling gate brief (`docs/working/briefs/2026-11-14-merge-rubric-gate.md`, criterion 2) accepts either, which would re-admit U2a2 D1. That is relayed in the marker for the cycle, since this brief cannot edit another;
+  - MA6, `Accepted-immutable` is a 🟡 row; MA7, the new sections moved after the Legibility-target paragraph;
+  - C1, SKILL.md's Step 3.5 pointer; C2, a self-merge deferral keeps its Reason in the Author note; C3, "eight known-issue rows"; C4, the landing check excludes build-loop merges.
 
 ## Gotchas
 

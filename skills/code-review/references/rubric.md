@@ -185,23 +185,29 @@ will be found again, so a yellow finding cannot get lost in the codebase. It is 
 A note with neither ("known, acceptable for now") is not qualifying; the row stays open
 for [next-action derivation](chat-synthesis.md#next-action-derivation).
 
+**Legibility-target column:** Carry forward the tag each critic placed on the source finding (see [taxonomy](../../../patterns/orchestrated-review.md#legibility-target-tagging)). Typical mapping: 🔴 / 🟡 / 🟢 rows are `for-author`; ✅ rows are `for-orchestrator-synthesis`. `for-automated-gate` findings (e.g., the security-reviewer HALT-ESCALATE pattern) live in the escalation block above the rubric, not in these tables — they reference the source critique once instead of being duplicated as a row.
+
 ### Status words
 
-A Status cell starts with one of these words (after its tier emoji when open), so a parser
-reads the first word, not the prose after it. Any other first word reads as open.
+A Status cell in a new rubric starts with one of these words, after any leading emoji
+(`🟡 Open`, `✅ Fixed`), so a parser reads the first word, not the prose after it. Any other
+first word reads as open. Older rubrics also use `Resolved` (read as `Fixed`) and `Defer`
+(read as `Deferred`). The format contract test pins only the template's subset of these words.
 
 | Word | Tiers | Means | The cell or Author note must carry |
 |---|---|---|---|
 | `Unresolved` / `Open` | 🔴 / 🟡, 🟢 | open | nothing |
 | `Fixed` | all | fixed | the fixing commit, once known |
 | `Acknowledged` | 🟡, 🟢 | stands with a [qualifying author note](#qualifying-author-note) | the note |
-| `Won't-Fix` / `Deferred` | all | declined or postponed (override-log row) | on a 🔴: the owner's `Q-NNN` |
+| `Won't-Fix` / `Deferred` | all | declined or postponed | its override-log row (where the log cannot be edited, its Reason in the Author note); on a 🔴, also the owner's `Q-NNN` |
 | `Waived` | 🔴 | ships unfixed | the owner's `Q-NNN` |
 | `Split` | 🔴, 🟡 | moved to another unit | the tracked follow-up (Q-ID, roadmap item or branch) |
 | `Carried` | 🔴, 🟡 | superseded by a newer rubric | the new file and row ID |
-| `Accepted-immutable` | 🔴, 🟡 | a claim no commit can edit | the artifact (see the exception below) |
+| `Accepted-immutable` | 🟡 | a claim no commit can edit | the artifact (see the exception below) |
 
-A merge-time check in `scripts/build-loop.sh` that reads these words is briefed in
+A 🔴 closed by anything but `Fixed`, `Split` or `Carried` needs the owner's `Q-NNN`; an
+override-log row or a revisit trigger alone does not close one, since an agent can write
+either. A merge-time check in `scripts/build-loop.sh` that reads these words is briefed in
 `docs/working/briefs/2026-11-14-merge-rubric-gate.md`.
 
 ### Carried forward table
@@ -232,8 +238,6 @@ that adds its rubric lands only after every open 🔴 and 🟡 row is routed: a 
 a roadmap item or an override-log row, named in the row. Fixing the small ambers counts;
 leaving them for a later sweep does not. At 435f46aa the design items of such a review were
 routed and three small ambers were not (review-gap audit, landing 2).
-
-**Legibility-target column:** Carry forward the tag each critic placed on the source finding (see [taxonomy](../../../patterns/orchestrated-review.md#legibility-target-tagging)). Typical mapping: 🔴 / 🟡 / 🟢 rows are `for-author`; ✅ rows are `for-orchestrator-synthesis`. `for-automated-gate` findings (e.g., the security-reviewer HALT-ESCALATE pattern) live in the escalation block above the rubric, not in these tables — they reference the source critique once instead of being duplicated as a row.
 
 ### Evidence grounding
 
@@ -399,7 +403,7 @@ edit) is not a tier at all — the orchestrator appends an `Accepted-immutable` 
 machine-row marking in [override-log.md](override-log.md#capture-format)) and does not
 raise it as 🔴/🟡; blocking merge on unfixable history is a category error. Where the log
 cannot be edited (a self-merge build-loop branch, whose floor refuses `docs/reviews/override-log.md`),
-the rubric row is the record instead: its Status cell reads `Accepted-immutable` and its
+the rubric row is the record instead: a 🟡 Must Address row whose Status cell reads `Accepted-immutable` and whose
 Author note starts with the `[auto: code-review]` reason the log row would carry. Rationale and the measured driver (verdict-draw
 variance on these two marginal classes controls loop length, ~1M tokens per marginal-red
 pass) are in `docs/decisions/031-review-loop-tier-and-factcheck-policy.md`.
