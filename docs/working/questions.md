@@ -89,7 +89,7 @@ Run the release paste below on the host, from your claude-workflows checkout at 
 
 **If you say no:** nothing breaks. Sessions keep running the installed image at C, whose dev-cycle skill lacks today's change to step 8 (below). The merges stay on main, waiting.
 
-**Release notes** (rewritten 2026-11-13, iteration 2250, from the log). The installed image is the root-owned copy of the dev-cycle scripts and skill that every session runs as the gate. It is at C = `107cba32d271132361bc4a74a2ebf851e4398b97` (read from `/opt/claude-workflows/.manifest`). Main is at M = `c8f74d411bc08d6d286d8b73ca30e8140039e7f0`.
+**Release notes** (rewritten 2026-11-13, iteration 2026-11-14-0319 UTC, from the log). The installed image is the root-owned copy of the dev-cycle scripts and skill that every session runs as the gate. It is at C = `107cba32d271132361bc4a74a2ebf851e4398b97` (read from `/opt/claude-workflows/.manifest`). Main is at M = `ac27fd42d0f99e8eab8230b3aec15aa4bae391ae`.
 
 **Merged without your review** (subject ends "build-loop self-merge"; a hand commit with that subject would read the same, so this is a pointer, not proof):
 
@@ -100,7 +100,7 @@ Run the release paste below on the host, from your claude-workflows checkout at 
 - The dev cycle stops leaving ready work unbriefed (`f1238bdb`, your Q-289 answer): step 8 takes a Next item's first step when no Now item is ready, a held item that rides another unit is briefed alone after two cycles, a host step is split from its code, every owner call goes in the questions file, and the record's `8.` line names why each free slot stayed free. This is the gate-code change that makes this release due.
 - Four small record fixes (`00e2e663`, your Q-287 answer): the decision log's row for D12 after the light pass, a `Harness feedback` section added to `AGENTS.md` and `GEMINI.md` (the health check's every-run warning), decision 018's moved line cite, and two failure-pattern records. The image carries none of these; `AGENTS.md` and `GEMINI.md` are what other agents read.
 
-**The rest:** 12 commits, cycle lands and recorded answers, records only. The full list: `git -c log.showSignature=false log --first-parent --format='%h %s' 107cba32d271132361bc4a74a2ebf851e4398b97..c8f74d411bc08d6d286d8b73ca30e8140039e7f0`
+**The rest:** 13 commits, cycle lands and recorded answers, records only. The full list: `git -c log.showSignature=false log --first-parent --format='%h %s' 107cba32d271132361bc4a74a2ebf851e4398b97..ac27fd42d0f99e8eab8230b3aec15aa4bae391ae`
 
 **Gate files changed:** `skills/dev-cycle/SKILL.md`.
 
@@ -109,7 +109,7 @@ Run the release paste below on the host, from your claude-workflows checkout at 
 The paste (one line; it refuses, saying why, unless the checkout is at main's tip and the gate code and installer are still M's):
 
 ```
-sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "c8f74d411bc08d6d286d8b73ca30e8140039e7f0:$p")"; then n=$((n+1)); else echo "release refused: $p changed after M: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
+sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "ac27fd42d0f99e8eab8230b3aec15aa4bae391ae:$p")"; then n=$((n+1)); else echo "release refused: $p changed after M: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
 ```
 
 - **Interim:** the image's gate (C) runs.
