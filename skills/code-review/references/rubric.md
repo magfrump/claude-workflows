@@ -14,7 +14,7 @@ track code review resolution.
 **Within one review-fix loop, keep updating the same file** — iterations 2 and 3 update
 statuses in place, which is what the 🔴/🟡 `Status` columns are for. A *new* file is
 created only when the date or the branch changes. A new date mid-loop is a continuation, not
-a new review: the new file copies the `Commit:` stamp and any marker line from the previous one. This preserves in-loop status tracking while stopping each loop from destroying the
+a new review: the new file copies the `Commit:` stamp and any marker line from the previous one. A new file for a branch whose previous file leaves 🔴/🟡 rows open opens with the [Carried forward table](#carried-forward-table) (the rule is [review-fix-loop.md's superseding loop](../../../workflows/review-fix-loop.md#hard-cap-3-iterations)). This preserves in-loop status tracking while stopping each loop from destroying the
 prior loop's findings.
 
 The file's first line is `Commit: <reviewed HEAD short SHA>`, above the template below, and
@@ -187,6 +187,58 @@ for [next-action derivation](chat-synthesis.md#next-action-derivation).
 
 **Legibility-target column:** Carry forward the tag each critic placed on the source finding (see [taxonomy](../../../patterns/orchestrated-review.md#legibility-target-tagging)). Typical mapping: 🔴 / 🟡 / 🟢 rows are `for-author`; ✅ rows are `for-orchestrator-synthesis`. `for-automated-gate` findings (e.g., the security-reviewer HALT-ESCALATE pattern) live in the escalation block above the rubric, not in these tables — they reference the source critique once instead of being duplicated as a row.
 
+### Status words
+
+A Status cell in a new rubric starts with one of these words, after any leading emoji
+(`🟡 Open`, `✅ Fixed`), so a parser reads the first word, not the prose after it. Any other
+first word reads as open. Older rubrics also use `Resolved` (read as `Fixed`) and `Defer`
+(read as `Deferred`). The format contract test pins only the template's subset of these words.
+
+| Word | Tiers | Means | The cell or Author note must carry |
+|---|---|---|---|
+| `Unresolved` / `Open` | 🔴 / 🟡, 🟢 | open | nothing |
+| `Fixed` | all | fixed | the fixing commit, once known |
+| `Acknowledged` | 🟡, 🟢 | stands with a [qualifying author note](#qualifying-author-note) | the note |
+| `Won't-Fix` / `Deferred` | all | declined or postponed | its override-log row (where the log cannot be edited, its Reason in the Author note); on a 🔴, also the owner's `Q-NNN` |
+| `Waived` | 🔴 | ships unfixed | the owner's `Q-NNN` |
+| `Split` | 🔴, 🟡 | moved to another unit | the tracked follow-up (Q-ID, roadmap item or branch) |
+| `Carried` | 🔴, 🟡 | superseded by a newer rubric | the new file and row ID |
+| `Accepted-immutable` | 🟡 | a claim no commit can edit | the artifact (see the exception below) |
+
+A 🔴 closed by anything but `Fixed`, `Split` or `Carried` needs the owner's `Q-NNN`; an
+override-log row or a revisit trigger alone does not close one, since an agent can write
+either. A merge-time check in `scripts/build-loop.sh` that reads these words is briefed in
+`docs/working/briefs/2026-11-14-merge-rubric-gate.md`.
+
+### Carried forward table
+
+When a rule in [review-fix-loop.md](../../../workflows/review-fix-loop.md#hard-cap-3-iterations)
+calls for it, this section goes directly under the status line, before `## 🔴 Must Fix`.
+It holds one row for every 🔴/🟡 row the branch's previous rubric file leaves open; that
+file's rows then read `Carried`.
+
+```markdown
+## ⤴️ Carried forward
+
+From `docs/reviews/code-review-rubric-<date>-<branch-slug>.md`:
+
+| Prior ID | Tier | Now | Reason |
+|---|---|---|---|
+| A9 | 🟡 | A3 | still open |
+| A13 | 🟡 | Fixed | 1a2b3c4 removed the field |
+```
+
+`Now` is a row ID in this file's tables or a [status word](#status-words) that closes it.
+
+### Review of code already on main
+
+A review should run before its code lands. A review of commits already on `main`
+(a range, or a branch slug of `main`) has no merge to hold the known issues, so the commit
+that adds its rubric lands only after every open 🔴 and 🟡 row is routed: a question entry,
+a roadmap item or an override-log row, named in the row. Fixing the small ambers counts;
+leaving them for a later sweep does not. At 435f46aa the design items of such a review were
+routed and three small ambers were not (review-gap audit, landing 2).
+
 ### Evidence grounding
 
 Before tiering, verify each finding's **Evidence** block against the file it cites.
@@ -349,7 +401,10 @@ about a claim in an *already-merged commit message* (or any artifact no new comm
 edit) is not a tier at all — the orchestrator appends an `Accepted-immutable` row to
 `docs/reviews/override-log.md` (the one kind of row it may write mid-run; format and
 machine-row marking in [override-log.md](override-log.md#capture-format)) and does not
-raise it as 🔴/🟡; blocking merge on unfixable history is a category error. Rationale and the measured driver (verdict-draw
+raise it as 🔴/🟡; blocking merge on unfixable history is a category error. The one exception: where the log
+cannot be edited (a self-merge build-loop branch, whose floor refuses `docs/reviews/override-log.md`),
+the rubric row is the record instead: a 🟡 Must Address row whose Status cell reads `Accepted-immutable` and whose
+Author note starts with the `[auto: code-review]` reason the log row would carry. Rationale and the measured driver (verdict-draw
 variance on these two marginal classes controls loop length, ~1M tokens per marginal-red
 pass) are in `docs/decisions/031-review-loop-tier-and-factcheck-policy.md`.
 
@@ -550,7 +605,7 @@ only, never demote, per the Soundness channel's rule.
 ### Rubric Status Line
 
 - Red items unresolved: `**Status: 🔴 DOES NOT PASS** — [N] red item(s) unresolved`
-- Zero red but amber open: `**Status: 🟡 CONDITIONAL PASS** — [N] amber item(s) awaiting resolution or justification`
+- Zero red but amber open: `**Status: 🟡 CONDITIONAL PASS** — [N] amber item(s) awaiting resolution or justification` (shipping on it is review-fix-loop's exit 2, which says what each open row needs)
 - All red and amber resolved: `**Status: ✅ PASSES REVIEW** — single-sample review; absence of findings is not an attestation`
 
 #### The single-sample label
