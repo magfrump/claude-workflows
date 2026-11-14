@@ -38,3 +38,5 @@ Paths: docs/working/research-2026-11-13-review-gap-audit.md docs/working/briefs/
 - Turning the procedure into a skill or script (a later item, if the paste proves useful in a second repo).
 - Reading or running anything in another repo.
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`: the dev cycle owns those.
+
+Dispatched: 1
