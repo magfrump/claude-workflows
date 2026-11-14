@@ -448,8 +448,9 @@
 #                 "superseded OLD by NEW (not read)" for each older dated
 #                 file, then per rubric read: "open PATH ID TIER: STATUS"
 #                 for a red or amber row neither fixed nor closed by a
-#                 reference (either tier: a Split naming its follow-up or a
-#                 Carried naming the newer rubric and row; else a red closes
+#                 reference (either tier: a Split naming its target, a brief
+#                 path, a TYPE/NAME branch or a roadmap item, or a Carried
+#                 naming a rubric dated no earlier and a row; else a red closes
 #                 only by a Q-ID the owner answered on main, an amber by a
 #                 qualifying note found by keyword: a Q-ID, an override-log
 #                 row, a TODO, a roadmap item or a revisit trigger), STATUS
@@ -459,7 +460,8 @@
 #                 the last commit changing PATH does not contain); "clean
 #                 PATH: R red and A amber rows, none open"; or, with no
 #                 rubric, one "none: WHY", counting the paths outside docs/
-#                 when there are any. PATH is "?" unless pathform allows it.
+#                 when there are any. PATH is "?" unless every character is
+#                 one pathform allows (showpath).
 #   --merge   lands a self-merge brief (D7), or with --approved a brief of
 #             either policy: --check's lines for BRIEF at --expect's tip
 #             (under --approved, without the S rules or the checkout

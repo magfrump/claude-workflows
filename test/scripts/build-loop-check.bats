@@ -1221,7 +1221,7 @@ rubric $B: open $RB A10 amber: Corrected in abc"
     commit_all "answer Q-003"; chk "$B"; [[ "$rubric" != *"R5 red"* && "$rubric" == *"R7 red"* ]] || { echo "$rubric"; show; return 1; }
 }
 
-@test "rubric: a Tier-column table, a pass appended under its own tier headings (the last row of an ID wins), a successor row named by superseded by or as, and the 🟢 tier left out (brief 2026-11-14-merge-rubric-gate)" {
+@test "rubric: a Tier-column table, a pass appended under its own tier headings (the last row of an ID wins), a successor row named by superseded by (still open as A3 stays open by its own words), and the 🟢 tier left out (brief 2026-11-14-merge-rubric-gate)" {
     gated feat/x
     rub "$RB" '# Code review rubric: feat/x' '' '## Findings' '' '| ID | Source | Tier | Finding | Status |' '|---|---|---|---|---|' \
         '| R1 | suite | red | a | fixed: in abc |' '| A1 | security | amber | b | superseded by C1 |' '| A2 | security | amber | c | still open as A3 |' \
@@ -1283,7 +1283,7 @@ rubric $B: unread $RB line 12: a amber table has no Status column"
     [ "$(count "$T" open) $(count "$T" fixed) $(count "$T" bad)" = "0 13 0" ]
 }
 
-@test "rubric: a red never borrows an amber successor's closure; prose like same as is no successor; negation anywhere in the cell, an unchecked Split Q-ID and a Carried row away from its file stay open; an empty Status cell keeps its fields (brief 2026-11-14-merge-rubric-gate, review 1)" {
+@test "rubric: a red never borrows an amber successor's closure; prose like same as is no successor; negation anywhere in the cell (not, open and still in the first clause only), an unchecked Split Q-ID and a Carried row away from its file stay open; an empty Status cell keeps its fields (brief 2026-11-14-merge-rubric-gate, review 1)" {
     qentry Q-002 ANSWERED; commit_all questions
     gated feat/x
     rub "$RB" '## 🔴 Must Fix' '' '| # | Finding | Status | Author note |' '|---|---|---|---|' \
@@ -1318,4 +1318,22 @@ rubric $B: unread $RB line 20: a code fence opened here is never closed, so the 
 rubric $B: superseded $T1 by $T2 (not read)
 rubric $B: open ? R1 red: Open
 rubric $B: clean $T2: 1 red and 0 amber rows, none open" ] || { echo "$rubric"; show; return 1; }
+}
+
+@test "rubric: a Split must name its target and a Carried a rubric not older than its own; a red superseded by an answered red closes; a slug holding a space is superseded cleanly (brief 2026-11-14-merge-rubric-gate, review 2)" {
+    qentry Q-002 ANSWERED; commit_all questions
+    gated feat/x
+    rub "$RB" '## 🔴 Must Fix' '' '| # | Finding | Status |' '|---|---|---|' \
+        '| R1 | a | Split; no branch yet |' '| R2 | b | Split — no roadmap item |' '| R3 | c | Carried to code-review-rubric-2020-01-01-old.md R4 |' \
+        '| R4 | d | Split to feat/rubric-gate-2 |' '| R5 | e | Split: docs/working/briefs/2026-10-02-y.md |' '| R6 | f | Carried to code-review-rubric-2026-10-01-feat-x.md R1 |' \
+        '| R7 | g | superseded by R8 |' '| R8 | h | Waived (Q-002) |' '| R9 | i | Fixed; follow-up still needed |'
+    rubis "rubric $B: open $RB R1 red: Split; no branch yet
+rubric $B: open $RB R2 red: Split — no roadmap item
+rubric $B: open $RB R3 red: Carried to code-review-rubric-2020-01-01-old.md R4
+rubric $B: open $RB R6 red: Carried to code-review-rubric-2026-10-01-feat-x.md R1"
+    git branch -q -f feat/x main; rub w.txt w
+    O="docs/reviews/code-review-rubric-2026-10-01-a b.md" N="docs/reviews/code-review-rubric-2026-10-02-a b.md"
+    for f in "$O" "$N"; do rub "$f" '## 🔴 Must Fix' '' '| # | Finding | Status |' '|---|---|---|' '| R1 | a | Fixed |'; done
+    rubis "rubric $B: superseded ? by ? (not read)
+rubric $B: clean ?: 1 red and 0 amber rows, none open"
 }

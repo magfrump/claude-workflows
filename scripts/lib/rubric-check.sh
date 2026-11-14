@@ -7,7 +7,7 @@
 # gate_git, fp_blob, showpath, MAIN_SHA and GATE_TMP and the reader lib's
 # check_answer.
 
-# rubric_parse FILE: one record per line, fields joined by a tab, none empty
+# rubric_parse FILE [NAME]: one record per line, fields joined by a tab, none empty
 # ("-" for no Q-IDs, "(empty)" for an empty Status cell), for the rows of
 # FILE's red and amber tables (skills/code-review/references/rubric.md):
 #   row TIER ID CLASS STATUS QIDS
@@ -36,10 +36,13 @@
 # rubric.md: "Fixed", or "Resolved" in older rubrics, is a fix unless the
 # cell anywhere says unresolved, partly, partially, half, "not yet", "not
 # fixed", "not resolved", "still open", pending or reopened (or its first
-# clause says not, open or still). "Split" and "Carried" close a row of
-# either tier with none of those words: a Split that names a roadmap item, a
-# branch or a brief (a Split naming only a Q-ID is qref), a Carried whose
-# newer rubric file is followed by the row ID. Any other closure of a red is
+# clause alone says not, open or still: "Fixed; follow-up still needed" is a
+# fix). "Split" and "Carried" close a row of either tier with none of those
+# words and no "no" or "none": a Split that names its target (a
+# docs/working/briefs/ path, a TYPE/NAME branch or "roadmap item" and an
+# ID; a Split naming only a Q-ID is qref), a Carried whose rubric file,
+# dated this rubric's day or later and not this file, is followed by the row
+# ID. FILE's own name is NAME (the blob is read from a temporary file). Any other closure of a red is
 # qref: it counts only with a Q-ID the owner has answered (the orchestrator's
 # correction to the brief's criterion 2: an agent can write an override-log
 # row or a trigger itself, which is how the audit's U2a2 D1 red was waived).
@@ -51,7 +54,8 @@
 # or revisit/reopen then if, when, once or after). Keyword presence is not a
 # check that the reference exists or says what it should.
 # A row not fixed whose Status names its successor row in this file
-# ("superseded by C1", "→ X1") takes that row's class, followed up to 5 hops;
+# ("superseded by C1", "→ X1") takes that row's class and Q-IDs, followed up
+# to 5 hops;
 # a red follows only red rows, so it never borrows an amber's closure.
 rubric_parse() {
   # shellcheck disable=SC2016  # perl code, not shell
@@ -63,6 +67,13 @@ rubric_parse() {
     my $n = 0;
     my $RED = qr/\xF0\x9F\x94\xB4/; my $AMB = qr/\xF0\x9F\x9F\xA1/; my $GRN = qr/\xF0\x9F\x9F\xA2/;
     my $NEG = qr/\b(unresolved|partly|partially|half|not yet|not fixed|not resolved|still open|pending|reopened)\b/;
+    # A Split target: a brief path, a branch name (TYPE/NAME) or a roadmap
+    # item named after the word (a token with a digit or a hyphen).
+    my $TARGET = qr{docs/working/briefs/[^\s|`]+\.md|\b(?:feat|fix|chore|docs|refactor|test|spike|exp)/[A-Za-z0-9][\w./-]*|\broadmap item\s+[`"]?[A-Za-z0-9]*[-0-9][\w.-]*};
+    # The name and date of this rubric (ARGV[1]): a Carried row closes only to
+    # another rubric dated the same day or later.
+    my $NAME = defined $ARGV[1] ? $ARGV[1] : ""; $NAME =~ s{.*/}{};
+    my $OWN = $NAME =~ /^code-review-rubric-([0-9]{4}-[0-9]{2}-[0-9]{2})-/ ? $1 : "";
     my $SUCC = qr/(?:superseded by|\xE2\x86\x92)\s*\**([A-Z]{1,3}[0-9]+[a-z0-9]*)\b/;
     sub cells { my $l = shift; $l =~ s/\\\|/\//g; $l =~ s/^\s*\|//; $l =~ s/\|\s*$//; return map { my $c = $_; $c =~ s/^\s+|\s+$//g; $c } split(/\|/, $l, -1); }
     sub plain { my $c = lc shift; $c =~ s/[*_`]//g; $c =~ s/^\s+|\s+$//g; return $c; }
@@ -87,11 +98,15 @@ rubric_parse() {
       my $t = "$st $note";
       my %q; $q{$1} = 1 while $t =~ /\b(Q-[0-9]{3,})\b/g;
       my $qids = join(" ", sort keys %q); $qids = "-" if $qids eq "";
-      if ($first eq "split" && !$neg) {
-        return ("closed", $qids) if $t =~ /\b(roadmap|branch|brief)\b/i;
+      my $none = $neg || $w =~ /\b(no|none)\b/;
+      if ($first eq "split" && !$none) {
+        return ("closed", $qids) if $t =~ $TARGET;
         return ("qref", $qids) if $qids ne "-";
       }
-      return ("closed", $qids) if $first eq "carried" && !$neg && $t =~ /code-review-rubric[^\s|]*\.md\W{0,3}(row\s+)?[A-Z]{1,3}[0-9]+\b/;
+      if ($first eq "carried" && !$none && $t =~ /(code-review-rubric-([0-9]{4}-[0-9]{2}-[0-9]{2})-[^\s|`]*\.md)\W{0,3}(?:row\s+)?[A-Z]{1,3}[0-9]+\b/) {
+        my ($to, $d) = ($1, $2);
+        return ("closed", $qids) if $OWN ne "" && $d ge $OWN && $to ne $NAME;
+      }
       return ($qids ne "-" ? "qref" : "open", $qids) if $tier eq "red";
       my $ovr = $t =~ /\boverride[- ](log|rows?)\b|\baccepted-immutable\b|\brows? [0-9]+\b/i;
       return ("closed", $qids) if $qids ne "-" || $ovr || $t =~ /\bTODO\b/ || $t =~ /\broadmap\b/i
@@ -100,7 +115,8 @@ rubric_parse() {
     }
     while (my $l = <$fh>) {
       $n++; $l =~ s/\r?\n\z//;
-      if ($l =~ /^\s{0,3}(```|~~~)/) { my $m = $1; if ($fence eq "") { $fence = "$m\t$n"; } elsif ($fence =~ /^\Q$m\E\t/) { $fence = ""; } $hdr = undef; next; }
+      # A fence closes on a line of the same character at least as long as its opener.
+      if ($l =~ /^\s{0,3}(`{3,}|~{3,})/) { my $m = $1; if ($fence eq "") { $fence = "$m\t$n"; } elsif (substr($fence, 0, 1) eq substr($m, 0, 1) && length($m) >= index($fence, "\t")) { $fence = ""; } $hdr = undef; next; }
       next if $fence ne "";
       if ($l =~ /^(#{1,6})\s/) {
         my $lev = length $1; my $h = lc $l;
@@ -151,7 +167,7 @@ rubric_parse() {
     print join("\t", "row", @{$rows{$_}}[0 .. 4]), "\n" for @order;
     print "bad\t$_\n" for @bad;
     print "none\n" unless $tables;
-  ' "$1"
+  ' "$1" "${2-}"
 }
 
 # rubric_lines BRIEF BRANCH TIP PATHS STATUSES: the advisory "rubric BRIEF:
@@ -176,7 +192,7 @@ rubric_lines() {
   local a="$1" br="$2" sha="$3" i p b f k d code=0 last nfix out tier id cl st q x ok nred namb
   local -n rl_ps="$4" rl_ss="$5"
   local -A newest=() ndate=() qdone=()
-  local files=() rows=() sup=()
+  local files=() rows=() sold=() sslug=()
   for i in "${!rl_ps[@]}"; do
     p="${rl_ps[$i]}"
     [[ "$p" == docs/* ]] || code=$((code + 1))
@@ -185,8 +201,8 @@ rubric_lines() {
     if [[ "$b" =~ ^code-review-rubric-([0-9]{4}-[0-9]{2}-[0-9]{2})-(.+)\.md$ ]]; then
       d="${BASH_REMATCH[1]}"; k="${BASH_REMATCH[2]}"
       if [[ -z "${newest[$k]-}" ]]; then newest[$k]="$p"; ndate[$k]="$d"
-      elif [[ "$d" > "${ndate[$k]}" ]]; then sup+=("$k ${newest[$k]}"); newest[$k]="$p"; ndate[$k]="$d"
-      else sup+=("$k $p"); fi
+      elif [[ "$d" > "${ndate[$k]}" ]]; then sold+=("${newest[$k]}"); sslug+=("$k"); newest[$k]="$p"; ndate[$k]="$d"
+      else sold+=("$p"); sslug+=("$k"); fi
     else files+=("$p"); fi
   done
   for k in "${!newest[@]}"; do files+=("${newest[$k]}"); done
@@ -198,7 +214,7 @@ rubric_lines() {
   fi
   x="$(printf '%s\n' "${files[@]}" | LC_ALL=C sort)" || { echo "rubric $a: unread: the rubrics on $br could not be sorted, so none was read"; return 0; }
   mapfile -t files <<< "$x"
-  for x in "${sup[@]}"; do echo "rubric $a: superseded $(showpath "${x#* }") by $(showpath "${newest[${x%% *}]}") (not read)"; done
+  for i in "${!sold[@]}"; do echo "rubric $a: superseded $(showpath "${sold[$i]}") by $(showpath "${newest[${sslug[$i]}]}") (not read)"; done
   for f in "${files[@]}"; do
     p="$(showpath "$f")"
     i=0; fp_blob "$sha" "$f" "$GATE_TMP/rub" || i=$?
@@ -207,7 +223,7 @@ rubric_lines() {
       2) echo "rubric $a: unread $p: not a regular file in the tip of $br"; continue ;;
       *) echo "rubric $a: unread $p: could not be read"; continue ;;
     esac
-    if ! rubric_parse "$GATE_TMP/rub" > "$GATE_TMP/rubp"; then echo "rubric $a: unread $p: could not be parsed"; continue; fi
+    if ! rubric_parse "$GATE_TMP/rub" "$f" > "$GATE_TMP/rubp"; then echo "rubric $a: unread $p: could not be parsed"; continue; fi
     ok=1; nred=0; namb=0; rows=()
     while IFS=$'\t' read -r k tier id cl st q; do
       case "$k" in

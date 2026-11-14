@@ -59,7 +59,7 @@ Nothing else writes the merge message: `--merge` builds it itself (`gate_msg`). 
 - A **red** closed by anything but a fix counts as closed only when it cites a Q-NNN the owner has answered on main (read by `check_answer`). An override-log row, a trigger or `Accepted-immutable` does not close it.
 - An **amber** may still be closed by a Q-ID (open or answered: a filed entry is a tracked follow-up), an override-log row, a named trigger, a TODO or a roadmap item: the qualifying author note of `skills/code-review/references/rubric.md`.
 
-The parser follows the "Status words" table on the parallel branch `docs/review-rules-close-gaps` (ready, not on main; nothing here depends on it). The first word is read: `Fixed`, or `Resolved` from older rubrics, is a fix, and any other first word is open unless a reference closes it. `Split` closes a row of either tier when it names its follow-up (a Q-ID, a roadmap item, a branch or brief). `Carried` closes one when it names the newer rubric file and a row ID. Those are the table's two non-fix closures for a red that need no Q-NNN. `Defer` and `Deferred` are treated the same: both need a reference. `Corrected`, which the first build counted as a fix, now reads as open, as the table's "any other first word" rule says.
+The parser follows the "Status words" table on the parallel branch `docs/review-rules-close-gaps` (ready, not on main; nothing here depends on it). The first word is read: `Fixed`, or `Resolved` from older rubrics, is a fix, and any other first word is open unless a reference closes it. `Split` closes a row of either tier when it names its target (a `docs/working/briefs/` path, a TYPE/NAME branch, or "roadmap item" followed by an ID), with no "no" or "none" in the cell. A Split that names only a Q-ID waits for that Q-ID to be answered. `Carried` closes one when it names a rubric file dated no earlier than its own (not itself), followed by a row ID. Those are the table's two non-fix closures for a red that need no Q-NNN. `Defer` and `Deferred` are treated the same: both need a reference. `Corrected`, which the first build counted as a fix, now reads as open, as the table's "any other first word" rule says.
 
 ### D3. Which rubric(s)
 
@@ -112,7 +112,7 @@ Failure-pattern grep: FP-064, FP-033, FP-156
 
 - **Pass 1** (at 66304b3d, the full `code-review` pipeline: fact-check k=3 and five critics, run by a separate read-only agent; rubric `docs/reviews/code-review-rubric-2026-11-14-merge-rubric-gate.md`): 1 Must Fix, 14 Must Address, 9 Consider.
   - R1, the successor pass let a red borrow an amber's closure and matched prose: fixed.
-  - Classifier findings fixed: A1 (split and carried), A2 (negation in the whole cell), A3 (only explicit answered states close; empty output is open) and A5 (empty fields).
+  - Classifier findings fixed: A1 (split and carried, completed in pass 2 as R2), A2 (negation in the whole cell), A3 (only explicit answered states close; empty output is open) and A5 (empty fields).
   - A4 (code fences, Tier-cell words, unread rows) is fixed, except unmarked tier headings (pre-mortem 3).
   - A6 (set -e hazards) is fixed.
   - The A7, A10 and A12 docs are reworded.
@@ -121,3 +121,12 @@ Failure-pattern grep: FP-064, FP-033, FP-156
   - A11 is fixed with namerefs, A13 by showpath, and A14 with two cases.
   - C3 (a red superseded by an answered red) closes now, since the successor's Q-IDs carry over. C4 (the skill's list) is fixed.
   - C9 is a record note: bb0030a1's Notes line states the first red rule (fix, answered Q-ID or override-log row). 66304b3d and this doc supersede it, and history is not rewritten.
+- **Pass 2** (at 655df91d, a loop pass: fact-check k=1, then the first-red short-circuit, so no critics ran; rubric updated in place): 1 new Must Fix, 6 new Must Address.
+  - R2: a Split closed a red on a bare keyword ("no branch yet"), and a Carried did not check its file was newer. Fixed: a Split needs a target shape and no "no" or "none"; a Carried needs a rubric dated no earlier than its own.
+  - A15: the superseded list split on a space and tripped set -u. Fixed with separate arrays.
+  - A16 and A14 (tests) are fixed: a case pins R2, C3 and A15.
+  - A17, A19 and A20 (wording) are fixed. For A19 the words not, open and still stay first-clause only, and the docs and test title now say so ("Fixed; follow-up still needed" is a fix).
+  - A18 (fence length) is fixed.
+  - A3 (an answered Q-ID closes a red whatever the answer) is kept on purpose. The answer's meaning is the owner's judgment, which the gate does not read (H4). The rubric row carries a revisit trigger.
+  - C4: the skill now says an `unread` failed-read line is the environment's.
+- **Pass 3** is the loop's last under the 3-pass cap (`workflows/review-fix-loop.md`). All critics run, since the short-circuit is spent.

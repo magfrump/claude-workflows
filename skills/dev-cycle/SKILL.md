@@ -668,7 +668,8 @@ the brief is still open and no subagent of this session runs it, step 10 re-disp
   again next iteration. The `rubric` lines (last, after the path lines) are advisory: they
   change no verdict, so a `merged` line still lands past an `open` red; the record quotes
   them under the `merged` line and the final message names each one but `clean` and
-  the docs-only `none`.
+  the docs-only `none`. An `unread` line naming a failed read ("could not be read", "listed",
+  "sorted") is the environment's, like a gap's; it does not stop the landing.
 - **ready**, review: `--check BRIEF --expect TIP`. On `ok`, one merge entry, heading
   `### Q-NNN · merge-STEM-SHA12` (SHA12: TIP's first 12 hex digits), or
   `merge-gate-STEM-SHA12` when a `path` or `deny` line's PATH (without a trailing ` (symlink)` or
