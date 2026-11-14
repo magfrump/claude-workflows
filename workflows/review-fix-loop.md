@@ -27,6 +27,8 @@ The review→fix→re-review loop is bounded at **3 iterations**. This is a hard
 
 The cap is **per-loop, not per-session**. Each review-fix loop carries its own counter; starting a fresh loop on a different PR or branch within the same session resets the count to zero. The counter belongs to the loop instance, not to the conversation.
 
+**A superseding loop closes the old one.** When a new loop, or a new dated rubric file, starts on a branch whose previous rubric file still has open 🔴 or 🟡 rows, the new rubric opens with one [Carried forward table](../skills/code-review/references/rubric.md#carried-forward-table). It lists every such row by its old ID, either carried (with its ID in the new tables) or closed with a reason. Why: at f6dc3f15 a second loop's rubric dropped six of the first loop's open rows, and the merge never accounted for them (review-gap audit, `docs/working/research-2026-11-13-review-gap-audit.md`, landing 1).
+
 ### Per-iteration header
 
 On entry to each iteration, emit a single header line:
@@ -42,7 +44,7 @@ Iteration N of 3
 Exit the loop at the end of any iteration where:
 
 1. **Clean convergence.** No Must Fix items remain and every Must Address item is resolved or acknowledged with a discoverable TODO or a concrete revisit trigger (the [qualifying author note](../skills/code-review/references/rubric.md#qualifying-author-note)). Proceed to Phase 2 of pr-prep.
-2. **Ship with documented known issues.** No Must Fix items remain, but Must Address or Consider items persist. Document the remaining findings in the PR description's "Areas of uncertainty" section (the merge commit message on pr-prep's local-merge path) and proceed to Phase 2. The human reviewer sees the known issues and can make a judgment call about whether they block merge.
+2. **Ship with documented known issues.** No Must Fix items remain, but Must Address or Consider items persist. Document the remaining findings in the PR description's "Areas of uncertainty" section (the merge commit message on pr-prep's local-merge path) and proceed to Phase 2. The human reviewer sees the known issues and can make a judgment call about whether they block merge. This exit, a `🟡 CONDITIONAL PASS`, needs a filled `Author note` in every open 🟡 row (why it ships open; a `—` cell does not pass). A 🔴 never ships open: one closed by waiver or deferral cites the owner's answer (`Q-NNN`) in its Status cell, never an agent's own call (the audit's U2a2 D1). The [status words](../skills/code-review/references/rubric.md#status-words) say how each closure is written; a merge-time check of these rows in `scripts/build-loop.sh` is briefed in `docs/working/briefs/2026-11-14-merge-rubric-gate.md`.
 
 If neither condition holds at the end of iteration 3, you have hit the cap. Do not begin iteration 4 implicitly — proceed to the gate below.
 
@@ -77,7 +79,9 @@ When iteration 3 ends without an exit condition met, the loop is paused at the c
   ```
 
   The human reviewer may authorize additional iterations; only their explicit authorization permits iteration 4 to begin, and a new `Iteration 4 of N` header must reflect the revised bound they granted.
-- **`split`** — Break the change into smaller pieces that can each converge inside their own 3-iteration budget. Close this loop, open per-piece branches, and start a new loop (with a fresh counter) on each piece. The current PR is either closed or repurposed as the integration branch. In /away mode and autonomous loops, `split` is the default when the unit has separable parts, past the [size re-check](#size-re-check-after-any-iteration-and-before-merge)'s limit too, recorded the way the [early split trigger](#early-split-trigger-after-any-iteration) records it; otherwise (no separable parts), the default is `escalate`.
+
+  Recording `escalate` does not close the loop. Before any merge, file the summary as a question entry (`Needs: you: judgment` in `docs/working/questions.md`), or in a build loop end with a `handoff: blocked` marker carrying it; the branch merges only after the answer. At 3a98f9e5 a branch was fast-forwarded to `main` after an `escalate`, and its leftover ambers were never filed (audit, landing 3).
+- **`split`** — Break the change into smaller pieces that can each converge inside their own 3-iteration budget. Close this loop, open per-piece branches, and start a new loop (with a fresh counter) on each piece. The current PR is either closed or repurposed as the integration branch. In /away mode and autonomous loops, `split` is the default when the unit has separable parts, past the [size re-check](#size-re-check-after-any-iteration-and-before-merge)'s limit too, recorded the way the [early split trigger](#early-split-trigger-after-any-iteration) records it; otherwise (no separable parts), the default is `escalate`. Every split, this one or the early trigger's or the size re-check's, files the split-off part as a tracked item before the rest merges: a roadmap item or question entry, or in a build loop a line in the marker body for the cycle to file. Each split-off 🔴/🟡 row then reads `Split` and names that item.
 - **`abandon`** — Revert or shelve the change. The chosen approach is not converging, and continuing to patch will compound debt. Record what was learned so a future attempt does not repeat the same path.
 
 The decision must be recorded in writing in one of: the latest review artifact (`docs/reviews/*.md`), a commit message on the branch, or the PR description's "Areas of uncertainty" section. The decision line must name the option (`escalate`, `split`, or `abandon`) explicitly so an audit can grep for it. A bare "let's keep going" is not a valid decision — it must select one of the three options.

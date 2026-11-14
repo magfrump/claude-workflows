@@ -7,7 +7,7 @@ value-justification: "Replaces manual pre-review cleanup with structured self-re
 *The self-review and cleanup steps follow the [orchestrated review pattern](../patterns/orchestrated-review.md), with commits/files as the units of review.*
 
 ## When to use
-Before a branch lands — merged locally in a solo project, or through a pull request when someone else reviews it (especially a reviewer in a different timezone or unfamiliar with the libraries used).
+Before a branch lands — merged locally in a solo project, or through a pull request when someone else reviews it (especially a reviewer in a different timezone or unfamiliar with the libraries used). The review runs before landing, never after; a review of code already on `main` is a different case with its own rule ([rubric.md § Review of code already on main](../skills/code-review/references/rubric.md#review-of-code-already-on-main)).
 
 ## Process
 
@@ -23,7 +23,7 @@ Pick the path before Step 0. The question is **does anyone other than you review
   - **Skip Step 2** (draft PR). Run CI-equivalent checks locally in Step 5a.
   - **Read "PR description" as "merge commit message"** everywhere in this doc. Step 6's template becomes the body of the `--no-ff` merge commit, and "Areas of uncertainty", convergence summaries and similar notes go there. Anything that would have been a PR comment (Step 5b) goes into the review artifact instead.
   - **Commit the review artifacts on the branch** (`docs/reviews/`, override-log rows) before merging, so they land with the change.
-  - **Merge locally**: `git checkout main && git merge --no-ff <branch> -F <message-file>`. Merging into `main` follows the Operating Modes in the global instructions: in /active mode, ask first.
+  - **Merge locally**: `git checkout main && git merge --no-ff <branch> -F <message-file>`. Merging into `main` follows the Operating Modes in the global instructions: in /active mode, ask first. This covers integration branches too (a branch carrying other reviewed branches, such as an `answers-*` batch): `main` is never fast-forwarded, and the merge message lists the known issues of every unit the branch carries. [Step 7](#step-7-post-merge-follow-up-optional) opens with the check that the landing was such a merge.
   - Step 4 rebases onto local `main` rather than `origin/main`. In Step 7, "CI on main" means re-running the checks on `main` after the merge.
 - **Yes → GitHub PR (the collaborative path).** Follow every step as written: push, open a draft PR, and publish the description on the PR.
 
@@ -200,7 +200,7 @@ Run review skills and iterate until clean. This is required, not optional.
 | Must Address | Fragility, inconsistency, misleading tests | Fix, or acknowledge with a discoverable TODO or a concrete revisit trigger ([qualifying author note](../skills/code-review/references/rubric.md#qualifying-author-note)) | **Override-log row required** |
 | Consider | Style, duplication, future-proofing | Fix if cheap, otherwise note for later | **Override-log row required** |
 
-For each finding: confirm it's real by reading the code, then fix. Commit in coherent batches referencing finding IDs (e.g., `fix: Address code review findings A2-A5`).
+For each finding: confirm it's real by reading the code, then fix. Commit in coherent batches referencing finding IDs (e.g., `fix: Address code review findings A2-A5`). The same commit sets each row it fixes to `Fixed` in the rubric's Status cell; a fix made without that edit, including one after the final pass, is marked by the next pass in step 3d.2, by ID. In another repo using these workflows (2026-11-14 audit), 26 rows were fixed by commits but left open in their rubric, so a red read "Unresolved" on `main` for two months.
 
 #### Capturing overrides — do it here, not later
 
@@ -213,7 +213,10 @@ verdict, Reason.
 This covers all three not-fixing outcomes the table above already sanctions: an
 acknowledged Must Address (whose row's `Reason` carries the TODO location or the revisit
 trigger), "note for later" (Consider), and the scope-drift deferral below. It also covers
-a Must Fix you waive, which should be rare enough to feel wrong. The only rows a
+a Must Fix you waive, which should be rare enough to feel wrong and needs the owner's answer:
+its override row and its rubric Status cell cite the `Q-NNN` entry that waived it, and an
+agent's own call never closes a red (in the review-gap audit, U2a2's D1 was closed by an
+agent-written `Defer` row). The only rows a
 code-review run writes on its own are `Accepted-immutable` ones; the format reference
 covers them, and you do not add rows for them.
 
@@ -254,7 +257,7 @@ either fixed something silently or waived something silently.
 **d. Re-review.** On the first iteration, run full review skills against the complete diff vs main. On iterations 2+, scope the re-review to reduce redundant work:
 
 1. **Diff only the fixes.** Run `/code-review --loop-pass --range <sha>..HEAD`, where `<sha>` is the `Commit:` stamp at the top of this unit's previous rubric (`docs/reviews/code-review-rubric-*.md`). Unchanged code has already been reviewed. Brief any other review skill (and any hand-written fact-check brief) on the same range, not on "every claim in the diff". `--loop-pass` also sets the fact-check replicate count and the short-circuit; code-review's SKILL.md owns both (decisions 031, 032 #4).
-2. **Verify prior Must Fix findings.** Walk the prior review's Must Fix and Must Address items and confirm each is resolved in the new diff. Mark each as resolved or still-open. This is a targeted check, not a full re-read of surrounding code.
+2. **Verify prior Must Fix findings.** Walk the prior review's Must Fix and Must Address items and confirm each is resolved in the new diff. Mark each, by ID, in its rubric Status cell: `Fixed` with the fixing commit, or left open. This is a targeted check, not a full re-read of surrounding code.
 3. **Spot-check for regressions.** Scan fix commits for unintended side effects (broken imports, changed signatures, shifted scoping). The narrower diff makes these easier to catch.
 
 If a fix touched code broadly enough that the narrower diff covers most of the PR, fall back to a full re-review — the incremental approach only helps when fixes are localized.
@@ -493,7 +496,16 @@ After the PR is opened, take 2 minutes to close the loop on the workflow that pr
 
 ## Step 7: Post-merge follow-up (optional)
 
-*These items are not required for every PR. Review the list after merge and act on whichever apply. Skip items that don't fit the change.*
+**Landing check (required on the local-merge path).** Right after the merge, check that `main`'s tip is a merge and that its message carries the description:
+
+```bash
+git rev-parse -q --verify 'main^2' >/dev/null || echo "main's tip is not a merge"
+git log -1 --format=%B main | grep -q '^## Areas of uncertainty' || echo "merge message lacks Areas of uncertainty"
+```
+
+If either line prints, the known issues have no record on `main`. Do not move `main` back; add the missing record as an empty commit on `main` (`git commit --allow-empty -F <message-file>`) that names the landed range and holds the Step 6 description. At 3a98f9e5 an integration branch was fast-forwarded, and eight known issues landed with no message (review-gap audit, landing 3).
+
+*The items below are not required for every PR. Review the list after merge and act on whichever apply. Skip items that don't fit the change.*
 
 After the PR merges, there are follow-up tasks that are easy to forget in the moment of completion. Scanning this checklist takes under a minute and can prevent silent regressions or stale artifacts.
 

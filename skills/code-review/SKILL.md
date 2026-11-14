@@ -1235,8 +1235,8 @@ synthesis; it is the format contract, not background.
 
 Save as `docs/reviews/code-review-rubric-<YYYY-MM-DD>-<branch-slug>.md`. The template, the
 tier definitions, evidence grounding, the Unified Severity Mapping, the escalation rule, the
-soundness-contradiction and executable-defect channels, and the rubric status line are
-specified in **[references/rubric.md](references/rubric.md)**. Read it before producing the
+soundness-contradiction and executable-defect channels, the rubric status line, the status
+words a Status cell may use and the carried-forward table are specified in **[references/rubric.md](references/rubric.md)**. Read it before producing the
 rubric and before tiering any finding — the mapping there is the single source of truth for
 severity, and Stage 3 cannot be completed correctly without it.
 

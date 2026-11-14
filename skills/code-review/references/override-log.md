@@ -30,7 +30,9 @@ are distinguishable from human overrides: the `Reason` cell starts with `[auto: 
 followed by the immutable artifact (e.g. `[auto: code-review] merged commit a1b2c3d message
 misstates the retry count; cannot be edited`), and `PR ref` names the run's PR/branch. Treat
 an `Accepted-immutable` row like a settled `Won't-Fix` in Step 3.5 matching (do not re-raise
-the same immutable claim), and never write any other verdict value automatically.
+the same immutable claim), and never write any other verdict value automatically. Where this
+log cannot be edited (a self-merge build-loop branch), the rubric row is the record instead
+([rubric.md](rubric.md#unified-severity-mapping), immutable-history exception).
 
 Rows are kept in reverse-chronological order (most recent at the top of the table) so that the freshest context is easiest to scan.
 
