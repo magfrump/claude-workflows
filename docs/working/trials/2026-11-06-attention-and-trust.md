@@ -1,4 +1,4 @@
-# Trial: attention and trust (2026-11-06 to about 2026-11-13)
+# Trial: attention and trust (2026-11-06 to about 2026-11-20)
 
 Started at the owner's request on 2026-11-06: "none of them have hurt and some have helped so let's commit them and start a new set of trials". The first set is `docs/working/trials/2026-10-30-friction-engagement.md`. All seven of its trials (T1-T7) stay, and a build loop is writing them into the dev cycle (`docs/working/briefs/2026-11-06-codify-trial-practices.md`).
 
@@ -26,5 +26,7 @@ Started at the owner's request on 2026-11-06: "none of them have hurt and some h
 Write it anywhere, in any order, for example: `T8 good, T11 skip it`. The cycle records your feedback in this doc, under Feedback, and turns it into roadmap changes. Each final message ends with a line naming these trials and linking here.
 
 ## Feedback
+
+- 2026-11-14 (Q-286, in session): "Trial set 2 needs to extend a week bc multiple items are weekly digest items". All five keep running to about 2026-11-20: T11 (one deliberate look a week) and T12 (what the checks caught) live in the weekly digest and have had one edition (`docs/working/weekly/2026-11-13.md`). The cycle asks again after the 2026-11-20 digest. The orchestrator also notes that its final messages on 2026-11-13 and 2026-11-14 often skipped T8's split, T9's links and the trials line; it keeps to them from 2026-11-14.
 
 ## Orchestrator notes
