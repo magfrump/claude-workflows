@@ -441,12 +441,14 @@
 #                 self-merge's record. It reads, from TIP, each file the
 #                 merge adds or changes under docs/reviews/ whose name holds
 #                 code-review-rubric (of code-review-rubric-DATE-SLUG.md
-#                 names only the newest DATE per SLUG), by table column, not
-#                 by words. WHAT is "open PATH ID TIER: STATUS" for a red or
-#                 amber row neither fixed nor closed by a reference (a red's:
-#                 an answered Q-ID on main or an override-log row; an
-#                 amber's: a Q-ID, an override-log row, a TODO, a roadmap
-#                 item or a revisit trigger), STATUS as written; "unread
+#                 names only the newest DATE per SLUG), by table column and each Status cell
+#                 by its first word. WHAT is "open PATH ID TIER: STATUS" for a
+#                 red or amber row neither fixed nor closed by a reference
+#                 (either tier: a Split naming its follow-up or a Carried
+#                 naming the newer rubric and row; else a red's only
+#                 closure is a Q-ID the owner answered on main, an amber's
+#                 a Q-ID, an override-log row, a TODO, a roadmap item or a
+#                 revisit trigger), STATUS as written; "unread
 #                 PATH[ line N]: WHY" for a table or file it cannot read;
 #                 "stale PATH: K fix(...) commits on BRANCH follow its last
 #                 change in SHA12"; "superseded OLD by NEW (not read)";

@@ -341,6 +341,7 @@ path $B A work-feat-x.txt" ] && [ "$(git rev-parse "$n^1")" = "$M" ] \
         && commit_all review && git checkout -q --detach main
     T="$(git rev-parse feat/x)"; TR="$(git merge-tree --write-tree main feat/x)"
     mrg "$B" --expect "$T"; n="$(git rev-parse main)"
+    # shellcheck disable=SC2154  # rubric is set by unrubric (test/lib/build-loop-fixtures.bash)
     [ "$status" -eq 0 ] && [ "$output" = "merged $B $T $TR $n
 path $B A $R
 path $B A work-feat-x.txt" ] && [ "$rubric" = "rubric $B: open $R R1 red: 🔴 Unresolved" ] || { show; echo "$rubric"; return 1; }

@@ -40,7 +40,7 @@ Options:
 | [3] refuse any open row | red or amber | H2, but most corpus flags are false (Measurement) |
 | [4] advisory on review, fall-through on self-merge | an open red sends a self-merge to review | the brief's criterion 4 target state |
 
-Measurement: across all 106 rubrics the parser classes 1164 red and amber rows, 41 red and 202 amber of them as open, and finds 29 unreadable tables. The audit (`docs/working/research-2026-11-13-review-gap-audit.md`) adjudicated the same corpus and found 15 unfixed reds (14 with an owner decision recorded only in a landing's message) and 21 open ambers. So most open lines on old rubrics are rows closed outside the rubric, in a merge message or a later file. On the 8 rubrics from November the parser prints 3 lines in all: d6-block A2 and confine-tests A5, both closed by prose with no reference, and one row of confine-tests whose cell count is off by a pipe inside a code span. Refusing on that would stop real merges for formatting. **Pick [1] (Path A).** [4] is the stage after this one, and the falsifier says when.
+Measurement: across all 106 rubrics the parser classes 1164 red and amber rows, 41 red and 204 amber of them as open (and 1 red that names a Q-ID, open unless that Q-ID is answered), and finds 29 unreadable tables. The audit (`docs/working/research-2026-11-13-review-gap-audit.md`) adjudicated the same corpus and found 15 unfixed reds (14 with an owner decision recorded only in a landing's message) and 21 open ambers. So most open lines on old rubrics are rows closed outside the rubric, in a merge message or a later file. On the 8 rubrics from November the parser prints 3 lines in all: d6-block A2 and confine-tests A5, both closed by prose with no reference, and one row of confine-tests whose cell count is off by a pipe inside a code span. Refusing on that would stop real merges for formatting. **Pick [1] (Path A).** [4] is the stage after this one, and the falsifier says when.
 
 **Falsifier (to leave advisory):** over the next 10 build-loop landings that carry a rubric, every `open` and `unread` line the cycle quotes is a real gap. "Real" means the owner's answer on the merge entry, or the record, confirms the row was not closed. If any such line is a row the rubric did close, the check stays advisory and that status word or format goes into the parser and its tests first. On passing, the next brief switches self-merge to [4]: an `open` red line makes `--merge` refuse, without `--approved`, and the cycle files it as a review merge entry. That is a single condition in `check_line`, and an `--approved` merge still lands, because the owner's answer is the waiver.
 
@@ -48,13 +48,18 @@ Measurement: across all 106 rubrics the parser classes 1164 red and amber rows, 
 
 | Option | What it means | Fit |
 |---|---|---|
-| **[1] no: only the rubric row closes it** | the row cites an answered Q-ID, an override-log row, a trigger (amber) | H4: re-checkable from the artifact; S3: one record |
+| **[1] no: only the rubric row closes it** | a red cites an answered Q-ID; an amber a qualifying note | H4: re-checkable from the artifact; S3: one record |
 | [2] yes, any waiver text naming the row ID | marker body or message | an agent-written waiver of a red, the U2a2 D1 failure (audit fix 6) |
 | [3] yes, if the quoted waiver cites an answered Q-ID | marker body | re-checkable, but a second place to look for the same fact (S3) |
 
 Nothing else writes the merge message: `--merge` builds it itself (`gate_msg`). On a review brief the owner's `[1]` on a merge entry that quotes the `rubric` lines is already the waiver. **Pick [1] (Path A).** Falsifier: a landing where the row could not be edited (an immutable artifact) and no Q-ID or override row could be filed. In that case the cycle files the case and [3] gets reconsidered.
 
-Interpretation recorded here: criterion 2 lists three references that close a waived or deferred row. For a **red**, the check accepts only an answered Q-ID or an override-log row. A revisit trigger alone leaves a red open, because audit fix 6 (part of this brief's motive) says a red closed as waived or deferred must cite an owner answer. For an **amber**, it accepts a qualifying author note as `skills/code-review/references/rubric.md` defines one: a Q-ID (open or answered: a filed entry is a tracked follow-up), an override-log row, a TODO, a roadmap item or a revisit trigger.
+**Correction to criterion 2, from the dev-cycle orchestrator (2026-11-14, mid-build).** As written, the criterion let a red closed by waiver or deferral count as closed when it cited an answered Q-ID, an override-log row or a named revisit trigger. An agent can write an override-log row or a trigger itself, so that would pass the audit's U2a2 D1 case (a red an agent waived on its own). The orchestrator's reading, applied here:
+
+- A **red** closed by anything but a fix counts as closed only when it cites a Q-NNN the owner has answered on main (read by `check_answer`). An override-log row, a trigger or `Accepted-immutable` does not close it.
+- An **amber** may still be closed by a Q-ID (open or answered: a filed entry is a tracked follow-up), an override-log row, a named trigger, a TODO or a roadmap item: the qualifying author note of `skills/code-review/references/rubric.md`.
+
+The parser follows the "Status words" table on the parallel branch `docs/review-rules-close-gaps` (ready, not on main; nothing here depends on it). The first word is read: `Fixed`, or `Resolved` from older rubrics, is a fix, and any other first word is open unless a reference closes it. `Split` closes a row of either tier when it names its follow-up (a Q-ID, a roadmap item, a branch or brief). `Carried` closes one when it names the newer rubric file and a row ID. Those are the table's two non-fix closures for a red that need no Q-NNN. `Defer` and `Deferred` are treated the same: both need a reference. `Corrected`, which the first build counted as a fix, now reads as open, as the table's "any other first word" rule says.
 
 ### D3. Which rubric(s)
 
@@ -74,7 +79,7 @@ Assume this landed and a gap still reached main. Ways it happens:
 1. **Wrong file read (selection bypass).** The rubric is named without `code-review-rubric`, sits outside `docs/reviews/`, or was committed on main before the branch, so the branch never changes it. Result: a `none` line, which says so. A docs-only branch with a rubric somewhere else passes with the docs note. Residual, noted.
 2. **Status words read as fixed (classification bypass).** A row reads `Fixed` with nothing fixed (an agent's say-so), or `Resolved` in the first clause of a status that is really open further on. The check keys on the row as written (H4). It cannot verify the claim behind it, and the `stale` line covers only fixes after the rubric's last change. Residual: an honest slip in a status word. A hostile loop is out of scope (S1).
 3. **Row hidden from the parser (format bypass).** A tier table under a heading with neither mark nor tier words, a table with no `Tier` or `Status` column, or rows in prose. The heading case reads as `none` or `unread` (a file with no tier table at all is named, never passed). A Must Fix heading spelled differently, `## Blocking`, is missed if the file also has another tier table. Residual.
-4. **Reference that closes nothing (reference bypass).** An amber cites a made-up `Q-999` or a nonexistent "override row 12". For a red the Q-ID must be answered on main (checked). An override-log row number is not looked up. Residual: the override-log row is taken on presence.
+4. **Reference that closes nothing (reference bypass).** An amber cites a made-up `Q-999` or a nonexistent "override row 12". For a red, only a Q-ID answered on main closes it (checked). A Split or Carried red is taken on its named target, which is not looked up. Residual: an amber's override-log row and a red's split or carry target are taken on presence.
 5. **Advisory ignored (attention bypass).** The cycle quotes the lines, but nobody reads them, or a self-merge lands past an open red. That is the cost of advisory, and the falsifier exists to end it. The dev-cycle skill names each non-clean line in the final message.
 6. **Lines not reached (path bypass).** A merge outside `build-loop.sh` (a hand merge, a fast-forward) never runs the check. Out of scope by the brief; see Follow-ups.
 7. **The check itself fails quietly (H2).** A failed git read prints an `unread` line naming it, a missing lib stops `build-loop.sh` with exit 1, and `d6.sh` refuses a partial image. Tests cover the missing lib, a non-regular file, a malformed row, a table with no Status column and a file with no tier table.
@@ -91,7 +96,7 @@ Assume this landed and a gap still reached main. Ways it happens:
 
 - A hook or a post-merge check for hand merges and fast-forwards of main, which bypass `build-loop.sh` (brief "Out of scope"; the audit's landing 3).
 - Leaving advisory, per D1's falsifier.
-- Looking up the override-log row a red cites (pre-mortem 4).
+- Looking up the override-log row an amber cites, and the target a split or carried red names (pre-mortem 4).
 - A fixed close-out line in the rubric template (the audit's fix 1 note) would make the parse exact. Template changes belong to brief `2026-11-14-review-rules-close-gaps`.
 
 ## Gotchas

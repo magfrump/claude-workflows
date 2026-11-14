@@ -1177,6 +1177,7 @@ miggap() { echo "$1 fix(...) commits on feat/x need a failure-pattern entry, but
 # unless RUBMSG names the subject). rubis WANT: --check passed brief x (the
 # rubric check never changes the verdict) and printed exactly WANT as its lines.
 rub() { local p="$1"; shift; git checkout -q feat/x && mkdir -p "$(dirname "$p")" && printf '%s\n' "$@" > "$p" && git add -A && git commit -q -m "${RUBMSG:-review}" && git checkout -q main; }
+# shellcheck disable=SC2154  # rubric is set by unrubric (test/lib/build-loop-fixtures.bash)
 rubis() { chk "$B"; [ "$status" -eq 0 ] && [[ "${lines[0]}" == "ok $B "* ]] && [ "$rubric" = "$1" ] && [ -z "$stderr" ] || { echo "want: $1"; echo "got: $rubric"; show; return 1; }; }
 RB=docs/reviews/code-review-rubric-2026-10-01-feat-x.md
 # qentry ID STATUS: one questions entry on main, with an answer line when ANSWERED.
@@ -1185,28 +1186,35 @@ qentry() {
         "$1" "$1" "$2" "$([[ "$2" == ANSWERED ]] && echo "$1: [1]")" >> docs/working/questions.md
 }
 
-@test "rubric: each status word read by column and whole word; a waiver of a red needs an answered Q-ID or an override-log row, an amber a qualifying note; the verdict stays ok (brief 2026-11-14-merge-rubric-gate)" {
+@test "rubric: each status word read by column and whole word; a red closed but by a fix, a named split or a carry needs an answered Q-ID (an override-log row or trigger does not do), an amber a qualifying note; the verdict stays ok (brief 2026-11-14-merge-rubric-gate)" {
     qentry Q-002 ANSWERED; qentry Q-003 OPEN; commit_all questions
     gated feat/x
     rub "$RB" '# Code Review Rubric' '' '**Status: 🔴 DOES NOT PASS** — 4 red item(s) unresolved' '' '## 🔴 Must Fix' '' \
         '| # | Finding | Domain | Status |' '|---|---|---|---|' \
         '| R1 | a | Security | 🔴 Unresolved |' '| R2 | b | Docs | ✅ Fixed in abc123 |' '| R3 | c | Docs | Partly fixed |' \
         '| R4 | d | Docs | ⏸️ Deferred (Q-002) |' '| R5 | e | Docs | Waived (Q-003) |' '| R6 | f | Docs | Won'"'"'t-Fix (override-log row 7) |' \
-        '| R7 | g | Docs | Deferred: revisit if p99 > 200ms |' '| R8 | h | Docs | Resolved |' '| R9 | i \| j | Docs | **Fixed** (2nd pass) |' '' \
+        '| R7 | g | Docs | Deferred: revisit if p99 > 200ms |' '| R8 | h | Docs | Resolved |' '| R9 | i \| j | Docs | **Fixed** (2nd pass) |' \
+        '| R10 | k | Docs | Split to the roadmap item rubric-gate-2 |' '| R11 | l | Docs | Split out; known route |' \
+        '| R12 | m | Docs | Carried to code-review-rubric-2026-10-02-feat-y.md R3 |' '| R13 | n | Docs | Accepted-immutable (TODO) |' '' \
         '## 🟡 Must Address' '' '| # | Finding | Status | Author note |' '|---|---|---|---|' \
         '| A1 | a | 🟡 Open | — |' '| A2 | b | Stands | revisit if the handler takes uploads |' '| A3 | c | Noted | known, acceptable for now |' \
         '| A4 | d | Carried | Q-003 |' '| A5 | e | 🟡 Resolved | — |' '| A6 | f | Unresolved | — |' '| A7 | g | Partly fixed in abc | TODO at x.sh:3 |' \
-        '| A8 | h | Deferred | — |' '| A9 | i | Fixed, pending confirmation | — |' '' \
+        '| A8 | h | Deferred | — |' '| A9 | i | Fixed, pending confirmation | — |' '| A10 | j | Corrected in abc | — |' \
+        '| A11 | k | Won'"'"'t-Fix | override-log row 9 |' '' \
         '## 🟢 Consider' '' '| # | Finding | Status |' '|---|---|---|' '| C1 | a | 🟢 Open |'
     rubis "rubric $B: open $RB R1 red: 🔴 Unresolved
 rubric $B: open $RB R3 red: Partly fixed
 rubric $B: open $RB R5 red: Waived (Q-003)
+rubric $B: open $RB R6 red: Won't-Fix (override-log row 7)
 rubric $B: open $RB R7 red: Deferred: revisit if p99 > 200ms
+rubric $B: open $RB R11 red: Split out; known route
+rubric $B: open $RB R13 red: Accepted-immutable (TODO)
 rubric $B: open $RB A1 amber: 🟡 Open
 rubric $B: open $RB A3 amber: Noted
 rubric $B: open $RB A6 amber: Unresolved
 rubric $B: open $RB A8 amber: Deferred
-rubric $B: open $RB A9 amber: Fixed, pending confirmation"
+rubric $B: open $RB A9 amber: Fixed, pending confirmation
+rubric $B: open $RB A10 amber: Corrected in abc"
     # Answering Q-003 on main closes R5; an answer only in the working tree does not count.
     sed -i 's/\*\*Status:\*\* OPEN/**Status:** ANSWERED/' docs/working/questions.md; printf 'Q-003: [1]\n' >> docs/working/questions.md
     chk "$B"; [[ "$rubric" == *"R5 red"* ]] || { show; return 1; }

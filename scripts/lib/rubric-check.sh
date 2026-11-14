@@ -10,8 +10,9 @@
 # rows of FILE's red and amber tables (skills/code-review/references/rubric.md):
 #   row TIER ID CLASS STATUS QIDS
 #       TIER red or amber; ID the row's first cell; CLASS fixed, closed
-#       (a reference that closes it), qref (a red whose only reference is a
-#       question ID: closed when one of QIDS is answered) or open; STATUS the
+#       (a reference that closes it), qref (a red not fixed, split or
+#       carried that names a question ID: closed when one of QIDS is
+#       answered) or open; STATUS the
 #       Status cell as written (markup kept, cut to 200 bytes on a character
 #       boundary); QIDS the Q-NNN IDs in the Status and Author note cells.
 #   bad LINE WHY
@@ -23,16 +24,22 @@
 # "Must Fix" (red), 🟡 or "Must Address" (amber); any other heading at the
 # same or a higher level ends the tier, a lower one keeps it. A row ID seen
 # twice in one tier keeps its last row (multi-pass rubrics append passes).
-# The status is read by whole words, never substrings: a fix is a Status cell
-# whose first word is "Fixed" or "Resolved" (after marks and emoji) with no
-# "unresolved", "partly", "partially", "half", "not", "open", "still",
-# "pending" or "reopened" anywhere in it. Anything else is a closure only by
-# reference, read from the Status and Author note cells: for a red an
-# override-log row ("override-log", "override row"), else an answered Q-ID
-# (audit fix 6: no agent-written waiver of a red); for an amber, a qualifying
-# author note: a Q-ID, an override-log row, a TODO, a roadmap item, or a
-# revisit trigger ("trigger", or "revisit"/"reopen" followed by if, when,
-# once or after).
+# The status is read by whole words, never substrings, by its first word as
+# skills/code-review/references/rubric.md's "Status words" table reads it
+# (brief docs/review-rules-close-gaps; "Resolved" reads as "Fixed"): a fix is
+# a Status cell whose first word is "Fixed" or "Resolved" (after marks and
+# emoji) with no "unresolved", "partly", "partially", "half", "not", "open",
+# "still", "pending" or "reopened" in its first clause. "Split" closes a row
+# that names its follow-up (a Q-ID, a roadmap item, a branch or brief), and
+# "Carried" one that names the newer rubric file and a row ID. Any other
+# closure of a red counts only with a Q-ID the owner has answered on the
+# default branch (the orchestrator's correction to the brief's criterion 2:
+# an agent can write an override-log row or a trigger itself, which is how
+# the audit's U2a2 D1 red was waived). An amber closes with a qualifying
+# author note in its Status or Author note cell: a Q-ID, an override-log row
+# ("override-log", "override row", "row N", "Accepted-immutable"), a TODO, a
+# roadmap item, or a revisit trigger ("trigger", or "revisit"/"reopen"
+# followed by if, when, once or after).
 rubric_parse() {
   # shellcheck disable=SC2016  # perl code, not shell
   env -u PERL_UNICODE -u PERL5OPT -u PERLIO LC_ALL=C perl -C0 -e '
@@ -50,12 +57,17 @@ rubric_parse() {
       my $first = ($w =~ /([a-z][a-z-]*)/) ? $1 : "";
       my $head = $w; $head =~ s/(:|;|\.\s|\xE2\x80\x94|\s-\s).*//s;  # the first clause
       my $neg = $head =~ /\b(unresolved|partly|partially|half|not|open|still|pending|reopened)\b/;
-      return ("fixed", "") if ($first eq "fixed" || $first eq "resolved" || $first eq "corrected") && !$neg;
+      return ("fixed", "") if ($first eq "fixed" || $first eq "resolved") && !$neg;
       my $t = "$st $note";
       my %q; $q{$1} = 1 while $t =~ /\b(Q-[0-9]{3,})\b/g;
       my $qids = join(" ", sort keys %q);
+      # Split (moved to another unit) and Carried (to a newer rubric) close a
+      # row of either tier when they name where it went.
+      return ("closed", $qids) if $first eq "split" && !$neg && ($qids ne "" || $t =~ /\b(roadmap|branch|brief)\b/i);
+      return ("closed", $qids) if $first eq "carried" && !$neg && $t =~ /code-review-rubric[^ ]*\.md/ && $t =~ /\b[A-Z]{1,3}[0-9]+\b/;
+      # Any other closure of a red needs the owner: an answered Q-ID, which the caller checks.
+      return ($qids ne "" ? "qref" : "open", $qids) if $tier eq "red";
       my $ovr = $t =~ /\boverride[- ](log|rows?)\b|\baccepted-immutable\b|\brows? [0-9]+\b/i;
-      if ($tier eq "red") { return ("closed", $qids) if $ovr; return ($qids ne "" ? "qref" : "open", $qids); }
       return ("closed", $qids) if $qids ne "" || $ovr || $t =~ /\bTODO\b/ || $t =~ /\broadmap\b/i
         || $t =~ /\btrigger(s|ed)?\b/i || $t =~ /\b(revisit|reopen)\s+(if|when|once|after)\b/i;
       return ("open", $qids);
