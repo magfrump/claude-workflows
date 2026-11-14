@@ -6,6 +6,8 @@
 #       stage `git merge-tree --write-tree main BRANCH` from REPO's objects, run
 #       MAIN's installed cc-isolated on that stage and a scratch clone named
 #       VERIFY-<tree8>, run FILE in its container, then tear it all down
+#       REPO: a path to a git repo (a relative one is resolved first), or a URL or
+#       host:path that git clones; a path that exists is read as a path
 #   cc-verify --clean      remove what an interrupted run left (a new run refuses until then)
 #   cc-verify --help       this text
 # The config verified is the merge tree's devcontainer-config/, never REPO's
@@ -44,6 +46,7 @@ hash_ok() {  # hash_ok MANIFEST NAME: $CFG/NAME matches its one entry in $CFG/MA
 # CC_ISOLATED_DIR is only ever that directory (pre-mortem 5). A grep, not a
 # parser: other spellings, or a staged script run by name, are not seen (as row 71's
 # Q-147), nor CC_ISOLATED_DIR set by read, for or mapfile. Prints the first offending line; the names loaded go to SOURCED.
+# test/cc-host-tool-sources.bats extracts this function by name: keep it one block.
 source_lines_ok() {
   local f line i=0 own='"\$\(dirname -- "\$\(readlink -f -- "\$\{BASH_SOURCE\[0\]\}"\)"\)"'
   local src='^[[:space:]]*source "(\$CC_ISOLATED_DIR|\$\(dirname -- "\$\(readlink -f -- "\$\{BASH_SOURCE\[0\]\}"\)"\))/([A-Za-z0-9._-]+)"[[:space:]]*$'
@@ -51,7 +54,7 @@ source_lines_ok() {
   while [ "$i" -lt "${#q[@]}" ]; do
     f="$1/${q[$i]}"; i=$((i + 1))
     [ -f "$f" ] || { echo "$f is missing"; return 1; }
-    while IFS= read -r line; do
+    while IFS= read -r line || [ -n "$line" ]; do   # || reads a last line with no newline
       [[ "$line" =~ ^[[:space:]]*# ]] && continue
       if [[ "$line" =~ (^|[\;\&\|\{\(\!\`]|then|do|else|if|elif|while|until|time)[[:space:]]*(builtin[[:space:]]+|command[[:space:]]+|\\)?(source|\.)[[:space:]] || "$line" =~ (^|[^A-Za-z_])eval([^A-Za-z_]|$) ]]; then
         [[ "$line" =~ $src ]] || { echo "$f: $line"; return 1; }
@@ -193,7 +196,8 @@ while [ $# -gt 0 ]; do
   esac
 done
 if [ "$MODE" = clean ]; then [ "${#POS[@]}" -eq 0 ] && [ -z "$CHECK" ] || usage_error "--clean takes no other arguments."
-else [ "${#POS[@]}" -eq 2 ] && [ -n "$CHECK" ] || usage_error "give --check FILE, REPO and BRANCH."; fi
+else [ "${#POS[@]}" -eq 2 ] && [ -n "$CHECK" ] || usage_error "give --check FILE, REPO and BRANCH."
+  [ -n "${POS[0]}" ] || usage_error "REPO is empty."; fi   # it would resolve to the current directory
 
 [ -z "${CLAUDECODE:-}" ] || die "run cc-verify from your own terminal, not from a Claude Code session."
 for c in git docker devcontainer python3 sha256sum tar find; do command -v "$c" >/dev/null || die "'$c' not found on PATH."; done
@@ -207,7 +211,9 @@ if [ "$MODE" = clean ]; then
   shopt -s nullglob
   rc=0
   for d in "$ROOT"/run-*; do
-    p="$(sed -n 's/^PID=\([0-9]*\)$/\1/p' "$d/record" 2>/dev/null | head -1)"
+    # A run writes record just after its mkdir: until then its PID is in its name.
+    p="$(sed -n 's/^PID=\([0-9]*\)$/\1/p' "$d/record" 2>/dev/null | head -1)" || p=""
+    [ -n "$p" ] || [[ ! "${d##*/}" =~ ^run-[0-9]+-([0-9]+)$ ]] || p="${BASH_REMATCH[1]}"
     if [ -L "$d" ] || [ ! -d "$d" ]; then echo "NOTE: skipped $d: not a directory."; rc=1
     elif [ -n "$p" ] && grep -qa cc-verify "/proc/$p/cmdline" 2>/dev/null; then echo "NOTE: skipped $d: run $p is still going."; rc=1
     else d="$(cd -P -- "$d" && pwd)" && echo "cleaning $d" && teardown "$d" || rc=1; fi
@@ -216,6 +222,11 @@ if [ "$MODE" = clean ]; then
 fi
 
 REPO="${POS[0]}" BRANCH="${POS[1]}"
+# A local path is made absolute here, before the cd into the run dir; a URL is kept.
+# The ./ keeps cd from reading CDPATH, or a REPO of - as the last directory.
+r="$REPO"; [[ "$r" == /* ]] || r="./$r"
+if [ -d "$r" ]; then REPO="$(cd -P -- "$r" && pwd)" || die "cannot resolve REPO $REPO."
+elif [ -e "$r" ]; then REPO="$(cd -P -- "$(dirname -- "$r")" && pwd)/$(basename -- "$r")" || die "cannot resolve REPO $REPO."; fi
 [ -f "$CHECK" ] && [ -r "$CHECK" ] || die "cannot read the check file $CHECK."
 BLOCK="$(cat -- "$CHECK")"   # read once: a later edit of FILE changes nothing
 mkdir -p -- "$ROOT"

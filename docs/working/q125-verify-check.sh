@@ -4,7 +4,9 @@
 # docs/working/research-2026-11-03-q125-verify-check.md, force-added on its branch).
 #
 # RUN it on the HOST, from your claude-workflows checkout at main:
-#   cc-verify --check docs/working/q125-verify-check.sh . feat/q125-sandbox-on-main
+#   cc-verify --check docs/working/q125-verify-check.sh "$PWD" feat/q125-sandbox-on-main
+# (REPO is "$PWD", not ".": a cc-verify installed before 2026-11-13 changes into its
+# run dir before the clone, so a relative REPO fails there.)
 # (feat/q125-sandbox-on-main is feat/q125-cc-isolated-sandbox merged with main; the
 # old branch no longer merges cleanly, so cc-verify refuses it.)
 # cc-verify builds main + the branch in a throwaway container and runs this text there
