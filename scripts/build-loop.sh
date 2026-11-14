@@ -447,14 +447,11 @@
 #                 cell by its first word and whole words. WHAT is first
 #                 "superseded OLD by NEW (not read)" for each older dated
 #                 file, then per rubric read: "open PATH ID TIER: STATUS"
-#                 for a red or amber row neither fixed nor closed by a
-#                 reference (either tier: a Split naming its target, a brief
-#                 path, a TYPE/NAME branch or a roadmap item, or a Carried
-#                 naming a rubric dated no earlier and a row; else a red closes
-#                 only by a Q-ID the owner answered on main, an amber by a
-#                 qualifying note found by keyword: a Q-ID, an override-log
-#                 row, a TODO, a roadmap item or a revisit trigger), STATUS
-#                 as written; "unread PATH[ line N]: WHY" for a table, row
+#                 for a red or amber row neither fixed nor closed (a red
+#                 closes only by a fix or a Q-ID the owner answered on main,
+#                 an amber also by a qualifying note; the lib says how each
+#                 is read), ID "carried:ID" for a row of a Carried forward
+#                 table, STATUS as written; "unread PATH[ line N]: WHY" for a table, row
 #                 or file it cannot read; "stale PATH: K fix(...) commits on
 #                 BRANCH follow its last change in SHA12" (branch commits
 #                 the last commit changing PATH does not contain); "clean

@@ -1,6 +1,6 @@
 # Research: a merge-time check of the branch's code-review rubric
 
-Brief: `docs/working/briefs/2026-11-14-merge-rubric-gate.md` (review policy, gate code). Build loop, dispatch 1, from fce8af4a.
+Brief: `docs/working/briefs/2026-11-14-merge-rubric-gate.md` (review policy, gate code). Build loop, dispatch 1 from fce8af4a; dispatch 2 from fc2eeb03, after the owner's Q-294 [1] (narrow, one more review pass).
 
 ## Answer
 
@@ -59,7 +59,9 @@ Nothing else writes the merge message: `--merge` builds it itself (`gate_msg`). 
 - A **red** closed by anything but a fix counts as closed only when it cites a Q-NNN the owner has answered on main (read by `check_answer`). An override-log row, a trigger or `Accepted-immutable` does not close it.
 - An **amber** may still be closed by a Q-ID (open or answered: a filed entry is a tracked follow-up), an override-log row, a named trigger, a TODO or a roadmap item: the qualifying author note of `skills/code-review/references/rubric.md`.
 
-The parser follows the "Status words" table on the parallel branch `docs/review-rules-close-gaps` (ready, not on main; nothing here depends on it). The first word is read: `Fixed`, or `Resolved` from older rubrics, is a fix, and any other first word is open unless a reference closes it. `Split` closes a row of either tier when it names its target (a `docs/working/briefs/` path, a TYPE/NAME branch, or "roadmap item" followed by an ID), with no "no" or "none" in the cell. A Split that names only a Q-ID waits for that Q-ID to be answered. `Carried` closes one when it names a rubric file dated no earlier than its own (not itself), followed by a row ID. Those are the table's two non-fix closures for a red that need no Q-NNN. `Defer` and `Deferred` are treated the same: both need a reference. `Corrected`, which the first build counted as a fix, now reads as open, as the table's "any other first word" rule says.
+The parser reads the "Status words" table of `skills/code-review/references/rubric.md` (landed on main through Q-293 [1], the review-rules merge). The first word is read: `Fixed`, or `Resolved` from older rubrics, is a fix, and any other first word is open unless a reference closes it. `Defer` and `Deferred` are the same word.
+
+**Narrowed by Q-294 [1] (dispatch 2).** Dispatch 1 let `Split` and `Carried` close a red without a Q-ID, as the table does, through a keyword classifier for the named target. Three review passes kept finding wordings that classifier closed wrongly (rubric rows R2, A1, A23). The owner picked option [1]: Split and Carried no longer close a red. A red now closes only by a fix or by a Q-ID answered on main, whatever its first word. This is the one place the check departs from the table: a red the table counts as split or carried prints as `open` until a Q-ID it cites is answered. It over-reports, which is the safe direction for an advisory line, and it cost nothing measured: across the 106 rubrics in `docs/reviews/` no red was closed by Split or Carried, and the row classes are the same before and after the change. An amber is read as before: any first word, closed by a qualifying note found by keyword (a Q-ID, an override-log row, a TODO, a roadmap item, a revisit trigger). A Split amber naming a Q-ID now closes at once, like an Open amber with one. The lib's header comment is the single place that says how the words are read (rubric A25), and a bats case runs every word of the table through the parser on a red and on an amber.
 
 ### D3. Which rubric(s)
 
@@ -79,14 +81,14 @@ Assume this landed and a gap still reached main. Ways it happens:
 1. **Wrong file read (selection bypass).** The rubric is named without `code-review-rubric`, sits outside `docs/reviews/`, or was committed on main before the branch, so the branch never changes it. Result: a `none` line, which says so. A docs-only branch with a rubric somewhere else passes with the docs note. Residual, noted.
 2. **Status words read as fixed (classification bypass).** A row reads `Fixed` with nothing fixed (an agent's say-so), or `Resolved` in the first clause of a status that is really open further on. The check keys on the row as written (H4). It cannot verify the claim behind it, and the `stale` line covers only fixes after the rubric's last change. Residual: an honest slip in a status word. A hostile loop is out of scope (S1).
 3. **Row hidden from the parser (format bypass).** A tier table under a heading with neither mark nor tier words, a table with no `Tier` or `Status` column, or rows in prose. The heading case reads as `none` or `unread` (a file with no tier table at all is named, never passed). Lines inside a code fence are not read, and a fence left open is named. A Tier cell that reads as no tier (not green or Consider) is named. A Must Fix heading spelled differently, `## Red findings` or `## Blocking`, is missed if the file also has another tier table. Residual; revisit trigger: a rubric generator that writes tier headings without a mark or the Must words.
-4. **Reference that closes nothing (reference bypass).** An amber cites a made-up `Q-999` or a nonexistent "override row 12". For a red, only a Q-ID answered on main closes it (checked). A Split or Carried red is taken on its named target, which is not looked up. Residual: an amber's override-log row and a red's split or carry target are taken on presence.
+4. **Reference that closes nothing (reference bypass).** An amber cites a made-up `Q-999` or a nonexistent "override row 12". For a red, only a Q-ID answered on main closes it (checked); since dispatch 2 no split or carry target closes a red. Residual: an amber's Q-ID, override-log row or trigger is taken on presence, and a Q-ID cited only for context closes a red once answered (rubric A3).
 5. **Advisory ignored (attention bypass).** The cycle quotes the lines, but nobody reads them, or a self-merge lands past an open red. That is the cost of advisory, and the falsifier exists to end it. The dev-cycle skill names each non-clean line in the final message.
 6. **Lines not reached (path bypass).** A merge outside `build-loop.sh` (a hand merge, a fast-forward) never runs the check. Out of scope by the brief; see Follow-ups.
 7. **The check itself fails quietly (H2).** A failed git read prints an `unread` line naming it, a missing lib stops `build-loop.sh` with exit 1, and `d6.sh` refuses a partial image. Tests cover the missing lib, a non-regular file, a malformed row, a table with no Status column and a file with no tier table.
 
 ## Plan (as built)
 
-1. `scripts/lib/rubric-check.sh`: `rubric_parse FILE` (perl, bytes) and `rubric_lines BRIEF BRANCH TIP` (glue on `gate_git`, `fp_blob`, `check_answer`).
+1. `scripts/lib/rubric-check.sh`: `rubric_parse FILE` (perl, bytes) and `rubric_lines BRIEF BRANCH TIP PATHS STATUSES` (PATHS and STATUSES are namerefs to check_line's arrays; glue on `gate_git`, `fp_blob`, `check_answer`).
 2. `scripts/build-loop.sh`: source the lib beside `lib/dev-cycle-read.sh`, call `rubric_lines` at both ends of `check_line`, and add the header docs for `--check`'s `rubric` line and `--merge`'s note.
 3. `scripts/d6.sh`: check the lib among the image files.
 4. `skills/dev-cycle/SKILL.md` step 7: what the lines are, and how they reach the owner on each policy.
@@ -96,8 +98,10 @@ Assume this landed and a gap still reached main. Ways it happens:
 
 - A hook or a post-merge check for hand merges and fast-forwards of main, which bypass `build-loop.sh` (brief "Out of scope"; the audit's landing 3).
 - Leaving advisory, per D1's falsifier.
-- Looking up the override-log row an amber cites, and the target a split or carried red names (pre-mortem 4).
+- Looking up the override-log row an amber cites (pre-mortem 4).
+- Letting a Split or Carried red close as the Status words table says, through a real lookup of its target (the brief, branch or roadmap item exists; the carried file and row exist and are newer), not by keyword. Until then such a red prints as `open` (Q-294 [1]).
 - A fixed close-out line in the rubric template (the audit's fix 1 note) would make the parse exact. Template changes belong to brief `2026-11-14-review-rules-close-gaps`.
+- A check on hand merges and fast-forwards (above) is the only way past `build-loop.sh`; nothing in this design reaches them.
 
 ## Gotchas
 
@@ -122,7 +126,7 @@ Failure-pattern grep: FP-064, FP-033, FP-156
   - C3 (a red superseded by an answered red) closes now, since the successor's Q-IDs carry over. C4 (the skill's list) is fixed.
   - C9 is a record note: bb0030a1's Notes line states the first red rule (fix, answered Q-ID or override-log row). 66304b3d and this doc supersede it, and history is not rewritten.
 - **Pass 2** (at 655df91d, a loop pass: fact-check k=1, then the first-red short-circuit, so no critics ran; rubric updated in place): 1 new Must Fix, 6 new Must Address.
-  - R2: a Split closed a red on a bare keyword ("no branch yet"), and a Carried did not check its file was newer. Fixed: a Split needs a target shape and no "no" or "none"; a Carried needs a rubric dated no earlier than its own.
+  - R2: a Split closed a red on a bare keyword ("no branch yet"), and a Carried did not check its file was newer. Patched in dd6aa89e (a target shape, no "no" or "none", a carried date no earlier); pass 3 found it only partly fixed, and dispatch 2 removed the closure instead.
   - A15: the superseded list split on a space and tripped set -u. Fixed with separate arrays.
   - A16 and A14 (tests) are fixed: a case pins R2, C3 and A15.
   - A17, A19 and A20 (wording) are fixed. For A19 the words not, open and still stay first-clause only, and the docs and test title now say so ("Fixed; follow-up still needed" is a fix).
@@ -131,3 +135,4 @@ Failure-pattern grep: FP-064, FP-033, FP-156
   - C4: the skill now says an `unread` failed-read line is the environment's.
 - **Pass 3** is the loop's last under the 3-pass cap (`workflows/review-fix-loop.md`). All critics run, since the short-circuit is spent.
 - **Pass 3** (at 70c549f7, full panel): not clean. R2 is only partly fixed: a Split still closes a red on a repo path, on a negation found only in the Author note, or on a later "not started". A1 and A18 are not fully fixed. There are 7 new amber findings (A21-A27). The loop hit the 3-pass cap. **Decision: escalate** (recorded in the rubric's "Cap decision" section). The recommended next step narrows instead of patching: only a fix or an answered Q-ID closes a red, and the Split and Carried closures wait for a follow-up once `docs/review-rules-close-gaps` lands.
+- **Pass 4** (dispatch 2, allowed by the owner's Q-294 [1]): the narrowing above. Split and Carried no longer close a red (R2, A1, A23 and C15 go with the classifier they were about). A fence line with an info string (```` ```bash ````) no longer closes a fence (A21). `partial`, `except` and `remains` in the Status cell negate a fix (A22). The Author note is not read for a fix: measured on `docs/reviews/`, doing so turned 4 correct fixes into false opens out of 6 rows it changed ("the overshoot half", "not yet on main"), and the table puts the word in the Status cell. A Carried forward table reads its `Now` column (A24). The `--check` header now names only the line formats (A26). Tests: one case per item above, plus the Status-words contract case (A25, A27). Each new case fails on the dispatch-1 lib.

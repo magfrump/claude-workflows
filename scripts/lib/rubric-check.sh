@@ -7,7 +7,7 @@
 # gate_git, fp_blob, showpath, MAIN_SHA and GATE_TMP and the reader lib's
 # check_answer.
 
-# rubric_parse FILE [NAME]: one record per line, fields joined by a tab, none empty
+# rubric_parse FILE: one record per line, fields joined by a tab, none empty
 # ("-" for no Q-IDs, "(empty)" for an empty Status cell), for the rows of
 # FILE's red and amber tables (skills/code-review/references/rubric.md):
 #   row TIER ID CLASS STATUS QIDS
@@ -20,7 +20,7 @@
 #   bad LINE WHY
 #       a table or row this parser cannot read by column: no Status column,
 #       a cell count that differs from its header's, a Tier cell it cannot
-#       read, or a code fence left open.
+#       read, a carried row naming no row of FILE, or a code fence left open.
 #   none
 #       FILE has no red or amber table at all.
 # A table belongs to a tier when the nearest heading above it names 🔴 or
@@ -28,24 +28,30 @@
 # column (red, amber, yellow, a mark or the Must words; green, 🟢 and
 # Consider rows are left out). Any other heading at the same or a higher level
 # ends the tier, a lower one keeps it; lines inside a ``` or ~~~ fence are not
-# read at all. A row ID seen twice in one tier keeps its last row
-# (multi-pass rubrics append passes).
+# read at all (a fence closes only on a line of its own character, at least
+# as long, with nothing after it). A row ID seen twice in one tier keeps its
+# last row (multi-pass rubrics append passes). A Tier-column table with no
+# Status column but a Now column is rubric.md's "Carried forward" table: its
+# rows print as carried:ID with Now read as their Status and Reason as their
+# Author note, and a row whose Now is a row ID of FILE is left to that row.
+# The words are rubric.md's "Status words" table; this comment owns how the
+# parser reads them, and test/scripts/build-loop-check.bats pins each word.
 # A Status cell is read by its first word and by whole words, never
-# substrings ("Unresolved" is not "resolved"). Its first word follows the
-# "Status words" table that brief 2026-11-14-review-rules-close-gaps adds to
-# rubric.md: "Fixed", or "Resolved" in older rubrics, is a fix unless the
-# cell anywhere says unresolved, partly, partially, half, "not yet", "not
-# fixed", "not resolved", "still open", pending or reopened (or its first
-# clause alone says not, open or still: "Fixed; follow-up still needed" is a
-# fix). "Split" and "Carried" close a row of either tier with none of those
-# words and no "no" or "none": a Split that names its target (a
-# docs/working/briefs/ path, a TYPE/NAME branch or "roadmap item" and an
-# ID; a Split naming only a Q-ID is qref), a Carried whose rubric file,
-# dated this rubric's day or later and not this file, is followed by the row
-# ID. FILE's own name is NAME (the blob is read from a temporary file). Any other closure of a red is
-# qref: it counts only with a Q-ID the owner has answered (the orchestrator's
-# correction to the brief's criterion 2: an agent can write an override-log
-# row or a trigger itself, which is how the audit's U2a2 D1 red was waived).
+# substrings ("Unresolved" is not "resolved"). "Fixed", or "Resolved" in
+# older rubrics, is a fix unless the Status cell anywhere says
+# unresolved, partly, partially, partial, half, except, remains, "not yet",
+# "not fixed", "not resolved", "still open", pending or reopened (or its
+# first clause alone says not, open or still: "Fixed; follow-up still needed"
+# is a fix). The Author note is not read for a fix: the table puts the word
+# in the Status cell, and notes use these words for other things ("the
+# overshoot half", "not yet on main"): so do 4 of the 6 Fixed rows in
+# docs/reviews/ whose note holds one. Any other closure of a red, Split and Carried included,
+# is qref: it counts only with a Q-ID the owner has answered. That is the
+# orchestrator's correction to the brief's criterion 2 (an agent can write an
+# override-log row or a trigger itself, which is how the audit's U2a2 D1 red
+# was waived), narrowed by Q-294 [1]: a Split or Carried red reads as open
+# until a Q-ID it cites is answered, which over-reports against the table,
+# where those two close a red without one.
 # An amber, whatever its first word, closes on a qualifying author note
 # (rubric.md's definition, which older words such as Stands or Noted also
 # carry) in its Status or Author note cell, found by keyword: a Q-ID, an
@@ -66,14 +72,9 @@ rubric_parse() {
     my ($tier, $tlev, $hdr, $six, $nix, $tix, $fence, @order, %rows, %byid, @bad, $tables) = (undef, 0, undef, -1, -1, -1, "");
     my $n = 0;
     my $RED = qr/\xF0\x9F\x94\xB4/; my $AMB = qr/\xF0\x9F\x9F\xA1/; my $GRN = qr/\xF0\x9F\x9F\xA2/;
-    my $NEG = qr/\b(unresolved|partly|partially|half|not yet|not fixed|not resolved|still open|pending|reopened)\b/;
-    # A Split target: a brief path, a branch name (TYPE/NAME) or a roadmap
-    # item named after the word (a token with a digit or a hyphen).
-    my $TARGET = qr{docs/working/briefs/[^\s|`]+\.md|\b(?:feat|fix|chore|docs|refactor|test|spike|exp)/[A-Za-z0-9][\w./-]*|\broadmap item\s+[`"]?[A-Za-z0-9]*[-0-9][\w.-]*};
-    # The name and date of this rubric (ARGV[1]): a Carried row closes only to
-    # another rubric dated the same day or later.
-    my $NAME = defined $ARGV[1] ? $ARGV[1] : ""; $NAME =~ s{.*/}{};
-    my $OWN = $NAME =~ /^code-review-rubric-([0-9]{4}-[0-9]{2}-[0-9]{2})-/ ? $1 : "";
+    my $NEG = qr/\b(unresolved|partly|partially|partial|half|except|remains|not yet|not fixed|not resolved|still open|pending|reopened)\b/;
+    my $RID = qr/^[A-Z]{1,3}[0-9]+[a-z0-9]*\z/;   # a row ID, as the Now cell of a carried row names one
+    my ($carry, $nwix) = (0, -1);
     my $SUCC = qr/(?:superseded by|\xE2\x86\x92)\s*\**([A-Z]{1,3}[0-9]+[a-z0-9]*)\b/;
     sub cells { my $l = shift; $l =~ s/\\\|/\//g; $l =~ s/^\s*\|//; $l =~ s/\|\s*$//; return map { my $c = $_; $c =~ s/^\s+|\s+$//g; $c } split(/\|/, $l, -1); }
     sub plain { my $c = lc shift; $c =~ s/[*_`]//g; $c =~ s/^\s+|\s+$//g; return $c; }
@@ -98,26 +99,22 @@ rubric_parse() {
       my $t = "$st $note";
       my %q; $q{$1} = 1 while $t =~ /\b(Q-[0-9]{3,})\b/g;
       my $qids = join(" ", sort keys %q); $qids = "-" if $qids eq "";
-      my $none = $neg || $w =~ /\b(no|none)\b/;
-      if ($first eq "split" && !$none) {
-        return ("closed", $qids) if $t =~ $TARGET;
-        return ("qref", $qids) if $qids ne "-";
-      }
-      if ($first eq "carried" && !$none && $t =~ /(code-review-rubric-([0-9]{4}-[0-9]{2}-[0-9]{2})-[^\s|`]*\.md)\W{0,3}(?:row\s+)?[A-Z]{1,3}[0-9]+\b/) {
-        my ($to, $d) = ($1, $2);
-        return ("closed", $qids) if $OWN ne "" && $d ge $OWN && $to ne $NAME;
-      }
       return ($qids ne "-" ? "qref" : "open", $qids) if $tier eq "red";
       my $ovr = $t =~ /\boverride[- ](log|rows?)\b|\baccepted-immutable\b|\brows? [0-9]+\b/i;
       return ("closed", $qids) if $qids ne "-" || $ovr || $t =~ /\bTODO\b/ || $t =~ /\broadmap\b/i
         || $t =~ /\btrigger(s|ed)?\b/i || $t =~ /\b(revisit|reopen)\s+(if|when|once|after)\b/i;
       return ("open", $qids);
     }
+    my @carried;
     while (my $l = <$fh>) {
       $n++; $l =~ s/\r?\n\z//;
-      # A fence closes on a line of the same character at least as long as its opener.
-      if ($l =~ /^\s{0,3}(`{3,}|~{3,})/) { my $m = $1; if ($fence eq "") { $fence = "$m\t$n"; } elsif (substr($fence, 0, 1) eq substr($m, 0, 1) && length($m) >= index($fence, "\t")) { $fence = ""; } $hdr = undef; next; }
-      next if $fence ne "";
+      # A fence closes on a line of the same character, at least as long as
+      # its opener, with only blanks after it (CommonMark: no info string).
+      if ($fence ne "") {
+        $fence = "" if $l =~ /^\s{0,3}(`{3,}|~{3,})\s*\z/ && substr($fence, 0, 1) eq substr($1, 0, 1) && length($1) >= index($fence, "\t");
+        next;
+      }
+      if ($l =~ /^\s{0,3}(`{3,}|~{3,})/) { $fence = "$1\t$n"; $hdr = undef; next; }
       if ($l =~ /^(#{1,6})\s/) {
         my $lev = length $1; my $h = lc $l;
         my $t = ($l =~ $RED || $h =~ /must fix/) ? "red" : ($l =~ $AMB || $h =~ /must address/) ? "amber" : undef;
@@ -127,10 +124,13 @@ rubric_parse() {
       if ($l !~ /^\s*\|/) { $hdr = undef; next; }
       my @c = cells($l);
       if (!defined $hdr) {
-        $hdr = scalar @c; $six = -1; $nix = -1; $tix = -1;
-        for my $i (0 .. $#c) { my $p = plain($c[$i]); $six = $i if $p eq "status"; $nix = $i if $p eq "author note"; $tix = $i if $p eq "tier"; }
+        $hdr = scalar @c; $six = -1; $nix = -1; $tix = -1; $nwix = -1;
+        for my $i (0 .. $#c) { my $p = plain($c[$i]); $six = $i if $p eq "status"; $nix = $i if $p eq "author note"; $tix = $i if $p eq "tier"; $nwix = $i if $p eq "now"; }
         # A table is read when a heading gives its tier, or its own Tier column does.
         if (!defined $tier && $tix < 0) { $hdr = 0; next; }
+        # The Carried forward table of rubric.md (Prior ID, Tier, Now, Reason).
+        $carry = ($six < 0 && $tix >= 0 && $nwix >= 0) ? 1 : 0;
+        if ($carry) { $six = $nwix; $nix = -1; for my $i (0 .. $#c) { $nix = $i if plain($c[$i]) eq "reason"; } }
         $tables++;
         push @bad, "$n\ta " . ($tix >= 0 ? "Tier" : $tier) . " table has no Status column" if $six < 0;
         next;
@@ -146,12 +146,19 @@ rubric_parse() {
         $rt = ($tc =~ $RED || $tp =~ /^(red|must fix)\b/) ? "red" : ($tc =~ $AMB || $tp =~ /^(amber|yellow|must address)\b/) ? "amber" : undef;
         if (!defined $rt) { push @bad, "$n\trow $c[0] has a Tier cell read as no tier" unless $tc =~ $GRN || $tp =~ /^(green|consider)\b/; next; }
       }
+      if ($carry) {
+        my $now = $c[$six]; $now =~ s/[*_`]//g; $now =~ s/^\s+|\s+$//g;
+        if ($now =~ $RID) { push @carried, [$n, $c[0], $now]; next; }
+      }
       my ($cl, $q) = classify($rt, $c[$six], $nix >= 0 ? $c[$nix] : "");
-      my $k = "$rt\t$c[0]";
+      my $rid = $carry ? "carried:$c[0]" : $c[0];
+      my $k = "$rt\t$rid";
       push @order, $k unless exists $rows{$k};
-      $rows{$k} = [$rt, $c[0], $cl, cut($c[$six]), $q, $c[$six]];
-      $byid{$c[0]}{$rt} = $k;
+      $rows{$k} = [$rt, $rid, $cl, cut($c[$six]), $q, $c[$six]];
+      $byid{$c[0]}{$rt} = $k unless $carry;
     }
+    # A carried row whose Now names a row ID is reported by that row.
+    push @bad, "$_->[0]\tcarried row $_->[1] names $_->[2], which is no red or amber row of this file" for grep { !$byid{$_->[2]} } @carried;
     push @bad, (split /\t/, $fence)[1] . "\ta code fence opened here is never closed, so the lines after it are not read" if $fence ne "";
     for my $k (@order) {
       my $r = $rows{$k}; next if $r->[2] eq "fixed";
@@ -167,7 +174,7 @@ rubric_parse() {
     print join("\t", "row", @{$rows{$_}}[0 .. 4]), "\n" for @order;
     print "bad\t$_\n" for @bad;
     print "none\n" unless $tables;
-  ' "$1" "${2-}"
+  ' "$1"
 }
 
 # rubric_lines BRIEF BRANCH TIP PATHS STATUSES: the advisory "rubric BRIEF:
@@ -223,7 +230,7 @@ rubric_lines() {
       2) echo "rubric $a: unread $p: not a regular file in the tip of $br"; continue ;;
       *) echo "rubric $a: unread $p: could not be read"; continue ;;
     esac
-    if ! rubric_parse "$GATE_TMP/rub" "$f" > "$GATE_TMP/rubp"; then echo "rubric $a: unread $p: could not be parsed"; continue; fi
+    if ! rubric_parse "$GATE_TMP/rub" > "$GATE_TMP/rubp"; then echo "rubric $a: unread $p: could not be parsed"; continue; fi
     ok=1; nred=0; namb=0; rows=()
     while IFS=$'\t' read -r k tier id cl st q; do
       case "$k" in
