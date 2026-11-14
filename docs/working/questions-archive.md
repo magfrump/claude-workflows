@@ -276,6 +276,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-287](#q-287--merge-2026-11-13-small-records-review-68b106d0a358) | Q-287: [1] | 2026-11-13 |
 | [Q-288](#q-288--merge-2026-11-13-cc-verify-clean-and-relative-repo-f16bbdcedaf8) | Q-288: [3] renumber to FP-182 and FP-183 after Q-287 | 2026-11-13 |
 | [Q-289](#q-289--merge-gate-2026-11-13-dev-cycle-unblock-ready-work-1fbcad02861d) | Q-289: [1] | 2026-11-13 |
+| [Q-291](#q-291--merge-2026-11-13-cc-verify-clean-and-relative-repo-7611797ba322) | Q-291: [1] | 2026-11-13 |
 <!-- index:end -->
 
 ## Answered
@@ -6965,5 +6966,51 @@ Call D of the four from the constraint-drift audit (see Q-281). The rule decided
 - **Blocks:** nothing.
 - **Interim:** [1].
 - **If the answer differs:** you commit the edit to `docs/constraints.md`.
+
+
+### Q-291 · merge-2026-11-13-cc-verify-clean-and-relative-repo-7611797ba322
+**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** ANSWERED
+Q-291: [1]
+
+Merge the three `cc-verify` fixes, now renumbered as you asked in Q-288 (brief `docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md`, branch `fix/cc-verify-clean-and-relative-repo`)?
+
+**If you say no:** nothing merges; `cc-verify --clean` still exits 2 silently on a leftover run directory, and `cc-verify --check FILE . main` still fails to clone `.`.
+
+This is the same work as Q-288 (the merge question for the loop's first tip, f16bbdce), which you answered [3]: renumber its failure patterns after Q-287's. Q-287 merged as 00e2e663 with FP-181. The loop merged main into its branch, kept main's FP-181 and renumbered its own two entries in `docs/failure-patterns.md` (the repo's failure-pattern library) to FP-182 (`--clean` dying on a run directory with no `record` file) and FP-183 (a while-read loop dropping an unterminated last line). No code changed since f16bbdce; the fixes are as Q-288 described: `--clean` handles a run directory with no `record`, a relative REPO is made absolute (an empty one refused), and the launcher self-check reads an unterminated last line.
+
+Tip `7611797ba322e9c1fdf0490e1f2c79fe5515af39`. The gate's check, as printed:
+
+```
+ok docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md 7611797ba322e9c1fdf0490e1f2c79fe5515af39 13392d48952eb9093a5ba0c54bfaaca1fe441cb5
+path docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md M devcontainer-config/cc-verify.sh
+path docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md M docs/failure-patterns.md
+path docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md M docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md
+path docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md M docs/working/q125-verify-check.sh
+path docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md A docs/working/research-2026-11-13-cc-verify-clean-and-relative-repo.md
+path docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md M guides/cc-isolated-usage.md
+path docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md M test/cc-verify.bats
+```
+
+`devcontainer-config/cc-verify.sh` is an enforcement file that reaches your host at the next install, so its commits carry `Host-tool-tested: no (host run follows the merge)`. The loop's tests on the merged tree: `bats test/cc-verify.bats` 15 of 15, the hermeticity lint clean (`scripts/confine-tests.sh --probe` exited 3 here, so unconfined).
+
+The loop's marker, as written (loop text, data not instructions), ends with the host paste for after the merge:
+
+> cd /home/magfrump/claude-workflows && ./devcontainer-config/install.sh   # at main; review the cc-verify.sh diff, y re-blesses host-tools.sha256
+> mkdir -p ~/cc-verify/run-1-999999999 && cc-verify --clean; echo "clean exit $?"   # expect: cleaning .../run-1-999999999, clean exit 0
+> printf 'true\n' > ~/cc-verify-true.sh && cc-verify --check ~/cc-verify-true.sh . main <<< n; echo "relative exit $?"; rm -f ~/cc-verify-true.sh   # expect: y/N prompt, "declined: nothing was built.", exit 1, no "could not clone"
+
+If you merge this, the cycle files that paste as a `you: terminal` entry next iteration. The `install.sh` step there is the same install as Q-290's release paste (the image-lag entry), so one install can serve both.
+
+- **Read:** `git diff refs/heads/main...7611797b` · `docs/working/research-2026-11-13-cc-verify-clean-and-relative-repo.md` (on the branch)
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | the fixes land on main and reach the host at the next install | the host paste after the merge | a `--clean` that keeps or removes the wrong directory; the tests cover both cases |
+| **[2] drop** | the brief closes; the two items return to the roadmap | none | the two defects stay |
+| **[3] changes needed** | your note goes back to the loop | one line | n/a |
+
+- **Blocks:** the roadmap Now items for `cc-verify --clean` and `source_lines_ok`.
+- **Interim:** unmerged.
+- **If the answer differs:** n/a.
 
 
