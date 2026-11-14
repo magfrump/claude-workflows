@@ -149,6 +149,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 - `docs/working/briefs/2026-11-14-merge-rubric-gate.md`: `build-loop.sh --merge` and `--check`
   read the branch's rubric by its Status column; gate code, review.
+  2026-11-14: blocked at fc2eeb03 (review hit the 3-round cap with one red open; the check
+  is built and report-only); asked at Q-294.
 - `docs/working/briefs/2026-11-14-review-rules-close-gaps.md`: the written review rules (no
   fast-forward to main, superseded loops, review before landing, decisions at the cap, a fix
   updates its row); review.
