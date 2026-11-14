@@ -56,41 +56,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   owner refuses the exception when Q-272 returns with data (watch Q-276). The owner's
   note on other repos is an Ideas item.
 
-- **Agent: `source_lines_ok` misses an unterminated last line** (filed 2026-11-05, step 7).
-  Motive: the Q-147 review found the shipped self-check in `devcontainer-config/cc-verify.sh`
-  can miss a final line with no newline; every file ends in one today, so nothing is exposed
-  now. It lives otherwise only as a Defer row in `docs/reviews/override-log.md`, merged with
-  Q-258. First step: one change with `Host-tool-tested:` and a re-bless,
-  which needs a host run, so it is not briefed for a loop yet.
-  2026-11-13: briefed with the `--clean` item below (In flight); only the trailer and re-bless
-  need the host, as one paste after the merge.
-
-- **Agent: `cc-verify --clean` exits 2 and prints nothing on a run directory with no
-  `record`** (filed 2026-11-11, from the owner's Q-273 paste). Motive: it stopped the
-  release's live check. `~/cc-verify/run-1793211495-572412.d` was left by the Q-117 trial
-  script on 2026-10-28 (its teardown removes `record` last and never the directory), the
-  new-run check at `devcontainer-config/cc-verify.sh:222` counts any `run-*`, and
-  `--clean` dies at line 210: `sed` cannot read `$d/record`, exits 2, and `pipefail` with
-  `set -e` ends the script with the message sent to `/dev/null`. A non-directory `run-*`
-  dies the same way before its NOTE. Reproduced with the bats harness of
-  `test/cc-verify.bats`: `mkdir "$CC_VERIFY_ROOT/run-1-1.d"`, then `--clean` gives status
-  2, empty output, directory kept. Appending `|| p=""` to line 210 gives status 0,
-  `cleaning <dir>`, directory removed (`teardown` with no `T8` only removes the
-  directory). First step: that change and its test, in the same change as the
-  `source_lines_ok` item above, since both need `Host-tool-tested:` and a re-bless. For
-  the pre-mortem: a run between its `mkdir` and its `record` write (lines 225 to 228)
-  has no `record`, so a `--clean` in that window would remove a live run's fresh
-  directory; today the abort hides that. The owner's workaround is in Q-273's paste 1.
-  Second defect, same day, same paste: a relative REPO fails. The script changes into its
-  run directory (line 225) before the clone at line 232, so `cc-verify --check FILE . main`
-  ends with "fatal: repository '.' does not exist" (reproduced with the harness: `cd "$R"`
-  and REPO `.` gives status 1; the absolute path passes). `--check FILE` is not affected:
-  it is read at line 220, before the `cd`. Fix in the same change: resolve REPO to an
-  absolute path before the `cd`, or refuse a relative one by name. The header of
-  `docs/working/q125-verify-check.sh` (line 7) shows the `.` form and needs the same
-  correction; `guides/cc-isolated-usage.md` and `--help` do not say REPO must be a full path.
-  2026-11-13: briefed with `source_lines_ok` (In flight).
-
 - **Agent: confine-tests follow-ups** (filed 2026-11-07, step 7). Motive: the research
   merged at be12889c (`docs/working/research-2026-11-07-confine-tests-situation.md`) found
   the script refuses here (no bwrap, `unshare -rn` EPERM), has never run with a primitive,
@@ -156,13 +121,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
      else open one) is an idea until v1 is used. v1 merged at a8e941a5 (Q-232 [1]).
 
 ## In flight
-
-- `docs/working/briefs/2026-11-13-cc-verify-clean-and-relative-repo.md`: `--clean`, a
-  relative REPO, `source_lines_ok`; review, with a host paste after the merge.
-  2026-11-13: ready at f16bbdce; merge entry Q-288 (its FP-181 clashes with Q-287's).
-  2026-11-13: Q-288 answered [3] in session (renumber to FP-182 and FP-183 after Q-287); goes back to its loop next iteration.
-  2026-11-13: Q-287 merged (00e2e663); sent back to its loop for the renumber (iteration 2237).
-  2026-11-13: ready at 7611797b (FP-182 and FP-183); merge entry Q-291.
 
 ## Next
 
@@ -482,6 +440,10 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- `cc-verify` fixes: `--clean` on a run directory with no `record`, a relative REPO, and
+  `source_lines_ok` on an unterminated last line (Now items filed 2026-11-05 and 2026-11-11;
+  `docs/working/briefs/closed/2026-11-13-cc-verify-clean-and-relative-repo.md`). Merged
+  5740cbfd, approved (Q-291 [1]). The host re-bless and live checks are Q-290's paste, then Q-292.
 - The cycle stops leaving ready work unbriefed (Now item, filed 2026-11-13;
   `docs/working/briefs/closed/2026-11-13-dev-cycle-unblock-ready-work.md`). Merged f1238bdb,
   approved (Q-289 [1]); gate code, so it runs from the next image release (Q-290).

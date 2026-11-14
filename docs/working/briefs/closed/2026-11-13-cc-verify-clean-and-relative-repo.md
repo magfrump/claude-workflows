@@ -35,4 +35,4 @@ Policy: review
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`: the dev cycle owns those.
 
 Dispatched: 2
-Applied: Q-288=redispatch
+Applied: Q-288=redispatch, Q-291=merged
