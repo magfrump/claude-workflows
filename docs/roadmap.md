@@ -157,6 +157,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   2026-11-14: Q-294 [1] (one more pass: Split and Carried stop closing a red; fence and
   "partial" cases); goes back to its loop. Reconciling Split and Carried with Q-293's merged
   status-word table is the follow-up the loop named.
+  2026-11-14: blocked again at 27c32c32 (pass 4 fixed Split and Carried but added red R3 in
+  its "Carried forward" table reading); asked at Q-295.
 
 ## Next
 
@@ -190,6 +192,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   closed; with a1121ac5's Path A record (Done item above), it is what the next deep audit
   reads first. No audit is asked for now: the owner starts one by hand, or the cycle asks
   when a major design decision fires step 4b.
+  2026-11-14 (iteration 2243): step 4b fired again on 21097afa (`workflows/pr-prep.md`,
+  `workflows/review-fix-loop.md` and `skills/code-review/`, the review rules you approved in
+  Q-293); the same sample takes it.
 - **Record out-of-cycle session answers through `--answered`.** Signal: 4306aa88 (the owner's
   Q-281..284 answers, recorded on a hand branch) read as `other` in `--main-log`, making
   iteration 2026-11-13-2237 a full cycle with a health run.
