@@ -115,12 +115,18 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
      the merge that carried it, whether a fix round followed, and which gate or prose rule
      should have stopped it), tried on the repo the owner names. Waits for the owner to
      name the repo (asked in session 2026-10-29; filed as Q-285 on 2026-11-13).
+     2026-11-13: Q-285 answered [2] in session: run it here first (the gap came up in
+     Behemoth Arsenal; from a phone the owner can carry only one paste there). Briefed:
+     `docs/working/briefs/2026-11-13-review-gap-audit.md` (In flight), which ends with that paste.
   4. A surface for projects to file feedback about the harness. First step (v1): a
      `docs/harness-feedback.md` file any project can append to in a fixed entry shape,
      plus how this repo ingests a copied file; v2 (GitHub issues: search, comment or star,
      else open one) is an idea until v1 is used. v1 merged at a8e941a5 (Q-232 [1]).
 
 ## In flight
+
+- `docs/working/briefs/2026-11-13-review-gap-audit.md`: the review-gap audit, run on this
+  repo, with a portable paste for Behemoth Arsenal (Q-285 [2]); self-merge.
 
 ## Next
 
