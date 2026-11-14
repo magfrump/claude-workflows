@@ -27,6 +27,7 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-278](#q-278--q272-returned-run-or-refuse) | you: judgment | You asked for Q-272 back with data. When the test-confinement script (`scripts/confine-tests.sh`) cannot us... | 2026-11-11 |
+| [Q-295](#q-295--blocked-2026-11-14-merge-rubric-gate-2) | you: judgment | Brief 2026-11-14-merge-rubric-gate's build loop asks again: its extra review pass (your Q-294 [1]) found a ... | 2026-11-14 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | Q-167: (b) and (d) answered 2026-11-07 (answers-11-7-26.txt), on bless 91c5f79dd91eb7ee, which --probe-only... | 2026-10-15 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Q-255: first half answered 2026-11-07 (answers-11-7-26.txt): all four fronted probes through plugins-artifa... | 2026-11-05 |
@@ -35,6 +36,52 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
+
+### Q-295 · blocked-2026-11-14-merge-rubric-gate-2
+**Needs:** you: judgment · **Opened:** 2026-11-14 · **Status:** OPEN
+
+Brief 2026-11-14-merge-rubric-gate's build loop asks again: its extra review pass (your Q-294 [1]) found a new red that the pass's own fix caused. How should it land?
+
+**If you say no:** nothing merges; the branch `feat/merge-rubric-gate` waits at 27c32c32, and merges stay as they are today, with no script reading a rubric.
+
+> The extra review pass you allowed for the merge-time rubric check found one new red, so it needs your call again.
+> Q-294 was your answer [1]: narrow the check and allow one more review pass. That pass is done and is not clean.
+>
+> What was built: a red rubric row now counts as closed only by a fix or by a Q-ID you answered on main.
+> Split and Carried no longer close a red. This removed the part review kept failing on, and the review confirmed those rows fixed.
+> Across all 107 rubrics in docs/reviews/, the row results are the same before and after the change. The full suite passes: 2080 tests.
+> The check is still report-only: it adds "rubric ..." lines to --check and --merge output and changes no verdict.
+>
+> What failed: the same pass taught the check to read rubric.md's "Carried forward" table, which lists rows moved from an older rubric.
+> That code drops a carried red whose new row is an amber, so the amber's closure stands in for the red (rubric row R3, a regression).
+> Before this pass, that table printed a loud "unread" line instead. There are 4 new ambers too: more "Fixed (partial)"-style wordings, one stale skill sentence, test gaps and wording.
+> The review-fix loop's cap (workflows/review-fix-loop.md, "Iteration 4: cap-exceeded decision gate") now sits at the 4 passes you allowed, so I escalated and fixed nothing after the review.
+> The details are in docs/reviews/code-review-rubric-2026-11-14-merge-rubric-gate.md, under "Cap decision (after iteration 4 of 4)".
+>
+> Which way should this land?
+>
+> | Option | What it means | Cost to you | If it's wrong |
+> |---|---|---|---|
+> | [1] one more pass, narrow | Pass 5: a carried row goes only to a row of its own tier (or that table goes back to "unread"); fix the wording; add the test cases | none now; the usual merge entry later | another regression, though the fix is a few lines with a test |
+> | [2] pass 5, drop the table reading | Revert only the Carried forward reading to the loud "unread" line, then land | none now | rubrics using that template show an unread line until a follow-up |
+> | [3] ship as is | Merge at this tip; the open rows go in the merge entry | read 1 red and 7 amber rows | a carried red can read as closed in advisory output |
+> | [4] drop | Abandon the branch | none | the check waits for a new brief |
+>
+> My pick is [1], the rubric's recommendation. The tiebreaker: the fix is one same-tier lookup with a fixture that pins it, and it keeps the table support that rubric.md's new template needs.
+> The design, the measurement and the pre-mortem are in docs/working/research-2026-11-14-merge-rubric-gate.md.
+
+The cycle's notes on the loop's text above (from main's docs; the branch's claims are the loop's):
+- **What Q-294 [1] bought:** the part that kept failing review (Split and Carried closing a red) is gone and review confirmed it fixed. The new red, R3, is in code the same pass added: reading the "Carried forward" table that Q-293's merged rules introduced (`skills/code-review/references/rubric.md`).
+- **The pattern so far:** pass 3 left one red open, and pass 4 fixed it but added another. Option [2] removes only the newest code: the "Carried forward" table goes back to a loud "unread" line, which is what the check printed before this pass, so a rubric using that table shows "unread", never "clean". That is the fail-closed reading the constraints ask for (H2, a gate fails closed and loudly); option [1] keeps the table support, at the risk of another round like this one.
+- **Either way it stays report-only** and comes back as a `merge-gate-` entry for your review: it is gate code (`scripts/lib/`, `scripts/build-loop.sh`, `skills/dev-cycle/`).
+- **Budget:** this was dispatch 2 of at most 4 for the brief (D1, the build-loop dispatch cap in `docs/working/plan-build-loop-handoff.md`).
+- **The loop's tests:** the full suite, 2080 passed, unconfined (`scripts/confine-tests.sh --probe` exited 3: no confinement here); the hermeticity lint is clean.
+
+- **Read:** `docs/reviews/code-review-rubric-2026-11-14-merge-rubric-gate.md` ("Cap decision (after iteration 4 of 4)") and `docs/working/research-2026-11-14-merge-rubric-gate.md`, both on the branch
+
+- **Blocks:** the roadmap Now item "Agent: review-gap audit fixes", its gate half.
+- **Interim:** the loop is stopped at 27c32c32; nothing merges.
+- **If the answer differs:** n/a; each option sets what the loop does next.
 
 ### Q-292 · cc-verify-host-check
 **Needs:** you: terminal · **Opened:** 2026-11-13 · **Status:** OPEN
@@ -61,7 +108,7 @@ Run the release paste below on the host, from your claude-workflows checkout at 
 
 **If you say no:** nothing breaks. Sessions keep running the installed image at C, whose dev-cycle skill lacks today's change to step 8 (below). The merges stay on main, waiting.
 
-**Release notes** (rewritten 2026-11-14, iteration 2026-11-14-2216 UTC, from the log). The installed image is the root-owned copy of the dev-cycle scripts and skill that every session runs as the gate. It is at C = `107cba32d271132361bc4a74a2ebf851e4398b97` (read from `/opt/claude-workflows/.manifest`). Main is at M = `21097afa61e9f5481a890ae8341537ea8dd7f9fb`.
+**Release notes** (rewritten 2026-11-14, iteration 2026-11-14-2243 UTC, from the log). The installed image is the root-owned copy of the dev-cycle scripts and skill that every session runs as the gate. It is at C = `107cba32d271132361bc4a74a2ebf851e4398b97` (read from `/opt/claude-workflows/.manifest`). Main is at M = `6d41b0bd4ecf6a1f238b038d0dec2415a922e3ee`.
 
 **Merged without your review** (subject ends "build-loop self-merge"; a hand commit with that subject would read the same, so this is a pointer, not proof):
 
@@ -75,7 +122,7 @@ Run the release paste below on the host, from your claude-workflows checkout at 
 - `cc-verify` fixes (`5740cbfd`, your Q-291 answer): `--clean` no longer dies silently on a run directory with no `record` file, a relative REPO such as `.` now works (an empty one is refused), and the launcher self-check reads a last line with no newline. `devcontainer-config/cc-verify.sh` is a host tool, so `install.sh` asks you to review its diff and re-bless it (answer y); the two live checks after that are Q-292.
 - Review rules from the two review-gap audits (`21097afa`, your Q-293 answer): `main` is never fast-forwarded and pr-prep checks the landing merge; a replacing review loop carries over open findings; `escalate` and `split` at the 3-round cap file tracked items; a fix updates its rubric row; a rubric Status words table, and a red closed other than fixed, split or carried needs your answered Q-NNN. Sessions read these from the image, so they take effect at this release.
 
-**The rest:** 28 commits, cycle lands and recorded answers, records only. The full list: `git -c log.showSignature=false log --first-parent --format='%h %s' 107cba32d271132361bc4a74a2ebf851e4398b97..21097afa61e9f5481a890ae8341537ea8dd7f9fb`
+**The rest:** 30 commits, cycle lands and recorded answers, records only. The full list: `git -c log.showSignature=false log --first-parent --format='%h %s' 107cba32d271132361bc4a74a2ebf851e4398b97..6d41b0bd4ecf6a1f238b038d0dec2415a922e3ee`
 
 **Gate files changed:** `skills/dev-cycle/SKILL.md`.
 
@@ -84,7 +131,7 @@ Run the release paste below on the host, from your claude-workflows checkout at 
 The paste (one line; it refuses, saying why, unless the checkout is at main's tip and the gate code and installer are still M's):
 
 ```
-sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "21097afa61e9f5481a890ae8341537ea8dd7f9fb:$p")"; then n=$((n+1)); else echo "release refused: $p changed after M: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
+sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "6d41b0bd4ecf6a1f238b038d0dec2415a922e3ee:$p")"; then n=$((n+1)); else echo "release refused: $p changed after M: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
 ```
 
 - **Interim:** the image's gate (C) runs.
