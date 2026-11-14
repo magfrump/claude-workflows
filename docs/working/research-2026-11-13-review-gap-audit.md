@@ -188,7 +188,7 @@ The research doc is the only deliverable; no code changed, so the review is a fa
   - the rubric count (48, not 43) and the P2-R1..R3 citation;
   - the digest and Q-076 wordings, and "recorded at the merge" (now "by the landing": two of the reds landed by fast-forward or direct commit).
   Consider 5 (the 21 new amber rows are given as totals, not one line each) stands: each was read and the doc names every one that is not plainly closed.
-- **Iteration 3**: a narrow check of the iteration-2 fix commit.
+- **Iteration 3** (at 6d878995, narrow, by the author): the iteration-2 fix diff re-read against git. 8781b882 (Q-168 filed, 02:03) precedes the f265d7f2 merge (15:09), and the Q-096 fix branch 75d08a94 is not on `main`. A scan for red rows closed by split, park, route, carry or escalation finds only rows the doc already lists (Q-085 R1, copy-install-final R1-R2, Q-096 R6-R10). No findings: the loop closes at iteration 3 by exit condition 1.
 
 ## Portable paste
 
