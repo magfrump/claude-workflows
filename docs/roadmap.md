@@ -81,6 +81,19 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   2026-11-13: those two records merged with the small-records review unit (00e2e663, Done);
   what remains here is the first live `--probe` run.
 
+- **Agent: review-gap audit fixes** (filed 2026-11-13, step 7). Motive: the audit
+  (`docs/working/research-2026-11-13-review-gap-audit.md`, merged 84f8532e) found that no
+  script reads a rubric's row statuses before a merge, so 21 amber rows (all Medium or lower)
+  and one agent-waived red reached main. It proposes six fixes, in its "Proposed fixes"
+  section: (1) an advisory merge-time rubric check; (2) a superseding review loop carries the
+  old loop's open rows forward; (3) enforce pr-prep's existing `--no-ff` rule; (4) a review of
+  code already on main routes every open amber; (5) a self-merge route for the
+  uneditable-commit-message case; (6) a red closed by waiver cites an owner answer. First step:
+  wait for the Behemoth Arsenal run's result (the owner's paste), since the fixes should cover
+  the gap seen there too; then brief fix 1 with fix 6's grep, gate code (review). Fixes 3 to 5
+  are prose changes to `workflows/pr-prep.md`, `workflows/review-fix-loop.md` and
+  `skills/code-review/SKILL.md` and can go as one unit.
+
 - **Trial week: less friction, less habituation (2026-10-30 to about 2026-11-06).** Motive:
   the owner's 2026-10-29 brainstorm request ("try things for a few days to a week").
   Every iteration writes owner entries, the image-lag entry and the final message as
@@ -117,16 +130,17 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
      name the repo (asked in session 2026-10-29; filed as Q-285 on 2026-11-13).
      2026-11-13: Q-285 answered [2] in session: run it here first (the gap came up in
      Behemoth Arsenal; from a phone the owner can carry only one paste there). Briefed:
-     `docs/working/briefs/2026-11-13-review-gap-audit.md` (In flight), which ends with that paste.
+     `docs/working/briefs/closed/2026-11-13-review-gap-audit.md`, which ends with that paste.
+     2026-11-13: done (84f8532e, self-merge; `docs/working/research-2026-11-13-review-gap-audit.md`):
+     21 amber rows reached main open through five landings and one red was waived with no
+     owner answer; its six proposed fixes are the Now item below. What remains of point 3 is
+     the paste's run in Behemoth Arsenal, which is the owner's.
   4. A surface for projects to file feedback about the harness. First step (v1): a
      `docs/harness-feedback.md` file any project can append to in a fixed entry shape,
      plus how this repo ingests a copied file; v2 (GitHub issues: search, comment or star,
      else open one) is an idea until v1 is used. v1 merged at a8e941a5 (Q-232 [1]).
 
 ## In flight
-
-- `docs/working/briefs/2026-11-13-review-gap-audit.md`: the review-gap audit, run on this
-  repo, with a portable paste for Behemoth Arsenal (Q-285 [2]); self-merge.
 
 ## Next
 
@@ -446,6 +460,8 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- Review-gap audit, first run on this repo (Q-285 [2];
+  `docs/working/briefs/closed/2026-11-13-review-gap-audit.md`). Merged 84f8532e, self-merge.
 - `cc-verify` fixes: `--clean` on a run directory with no `record`, a relative REPO, and
   `source_lines_ok` on an unterminated last line (Now items filed 2026-11-05 and 2026-11-11;
   `docs/working/briefs/closed/2026-11-13-cc-verify-clean-and-relative-repo.md`). Merged
