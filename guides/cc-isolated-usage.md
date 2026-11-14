@@ -55,7 +55,8 @@ directory is a hard error (it refuses rather than guessing another repo).
 ### Verify a branch without installing it: cc-verify
 
 `cc-verify --check FILE REPO BRANCH` stages the merge of `main` and BRANCH (from
-REPO's objects, never its working tree), runs your installed `cc-isolated` on that
+REPO's objects, never its working tree; REPO is a path to a git repo, or a URL or `host:path`
+git can clone, and a relative path is resolved before the run starts), runs your installed `cc-isolated` on that
 stage and a scratch clone named `VERIFY-<tree8>` under `~/cc-verify`, runs FILE in
 the container, and removes what it created at exit (an image that existed
 before the run is kept); nothing is installed and other
