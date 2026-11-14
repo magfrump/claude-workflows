@@ -1282,3 +1282,40 @@ rubric $B: unread $RB line 12: a amber table has no Status column"
     [ "$(count "$U" open) $(count "$U" fixed) $(count "$U" closed) $(count "$U" bad)" = "1 2 2 1" ]
     [ "$(count "$T" open) $(count "$T" fixed) $(count "$T" bad)" = "0 13 0" ]
 }
+
+@test "rubric: a red never borrows an amber successor's closure; prose like same as is no successor; negation anywhere in the cell, an unchecked Split Q-ID and a Carried row away from its file stay open; an empty Status cell keeps its fields (brief 2026-11-14-merge-rubric-gate, review 1)" {
+    qentry Q-002 ANSWERED; commit_all questions
+    gated feat/x
+    rub "$RB" '## 🔴 Must Fix' '' '| # | Finding | Status | Author note |' '|---|---|---|---|' \
+        '| R1 | a | Waived → A1 | — |' '| R2 | b | Fixed: no, not yet | — |' '| R3 | c | Resolved — mostly; partly open | — |' \
+        '| R4 | d | Split; not yet on a branch | — |' '| R5 | e | Split (Q-999) | — |' '| R6 | f | Carried; see H2 in code-review-rubric-2026-10-02-feat-y.md | — |' \
+        '| R7 | g |  | Q-002 |' '| R8 | h | superseded by R9 | — |' '| R9 | i | ✅ Fixed | — |' '' \
+        '## 🟡 Must Address' '' '| # | Finding | Status | Author note |' '|---|---|---|---|' \
+        '| A1 | a | Stands | TODO at x.sh:1 |' '| A2 | b | Open, same as A1 |  |' '| A3 | c |  |  |'
+    rubis "rubric $B: open $RB R1 red: Waived → A1
+rubric $B: open $RB R2 red: Fixed: no, not yet
+rubric $B: open $RB R3 red: Resolved — mostly; partly open
+rubric $B: open $RB R4 red: Split; not yet on a branch
+rubric $B: open $RB R5 red: Split (Q-999)
+rubric $B: open $RB R6 red: Carried; see H2 in code-review-rubric-2026-10-02-feat-y.md
+rubric $B: open $RB A2 amber: Open, same as A1
+rubric $B: open $RB A3 amber: (empty)"
+}
+
+@test "rubric: a code fence hides its lines and an unclosed one is named; a Tier cell reading Must Fix is red, one read as no tier is named; three dated files name the one read; a path outside pathform prints as ? (brief 2026-11-14-merge-rubric-gate, review 1)" {
+    gated feat/x
+    rub "$RB" '## 🔴 Must Fix' '' '```' '# not a heading' '| R0 | not a row | Open |' '```' '' '| # | Finding | Status |' '|---|---|---|' '| R1 | a | Open |' '' \
+        '## Findings' '' '| ID | Tier | Status |' '|---|---|---|' '| R2 | Must Fix | Open |' '| R3 | blue | Open |' '| C1 | 🟢 | Open |' '' '~~~' '| R4 | x | Open |'
+    rubis "rubric $B: open $RB R1 red: Open
+rubric $B: open $RB R2 red: Open
+rubric $B: unread $RB line 17: row R3 has a Tier cell read as no tier
+rubric $B: unread $RB line 20: a code fence opened here is never closed, so the lines after it are not read"
+    T1=docs/reviews/code-review-rubric-2026-10-02-feat-x.md T2=docs/reviews/code-review-rubric-2026-10-03-feat-x.md
+    for f in "$T2" "$T1"; do rub "$f" '## 🔴 Must Fix' '' '| # | Finding | Status |' '|---|---|---|' '| R1 | a | Fixed |'; done
+    rub "docs/reviews/code-review-rubric odd.md" '## 🔴 Must Fix' '' '| # | Finding | Status |' '|---|---|---|' '| R1 | a | Open |'
+    chk "$B"
+    [ "$status" -eq 0 ] && [ "$rubric" = "rubric $B: superseded $RB by $T2 (not read)
+rubric $B: superseded $T1 by $T2 (not read)
+rubric $B: open ? R1 red: Open
+rubric $B: clean $T2: 1 red and 0 amber rows, none open" ] || { echo "$rubric"; show; return 1; }
+}

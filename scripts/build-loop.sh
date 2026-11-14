@@ -435,26 +435,31 @@
 #                 other line is malformed, and only own files land.
 #             rubric BRIEF: WHAT
 #                 Last, after the path lines, wherever gap lines print: the
-#                 rubric check (lib/rubric-check.sh, rubric_lines), advisory:
-#                 it changes no verdict and no exit status, so a cycle quotes
+#                 rubric check (lib/rubric-check.sh, rubric_lines; its
+#                 comments hold the full reading rules), advisory: it
+#                 changes no verdict and no exit status, so a cycle quotes
 #                 these lines in a review brief's merge entry and in a
 #                 self-merge's record. It reads, from TIP, each file the
-#                 merge adds or changes under docs/reviews/ whose name holds
-#                 code-review-rubric (of code-review-rubric-DATE-SLUG.md
-#                 names only the newest DATE per SLUG), by table column and each Status cell
-#                 by its first word. WHAT is "open PATH ID TIER: STATUS" for a
-#                 red or amber row neither fixed nor closed by a reference
-#                 (either tier: a Split naming its follow-up or a Carried
-#                 naming the newer rubric and row; else a red's only
-#                 closure is a Q-ID the owner answered on main, an amber's
-#                 a Q-ID, an override-log row, a TODO, a roadmap item or a
-#                 revisit trigger), STATUS as written; "unread
-#                 PATH[ line N]: WHY" for a table or file it cannot read;
-#                 "stale PATH: K fix(...) commits on BRANCH follow its last
-#                 change in SHA12"; "superseded OLD by NEW (not read)";
-#                 "clean PATH: R red and A amber rows, none open"; or, with
-#                 no rubric, "none: WHY", naming the paths outside docs/
-#                 when there are any.
+#                 merge adds or changes directly in docs/reviews/ whose name
+#                 starts code-review-rubric or holds -code-review-rubric and
+#                 ends .md (of code-review-rubric-DATE-SLUG.md names, only
+#                 the newest DATE per SLUG), by table column, each Status
+#                 cell by its first word and whole words. WHAT is first
+#                 "superseded OLD by NEW (not read)" for each older dated
+#                 file, then per rubric read: "open PATH ID TIER: STATUS"
+#                 for a red or amber row neither fixed nor closed by a
+#                 reference (either tier: a Split naming its follow-up or a
+#                 Carried naming the newer rubric and row; else a red closes
+#                 only by a Q-ID the owner answered on main, an amber by a
+#                 qualifying note found by keyword: a Q-ID, an override-log
+#                 row, a TODO, a roadmap item or a revisit trigger), STATUS
+#                 as written; "unread PATH[ line N]: WHY" for a table, row
+#                 or file it cannot read; "stale PATH: K fix(...) commits on
+#                 BRANCH follow its last change in SHA12" (branch commits
+#                 the last commit changing PATH does not contain); "clean
+#                 PATH: R red and A amber rows, none open"; or, with no
+#                 rubric, one "none: WHY", counting the paths outside docs/
+#                 when there are any. PATH is "?" unless pathform allows it.
 #   --merge   lands a self-merge brief (D7), or with --approved a brief of
 #             either policy: --check's lines for BRIEF at --expect's tip
 #             (under --approved, without the S rules or the checkout
@@ -1552,7 +1557,7 @@ check_line() {
     echo "ok $a $sha $tree"
   }
   gaps() { local g; for g in "${FP_GAPS[@]}"; do echo "gap $a: $g"; done; }
-  if [[ ${#ps[@]} -eq 0 ]]; then if [[ -n "$co" ]]; then echo "$co"; elif [[ -n "$fv" ]]; then echo "$fv"; else verdict_ok; fi; gaps; rubric_lines "$a" "$br" "$sha"; return; fi
+  if [[ ${#ps[@]} -eq 0 ]]; then if [[ -n "$co" ]]; then echo "$co"; elif [[ -n "$fv" ]]; then echo "$fv"; else verdict_ok; fi; gaps; rubric_lines "$a" "$br" "$sha" ps ss; return; fi
   # One lower-casing pass for every path (a tr per path cost 1 to 2.5 ms each).
   if ! nul_list lps lower_all "${ps[@]}" || [[ ${#lps[@]} -ne ${#ps[@]} ]]; then echo "refuse $a: the paths the merge of $br changes could not be lower-cased"; return; fi
   for i in "${!ps[@]}"; do
@@ -1568,8 +1573,8 @@ check_line() {
   gaps
   printf '%s\n' "${rows[@]}"
   # The rubric check, advisory (brief 2026-11-14-merge-rubric-gate): its lines
-  # come last and change no verdict; it reads ps and ss.
-  rubric_lines "$a" "$br" "$sha"
+  # come last and change no verdict.
+  rubric_lines "$a" "$br" "$sha" ps ss
 }
 
 # The merge commit's author and committer, as git var resolves them: the

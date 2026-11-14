@@ -667,8 +667,8 @@ the brief is still open and no subagent of this session runs it, step 10 re-disp
   is the environment's, not the loop's: recorded, named in the final message, and tried
   again next iteration. The `rubric` lines (last, after the path lines) are advisory: they
   change no verdict, so a `merged` line still lands past an `open` red; the record quotes
-  them under the `merged` line and the final message names each `open`, `stale`, `unread`
-  or `none` one.
+  them under the `merged` line and the final message names each one but `clean` and
+  the docs-only `none`.
 - **ready**, review: `--check BRIEF --expect TIP`. On `ok`, one merge entry, heading
   `### Q-NNN · merge-STEM-SHA12` (SHA12: TIP's first 12 hex digits), or
   `merge-gate-STEM-SHA12` when a `path` or `deny` line's PATH (without a trailing ` (symlink)` or

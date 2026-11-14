@@ -23,7 +23,7 @@ Brief: `docs/working/briefs/2026-11-14-merge-rubric-gate.md` (review policy, gat
 - **Placement of the lines:** last, after the path lines (the other choice was before them, like `gap` lines). Last keeps every existing line index, which the dev-cycle skill and about 16 existing bats cases read. The suites' `chk`/`mrg` helpers move the lines into `$rubric` (`unrubric` in `test/lib/build-loop-fixtures.bash`).
 - **The lib missing:** `build-loop.sh` exits 1 naming it, like `lib/dev-cycle-read.sh` (H2). Printing an `unread` line and going on was the other option, but a partial image is the environment's failure, and the reader lib already has this precedent.
 - **Duplicate row IDs in one file:** the last row wins. Multi-pass files append passes, and the in-place template keeps one row per ID.
-- **A row naming its successor** (`superseded by C1`, `still open as A3`, `→ X1`, `see A4`): it takes the successor row's class, up to 5 hops. A name that is not a row in the same file changes nothing.
+- **A row naming its successor** (`superseded by C1`, `→ X1`): it takes the successor row's class and Q-IDs, up to 5 hops. A red follows only red rows, so it never borrows an amber's closure. A name that is not a row in the same file changes nothing. The first build also followed `as`, `see` and `into`, which matched prose ("same as A2"); review 1 R1 removed them.
 - **Code vs docs-only:** a branch with no rubric and any changed path outside `docs/` gets a `none` line that counts those paths. A docs-only branch gets a `none ... no rubric is needed` note.
 - **Stale:** the newest commit on the branch (not on main) that touches the rubric, then the `fix(` / `fix:` / `fix!` commits after it on the branch, matched the way `fp_gaps` matches them. The brief's other reading compares the rubric's `Commit:` stamp with later fixes. The stamp is a short SHA that the loop writes by hand, while the commit that last changed the file comes from git, so the check uses that.
 
@@ -78,7 +78,7 @@ Assume this landed and a gap still reached main. Ways it happens:
 
 1. **Wrong file read (selection bypass).** The rubric is named without `code-review-rubric`, sits outside `docs/reviews/`, or was committed on main before the branch, so the branch never changes it. Result: a `none` line, which says so. A docs-only branch with a rubric somewhere else passes with the docs note. Residual, noted.
 2. **Status words read as fixed (classification bypass).** A row reads `Fixed` with nothing fixed (an agent's say-so), or `Resolved` in the first clause of a status that is really open further on. The check keys on the row as written (H4). It cannot verify the claim behind it, and the `stale` line covers only fixes after the rubric's last change. Residual: an honest slip in a status word. A hostile loop is out of scope (S1).
-3. **Row hidden from the parser (format bypass).** A tier table under a heading with neither mark nor tier words, a table with no `Tier` or `Status` column, or rows in prose. The heading case reads as `none` or `unread` (a file with no tier table at all is named, never passed). A Must Fix heading spelled differently, `## Blocking`, is missed if the file also has another tier table. Residual.
+3. **Row hidden from the parser (format bypass).** A tier table under a heading with neither mark nor tier words, a table with no `Tier` or `Status` column, or rows in prose. The heading case reads as `none` or `unread` (a file with no tier table at all is named, never passed). Lines inside a code fence are not read, and a fence left open is named. A Tier cell that reads as no tier (not green or Consider) is named. A Must Fix heading spelled differently, `## Red findings` or `## Blocking`, is missed if the file also has another tier table. Residual; revisit trigger: a rubric generator that writes tier headings without a mark or the Must words.
 4. **Reference that closes nothing (reference bypass).** An amber cites a made-up `Q-999` or a nonexistent "override row 12". For a red, only a Q-ID answered on main closes it (checked). A Split or Carried red is taken on its named target, which is not looked up. Residual: an amber's override-log row and a red's split or carry target are taken on presence.
 5. **Advisory ignored (attention bypass).** The cycle quotes the lines, but nobody reads them, or a self-merge lands past an open red. That is the cost of advisory, and the falsifier exists to end it. The dev-cycle skill names each non-clean line in the final message.
 6. **Lines not reached (path bypass).** A merge outside `build-loop.sh` (a hand merge, a fast-forward) never runs the check. Out of scope by the brief; see Follow-ups.
@@ -105,4 +105,19 @@ Failure-pattern grep: FP-064, FP-033, FP-156
 
 - FP-064 (an overwritten rubric destroyed prior findings, so rubrics became date-stamped files): a branch can carry several dated rubrics for one loop. The check reads the newest per slug and names the older ones `superseded`, and does not silently drop them.
 - FP-033 (a substring denylist missed its subject; the fix was a structural parse): this is why the parser reads cells by header column and status words as whole words. "Unresolved" is never "resolved".
+- Failure-pattern skip: the fix(...) commits on this branch correct review findings in code that never reached main; the reusable shape (keyword and substring closure misread as structure) is already FP-033.
 - FP-156 (a bare substring assertion stayed green across the move it covered): the new tests compare `$rubric` exactly, not by `grep -q`. The one substring check (R5 closing once Q-003 is answered) also asserts that another red stays open.
+
+## Review
+
+- **Pass 1** (at 66304b3d, the full `code-review` pipeline: fact-check k=3 and five critics, run by a separate read-only agent; rubric `docs/reviews/code-review-rubric-2026-11-14-merge-rubric-gate.md`): 1 Must Fix, 14 Must Address, 9 Consider.
+  - R1, the successor pass let a red borrow an amber's closure and matched prose: fixed.
+  - Classifier findings fixed: A1 (split and carried), A2 (negation in the whole cell), A3 (only explicit answered states close; empty output is open) and A5 (empty fields).
+  - A4 (code fences, Tier-cell words, unread rows) is fixed, except unmarked tier headings (pre-mortem 3).
+  - A6 (set -e hazards) is fixed.
+  - The A7, A10 and A12 docs are reworded.
+  - A8 (cut at a UTF-8 boundary) is fixed.
+  - A9 is documented: amber closure is keyword presence.
+  - A11 is fixed with namerefs, A13 by showpath, and A14 with two cases.
+  - C3 (a red superseded by an answered red) closes now, since the successor's Q-IDs carry over. C4 (the skill's list) is fixed.
+  - C9 is a record note: bb0030a1's Notes line states the first red rule (fix, answered Q-ID or override-log row). 66304b3d and this doc supersede it, and history is not rewritten.
