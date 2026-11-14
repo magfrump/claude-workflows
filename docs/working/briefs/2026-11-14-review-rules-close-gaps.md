@@ -37,3 +37,5 @@ Policy: review
 - Any script or gate code (`scripts/build-loop.sh`, `scripts/lib/`, `skills/dev-cycle/`): the merge-rubric-gate brief owns those, in parallel.
 - Rewriting existing rubrics.
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`: the dev cycle owns those.
+
+Dispatched: 1
