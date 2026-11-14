@@ -74,3 +74,14 @@ tip() {
     else t="$(git rev-parse "$b^{tree}")"; p=(-p "$(git rev-parse "$b")"); fi
     git update-ref "refs/heads/$b" "$(printf '%s\n' "$m" | git commit-tree "$t" "${p[@]}")"
 }
+
+# unrubric: after a run of --check or --merge, move the advisory "rubric ..."
+# lines (brief 2026-11-14-merge-rubric-gate), which come last, out of $output
+# and $lines into $rubric, so a case about the other lines reads them as
+# before; the rubric cases read $rubric.
+# shellcheck disable=SC2154,SC2034  # bats sets output and lines; rubric is read by the suites
+unrubric() {
+    rubric="$(printf '%s\n' "$output" | grep '^rubric ' || true)"
+    output="$(printf '%s\n' "$output" | grep -v '^rubric ' || true)"
+    IFS=$'\n' read -d '' -r -a lines <<< "$output" || true
+}

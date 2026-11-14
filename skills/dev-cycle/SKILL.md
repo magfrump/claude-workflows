@@ -665,14 +665,18 @@ the brief is still open and no subagent of this session runs it, step 10 re-disp
   names a failed read ("could not be read", "listed" or "compared"): that one is the
   environment's, as below. Any other refusal (no identity, MAIN_WT's state, a moved main, a failed read)
   is the environment's, not the loop's: recorded, named in the final message, and tried
-  again next iteration.
+  again next iteration. The `rubric` lines (last, after the path lines) are advisory: they
+  change no verdict, so a `merged` line still lands past an `open` red; the record quotes
+  them under the `merged` line and the final message names each `open`, `stale`, `unread`
+  or `none` one.
 - **ready**, review: `--check BRIEF --expect TIP`. On `ok`, one merge entry, heading
   `### Q-NNN · merge-STEM-SHA12` (SHA12: TIP's first 12 hex digits), or
   `merge-gate-STEM-SHA12` when a `path` or `deny` line's PATH (without a trailing ` (symlink)` or
   ` (gitlink)`), lower-cased, matches the lib's
   GATE_CODE (a test holds this copy to it; `--approved` accepts no other heading):
   `^scripts/(build-loop|d6|dev-cycle|questions)\.sh$|^scripts/lib/|^skills/dev-cycle/`
-  Its body: the full TIP (row 673), `--check`'s lines as printed, and a note on each path
+  Its body: the full TIP (row 673), `--check`'s lines as printed (its advisory `rubric`
+  lines included: an `open` row is a red or amber the review did not close), and a note on each path
   that is an instruction or prompt file, a dot path or gate code, which self-merge's floor
   would have refused (rows 680, 683), and on each `(symlink)` or `(gitlink)` path line. A `merge-gate-` entry also has a line
   `**What an attacker would want here:** WHAT`, naming outside parties only, such as a stranger's text

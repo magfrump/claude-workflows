@@ -433,6 +433,26 @@
 #                 boundary; unlike a never glob, an entry without one matches
 #                 that file alone); "Paths: none" or no line lists none; any
 #                 other line is malformed, and only own files land.
+#             rubric BRIEF: WHAT
+#                 Last, after the path lines, wherever gap lines print: the
+#                 rubric check (lib/rubric-check.sh, rubric_lines), advisory:
+#                 it changes no verdict and no exit status, so a cycle quotes
+#                 these lines in a review brief's merge entry and in a
+#                 self-merge's record. It reads, from TIP, each file the
+#                 merge adds or changes under docs/reviews/ whose name holds
+#                 code-review-rubric (of code-review-rubric-DATE-SLUG.md
+#                 names only the newest DATE per SLUG), by table column, not
+#                 by words. WHAT is "open PATH ID TIER: STATUS" for a red or
+#                 amber row neither fixed nor closed by a reference (a red's:
+#                 an answered Q-ID on main or an override-log row; an
+#                 amber's: a Q-ID, an override-log row, a TODO, a roadmap
+#                 item or a revisit trigger), STATUS as written; "unread
+#                 PATH[ line N]: WHY" for a table or file it cannot read;
+#                 "stale PATH: K fix(...) commits on BRANCH follow its last
+#                 change in SHA12"; "superseded OLD by NEW (not read)";
+#                 "clean PATH: R red and A amber rows, none open"; or, with
+#                 no rubric, "none: WHY", naming the paths outside docs/
+#                 when there are any.
 #   --merge   lands a self-merge brief (D7), or with --approved a brief of
 #             either policy: --check's lines for BRIEF at --expect's tip
 #             (under --approved, without the S rules or the checkout
@@ -467,6 +487,10 @@
 #                 host refuses instead. With the branch checked out in no
 #                 worktree it moves by compare-and-swap from the checked
 #                 commit; checked out in a worktree W, by merge --ff-only in W.
+#             The rubric lines follow the path lines, as --check prints them,
+#             and an open red does not stop the landing while the check is
+#             advisory (docs/working/research-2026-11-14-merge-rubric-gate.md
+#             names what moves it out).
 #             or refuse BRIEF: WHY, with the ok line's path lines following,
 #             when: without --approved, the policy --status reads is review;
 #             with it, Q-NNN is open, skipped (WHY quotes the skip) or
@@ -599,7 +623,7 @@
 # --merge or --free-worktrees can also stop part way, after the lines before, with 1
 # (need_root) or a failed command's own status: a caller reads any exit but 0
 # as nothing decided. 1 bad usage, a GIT_CONFIG_COUNT that is not plain
-# decimal, not a git repo, no perl or lib/dev-cycle-read.sh, a failed mktemp
+# decimal, not a git repo, no perl, lib/dev-cycle-read.sh or lib/rubric-check.sh, a failed mktemp
 # (--state, --main-log, --cycle-diff, --check, --merge, --start, --prompt, --free-worktrees; no line printed),
 # or no default branch found by name.
 
@@ -614,6 +638,11 @@ READ_LIB="$SCRIPT_DIR/lib/dev-cycle-read.sh"
 [[ -f "$READ_LIB" ]] || { echo "build-loop.sh needs $READ_LIB" >&2; exit 1; }
 # shellcheck source=lib/dev-cycle-read.sh
 source "$READ_LIB"
+# The advisory rubric check (rubric_parse, rubric_lines), from the same lib/.
+RUBRIC_LIB="$SCRIPT_DIR/lib/rubric-check.sh"
+[[ -f "$RUBRIC_LIB" ]] || { echo "build-loop.sh needs $RUBRIC_LIB" >&2; exit 1; }
+# shellcheck source=lib/rubric-check.sh
+source "$RUBRIC_LIB"
 scrub_reexec "${BASH_SOURCE[0]}" "$@"
 
 # A constraints file (main's docs/constraints.md, or --check-constraints'
@@ -1521,7 +1550,7 @@ check_line() {
     echo "ok $a $sha $tree"
   }
   gaps() { local g; for g in "${FP_GAPS[@]}"; do echo "gap $a: $g"; done; }
-  if [[ ${#ps[@]} -eq 0 ]]; then if [[ -n "$co" ]]; then echo "$co"; elif [[ -n "$fv" ]]; then echo "$fv"; else verdict_ok; fi; gaps; return; fi
+  if [[ ${#ps[@]} -eq 0 ]]; then if [[ -n "$co" ]]; then echo "$co"; elif [[ -n "$fv" ]]; then echo "$fv"; else verdict_ok; fi; gaps; rubric_lines "$a" "$br" "$sha"; return; fi
   # One lower-casing pass for every path (a tr per path cost 1 to 2.5 ms each).
   if ! nul_list lps lower_all "${ps[@]}" || [[ ${#lps[@]} -ne ${#ps[@]} ]]; then echo "refuse $a: the paths the merge of $br changes could not be lower-cased"; return; fi
   for i in "${!ps[@]}"; do
@@ -1536,6 +1565,9 @@ check_line() {
   if [[ -n "$co" ]]; then echo "$co"; elif [[ -n "$fv" ]]; then echo "$fv"; elif [[ "$nd" -eq 0 ]]; then verdict_ok; else echo "refuse $a: $nd of ${#ps[@]} changed paths refused in the merge of $sha (tree $tree)"; fi
   gaps
   printf '%s\n' "${rows[@]}"
+  # The rubric check, advisory (brief 2026-11-14-merge-rubric-gate): its lines
+  # come last and change no verdict; it reads ps and ss.
+  rubric_lines "$a" "$br" "$sha"
 }
 
 # The merge commit's author and committer, as git var resolves them: the

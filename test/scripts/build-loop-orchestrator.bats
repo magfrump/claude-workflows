@@ -258,9 +258,9 @@ d6_copy() {
     cp "$REPO_ROOT/scripts/d6.sh" "$D6"
     grep -qxF 'D6_OPT=/opt/claude-workflows' "$D6" && sed -i "s|^D6_OPT=/opt/claude-workflows\$|D6_OPT=$1|" "$D6" && grep -qxF "D6_OPT=$1" "$D6" || return 1
 }
-opt_copy() { mkdir -p "$1/scripts/lib" && cp "$REPO_ROOT"/scripts/{build-loop,dev-cycle,questions}.sh "$1/scripts/" && cp "$REPO_ROOT/scripts/lib/dev-cycle-read.sh" "$1/scripts/lib/"; }
+opt_copy() { mkdir -p "$1/scripts/lib" && cp "$REPO_ROOT"/scripts/{build-loop,dev-cycle,questions}.sh "$1/scripts/" && cp "$REPO_ROOT"/scripts/lib/{dev-cycle-read,rubric-check}.sh "$1/scripts/lib/"; }
 d6_setup() {
-    mkdir -p scripts/lib && cp "$REPO_ROOT"/scripts/{build-loop,dev-cycle,questions}.sh scripts/ && cp "$REPO_ROOT/scripts/lib/dev-cycle-read.sh" scripts/lib/
+    mkdir -p scripts/lib && cp "$REPO_ROOT"/scripts/{build-loop,dev-cycle,questions}.sh scripts/ && cp "$REPO_ROOT"/scripts/lib/{dev-cycle-read,rubric-check}.sh scripts/lib/
     commit_all scripts && U="$BATS_TEST_TMPDIR/opt" && opt_copy "$U" && d6_copy "$U"
 }
 d6() { run --separate-stderr bash "$D6" "$@"; }
@@ -340,6 +340,7 @@ shim() {
     N="$BATS_TEST_TMPDIR/not-a-repo"; mkdir "$N"
     cd "$N"; GIT_CEILING_DIRECTORIES="$BATS_TEST_TMPDIR" d6_is "refuse d6: refs/heads/main could not be read"; cd - >/dev/null
     rm "$U/scripts/questions.sh"; d6_is "refuse d6: $U/scripts/questions.sh is missing"; cp "$REPO_ROOT/scripts/questions.sh" "$U/scripts/"
+    rm "$U/scripts/lib/rubric-check.sh"; d6_is "refuse d6: $U/scripts/lib/rubric-check.sh is missing"; cp "$REPO_ROOT/scripts/lib/rubric-check.sh" "$U/scripts/lib/"
     mv "$U/scripts/lib/dev-cycle-read.sh" "$U/x"; mkdir "$U/scripts/lib/dev-cycle-read.sh"; d6_is "refuse d6: $U/scripts/lib/dev-cycle-read.sh is not a regular file"
     rmdir "$U/scripts/lib/dev-cycle-read.sh"; ln -s "$U/gone" "$U/scripts/lib/dev-cycle-read.sh"; d6_is "refuse d6: $U/scripts/lib/dev-cycle-read.sh is not a regular file"
     rm "$U/scripts/lib/dev-cycle-read.sh"; ln -s "$U/x" "$U/scripts/lib/dev-cycle-read.sh"; d6_is "refuse d6: $U/scripts/lib/dev-cycle-read.sh is not a regular file"
@@ -876,7 +877,7 @@ $(GONE Q-004)" --migrated no-such-id --migrated failure-patterns-out-of-thoughts
     bash "$QS" migrate > /dev/null; git add -A; grep -q '^### Q-004' docs/working/questions.md; cd_is "$(GONE Q-004)" --migrated "$MIG"
     # A registry with a malformed line, or a symlinked one, beside a copied gate.
     git checkout -q HEAD -- docs/working; rm -f docs/working/roadmap-from-questions.md; bash "$QS" migrate > /dev/null; git add -A
-    O="$BATS_TEST_TMPDIR/opt"; mkdir -p "$O/scripts/lib"; cp "$REPO_ROOT/scripts/build-loop.sh" "$O/scripts/"; cp "$REPO_ROOT"/scripts/lib/{dev-cycle-read,migrations}.sh "$O/scripts/lib/"
+    O="$BATS_TEST_TMPDIR/opt"; mkdir -p "$O/scripts/lib"; cp "$REPO_ROOT/scripts/build-loop.sh" "$O/scripts/"; cp "$REPO_ROOT"/scripts/lib/{dev-cycle-read,migrations,rubric-check}.sh "$O/scripts/lib/"
     run --separate-stderr bash "$O/scripts/build-loop.sh" --cycle-diff --migrated "$MIG"; [ "$status" -eq 0 ] && [ "$output" = ok ] || { show; return 1; }
     perl -0pi -e 's/^(if \[\[ "\$\{BASH_SOURCE)/mig bad-line\n$1/m' "$O/scripts/lib/migrations.sh"
     run --separate-stderr bash "$O/scripts/build-loop.sh" --cycle-diff --migrated "$MIG"
@@ -887,7 +888,7 @@ $(GONE Q-004)" --migrated no-such-id --migrated failure-patterns-out-of-thoughts
 }
 
 @test "--cycle-diff --migrated relaxes a roadmap's headings only for a registry line whose file is the roadmap, read from the registry beside the gate (brief 2026-11-02-cycle-runs-migrations)" {
-    O="$BATS_TEST_TMPDIR/opt"; mkdir -p "$O/scripts/lib"; cp "$REPO_ROOT/scripts/build-loop.sh" "$O/scripts/"; cp "$REPO_ROOT"/scripts/lib/{dev-cycle-read,migrations}.sh "$O/scripts/lib/"
+    O="$BATS_TEST_TMPDIR/opt"; mkdir -p "$O/scripts/lib"; cp "$REPO_ROOT/scripts/build-loop.sh" "$O/scripts/"; cp "$REPO_ROOT"/scripts/lib/{dev-cycle-read,migrations,rubric-check}.sh "$O/scripts/lib/"
     perl -0pi -e 's/^(if \[\[ "\$\{BASH_SOURCE)/mig roadmap-later roadmap 0123456789abcdef docs\/roadmap.md '"'"'^## Later\$'"'"' '"'"'~\/.claude\/scripts\/x.sh'"'"'\n$1/m' "$O/scripts/lib/migrations.sh"
     grep -q '^mig roadmap-later ' "$O/scripts/lib/migrations.sh"
     mkdir -p docs; printf '%s\n' '# Roadmap' 'Intro.' '## Now' '## Later' '- `docs/working/briefs/2026-10-01-x.md`' '## Done' > docs/roadmap.md; commit_all roadmap

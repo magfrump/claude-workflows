@@ -9,7 +9,7 @@ load ../lib/build-loop-fixtures
 setup() { bl_setup; }
 
 # mrg ARG...: run build-loop.sh --merge. show: what a failed test prints, the history included.
-mrg() { run --separate-stderr bash "$BL" --merge "$@"; }
+mrg() { run --separate-stderr bash "$BL" --merge "$@"; unrubric; }
 show() { echo "status $status"; echo "$output"; echo "$stderr"; git -c log.date=default log --oneline --graph --all; }
 # sm [PATHS]: self-merge on, brief x (self-merge, feat/x, Paths: PATHS or feat/x's file) and feat/x
 # with one commit; B is the brief's path, T the tip, M main's commit, TR the merged tree.
@@ -332,4 +332,16 @@ path $B A work-feat-x.txt" ] && [ "$(git rev-parse main)" = "$M" ] || { show; re
     [ "$status" -eq 0 ] && [ "$output" = "merged $B $T $TR $n
 path $B A work-feat-x.txt" ] && [ "$(git rev-parse "$n^1")" = "$M" ] \
         && git log -1 --format=%B "$n" | grep -qxF "Build-loop-approved: Q-001" || { show; return 1; }
+}
+
+@test "--merge lands a self-merge brief past an open red while the rubric check is advisory, and prints its lines last (brief 2026-11-14-merge-rubric-gate)" {
+    # The rubric is one of the brief's own files (NAME-STEM.md), so it self-merges.
+    sm; R=docs/reviews/code-review-rubric-2026-10-01-x.md
+    git checkout -q feat/x && mkdir -p docs/reviews && printf '%s\n' '## 🔴 Must Fix' '' '| # | Finding | Status |' '|---|---|---|' '| R1 | a | 🔴 Unresolved |' > "$R" \
+        && commit_all review && git checkout -q --detach main
+    T="$(git rev-parse feat/x)"; TR="$(git merge-tree --write-tree main feat/x)"
+    mrg "$B" --expect "$T"; n="$(git rev-parse main)"
+    [ "$status" -eq 0 ] && [ "$output" = "merged $B $T $TR $n
+path $B A $R
+path $B A work-feat-x.txt" ] && [ "$rubric" = "rubric $B: open $R R1 red: 🔴 Unresolved" ] || { show; echo "$rubric"; return 1; }
 }

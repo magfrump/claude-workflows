@@ -39,10 +39,11 @@ g() { ( harden && git "$@" ); }
 s="${1:-}"
 [[ "$s" == build-loop.sh || "$s" == dev-cycle.sh || "$s" == questions.sh ]] || { echo "d6: the first argument is build-loop.sh, dev-cycle.sh or questions.sh" >&2; exit 1; }
 shift
-# The four files the scripts run (build-loop.sh and dev-cycle.sh source the
-# lib from their own directory; dev-cycle.sh runs questions.sh beside it).
+# The five files the scripts run (build-loop.sh and dev-cycle.sh source the
+# lib from their own directory, build-loop.sh also lib/rubric-check.sh;
+# dev-cycle.sh runs questions.sh beside it).
 # lib/migrations.sh is left out: both scripts check it themselves before use.
-for f in build-loop.sh dev-cycle.sh questions.sh lib/dev-cycle-read.sh; do
+for f in build-loop.sh dev-cycle.sh questions.sh lib/dev-cycle-read.sh lib/rubric-check.sh; do
   x="$D6_OPT/scripts/$f"
   [[ -e "$x" || -L "$x" ]] || no "$x is missing"
   [[ -f "$x" && ! -L "$x" ]] || no "$x is not a regular file"

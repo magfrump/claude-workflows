@@ -414,7 +414,7 @@ c: $IMP" ] || { echo "$output $stderr"; return 1; }
 
 # chk ARG...: run build-loop.sh --check. show: what a failed --check test prints,
 # the history included (the plan's test spec; row 223).
-chk() { run --separate-stderr bash "$BL" --check "$@"; }
+chk() { run --separate-stderr bash "$BL" --check "$@"; unrubric; }
 show() { echo "status $status"; echo "$output"; echo "$stderr"; git -c log.date=default log --oneline --graph --all; }
 # gated BRANCH: brief x, open and naming BRANCH (B is its path), and BRANCH with one commit.
 gated() { brief x "Status: open" "Branch: $1"; work "$1"; }
@@ -1169,4 +1169,108 @@ miggap() { echo "$1 fix(...) commits on feat/x need a failure-pattern entry, but
     sm; git checkout -q feat/x && git rm -q "$RD" && commit_all "drop the research doc"
     chk "$B"
     [ "$status" -eq 2 ] && [[ "${lines[0]}" == "refuse $B: $CO; "* ]] && [ "${lines[1]}" = "gap $B: its research doc $RD is not in the tip of feat/x" ] || { show; return 1; }
+}
+
+# The advisory rubric check (brief 2026-11-14-merge-rubric-gate). chk moves its
+# "rubric ..." lines into $rubric (unrubric, test/lib/build-loop-fixtures.bash).
+# rub PATH LINE...: PATH on feat/x holding LINE..., committed there ("review"
+# unless RUBMSG names the subject). rubis WANT: --check passed brief x (the
+# rubric check never changes the verdict) and printed exactly WANT as its lines.
+rub() { local p="$1"; shift; git checkout -q feat/x && mkdir -p "$(dirname "$p")" && printf '%s\n' "$@" > "$p" && git add -A && git commit -q -m "${RUBMSG:-review}" && git checkout -q main; }
+rubis() { chk "$B"; [ "$status" -eq 0 ] && [[ "${lines[0]}" == "ok $B "* ]] && [ "$rubric" = "$1" ] && [ -z "$stderr" ] || { echo "want: $1"; echo "got: $rubric"; show; return 1; }; }
+RB=docs/reviews/code-review-rubric-2026-10-01-feat-x.md
+# qentry ID STATUS: one questions entry on main, with an answer line when ANSWERED.
+qentry() {
+    mkdir -p docs/working && printf '### %s \302\267 waive-%s\n**Needs:** you: judgment \302\267 **Opened:** 2026-10-01 \302\267 **Status:** %s\n\nWaive it?\n\n%s\n\n' \
+        "$1" "$1" "$2" "$([[ "$2" == ANSWERED ]] && echo "$1: [1]")" >> docs/working/questions.md
+}
+
+@test "rubric: each status word read by column and whole word; a waiver of a red needs an answered Q-ID or an override-log row, an amber a qualifying note; the verdict stays ok (brief 2026-11-14-merge-rubric-gate)" {
+    qentry Q-002 ANSWERED; qentry Q-003 OPEN; commit_all questions
+    gated feat/x
+    rub "$RB" '# Code Review Rubric' '' '**Status: 🔴 DOES NOT PASS** — 4 red item(s) unresolved' '' '## 🔴 Must Fix' '' \
+        '| # | Finding | Domain | Status |' '|---|---|---|---|' \
+        '| R1 | a | Security | 🔴 Unresolved |' '| R2 | b | Docs | ✅ Fixed in abc123 |' '| R3 | c | Docs | Partly fixed |' \
+        '| R4 | d | Docs | ⏸️ Deferred (Q-002) |' '| R5 | e | Docs | Waived (Q-003) |' '| R6 | f | Docs | Won'"'"'t-Fix (override-log row 7) |' \
+        '| R7 | g | Docs | Deferred: revisit if p99 > 200ms |' '| R8 | h | Docs | Resolved |' '| R9 | i \| j | Docs | **Fixed** (2nd pass) |' '' \
+        '## 🟡 Must Address' '' '| # | Finding | Status | Author note |' '|---|---|---|---|' \
+        '| A1 | a | 🟡 Open | — |' '| A2 | b | Stands | revisit if the handler takes uploads |' '| A3 | c | Noted | known, acceptable for now |' \
+        '| A4 | d | Carried | Q-003 |' '| A5 | e | 🟡 Resolved | — |' '| A6 | f | Unresolved | — |' '| A7 | g | Partly fixed in abc | TODO at x.sh:3 |' \
+        '| A8 | h | Deferred | — |' '| A9 | i | Fixed, pending confirmation | — |' '' \
+        '## 🟢 Consider' '' '| # | Finding | Status |' '|---|---|---|' '| C1 | a | 🟢 Open |'
+    rubis "rubric $B: open $RB R1 red: 🔴 Unresolved
+rubric $B: open $RB R3 red: Partly fixed
+rubric $B: open $RB R5 red: Waived (Q-003)
+rubric $B: open $RB R7 red: Deferred: revisit if p99 > 200ms
+rubric $B: open $RB A1 amber: 🟡 Open
+rubric $B: open $RB A3 amber: Noted
+rubric $B: open $RB A6 amber: Unresolved
+rubric $B: open $RB A8 amber: Deferred
+rubric $B: open $RB A9 amber: Fixed, pending confirmation"
+    # Answering Q-003 on main closes R5; an answer only in the working tree does not count.
+    sed -i 's/\*\*Status:\*\* OPEN/**Status:** ANSWERED/' docs/working/questions.md; printf 'Q-003: [1]\n' >> docs/working/questions.md
+    chk "$B"; [[ "$rubric" == *"R5 red"* ]] || { show; return 1; }
+    commit_all "answer Q-003"; chk "$B"; [[ "$rubric" != *"R5 red"* && "$rubric" == *"R7 red"* ]] || { echo "$rubric"; show; return 1; }
+}
+
+@test "rubric: a Tier-column table, a pass appended under its own tier headings (the last row of an ID wins), a successor row named by superseded by or as, and the 🟢 tier left out (brief 2026-11-14-merge-rubric-gate)" {
+    gated feat/x
+    rub "$RB" '# Code review rubric: feat/x' '' '## Findings' '' '| ID | Source | Tier | Finding | Status |' '|---|---|---|---|---|' \
+        '| R1 | suite | red | a | fixed: in abc |' '| A1 | security | amber | b | superseded by C1 |' '| A2 | security | amber | c | still open as A3 |' \
+        '| A3 | api | 🟡 | d | 🟡 Open |' '| B1 | p2 | green | e | open |' '| C1 | p3 | amber | f | fixed |' '' \
+        '## Pass 2' '' '### 🔴 Must Fix' '' '| # | Finding | Status |' '|---|---|---|' '| R9 | x | 🔴 Unresolved |' '' \
+        '### Notes' '' '| # | Finding | Status |' '|---|---|---|' '| R10 | not a tier row | open |' '' \
+        '## Pass 3' '' '### 🔴 Must Fix' '' '| # | Finding | Status |' '|---|---|---|' '| R9 | x | ✅ Fixed |'
+    rubis "rubric $B: open $RB A2 amber: still open as A3
+rubric $B: open $RB A3 amber: 🟡 Open"
+}
+
+@test "rubric: no rubric on a branch with code says so, a docs-only branch passes with a note, a fix after the rubric's last change is stale, a clean rubric says what it read, an older dated rubric of the loop is superseded (brief 2026-11-14-merge-rubric-gate)" {
+    gated feat/x
+    rubis "rubric $B: none: feat/x changes 1 paths outside docs/ and adds or changes no code-review rubric under docs/reviews/"
+    git branch -q -f feat/x main; rub docs/notes.md n
+    rubis "rubric $B: none: feat/x changes only docs/, so no rubric is needed"
+    git branch -q -f feat/x main; rub w.txt w
+    rub "$RB" '## 🔴 Must Fix' '' '| # | Finding | Status |' '|---|---|---|' '| R1 | a | ✅ Fixed |' '' '## 🟡 Must Address' '' '| # | Finding | Status |' '|---|---|---|' '| — | None | — |'
+    rubis "rubric $B: clean $RB: 1 red and 0 amber rows, none open"
+    # The fix commit also carries the research doc's skip line, so the failure-pattern step passes.
+    RUBMSG="fix(x): after the pass" rub "$RD" '# Research' '- Failure-pattern grep: no matches found' 'Failure-pattern skip: a test fixture'; RUBMSG="docs: a note" rub w3.txt w
+    s="$(git rev-list -1 feat/x -- "$RB")"
+    rubis "rubric $B: stale $RB: 1 fix(...) commits on feat/x follow its last change in ${s:0:12}"
+    # A newer dated file of the same loop is the one read; a non-canonical name is read on its own.
+    N=docs/reviews/code-review-rubric-2026-10-02-feat-x.md Q=docs/reviews/q001-code-review-rubric-2026-10-01.md
+    rub "$N" '## 🔴 Must Fix' '' '| # | Finding | Status |' '|---|---|---|' '| R1 | a | Fixed |'
+    rub "$Q" '## 🔴 Must Fix' '' '| # | Finding | Status |' '|---|---|---|' '| R1 | a | Open |'
+    rubis "rubric $B: superseded $RB by $N (not read)
+rubric $B: clean $N: 1 red and 0 amber rows, none open
+rubric $B: open $Q R1 red: Open"
+}
+
+@test "rubric: a malformed table, a table with no Status column and a rubric with no red or amber table are named, never passed silently (brief 2026-11-14-merge-rubric-gate)" {
+    gated feat/x
+    rub "$RB" '# Rubric' '' '## 🔴 Must Fix' '' '| # | Finding | Status |' '|---|---|---|' '| R1 | a | b | Fixed |' '| R2 | a | Open |' '' \
+        '## 🟡 Must Address' '' '| # | Finding |' '|---|---|' '| A1 | a |'
+    rubis "rubric $B: open $RB R2 red: Open
+rubric $B: unread $RB line 7: row R1 has 4 cells where its header has 3
+rubric $B: unread $RB line 12: a amber table has no Status column"
+    rub "$RB" '# Rubric' '' 'Nothing found.'
+    rubis "rubric $B: unread $RB: no red or amber table (a heading naming 🔴 Must Fix or 🟡 Must Address, or a Tier column)"
+    git checkout -q feat/x && ln -sf ../../work-feat-x.txt "$RB" && commit_all link && git checkout -q main
+    rubis "rubric $B: unread $RB: not a regular file in the tip of feat/x"
+}
+
+@test "rubric: build-loop.sh refuses to start without lib/rubric-check.sh beside it (H2) (brief 2026-11-14-merge-rubric-gate)" {
+    O="$BATS_TEST_TMPDIR/opt"; mkdir -p "$O/scripts/lib"; cp "$REPO_ROOT/scripts/build-loop.sh" "$O/scripts/"; cp "$REPO_ROOT/scripts/lib/dev-cycle-read.sh" "$O/scripts/lib/"
+    run --separate-stderr bash "$O/scripts/build-loop.sh" --settings
+    [ "$status" -eq 1 ] && [ -z "$output" ] && [ "$stderr" = "build-loop.sh needs $O/scripts/lib/rubric-check.sh" ] || { show; return 1; }
+}
+
+@test "rubric_parse reads real rubrics of three generations in docs/reviews/: the multi-pass digest, the in-place iteration tables of U1c and the Tier-column table of 2026-11-10 (brief 2026-11-14-merge-rubric-gate)" {
+    cd "$REPO_ROOT"
+    # count FILE CLASS: the rows rubric_parse gives CLASS, and its bad lines (CLASS bad).
+    count() { bash -c 'source "$1"; rubric_parse "$2"' _ scripts/lib/rubric-check.sh "$1" | awk -F'\t' -v c="$2" '($1 == "row" && $4 == c) || ($1 == c) { n++ } END { print n + 0 }'; }
+    D=docs/reviews/code-review-rubric-2026-09-29-feat-dev-cycle-digest.md U=docs/reviews/code-review-rubric-2026-10-05-feat-build-loop-u1c.md T=docs/reviews/code-review-rubric-2026-11-10-dev-cycle-skill-held-fixes.md
+    [ "$(count "$D" open) $(count "$D" fixed) $(count "$D" bad)" = "12 0 0" ]
+    [ "$(count "$U" open) $(count "$U" fixed) $(count "$U" closed) $(count "$U" bad)" = "1 2 2 1" ]
+    [ "$(count "$T" open) $(count "$T" fixed) $(count "$T" bad)" = "0 13 0" ]
 }
