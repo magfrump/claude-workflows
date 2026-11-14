@@ -152,6 +152,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 - `docs/working/briefs/2026-11-14-review-rules-close-gaps.md`: the written review rules (no
   fast-forward to main, superseded loops, review before landing, decisions at the cap, a fix
   updates its row); review.
+  2026-11-14: ready at e91b0f75; merge entry Q-293. Its note on red waivers was sent to the
+  gate loop as a correction to that brief's criterion 2.
 
 ## Next
 

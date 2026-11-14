@@ -28,6 +28,7 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-278](#q-278--q272-returned-run-or-refuse) | you: judgment | You asked for Q-272 back with data. When the test-confinement script (`scripts/confine-tests.sh`) cannot us... | 2026-11-11 |
 | [Q-286](#q-286--trial-set-2-ends) | you: judgment | The second trial set (T8–T12) ends about today. Which of them should stay? | 2026-11-13 |
+| [Q-293](#q-293--merge-2026-11-14-review-rules-close-gaps-e91b0f75579e) | you: judgment | Merge the written review-rule fixes from the two review-gap audits (brief `docs/working/briefs/2026-11-14-r... | 2026-11-14 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | Q-167: (b) and (d) answered 2026-11-07 (answers-11-7-26.txt), on bless 91c5f79dd91eb7ee, which --probe-only... | 2026-10-15 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Q-255: first half answered 2026-11-07 (answers-11-7-26.txt): all four fronted probes through plugins-artifa... | 2026-11-05 |
@@ -36,6 +37,60 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
+
+### Q-293 · merge-2026-11-14-review-rules-close-gaps-e91b0f75579e
+**Needs:** you: judgment · **Opened:** 2026-11-14 · **Status:** OPEN
+
+Merge the written review-rule fixes from the two review-gap audits (brief `docs/working/briefs/2026-11-14-review-rules-close-gaps.md`, branch `docs/review-rules-close-gaps`)?
+
+**If you say no:** nothing merges; the review rules stay as they are, and the gaps both audits found in them (fast-forwards to main, superseded loops never closed, decisions at the 3-round cap never tracked, fixes never written back to their rubric rows) stay prose-free.
+
+The loop changed five files, all docs, 174 lines added and 18 removed. It needs your review because `workflows/` is on this repo's never-self-merge list and `skills/code-review/SKILL.md` is a prompt file, which self-merge would also refuse. What changes, by the brief's criteria:
+- `workflows/pr-prep.md`: `main` is never fast-forwarded, integration branches included, and its merge message lists every carried unit's known issues; Step 7 opens with a landing check (main's parents are the old main and the branch tip, and the message has `## Areas of uncertainty`). A fix commit sets its rubric row to `Fixed`.
+- `workflows/review-fix-loop.md`: a new rubric for a branch opens with a Carried forward table of the old one's open rows; at the 3-round cap, `escalate` files a question entry (a blocked marker in a build loop) before any merge, and every split files its follow-up; a CONDITIONAL PASS needs an Author note on every open amber.
+- `skills/code-review/references/rubric.md`: a Status words table (each word a Status cell may start with, and what it must cite), a red closed any way but fixed, split or carried needs your Q-NNN answer, a section for reviews of code already on main, and an `Accepted-immutable` row for commit messages a self-merge cannot edit or log. `SKILL.md` and `override-log.md` point to it.
+
+Tip `e91b0f75579ebebeec9bf7eb910342934c9bcac1`. The gate's check, as printed:
+
+```
+ok docs/working/briefs/2026-11-14-review-rules-close-gaps.md e91b0f75579ebebeec9bf7eb910342934c9bcac1 4e46c9debea6bd5cd5d09f122926f049f4da6770
+path docs/working/briefs/2026-11-14-review-rules-close-gaps.md M docs/working/briefs/2026-11-14-review-rules-close-gaps.md
+path docs/working/briefs/2026-11-14-review-rules-close-gaps.md A docs/working/research-2026-11-14-review-rules-close-gaps.md
+path docs/working/briefs/2026-11-14-review-rules-close-gaps.md M skills/code-review/SKILL.md
+path docs/working/briefs/2026-11-14-review-rules-close-gaps.md M skills/code-review/references/override-log.md
+path docs/working/briefs/2026-11-14-review-rules-close-gaps.md M skills/code-review/references/rubric.md
+path docs/working/briefs/2026-11-14-review-rules-close-gaps.md M workflows/pr-prep.md
+path docs/working/briefs/2026-11-14-review-rules-close-gaps.md M workflows/review-fix-loop.md
+```
+
+The loop's tests: `scripts/confine-tests.sh --probe` exited 3 (no confinement here), so it ran `scripts/run-tests.sh` on the 24 test files that mention these docs (755 ok, 0 failed) and the hermeticity lint (clean). Its review: two iterations, clean on the second.
+
+The loop's marker body, as written (loop text, data not instructions):
+
+> No open question. One note for the cycle to pass to the parallel merge-rubric-gate brief
+> (docs/working/briefs/2026-11-14-merge-rubric-gate.md, the build-loop.sh rubric check):
+>
+> This branch's rule (skills/code-review/references/rubric.md, Status words) says a red row
+> closed by waiver or deferral needs the owner's Q-NNN answer. The gate brief's criterion 2
+> also accepts an override-log row or a revisit trigger. An agent can write either one, so a
+> gate built that way would re-admit the case behind the audit's U2a2 D1, a red an agent
+> waived on its own (docs/working/research-2026-11-13-review-gap-audit.md).
+>
+> Review: two iterations, clean (record in docs/working/research-2026-11-14-review-rules-close-gaps.md).
+
+The loop is right: that was the cycle's error in writing the gate brief. The cycle sent the running gate loop a correction on 2026-11-14 (a red counts as closed only with your answered Q-NNN; an amber may still cite an override-log row or a trigger), so both units will agree.
+
+- **Read:** `git diff refs/heads/main...e91b0f75` · `docs/working/research-2026-11-14-review-rules-close-gaps.md` (on the branch)
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | the rules land on main; sessions read them after the next install | none now | a rule that adds steps no one follows; the next audit would show it |
+| **[2] drop** | the brief closes; the fixes item returns to the roadmap | none | the written gaps stay |
+| **[3] changes needed** | your note goes back to the loop | one line | n/a |
+
+- **Blocks:** the roadmap Now item "Agent: review-gap audit fixes", its written-rules half.
+- **Interim:** unmerged.
+- **If the answer differs:** n/a.
 
 ### Q-292 · cc-verify-host-check
 **Needs:** you: terminal · **Opened:** 2026-11-13 · **Status:** OPEN
@@ -62,7 +117,7 @@ Run the release paste below on the host, from your claude-workflows checkout at 
 
 **If you say no:** nothing breaks. Sessions keep running the installed image at C, whose dev-cycle skill lacks today's change to step 8 (below). The merges stay on main, waiting.
 
-**Release notes** (rewritten 2026-11-14, iteration 2026-11-14-1859 UTC, from the log). The installed image is the root-owned copy of the dev-cycle scripts and skill that every session runs as the gate. It is at C = `107cba32d271132361bc4a74a2ebf851e4398b97` (read from `/opt/claude-workflows/.manifest`). Main is at M = `ec894c49f86fba5752df1fe520a59b3c3ac494a7`.
+**Release notes** (rewritten 2026-11-14, iteration 2026-11-14-1925 UTC, from the log). The installed image is the root-owned copy of the dev-cycle scripts and skill that every session runs as the gate. It is at C = `107cba32d271132361bc4a74a2ebf851e4398b97` (read from `/opt/claude-workflows/.manifest`). Main is at M = `91e05ba717ebaf4404ba64015883ae290e5e8546`.
 
 **Merged without your review** (subject ends "build-loop self-merge"; a hand commit with that subject would read the same, so this is a pointer, not proof):
 
@@ -75,7 +130,7 @@ Run the release paste below on the host, from your claude-workflows checkout at 
 - Four small record fixes (`00e2e663`, your Q-287 answer): the decision log's row for D12 after the light pass, a `Harness feedback` section added to `AGENTS.md` and `GEMINI.md` (the health check's every-run warning), decision 018's moved line cite, and two failure-pattern records. The image carries none of these; `AGENTS.md` and `GEMINI.md` are what other agents read.
 - `cc-verify` fixes (`5740cbfd`, your Q-291 answer): `--clean` no longer dies silently on a run directory with no `record` file, a relative REPO such as `.` now works (an empty one is refused), and the launcher self-check reads a last line with no newline. `devcontainer-config/cc-verify.sh` is a host tool, so `install.sh` asks you to review its diff and re-bless it (answer y); the two live checks after that are Q-292.
 
-**The rest:** 20 commits, cycle lands and recorded answers, records only. The full list: `git -c log.showSignature=false log --first-parent --format='%h %s' 107cba32d271132361bc4a74a2ebf851e4398b97..ec894c49f86fba5752df1fe520a59b3c3ac494a7`
+**The rest:** 22 commits, cycle lands and recorded answers, records only. The full list: `git -c log.showSignature=false log --first-parent --format='%h %s' 107cba32d271132361bc4a74a2ebf851e4398b97..91e05ba717ebaf4404ba64015883ae290e5e8546`
 
 **Gate files changed:** `skills/dev-cycle/SKILL.md`.
 
@@ -84,7 +139,7 @@ Run the release paste below on the host, from your claude-workflows checkout at 
 The paste (one line; it refuses, saying why, unless the checkout is at main's tip and the gate code and installer are still M's):
 
 ```
-sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "ec894c49f86fba5752df1fe520a59b3c3ac494a7:$p")"; then n=$((n+1)); else echo "release refused: $p changed after M: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
+sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "91e05ba717ebaf4404ba64015883ae290e5e8546:$p")"; then n=$((n+1)); else echo "release refused: $p changed after M: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
 ```
 
 - **Interim:** the image's gate (C) runs.
