@@ -273,6 +273,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-282](#q-282--constraint-s8-no-growth-clause) | Should the "no growth of the 500-plus-line files" clause of soft constraint S8 stay as it is, be reworded a... | 2026-11-13 |
 | [Q-283](#q-283--constraint-s10-owner-wait-clause) | Should the S10 clause "no merge or loop that waits on the user's manual action when a fail-closed alternati... | 2026-11-13 |
 | [Q-284](#q-284--constraint-instrument-code-in-fork) | Should the unwritten rule "benchmark and review-instrument code lives in the SWRBench fork" stay out of `do... | 2026-11-13 |
+| [Q-285](#q-285--review-gap-audit-which-repo) | Q-285: [2] | 2026-11-13 |
 | [Q-287](#q-287--merge-2026-11-13-small-records-review-68b106d0a358) | Q-287: [1] | 2026-11-13 |
 | [Q-288](#q-288--merge-2026-11-13-cc-verify-clean-and-relative-repo-f16bbdcedaf8) | Q-288: [3] renumber to FP-182 and FP-183 after Q-287 | 2026-11-13 |
 | [Q-289](#q-289--merge-gate-2026-11-13-dev-cycle-unblock-ready-work-1fbcad02861d) | Q-289: [1] | 2026-11-13 |
@@ -7012,5 +7013,28 @@ If you merge this, the cycle files that paste as a `you: terminal` entry next it
 - **Blocks:** the roadmap Now items for `cc-verify --clean` and `source_lines_ok`.
 - **Interim:** unmerged.
 - **If the answer differs:** n/a.
+
+
+### Q-285 · review-gap-audit-which-repo
+**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** ANSWERED
+Q-285: [2]
+
+Which repo should the review-gap audit run on first, or should the item be dropped?
+
+**If you say no:** the item stays parked on the roadmap and nothing runs.
+
+Your 2026-10-29 feedback (`docs/human-author/feedback-10-29-26.txt`, point 3) asked for an audit of a repo that committed code-review rubrics with open amber or red rows: for each, find the merge that carried it, whether a fix round followed, and which gate or rule should have stopped it. You were asked in session that day which repo to run it on, but the question never reached this file, so the roadmap has shown it as waiting on you for two weeks with no way to answer.
+
+- **Read:** the roadmap Now item "Owner feedback 2026-10-29", point 3
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Name a repo** | answer `Q-285: [1] <repo>`; a read-only audit procedure is briefed and tried there (in this repo, or written up for that repo's own session if it lives elsewhere) | one line | the first repo may have too few rubrics to show a pattern; a second can follow |
+| **[2] This repo** | run it on claude-workflows' own `docs/reviews/` | one line | this repo's rubrics may not be the ones you were worried about |
+| **[3] Drop it** | the point closes as not needed now | one line | a review gap you suspected stays unexamined |
+
+- **Blocks:** the roadmap item's point 3.
+- **Interim:** nothing runs.
+- **If the answer differs:** n/a; each option sets what runs.
 
 
