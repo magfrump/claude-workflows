@@ -27,7 +27,7 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-278](#q-278--q272-returned-run-or-refuse) | you: judgment | You asked for Q-272 back with data. When the test-confinement script (`scripts/confine-tests.sh`) cannot us... | 2026-11-11 |
-| [Q-286](#q-286--trial-set-2-ends) | you: judgment | The second trial set (T8–T12) ends about today. Which of them should stay? | 2026-11-13 |
+| [Q-286](#q-286--trial-set-2-ends) | you: judgment | Q-286: extend a week: T8 to T12 all keep running to about 2026-11-20, since several are weekly digest items | 2026-11-13 |
 | [Q-293](#q-293--merge-2026-11-14-review-rules-close-gaps-e91b0f75579e) | you: judgment | Merge the written review-rule fixes from the two review-gap audits (brief `docs/working/briefs/2026-11-14-r... | 2026-11-14 |
 | [Q-294](#q-294--blocked-2026-11-14-merge-rubric-gate-1) | you: judgment | Brief 2026-11-14-merge-rubric-gate's build loop asks: how should the merge-time rubric check land, after it... | 2026-11-14 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
@@ -157,7 +157,7 @@ Run the release paste below on the host, from your claude-workflows checkout at 
 
 **If you say no:** nothing breaks. Sessions keep running the installed image at C, whose dev-cycle skill lacks today's change to step 8 (below). The merges stay on main, waiting.
 
-**Release notes** (rewritten 2026-11-14, iteration 2026-11-14-2018 UTC, from the log). The installed image is the root-owned copy of the dev-cycle scripts and skill that every session runs as the gate. It is at C = `107cba32d271132361bc4a74a2ebf851e4398b97` (read from `/opt/claude-workflows/.manifest`). Main is at M = `2e22cb73e4109246208b0f747770037cb683e250`.
+**Release notes** (rewritten 2026-11-14, iteration 2026-11-14-2053 UTC, from the log). The installed image is the root-owned copy of the dev-cycle scripts and skill that every session runs as the gate. It is at C = `107cba32d271132361bc4a74a2ebf851e4398b97` (read from `/opt/claude-workflows/.manifest`). Main is at M = `10c3a9dfb60c0ebef98e3c58c83b85188ed99f21`.
 
 **Merged without your review** (subject ends "build-loop self-merge"; a hand commit with that subject would read the same, so this is a pointer, not proof):
 
@@ -170,7 +170,7 @@ Run the release paste below on the host, from your claude-workflows checkout at 
 - Four small record fixes (`00e2e663`, your Q-287 answer): the decision log's row for D12 after the light pass, a `Harness feedback` section added to `AGENTS.md` and `GEMINI.md` (the health check's every-run warning), decision 018's moved line cite, and two failure-pattern records. The image carries none of these; `AGENTS.md` and `GEMINI.md` are what other agents read.
 - `cc-verify` fixes (`5740cbfd`, your Q-291 answer): `--clean` no longer dies silently on a run directory with no `record` file, a relative REPO such as `.` now works (an empty one is refused), and the launcher self-check reads a last line with no newline. `devcontainer-config/cc-verify.sh` is a host tool, so `install.sh` asks you to review its diff and re-bless it (answer y); the two live checks after that are Q-292.
 
-**The rest:** 24 commits, cycle lands and recorded answers, records only. The full list: `git -c log.showSignature=false log --first-parent --format='%h %s' 107cba32d271132361bc4a74a2ebf851e4398b97..2e22cb73e4109246208b0f747770037cb683e250`
+**The rest:** 25 commits, cycle lands and recorded answers, records only. The full list: `git -c log.showSignature=false log --first-parent --format='%h %s' 107cba32d271132361bc4a74a2ebf851e4398b97..10c3a9dfb60c0ebef98e3c58c83b85188ed99f21`
 
 **Gate files changed:** `skills/dev-cycle/SKILL.md`.
 
@@ -179,14 +179,15 @@ Run the release paste below on the host, from your claude-workflows checkout at 
 The paste (one line; it refuses, saying why, unless the checkout is at main's tip and the gate code and installer are still M's):
 
 ```
-sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "2e22cb73e4109246208b0f747770037cb683e250:$p")"; then n=$((n+1)); else echo "release refused: $p changed after M: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
+sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "10c3a9dfb60c0ebef98e3c58c83b85188ed99f21:$p")"; then n=$((n+1)); else echo "release refused: $p changed after M: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
 ```
 
 - **Interim:** the image's gate (C) runs.
 - **Blocks:** nothing; the dev cycle runs on the old gate meanwhile.
 
 ### Q-286 · trial-set-2-ends
-**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** ANSWERED
+Q-286: extend a week: T8 to T12 all keep running to about 2026-11-20, since several are weekly digest items
 
 The second trial set (T8–T12) ends about today. Which of them should stay?
 

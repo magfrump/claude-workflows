@@ -110,6 +110,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   T4 included, and they are written into the skill (3dbf43cb, live in the image since 2026-11-10). A1/A3/A10: no change (Done; watch Q-262). New set: T8-T12, in
   `docs/working/trials/2026-11-06-attention-and-trust.md`, running to about 2026-11-13; no owner feedback on it yet.
   2026-11-13: the set's end is asked in Q-286 (keep all, some, or none).
+  2026-11-14: Q-286 answered in session: extend a week, all five running to about 2026-11-20,
+  because T11 and T12 live in the weekly digest and have had one edition. Ask again after the
+  2026-11-20 weekly digest.
 - **Questions doc becomes owner-only (Q-221 [14′], decision 040).** Motive: the owner reported
   that agent bookkeeping crowds the one page meant for them (17 open entries, 2 theirs).
   Build in three units: (1) four owner routes (`you: judgment`, `you: terminal`, new
