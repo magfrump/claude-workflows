@@ -93,6 +93,11 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   the gap seen there too; then brief fix 1 with fix 6's grep, gate code (review). Fixes 3 to 5
   are prose changes to `workflows/pr-prep.md`, `workflows/review-fix-loop.md` and
   `skills/code-review/SKILL.md` and can go as one unit.
+  2026-11-14: the owner pasted Behemoth Arsenal's result: 39 rubrics, 44 gaps (30 bypassed a
+  written rule, 14 had no gate), the same root cause (nothing reads a rubric before a merge),
+  plus two causes not seen here: status words grep cannot read, and fixes never written back
+  to their rubric rows. Briefed as two parallel units (In flight): the gate (fixes 1 and 6,
+  and that repo's 1, 2 and 4) and the written rules (fixes 2 to 5, and that repo's 3 and 4).
 
 - **Trial week: less friction, less habituation (2026-10-30 to about 2026-11-06).** Motive:
   the owner's 2026-10-29 brainstorm request ("try things for a few days to a week").
@@ -141,6 +146,12 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
      else open one) is an idea until v1 is used. v1 merged at a8e941a5 (Q-232 [1]).
 
 ## In flight
+
+- `docs/working/briefs/2026-11-14-merge-rubric-gate.md`: `build-loop.sh --merge` and `--check`
+  read the branch's rubric by its Status column; gate code, review.
+- `docs/working/briefs/2026-11-14-review-rules-close-gaps.md`: the written review rules (no
+  fast-forward to main, superseded loops, review before landing, decisions at the cap, a fix
+  updates its row); review.
 
 ## Next
 
