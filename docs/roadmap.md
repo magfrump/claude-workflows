@@ -154,11 +154,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   read the branch's rubric by its Status column; gate code, review.
   2026-11-14: blocked at fc2eeb03 (review hit the 3-round cap with one red open; the check
   is built and report-only); asked at Q-294.
-- `docs/working/briefs/2026-11-14-review-rules-close-gaps.md`: the written review rules (no
-  fast-forward to main, superseded loops, review before landing, decisions at the cap, a fix
-  updates its row); review.
-  2026-11-14: ready at e91b0f75; merge entry Q-293. Its note on red waivers was sent to the
-  gate loop as a correction to that brief's criterion 2.
+  2026-11-14: Q-294 [1] (one more pass: Split and Carried stop closing a red; fence and
+  "partial" cases); goes back to its loop. Reconciling Split and Carried with Q-293's merged
+  status-word table is the follow-up the loop named.
 
 ## Next
 
@@ -478,6 +476,9 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- Review rules from the two review-gap audits (`docs/working/briefs/closed/2026-11-14-review-rules-close-gaps.md`):
+  no fast-forward to main, superseded loops carry rows, decisions at the cap tracked, fixes
+  update their rows, rubric status words. Merged 21097afa, approved (Q-293 [1]).
 - Review-gap audit, first run on this repo (Q-285 [2];
   `docs/working/briefs/closed/2026-11-13-review-gap-audit.md`). Merged 84f8532e, self-merge.
 - `cc-verify` fixes: `--clean` on a run directory with no `record`, a relative REPO, and

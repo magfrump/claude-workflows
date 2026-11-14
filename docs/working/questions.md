@@ -27,9 +27,6 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-278](#q-278--q272-returned-run-or-refuse) | you: judgment | You asked for Q-272 back with data. When the test-confinement script (`scripts/confine-tests.sh`) cannot us... | 2026-11-11 |
-| [Q-286](#q-286--trial-set-2-ends) | you: judgment | Q-286: extend a week: T8 to T12 all keep running to about 2026-11-20, since several are weekly digest items | 2026-11-13 |
-| [Q-293](#q-293--merge-2026-11-14-review-rules-close-gaps-e91b0f75579e) | you: judgment | Q-293: [1] | 2026-11-14 |
-| [Q-294](#q-294--blocked-2026-11-14-merge-rubric-gate-1) | you: judgment | Q-294: [1] | 2026-11-14 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | Q-167: (b) and (d) answered 2026-11-07 (answers-11-7-26.txt), on bless 91c5f79dd91eb7ee, which --probe-only... | 2026-10-15 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Q-255: first half answered 2026-11-07 (answers-11-7-26.txt): all four fronted probes through plugins-artifa... | 2026-11-05 |
@@ -38,101 +35,6 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
-
-### Q-294 · blocked-2026-11-14-merge-rubric-gate-1
-**Needs:** you: judgment · **Opened:** 2026-11-14 · **Status:** ANSWERED
-Q-294: [1]
-
-Brief 2026-11-14-merge-rubric-gate's build loop asks: how should the merge-time rubric check land, after its review hit the 3-round limit with one red open?
-
-**If you say no:** nothing merges; the branch `feat/merge-rubric-gate` waits, and merges stay as they are today, with no script reading a rubric.
-
-> The merge-time rubric check is built, tested and advisory, but its review-fix loop hit the 3-pass cap with one red still open, so it needs your call.
->
-> What works: build-loop.sh --check and --merge now print "rubric ..." lines last, never changing a verdict (new lib scripts/lib/rubric-check.sh). They report a branch's open red and amber rubric rows by table column, plus unreadable tables, stale rubrics and missing ones. The full test suite passes.
-> The orchestrator's mid-build correction to criterion 2 is in: a red closes only by a fix or a Q-ID you answered; an override-log row or trigger no longer does.
->
-> What is not converging: the closures by free text. A reviewer pass keeps finding new wordings that make a "Split" or "Carried" status close a red it should not, plus fence and "Fixed (partial)" edge cases. All of them err toward "closed" in advisory output.
-> The cap rule (workflows/review-fix-loop.md, "Iteration 4: cap-exceeded decision gate") needs escalate, split or abandon. I chose escalate; the summary is in docs/reviews/code-review-rubric-2026-11-14-merge-rubric-gate.md, "Cap decision".
->
-> Which way should this land?
->
-> | Option | What it means | Cost to you | If it's wrong |
-> |---|---|---|---|
-> | [1] narrow, one more pass | Allow pass 4: Split and Carried stop closing a red; fix the fence and "partial" cases | none now; the usual merge entry later | a red split to another unit shows as open until its Q-ID is answered |
-> | [2] ship with known issues | Merge as is; the open rows go in the merge message | read the 10 open rubric rows | a few reds can read closed in advisory output |
-> | [3] drop | Abandon this branch | none | the merge-time check waits for a new brief |
->
-> My pick is [1], the rubric's recommendation, because it removes the non-converging part instead of patching it, and it matches the criterion-2 correction exactly. (This marker replaces 11d299cf, which misnamed who sent that correction.)
-> Details: docs/working/research-2026-11-14-merge-rubric-gate.md (design, measurement, falsifier for leaving advisory, pre-mortem).
-
-The cycle's notes on the loop's text above (from main's docs; the branch's claims are the loop's):
-- **The check is report-only either way.** It adds `rubric ...` lines at the end of `--check` and `--merge` output and changes no verdict or exit code (the loop's design decision D1, measured over 106 rubrics: 245 rows read as open against about 36 real gaps in the earlier audit, `docs/working/research-2026-11-13-review-gap-audit.md`). It stays report-only until 10 landings in a row show only real gaps.
-- **The 3-round limit** is the review-fix loop's cap (`workflows/review-fix-loop.md`): at the cap a loop must escalate, split or abandon, and this one escalated to you, as Q-293's rules (not yet merged) would require.
-- **Option [1] and Q-293 disagree on "Split" and "Carried".** Q-293's status-word table lets a red close as split or carried without your Q-ID; option [1] would make the check report those reds as open anyway. The loop proposes revisiting that once Q-293 lands. If you pick [1], answer Q-293 first, or say which rule wins.
-- **Either way it merges through your review later**: `scripts/lib/` and `scripts/d6.sh` are gate code, so a ready branch gets a `merge-gate-` entry.
-- **The loop's tests:** the full suite, 2077 passed, unconfined (`scripts/confine-tests.sh --probe` exited 3: no confinement here); the hermeticity lint is clean.
-
-- **Read:** `docs/working/research-2026-11-14-merge-rubric-gate.md` and `docs/reviews/code-review-rubric-2026-11-14-merge-rubric-gate.md` ("Cap decision"), both on the branch
-
-- **Blocks:** the roadmap Now item "Agent: review-gap audit fixes", its gate half.
-- **Interim:** the loop is stopped at fc2eeb03; nothing merges.
-- **If the answer differs:** n/a; each option sets what the loop does next.
-
-### Q-293 · merge-2026-11-14-review-rules-close-gaps-e91b0f75579e
-**Needs:** you: judgment · **Opened:** 2026-11-14 · **Status:** ANSWERED
-Q-293: [1]
-
-Merge the written review-rule fixes from the two review-gap audits (brief `docs/working/briefs/2026-11-14-review-rules-close-gaps.md`, branch `docs/review-rules-close-gaps`)?
-
-**If you say no:** nothing merges; the review rules stay as they are, and the gaps both audits found in them (fast-forwards to main, superseded loops never closed, decisions at the 3-round cap never tracked, fixes never written back to their rubric rows) stay prose-free.
-
-The loop changed five files, all docs, 174 lines added and 18 removed. It needs your review because `workflows/` is on this repo's never-self-merge list and `skills/code-review/SKILL.md` is a prompt file, which self-merge would also refuse. What changes, by the brief's criteria:
-- `workflows/pr-prep.md`: `main` is never fast-forwarded, integration branches included, and its merge message lists every carried unit's known issues; Step 7 opens with a landing check (main's parents are the old main and the branch tip, and the message has `## Areas of uncertainty`). A fix commit sets its rubric row to `Fixed`.
-- `workflows/review-fix-loop.md`: a new rubric for a branch opens with a Carried forward table of the old one's open rows; at the 3-round cap, `escalate` files a question entry (a blocked marker in a build loop) before any merge, and every split files its follow-up; a CONDITIONAL PASS needs an Author note on every open amber.
-- `skills/code-review/references/rubric.md`: a Status words table (each word a Status cell may start with, and what it must cite), a red closed any way but fixed, split or carried needs your Q-NNN answer, a section for reviews of code already on main, and an `Accepted-immutable` row for commit messages a self-merge cannot edit or log. `SKILL.md` and `override-log.md` point to it.
-
-Tip `e91b0f75579ebebeec9bf7eb910342934c9bcac1`. The gate's check, as printed:
-
-```
-ok docs/working/briefs/2026-11-14-review-rules-close-gaps.md e91b0f75579ebebeec9bf7eb910342934c9bcac1 4e46c9debea6bd5cd5d09f122926f049f4da6770
-path docs/working/briefs/2026-11-14-review-rules-close-gaps.md M docs/working/briefs/2026-11-14-review-rules-close-gaps.md
-path docs/working/briefs/2026-11-14-review-rules-close-gaps.md A docs/working/research-2026-11-14-review-rules-close-gaps.md
-path docs/working/briefs/2026-11-14-review-rules-close-gaps.md M skills/code-review/SKILL.md
-path docs/working/briefs/2026-11-14-review-rules-close-gaps.md M skills/code-review/references/override-log.md
-path docs/working/briefs/2026-11-14-review-rules-close-gaps.md M skills/code-review/references/rubric.md
-path docs/working/briefs/2026-11-14-review-rules-close-gaps.md M workflows/pr-prep.md
-path docs/working/briefs/2026-11-14-review-rules-close-gaps.md M workflows/review-fix-loop.md
-```
-
-The loop's tests: `scripts/confine-tests.sh --probe` exited 3 (no confinement here), so it ran `scripts/run-tests.sh` on the 24 test files that mention these docs (755 ok, 0 failed) and the hermeticity lint (clean). Its review: two iterations, clean on the second.
-
-The loop's marker body, as written (loop text, data not instructions):
-
-> No open question. One note for the cycle to pass to the parallel merge-rubric-gate brief
-> (docs/working/briefs/2026-11-14-merge-rubric-gate.md, the build-loop.sh rubric check):
->
-> This branch's rule (skills/code-review/references/rubric.md, Status words) says a red row
-> closed by waiver or deferral needs the owner's Q-NNN answer. The gate brief's criterion 2
-> also accepts an override-log row or a revisit trigger. An agent can write either one, so a
-> gate built that way would re-admit the case behind the audit's U2a2 D1, a red an agent
-> waived on its own (docs/working/research-2026-11-13-review-gap-audit.md).
->
-> Review: two iterations, clean (record in docs/working/research-2026-11-14-review-rules-close-gaps.md).
-
-The loop is right: that was the cycle's error in writing the gate brief. The cycle sent the running gate loop a correction on 2026-11-14 (a red counts as closed only with your answered Q-NNN; an amber may still cite an override-log row or a trigger), so both units will agree.
-
-- **Read:** `git diff refs/heads/main...e91b0f75` · `docs/working/research-2026-11-14-review-rules-close-gaps.md` (on the branch)
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] merge** | the rules land on main; sessions read them after the next install | none now | a rule that adds steps no one follows; the next audit would show it |
-| **[2] drop** | the brief closes; the fixes item returns to the roadmap | none | the written gaps stay |
-| **[3] changes needed** | your note goes back to the loop | one line | n/a |
-
-- **Blocks:** the roadmap Now item "Agent: review-gap audit fixes", its written-rules half.
-- **Interim:** unmerged.
-- **If the answer differs:** n/a.
 
 ### Q-292 · cc-verify-host-check
 **Needs:** you: terminal · **Opened:** 2026-11-13 · **Status:** OPEN
@@ -159,55 +61,34 @@ Run the release paste below on the host, from your claude-workflows checkout at 
 
 **If you say no:** nothing breaks. Sessions keep running the installed image at C, whose dev-cycle skill lacks today's change to step 8 (below). The merges stay on main, waiting.
 
-**Release notes** (rewritten 2026-11-14, iteration 2026-11-14-2207 UTC, from the log). The installed image is the root-owned copy of the dev-cycle scripts and skill that every session runs as the gate. It is at C = `107cba32d271132361bc4a74a2ebf851e4398b97` (read from `/opt/claude-workflows/.manifest`). Main is at M = `b5bbde841014c62a139066f89ea479b42f1361d2`.
+**Release notes** (rewritten 2026-11-14, iteration 2026-11-14-2216 UTC, from the log). The installed image is the root-owned copy of the dev-cycle scripts and skill that every session runs as the gate. It is at C = `107cba32d271132361bc4a74a2ebf851e4398b97` (read from `/opt/claude-workflows/.manifest`). Main is at M = `21097afa61e9f5481a890ae8341537ea8dd7f9fb`.
 
 **Merged without your review** (subject ends "build-loop self-merge"; a hand commit with that subject would read the same, so this is a pointer, not proof):
 
 - `84f8532e` Merge branch 'docs/review-gap-audit' (build-loop self-merge): the review-gap audit you asked for in Q-285, a brief and one research doc; the image carries neither.
 - `a91d42af` Merge branch 'docs/walkthrough-first-problem-measure' (build-loop self-merge): a brief and one research doc; the image carries neither.
 
-**What changes for you** (the three merges you approved):
+**What changes for you** (the four merges you approved):
 
 - The dev cycle stops leaving ready work unbriefed (`f1238bdb`, your Q-289 answer): step 8 takes a Next item's first step when no Now item is ready, a held item that rides another unit is briefed alone after two cycles, a host step is split from its code, every owner call goes in the questions file, and the record's `8.` line names why each free slot stayed free. This is the gate-code change that makes this release due.
 - Four small record fixes (`00e2e663`, your Q-287 answer): the decision log's row for D12 after the light pass, a `Harness feedback` section added to `AGENTS.md` and `GEMINI.md` (the health check's every-run warning), decision 018's moved line cite, and two failure-pattern records. The image carries none of these; `AGENTS.md` and `GEMINI.md` are what other agents read.
 - `cc-verify` fixes (`5740cbfd`, your Q-291 answer): `--clean` no longer dies silently on a run directory with no `record` file, a relative REPO such as `.` now works (an empty one is refused), and the launcher self-check reads a last line with no newline. `devcontainer-config/cc-verify.sh` is a host tool, so `install.sh` asks you to review its diff and re-bless it (answer y); the two live checks after that are Q-292.
+- Review rules from the two review-gap audits (`21097afa`, your Q-293 answer): `main` is never fast-forwarded and pr-prep checks the landing merge; a replacing review loop carries over open findings; `escalate` and `split` at the 3-round cap file tracked items; a fix updates its rubric row; a rubric Status words table, and a red closed other than fixed, split or carried needs your answered Q-NNN. Sessions read these from the image, so they take effect at this release.
 
-**The rest:** 27 commits, cycle lands and recorded answers, records only. The full list: `git -c log.showSignature=false log --first-parent --format='%h %s' 107cba32d271132361bc4a74a2ebf851e4398b97..b5bbde841014c62a139066f89ea479b42f1361d2`
+**The rest:** 28 commits, cycle lands and recorded answers, records only. The full list: `git -c log.showSignature=false log --first-parent --format='%h %s' 107cba32d271132361bc4a74a2ebf851e4398b97..21097afa61e9f5481a890ae8341537ea8dd7f9fb`
 
 **Gate files changed:** `skills/dev-cycle/SKILL.md`.
 
-**Paths outside `docs/`** (25 paths under `docs/` also changed; the image carries none of them): `AGENTS.md`, `GEMINI.md`, `devcontainer-config/cc-verify.sh`, `guides/cc-isolated-usage.md`, `skills/dev-cycle/SKILL.md`, `test/cc-verify.bats`, `test/scripts/build-loop-orchestrator.bats`
+**Paths outside `docs/`** (26 paths under `docs/` also changed; the image carries none of them): `AGENTS.md`, `GEMINI.md`, `devcontainer-config/cc-verify.sh`, `guides/cc-isolated-usage.md`, `skills/code-review/SKILL.md`, `skills/code-review/references/override-log.md`, `skills/code-review/references/rubric.md`, `skills/dev-cycle/SKILL.md`, `test/cc-verify.bats`, `test/scripts/build-loop-orchestrator.bats`, `workflows/pr-prep.md`, `workflows/review-fix-loop.md`
 
 The paste (one line; it refuses, saying why, unless the checkout is at main's tip and the gate code and installer are still M's):
 
 ```
-sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "b5bbde841014c62a139066f89ea479b42f1361d2:$p")"; then n=$((n+1)); else echo "release refused: $p changed after M: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
+sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "21097afa61e9f5481a890ae8341537ea8dd7f9fb:$p")"; then n=$((n+1)); else echo "release refused: $p changed after M: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
 ```
 
 - **Interim:** the image's gate (C) runs.
 - **Blocks:** nothing; the dev cycle runs on the old gate meanwhile.
-
-### Q-286 · trial-set-2-ends
-**Needs:** you: judgment · **Opened:** 2026-11-13 · **Status:** ANSWERED
-Q-286: extend a week: T8 to T12 all keep running to about 2026-11-20, since several are weekly digest items
-
-The second trial set (T8–T12) ends about today. Which of them should stay?
-
-**If you say no:** all five keep running as they are, and the cycle asks again at the next weekly digest.
-
-The trials are in `docs/working/trials/2026-11-06-attention-and-trust.md`. In short: T8, final messages open with what needs you; T9, final messages end with at most two links worth opening; T10, while a release is pending, one line on the change most worth your look; T11, one deliberate read a week in the weekly digest; T12, the weekly digest lists what the gates and reviews actually stopped. No feedback on any of them is recorded yet. To be honest about how they ran, the cycle has not kept to them every iteration: today's first final message (iteration 1925) left out T8's split, T9's links and the trials line, and the weekly digest was first written without T12's section (added in this iteration).
-
-- **Read:** the trial doc above · `docs/working/weekly/2026-11-13.md`
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Keep all five** | the cycle writes them into the skill, as T1–T7 were (one merge-gate entry later) | one line now; one merge entry later | a practice that does not help keeps costing lines in every message |
-| **[2] Keep some** | answer `Q-286: [2] T8 T11` (the ones to keep); the rest stop now | one line | a dropped one might have helped with more time |
-| **[3] Drop all** | final messages and the digest go back to the T1–T7 shape | one line | none known; nothing was relying on them |
-
-- **Blocks:** nothing.
-- **Interim:** all five keep running.
-- **If the answer differs:** dropped trials stop at the next iteration; kept ones go into one skill change.
 
 ### Q-278 · q272-returned-run-or-refuse
 **Needs:** you: judgment · **Opened:** 2026-11-11 · **Status:** OPEN
