@@ -240,7 +240,7 @@ Other details:
   - `docs/constraints.md` from main's commit, quoted, and the rule: every design choice runs DD seeded with it; Path A → proceed; no clear winner, no survivor or a missing fact → `blocked`;
   - "force-add your research doc (`git add -f`), so your DD records land with your work";
   - the three markers, when to use each, and the blocked-body grammar;
-  - "subagents only for research and review, each with scratch dir SCRATCH/STEM/; never start build loops, background agents or schedules; never push, merge, open a PR or publish";
+  - "subagents only for research and review, each with scratch dir SCRATCH/STEM/; never start build loops, background agents or schedules; never push, merge, open a PR or publish"; **amended 2026-11-16 (brief `2026-11-16-loop-may-merge-default-in`):** "merge" now reads "merge into any branch but your own", and a loop may merge the default branch, and no other branch, into its own branch with git's default strategy, then re-runs pr-prep's review-fix loop and its tests; a conflict it cannot resolve without discarding a side, or that needs a path outside `Paths:` on a self-merge brief, is `git merge --abort` and a `stopped` marker;
   - "never write the questions files, the roadmap, `docs/dev-cycle.md` or any other brief";
   - "in your own brief, change only the Status line, open→done, in your final change";
   - "run RPI with no plan-approval gate: questions go in a `blocked` marker";

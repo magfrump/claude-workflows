@@ -1850,6 +1850,9 @@ free_worktrees() {
 # content"; D2, D3, D11, D14; row 622), for dispatch N of a branch at TIP in
 # DIR (branch and policy from STATUS). It says "send your
 # branch to a remote": T20 holds this file to never naming git's command.
+# A loop may merge the default branch into its own branch (brief
+# 2026-11-16-loop-may-merge-default-in): the gate judges the merge result
+# against main either way, so the merge adds no path the gate does not see.
 loop_prompt() {
   local a="$1" s="$2" br="${STATUS[branch]}"
   cat <<PROMPT
@@ -1870,7 +1873,7 @@ End with one marker, an empty commit at your branch tip whose first line is exac
 - "handoff: ready", once the review-fix loop is clean and your final change sets your brief's Status line from open to done; a tentative pick's question goes after a blank line, under the blocked body's rules;
 - "handoff: blocked", with the question after a blank line as plain prose and an options table, at most $BODY_LINES lines of $BODY_BYTES bytes (longer is cut; a commit over $MARKER_MAX bytes is skipped): $BODY_RULE;
 - "handoff: stopped: REASON" (1 to 120 printable ASCII characters, no blank at either end), on a stop condition: adding a dependency, a symlink on a self-merge brief, an edit these rules forbid, or a --check refusal you cannot fix within Paths:.
-Start subagents only for research and review, each with its own scratch directory under $s/ in your scratchpad directory. Never start build loops, background agents or schedules; never send your branch to a remote, merge, open a pull request or publish.
+Start subagents only for research and review, each with its own scratch directory under $s/ in your scratchpad directory. Never start build loops, background agents or schedules; never send your branch to a remote, merge into any branch but your own, open a pull request or publish. You may merge the default branch, and no other branch, into your own branch (for example when --check says your branch conflicts with the default branch): "git merge --no-edit refs/heads/$MAIN", with git's default strategy (no -s or -X); resolve any conflict within your brief's scope, then re-run pr-prep's review-fix loop and the tests your brief names. When a conflict cannot be resolved without discarding a change from either side, or needs a path outside your brief's Paths: on a self-merge brief, run "git merge --abort" and end with "handoff: stopped: REASON".
 Never write the questions files, docs/working/watching.md, the roadmap, docs/dev-cycle.md or any other brief. In your own brief change only the Status line, from open to done, in your final change.
 PROMPT
 }
