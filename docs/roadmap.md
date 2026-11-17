@@ -159,10 +159,13 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   status-word table is the follow-up the loop named.
   2026-11-14: blocked again at 27c32c32 (pass 4 fixed Split and Carried but added red R3 in
   its "Carried forward" table reading); asked at Q-295.
+  2026-11-16: Q-295 [1] (pass 5, narrow: a carried row maps only to a row of its own tier,
+  the wording fixed, the test cases added); goes back to its loop.
 - `docs/working/briefs/2026-11-16-loop-may-merge-default-in.md`: the dispatch prompt lets a
   loop merge the default branch into its own branch, never into the default branch; gate
   code, review. Signal: philosophy-research harness feedback F-009 (brainstorm 2026-11-16).
   2026-11-16: ready at a3ef5a38 (dispatch 1, review clean); merge asked at Q-296.
+  2026-11-16: Q-296 [1] (merge), given in session; merges next iteration.
 
 ## Next
 

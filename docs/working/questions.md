@@ -27,8 +27,8 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-278](#q-278--q272-returned-run-or-refuse) | you: judgment | You asked for Q-272 back with data. When the test-confinement script (`scripts/confine-tests.sh`) cannot us... | 2026-11-11 |
-| [Q-295](#q-295--blocked-2026-11-14-merge-rubric-gate-2) | you: judgment | Brief 2026-11-14-merge-rubric-gate's build loop asks again: its extra review pass (your Q-294 [1]) found a ... | 2026-11-14 |
-| [Q-296](#q-296--merge-gate-2026-11-16-loop-may-merge-default-in-a3ef5a381c94) | you: judgment | Merge branch `fix/loop-may-merge-default-in` at a3ef5a381c94cc2e8be45502fd02e60256407037? It changes one li... | 2026-11-16 |
+| [Q-295](#q-295--blocked-2026-11-14-merge-rubric-gate-2) | you: judgment | Q-295: [1] | 2026-11-14 |
+| [Q-296](#q-296--merge-gate-2026-11-16-loop-may-merge-default-in-a3ef5a381c94) | you: judgment | Q-296: [1] | 2026-11-16 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | Q-167: (b) and (d) answered 2026-11-07 (answers-11-7-26.txt), on bless 91c5f79dd91eb7ee, which --probe-only... | 2026-10-15 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Q-255: first half answered 2026-11-07 (answers-11-7-26.txt): all four fronted probes through plugins-artifa... | 2026-11-05 |
@@ -38,7 +38,8 @@ The index below is generated — edit entries, not the table.
 ## Open
 
 ### Q-296 · merge-gate-2026-11-16-loop-may-merge-default-in-a3ef5a381c94
-**Needs:** you: judgment · **Opened:** 2026-11-16 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-16 · **Status:** ANSWERED
+Q-296: [1]
 
 Merge branch `fix/loop-may-merge-default-in` at a3ef5a381c94cc2e8be45502fd02e60256407037? It changes one line of the build-loop prompt, so a loop may merge the default branch into its own branch.
 
@@ -84,7 +85,8 @@ The cycle's note: the follow-up goes to the roadmap's Ideas; it blocks nothing h
 - **If the answer differs:** n/a; each option sets what happens next.
 
 ### Q-295 · blocked-2026-11-14-merge-rubric-gate-2
-**Needs:** you: judgment · **Opened:** 2026-11-14 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-14 · **Status:** ANSWERED
+Q-295: [1]
 
 Brief 2026-11-14-merge-rubric-gate's build loop asks again: its extra review pass (your Q-294 [1]) found a new red that the pass's own fix caused. How should it land?
 
