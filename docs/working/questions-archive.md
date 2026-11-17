@@ -285,6 +285,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-294](#q-294--blocked-2026-11-14-merge-rubric-gate-1) | Q-294: [1] | 2026-11-14 |
 | [Q-295](#q-295--blocked-2026-11-14-merge-rubric-gate-2) | Q-295: [1] | 2026-11-14 |
 | [Q-296](#q-296--merge-gate-2026-11-16-loop-may-merge-default-in-a3ef5a381c94) | Q-296: [1] | 2026-11-16 |
+| [Q-298](#q-298--merge-gate-2026-11-14-merge-rubric-gate-e035801282ff) | Q-298: [1] | 2026-11-16 |
 <!-- index:end -->
 
 ## Answered
@@ -7317,5 +7318,53 @@ Expect: `cleaning .../run-1-999999999` and `clean exit 0`; then the y/N prompt, 
 - **Interim:** the fixes are on main; the installed host copy of `cc-verify` is the old one until Q-290 runs.
 - **Blocks:** closing the two roadmap items (`--clean`, `source_lines_ok`) as host-verified.
 - **Answer (2026-11-17, in session):** both checks passed on the host. `--clean` printed `cleaning /home/…/cc-verify/run-1-999999999` and `clean exit 0`; the relative REPO `.` reached the review and the y/N prompt, then `declined: nothing was built.`, teardown ok, `relative exit 1`, and no `could not clone`.
+
+
+### Q-298 · merge-gate-2026-11-14-merge-rubric-gate-e035801282ff
+**Needs:** you: judgment · **Opened:** 2026-11-16 · **Status:** ANSWERED
+Q-298: [1]
+
+Merge branch `feat/merge-rubric-gate` at e035801282ff2653b89b722eed381d6cdbe119fe? It adds a report-only check that reads a branch's code-review rubric before a merge and names every red or amber row it cannot count as closed.
+
+**If you say no:** nothing merges; merges stay as today, with no script reading a rubric, which is the gap both review-gap audits found (21 amber rows and one waived red reached main here; 44 gaps in Behemoth Arsenal).
+
+**What it does:** `build-loop.sh --check` and `--merge` print extra `rubric` lines after their path lines: one per open red or amber row in the branch's rubric (`docs/reviews/code-review-rubric-*.md`), `clean` when none is open, `unread` for a table it cannot parse, `stale` when fix commits follow the rubric's last update, `none` when there is no rubric. A red counts as closed only by a fix or a Q-ID you answered on main; "Split" and "Carried" no longer close one. It changes no verdict and no exit status, so a cycle quotes the lines in merge entries like this one and in self-merge records. Your Q-295 answer [1] asked for this pass: a row carried forward from an older rubric now maps only to a row of its own tier (the R3 regression is fixed), plus more "partly fixed" wordings read as not fixed.
+
+`--check`'s lines, as printed (the installed gate predates the rubric lines, so none print here):
+
+```
+ok docs/working/briefs/2026-11-14-merge-rubric-gate.md e035801282ff2653b89b722eed381d6cdbe119fe 2e5d86cf0e052ac2d55e6f0a82c85b731301b80b
+path docs/working/briefs/2026-11-14-merge-rubric-gate.md A docs/reviews/code-review-rubric-2026-11-14-merge-rubric-gate.md
+path docs/working/briefs/2026-11-14-merge-rubric-gate.md M docs/working/briefs/2026-11-14-merge-rubric-gate.md
+path docs/working/briefs/2026-11-14-merge-rubric-gate.md A docs/working/research-2026-11-14-merge-rubric-gate.md
+path docs/working/briefs/2026-11-14-merge-rubric-gate.md M scripts/build-loop.sh
+path docs/working/briefs/2026-11-14-merge-rubric-gate.md M scripts/d6.sh
+path docs/working/briefs/2026-11-14-merge-rubric-gate.md A scripts/lib/rubric-check.sh
+path docs/working/briefs/2026-11-14-merge-rubric-gate.md M skills/dev-cycle/SKILL.md
+path docs/working/briefs/2026-11-14-merge-rubric-gate.md M test/lib/build-loop-fixtures.bash
+path docs/working/briefs/2026-11-14-merge-rubric-gate.md M test/scripts/build-loop-check.bats
+path docs/working/briefs/2026-11-14-merge-rubric-gate.md M test/scripts/build-loop-merge.bats
+path docs/working/briefs/2026-11-14-merge-rubric-gate.md M test/scripts/build-loop-orchestrator.bats
+```
+
+- **Gate code:** `scripts/build-loop.sh`, `scripts/d6.sh`, the new `scripts/lib/rubric-check.sh` (286 lines) and `skills/dev-cycle/SKILL.md` (step 7: how the cycle quotes the `rubric` lines) are all in GATE_CODE (the paths that make up the gate, `scripts/lib/dev-cycle-read.sh`), so self-merge's floor would have refused them. 11 files, +964 −14.
+- **One thing to know at release:** `scripts/d6.sh`, the entry point every gate call goes through, now refuses unless the image holds `scripts/lib/rubric-check.sh`. The installer stages the whole `scripts` directory (`devcontainer-config/install.sh`, `CLAUDE_HOME_SRC`), so the file ships with it; I checked that, nothing ran.
+- **What an attacker would want here:** a branch's own rubric file is text the branch writes, so outside text that reaches a loop could try to word a rubric so an open red reads as `clean`. The check is advisory and changes no verdict, so the worst case is a misleading `clean` line in an entry like this; the research doc names the falsifier that would move it out of advisory.
+- **The loop's report** (loop text): pass 5 found no red; its two ambers were fixed and checked by bats and mutants (each mutant fails a new case), with no sixth review pass, since you allowed one. Over the 107 rubrics in `docs/reviews/`, 3 rows change class against the dispatch-2 code, all away from "fixed": two real partial fixes and one false open (a red worded "Fixed for the 13 table shapes only", whose remainder is a separate fixed red). The suite passed 2081 of 2081, unconfined (`scripts/confine-tests.sh --probe` exited 3: no confinement here); the hermeticity lint is clean. The branch's own rubric now reads passes, and its own `--check` prints `clean: 3 red and 33 amber rows, none open`.
+- **Budget:** dispatch 3 of at most 4 for this brief (D1, the build-loop dispatch cap in `docs/working/plan-build-loop-handoff.md`).
+
+The loop's marker has no body (no question).
+
+- **Read:** `git diff 34de09b9...e0358012`; on the branch, `docs/working/research-2026-11-14-merge-rubric-gate.md` (design, measurement, pre-mortem) and `docs/reviews/code-review-rubric-2026-11-14-merge-rubric-gate.md`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The advisory check lands; sessions run it from the next release | Reading the diff, mainly the 286-line lib | A misleading `rubric` line in a merge entry; no verdict changes |
+| **[2] drop** | The branch is abandoned | None | No script reads a rubric before a merge, as today |
+| **[3] changes needed** | Your note goes back to the loop (its last dispatch under the cap) | Writing the note | One more loop run, then a capped entry if it does not finish |
+
+- **Blocks:** the roadmap Now item "Agent: review-gap audit fixes", its gate half.
+- **Interim:** the branch waits at e0358012; nothing merges.
+- **If the answer differs:** n/a; each option sets what happens next.
 
 
