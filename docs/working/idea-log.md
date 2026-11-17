@@ -293,3 +293,4 @@ Trigger: 16 seeds since the last brainstorm, all from the philosophy-research ha
 - Step 0 tests that a worktree can be made before anything else, and the skill names where a stop is filed when no worktree can exist (signal: philosophy-research F-018; log row 88 keeps worktrees as how agents work)
 - A judgment entry's "Why it's yours" line quotes the constraint text it relies on (signal: philosophy-research F-007, an entry that cited H1 for a change H1 does not cover)
 - Tell a loop to run a wait on a file or job in the foreground, not through Monitor (signal: philosophy-research F-012, loops told so finished in 30 to 60 minutes; F-013's hangs have no known cause)
+- The live-verify hook ignores MERGE_HEAD, so a loop hand-resolving a merge of the default branch that brings in an enforcement-file change is asked for a trailer it cannot give (signal: the F-009 loop's pre-mortem item 5, marker a3ef5a38)

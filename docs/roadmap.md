@@ -162,6 +162,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 - `docs/working/briefs/2026-11-16-loop-may-merge-default-in.md`: the dispatch prompt lets a
   loop merge the default branch into its own branch, never into the default branch; gate
   code, review. Signal: philosophy-research harness feedback F-009 (brainstorm 2026-11-16).
+  2026-11-16: ready at a3ef5a38 (dispatch 1, review clean); merge asked at Q-296.
 
 ## Next
 
@@ -190,6 +191,13 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## Ideas
 
+- **The live-verify hook reads a merge commit's staged diff against HEAD only.** Signal:
+  the F-009 loop's pre-mortem item 5 (`docs/working/research-2026-11-16-loop-may-merge-default-in.md`
+  on `fix/loop-may-merge-default-in`): `hooks/live-verify-gate.sh` ignores MERGE_HEAD, so a
+  loop hand-resolving a merge of the default branch whose main side changed an enforcement
+  file is asked for a `Live-verified:` trailer it cannot honestly give, and stops. First
+  step: count how often main's side of such a merge touches an enforcement file; an
+  enforcement-file change, so review and a live-verify trailer.
 - **Re-dispatch a conflict that touches only generated files, with no owner entry**
   (brainstorm 2026-11-16). Signal: philosophy-research F-010 (a generated catalog README
   made approved branches go stale within minutes) and F-006 (a newer gate rule refusing an
