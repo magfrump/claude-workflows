@@ -150,20 +150,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
-- `docs/working/briefs/2026-11-14-merge-rubric-gate.md`: `build-loop.sh --merge` and `--check`
-  read the branch's rubric by its Status column; gate code, review.
-  2026-11-14: blocked at fc2eeb03 (review hit the 3-round cap with one red open; the check
-  is built and report-only); asked at Q-294.
-  2026-11-14: Q-294 [1] (one more pass: Split and Carried stop closing a red; fence and
-  "partial" cases); goes back to its loop. Reconciling Split and Carried with Q-293's merged
-  status-word table is the follow-up the loop named.
-  2026-11-14: blocked again at 27c32c32 (pass 4 fixed Split and Carried but added red R3 in
-  its "Carried forward" table reading); asked at Q-295.
-  2026-11-16: Q-295 [1] (pass 5, narrow: a carried row maps only to a row of its own tier,
-  the wording fixed, the test cases added); goes back to its loop.
-  2026-11-16: ready at e0358012 (dispatch 3; pass 5 found no red, its two ambers fixed);
-  merge asked at Q-298; answered [1] in session 2026-11-17, merges next iteration.
-
 ## Next
 
 1. **A8 post-restructure token measurement.** Motive: the user deferred big compute until
@@ -524,6 +510,10 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- Merge-time rubric check (`docs/working/briefs/closed/2026-11-14-merge-rubric-gate.md`):
+  `build-loop.sh --merge` and `--check` print `rubric` lines for each red or amber row of the
+  branch's code-review rubric they cannot count as closed; report-only, no verdict changes.
+  Merged 1b50402c, approved (Q-298 [1]); gate code, live at the next release (Q-297).
 - A build loop may merge the default branch into its own branch (`docs/working/briefs/closed/2026-11-16-loop-may-merge-default-in.md`):
   the dispatch prompt's "never … merge" now forbids only merging into another branch
   (philosophy-research F-009). Merged c1c7a4f3, approved (Q-296 [1]); live at the next release.
