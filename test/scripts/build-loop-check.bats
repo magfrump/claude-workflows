@@ -1394,7 +1394,7 @@ rubric $B: open $RB A3 amber: Open
 rubric $B: unread $RB line 12: carried row A14 names A99, which is no red or amber row of this file"
 }
 
-@test "rubric: a carried row is left only to a row of its own tier, so a carried red naming an amber stays open as a red; partial fix wordings are open; an info-string opener is a fence and a closer must be its own character (brief 2026-11-14-merge-rubric-gate, review 4 R3 A28 A30)" {
+@test "rubric: a carried row is left only to a row of its own tier, so a carried red naming an amber stays open as a red; partial fix wordings are open and near-misses stay fixes; an info-string opener is a fence and a closer must be its own character (brief 2026-11-14-merge-rubric-gate, review 4 R3 A28 A30)" {
     gated feat/x
     rub "$RB" '# Code Review Rubric' '' '## ⤴️ Carried forward' '' \
         '| Prior ID | Tier | Now | Reason |' '|---|---|---|---|' '| R4 | 🔴 | A3 | still open |' '| R5 | 🔴 | R1 | fixed there |' \
@@ -1404,7 +1404,11 @@ rubric $B: unread $RB line 12: carried row A14 names A99, which is no red or amb
         '| # | Finding | Status |' '|---|---|---|' '| R1 | a | Fixed |' '| R2 | b | Open |' \
         '| R10 | c | Fixed in part |' '| R11 | d | Fixed mostly |' '| R12 | e | Fixed: no |' '| R13 | f | Fixed in next PR |' \
         '| R14 | g | Fixed (WIP) |' '| R15 | h | Fixed (TBD) |' '| R16 | i | Fixed for bash only |' \
-        '| R17 | j | Fixed: no early return |' '| R18 | k | Fixed (next commit: the guard) |' '| R19 | l | Fixed in abc (constants only) |' '' \
+        '| R17 | j | Fixed: no early return |' '| R18 | k | Fixed (next commit: the guard) |' '| R19 | l | Fixed in abc (constants only) |' \
+        '| R20 | m | Fixed: no (see R2) |' '| R21 | n | Fixed — no |' '| R22 | o | Resolved: no |' '| R23 | p | Fixed? No |' \
+        '| R24 | q | Fixed in the next pass |' '| R25 | r | Fixed in next release |' '| R26 | s | Fixed in next pull request |' '| R27 | t | Fixed in a follow-up PR |' \
+        '| R28 | u | Fixed, but only for bash |' '| R29 | v | Fixed (work in progress) |' '| R30 | w | Fixed for the most part |' \
+        '| R31 | x | Fixed for bash; only once |' '| R32 | y | Fixed in abc; resolved: no regression |' '| R33 | z | Fixed: applies on the first review only |' '' \
         '## 🟡 Must Address' '' '| # | Finding | Status | Author note |' '|---|---|---|---|' '| A3 | c | Acknowledged | TODO later |'
     # R4 and A9 name a row of the other tier only, so each is read on its own:
     # the red stays open (no answered Q-ID), the amber has no qualifying note.
@@ -1418,6 +1422,17 @@ rubric $B: open $RB R13 red: Fixed in next PR
 rubric $B: open $RB R14 red: Fixed (WIP)
 rubric $B: open $RB R15 red: Fixed (TBD)
 rubric $B: open $RB R16 red: Fixed for bash only
+rubric $B: open $RB R20 red: Fixed: no (see R2)
+rubric $B: open $RB R21 red: Fixed — no
+rubric $B: open $RB R22 red: Resolved: no
+rubric $B: open $RB R23 red: Fixed? No
+rubric $B: open $RB R24 red: Fixed in the next pass
+rubric $B: open $RB R25 red: Fixed in next release
+rubric $B: open $RB R26 red: Fixed in next pull request
+rubric $B: open $RB R27 red: Fixed in a follow-up PR
+rubric $B: open $RB R28 red: Fixed, but only for bash
+rubric $B: open $RB R29 red: Fixed (work in progress)
+rubric $B: open $RB R30 red: Fixed for the most part
 rubric $B: open $RB carried:R4 red: A3
 rubric $B: open $RB carried:A9 amber: R2"
 }

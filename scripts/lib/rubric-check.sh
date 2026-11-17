@@ -43,10 +43,16 @@
 # older rubrics, is a fix unless the Status cell anywhere says
 # unresolved, partly, partially, partial, half, except, remains, "not yet",
 # "not fixed", "not resolved", "still open", pending, reopened, "in part",
-# mostly, WIP, TBD, "next PR" (or pass, release, branch, iteration, round),
-# "for ... only" within a clause, or is "Fixed: no" (or its
-# first clause alone says not, open or still: "Fixed; follow-up still needed"
-# is a fix). The Author note is not read for a fix: the table puts the word
+# mostly, "for the most part", WIP, "work in progress", TBD, "next PR" or
+# "follow-up PR" (or PRs, pull request, release, branch, pass, iteration,
+# round), "for ... only" within a clause, or "only for" (or its first
+# clause alone says not, open or still:
+# "Fixed; follow-up still needed" is a fix), or when the cell begins
+# "Fixed" or "Resolved", then a colon, dash or "?", then "no" or "nope"
+# with no word after it ("Fixed: no early return" is a fix). A
+# parenthetical "(bash only)", "on Linux only" and "only in" are not read as
+# negations: in docs/reviews/ "(constants only)", "applies on the first review
+# only" and "closes only on an answered Q-ID" describe full fixes. The Author note is not read for a fix: the table puts the word
 # in the Status cell, and notes use these words for other things ("the
 # overshoot half", "not yet on main"): so do 4 of the 6 Fixed rows in
 # docs/reviews/ whose note holds one. Any other closure of a red, Split and Carried included,
@@ -76,7 +82,7 @@ rubric_parse() {
     my ($tier, $tlev, $hdr, $six, $nix, $tix, $fence, @order, %rows, %byid, @bad, $tables) = (undef, 0, undef, -1, -1, -1, "");
     my $n = 0;
     my $RED = qr/\xF0\x9F\x94\xB4/; my $AMB = qr/\xF0\x9F\x9F\xA1/; my $GRN = qr/\xF0\x9F\x9F\xA2/;
-    my $NEG = qr/\b(unresolved|partly|partially|partial|half|except|remains|not yet|not fixed|not resolved|still open|pending|reopened|in part|mostly|wip|tbd)\b|\bnext (pr|pull request|release|branch|pass|iteration|round)\b|\bfor\b[^;:.,()]*\bonly\b|^\W*(fixed|resolved)\s*:\s*no\s*([,;.]|\z)/;
+    my $NEG = qr/\b(unresolved|partly|partially|partial|half|except|remains|not yet|not fixed|not resolved|still open|pending|reopened|in part|mostly|for the most part|wip|work in progress|tbd)\b|\b(next|follow-up) (prs?|pull requests?|releases?|branch|pass|iteration|round)\b|\bfor\b[^;:.,()]*\bonly\b|\bonly for\b|^\W*(fixed|resolved)\s*(:|\?|\xE2\x80\x94|-)\s*(no|nope)\b(?!\s+[a-z])/;
     my $RID = qr/^[A-Z]{1,3}[0-9]+[a-z0-9]*\z/;   # a row ID, as the Now cell of a carried row names one
     my ($carry, $nwix) = (0, -1);
     my $SUCC = qr/(?:superseded by|\xE2\x86\x92)\s*\**([A-Z]{1,3}[0-9]+[a-z0-9]*)\b/;
