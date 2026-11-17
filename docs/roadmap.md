@@ -81,24 +81,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   2026-11-13: those two records merged with the small-records review unit (00e2e663, Done);
   what remains here is the first live `--probe` run.
 
-- **Agent: review-gap audit fixes** (filed 2026-11-13, step 7). Motive: the audit
-  (`docs/working/research-2026-11-13-review-gap-audit.md`, merged 84f8532e) found that no
-  script reads a rubric's row statuses before a merge, so 21 amber rows (all Medium or lower)
-  and one agent-waived red reached main. It proposes six fixes, in its "Proposed fixes"
-  section: (1) an advisory merge-time rubric check; (2) a superseding review loop carries the
-  old loop's open rows forward; (3) enforce pr-prep's existing `--no-ff` rule; (4) a review of
-  code already on main routes every open amber; (5) a self-merge route for the
-  uneditable-commit-message case; (6) a red closed by waiver cites an owner answer. First step:
-  wait for the Behemoth Arsenal run's result (the owner's paste), since the fixes should cover
-  the gap seen there too; then brief fix 1 with fix 6's grep, gate code (review). Fixes 3 to 5
-  are prose changes to `workflows/pr-prep.md`, `workflows/review-fix-loop.md` and
-  `skills/code-review/SKILL.md` and can go as one unit.
-  2026-11-14: the owner pasted Behemoth Arsenal's result: 39 rubrics, 44 gaps (30 bypassed a
-  written rule, 14 had no gate), the same root cause (nothing reads a rubric before a merge),
-  plus two causes not seen here: status words grep cannot read, and fixes never written back
-  to their rubric rows. Briefed as two parallel units (In flight): the gate (fixes 1 and 6,
-  and that repo's 1, 2 and 4) and the written rules (fixes 2 to 5, and that repo's 3 and 4).
-
 - **Trial week: less friction, less habituation (2026-10-30 to about 2026-11-06).** Motive:
   the owner's 2026-10-29 brainstorm request ("try things for a few days to a week").
   Every iteration writes owner entries, the image-lag entry and the final message as
@@ -510,6 +492,10 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- Agent: review-gap audit fixes (Now item filed 2026-11-13, step 7;
+  `docs/working/research-2026-11-13-review-gap-audit.md`): both units merged, the written
+  rules (21097afa, Q-293 [1]) and the merge-time rubric check (1b50402c, Q-298 [1]); the
+  check runs from the next release (Q-297). Closed by iteration chore/dev-cycle-2026-11-17-2049.
 - Merge-time rubric check (`docs/working/briefs/closed/2026-11-14-merge-rubric-gate.md`):
   `build-loop.sh --merge` and `--check` print `rubric` lines for each red or amber row of the
   branch's code-review rubric they cannot count as closed; report-only, no verdict changes.
