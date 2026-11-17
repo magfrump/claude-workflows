@@ -39,6 +39,28 @@ lock() { git worktree unlock "$1" 2>/dev/null; git worktree lock --reason "$2" "
     dsp --start "$B"; refused "its branch feat/x exists; --prompt re-dispatches it"
 }
 
+@test "the prompt lets a loop merge the default branch into its own branch, never into the default branch, with a stop on an unresolvable conflict (brief 2026-11-16-loop-may-merge-default-in)" {
+    ready
+    # --start, then --prompt on the same branch (a marker ends the first dispatch): both print the rule.
+    for c in --start --prompt; do
+    [ "$c" = --start ] || git -C "$W" commit -q --allow-empty -m "handoff: stopped: test"
+    dsp "$c" "$B"
+    [ "$status" -eq 0 ] || { show; return 1; }
+    p="$(printf '%s\n' "${lines[@]:2}")"
+    l="$(grep -F 'Start subagents only for research and review' <<<"$p")"
+    for w in "never send your branch to a remote, merge into any branch but your own, open a pull request or publish." \
+        "You may merge the default branch, and no other branch, into your own branch (for example when --check says your branch conflicts with the default branch): \"git merge --no-edit refs/heads/main\", with git's default strategy (no -s or -X)" \
+        "then re-run pr-prep's review-fix loop and the tests your brief names." \
+        "When a conflict cannot be resolved without discarding a change from either side, or needs a path outside your brief's Paths: on a self-merge brief, run \"git merge --abort\" and end with \"handoff: stopped: REASON\"."; do
+        [[ "$l" == *"$w"* ]] || { echo "missing: $w"; show; return 1; }
+    done
+    # The old bare "merge" is gone, so no reading forbids merging the default branch in.
+    [[ "$p" != *"to a remote, merge, open"* ]] || { show; return 1; }
+    # The rule that keeps the dispatch commit an ancestor still stands: a merge only adds a commit.
+    [[ "$p" == *"Only add commits: never reset, rebase or otherwise move your branch below $(git rev-parse feat/x), the commit you were dispatched at."* ]] || { show; return 1; }
+    done
+}
+
 @test "--start takes an absolute new --dir and refuses anything else (T19, U3d)" {
     ready
     for d in rel/wt /a/../b /a/./b /a//b "/a b"; do dsp --start "$B" --dir "$d"; [ "$status" -eq 1 ] || { show; return 1; }; done
