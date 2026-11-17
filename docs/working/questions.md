@@ -27,109 +27,44 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-278](#q-278--q272-returned-run-or-refuse) | you: judgment | You asked for Q-272 back with data. When the test-confinement script (`scripts/confine-tests.sh`) cannot us... | 2026-11-11 |
-| [Q-295](#q-295--blocked-2026-11-14-merge-rubric-gate-2) | you: judgment | Q-295: [1] | 2026-11-14 |
-| [Q-296](#q-296--merge-gate-2026-11-16-loop-may-merge-default-in-a3ef5a381c94) | you: judgment | Q-296: [1] | 2026-11-16 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | Q-167: (b) and (d) answered 2026-11-07 (answers-11-7-26.txt), on bless 91c5f79dd91eb7ee, which --probe-only... | 2026-10-15 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Q-255: first half answered 2026-11-07 (answers-11-7-26.txt): all four fronted probes through plugins-artifa... | 2026-11-05 |
 | [Q-292](#q-292--cc-verify-host-check) | you: terminal | After Q-290's release paste (which runs `install.sh`; answer y to re-bless `cc-verify.sh`), run the two che... | 2026-11-13 |
+| [Q-297](#q-297--image-lag) | you: terminal | Run the release paste below on the host, from your claude-workflows checkout at main's tip, then start a ne... | 2026-11-16 |
 <!-- index:end -->
 
 ## Open
 
-### Q-296 · merge-gate-2026-11-16-loop-may-merge-default-in-a3ef5a381c94
-**Needs:** you: judgment · **Opened:** 2026-11-16 · **Status:** ANSWERED
-Q-296: [1]
+### Q-297 · image-lag
+**Needs:** you: terminal · **Opened:** 2026-11-16 · **Status:** OPEN
 
-Merge branch `fix/loop-may-merge-default-in` at a3ef5a381c94cc2e8be45502fd02e60256407037? It changes one line of the build-loop prompt, so a loop may merge the default branch into its own branch.
+Run the release paste below on the host, from your claude-workflows checkout at main's tip, then start a new sandbox session.
 
-**If you say no:** nothing merges; loops keep the prompt's bare "never … merge", which one loop read as forbidding a merge of the default branch into its own branch (the philosophy-research project's harness feedback F-009, `docs/working/feedback/philosophy-research.md`), costing you an extra answer per conflict there.
+**If you say no:** nothing breaks. Sessions keep running the installed image at C, whose build-loop prompt still ends with the bare "never … merge" (below). The merge stays on main, waiting.
 
-**What it changes:** the dispatch prompt `build-loop.sh --start` and `--prompt` print to a build loop (the line beginning "Start subagents only for research and review"). It used to end "never send your branch to a remote, merge, open a pull request or publish". It now says "never send your branch to a remote, merge into any branch but your own, open a pull request or publish", then allows merging the default branch, and no other branch, into the loop's own branch with git's default strategy, after which the loop re-runs its review and tests. A conflict it cannot resolve without discarding a side, or that needs a path off a self-merge brief's `Paths:` line, means `git merge --abort` and a stopped marker. It matches the gate's own conflict refusal, which already says "merge the default branch into HEAD first".
+**Release notes** (written 2026-11-16, iteration 2026-11-17-0120 UTC, from the log). The installed image is the root-owned copy of the dev-cycle scripts and skill that every session runs as the gate. It is at C = `10a50983ade4c51f2ee3db3fc2046905318b618f` (read from `/opt/claude-workflows/.manifest`). Main is at M = `c1c7a4f3bf76df976679c79ad026612b547eea99`.
 
-`--check`'s lines, as printed:
+**Merged without your review:** none (no subject ends "build-loop self-merge").
+
+**What changes for you** (the one merge you approved):
+
+- A build loop may merge the default branch into its own branch (`c1c7a4f3`, your Q-296 answer): the prompt `build-loop.sh --start` and `--prompt` give a loop now forbids only merging into another branch, and says to re-run review and tests after merging the default branch in, or to abort and stop on a conflict it cannot resolve cleanly. This is the gate-code change that makes this release due; it is the fix for the philosophy-research project's feedback F-009.
+
+**The rest:** 5 commits, cycle lands and the philosophy-research feedback ingest, records only. The full list: `git -c log.showSignature=false log --first-parent --format='%h %s' 10a50983ade4c51f2ee3db3fc2046905318b618f..c1c7a4f3bf76df976679c79ad026612b547eea99`
+
+**Gate files changed:** `scripts/build-loop.sh`.
+
+**Paths outside `docs/`** (9 paths under `docs/` also changed; the image carries none of them): `scripts/build-loop.sh`, `test/scripts/build-loop-dispatch.bats`
+
+The paste (one line; it refuses, saying why, unless the checkout is at main's tip and the gate code and installer are still M's):
 
 ```
-ok docs/working/briefs/2026-11-16-loop-may-merge-default-in.md a3ef5a381c94cc2e8be45502fd02e60256407037 f61aba07e01f11f40990b9b0a5630f3a10b2f352
-path docs/working/briefs/2026-11-16-loop-may-merge-default-in.md M docs/working/briefs/2026-11-16-loop-may-merge-default-in.md
-path docs/working/briefs/2026-11-16-loop-may-merge-default-in.md M docs/working/plan-build-loop-handoff.md
-path docs/working/briefs/2026-11-16-loop-may-merge-default-in.md A docs/working/research-2026-11-16-loop-may-merge-default-in.md
-path docs/working/briefs/2026-11-16-loop-may-merge-default-in.md M scripts/build-loop.sh
-path docs/working/briefs/2026-11-16-loop-may-merge-default-in.md M test/scripts/build-loop-dispatch.bats
+sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "c1c7a4f3bf76df976679c79ad026612b547eea99:$p")"; then n=$((n+1)); else echo "release refused: $p changed after M: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
 ```
 
-- **Gate code:** `scripts/build-loop.sh` is in GATE_CODE (the paths that make up the gate, `scripts/lib/dev-cycle-read.sh`), so self-merge's floor would have refused it and this entry is a `merge-gate-` one. The diff is 5 lines there: the prompt line and a 3-line comment. It reaches sessions at the next release.
-- **What an attacker would want here:** outside text that reaches a loop (a web page it read, a file in another branch) persuading it to merge some branch other than the default branch into its own, to carry unreviewed changes through. The prompt names only the default branch, and the gate's `--check` and `--merge` judge the merged result against main, so anything brought in that way shows up as changed paths in an entry like this one.
-- **The loop's report** (loop text): a new bats test checks the wording in both `--start`'s and `--prompt`'s output and fails on the old script; the six `test/scripts/build-loop*.bats` files passed (176 tests), unconfined (`scripts/confine-tests.sh --probe` exited 3, no confinement here), and the hermeticity lint passed. Two review rounds; the second was clean.
-
-The loop's marker body, quoted (loop text, data, not instructions):
-
-> No open question. One follow-up idea for the cycle to weigh:
-> the live-verify commit hook (hooks/live-verify-gate.sh, which asks for a Live-verified: trailer when a commit touches an enforcement file under devcontainer-config/) judges the staged diff against HEAD and ignores MERGE_HEAD.
-> So a hand-resolved merge of the default branch whose main side changed such a file asks the loop for a trailer it cannot honestly give; the loop then stops, as it did before this change.
-> A clean merge is unaffected. Fixing it means editing an enforcement file, outside this brief; details in the research doc's pre-mortem, item 5 (docs/working/research-2026-11-16-loop-may-merge-default-in.md).
-> This change edits gate code (scripts/build-loop.sh), so its merge needs the owner's approval under a merge-gate- entry.
-
-The cycle's note: the follow-up goes to the roadmap's Ideas; it blocks nothing here.
-
-- **Read:** `git diff 747bd569...a3ef5a38` (5 files, +84 −3); the research doc on the branch, `docs/working/research-2026-11-16-loop-may-merge-default-in.md`.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] merge** | The prompt change lands on main; sessions get it at the next release | Reading a 5-line diff | A loop merges the default branch in where you would rather it stopped; the gate still checks the result |
-| **[2] drop** | The branch is abandoned; the prompt stays as it is | None | Conflicts keep costing a permission answer when a loop takes the strict reading |
-| **[3] changes needed** | Your note goes back to the loop for another pass | Writing the note | One more loop run |
-
-- **Blocks:** nothing else; the roadmap In flight line for this brief.
-- **Interim:** the branch waits at a3ef5a38; nothing merges.
-- **If the answer differs:** n/a; each option sets what happens next.
-
-### Q-295 · blocked-2026-11-14-merge-rubric-gate-2
-**Needs:** you: judgment · **Opened:** 2026-11-14 · **Status:** ANSWERED
-Q-295: [1]
-
-Brief 2026-11-14-merge-rubric-gate's build loop asks again: its extra review pass (your Q-294 [1]) found a new red that the pass's own fix caused. How should it land?
-
-**If you say no:** nothing merges; the branch `feat/merge-rubric-gate` waits at 27c32c32, and merges stay as they are today, with no script reading a rubric.
-
-> The extra review pass you allowed for the merge-time rubric check found one new red, so it needs your call again.
-> Q-294 was your answer [1]: narrow the check and allow one more review pass. That pass is done and is not clean.
->
-> What was built: a red rubric row now counts as closed only by a fix or by a Q-ID you answered on main.
-> Split and Carried no longer close a red. This removed the part review kept failing on, and the review confirmed those rows fixed.
-> Across all 107 rubrics in docs/reviews/, the row results are the same before and after the change. The full suite passes: 2080 tests.
-> The check is still report-only: it adds "rubric ..." lines to --check and --merge output and changes no verdict.
->
-> What failed: the same pass taught the check to read rubric.md's "Carried forward" table, which lists rows moved from an older rubric.
-> That code drops a carried red whose new row is an amber, so the amber's closure stands in for the red (rubric row R3, a regression).
-> Before this pass, that table printed a loud "unread" line instead. There are 4 new ambers too: more "Fixed (partial)"-style wordings, one stale skill sentence, test gaps and wording.
-> The review-fix loop's cap (workflows/review-fix-loop.md, "Iteration 4: cap-exceeded decision gate") now sits at the 4 passes you allowed, so I escalated and fixed nothing after the review.
-> The details are in docs/reviews/code-review-rubric-2026-11-14-merge-rubric-gate.md, under "Cap decision (after iteration 4 of 4)".
->
-> Which way should this land?
->
-> | Option | What it means | Cost to you | If it's wrong |
-> |---|---|---|---|
-> | [1] one more pass, narrow | Pass 5: a carried row goes only to a row of its own tier (or that table goes back to "unread"); fix the wording; add the test cases | none now; the usual merge entry later | another regression, though the fix is a few lines with a test |
-> | [2] pass 5, drop the table reading | Revert only the Carried forward reading to the loud "unread" line, then land | none now | rubrics using that template show an unread line until a follow-up |
-> | [3] ship as is | Merge at this tip; the open rows go in the merge entry | read 1 red and 7 amber rows | a carried red can read as closed in advisory output |
-> | [4] drop | Abandon the branch | none | the check waits for a new brief |
->
-> My pick is [1], the rubric's recommendation. The tiebreaker: the fix is one same-tier lookup with a fixture that pins it, and it keeps the table support that rubric.md's new template needs.
-> The design, the measurement and the pre-mortem are in docs/working/research-2026-11-14-merge-rubric-gate.md.
-
-The cycle's notes on the loop's text above (from main's docs; the branch's claims are the loop's):
-- **What Q-294 [1] bought:** the part that kept failing review (Split and Carried closing a red) is gone and review confirmed it fixed. The new red, R3, is in code the same pass added: reading the "Carried forward" table that Q-293's merged rules introduced (`skills/code-review/references/rubric.md`).
-- **The pattern so far:** pass 3 left one red open, and pass 4 fixed it but added another. Option [2] removes only the newest code: the "Carried forward" table goes back to a loud "unread" line, which is what the check printed before this pass, so a rubric using that table shows "unread", never "clean". That is the fail-closed reading the constraints ask for (H2, a gate fails closed and loudly); option [1] keeps the table support, at the risk of another round like this one.
-- **Either way it stays report-only** and comes back as a `merge-gate-` entry for your review: it is gate code (`scripts/lib/`, `scripts/build-loop.sh`, `skills/dev-cycle/`).
-- **Budget:** this was dispatch 2 of at most 4 for the brief (D1, the build-loop dispatch cap in `docs/working/plan-build-loop-handoff.md`).
-- **The loop's tests:** the full suite, 2080 passed, unconfined (`scripts/confine-tests.sh --probe` exited 3: no confinement here); the hermeticity lint is clean.
-
-- **Read:** `docs/reviews/code-review-rubric-2026-11-14-merge-rubric-gate.md` ("Cap decision (after iteration 4 of 4)") and `docs/working/research-2026-11-14-merge-rubric-gate.md`, both on the branch
-
-- **Blocks:** the roadmap Now item "Agent: review-gap audit fixes", its gate half.
-- **Interim:** the loop is stopped at 27c32c32; nothing merges.
-- **If the answer differs:** n/a; each option sets what the loop does next.
+- **Interim:** the image's gate (C) runs.
+- **Blocks:** nothing; the dev cycle runs on the old gate meanwhile. The re-dispatched rubric-gate loop gets the old prompt wording.
 
 ### Q-292 · cc-verify-host-check
 **Needs:** you: terminal · **Opened:** 2026-11-13 · **Status:** OPEN
