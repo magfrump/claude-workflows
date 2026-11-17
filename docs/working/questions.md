@@ -27,7 +27,7 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-278](#q-278--q272-returned-run-or-refuse) | you: judgment | You asked for Q-272 back with data. When the test-confinement script (`scripts/confine-tests.sh`) cannot us... | 2026-11-11 |
-| [Q-298](#q-298--merge-gate-2026-11-14-merge-rubric-gate-e035801282ff) | you: judgment | Merge branch `feat/merge-rubric-gate` at e035801282ff2653b89b722eed381d6cdbe119fe? It adds a report-only ch... | 2026-11-16 |
+| [Q-298](#q-298--merge-gate-2026-11-14-merge-rubric-gate-e035801282ff) | you: judgment | Q-298: [1] | 2026-11-16 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | Q-167: (b) and (d) answered 2026-11-07 (answers-11-7-26.txt), on bless 91c5f79dd91eb7ee, which --probe-only... | 2026-10-15 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Q-255: first half answered 2026-11-07 (answers-11-7-26.txt): all four fronted probes through plugins-artifa... | 2026-11-05 |
@@ -37,7 +37,8 @@ The index below is generated — edit entries, not the table.
 ## Open
 
 ### Q-298 · merge-gate-2026-11-14-merge-rubric-gate-e035801282ff
-**Needs:** you: judgment · **Opened:** 2026-11-16 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-16 · **Status:** ANSWERED
+Q-298: [1]
 
 Merge branch `feat/merge-rubric-gate` at e035801282ff2653b89b722eed381d6cdbe119fe? It adds a report-only check that reads a branch's code-review rubric before a merge and names every red or amber row it cannot count as closed.
 
@@ -89,7 +90,7 @@ Run the release paste below on the host, from your claude-workflows checkout at 
 
 **If you say no:** nothing breaks. Sessions keep running the installed image at C, whose build-loop prompt still ends with the bare "never … merge" (below). The merge stays on main, waiting.
 
-**Release notes** (rewritten 2026-11-16, iteration 2026-11-17-0157 UTC, from the log). The installed image is the root-owned copy of the dev-cycle scripts and skill that every session runs as the gate. It is at C = `10a50983ade4c51f2ee3db3fc2046905318b618f` (read from `/opt/claude-workflows/.manifest`). Main is at M = `34de09b989c8a8541fa80a168c039077516fd342`.
+**Release notes** (rewritten 2026-11-17, iteration 2026-11-17-2019 UTC, from the log). The installed image is the root-owned copy of the dev-cycle scripts and skill that every session runs as the gate. It is at C = `10a50983ade4c51f2ee3db3fc2046905318b618f` (read from `/opt/claude-workflows/.manifest`). Main is at M = `f85c006b6c918f582729c5d9b5f64b49b4930b4c`.
 
 **Merged without your review:** none (no subject ends "build-loop self-merge").
 
@@ -97,7 +98,7 @@ Run the release paste below on the host, from your claude-workflows checkout at 
 
 - A build loop may merge the default branch into its own branch (`c1c7a4f3`, your Q-296 answer): the prompt `build-loop.sh --start` and `--prompt` give a loop now forbids only merging into another branch, and says to re-run review and tests after merging the default branch in, or to abort and stop on a conflict it cannot resolve cleanly. This is the gate-code change that makes this release due; it is the fix for the philosophy-research project's feedback F-009.
 
-**The rest:** 7 commits, cycle lands and the philosophy-research feedback ingest, records only. The full list: `git -c log.showSignature=false log --first-parent --format='%h %s' 10a50983ade4c51f2ee3db3fc2046905318b618f..34de09b989c8a8541fa80a168c039077516fd342`
+**The rest:** 9 commits, cycle lands, the philosophy-research feedback ingest and the Q-292 answer, records only. The full list: `git -c log.showSignature=false log --first-parent --format='%h %s' 10a50983ade4c51f2ee3db3fc2046905318b618f..f85c006b6c918f582729c5d9b5f64b49b4930b4c`
 
 **Gate files changed:** `scripts/build-loop.sh`.
 
@@ -106,11 +107,11 @@ Run the release paste below on the host, from your claude-workflows checkout at 
 The paste (one line; it refuses, saying why, unless the checkout is at main's tip and the gate code and installer are still M's):
 
 ```
-sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "34de09b989c8a8541fa80a168c039077516fd342:$p")"; then n=$((n+1)); else echo "release refused: $p changed after M: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
+sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "f85c006b6c918f582729c5d9b5f64b49b4930b4c:$p")"; then n=$((n+1)); else echo "release refused: $p changed after M: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
 ```
 
 - **Interim:** the image's gate (C) runs.
-- **Blocks:** nothing; the dev cycle runs on the old gate meanwhile. If Q-298 merges first, the next iteration rewrites this entry to carry it too.
+- **Blocks:** nothing; the dev cycle runs on the old gate meanwhile. Q-298 (the rubric gate) was answered [1] and merges next iteration; that iteration rewrites this entry to carry it too, so wait for that paste if you can.
 
 ### Q-278 · q272-returned-run-or-refuse
 **Needs:** you: judgment · **Opened:** 2026-11-11 · **Status:** OPEN

@@ -162,7 +162,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   2026-11-16: Q-295 [1] (pass 5, narrow: a carried row maps only to a row of its own tier,
   the wording fixed, the test cases added); goes back to its loop.
   2026-11-16: ready at e0358012 (dispatch 3; pass 5 found no red, its two ambers fixed);
-  merge asked at Q-298.
+  merge asked at Q-298; answered [1] in session 2026-11-17, merges next iteration.
 
 ## Next
 
