@@ -27,6 +27,7 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-278](#q-278--q272-returned-run-or-refuse) | you: judgment | You asked for Q-272 back with data. When the test-confinement script (`scripts/confine-tests.sh`) cannot us... | 2026-11-11 |
+| [Q-298](#q-298--merge-gate-2026-11-14-merge-rubric-gate-e035801282ff) | you: judgment | Merge branch `feat/merge-rubric-gate` at e035801282ff2653b89b722eed381d6cdbe119fe? It adds a report-only ch... | 2026-11-16 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | Q-167: (b) and (d) answered 2026-11-07 (answers-11-7-26.txt), on bless 91c5f79dd91eb7ee, which --probe-only... | 2026-10-15 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Q-255: first half answered 2026-11-07 (answers-11-7-26.txt): all four fronted probes through plugins-artifa... | 2026-11-05 |
@@ -36,6 +37,52 @@ The index below is generated — edit entries, not the table.
 
 ## Open
 
+### Q-298 · merge-gate-2026-11-14-merge-rubric-gate-e035801282ff
+**Needs:** you: judgment · **Opened:** 2026-11-16 · **Status:** OPEN
+
+Merge branch `feat/merge-rubric-gate` at e035801282ff2653b89b722eed381d6cdbe119fe? It adds a report-only check that reads a branch's code-review rubric before a merge and names every red or amber row it cannot count as closed.
+
+**If you say no:** nothing merges; merges stay as today, with no script reading a rubric, which is the gap both review-gap audits found (21 amber rows and one waived red reached main here; 44 gaps in Behemoth Arsenal).
+
+**What it does:** `build-loop.sh --check` and `--merge` print extra `rubric` lines after their path lines: one per open red or amber row in the branch's rubric (`docs/reviews/code-review-rubric-*.md`), `clean` when none is open, `unread` for a table it cannot parse, `stale` when fix commits follow the rubric's last update, `none` when there is no rubric. A red counts as closed only by a fix or a Q-ID you answered on main; "Split" and "Carried" no longer close one. It changes no verdict and no exit status, so a cycle quotes the lines in merge entries like this one and in self-merge records. Your Q-295 answer [1] asked for this pass: a row carried forward from an older rubric now maps only to a row of its own tier (the R3 regression is fixed), plus more "partly fixed" wordings read as not fixed.
+
+`--check`'s lines, as printed (the installed gate predates the rubric lines, so none print here):
+
+```
+ok docs/working/briefs/2026-11-14-merge-rubric-gate.md e035801282ff2653b89b722eed381d6cdbe119fe 2e5d86cf0e052ac2d55e6f0a82c85b731301b80b
+path docs/working/briefs/2026-11-14-merge-rubric-gate.md A docs/reviews/code-review-rubric-2026-11-14-merge-rubric-gate.md
+path docs/working/briefs/2026-11-14-merge-rubric-gate.md M docs/working/briefs/2026-11-14-merge-rubric-gate.md
+path docs/working/briefs/2026-11-14-merge-rubric-gate.md A docs/working/research-2026-11-14-merge-rubric-gate.md
+path docs/working/briefs/2026-11-14-merge-rubric-gate.md M scripts/build-loop.sh
+path docs/working/briefs/2026-11-14-merge-rubric-gate.md M scripts/d6.sh
+path docs/working/briefs/2026-11-14-merge-rubric-gate.md A scripts/lib/rubric-check.sh
+path docs/working/briefs/2026-11-14-merge-rubric-gate.md M skills/dev-cycle/SKILL.md
+path docs/working/briefs/2026-11-14-merge-rubric-gate.md M test/lib/build-loop-fixtures.bash
+path docs/working/briefs/2026-11-14-merge-rubric-gate.md M test/scripts/build-loop-check.bats
+path docs/working/briefs/2026-11-14-merge-rubric-gate.md M test/scripts/build-loop-merge.bats
+path docs/working/briefs/2026-11-14-merge-rubric-gate.md M test/scripts/build-loop-orchestrator.bats
+```
+
+- **Gate code:** `scripts/build-loop.sh`, `scripts/d6.sh`, the new `scripts/lib/rubric-check.sh` (286 lines) and `skills/dev-cycle/SKILL.md` (step 7: how the cycle quotes the `rubric` lines) are all in GATE_CODE (the paths that make up the gate, `scripts/lib/dev-cycle-read.sh`), so self-merge's floor would have refused them. 11 files, +964 −14.
+- **One thing to know at release:** `scripts/d6.sh`, the entry point every gate call goes through, now refuses unless the image holds `scripts/lib/rubric-check.sh`. The installer stages the whole `scripts` directory (`devcontainer-config/install.sh`, `CLAUDE_HOME_SRC`), so the file ships with it; I checked that, nothing ran.
+- **What an attacker would want here:** a branch's own rubric file is text the branch writes, so outside text that reaches a loop could try to word a rubric so an open red reads as `clean`. The check is advisory and changes no verdict, so the worst case is a misleading `clean` line in an entry like this; the research doc names the falsifier that would move it out of advisory.
+- **The loop's report** (loop text): pass 5 found no red; its two ambers were fixed and checked by bats and mutants (each mutant fails a new case), with no sixth review pass, since you allowed one. Over the 107 rubrics in `docs/reviews/`, 3 rows change class against the dispatch-2 code, all away from "fixed": two real partial fixes and one false open (a red worded "Fixed for the 13 table shapes only", whose remainder is a separate fixed red). The suite passed 2081 of 2081, unconfined (`scripts/confine-tests.sh --probe` exited 3: no confinement here); the hermeticity lint is clean. The branch's own rubric now reads passes, and its own `--check` prints `clean: 3 red and 33 amber rows, none open`.
+- **Budget:** dispatch 3 of at most 4 for this brief (D1, the build-loop dispatch cap in `docs/working/plan-build-loop-handoff.md`).
+
+The loop's marker has no body (no question).
+
+- **Read:** `git diff 34de09b9...e0358012`; on the branch, `docs/working/research-2026-11-14-merge-rubric-gate.md` (design, measurement, pre-mortem) and `docs/reviews/code-review-rubric-2026-11-14-merge-rubric-gate.md`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The advisory check lands; sessions run it from the next release | Reading the diff, mainly the 286-line lib | A misleading `rubric` line in a merge entry; no verdict changes |
+| **[2] drop** | The branch is abandoned | None | No script reads a rubric before a merge, as today |
+| **[3] changes needed** | Your note goes back to the loop (its last dispatch under the cap) | Writing the note | One more loop run, then a capped entry if it does not finish |
+
+- **Blocks:** the roadmap Now item "Agent: review-gap audit fixes", its gate half.
+- **Interim:** the branch waits at e0358012; nothing merges.
+- **If the answer differs:** n/a; each option sets what happens next.
+
 ### Q-297 · image-lag
 **Needs:** you: terminal · **Opened:** 2026-11-16 · **Status:** OPEN
 
@@ -43,7 +90,7 @@ Run the release paste below on the host, from your claude-workflows checkout at 
 
 **If you say no:** nothing breaks. Sessions keep running the installed image at C, whose build-loop prompt still ends with the bare "never … merge" (below). The merge stays on main, waiting.
 
-**Release notes** (written 2026-11-16, iteration 2026-11-17-0120 UTC, from the log). The installed image is the root-owned copy of the dev-cycle scripts and skill that every session runs as the gate. It is at C = `10a50983ade4c51f2ee3db3fc2046905318b618f` (read from `/opt/claude-workflows/.manifest`). Main is at M = `c1c7a4f3bf76df976679c79ad026612b547eea99`.
+**Release notes** (rewritten 2026-11-16, iteration 2026-11-17-0157 UTC, from the log). The installed image is the root-owned copy of the dev-cycle scripts and skill that every session runs as the gate. It is at C = `10a50983ade4c51f2ee3db3fc2046905318b618f` (read from `/opt/claude-workflows/.manifest`). Main is at M = `34de09b989c8a8541fa80a168c039077516fd342`.
 
 **Merged without your review:** none (no subject ends "build-loop self-merge").
 
@@ -51,20 +98,20 @@ Run the release paste below on the host, from your claude-workflows checkout at 
 
 - A build loop may merge the default branch into its own branch (`c1c7a4f3`, your Q-296 answer): the prompt `build-loop.sh --start` and `--prompt` give a loop now forbids only merging into another branch, and says to re-run review and tests after merging the default branch in, or to abort and stop on a conflict it cannot resolve cleanly. This is the gate-code change that makes this release due; it is the fix for the philosophy-research project's feedback F-009.
 
-**The rest:** 5 commits, cycle lands and the philosophy-research feedback ingest, records only. The full list: `git -c log.showSignature=false log --first-parent --format='%h %s' 10a50983ade4c51f2ee3db3fc2046905318b618f..c1c7a4f3bf76df976679c79ad026612b547eea99`
+**The rest:** 7 commits, cycle lands and the philosophy-research feedback ingest, records only. The full list: `git -c log.showSignature=false log --first-parent --format='%h %s' 10a50983ade4c51f2ee3db3fc2046905318b618f..34de09b989c8a8541fa80a168c039077516fd342`
 
 **Gate files changed:** `scripts/build-loop.sh`.
 
-**Paths outside `docs/`** (9 paths under `docs/` also changed; the image carries none of them): `scripts/build-loop.sh`, `test/scripts/build-loop-dispatch.bats`
+**Paths outside `docs/`** (10 paths under `docs/` also changed; the image carries none of them): `scripts/build-loop.sh`, `test/scripts/build-loop-dispatch.bats`
 
 The paste (one line; it refuses, saying why, unless the checkout is at main's tip and the gate code and installer are still M's):
 
 ```
-sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "c1c7a4f3bf76df976679c79ad026612b547eea99:$p")"; then n=$((n+1)); else echo "release refused: $p changed after M: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
+sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "34de09b989c8a8541fa80a168c039077516fd342:$p")"; then n=$((n+1)); else echo "release refused: $p changed after M: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
 ```
 
 - **Interim:** the image's gate (C) runs.
-- **Blocks:** nothing; the dev cycle runs on the old gate meanwhile. The re-dispatched rubric-gate loop gets the old prompt wording.
+- **Blocks:** nothing; the dev cycle runs on the old gate meanwhile. If Q-298 merges first, the next iteration rewrites this entry to carry it too.
 
 ### Q-292 · cc-verify-host-check
 **Needs:** you: terminal · **Opened:** 2026-11-13 · **Status:** OPEN
