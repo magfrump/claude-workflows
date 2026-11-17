@@ -33,3 +33,5 @@ Policy: review
 - Changing what the dev cycle does with a conflict refusal (step 7 files it as `stopped`), or re-dispatching conflicts with generated files without an owner entry: that is a separate idea (philosophy-research F-010) for divergent design.
 - Any other prompt line.
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`: the dev cycle owns those.
+
+Dispatched: 1
