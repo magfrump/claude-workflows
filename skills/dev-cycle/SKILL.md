@@ -677,7 +677,7 @@ the brief is still open and no subagent of this session runs it, step 10 re-disp
   GATE_CODE (a test holds this copy to it; `--approved` accepts no other heading):
   `^scripts/(build-loop|d6|dev-cycle|questions)\.sh$|^scripts/lib/|^skills/dev-cycle/`
   Its body: the full TIP (row 673), `--check`'s lines as printed (its advisory `rubric`
-  lines included: an `open` row is a red or amber the review did not close), and a note on each path
+  lines included: an `open` row is a red or amber the check could not count as closed), and a note on each path
   that is an instruction or prompt file, a dot path or gate code, which self-merge's floor
   would have refused (rows 680, 683), and on each `(symlink)` or `(gitlink)` path line. A `merge-gate-` entry also has a line
   `**What an attacker would want here:** WHAT`, naming outside parties only, such as a stranger's text

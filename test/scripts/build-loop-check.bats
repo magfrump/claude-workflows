@@ -1330,7 +1330,7 @@ rubric $B: clean $T2: 1 red and 0 amber rows, none open" ] || { echo "$rubric"; 
         '| R4 | d | Split to feat/rubric-gate-2 |' '| R5 | e | Split: docs/working/briefs/2026-10-02-y.md |' '| R6 | f | Carried to code-review-rubric-2026-10-01-feat-x.md R1 |' \
         '| R7 | g | superseded by R8 |' '| R8 | h | Waived (Q-002) |' '| R9 | i | Fixed; follow-up still needed |' \
         '| R10 | j | Split to feat/y (Q-002) |' '| R11 | k | Carried to code-review-rubric-2026-10-02-feat-x.md R1 (Q-002) |' '| R12 | l | superseded by R13 |' '| R13 | m | Waived (Q-003) |'
-    # R12 copies R13's Q-IDs, not its class: Q-003 is unanswered, so both stay open.
+    # R12 takes R13's class and Q-IDs: Q-003 is unanswered, so both stay open.
     rubis "rubric $B: open $RB R1 red: Split; no branch yet
 rubric $B: open $RB R2 red: Split — no roadmap item
 rubric $B: open $RB R3 red: Carried to code-review-rubric-2020-01-01-old.md R4
@@ -1346,7 +1346,7 @@ rubric $B: open $RB R13 red: Waived (Q-003)"
 rubric $B: clean ?: 1 red and 0 amber rows, none open"
 }
 
-@test "rubric: each word of rubric.md's Status words table, on a red and on an amber, reads as the lib's header says (brief 2026-11-14-merge-rubric-gate, review 3 A25)" {
+@test "rubric: each word of rubric.md's Status words table, on the tiers it lists, reads as the lib's header says (brief 2026-11-14-merge-rubric-gate, review 3 A25)" {
     # The table (skills/code-review/references/rubric.md, "Status words") is the
     # vocabulary; the lib's header comment owns how it is read. Q-002 is answered.
     qentry Q-002 ANSWERED; commit_all questions
@@ -1392,4 +1392,32 @@ rubric $B: open $RB R5 red: Fixed in abc; merge path remains"
     rubis "rubric $B: open $RB carried:R4 red: Waived
 rubric $B: open $RB A3 amber: Open
 rubric $B: unread $RB line 12: carried row A14 names A99, which is no red or amber row of this file"
+}
+
+@test "rubric: a carried row is left only to a row of its own tier, so a carried red naming an amber stays open as a red; partial fix wordings are open; an info-string opener is a fence and a closer must be its own character (brief 2026-11-14-merge-rubric-gate, review 4 R3 A28 A30)" {
+    gated feat/x
+    rub "$RB" '# Code Review Rubric' '' '## ⤴️ Carried forward' '' \
+        '| Prior ID | Tier | Now | Reason |' '|---|---|---|---|' '| R4 | 🔴 | A3 | still open |' '| R5 | 🔴 | R1 | fixed there |' \
+        '| R6 | 🔴 | R2 | open there |' '| A7 | 🟡 | A3 | closed there |' '| A8 | 🟡 | R1 | TODO at y.sh:2 |' '| A9 | 🟡 | R2 | moved |' '' \
+        '## 🔴 Must Fix' '' '```bash' '| # | Finding | Status |' '|---|---|---|' '| R90 | hidden | Open |' '```' '' \
+        '```' '~~~' '| # | Finding | Status |' '|---|---|---|' '| R91 | hidden | Open |' '~~~' '```' '' \
+        '| # | Finding | Status |' '|---|---|---|' '| R1 | a | Fixed |' '| R2 | b | Open |' \
+        '| R10 | c | Fixed in part |' '| R11 | d | Fixed mostly |' '| R12 | e | Fixed: no |' '| R13 | f | Fixed in next PR |' \
+        '| R14 | g | Fixed (WIP) |' '| R15 | h | Fixed (TBD) |' '| R16 | i | Fixed for bash only |' \
+        '| R17 | j | Fixed: no early return |' '| R18 | k | Fixed (next commit: the guard) |' '| R19 | l | Fixed in abc (constants only) |' '' \
+        '## 🟡 Must Address' '' '| # | Finding | Status | Author note |' '|---|---|---|---|' '| A3 | c | Acknowledged | TODO later |'
+    # R4 and A9 name a row of the other tier only, so each is read on its own:
+    # the red stays open (no answered Q-ID), the amber has no qualifying note.
+    # A8 names a red row too, and closes on its own TODO. R6 and A7 are left
+    # to R2 and A3; R5 to R1.
+    rubis "rubric $B: open $RB R2 red: Open
+rubric $B: open $RB R10 red: Fixed in part
+rubric $B: open $RB R11 red: Fixed mostly
+rubric $B: open $RB R12 red: Fixed: no
+rubric $B: open $RB R13 red: Fixed in next PR
+rubric $B: open $RB R14 red: Fixed (WIP)
+rubric $B: open $RB R15 red: Fixed (TBD)
+rubric $B: open $RB R16 red: Fixed for bash only
+rubric $B: open $RB carried:R4 red: A3
+rubric $B: open $RB carried:A9 amber: R2"
 }

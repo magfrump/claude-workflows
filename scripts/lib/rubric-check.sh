@@ -29,18 +29,22 @@
 # Consider rows are left out). Any other heading at the same or a higher level
 # ends the tier, a lower one keeps it; lines inside a ``` or ~~~ fence are not
 # read at all (a fence closes only on a line of its own character, at least
-# as long, with nothing after it). A row ID seen twice in one tier keeps its
+# as long, with nothing but blanks after it). A row ID seen twice in one tier keeps its
 # last row (multi-pass rubrics append passes). A Tier-column table with no
 # Status column but a Now column is rubric.md's "Carried forward" table: its
 # rows print as carried:ID with Now read as their Status and Reason as their
-# Author note, and a row whose Now is a row ID of FILE is left to that row.
+# Author note, and a row whose Now is a row ID of FILE in the same tier is
+# left to that row (a red carried to an amber row is read on its own, as a
+# red, so the amber's closure never stands in for it).
 # The words are rubric.md's "Status words" table; this comment owns how the
 # parser reads them, and test/scripts/build-loop-check.bats pins each word.
 # A Status cell is read by its first word and by whole words, never
 # substrings ("Unresolved" is not "resolved"). "Fixed", or "Resolved" in
 # older rubrics, is a fix unless the Status cell anywhere says
 # unresolved, partly, partially, partial, half, except, remains, "not yet",
-# "not fixed", "not resolved", "still open", pending or reopened (or its
+# "not fixed", "not resolved", "still open", pending, reopened, "in part",
+# mostly, WIP, TBD, "next PR" (or pass, release, branch, iteration, round),
+# "for ... only" within a clause, or is "Fixed: no" (or its
 # first clause alone says not, open or still: "Fixed; follow-up still needed"
 # is a fix). The Author note is not read for a fix: the table puts the word
 # in the Status cell, and notes use these words for other things ("the
@@ -72,7 +76,7 @@ rubric_parse() {
     my ($tier, $tlev, $hdr, $six, $nix, $tix, $fence, @order, %rows, %byid, @bad, $tables) = (undef, 0, undef, -1, -1, -1, "");
     my $n = 0;
     my $RED = qr/\xF0\x9F\x94\xB4/; my $AMB = qr/\xF0\x9F\x9F\xA1/; my $GRN = qr/\xF0\x9F\x9F\xA2/;
-    my $NEG = qr/\b(unresolved|partly|partially|partial|half|except|remains|not yet|not fixed|not resolved|still open|pending|reopened)\b/;
+    my $NEG = qr/\b(unresolved|partly|partially|partial|half|except|remains|not yet|not fixed|not resolved|still open|pending|reopened|in part|mostly|wip|tbd)\b|\bnext (pr|pull request|release|branch|pass|iteration|round)\b|\bfor\b[^;:.,()]*\bonly\b|^\W*(fixed|resolved)\s*:\s*no\s*([,;.]|\z)/;
     my $RID = qr/^[A-Z]{1,3}[0-9]+[a-z0-9]*\z/;   # a row ID, as the Now cell of a carried row names one
     my ($carry, $nwix) = (0, -1);
     my $SUCC = qr/(?:superseded by|\xE2\x86\x92)\s*\**([A-Z]{1,3}[0-9]+[a-z0-9]*)\b/;
@@ -148,7 +152,7 @@ rubric_parse() {
       }
       if ($carry) {
         my $now = $c[$six]; $now =~ s/[*_`]//g; $now =~ s/^\s+|\s+$//g;
-        if ($now =~ $RID) { push @carried, [$n, $c[0], $now]; next; }
+        if ($now =~ $RID) { push @carried, [$n, $c[0], $now, $rt, $c[$six], $nix >= 0 ? $c[$nix] : ""]; next; }
       }
       my ($cl, $q) = classify($rt, $c[$six], $nix >= 0 ? $c[$nix] : "");
       my $rid = $carry ? "carried:$c[0]" : $c[0];
@@ -157,8 +161,19 @@ rubric_parse() {
       $rows{$k} = [$rt, $rid, $cl, cut($c[$six]), $q, $c[$six]];
       $byid{$c[0]}{$rt} = $k unless $carry;
     }
-    # A carried row whose Now names a row ID is reported by that row.
-    push @bad, "$_->[0]\tcarried row $_->[1] names $_->[2], which is no red or amber row of this file" for grep { !$byid{$_->[2]} } @carried;
+    # A carried row whose Now names a row ID of its own tier is reported by
+    # that row. Naming a row of the other tier only, it is read on its own,
+    # under its own tier (a red so stays open unless a Q-ID it cites is
+    # answered); naming no row, it is named.
+    for my $cr (@carried) {
+      my ($ln, $pid, $now, $rt, $st, $note) = @$cr;
+      next if $byid{$now} && $byid{$now}{$rt};
+      if (!$byid{$now}) { push @bad, "$ln\tcarried row $pid names $now, which is no red or amber row of this file"; next; }
+      my ($cl, $q) = classify($rt, $st, $note);
+      my $k = "$rt\tcarried:$pid";
+      push @order, $k unless exists $rows{$k};
+      $rows{$k} = [$rt, "carried:$pid", $cl, cut($st), $q, $st];
+    }
     push @bad, (split /\t/, $fence)[1] . "\ta code fence opened here is never closed, so the lines after it are not read" if $fence ne "";
     for my $k (@order) {
       my $r = $rows{$k}; next if $r->[2] eq "fixed";

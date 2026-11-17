@@ -451,7 +451,8 @@
 #                 closes only by a fix or a Q-ID the owner answered on main,
 #                 an amber also by a qualifying note; the lib says how each
 #                 is read), ID "carried:ID" for a row of a Carried forward
-#                 table, STATUS as written; "unread PATH[ line N]: WHY" for a table, row
+#                 table (its STATUS the Now cell), STATUS as written;
+#                 "unread PATH[ line N]: WHY" for a table, row
 #                 or file it cannot read; "stale PATH: K fix(...) commits on
 #                 BRANCH follow its last change in SHA12" (branch commits
 #                 the last commit changing PATH does not contain); "clean
