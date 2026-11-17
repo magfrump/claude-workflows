@@ -159,6 +159,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   status-word table is the follow-up the loop named.
   2026-11-14: blocked again at 27c32c32 (pass 4 fixed Split and Carried but added red R3 in
   its "Carried forward" table reading); asked at Q-295.
+- `docs/working/briefs/2026-11-16-loop-may-merge-default-in.md`: the dispatch prompt lets a
+  loop merge the default branch into its own branch, never into the default branch; gate
+  code, review. Signal: philosophy-research harness feedback F-009 (brainstorm 2026-11-16).
 
 ## Next
 
@@ -187,6 +190,38 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## Ideas
 
+- **Re-dispatch a conflict that touches only generated files, with no owner entry**
+  (brainstorm 2026-11-16). Signal: philosophy-research F-010 (a generated catalog README
+  made approved branches go stale within minutes) and F-006 (a newer gate rule refusing an
+  approved merge), each costing the owner a re-dispatch answer and a second merge answer.
+  Three or more shapes (a repo setting listing generated paths, regenerating at merge time,
+  no change), so a divergent-design pass first. Builds on the in-flight F-009 brief.
+- **parallel-worktrees: a subagent returns its report as text** (brainstorm 2026-11-16).
+  Signal: Claude Code's Write tool refused a subagent's report file in two projects
+  (philosophy-research F-011, belegarth-herald F-010). First step: say in
+  `workflows/parallel-worktrees.md` that the parent writes and commits a report the subagent
+  returns in its final message (review: `workflows/` is a never glob).
+- **Worktrees and caches outside `.claude/`** (brainstorm 2026-11-16). Signal:
+  philosophy-research F-019, about 18 brief writes under `.claude/wt-*` prompting in one
+  session, and a denied write that left one iteration half-landed. Shapes: a sibling
+  directory, a scoped allow rule shipped with the skill, or the session temp directory; a
+  divergent-design pass first. Also: the skill says a brief write and the commands that
+  depend on it go in separate responses.
+- **Step 0 tests worktree creation first, and names where a stop goes with no worktree**
+  (brainstorm 2026-11-16). Signal: philosophy-research F-018, a read-only `.git/worktrees`
+  stopped an iteration with nowhere to file the stop; decision-log row 88 keeps worktrees
+  as how agents work.
+- **A per-repo health-checkout preparation line** (brainstorm 2026-11-16). Signal:
+  philosophy-research F-016: a fresh health checkout has no Lean build cache (1.9 GB), so
+  the iteration linked and copied it in by hand. First step: a `docs/dev-cycle.md` line
+  naming paths to link or copy from the main checkout, read through `--settings`.
+- **A judgment entry's "Why it's yours" quotes the constraint it relies on** (brainstorm
+  2026-11-16). Signal: philosophy-research F-007, an entry that cited H1 for a change H1
+  does not cover, so the whole entry should not have reached the owner.
+- **Loops wait on a file or job in the foreground** (brainstorm 2026-11-16). Signal:
+  philosophy-research F-012 (loops idle two hours on Monitor while listed as running;
+  told to wait in the foreground, they finished in 30 to 60 minutes). F-013's hung tool
+  calls have no known cause and are not covered by this.
 - **The next deep audit's sample.** Signal: step 4b fired 2026-11-13 (iteration 2250) on
   `skills/dev-cycle/SKILL.md` as f1238bdb (Q-289) changed it, after the constraint-drift item
   closed; with a1121ac5's Path A record (Done item above), it is what the next deep audit
