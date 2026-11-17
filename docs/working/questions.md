@@ -31,7 +31,6 @@ The index below is generated — edit entries, not the table.
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | Q-167: (b) and (d) answered 2026-11-07 (answers-11-7-26.txt), on bless 91c5f79dd91eb7ee, which --probe-only... | 2026-10-15 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Q-255: first half answered 2026-11-07 (answers-11-7-26.txt): all four fronted probes through plugins-artifa... | 2026-11-05 |
-| [Q-292](#q-292--cc-verify-host-check) | you: terminal | After Q-290's release paste (which runs `install.sh`; answer y to re-bless `cc-verify.sh`), run the two che... | 2026-11-13 |
 | [Q-297](#q-297--image-lag) | you: terminal | Run the release paste below on the host, from your claude-workflows checkout at main's tip, then start a ne... | 2026-11-16 |
 <!-- index:end -->
 
@@ -112,24 +111,6 @@ sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git r
 
 - **Interim:** the image's gate (C) runs.
 - **Blocks:** nothing; the dev cycle runs on the old gate meanwhile. If Q-298 merges first, the next iteration rewrites this entry to carry it too.
-
-### Q-292 · cc-verify-host-check
-**Needs:** you: terminal · **Opened:** 2026-11-13 · **Status:** OPEN
-
-After Q-290's release paste (which runs `install.sh`; answer y to re-bless `cc-verify.sh`), run the two checks below on the host and paste the output here.
-
-**If you say no:** the `cc-verify` fixes merged at `5740cbfd` stay on main untested on the host; their commits carry `Host-tool-tested: no (host run follows the merge)`, and `cc-verify --clean` and a relative REPO keep their old behaviour on your machine until `install.sh` re-blesses the new script.
-
-The checks come from the build loop's report (its marker on branch `fix/cc-verify-clean-and-relative-repo`, loop text). The first makes a fake leftover run directory and expects `--clean` to remove it; the second runs a check with REPO `.` and declines the build, expecting no "could not clone" error.
-
-```
-mkdir -p ~/cc-verify/run-1-999999999 && cc-verify --clean; echo "clean exit $?"; printf 'true\n' > ~/cc-verify-true.sh && cc-verify --check ~/cc-verify-true.sh . main <<< n; echo "relative exit $?"; rm -f ~/cc-verify-true.sh
-```
-
-Expect: `cleaning .../run-1-999999999` and `clean exit 0`; then the y/N prompt, `declined: nothing was built.`, `relative exit 1`, and no `could not clone`. Run the second from inside a git checkout that has a `main` branch.
-
-- **Interim:** the fixes are on main; the installed host copy of `cc-verify` is the old one until Q-290 runs.
-- **Blocks:** closing the two roadmap items (`--clean`, `source_lines_ok`) as host-verified.
 
 ### Q-278 · q272-returned-run-or-refuse
 **Needs:** you: judgment · **Opened:** 2026-11-11 · **Status:** OPEN

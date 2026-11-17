@@ -535,7 +535,7 @@ Items finished since the last cycle, with the merge.
 - `cc-verify` fixes: `--clean` on a run directory with no `record`, a relative REPO, and
   `source_lines_ok` on an unterminated last line (Now items filed 2026-11-05 and 2026-11-11;
   `docs/working/briefs/closed/2026-11-13-cc-verify-clean-and-relative-repo.md`). Merged
-  5740cbfd, approved (Q-291 [1]). The host re-bless and live checks are Q-290's paste, then Q-292.
+  5740cbfd, approved (Q-291 [1]). Host-verified 2026-11-17 (Q-292: both live checks passed).
 - The cycle stops leaving ready work unbriefed (Now item, filed 2026-11-13;
   `docs/working/briefs/closed/2026-11-13-dev-cycle-unblock-ready-work.md`). Merged f1238bdb,
   approved (Q-289 [1]); gate code, so it runs from the next image release (Q-290).

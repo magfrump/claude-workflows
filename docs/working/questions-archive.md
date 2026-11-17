@@ -280,6 +280,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-289](#q-289--merge-gate-2026-11-13-dev-cycle-unblock-ready-work-1fbcad02861d) | Q-289: [1] | 2026-11-13 |
 | [Q-290](#q-290--image-lag) | Q-290: met — image 10a50983ade4c51f2ee3db3fc2046905318b618f holds the gate code of main 7b0479ee05b4fe6e2... | 2026-11-13 |
 | [Q-291](#q-291--merge-2026-11-13-cc-verify-clean-and-relative-repo-7611797ba322) | Q-291: [1] | 2026-11-13 |
+| [Q-292](#q-292--cc-verify-host-check) | After Q-290's release paste (which runs `install.sh`; answer y to re-bless `cc-verify.sh`), run the two che... | 2026-11-13 |
 | [Q-293](#q-293--merge-2026-11-14-review-rules-close-gaps-e91b0f75579e) | Q-293: [1] | 2026-11-14 |
 | [Q-294](#q-294--blocked-2026-11-14-merge-rubric-gate-1) | Q-294: [1] | 2026-11-14 |
 | [Q-295](#q-295--blocked-2026-11-14-merge-rubric-gate-2) | Q-295: [1] | 2026-11-14 |
@@ -7296,5 +7297,25 @@ The cycle's notes on the loop's text above (from main's docs; the branch's claim
 - **Blocks:** the roadmap Now item "Agent: review-gap audit fixes", its gate half.
 - **Interim:** the loop is stopped at 27c32c32; nothing merges.
 - **If the answer differs:** n/a; each option sets what the loop does next.
+
+
+### Q-292 · cc-verify-host-check
+**Needs:** you: terminal · **Opened:** 2026-11-13 · **Status:** ANSWERED
+
+After Q-290's release paste (which runs `install.sh`; answer y to re-bless `cc-verify.sh`), run the two checks below on the host and paste the output here.
+
+**If you say no:** the `cc-verify` fixes merged at `5740cbfd` stay on main untested on the host; their commits carry `Host-tool-tested: no (host run follows the merge)`, and `cc-verify --clean` and a relative REPO keep their old behaviour on your machine until `install.sh` re-blesses the new script.
+
+The checks come from the build loop's report (its marker on branch `fix/cc-verify-clean-and-relative-repo`, loop text). The first makes a fake leftover run directory and expects `--clean` to remove it; the second runs a check with REPO `.` and declines the build, expecting no "could not clone" error.
+
+```
+mkdir -p ~/cc-verify/run-1-999999999 && cc-verify --clean; echo "clean exit $?"; printf 'true\n' > ~/cc-verify-true.sh && cc-verify --check ~/cc-verify-true.sh . main <<< n; echo "relative exit $?"; rm -f ~/cc-verify-true.sh
+```
+
+Expect: `cleaning .../run-1-999999999` and `clean exit 0`; then the y/N prompt, `declined: nothing was built.`, `relative exit 1`, and no `could not clone`. Run the second from inside a git checkout that has a `main` branch.
+
+- **Interim:** the fixes are on main; the installed host copy of `cc-verify` is the old one until Q-290 runs.
+- **Blocks:** closing the two roadmap items (`--clean`, `source_lines_ok`) as host-verified.
+- **Answer (2026-11-17, in session):** both checks passed on the host. `--clean` printed `cleaning /home/…/cc-verify/run-1-999999999` and `clean exit 0`; the relative REPO `.` reached the review and the y/N prompt, then `declined: nothing was built.`, teardown ok, `relative exit 1`, and no `could not clone`.
 
 
