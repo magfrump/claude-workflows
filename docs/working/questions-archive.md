@@ -278,6 +278,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-287](#q-287--merge-2026-11-13-small-records-review-68b106d0a358) | Q-287: [1] | 2026-11-13 |
 | [Q-288](#q-288--merge-2026-11-13-cc-verify-clean-and-relative-repo-f16bbdcedaf8) | Q-288: [3] renumber to FP-182 and FP-183 after Q-287 | 2026-11-13 |
 | [Q-289](#q-289--merge-gate-2026-11-13-dev-cycle-unblock-ready-work-1fbcad02861d) | Q-289: [1] | 2026-11-13 |
+| [Q-290](#q-290--image-lag) | Q-290: met — image 10a50983ade4c51f2ee3db3fc2046905318b618f holds the gate code of main 7b0479ee05b4fe6e2... | 2026-11-13 |
 | [Q-291](#q-291--merge-2026-11-13-cc-verify-clean-and-relative-repo-7611797ba322) | Q-291: [1] | 2026-11-13 |
 | [Q-293](#q-293--merge-2026-11-14-review-rules-close-gaps-e91b0f75579e) | Q-293: [1] | 2026-11-14 |
 | [Q-294](#q-294--blocked-2026-11-14-merge-rubric-gate-1) | Q-294: [1] | 2026-11-14 |
@@ -7159,5 +7160,43 @@ The trials are in `docs/working/trials/2026-11-06-attention-and-trust.md`. In sh
 - **Blocks:** nothing.
 - **Interim:** all five keep running.
 - **If the answer differs:** dropped trials stop at the next iteration; kept ones go into one skill change.
+
+
+### Q-290 · image-lag
+**Needs:** you: terminal · **Opened:** 2026-11-13 · **Status:** ANSWERED
+Q-290: met — image 10a50983ade4c51f2ee3db3fc2046905318b618f holds the gate code of main 7b0479ee05b4fe6e2bb0c99fcac6e468fb9154a6
+
+Run the release paste below on the host, from your claude-workflows checkout at main's tip, then start a new sandbox session.
+
+**If you say no:** nothing breaks. Sessions keep running the installed image at C, whose dev-cycle skill lacks today's change to step 8 (below). The merges stay on main, waiting.
+
+**Release notes** (rewritten 2026-11-14, iteration 2026-11-14-2243 UTC, from the log). The installed image is the root-owned copy of the dev-cycle scripts and skill that every session runs as the gate. It is at C = `107cba32d271132361bc4a74a2ebf851e4398b97` (read from `/opt/claude-workflows/.manifest`). Main is at M = `6d41b0bd4ecf6a1f238b038d0dec2415a922e3ee`.
+
+**Merged without your review** (subject ends "build-loop self-merge"; a hand commit with that subject would read the same, so this is a pointer, not proof):
+
+- `84f8532e` Merge branch 'docs/review-gap-audit' (build-loop self-merge): the review-gap audit you asked for in Q-285, a brief and one research doc; the image carries neither.
+- `a91d42af` Merge branch 'docs/walkthrough-first-problem-measure' (build-loop self-merge): a brief and one research doc; the image carries neither.
+
+**What changes for you** (the four merges you approved):
+
+- The dev cycle stops leaving ready work unbriefed (`f1238bdb`, your Q-289 answer): step 8 takes a Next item's first step when no Now item is ready, a held item that rides another unit is briefed alone after two cycles, a host step is split from its code, every owner call goes in the questions file, and the record's `8.` line names why each free slot stayed free. This is the gate-code change that makes this release due.
+- Four small record fixes (`00e2e663`, your Q-287 answer): the decision log's row for D12 after the light pass, a `Harness feedback` section added to `AGENTS.md` and `GEMINI.md` (the health check's every-run warning), decision 018's moved line cite, and two failure-pattern records. The image carries none of these; `AGENTS.md` and `GEMINI.md` are what other agents read.
+- `cc-verify` fixes (`5740cbfd`, your Q-291 answer): `--clean` no longer dies silently on a run directory with no `record` file, a relative REPO such as `.` now works (an empty one is refused), and the launcher self-check reads a last line with no newline. `devcontainer-config/cc-verify.sh` is a host tool, so `install.sh` asks you to review its diff and re-bless it (answer y); the two live checks after that are Q-292.
+- Review rules from the two review-gap audits (`21097afa`, your Q-293 answer): `main` is never fast-forwarded and pr-prep checks the landing merge; a replacing review loop carries over open findings; `escalate` and `split` at the 3-round cap file tracked items; a fix updates its rubric row; a rubric Status words table, and a red closed other than fixed, split or carried needs your answered Q-NNN. Sessions read these from the image, so they take effect at this release.
+
+**The rest:** 30 commits, cycle lands and recorded answers, records only. The full list: `git -c log.showSignature=false log --first-parent --format='%h %s' 107cba32d271132361bc4a74a2ebf851e4398b97..6d41b0bd4ecf6a1f238b038d0dec2415a922e3ee`
+
+**Gate files changed:** `skills/dev-cycle/SKILL.md`.
+
+**Paths outside `docs/`** (26 paths under `docs/` also changed; the image carries none of them): `AGENTS.md`, `GEMINI.md`, `devcontainer-config/cc-verify.sh`, `guides/cc-isolated-usage.md`, `skills/code-review/SKILL.md`, `skills/code-review/references/override-log.md`, `skills/code-review/references/rubric.md`, `skills/dev-cycle/SKILL.md`, `test/cc-verify.bats`, `test/scripts/build-loop-orchestrator.bats`, `workflows/pr-prep.md`, `workflows/review-fix-loop.md`
+
+The paste (one line; it refuses, saying why, unless the checkout is at main's tip and the gate code and installer are still M's):
+
+```
+sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "6d41b0bd4ecf6a1f238b038d0dec2415a922e3ee:$p")"; then n=$((n+1)); else echo "release refused: $p changed after M: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
+```
+
+- **Interim:** the image's gate (C) runs.
+- **Blocks:** nothing; the dev cycle runs on the old gate meanwhile.
 
 
