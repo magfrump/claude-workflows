@@ -25,3 +25,14 @@ D3: I mistakenly approved adding the sandboxes because I did not understand the 
 D4: No. I asked for more data, and the first entry under "The Data" begins with "Not enough data yet."
 
 D5: Yes, the re-framing of "do not use sandboxes" as an option with costs and benefits.
+
+## Follow-up, after grading (2026-11-18), verbatim
+
+"I don't think the question is meaningfully answered. I know that after the revert there was a research
+session to determine how to implement bwrap without breaking worktrees. The next step should be re-writing
+the question to address the concerns and options, not implementing. I never saw a reference to the test
+confinement script in the question text!"
+
+*Orchestrator note:* the question line does name it: "When the test-confinement script
+(`scripts/confine-tests.sh`) cannot use `bwrap` …". The owner read past it. That is the finding, not a
+reader error: see findings.md, "C1 settled".

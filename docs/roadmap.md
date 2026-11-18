@@ -13,6 +13,21 @@ user's order).
 
 Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0002).
 
+- **Rewrite Q-278 (the bwrap run-or-refuse question) before anything acts on it (owner, 2026-11-18).**
+  Motive: the owner's reader test showed the entry was read as being about Claude Code's Bash sandbox,
+  the one main reverted at 7caea26d, not the test-confinement script it names. The owner "never saw a
+  reference to the test confinement script in the question text", although its question line names
+  `scripts/confine-tests.sh`. The owner says it is not meaningfully answered. The rewrite comes first;
+  nothing is implemented. Inputs, in order:
+  1. the reader-test findings and revision brief, `docs/working/reader-testing/q278-2026-11-18/findings.md`;
+  2. the post-revert research on bringing `bwrap` back without breaking worktrees,
+     `docs/working/research-2026-11-12-sandbox-return-research.md`;
+  3. the owner's frame from that session: sandboxing is a feature proposal that needs more benefit than
+     cost; the provisional H2 exception framing is disallowed; one option must be "do not use sandboxes",
+     with costs and benefits.
+  The rewritten entry must say plainly which tool it is about, and why the test-confinement script
+  is or isn't the same question as the Bash sandbox. Reader-test it (light tier) before filing.
+
 - **Models answer their own questions from the repo's docs (owner request, 2026-11-11).**
   Motive: the owner asked for a plan for how models can answer their own questions based on
   existing docs in a repo. The questions doc spends the owner's attention, the binding

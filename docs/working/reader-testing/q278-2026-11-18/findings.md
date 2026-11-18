@@ -281,3 +281,25 @@ For whichever entry replaces Q-278, if one is needed after the owner's reframe:
 
 **Claims a revision may change:** the frame (C1), the cost column (C2), the "never run" claim (C3),
 "Blocks" (C5), the end condition (C6), and "why it's yours" (C7).
+
+## C1 settled by the owner (orchestrator, 2026-11-18)
+
+The owner's follow-up settles C1 as a **misread the text invited**, not a reframe of the script: "I never
+saw a reference to the test confinement script in the question text!" The question line names
+`scripts/confine-tests.sh` once, inside a gloss. The rest of the entry talks about `bwrap`, image
+releases, and "main rolled the Bash sandbox back" (§2 bullet 3). So the owner read the whole entry as
+being about the reverted Bash sandbox.
+
+What changes as a result:
+- **F1 becomes a text-surface S1**: the subject of the entry was misread, a misread type. Before, it was
+  an institutional finding about a withdrawn frame. The owner's frame (sandboxing must earn its place)
+  still stands, but it was aimed at the Bash sandbox.
+- **Q-278 is not answered.** The record of it as answered (e387ec24) was wrong. The entry is reopened, to be
+  rewritten, and the rewrite is a Now item on the roadmap.
+- **For the profile's decider archetype** (`docs/audiences/owner.md`): a name given once, inside a gloss,
+  is missed when the rest of the entry uses a near-synonym ("sandbox" against "test confinement"). Both
+  simulated readers caught the script name; the real reader didn't. That is the clearest calibration
+  result of the run.
+- **The calibration section above is partly wrong.** It counts "the owner rejected the frame" as a real-only
+  finding about frames held off the record. Part of it was this misread. Read that section with that in
+  mind.
