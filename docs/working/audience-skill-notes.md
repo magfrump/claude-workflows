@@ -61,3 +61,16 @@ run is the only fixture so far. Three calls made while drafting, each open to re
 - **Profiles from venue evidence.** Thread behaviour produced an archetype the author hadn't named (the builder).
   The survey's profile sources are the author's brief, or docs the designer agent reads. Add thread and
   comment history as a source.
+
+## The owner as reader (author's answer, 2026-11-18)
+
+The main venue is writing for the owner, whose role varies by repo. It is not MAIS's public post.
+
+- **Engineering manager plus end user:** the `docs/working/questions.md` entries and the dev cycle's
+  final messages. The questions grammar in the global CLAUDE.md is this venue's style guide.
+- **Player or walkthrough tester:** Behemoth Arsenal and Belegarth Herald both wait on the owner
+  to walk through them. Behemoth Arsenal's playtest checklist artifact
+  (claude.ai/artifact/M2N3XtMC4tUBfYbvzR32qE, from `user-testing-workflow`) is a solid example of
+  the genre. It has stops in play order, items tagged "Your eyes" or "Test-pinned", "New since
+  session N" notes, negative checks, and answers saved back for Claude to read.
+- **Friends as playtesters:** the same checklist reaches readers without the owner's context.
