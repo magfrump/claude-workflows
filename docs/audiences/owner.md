@@ -1,10 +1,11 @@
 # Audience profile: the owner, reading agent-written entries and messages
 
-**Status:** draft, 2026-11-18. The author's interview is set for 2026-11-19; the calls are under "Calls
-for the author", each with the interim answer this draft uses. **Last verified:** 2026-11-18.
+**Status:** ratified by the author 2026-11-18 (Q-299 [2]: ratified with the author's edit, the five
+calls at their interim answers). The calls stay listed under "Calls for the author"; answering one
+later is a refresh. **Last verified:** 2026-11-18.
 **Changes:** 2026-11-18, the author's edit: the operator's worst misreading is now a half-applied paste
 or a buried remainder, with a wrong-environment run (which costs a repeat) second. The author read the
-rest and called it "LGTM"; the calls are still at their interim answers.
+rest and called it "LGTM", then ratified it (Q-299 [2]).
 **Venue:** text agents write to the owner in this repo and the repos it serves: `docs/working/questions.md`
 entries (all routes), the dev cycle's final messages, and the end-of-run summary. **Evidence read:**
 `docs/working/questions-archive.md` (all 277 entries, Q-001 2026-09-12 to Q-298 2026-11-14; answer lines
@@ -306,8 +307,8 @@ from the archive alone.
 
 ## Calls for the author
 
-Each call has options, one of which departs from the draft. The draft uses the **interim** until you
-answer.
+Each call has options, one of which departs from the draft. Ratified 2026-11-18 with every call at its
+**interim**; answering a call later is a refresh.
 
 1. **Who is the write-for reader of an entry?** [1] the decider reading cold (*interim*). [2] the
    acting agent: entries are records first, and the owner reads a summary. [3] the decider, but final

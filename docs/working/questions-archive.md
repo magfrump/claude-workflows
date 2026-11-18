@@ -286,6 +286,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-295](#q-295--blocked-2026-11-14-merge-rubric-gate-2) | Q-295: [1] | 2026-11-14 |
 | [Q-296](#q-296--merge-gate-2026-11-16-loop-may-merge-default-in-a3ef5a381c94) | Q-296: [1] | 2026-11-16 |
 | [Q-298](#q-298--merge-gate-2026-11-14-merge-rubric-gate-e035801282ff) | Q-298: [1] | 2026-11-16 |
+| [Q-299](#q-299--profile-ratify-owner) | Q-299: [2] (owner, in session, 2026-11-18): ratify with your edits. The owner's edit was to archetype 2's w... | 2026-11-18 |
 <!-- index:end -->
 
 ## Answered
@@ -7366,5 +7367,29 @@ The loop's marker has no body (no question).
 - **Blocks:** the roadmap Now item "Agent: review-gap audit fixes", its gate half.
 - **Interim:** the branch waits at e0358012; nothing merges.
 - **If the answer differs:** n/a; each option sets what happens next.
+
+
+### Q-299 · profile-ratify-owner
+**Needs:** you: judgment · **Opened:** 2026-11-18 · **Status:** ANSWERED
+Q-299: [2] (owner, in session, 2026-11-18): ratify with your edits. The owner's edit was to archetype 2's worst misreading (c6c14776); the five calls keep their interim answers.
+
+Is the draft profile of you as a reader of agent-written entries and messages (`docs/audiences/owner.md`) right, or what needs to change?
+
+**If you say no:** the profile stays a draft. The next reader tests of questions entries use its interim answers, and their findings are marked as resting on an unratified profile.
+
+**What it is.** This is the second run of the new `audience-profiles` skill; the first was the MAIS profile. It describes four readers: you deciding a judgment entry, you running a terminal paste, you returning after hours away, and the agent that acts on your answer. It was built from the whole questions archive, your answer and feedback files, and the trial docs. Its five "Calls for the author" are the interview you planned for 2026-11-19. Each call has numbered options, and one option per call departs from the draft.
+
+- **Why it's yours:** the profile describes you, and its calls (for example, who the write-for reader of an entry is) are yours to make.
+- **Read:** `docs/audiences/owner.md`, its "Calls for the author" section. The reader test that uses it is `docs/working/reader-testing/q278-2026-11-18/`. Don't open its `predictions-owner.md` until your session on Q-278 is done.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Ratify as drafted** | The five calls take their interim answers, and the status becomes "ratified" | One line | The profile carries a wrong call into every later reader test, until a refresh catches it |
+| **[2] Ratify with your edits** | You answer some calls (for example `call 4: [2]`) and the rest stay at their interim | One line per changed call | As [1], for the calls you left |
+| **[3] Answer every call, then re-run** | You answer all five; the profile is redrafted from your answers and comes back once | Five short answers, plus one more read | One more round trip |
+
+- **Blocks:** nothing. The Q-278 reader test runs on the draft either way.
+- **Interim:** draft, with every call at its interim answer.
+- **If the answer differs:** the profile's affected sections are redrafted. Any reader-test finding that rested on a changed call is re-graded.
 
 
