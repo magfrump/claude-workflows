@@ -1,9 +1,24 @@
 # Design notes: `audience-profiles` and `reader-testing`
 
 **Status:** working notes for drafting the two skills, 2026-11-17. **Inputs:** the hand pilots,
-`docs/audiences/mais.md` and `docs/working/reader-testing/o20-2026-11-17/`, and the author's survey,
+`docs/audiences/mais.md` (copied here as `docs/working/mais.md`) and `docs/working/o20-2026-11-17/`, and the author's survey,
 `docs/working/Skill survey exposition, structure, tutorials, simulated-reader testing.md` (24 skills from 21 repos).
 Each rule below names where it came from.
+
+**Drafted 2026-11-17** as `skills/audience-profiles/` and `skills/reader-testing/`. Changes 1–10, 12
+and 13 are in the skill text. Change 11 (the two opposite fixtures) is **not built yet**: the O20
+run is the only fixture so far. Three calls made while drafting, each open to reversal:
+
+- **Both skills ship from claude-workflows**, not the MAIS repo, because the venue's register stays
+  in the venue's style guide (change 12), so nothing in them is MAIS-specific.
+- **`reader-testing` owns the convergent-reasons test** (change 2). `draft-review`'s convergence
+  step has the same weakness and is unchanged for now.
+- **The correctness lane is a fresh verifier subagent**, using `fact-check` or `code-fact-check`
+  where the standard is prose or code. It fills Part A, which blocks posting.
+- **Staging is by release**: the reader's folder starts with the blind cut, and each next section
+  is copied in before the same agent is continued with `SendMessage`. Without it, the run is
+  labelled "instruction-only staging". This is the cheapest mechanism that doesn't rely on the
+  reader obeying; it hasn't been run yet.
 
 ## What the pilot already does that the survey backs
 
