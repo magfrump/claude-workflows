@@ -74,3 +74,25 @@ The main venue is writing for the owner, whose role varies by repo. It is not MA
   the genre. It has stops in play order, items tagged "Your eyes" or "Test-pinned", "New since
   session N" notes, negative checks, and answers saved back for Claude to read.
 - **Friends as playtesters:** the same checklist reaches readers without the owner's context.
+
+## v2 changes (2026-11-18), with provenance
+
+From the owner-as-reader venue (`docs/audiences/owner.md`) and the light-tier Q-278 run
+(`docs/working/reader-testing/q278-2026-11-18/findings.md`):
+
+| Change | Skill | Source |
+|---|---|---|
+| A venue can be a genre to one person in a role; a role is an archetype; an agent can be a test-only reader | audience-profiles | owner profile, notes for the skill |
+| Layered profiles (shared roles, per-repo roles), with a Scope line | audience-profiles | owner's answer on Behemoth Arsenal and Belegarth Herald; profile call 4 (interim, ratified by Q-299 [2]) |
+| Answer records are often agent paraphrase; count shapes, quote only the reader's own files | audience-profiles | archive evidence reader |
+| Record where practice breaks the venue's rules | audience-profiles | Q-167 and Q-084 against the one-paste rule |
+| A reader's frame can be newer than the records; ask in the interview | audience-profiles | Q-278, owner's D3 (partly recast as a misread by C1) |
+| Calibrate on reads the reader does anyway | audience-profiles | owner profile, predictions section |
+| Full and light tiers; on light, the real reader is the only independent second session; the verifier runs on repo-checkable candidates | reader-testing | Q-278 findings, notes for the skill |
+| Release groups per archetype, at its reading units | reader-testing | Q-278, F26 (the table released without its recommendation) |
+| A bare-answer task for each reused option label | reader-testing | Q-278, F6, the acting agent's protocol feedback |
+| An author-written key shares the author's frame; "key contested" outcome | reader-testing | Q-278, the owner's D2–D4 |
+| Predict only what the session's form can observe | reader-testing | Q-278, four of eleven predictions not observable |
+| Resolved only by a linked doc counts as missing; knowledge-file resolutions are logged | reader-testing | Q-278, the acting agent's protocol feedback |
+| A test of a live entry is testimony, not its answer; settle unsettled readings with the reader, or file them and grade *pending reader* | reader-testing | Q-278 recorded as answered by mistake (e387ec24), reopened (b6f1f3e1) |
+| Simulated readers may read more carefully than real ones; a real reader's subject misread is S1 | reader-testing | Q-278, C1 settled (one run) |
