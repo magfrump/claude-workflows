@@ -36,6 +36,8 @@ words what it is. A name that is only cited in brackets is not defined.
 - **If this reader would stop reading at some point, stop there and say why.** Quitting is a
   result, not a failure. Don't finish out of politeness.
 - Quote the passage each reaction is about, with its section.
+- If one of the files listed in "What you know", or a linked doc, settles something the post left
+  open, say which file did. That counts as the post not settling it.
 
 ## 3. First take
 

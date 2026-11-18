@@ -18,6 +18,9 @@ author's own knowledge moves>.
 
 This profile describes archetypes, never named people.
 
+**Scope.** <"Whole venue", or for a layered profile: which roles live here, which in the other
+layer, and a link to it.>
+
 ## The venue
 
 **What a post is for.** <What the post asks for (a verdict, a merge, a citation), and what record
@@ -34,7 +37,7 @@ archetypes. When two archetypes conflict, that reader decides, and the other nee
 labelling and status rules; queue order; where negative outcomes go.>
 
 **What has actually happened on threads** (<date>). <Counts, verdict formats, what readers asked
-for or found missing. Cite threads.>
+for or found missing. Cite threads. Note where practice breaks the venue's own rules.>
 
 ## Archetype N: <role name>
 
@@ -61,6 +64,11 @@ tab.> **Wins:** <what makes them come back.>
 written for them. reader-testing instantiates these per post.>
 
 **Real readers available before posting.** <Who, or "none". A stand-in is not a calibration.>
+
+## Predictions to score against reads the reader does anyway
+
+<Optional, for a reader who is always available. Each prediction is a credence about their next N
+answers or actions, and is scored at the next refresh.>
 
 ## Interview answers (<date>)
 

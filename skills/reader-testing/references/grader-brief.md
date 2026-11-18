@@ -22,7 +22,9 @@ You are grading a reader test of a draft post. You did not write the post, the t
    *misread* (the text invites a wrong reading), *undefined* (a term used before it is defined),
    *overreach* (the text claims more than the body shows), *attachment* (the attachment doesn't
    match the post). Grade the opening-alone elements one by one, from the first-take reply only
-   (the reader had nothing else then).
+   (the reader had nothing else then). Where a real reader rejects the frame the key assumes, grade
+   **key contested** rather than fail, and say why. A point a reader resolved only from a knowledge
+   file or a linked doc is *buried*.
 2. **Recall.** Compare each reader's recall with the key's intended gist. A section the reader
    called clear and then misrecalled is a finding, whatever the reader said about it.
 3. **Candidate findings.** Gather every stop, failure and complaint across sessions. Mark each
@@ -40,13 +42,16 @@ You are grading a reader test of a draft post. You did not write the post, the t
    observable. For each archetype with a real session, list the simulated findings the real reader
    confirmed, contradicted, or didn't reach, and the real-only findings. Mark each archetype
    without a real session **uncalibrated**.
-7. **Correctness candidates.** List every finding that says the post is wrong, or claims more than
+7. **Unsettled readings.** List every real-reader answer that could be either a deliberate reframe
+   or a misreading the text invited, with both readings and your credence in each. The orchestrator
+   asks the reader; don't settle it yourself.
+8. **Correctness candidates.** List every finding that says the post is wrong, or claims more than
    its sources show, with the reader's evidence. Don't verify them: the orchestrator sends them
    to a verifier, and Part A is filled in from its verdicts.
-8. **Across rounds** (re-runs only). Each earlier finding is Fixed, Improved, Unchanged or
+9. **Across rounds** (re-runs only). Each earlier finding is Fixed, Improved, Unchanged or
    Regressed. Check `{CLAIM_CHANGES}` against the difference between the two `post.md` files, and
    list any claim that changed without a Part A item behind it.
-9. **Where archetypes conflict.** Name each conflict and what the profile's conflict rule says.
+10. **Where archetypes conflict.** Name each conflict and what the profile's conflict rule says.
 
 Leave Part A's verdict column empty, and leave findings labelled "observed by the orchestrator"
 as they are, outside your counts.

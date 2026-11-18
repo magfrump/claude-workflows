@@ -1,7 +1,7 @@
 ---
 name: reader-testing
 description: >
-  Test a draft post against its venue's audience profile before posting. Fresh simulated readers
+  Test a draft post, entry or message against its venue's audience profile before it goes out. Fresh simulated readers
   read section by section, one per archetype, then do recall and goal-level tasks. A fresh
   grader marks them against a key written from the source of truth. Correctness errors go to a
   separate lane that blocks posting. Output is findings plus a revision brief; revisions go to
@@ -19,16 +19,29 @@ requires:
 
 # Reader Testing
 
-Find out whether the readers a post is for can do what they came to do, before it is posted.
+Find out whether the readers a post is for can do what they came to do, before it is posted. A
+"post" here is any text with a profiled reader: a public post, or a single decision entry or message
+to one owner.
 Simulated readers are heuristic evaluation, not testing: their findings are leads until a real
 reader or a check confirms them. **The output is testimony, pass/fail per task and a revision
 brief. It has no composite score.**
 
-The worked example is the O20 pilot, `docs/working/o20-2026-11-17/` in claude-workflows, and
-the rules come from the design notes `docs/working/audience-skill-notes.md` and the pilot's own
+The worked examples are in claude-workflows: the full-tier O20 pilot, `docs/working/o20-2026-11-17/`,
+and the light-tier Q-278 run, `docs/working/reader-testing/q278-2026-11-18/`. The rules come from the design notes `docs/working/audience-skill-notes.md` and the pilot's own
 "Notes for the `reader-testing` skill" (its `findings.md`). Briefs to copy are in `references/`:
 `reader-brief.md` (each reader), `grader-brief.md` (grading and synthesis), `verifier-brief.md`
 (the correctness lane), `run-templates.md` (tasks, key, predictions, findings).
+
+## Tiers
+
+| Tier | For | Readers | Lanes | Cost seen so far |
+|---|---|---|---|---|
+| **Full** | a public post, a paper, anything with an attachment | one simulated reader per archetype, plus real readers where possible | all, including attachment tasks and the verifier | about 530k subagent tokens for five sessions (O20) |
+| **Light** | one entry or message to one reader | the one or two archetypes that act on it, plus the real reader | grader; verifier only if the entry is still live | about 250k for two simulated sessions and a grader (Q-278) |
+
+On the light tier, plan for the real reader to be the only independent second session. In Q-278 the
+convergent-reasons test cut most overlaps between the two simulated readers to one hit, and every
+surviving two-hit finding but two had the real reader as its second hit.
 
 ## Roles, and what each may see
 
@@ -53,7 +66,10 @@ A re-run after revision is a **new folder**, linking the one before.
 ## Step 1: Freeze the stimulus and choose the cuts
 
 Copy the post (and title) to `post.md` and record both hashes. Split it into **numbered sections**
-at its own headings. Choose the **blind cut** deliberately: it should end where the opening ends,
+at its own headings, but **cut at the archetype's reading units**: release together what the profile
+says this reader reads together. In Q-278 a cut released an options table without the
+recommendation under it. The reader stopped on the table, and the post's answer to its objection was
+never tested. Choose the **blind cut** deliberately: it should end where the opening ends,
 so the first take measures the opening rather than whichever paragraph line 11 fell on. Write the
 choice and its reason in `tasks.md`.
 
@@ -65,8 +81,15 @@ negative signals and the section where it should be answered**. Tasks that check
 graded **per element** (answer, status, conditions: each yes or no). "Partly" can't tell "the
 answer is there but its conditions aren't" from "nothing is there".
 
+For an entry an agent will act on, add one task per option whose label the text reuses elsewhere,
+each giving a bare answer such as "The owner answers `[1]`". A reused label reads two ways, and only a
+bare answer tests it.
+
 Then write `key.md` **from the source of truth, not from the draft**: the research notes, the
-problem page, the code. A key written from the draft inherits the draft's framing. Mark required
+problem page, the code. A key written from the draft inherits the draft's framing. A key the post's
+author writes shares the author's frame even from other sources. Say so in the key's header, take the
+gist from a source the author didn't write where one exists, and expect a real reader who rejects the
+frame to contest the key (step 6). Mark required
 elements ● and credit elements ○. Also write the **intended gist**: the problem, insight, key move
 and finding that recall will be graded against.
 
@@ -77,6 +100,11 @@ stops and task answers to be, each with a credence about this one run (never a r
 before the session; the commit is the timestamp. Record known contamination at the top: if the
 real reader worked on the result, or anything they were told gives an answer away, say so, and
 treat those predictions as weak evidence either way.
+
+**Predict only what the session's form can observe.** A real reader who reads the whole text and then
+answers the tasks leaves no first take, stops or links opened. In Q-278 four of eleven predictions
+couldn't be scored. Either collect those observations: ask the opening-alone task before they read
+on, and one line on where they stopped and what they opened. Or don't predict them.
 
 ## Step 4: Run the simulated readers
 
@@ -110,7 +138,9 @@ One fresh subagent per archetype, all in one message so they run in parallel. Fi
   the finding.
 - **Then the tasks**, each with the answer, the quoted sentences and section relied on, or "not
   in the text". The opening-alone elements were already answered at the first take, before the
-  rest of the post existed in the folder. The reader flags answers it **assembled from several places**, which is how
+  rest of the post existed in the folder. A point resolved only by a knowledge file or a linked doc
+  counts as **not resolved by the post**: the reader says which file resolved it, and the grader
+  marks it *buried*. The reader flags answers it **assembled from several places**, which is how
   "buried" shows. Background knowledge is tagged "[from my own knowledge]". Where the post links
   a source (a problem page), the reader answers before opening it and again after, if it opens
   it at all.
@@ -130,6 +160,14 @@ asks the orchestrator something mid-session, answer neutrally once, log it in th
 and mark everything after it as contaminated. Append every question a real reader asks to the
 profile's evidence.
 
+- **A test of a live entry is testimony, not the entry's answer.** When the stimulus is still awaiting
+  a decision (an open questions entry), the real reader's task answers don't answer it. Record an
+  answer only when the reader gives one by ID. In Q-278 the owner's answers were recorded as the
+  entry's answer, and that was wrong: the owner had misread what the entry was about.
+- **Settle an unsettled reading with the reader, not the verifier.** When a real answer could be
+  either a deliberate reframe or a misreading the text invited, ask the reader which, in one line,
+  before grading it as a frame or acting on it.
+
 ## Step 6: Grade and synthesize (fresh grader)
 
 Start one fresh subagent with `references/grader-brief.md`. It reads the run folder and returns
@@ -137,7 +175,8 @@ Start one fresh subagent with `references/grader-brief.md`. It reads the run fol
 grading, **run a fresh grader again** over the whole folder: calibration only closes that way. It:
 
 1. **Grades each task** against the key: **pass** (every ● element, nothing contradicted, status
-   right), **partial**, or **fail**. A misreading the reader would repeat is a fail even when the
+   right), **partial**, **fail**, or **key contested** (a real reader rejects the frame the key
+   assumes; the key may be what's wrong). A misreading the reader would repeat is a fail even when the
    rest is right. Each failure gets a type: *missing*, *buried*, *misread*, *undefined*,
    *overreach*, *attachment*.
 2. **Grades recall** against the intended gist. Behaviour outranks words.
@@ -155,7 +194,10 @@ grading, **run a fresh grader again** over the whole folder: calibration only cl
 6. **Scores the predictions** against the real sessions, and compares each simulated finding with
    the real reader of that archetype. A simulated finding the real reader contradicts is
    downgraded. A real-reader-only finding is the most valuable kind. Until the real session is in,
-   that archetype's findings are marked **uncalibrated**.
+   that archetype's findings are marked **uncalibrated**. Simulated readers read more carefully
+   than real ones. In Q-278 both caught a subject named once inside a gloss, while the rest of the
+   entry used a near-synonym, and the real reader missed it. So a simulated catch never clears a real
+   reader's miss, and a real reader misreading the subject is S1.
 7. **Lists correctness candidates** separately (step 7), without verifying them.
 
 ## Step 7: The correctness lane
@@ -219,7 +261,9 @@ grader that wasn't fresh. A stated gap is a complete answer; a guessed number is
 
 - [ ] `post.md` is frozen with hashes; the blind cut and its reason are in `tasks.md`
 - [ ] The key was written from the source of truth, and readers never saw it
-- [ ] Real-reader predictions were committed before the session
+- [ ] Real-reader predictions were committed before the session, and each one can be observed
+      from the session's form
+- [ ] The cuts follow the archetype's reading units
 - [ ] Every simulated reader was fresh, staged by release (or the run is labelled otherwise), and
       checked for writes outside its folder
 - [ ] A fresh grader wrote `findings.md`, with the convergent-reasons test applied to every
@@ -229,4 +273,5 @@ grader that wasn't fresh. A stated gap is a complete answer; a guessed number is
 - [ ] A fresh grader re-ran after any late real session
 - [ ] The revision brief lists the claims a revision may change
 - [ ] Real readers' questions were appended to the profile's evidence
+- [ ] No real reader's test answers were recorded as a live entry's answer unless they gave it by ID
 - [ ] `findings.md` ends with notes for the skill
