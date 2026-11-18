@@ -2,7 +2,9 @@
 
 **Status:** draft, 2026-11-18. The author's interview is set for 2026-11-19; the calls are under "Calls
 for the author", each with the interim answer this draft uses. **Last verified:** 2026-11-18.
-**Changes:** none (first version).
+**Changes:** 2026-11-18, the author's edit: the operator's worst misreading is now a half-applied paste
+or a buried remainder, with a wrong-environment run (which costs a repeat) second. The author read the
+rest and called it "LGTM"; the calls are still at their interim answers.
 **Venue:** text agents write to the owner in this repo and the repos it serves: `docs/working/questions.md`
 entries (all routes), the dev cycle's final messages, and the end-of-run summary. **Evidence read:**
 `docs/working/questions-archive.md` (all 277 entries, Q-001 2026-09-12 to Q-298 2026-11-14; answer lines
@@ -180,9 +182,7 @@ triggers:**
 **What they do next.** Paste the output back, or refuse with a reason (Q-117, Q-130). The output is
 sometimes missing (Q-214, Q-280), so the entry should say which lines of output the agent needs.
 
-**The worst misreading.** Running a step in the wrong environment, or a partial paste that leaves a
-half-changed setup. Second worst: an entry answered in part and grown by dated appends, which leaves the
-live remainder buried (Q-167, Q-084).
+**The worst misreading.** A partial paste that leaves a half-changed setup, or an entry answered in part and grown by dated appends, which leaves the live remainder buried (Q-167, Q-084). Second-worst: running a paste in the wrong environment, requiring a repeat.
 
 **Success test.** From the entry alone they can run it in one paste, in the right place, know what output
 means success, and know what to send back.
