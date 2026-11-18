@@ -27,6 +27,7 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-278](#q-278--q272-returned-run-or-refuse) | you: judgment | You asked for Q-272 back with data. When the test-confinement script (`scripts/confine-tests.sh`) cannot us... | 2026-11-11 |
+| [Q-299](#q-299--profile-ratify-owner) | you: judgment | Is the draft profile of you as a reader of agent-written entries and messages (`docs/audiences/owner.md`) r... | 2026-11-18 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | Q-167: (b) and (d) answered 2026-11-07 (answers-11-7-26.txt), on bless 91c5f79dd91eb7ee, which --probe-only... | 2026-10-15 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Q-255: first half answered 2026-11-07 (answers-11-7-26.txt): all four fronted probes through plugins-artifa... | 2026-11-05 |
@@ -34,6 +35,28 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
+
+### Q-299 · profile-ratify-owner
+**Needs:** you: judgment · **Opened:** 2026-11-18 · **Status:** OPEN
+
+Is the draft profile of you as a reader of agent-written entries and messages (`docs/audiences/owner.md`) right, or what needs to change?
+
+**If you say no:** the profile stays a draft. The next reader tests of questions entries use its interim answers, and their findings are marked as resting on an unratified profile.
+
+**What it is.** This is the second run of the new `audience-profiles` skill; the first was the MAIS profile. It describes four readers: you deciding a judgment entry, you running a terminal paste, you returning after hours away, and the agent that acts on your answer. It was built from the whole questions archive, your answer and feedback files, and the trial docs. Its five "Calls for the author" are the interview you planned for 2026-11-19. Each call has numbered options, and one option per call departs from the draft.
+
+- **Why it's yours:** the profile describes you, and its calls (for example, who the write-for reader of an entry is) are yours to make.
+- **Read:** `docs/audiences/owner.md`, its "Calls for the author" section. The reader test that uses it is `docs/working/reader-testing/q278-2026-11-18/`. Don't open its `predictions-owner.md` until your session on Q-278 is done.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Ratify as drafted** | The five calls take their interim answers, and the status becomes "ratified" | One line | The profile carries a wrong call into every later reader test, until a refresh catches it |
+| **[2] Ratify with your edits** | You answer some calls (for example `call 4: [2]`) and the rest stay at their interim | One line per changed call | As [1], for the calls you left |
+| **[3] Answer every call, then re-run** | You answer all five; the profile is redrafted from your answers and comes back once | Five short answers, plus one more read | One more round trip |
+
+- **Blocks:** nothing. The Q-278 reader test runs on the draft either way.
+- **Interim:** draft, with every call at its interim answer.
+- **If the answer differs:** the profile's affected sections are redrafted. Any reader-test finding that rested on a changed call is re-graded.
 
 ### Q-297 · image-lag
 **Needs:** you: terminal · **Opened:** 2026-11-16 · **Status:** OPEN
