@@ -10,8 +10,9 @@ Skeletons for the run folder's files. The filled-in originals are in the O20 pil
 
 **Stimulus:** `post.md` (sha256 `…`), title "<title>", attachment `<name>` (sha256 `…`).
 **Profile:** `docs/audiences/<venue>.md`. **Key:** `key.md`, never shown to readers.
-**Tier:** full | light. **Sections** (cut at the archetype's reading units): 1 <heading> (lines
-a–b) · 2 … **Blind cut:** section 1 (lines a–b), because <it is
+**Tier:** full | light. **Sections** (at the post's headings): 1 <heading> (lines a–b) · 2 …
+**Release groups per archetype** (from the profile's "How they read"; the first group is the blind
+cut): <archetype>: [1] · [2, 3] · [4] … **Blind cut:** section 1 (lines a–b), because <it is
 where the opening ends>.
 
 ## <Archetype> (<reading path, from the profile>)

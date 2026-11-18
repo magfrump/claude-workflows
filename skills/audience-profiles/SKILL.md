@@ -113,7 +113,9 @@ Fill in every field of `references/profile-template.md`. Three fields fail most 
   list dropped two terms the agenda defines). Name a document only if a reader subagent could be
   given it, and date the limit ("as of"): it moves as the reader learns. A reader's current frame
   can also be newer than the records: an approval they reverted or regretted, but never wrote down
-  as an answer. The records can't show it, so ask about it in the interview.
+  as an answer. The records can't show it, so ask about it in the interview's knowledge-limit
+  question. This rests on one run (Q-278, the owner's D3), and part of that run's evidence turned
+  out to be a misread.
 - **The stake sentence has teeth**: what the reader loses if they misread or waste the time.
   Without one, a sympathetic reader's wanting the post to be good turns into rating it good.
 - **The patience budget and pain triggers say when they stop**: a time or a section, and the
@@ -127,7 +129,8 @@ selects the rule set; the skill does not carry one.
 
 Ask three or four multiple-choice questions on the calls only the author can make: the primary
 reader, where content for an outside reader goes, any archetype the evidence added, and whether
-the author's own knowledge limit is right as written (it moves as they read). **Offer at least
+the author's own knowledge limit is right as written (it moves as they read), including any
+approval they have since reverted or regretted that the records don't show. **Offer at least
 one option that departs from the draft** on each question. In the pilot the author took every
 recommended option, which is some evidence the draft was right and also a sign that a draft can
 anchor them.
@@ -146,7 +149,7 @@ Ask for a dedicated test session rarely.
 - Save `docs/audiences/<venue>.md` with its **Status**, **Last verified** and **Refresh when**
   lines. Refresh triggers: the venue changes its style or maintainer guide; a reader on a thread
   does something the profile did not predict; a `reader-testing` run's simulated reader disagrees
-  with a real one; the author's own knowledge moves.
+  with a real one; the author's own knowledge moves; the profile's predictions are due.
 - In a repo that uses `docs/working/questions.md`, a draft profile gets one `you: judgment`
   entry (slug `profile-ratify-<venue>`) with one choice: **[1] ratify as drafted**, **[2] ratify
   with the edits I make**, **[3] answer the calls in the document, then re-run**. A call where a

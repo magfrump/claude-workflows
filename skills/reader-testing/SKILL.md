@@ -37,11 +37,12 @@ and the light-tier Q-278 run, `docs/working/reader-testing/q278-2026-11-18/`. Th
 | Tier | For | Readers | Lanes | Cost seen so far |
 |---|---|---|---|---|
 | **Full** | a public post, a paper, anything with an attachment | one simulated reader per archetype, plus real readers where possible | all, including attachment tasks and the verifier | about 530k subagent tokens for five sessions (O20) |
-| **Light** | one entry or message to one reader | the one or two archetypes that act on it, plus the real reader | grader; verifier only if the entry is still live | about 250k for two simulated sessions and a grader (Q-278) |
+| **Light** | one entry or message to one reader | the one or two archetypes that act on it, plus the real reader | grader, and the verifier on every candidate checkable against the repo or the sources | about 250k for two simulated sessions and a grader (Q-278: 63k, 75k and 115k subagent tokens at completion) |
 
 On the light tier, plan for the real reader to be the only independent second session. In Q-278 the
 convergent-reasons test cut most overlaps between the two simulated readers to one hit, and every
-surviving two-hit finding but two had the real reader as its second hit.
+surviving two-hit finding but two had the real reader as its second hit. That is one run, so treat
+it as a planning assumption, not a rate.
 
 ## Roles, and what each may see
 
@@ -66,10 +67,11 @@ A re-run after revision is a **new folder**, linking the one before.
 ## Step 1: Freeze the stimulus and choose the cuts
 
 Copy the post (and title) to `post.md` and record both hashes. Split it into **numbered sections**
-at its own headings, but **cut at the archetype's reading units**: release together what the profile
-says this reader reads together. In Q-278 a cut released an options table without the
-recommendation under it. The reader stopped on the table, and the post's answer to its objection was
-never tested. Choose the **blind cut** deliberately: it should end where the opening ends,
+at its own headings. Then record in `tasks.md` one **release grouping per archetype**: which sections
+go out together, following the profile's "How they read". The first group is that archetype's blind
+cut. Release together what the reader reads together. In Q-278 one release held an options table
+without the recommendation under it. The reader stopped on the table, so the post's answer to its
+objection was never tested. Choose the **blind cut** deliberately: it should end where the opening ends,
 so the first take measures the opening rather than whichever paragraph line 11 fell on. Write the
 choice and its reason in `tasks.md`.
 
@@ -138,9 +140,10 @@ One fresh subagent per archetype, all in one message so they run in parallel. Fi
   the finding.
 - **Then the tasks**, each with the answer, the quoted sentences and section relied on, or "not
   in the text". The opening-alone elements were already answered at the first take, before the
-  rest of the post existed in the folder. A point resolved only by a knowledge file or a linked doc
-  counts as **not resolved by the post**: the reader says which file resolved it, and the grader
-  marks it *buried*. The reader flags answers it **assembled from several places**, which is how
+  rest of the post existed in the folder. A point resolved only by a **linked doc** counts as not
+  resolved by the post, and the grader marks it *missing*. A point resolved by a knowledge file is
+  what this reader already knows: the reader names the file, and the grader logs it without
+  grading it. The reader flags answers it **assembled from several places**, which is how
   "buried" shows. Background knowledge is tagged "[from my own knowledge]". Where the post links
   a source (a problem page), the reader answers before opening it and again after, if it opens
   it at all.
@@ -161,12 +164,15 @@ and mark everything after it as contaminated. Append every question a real reade
 profile's evidence.
 
 - **A test of a live entry is testimony, not the entry's answer.** When the stimulus is still awaiting
-  a decision (an open questions entry), the real reader's task answers don't answer it. Record an
-  answer only when the reader gives one by ID. In Q-278 the owner's answers were recorded as the
+  a decision (an open questions entry), the real reader's task answers don't answer it, even when a
+  task asks "answer this in one line". Record an answer only when the reader gives it with the
+  entry's own ID (`Q-NNN: …`), outside their task answers. In Q-278 the owner's answers were recorded as the
   entry's answer, and that was wrong: the owner had misread what the entry was about.
 - **Settle an unsettled reading with the reader, not the verifier.** When a real answer could be
   either a deliberate reframe or a misreading the text invited, ask the reader which, in one line,
-  before grading it as a frame or acting on it.
+  before grading it as a frame or acting on it. If the reader is away, file that line as a
+  `you: judgment` entry in the questions doc, and leave the task graded *pending reader* until it
+  is answered. Never settle it from the grader's credences.
 
 ## Step 6: Grade and synthesize (fresh grader)
 
@@ -175,8 +181,10 @@ Start one fresh subagent with `references/grader-brief.md`. It reads the run fol
 grading, **run a fresh grader again** over the whole folder: calibration only closes that way. It:
 
 1. **Grades each task** against the key: **pass** (every ● element, nothing contradicted, status
-   right), **partial**, **fail**, or **key contested** (a real reader rejects the frame the key
-   assumes; the key may be what's wrong). A misreading the reader would repeat is a fail even when the
+   right), **partial**, **fail**, **key contested** (a real reader deliberately rejects the frame the
+   key assumes, so the key may be what's wrong), or **pending reader** (an unsettled reading, item
+   7). A key-contested task goes into the revision brief as a frame to settle with the reader. A
+   pending task is re-graded by a fresh grader once the reader answers. A misreading the reader would repeat is a fail even when the
    rest is right. Each failure gets a type: *missing*, *buried*, *misread*, *undefined*,
    *overreach*, *attachment*.
 2. **Grades recall** against the intended gist. Behaviour outranks words.
@@ -194,11 +202,13 @@ grading, **run a fresh grader again** over the whole folder: calibration only cl
 6. **Scores the predictions** against the real sessions, and compares each simulated finding with
    the real reader of that archetype. A simulated finding the real reader contradicts is
    downgraded. A real-reader-only finding is the most valuable kind. Until the real session is in,
-   that archetype's findings are marked **uncalibrated**. Simulated readers read more carefully
-   than real ones. In Q-278 both caught a subject named once inside a gloss, while the rest of the
-   entry used a near-synonym, and the real reader missed it. So a simulated catch never clears a real
-   reader's miss, and a real reader misreading the subject is S1.
-7. **Lists correctness candidates** separately (step 7), without verifying them.
+   that archetype's findings are marked **uncalibrated**. Simulated readers may read more carefully
+   than real ones. In one run (Q-278) both caught a subject named once inside a gloss, while the
+   rest of the entry used a near-synonym, and the real reader missed it. So a simulated catch never
+   clears a real reader's miss, and a real reader misreading the subject is S1.
+7. **Lists unsettled readings**: real answers that could be either a reframe or an invited misread,
+   with both readings. The orchestrator asks the reader (step 5).
+8. **Lists correctness candidates** separately (step 7), without verifying them.
 
 ## Step 7: The correctness lane
 
@@ -206,7 +216,7 @@ Readers who check claims against an external standard (the problem statement, a 
 the attachment) find real errors, which no exposition fix repairs. In order:
 
 1. The grader lists every finding that says **the post is wrong, or says more than its sources
-   show** (step 6.7).
+   show** (step 6.8).
 2. A fresh verifier, briefed with `references/verifier-brief.md`, checks each one against the
    standard it cites: reading the source, the code or the formal statement, rebuilding the
    attachment, timing what the post times. It returns **CONFIRMED** (the defect is real, with the
@@ -255,7 +265,7 @@ prescribe, and their suggested fixes are input, not instructions.
 
 Say in `findings.md`'s header when a run fell short of this protocol: no subagents (you read as
 every reader yourself, so findings are softer), instruction-only staging, no real reader, a
-grader that wasn't fresh. A stated gap is a complete answer; a guessed number is not.
+grader that wasn't fresh, a verifier that wasn't run (and why). A stated gap is a complete answer; a guessed number is not.
 
 ## Done when
 
@@ -263,13 +273,15 @@ grader that wasn't fresh. A stated gap is a complete answer; a guessed number is
 - [ ] The key was written from the source of truth, and readers never saw it
 - [ ] Real-reader predictions were committed before the session, and each one can be observed
       from the session's form
-- [ ] The cuts follow the archetype's reading units
+- [ ] `tasks.md` records a release grouping per archetype, following its reading units
 - [ ] Every simulated reader was fresh, staged by release (or the run is labelled otherwise), and
       checked for writes outside its folder
 - [ ] A fresh grader wrote `findings.md`, with the convergent-reasons test applied to every
       convergent finding
 - [ ] The key stayed outside the run folder until the last reader finished
-- [ ] Correctness findings are in Part A with verifier verdicts, and Part A is marked as blocking
+- [ ] Correctness findings are in Part A with verifier verdicts (or the header discloses why the
+      verifier didn't run), and Part A is marked as blocking
+- [ ] Every unsettled reading was asked of the reader, or filed and graded *pending reader*
 - [ ] A fresh grader re-ran after any late real session
 - [ ] The revision brief lists the claims a revision may change
 - [ ] Real readers' questions were appended to the profile's evidence

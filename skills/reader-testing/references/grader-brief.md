@@ -22,9 +22,11 @@ You are grading a reader test of a draft post. You did not write the post, the t
    *misread* (the text invites a wrong reading), *undefined* (a term used before it is defined),
    *overreach* (the text claims more than the body shows), *attachment* (the attachment doesn't
    match the post). Grade the opening-alone elements one by one, from the first-take reply only
-   (the reader had nothing else then). Where a real reader rejects the frame the key assumes, grade
-   **key contested** rather than fail, and say why. A point a reader resolved only from a knowledge
-   file or a linked doc is *buried*.
+   (the reader had nothing else then). Where a real reader deliberately rejects the frame the key
+   assumes, grade **key contested** rather than fail, and say why. Where you can't tell a deliberate
+   reframe from a misreading the text invited, grade **pending reader** and list it under item 7.
+   Don't grade it key contested. A point resolved only from a linked doc is *missing*. A point
+   resolved from a knowledge file is logged, not graded.
 2. **Recall.** Compare each reader's recall with the key's intended gist. A section the reader
    called clear and then misrecalled is a finding, whatever the reader said about it.
 3. **Candidate findings.** Gather every stop, failure and complaint across sessions. Mark each
@@ -35,10 +37,11 @@ You are grading a reader test of a draft post. You did not write the post, the t
    naturally? If yes, it counts as **one** hit, since every simulated reader is the same model.
    Report the count after this test, and say which findings it reduced. Three or more
    non-swappable hits is systemic.
-5. **Severity and kind.** S1 (a misreading likely to be repeated, or a rejection at the venue's
+5. **Severity and kind.** A real reader misreading what the text is about is S1, whatever the
+   simulated readers caught. S1 (a misreading likely to be repeated, or a rejection at the venue's
    screen), S2 (a task this archetype exists to do can't be done), S3 (doable with friction), S4
    (cosmetic). Kind: text-surface, affective or institutional.
-6. **Calibration.** Score every prediction against the real session it names: hit, miss, or not
+6. **Calibration.** A simulated reader's catch never clears a real reader's miss of the same point. Score every prediction against the real session it names: hit, miss, or not
    observable. For each archetype with a real session, list the simulated findings the real reader
    confirmed, contradicted, or didn't reach, and the real-only findings. Mark each archetype
    without a real session **uncalibrated**.
