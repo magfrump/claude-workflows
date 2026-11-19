@@ -13,49 +13,6 @@ user's order).
 
 Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0002).
 
-- **Models answer their own questions from the repo's docs (owner request, 2026-11-11).**
-  Motive: the owner asked for a plan for how models can answer their own questions based on
-  existing docs in a repo. The questions doc spends the owner's attention, the binding
-  budget here, and on 2026-11-10 the cycle filed four judgment entries in one day. At least
-  one was answerable from a doc on main: Q-272 asks whether a degraded tool should refuse,
-  and hard constraint H2 in `docs/constraints.md` already says it does. The plan, in order:
-  1. **Measure before designing.** For the archived and open owner entries, record whether a
-     doc that existed when the entry was filed answered it fully, in part or not at all:
-     the constraints file, a decision record or log row, an earlier answer to the same
-     question, the owner's feedback and answer notes, the global instructions. Output: the
-     share, the examples, and which kinds of doc held the answers. If the share is small,
-     stop there and say so; the status quo is a valid result.
-  2. **Design where the lookup lives**, as a divergent-design pass seeded with
-     `docs/constraints.md`. Candidates to start from: a "look before you ask" step in the
-     build-loop prompt and in research-plan-implement's research phase; a
-     `questions.sh` search over the archive and the decision log for earlier answers; an
-     index of standing answers the cycle keeps; a `Looked in:` line every owner entry must
-     carry, so an ask that searched nothing is visible; moving answers that recur into
-     `docs/constraints.md`, where every loop already reads them.
-  3. **Guardrails.** An answer taken from a doc names the doc and quotes the line, so it can
-     be checked. It is never used for what is the owner's by authority, not information: a
-     merge entry, a change or exception to a hard constraint, a release. The weekly digest
-     lists each question a model answered for itself, one line each, so a wrong reading is
-     caught after the fact; no new stop or entry is added.
-  4. **Try it for a week as a writing trial**, with a measure that can come out negative:
-     owner entries per cycle fall, and the owner does not reverse the self-answered ones.
-  First step: step 1, briefed as a docs-only unit (In flight). It also covers repos other
-  than this one in its design step, since the request says "a repo": the four repos that
-  run these workflows each have their own docs and questions files.
-  2026-11-11, step 1 done (fd325a74, `docs/working/research-2026-11-11-self-answer-measure.md`):
-  of 200 answered judgment entries, at most 4 (2%) were answered in full by a doc that
-  existed, 35 in part, 56 not at all, and 105 were the owner's by authority. A lookup is not
-  shown to remove any entry, so the plan pauses here. How far it goes is Q-274 (interim:
-  build nothing); watch Q-275 brings it back when Q-272 is answered. The doc's one positive
-  step is already on the roadmap: answers that deserve to be standing rules go into
-  `docs/constraints.md` at the deep audit (Q-269).
-  2026-11-11, stopped here on the owner's answer (Q-274 [1]: build nothing; look again
-  when Q-272 is answered). Q-272 was answered the same day, [1] "to start": the owner
-  granted the exception for now, so the exceptions rule has no confirmed case and watch
-  Q-275 is closed. Steps 2 to 4 are not to be briefed. The rule comes back only if the
-  owner refuses the exception when Q-272 returns with data (watch Q-276). The owner's
-  note on other repos is an Ideas item.
-
 - **Agent: confine-tests follow-ups** (filed 2026-11-07, step 7). Motive: the research
   merged at be12889c (`docs/working/research-2026-11-07-confine-tests-situation.md`) found
   the script refuses here (no bwrap, `unshare -rn` EPERM), has never run with a primitive,
@@ -96,48 +53,13 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   2026-11-14: Q-286 answered in session: extend a week, all five running to about 2026-11-20,
   because T11 and T12 live in the weekly digest and have had one edition. Ask again after the
   2026-11-20 weekly digest.
-- **Questions doc becomes owner-only (Q-221 [14′], decision 040).** Motive: the owner reported
-  that agent bookkeeping crowds the one page meant for them (17 open entries, 2 theirs).
-  Build in three units: (1) four owner routes (`you: judgment`, `you: terminal`, new
-  `you: walkthrough`, new `you: fyi`), with `questions.sh check` refusing `agent`/`trigger`/
-  `deferred` in `questions.md` and naming where each goes; (2) `docs/working/watching.md`
-  (entry grammar, `## Closed` section) plus a lossless `questions.sh migrate`; (3) dev-cycle
-  steps 2/3 read `watching.md` and file agent work to this roadmap, and the global
-  instructions' questions section changes to match (≤ ~30 lines, repo S2). Gate code: each
-  unit is a `merge-gate` entry. Unit 1 merged at 236f21ee (Q-224 [1]); unit 2 merged at 6ee39f24 (Q-229 [1]). Unit 3 merged at 01022de2 (Q-235 [1]). Next: the release (Q-227), then the owner's one-time `questions.sh migrate` run (Q-234). Follow-ups: entry clarity (gloss every internal reference) and a
-  `questions.sh record <answers-file>`.
 
-- **Owner feedback 2026-10-29** (`docs/human-author/feedback-10-29-26.txt`), four points:
-  1. An answer given in session should approve a merge entry (the gate is too strict).
-     Merged at 014e5219 (Q-230 [1]); the orchestrator follows it once the next release
-     installs the skill.
-  2. Convention changes ship migration instructions, and the dev cycle runs them before
-     continuing existing work. Merged at 6f364ba6 (Q-233 [1]).
-  3. Audit a repo that committed code-review rubrics with open amber or red items: find
-     which step of the review-fix loop let the merge through. First step: a read-only
-     `review-gap-audit` procedure (for each committed rubric with amber or red rows, find
-     the merge that carried it, whether a fix round followed, and which gate or prose rule
-     should have stopped it), tried on the repo the owner names. Waits for the owner to
-     name the repo (asked in session 2026-10-29; filed as Q-285 on 2026-11-13).
-     2026-11-13: Q-285 answered [2] in session: run it here first (the gap came up in
-     Behemoth Arsenal; from a phone the owner can carry only one paste there). Briefed:
-     `docs/working/briefs/closed/2026-11-13-review-gap-audit.md`, which ends with that paste.
-     2026-11-13: done (84f8532e, self-merge; `docs/working/research-2026-11-13-review-gap-audit.md`):
-     21 amber rows reached main open through five landings and one red was waived with no
-     owner answer; its six proposed fixes are the Now item below. What remains of point 3 is
-     the paste's run in Behemoth Arsenal, which is the owner's.
-  4. A surface for projects to file feedback about the harness. First step (v1): a
-     `docs/harness-feedback.md` file any project can append to in a fixed entry shape,
-     plus how this repo ingests a copied file; v2 (GitHub issues: search, comment or star,
-     else open one) is an idea until v1 is used. v1 merged at a8e941a5 (Q-232 [1]).
-
-- **Agent: check cc-push's git version list against git's release notes** (filed
-  2026-11-18, from Q-084's rewrite). Motive: `devcontainer-config/cc-push.sh` refuses git
-  older than the May 2024 security fixes (2.39.4, 2.40.2, 2.41.1, 2.42.2, 2.43.4, 2.44.1,
-  2.45.1, or 2.46), and that list was written from memory; Q-084 carried the check as a
-  side note, but it needs no host. First step: compare the list with git's published
-  release notes for those versions (a web source: flag it as unverified until a host
-  fetch confirms it); a wrong version is an enforcement-file fix through pr-prep.
+- **Review-gap audit in Behemoth Arsenal** (owner feedback 2026-10-29, point 3). Motive: the
+  gap that prompted the audit came up in Behemoth Arsenal; the run here (84f8532e,
+  `docs/working/research-2026-11-13-review-gap-audit.md`) found 21 amber rows that reached
+  main open, and its fixes merged. What remains is the read-only paste in that repo, which
+  is the owner's: Q-302. First step after the answer: compare its gaps and causes with this
+  repo's, and file any cause the fixes here do not cover.
 
 ## In flight
 
@@ -167,6 +89,15 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
    since the first (which project to try first) depends on which repos have walkthroughs.
 
 ## Ideas
+
+- **Models answer their own questions from the repo's docs** (owner request 2026-11-11;
+  parked, moved from Now 2026-11-18). Signal: the measure
+  (`docs/working/research-2026-11-11-self-answer-measure.md`, fd325a74) found at most 4 of
+  200 answered judgment entries (2%) answered in full by an existing doc, so the owner chose
+  to build nothing (Q-274 [1]). Steps 2 to 4 of the plan (design the lookup, guardrails, a
+  trial week) come back only if watch Q-276 fires (the owner refuses the Q-272 exception
+  when it returns with data). The plan's full text is in this file's history before
+  2026-11-18 (`git log -S'Measure before designing' -- docs/roadmap.md`).
 
 - **The live-verify hook reads a merge commit's staged diff against HEAD only.** Signal:
   the F-009 loop's pre-mortem item 5 (`docs/working/research-2026-11-16-loop-may-merge-default-in.md`
@@ -516,6 +447,23 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- **Agent: check cc-push's git version list against git's release notes** (filed and done
+  2026-11-18, branch `docs/roadmap-cleanup-2026-11-18`). The list in
+  `devcontainer-config/cc-push.sh` (2.39.4, 2.40.2, 2.41.1, 2.42.2, 2.43.4, 2.44.1, 2.45.1,
+  or 2.46 and later) matches the May 14, 2024 security release (CVE-2024-32002 and four
+  others): GitHub's blog, the Red Hat tracker and the kernel.org release notes agree, read
+  through web search only (no fetch from the sandbox: unverified until a host read).
+  `git_version_ok` applies that list, and `test/cc-push.bats`'s version test covers it. No
+  change.
+- **Questions doc becomes owner-only** (Q-221 [14′], decision 040; moved from Now
+  2026-11-18). All three units merged (236f21ee, 6ee39f24, 01022de2), the release ran
+  (Q-227) and the one-time `questions.sh migrate` ran (Q-234). The two follow-ups it named
+  are done or not pursued: entry glossing is the "Gloss every reference" rule; a
+  `questions.sh record <answers-file>` was never briefed (it is not in the idea log).
+- **Owner feedback 2026-10-29, points 1, 2 and 4** (moved from Now 2026-11-18): in-session
+  answers approve merge entries (014e5219, Q-230 [1]); convention changes ship migrations
+  (6f364ba6, Q-233 [1]); the harness-feedback file, v1 (a8e941a5, Q-232 [1]). Point 3 stays
+  in Now as the Behemoth Arsenal audit (Q-302).
 - **Rewrite Q-278 (the bwrap run-or-refuse question)** (owner, 2026-11-18). Done a61f9a17 (self-merge),
   brief `docs/working/briefs/closed/2026-11-18-rewrite-q278.md`, research
   `docs/working/research-2026-11-18-rewrite-q278.md`: no question is due (neither tool works in any
