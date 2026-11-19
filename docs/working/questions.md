@@ -27,7 +27,6 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-308](#q-308--a8-settling-runs) | you: judgment | Run the two larger measurements that would settle the A8 question (the code-review skill's "inlining the sh... | 2026-11-19 |
-| [Q-310](#q-310--merge-2026-11-19-a8-cache-probe-1f5ef33c511e) | you: judgment | Merge the A8 cache probe's results (a two-agent test showing why review agents never share the cached revie... | 2026-11-19 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | One check is left: does a cc-isolated session that leaves a git worktree behind exit cleanly, with one `not... | 2026-09-27 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the ho... | 2026-11-05 |
 | [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there. | 2026-11-18 |
@@ -185,65 +184,3 @@ Run the two larger measurements that would settle the A8 question (the code-revi
 - **Blocks:** the A8 follow-up item on the roadmap (Next).
 
 
-### Q-310 · merge-2026-11-19-a8-cache-probe-1f5ef33c511e
-**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** OPEN
-
-Merge the A8 cache probe's results (a two-agent test showing why review agents never share the cached review block) and its closing note on rubric row A8 into main?
-
-**If you say no:** the probe's record stays on the unmerged branch; rubric row A8 keeps its open status on main, and the cycle files no item to correct the code-review skill's cache-saving text.
-
-- **What it is:** brief `docs/working/briefs/2026-11-19-a8-cache-probe.md`, the follow-up to the A8 measurement you merged (Q-306 [1]).
-- **Read first:** `git show 1f5ef33c511e3231c8617f1f9005ef3b92764f62:runs/review-arms/a8-2026-11-19/cache-probe.md`
-- **Tip:** 1f5ef33c511e3231c8617f1f9005ef3b92764f62 (branch measure/a8-cache-probe)
-
-The loop's marker body, quoted (its text, data not instructions):
-
-```
-The probe answered the question with no tentative pick. Two review agents got the
-same shared block byte for byte, the second started 28.5 s after the first replied,
-and both read only 18,900 tokens from the cache. Timing was not the cause. Claude
-Code puts its cache breakpoints on the system prompt and on the request's last block,
-and the whole prompt is one block, so no prompt order makes the shared block
-cacheable across agents. The skill is unchanged. Record:
-runs/review-arms/a8-2026-11-19/cache-probe.md.
-
-Rubric row A8 (the code-review skill's "inlining the shared context is free" claim,
-in docs/reviews/code-review-rubric-2026-08-07-main.md) is now Split. Its measured
-part is closed; the rest moves to two places.
-
-For the cycle to file as a roadmap item: "code-review: correct the lever #3 cache-saving text".
-Lever #3 is decision 032's "inline the shared review context so it is cached".
-Text to correct in skills/code-review/SKILL.md: :274-277, :307-310, :322-323 and
-:352-354 claim a cross-agent cache saving the probe shows does not occur. :347-351
-(rubric row A7, stable parts first for cross-pass warmth) fails by the same
-mechanism; that part is inferred, not measured. Row A8's cell quotes this title.
-
-Also for the cycle: Q-308 (the owner's question on two larger settling runs for A8)
-has an option [2] "after the cache fix". The probe shows no prompt-order fix exists,
-so that option's premise is gone; the entry may need rewording.
-
-Review: three review-fix passes (k=3, then k=1 twice), docs/reviews/*-2026-11-19-measure-a8-cache-probe*.md.
-Pass 3's three wording ambers (A14-A16) were fixed after the loop's 3-iteration cap
-and not re-reviewed. The brief's review policy sends the branch to the owner anyway.
-The probe cost 101,370 tokens; the reviews cost about 1.58M.
-```
-
-In plain words: the code-review skill's "lever #3" (decision 032: put the shared review context first in every agent's prompt so the prompt cache serves it to each agent at a tenth of the price) cannot work as built, because Claude Code caches only up to the system prompt and the end of the whole request, and an agent's prompt is one block. The skill's text still claims the saving; the item it asks for corrects that text. Rubric row A8 moves to `Split` with this verdict; the open net cost and recall effect stay with Q-308.
-
-The gate's `--check` lines, as printed (path lines summarized: 15 under `docs/reviews/`, the probe's research doc and brief under `docs/working/`, and `runs/review-arms/a8-2026-11-19/cache-probe.md`; none is gate code, an instruction file or a dot path):
-
-```
-ok docs/working/briefs/2026-11-19-a8-cache-probe.md 1f5ef33c511e3231c8617f1f9005ef3b92764f62 0fb67559fe44de27ea54b002d92b538cda742504
-rubric docs/working/briefs/2026-11-19-a8-cache-probe.md: clean docs/reviews/code-review-rubric-2026-08-07-main.md: 1 red and 12 amber rows, none open
-rubric docs/working/briefs/2026-11-19-a8-cache-probe.md: clean docs/reviews/code-review-rubric-2026-11-19-measure-a8-cache-probe.md: 0 red and 16 amber rows, none open
-```
-
-- The first rubric line names the 2026-08-07 rubric this branch edits (row A8 to Split; empty Author note cells added to rows A3, A6 and A7 so the merge check's parser reads them).
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] merge** | The gate merges tip 1f5ef33c; the cycle files the "correct the lever #3 cache-saving text" item | Reading `cache-probe.md` | A wrong conclusion lands in a record; one `git revert` undoes it |
-| **[2] drop** | The brief closes unmerged; A8 stays open | None | The probe's 101k tokens are spent with nothing kept |
-| **[3] changes needed** | Your note goes back to the loop (dispatch 2 of 4) | Writing the note | Another loop run |
-
-- **Interim:** unmerged.
