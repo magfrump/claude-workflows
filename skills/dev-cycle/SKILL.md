@@ -34,8 +34,23 @@ full cycles a light pass skips those checks while nothing new needs them (step 0
   and never checks out or switches a branch in a checkout it did not create. Stage named
   paths only, never `git add -A`. Commits and merges follow the Operating Modes rules in the
   global instructions (in /active mode, ask first); code fixes land through `pr-prep`.
+- **Worktrees go under WTB.** WTB is the directory in the `ok WTB` line that
+  `build-loop.sh --worktree-base` prints: `.worktrees` in MAIN_WT, which git ignores
+  through its own `.gitignore`. It runs at step 0.3, before WT exists, and a
+  `refuse worktree-base:` line is a stop. WT, HC and GT go there, and so does each
+  loop's worktree (`--start`'s default). Never put one under `.claude/`: Claude Code asks
+  before every write there, and an allow rule does not stop it (brief
+  2026-11-19-worktrees-outside-dot-claude). A worktree that an earlier iteration or loop
+  left under `.claude/` is found by its name in `worktree list`, and removed or freed as
+  before.
+- **A file write and the commands that depend on it go in separate responses.** Write a
+  brief, the record or a roadmap edit in one response. Send the commit, merge or other
+  command that needs the file in a later response, once the write has succeeded. In
+  philosophy-research's harness feedback F-019, the owner denied a brief write while a
+  dependent Bash call in the same response still ran, and that landed an iteration
+  record naming a brief that did not exist.
 - **Scripts run through d6** (D6). Every `build-loop.sh`, `dev-cycle.sh` and `questions.sh` call
-  runs from WT (step 0's first two from MAIN_WT; step 7's self-merge from its GT) as this
+  runs from WT (step 0's first two and step 0.3's `--worktree-base` from MAIN_WT; step 7's self-merge from its GT) as this
   one line, SCRIPT being one of those three names:
   `cd WT && bash /opt/claude-workflows/scripts/d6.sh SCRIPT ARG...`
   Never `~/.claude/scripts/`, a working-tree copy, or a `source`. In
@@ -312,8 +327,9 @@ the iteration with no record, so the next one starts from the same `Main at:`:
    it), which its `Main at:` line re-anchors. No entry, and no hold on tests, merges,
    answers or dispatch: the anchor exists to show the user what moved main, and the classes
    cannot catch a disguised commit anyway (F19).
-3. **The worktree.** `git -C MAIN_WT worktree add -b chore/dev-cycle-DATE-HHMM WT MAIN`, with WT at
-   `.claude/wt-dev-cycle-DATE-HHMM` in MAIN_WT (UTC time; a name taken: the next minute).
+3. **The worktree.** `build-loop.sh --worktree-base` (WTB, the Rules), then `git -C MAIN_WT
+   worktree add -b chore/dev-cycle-DATE-HHMM WT MAIN`, with WT at
+   `WTB/wt-dev-cycle-DATE-HHMM` (UTC time; a name taken: the next minute).
    When this session's previous iteration stopped after committing (its branch not in
    main), merge the commit the session made there (by its id, not the branch name) into WT
    first (as step 9 merges main in), so its entries and
@@ -378,7 +394,7 @@ last good one.
   subagents. It runs from a health checkout HC, not WT: `git -C MAIN_WT worktree add
   --detach HC W`, W being WT's HEAD commit (`git -C WT rev-parse HEAD`; MAIN, or step 0.3's
   merge of an earlier iteration's commit, which the `1.` line then names in MAIN's place),
-  HC at `.claude/wt-dev-cycle-health-DATE-HHMM` in MAIN_WT (a name taken: the next
+  HC at `WTB/wt-dev-cycle-health-DATE-HHMM` (a name taken: the next
   minute). It is made for this one run and removed
   as step 0.3 removes WT once the check exits (its log is in the orchestrator's directory,
   not HC). A stop while it runs stops the check by its PID or process group, then removes
@@ -677,7 +693,7 @@ the brief is still open and no subagent of this session runs it, step 10 re-disp
 - **ready**, POLICY `self-merge`: `--merge BRIEF
   --expect TIP`, run from a gate checkout,
   not WT: `git -C MAIN_WT worktree add --detach GT
-  refs/heads/main`, GT at `.claude/wt-dev-cycle-gate-DATE-HHMM` in MAIN_WT, made for this
+  refs/heads/main`, GT at `WTB/wt-dev-cycle-gate-DATE-HHMM`, made for this
   one call and removed after it as step 0.3 removes WT (the self-merge floor reads a clean
   checkout of main's commit, which WT is not once this iteration has edited it, and a
   merge moves main past any earlier one). A `merged` line goes in the record. A refusal

@@ -664,10 +664,29 @@ shim() {
     [ -n "$s" ] || { echo "step 1 not found"; return 1; }
     q=$'\x60'
     for f in "It runs from a health checkout HC, not WT" "${q}git -C MAIN_WT worktree add --detach HC W${q}, W being WT's HEAD commit" \
-        "${q}.claude/wt-dev-cycle-health-DATE-HHMM${q}" "removed as step 0.3 removes WT once the check exits" "${q}skipped: HC not made${q}"; do
+        "${q}WTB/wt-dev-cycle-health-DATE-HHMM${q}" "removed as step 0.3 removes WT once the check exits" "${q}skipped: HC not made${q}"; do
         [[ "$s" == *"$f"* ]] || { echo "missing: $f"; echo "$s"; return 1; }
     done
     [[ "$s" != *"health check from WT"* ]] || { echo "$s"; return 1; }
+}
+
+@test "SKILL.md puts WT, HC and GT under WTB from --worktree-base, never under .claude/, and keeps a file write apart from what depends on it (brief 2026-11-19-worktrees-outside-dot-claude)" {
+    K="$REPO_ROOT/skills/dev-cycle/SKILL.md"
+    s="$(tr '\n' ' ' < "$K" | tr -s ' ')"
+    q=$'\x60'
+    for f in "**Worktrees go under WTB.** WTB is the directory in the ${q}ok WTB${q} line that ${q}build-loop.sh --worktree-base${q} prints" \
+        "a ${q}refuse worktree-base:${q} line is a stop" "WT, HC and GT go there, and so does each loop's worktree" \
+        "is found by its name in ${q}worktree list${q}, and removed or freed as before" \
+        "step 0.3's ${q}--worktree-base${q} from MAIN_WT" \
+        "3. **The worktree.** ${q}build-loop.sh --worktree-base${q} (WTB, the Rules)" "${q}WTB/wt-dev-cycle-DATE-HHMM${q}" \
+        "GT at ${q}WTB/wt-dev-cycle-gate-DATE-HHMM${q}" \
+        "**A file write and the commands that depend on it go in separate responses.**" \
+        "Send the commit, merge or other command that needs the file in a later response, once the write has succeeded."; do
+        [[ "$s" == *"$f"* ]] || { echo "missing: $f"; return 1; }
+    done
+    ! grep -nF '.claude/wt-' "$K" || { echo "a worktree path under .claude/ is left"; return 1; }
+    # The mode the skill names exists in the script it runs.
+    grep -qF -- '--worktree-base) MODE=worktree-base' "$REPO_ROOT/scripts/build-loop.sh"
 }
 
 @test "SKILL.md's merge-entry slug rule quotes the lib's GATE_CODE, which --approved's heading reads, on one line of its own (row 674, U4b2)" {
