@@ -73,6 +73,15 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   so section 5 prints its NOT-checked line; add the test; then A11. Gate code: a review
   merge, then the next release.
 
+- **Agent: flaky board test, the fanout case** (filed 2026-11-18, from the health check
+  before `fix/dev-cycle-roadmap-staleness` merged). Motive: `test/scripts/board.bats`'s
+  "a symlink in the git directory refuses the write" failed once in a full run (want
+  `objects/ab … is a symlink`, got WRITTEN) and passed alone 3 of 3. Likely cause
+  [inferred]: when the fixture repo already has an `objects/ab` directory (an object
+  whose hash starts `ab`, which varies with commit timestamps), `ln -s … "$c/objects/ab"`
+  makes the link inside it, so nothing is planted. First step: confirm by forcing an
+  `ab` object, then plant the link at a fan-out name the repo does not hold.
+
 ## In flight
 
 ## Next
