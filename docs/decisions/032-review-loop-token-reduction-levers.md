@@ -152,3 +152,41 @@ So H3 (≥15% saving) is **met by #1 + k=1, not by #3/#4**. #1 was the load-bear
   behavioral comment/contract lie, to convert its loop estimate to a measurement.
 - Run #2 (model-tiering) as the next arm on csp+corpus (reconstruct-then-live, k=1 protocol)
   before any SKILL default change.
+
+## Amendment 2026-11-19 — #3 measured: no cross-agent cache saving on the Agent-tool path
+
+The A8 measurement (`runs/review-arms/a8-2026-11-19/results.md` §2, §4) and its two-agent cache
+probe (`runs/review-arms/a8-2026-11-19/cache-probe.md`) settle the projection above:
+
+- **Cross-agent saving: 0.** All 9 agents of one terminal pass read only the 18,900 cached tokens
+  of system prompt and tools on their first call and wrote the inlined shared block fresh. A
+  second agent dispatched 28.5 s after a first, its prompt starting with the same block byte for
+  byte, read the same 18,900. Timing is not the cause: the Agent tool sends the whole prompt as
+  one content block, and Claude Code puts the breakpoints on the system prompt and the request's
+  last block, so no cache entry ends at the shared block and no prompt order makes one.
+- **Cross-pass saving:** none by the same mechanism (inferred from the request records, not
+  measured).
+- The 20–40% estimate came from the cross-model harness, which calls the API directly and sets
+  its own breakpoints; the ~5% projection (log row 34) assumed a cacheable prefix the Agent tool
+  never forms. "Leave it on because it is free" fails on its benefit.
+
+**What changes in `skills/code-review/SKILL.md`** (research:
+`docs/working/research-2026-11-19-code-review-lever3-correction.md`):
+
+- The cache-saving and cross-pass cache-warmth claims are replaced by the measured result
+  (rubric row A7 of `docs/reviews/code-review-rubric-2026-08-07-main.md` rested on the latter).
+- Rules that existed only for the cache are dropped: "only the tail varies" and the stable-first
+  order as a requirement (log row 35's reorder; the part list stays as a reading order). Kept on
+  their own grounds: building the shared block once and including it verbatim in every prompt
+  (every agent reviews the same material, which Stage 3's convergence detection relies on), the
+  goal preamble opening every dispatch, and the fact-check replicates differing only in output
+  path (decision 031's disagreement measurement).
+- Inlining the diff and enclosing files, and the 25k budget with its degrade ladder, stay:
+  inlining delivers decision 021's Stage-1 context the same to every agent, and the budget guards
+  the context window. Their cost-versus-recall test is Q-308 (the owner's, after the release).
+- Sub-agents now read their skill file by path instead of having it pasted: every agent of the
+  A8 pass did so reliably, and the old "sub-agents cannot read your files" premise is false for
+  the Agent tool (`guides/sub-agent-briefing.md`, anti-pattern 4).
+
+Lever #3 is thus not a token or cost lever on the production loop. H3's conclusion above is
+unchanged: the savings that clear it are 031's k=1 and #1 gating.

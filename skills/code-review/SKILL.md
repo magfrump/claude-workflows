@@ -134,7 +134,7 @@ final confirming pass reviews the full branch at k=3 (decision log 63, Q-087 [2]
 [pr-prep 3d](../../workflows/pr-prep.md#3-review-fix-loop) already said to review only the
 fixes; the instruction was prose nobody computed (`docs/working/proposal-2026-09-27-smaller-review-units.md`, B1).
 
-Diff delivery to agents is conditional (decision 032 #3, see [Inline shared-context prefix](#inline-shared-context-prefix-decision-032-3)): assemble the shared block (diff + enclosing-file context) and measure it against the **25k-token budget** defined in that section. Within budget → inline it once as the shared cacheable prefix of every agent prompt. Over budget → degrade per that section's ladder (diff-only inline, then full self-read via the scope specification, each agent running its own `git diff`). The delivery gate is the byte/token budget alone — the ~1000-line triage below governs *splitting the review into passes*, and the >40%-churn rule governs *per-file review framing*; neither gates delivery.
+Diff delivery to agents is conditional (decision 032 #3, see [Inline shared-context prefix](#inline-shared-context-prefix-decision-032-3)): assemble the shared block (diff + enclosing-file context) and measure it against the **25k-token budget** defined in that section. Within budget → inline it once and include the same block in every agent prompt. Over budget → degrade per that section's ladder (diff-only inline, then full self-read via the scope specification, each agent running its own `git diff`). The delivery gate is the byte/token budget alone — the ~1000-line triage below governs *splitting the review into passes*, and the >40%-churn rule governs *per-file review framing*; neither gates delivery.
 
 **Partial-scope reviews must label out-of-scope sibling work.** When the scope is narrower than the full branch changeset (`--range`, the loop-pass default range, `--staged`, `--files`, or a `--pr` covering part of a larger branch), every critic prompt must state: (a) that commits/files on the branch outside the scope are *already committed — context only, not under review*, and (b) that before flagging work as "missing", the critic must check the rest of the branch (`git log main..HEAD`, `git diff main...HEAD -- <path>`) for it. The label marks provenance, not trustworthiness — sibling context stays under normal scrutiny (a control *deleted* in a sibling commit is still a finding); only "this work is missing" claims are gated on checking it. This rule is validated, not speculative: the 2026-07-30 diff-only baseline sweep (`archive/docs/2026-08-06-experiment-cross-model-review-2026-07-30.md`, Result 5) showed unlabelled single-commit scope made three of four model families flag work as missing that sat in sibling commits (6 of 11 replicates, all at High), and the 2026-07-31 re-run under the label + sibling context (`archive/docs/2026-08-06-experiment-stage1-fp-kill-2026-07-31.md`, decision 021) reduced that FP class to 0/8 — while cross-family agreement on real issues rose among the Sonnet/Gemini/Sol pairs on the other cell. The default full-branch scope (`git diff main...HEAD`) needs no label — the whole changeset is under review.
 
@@ -267,22 +267,35 @@ Keep this brief — a short paragraph.
 
 ### Inline shared-context prefix (decision 032 #3)
 
-Every Stage-1 replicate and Stage-2 critic prompt is assembled from two parts: a **shared
-context block** that is byte-identical across all agents in the run, and a **per-agent tail**
-(that agent's skill text + its output path + any chain context). Build the shared block **once**
-and place it **first, verbatim**, in every agent prompt; put everything that varies per agent
-**after** it. This lets the Anthropic prompt cache serve the shared block to all ~8 agents in a
-pass — and again on the next loop pass while it is unchanged — at the cache-read rate instead of
-re-billing full input per agent. It is a pure transport optimization: the content each agent sees
-is unchanged, so it has **zero effect on recall** (decision 032 H1).
+Every Stage-1 replicate and Stage-2 critic prompt carries a **shared context block**, the same
+review material for every agent in the run, and a **per-agent part** (that agent's skill-file
+path, its output path, any chain context, and role-specific material such as the security
+critic's threat-model lines). Build the shared block **once** and include it **verbatim** in
+every agent prompt. The reason is consistency, not cost: every agent reviews the same diff,
+intent and fact-check summary, so Stage 3's convergence detection compares like with like, and
+no per-agent re-assembly drifts (a diff truncated for one critic only). The block opens the
+prompt because its first part, the goal preamble, opens every dispatch
+([goal preamble](../../patterns/orchestrated-review.md#goal-preamble)).
 
-**Inline the shared review material** (this is the realized form of #3 — the 2026-08-06
-measurement, `runs/review-arms/baseline-2026-08-06/levers-3-4-measurement.md`, found the benefit is
-only captured when the shared material is actually inlined as one cacheable prefix; agents
-self-reading via tools share only a ~330-token instruction prefix — ~8k cost-equivalent across
-the canon, negligible). The shared block is, in this fixed
-order (omit a part only when it does not apply, but keep the order so the cached prefix stays
-stable):
+**It buys no prompt-cache saving across agents.** Decision 032 adopted this lever expecting the
+cache to serve the block to all ~8 agents of a pass. Measured on 2026-11-19, it does not on the
+Agent-tool path: no agent of the A8 pass read the block from another agent's cache
+(`runs/review-arms/a8-2026-11-19/results.md` §2), and a second agent dispatched 28.5 s after a
+first, with the block byte for byte, still read only the 18,900 cached tokens of system prompt
+and tools (`runs/review-arms/a8-2026-11-19/cache-probe.md`). The Agent tool sends the whole prompt
+as one content block, and Claude Code puts the cache breakpoints on the system prompt and the
+request's last block, so no cache entry ends at the shared block and no order of the prompt's
+parts changes that. By the same mechanism a later loop pass gets no hit either (inferred from the
+records, not measured). An agent's own later calls re-read its prompt from cache, with or
+without inlining.
+
+**Why inline it at all.** Inlining delivers decision 021's Stage-1 context (the changeset plus the
+enclosing files of the touched hunks, so a reviewer does not misattribute code across a boundary
+the diff flattens; the review-quality default per decision log row 30) to every agent the same
+way, and spares each agent re-fetching it. Its recall effect and its net cost against self-read
+are unmeasured on this path (A8 `results.md` §4 could not tell); that test is the owner's open
+question Q-308. The shared block is, in this order (omit a part that does not apply; the order
+is a reading order, not a requirement):
 
 1. The goal preamble (what a review pass is). The preamble MUST include the
    **complete-unit reading rule**: before verdicting a claim or filing a finding about
@@ -304,24 +317,22 @@ stable):
 4. `## Prior review findings (advisory …)` — `<prior-findings>` from Step 3, if any.
 5. **The unified diff itself** (`git diff <scope>`), inlined — plus the decision-021 Stage-1
    enclosing-file context (the post-scope contents of the files the diff touches), subject to
-   the budget below. This is the bulk of the shared prefix; inlining it once and caching it
-   across the fan-out is where the saving comes from. It sits second-to-last because a fix
-   commit mutates it: parts 1–4 are stable across the whole loop, so ordering them first keeps
-   them a cache-warm common prefix across fix→re-review cycles.
+   the budget below. This is the bulk of the shared block.
 6. The Stage-1 merged fact-check summary (Stage 2 only; Incorrect/Stale/Mostly-Accurate rows
    per the >200-line rule in Stage 2 step 5), **plus** the merged report's `## Escalations`
    section in full and a one-line entry for each Verified claim whose `Replicate
    annotations` or `Scope:` does-not-establish clause names a concrete risk (the caveat,
    with `path:line`) — these are the under-calling guard's payload and must reach every
-   critic even when the summary is otherwise truncated. Changes every pass, so it is last.
+   critic even when the summary is otherwise truncated.
 
 Agents still have repo access and may read further files on demand (e.g. a cross-file consumer not
 in the enclosing set); inlining the diff + enclosing files just means they don't re-fetch the
-*shared* material, so it can be cached.
+*shared* material, and all of them start from the same copy of it.
 
-**Size guard — the 25k-token budget and the degrade ladder.** Inlining trades context-window
-budget for cache reuse, and for a large change the window, not the bill, is the binding
-constraint. The gate is a number, measured on the assembled material, not a diff-line proxy —
+**Size guard — the 25k-token budget and the degrade ladder.** Inlining spends each agent's
+context window: the shared block sits in every agent's context for its whole run, next to its
+skill text and working room, so for a large change the window is the binding constraint. The
+gate is a number, measured on the assembled material, not a diff-line proxy —
 the dominant term is enclosing-file bytes, which the canon showed are decoupled from diff line
 count (7,663–69,575 chars/cell on similar-sized diffs):
 
@@ -329,7 +340,8 @@ count (7,663–69,575 chars/cell on similar-sized diffs):
   Compute after assembling the diff + enclosing-file context (`wc -c` ÷ 4). The number is
   calibrated to the 2026-08-06 canon: the largest measured cell was ~17.4k tokens, so every
   measured cell inlines with ~45% headroom, and the budget stays ~12% of a 200k agent window
-  after skill text and working room. Revisit when a post-restructure measurement lands.
+  after skill text and working room. The 2026-11-19 A8 cell (csp, ~2.2k tokens) did not test
+  the upper edge; the budget's cost-versus-recall test is Q-308's.
 - **Within budget** → inline diff + enclosing files as part 5.
 - **Over budget** → degrade, don't cliff: drop the enclosing-file context and inline the
   **diff only** (agents self-read enclosing files on demand — they have repo access).
@@ -341,21 +353,11 @@ State which of the three modes you used in the plan summary (`delivery mode: inl
 rather than forbidden. The per-file >40%-churn rule in Step 1 is a review-framing rule —
 greenfield vs diff-level evaluation — and plays no part in this delivery gate.)
 
-**Stability rules that make the cache actually hit:**
-- Keep the shared block **first** and **byte-identical** across agents in a pass. The only
-  permitted per-agent variation lives in the tail (skill text, output path, chain context).
-- Across loop passes, the block's prefix stays cache-warm up to the first part that changed:
-  parts 1–4 are stable across the whole fix→re-review loop; the diff/enclosing context (part 5)
-  mutates on every fix commit and therefore sits second-to-last; the fact-check summary
-  (part 6) changes each pass and sits last. Ordering stable-parts-first is what preserves a
-  cacheable common prefix across passes even when the diff changes.
-- **Measured benefit is modest — single-digit-% of input cost, 0% of token count** (caching is a
-  billing-rate effect, not a token-count reduction). Leave it on because it is free; do not expect
-  it to move the token-count ledger.
-- This is **production-loop-only**. It must **not** be ported to `scripts/cross-model-review.py`:
-  that harness is the cross-model *sweep*, whose confound control requires whole prompts that are
-  byte-identical *across models* and stamped by `prompt_sha`. Prompt caching is deliberately absent
-  there (decision 032 H4) — see the guard note in that file's module docstring.
+This section is **production-loop-only**. It must **not** be ported to
+`scripts/cross-model-review.py`: that harness is the cross-model *sweep*, whose confound control
+requires whole prompts that are byte-identical *across models* and stamped by `prompt_sha`.
+Prompt caching is deliberately absent there (decision 032 H4) — see the guard note in that
+file's module docstring.
 
 ### Between-stage status banner
 
@@ -414,7 +416,7 @@ notification arrives**, not reconstructed from memory afterward:
 ### Stage 1: Code Fact-Check (k=3 replicated)
 
 Spawn **three** agents with the code-fact-check skill, in parallel, on **byte-identical
-prompts** — same skill text, same scope spec, same instructions, differing only in the
+prompts** — same skill-file path, same scope spec, same instructions, differing only in the
 output path each is told to write.
 
 **Model (pinned — do not inherit the session model): `opus`, set explicitly on every
@@ -457,8 +459,12 @@ redundancy on that code (decision log 63, Q-087 [2]; decision 031 priced both cl
 
 For each of the three replicate agents:
 
-1. Read the full contents of `skills/code-fact-check/SKILL.md`
-2. Paste those contents directly into the Agent tool prompt (sub-agents cannot read your files)
+1. Give the agent the absolute path of the `code-fact-check` skill file this session loaded
+   (e.g. `~/.claude/skills/code-fact-check/SKILL.md` when installed) as its instructions.
+2. Tell it to read that whole file before anything else and follow it. Sub-agents share your
+   filesystem: all 9 agents of the 2026-11-19 A8 pass read their skill file by path
+   (`docs/working/research-2026-11-19-code-review-lever3-correction.md`). Paste the contents
+   instead only when the agent cannot reach the path (no file tools, or outside its sandbox)
 3. Deliver the review material per Step 1's conditional diff-delivery rule (see
    [Inline shared-context prefix](#inline-shared-context-prefix-decision-032-3)): within the
    25k-token budget → the shared block (diff + enclosing-file context, inlined) opens the
@@ -875,8 +881,10 @@ Dispatch each critique to a sub-agent via the Agent tool.
 
 For each critic agent, you MUST:
 
-1. Read the full contents of that critic's skill file (e.g., `skills/security-reviewer/SKILL.md`)
-2. Paste those contents directly into the Agent tool prompt
+1. Give the critic the absolute path of its skill file as this session loaded it (e.g.,
+   `~/.claude/skills/security-reviewer/SKILL.md` when installed) as its instructions
+2. Tell it to read that whole file before anything else and follow it; paste the contents
+   instead only when the agent cannot reach the path (same rule as Stage 1 step 2)
 3. Deliver the review material per Step 1's conditional diff-delivery rule (see
    [Inline shared-context prefix](#inline-shared-context-prefix-decision-032-3)): within the
    25k-token budget → the shared block (diff + enclosing-file context, inlined) opens the
@@ -1023,8 +1031,8 @@ verdicts into synthesis.
    ✅ rows must then rest on Stage-1 verdicts alone. On a `--loop-pass`, skip it too:
    routed claims stay *pending execution verification* (✅ rows are terminal-pass output,
    and the decision-032 pass economics apply); the terminal pass runs the stage in full.
-3. **Dispatch one fact-check agent** — same mechanics as a Stage-1 replicate: paste
-   `skills/code-fact-check/SKILL.md`, deliver the review material per Step 1's conditional
+3. **Dispatch one fact-check agent** — same mechanics as a Stage-1 replicate: give it
+   the `code-fact-check` skill file by path, deliver the review material per Step 1's conditional
    diff-delivery rule, launch with `subagent_type: "general-purpose"` and the **model
    pinned `opus`** exactly as Stage 1 pins it (submitted-claim verdicts feed ✅ rows, so
    this dispatch must not silently degrade either). Supply the collected list under a
@@ -1290,7 +1298,9 @@ capture format, the append procedure, and why the log is not write-only are in
   prompts, merged most-severe-wins, per-claim replicate verdicts recorded, disagreement rate
   reported. Rationale and mechanics live in Stage 1's **Why three**, its loop-aware
   replication paragraph, and the merge steps — the single canonical statement.
-- **Paste skill file contents into agent prompts.** Sub-agents cannot read your filesystem.
+- **Give each agent its skill file by path; it reads the file itself.** Sub-agents share your
+  filesystem (Stage 1 step 2 has the evidence); paste a skill's contents only when an agent
+  cannot reach the path.
 - **Co-located fragments get one composition question, at unchanged severity.** The
   Fragment-Composition cross-check clusters all cited locations (headers, Evidence, and
   body citations) across sources; a qualifying cluster's forced question is answered and
@@ -1298,7 +1308,7 @@ capture format, the append procedure, and why the log is not write-only are in
   never corroborates escalation. See
   [Fragment-Composition cross-check](#fragment-composition-cross-check-required-before-producing-deliverables).
 - **Diff delivery is conditional (Step 1 / decision 032 #3).** Within the 25k-token shared-block
-  budget: inline it once as the shared cacheable prefix of every agent prompt. Over budget:
+  budget: inline it once and include the same block in every agent prompt. Over budget:
   degrade — inline the diff only, then as a last resort pass scope, not diffs, so each agent
   runs its own `git diff` to avoid context budget issues.
 - **All agents of the same stage run in parallel.** They must not see each other's output.
