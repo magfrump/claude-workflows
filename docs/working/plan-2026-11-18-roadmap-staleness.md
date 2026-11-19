@@ -2,7 +2,7 @@
 
 **Goal**: Every iteration sees which roadmap Now and Next items no open questions-file entry holds, and moves or explains each one.
 **Project state**: fixes the roadmap-staleness gaps found 2026-11-18 · standalone · not blocked (cite: docs/working/research-2026-11-18-roadmap-staleness.md)
-**Task status**: complete
+**Task status**: complete (the output shape in step 1 changed in review: verdict first, then the quoted title; R5 and A11 split off)
 Research: `docs/working/research-2026-11-18-roadmap-staleness.md`
 
 ## Approach

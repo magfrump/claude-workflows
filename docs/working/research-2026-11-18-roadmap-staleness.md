@@ -3,7 +3,7 @@
 **Goal**: Close the dev-cycle gaps that let finished and parked items sit in roadmap Now for weeks, so every iteration, light passes included, sees which Now and Next items no open questions-file entry holds.
 **Problem framing**: Nothing in the cycle connects a roadmap item to the state of the entries it names, and Now is never shown to the orchestrator, so an item whose hold was answered keeps reading as held. Considered and discarded: "the orchestrator was careless", since the same blanket `8.` line passed for about 109 iterations from 2026-11-01, a process gap and not a single slip.
 **Project state**: fixes the roadmap-staleness gaps the owner asked for in session on 2026-11-18 · standalone · not blocked (cite: a81ddd8f)
-**Task status**: complete (implemented on fix/dev-cycle-roadmap-staleness)
+**Task status**: complete (merged; R5 and A11 split to a roadmap item at the review cap)
 
 ## What exists
 
