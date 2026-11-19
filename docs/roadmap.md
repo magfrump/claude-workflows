@@ -63,18 +63,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
-- **Agent: dev-cycle section 5 follow-ups (R5, A11)** (filed 2026-11-18, split from
-  `fix/dev-cycle-roadmap-staleness` at the review cap on the owner's answer "Split R5
-  off"). Motive: the digest's new section 5 list
-  (`docs/reviews/code-review-rubric-2026-11-18-fix-dev-cycle-roadmap-staleness.md`) shows
-  an item an open watch holds as unheld when a repo has `docs/working/watching.md` but no
-  `questions.md` (R5), and has wording and test gaps (A11: "one Needs line, which `check`
-  requires" is false; "80 characters" is bytes under mawk; test 97's glob half and test
-  92's Next half cannot fail; the plan and research docs' stale lines). First step: in
-  section 3's no-questions-file branch, leave `open_ok` unset when `watching.md` exists,
-  so section 5 prints its NOT-checked line; add the test; then A11. Gate code: a review
-  merge, then the next release. Briefed 2026-11-18: `docs/working/briefs/2026-11-18-section5-followups.md`.
-
 - **A8 post-restructure token measurement** (Next 1 until 2026-11-19; go-ahead Q-304 [1],
   the owner in session: "yes, run it now"). Briefed: `docs/working/briefs/2026-11-19-a8-token-measurement.md`
   (one canon cell, a terminal pass, tokens per the provenance convention; the review k and
@@ -461,6 +449,12 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- **Agent: dev-cycle section 5 follow-ups (R5, A11)** (filed 2026-11-18). Done 24af50da
+  (approved merge, Q-305 [1]), brief `docs/working/briefs/closed/2026-11-18-section5-followups.md`,
+  research `docs/working/research-2026-11-18-section5-followups.md`: a `watching.md` with no
+  `questions.md` reads as not checked; titles cut without splitting a character; test 97's
+  glob half and the first-heading test now fail on their mutants; FP-184 added. Live with
+  the next release (Q-303).
 - **Agent: flaky board test, the fanout case** (filed 2026-11-18). Done 5a4d2fda (self-merge),
   brief `docs/working/briefs/closed/2026-11-18-board-fanout-flaky.md`, research
   `docs/working/research-2026-11-18-board-fanout-flaky.md`: cause confirmed (an existing
