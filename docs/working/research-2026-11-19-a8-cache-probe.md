@@ -59,12 +59,15 @@ hashed each content block, and printed breakpoints and first-call usage.
 ## Design choices
 
 - Change the skill or not: not a choice; criterion 2 decides on the probe result (no order works).
-- Rubric status word for A8: `🟡 Open` with the measured verdict. `Split` (to Q-308) was the
-  first pick, but review found Q-308 covers only the settling runs, while the skill text A8
-  cites is now measured false and no tracked item corrects it; this branch cannot file one
-  (questions and roadmap are off limits). `Acknowledged` needs a tracked follow-up or a revisit
-  trigger for the same reason. So the row stays open until the cycle files the correction.
-- The rubric file's status line keeps the conditional-pass form, now naming the measured verdict.
+- Rubric status word for A8: `Split`, naming Q-308 (net cost, recall) and the skill-text
+  correction this branch's `handoff: ready` marker asks the cycle to file (the brief keeps the
+  questions files and roadmap off limits, and a marker body is the build loop's channel for
+  what the cycle files). Review pass 1 caught a first Split that named only Q-308; pass 2
+  caught the interim `🟡 Open` cell, which named Q-IDs and so read as closed to
+  `scripts/lib/rubric-check.sh` while the file's status line said open. `Acknowledged` was
+  the other viable word and needs the same tracked follow-up.
+- The rubric file's status line takes the template's all-resolved form, since every other
+  red and amber row there is fixed.
 - Not proposed: a byte-identical whole prompt with the role sent another way would let a
   sibling read its whole request (~50.6k) from cache. That is a pipeline change, out of scope; noted in the
   probe doc for whoever weighs lever #3 next.

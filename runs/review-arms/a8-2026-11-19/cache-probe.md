@@ -97,6 +97,6 @@ on two larger settling runs).
 
 Cost of the probe: 2 × 50,685 = 101,370 tokens by the notified figure. Nearly all of that is
 the harness context every agent starts with, not the tail. These two agents are not rows in
-`token-ledger.md` or `manifest.json`: those record the A8 review pass, and the probe is a
-separate two-call measurement whose full per-agent record is the table above (the omission
-`docs/working/review-canon.md:131` asks a results doc to state).
+`token-ledger.md` or `manifest.json`: the brief's file list for this change (the probe doc,
+the rubric row, any skill change and the research doc) leaves those files out, so the table
+above is the probe's per-agent record, and this paragraph states the omission.
