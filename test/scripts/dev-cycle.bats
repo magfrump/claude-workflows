@@ -1695,3 +1695,41 @@ MD
     run --separate-stderr bash "$DC"
     [[ "$output" == *"- Now 1 · Item: open Q-010 (you: judgment)"* && "$output" != *"Now 2"* ]] || { echo "$output" | sed -n '/## 5/,/## 6/p'; return 1; }
 }
+
+@test "section 5: an entry marked ANSWERED but not archived yet holds nothing; column-0 prose ends an item; only the first Now and Next count (review 2026-11-18, claims 11b, 9a, 9b)" {
+    mkdir -p docs/working
+    e() { printf '### %s · %s\n**Needs:** %s · **Opened:** 2026-11-01 · **Status:** %s\n\nAbout it.\n\n' "$1" "$2" "$3" "${4:-OPEN}"; }
+    { echo '# Running questions'; echo; echo '## Open'; echo; e Q-010 still-open 'you: judgment'; e Q-011 answered-here 'you: judgment' ANSWERED; } > docs/working/questions.md
+    : > docs/working/questions-archive.md
+    cat > docs/roadmap.md <<'MD'
+# Roadmap
+
+## Now
+
+- **Answered, not archived** (waits on Q-011).
+- **No hold of its own**
+Column-0 prose after it naming Q-010 belongs to no item.
+
+### A subheading naming Q-010
+
+- **Held** (Q-010)
+
+## Next
+
+1. **Ranked** (Q-010)
+
+## Now
+
+- **A second Now section** (Q-010)
+MD
+    run --separate-stderr bash "$DC"
+    [ "$status" -eq 0 ]
+    section=$(echo "$output" | sed -n '/## 5/,/## 6/p')
+    for t in "- Now 1 · Answered, not archived: no open entry or watch names it" \
+             "- Now 2 · No hold of its own: no open entry or watch names it" \
+             "- Now 3 · Held: open Q-010 (you: judgment)" \
+             "- Next 1 · Ranked: open Q-010 (you: judgment)"; do
+        [[ "$section" == *"$t"* ]] || { echo "missing: $t"; echo "$section"; return 1; }
+    done
+    [[ "$section" != *"Now 4"* && "$section" != *"A second Now section"* ]] || { echo "$section"; return 1; }
+}

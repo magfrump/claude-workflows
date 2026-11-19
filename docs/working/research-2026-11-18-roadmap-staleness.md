@@ -8,7 +8,7 @@
 ## What exists
 
 - `scripts/dev-cycle.sh` section 5 prints only the roadmap's Next section, quoted (`awk` at the `## 5. Roadmap` block) [observed]. Section 7 counts items in Now, In flight and Next and compares Now with the last brainstorm's commit (`now_of`) [observed]. Now's text itself is never printed.
-- Section 3 runs `questions.sh open` with the three questions paths pinned (`qopen`), keeping its output in `open_q`: one line per open entry or watch, `ID  ROUTE  slug` [observed]. That is the only list of open IDs the digest has.
+- Section 3 runs `questions.sh open` with the three questions paths pinned (`qopen`), keeping its output in `open_q`: one line per live-file entry of any status, plus each watch not marked ANSWERED, `ID  ROUTE  slug` [observed: `scripts/questions.sh` `cmd_open`]. So an entry marked ANSWERED but not archived yet is still on it; section 5 drops those itself (review 2026-11-18, claim 11b).
 - `skills/dev-cycle/SKILL.md`:
   - Step 3 checks staleness for "Now's agent work items" only [observed]. A light pass skips step 3 (step 0.5) [observed].
   - Step 6 closes In flight items through `--check-brief`. It has no rule for a Now or Next item that is finished or parked, and none for a Done line that records part of a Now item [observed].
@@ -32,7 +32,7 @@
 - Failure-pattern grep: no matches found
 - Every item names old answered IDs in its history ("Unit 1 merged at 236f21ee (Q-224 [1])"), so "names an answered ID" would flag every item. The signal is an item with **no open** ID: nothing in the questions files holds it [observed: the roadmap at 686258b1].
 - Next items are numbered (`1. **…**`) and Now items are bullets (`- **…**`), with indented numbered sub-steps inside items that are not items [observed]. An item starts only at column 0.
-- When section 3 could not read the questions files, `open_q` is unset or empty, and the new list must say it was not checked instead of reporting every item as unheld [inferred].
+- When section 3 could not read the questions files, `open_q` may still hold a partial list (the first `qopen` succeeded, the second failed), so section 5 gates on `open_ok`, set only when both succeed, and says the list was not checked instead of reporting every item as unheld [observed: review 2026-11-18, claim 8].
 - The `--cycle-diff` refusal for a blanket `8.` line, proposed in session, is not mechanical: the record's `8.` line is prose, Now has no item IDs, and an iteration edits Now before writing the line, so a check would match titles against a moving list. The digest's per-item list makes the blanket line visibly false instead, and step 8 is told to use it [inferred]. The plan records this change of approach.
 
 ## Files read

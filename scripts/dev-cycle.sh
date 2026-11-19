@@ -463,14 +463,22 @@ if inrepo docs/roadmap.md; then
   awk '{ sub(/\r$/, ""); t = tolower($0) } t == "## next" || index(t, "## next ") == 1 || index(t, "## next(") == 1 { on = 1; next } on && /^## / { exit } on && NF { print "> " $0 }' docs/roadmap.md
   # Each column-0 item of Now and Next, with the open entries and watches it
   # names (section 3's open_q), so step 6 sees every item nothing open holds.
-  # An item names old answered IDs in its history, so only an open one counts.
-  # One record per item: SECTION, N, TITLE (its first bold span, else its first
+  # An item names old answered IDs in its history, so only an open one counts:
+  # `questions.sh open` lists every live-file entry whatever its status, so an
+  # entry marked ANSWERED but not archived yet (step 1 archives after this
+  # digest runs) is left out here too. An item is its column-0 line and the
+  # indented lines under it; a column-0 line that is no item (prose, a ###
+  # heading) ends it. Only the first Now and the first Next heading count, as
+  # in section 7. One record per item: SECTION, N, TITLE (its first bold span, else its first
   # 80 characters), IDS, joined by \x1f (a tab is IFS whitespace: an empty
   # field would collapse and shift the rest).
   echo
   if [[ "$open_ok" != 1 ]]; then
     echo "Now and Next items were NOT checked against open entries and watches: section 3 did not read them."
   else
+    # IDs marked ANSWERED in the live file (the Status field on the line under
+    # each "### Q-NNN" heading), which section 3's list still carries.
+    answered=" $(awk '/^### Q-[0-9]+/ { id = $2; next } id != "" && /\*\*Status:\*\*[ \t]*ANSWERED/ { printf "%s ", id; id = "" }' docs/working/questions.md) "
     items="$(awk '
       function flush(   title, ids, s, id, seen) {
         if (cur == "") return
@@ -483,11 +491,12 @@ if inrepo docs/roadmap.md; then
       }
       { sub(/\r$/, ""); gsub(/\t/, " "); t = tolower($0) }
       /^## / { flush(); sec = ""
-        if (t == "## now" || index(t, "## now ") == 1 || index(t, "## now(") == 1) sec = "Now"
-        else if (t == "## next" || index(t, "## next ") == 1 || index(t, "## next(") == 1) sec = "Next"
+        if (!seen_now && (t == "## now" || index(t, "## now ") == 1 || index(t, "## now(") == 1)) { sec = "Now"; seen_now = 1 }
+        else if (!seen_next && (t == "## next" || index(t, "## next ") == 1 || index(t, "## next(") == 1)) { sec = "Next"; seen_next = 1 }
         next }
       sec != "" && /^([-*] |[0-9]+\. )/ { flush(); cur = sec; num = ++n[sec]; text = $0; next }
-      cur != "" && NF { text = text " " $0 }
+      cur != "" && /^[ ]/ && NF { text = text " " $0; next }
+      NF { flush() }
       END { flush() }' docs/roadmap.md)"
     if [[ -z "$items" ]]; then
       echo "No items in Now or Next."
@@ -497,6 +506,7 @@ if inrepo docs/roadmap.md; then
       while IFS=$'\x1f' read -r sec num title ids; do
         held=""
         for id in $ids; do
+          [[ "$answered" != *" $id "* ]] || continue
           r="$(printf '%s\n' "$open_q" | awk -v id="$id" '$1 == id { r = substr($0, index($0, "  ") + 2, 16); sub(/ +$/, "", r); print r; exit }')"
           [[ -z "$r" ]] || held+="${held:+, }$id ($r)"
         done
