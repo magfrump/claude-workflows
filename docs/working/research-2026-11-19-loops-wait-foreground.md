@@ -53,7 +53,7 @@ What the evidence shows:
 - E2. A loop told to wait on a file through `Monitor` or a background job can sit idle for about two hours while listed as running (F-012, two of three).
 - E3. A message sent to an idle loop is queued "until the next tool round" (F-012): delivery happens between tool calls, not while the loop is idle.
 - E4. Loops told to wait in the foreground finished in 30 to 60 minutes (F-012). This is one repo, one night, with no controlled comparison.
-- E5. Prior art in this repo: FP-124 (`docs/failure-patterns.md:266`, commit 9ae66943). A headless top-level code-review orchestrator dispatched background replicates and ended its turn; `claude -p` waited out its 600 s background ceiling and stopped with one replicate written, while reporting success. The fix set `CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0`, after which background completions did re-invoke it. So for a headless top-level session, ending a turn to wait is safe once the ceiling is off; it says nothing direct about subagents, and whether a like ceiling or re-invocation applies to a subagent is L5 below.
+- E5. Prior art in this repo: FP-124 (`docs/failure-patterns.md:266`, commit 9ae66943). A headless top-level code-review orchestrator dispatched background replicates and ended its turn; `claude -p` waited out its 600 s background ceiling and stopped with one replicate written, while reporting success. The fix set `CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0` so that background completions would re-invoke it (the commit states the intent, not an observed re-run), and its own notes say that with no ceiling a wedged subagent can hang the run. It says nothing direct about subagents, and whether a like ceiling or re-invocation applies to a subagent is L5 below.
 - E6. One observation in this loop's own run (2026-11-19, 23:47 to about 23:49 UTC): this loop started one review subagent, then did not end its turn but kept making short `git`/`rg` reads. The reviewer's report arrived as a message between two of those tool calls, about 76 s after launch, and the loop went on. One run, one harness version; it supports I3 and answers L1 for this case only. No foreground `sleep` was used (criterion 6), so it says nothing about L2.
 
 Inferences (not shown by the evidence):
@@ -62,7 +62,7 @@ Inferences (not shown by the evidence):
 - I2. A loop that ends its turn waiting on a `Monitor` event or a background job is woken only if the harness re-invokes a subagent on that event, and F-012 suggests it does so late or not at all (E2, E3).
 - I3. A foreground wait works because the loop never yields: it stays inside one bounded tool call, and the reviewer's notification arrives with the next tool result (E3). That would explain E4.
 
-Facts only a live run could show (none was run here; criterion 6 allows only `git`, `rg` and reads):
+Facts only a live run could show (no dedicated probe was run here, and E6 is incidental; criterion 6 allows only `git`, `rg` and reads):
 
 - L1. Whether a subagent's own background subagent's completion notification is delivered with its next tool result, or only after its turn ends. This decides whether "keep making tool calls until the report arrives" works at all. E6 is one positive observation; a second, in a dispatched build loop, is still owed.
 - L2. Whether H-b's "Foreground sleep is blocked" refuses `timeout 540 sh -c 'until test -e FILE; do sleep 15; done'`, or only a bare `sleep N`. A wording that names a refused command would send the loop to the `Monitor` path it was meant to avoid.
@@ -129,26 +129,14 @@ Observable that could come out negative (S6): the cycle records' step-7 lines. B
 - `loop_prompt`'s heredocs are unquoted (`cat <<PROMPT`, so `$s`, `$MAIN` expand): the drafted `"$1"` must be written `"\$1"` there, or the prompt prints the function's first argument (the brief path) in its place. A bats assertion on the printed `"$1"` catches it.
 - W2 and W1 conflict today in this harness (H-a): every review the loop starts is a background agent.
 - The Bash tool's 120 s default timeout is under the health check's 140 s run (W9), which pushes a loop toward `run_in_background`.
-- The fallback ("keep making short reads") costs a tool round each, each re-reading the cached context; at one round per nine minutes this is small next to a lost two-hour slot.
-
-## For the dev cycle
-
-Suggested roadmap change: replace the Now item "Loops wait on a file or job in the foreground" with a review brief.
-
-- Goal: add the drafted "wait inside a tool call" line to `loop_prompt` and reword "background agents" to "agents that outlive your run", as drafted in this doc's "Drafted wording"; update and extend `test/scripts/build-loop-dispatch.bats` for both.
-- Paths: `scripts/build-loop.sh`, `test/scripts/build-loop-dispatch.bats`.
-- Policy: review (gate code).
-- Precondition, before the wording lands: one live check of L1 and L2 in a dispatched loop (it starts a reviewer subagent and waits as drafted; does the report arrive, and is the `until` command allowed under H-b). E6 is one positive for L1 already. A negative L2 drops the file-wait half of the command, not the placement; a negative L1 sends the item back to research.
-- The review brief also picks the bounded wait's exit (blocked marker naming the unfinished reviewer, as drafted, or another).
-- After merge: the S6 count above, over ten dispatches.
-
-F-013's unreturned tool calls stay out of this item (L4).
+- Waiting by short reads costs a tool round each, each re-reading the cached context. In E6 the loop made about twenty reads while the reviewer ran (its own run took 76 s), so a ten-minute review could take a hundred rounds or more. A file wait's nine-minute call is cheap; for a subagent wait, the review brief should measure the round count in its live check and, if it is large, pair the reads with a bounded foreground pause once L2 shows one is allowed. Even a hundred cached rounds are small next to a lost two-hour slot and a re-dispatch.
 
 ## Files read
 
 Last verified: 2026-11-19
 docs/working/briefs/2026-11-19-loops-wait-foreground.md
 docs/working/feedback/philosophy-research.md
+docs/working/feedback/belegarth-herald.md
 scripts/build-loop.sh
 scripts/health-check.sh
 skills/dev-cycle/SKILL.md
@@ -158,7 +146,21 @@ workflows/pr-prep.md
 workflows/review-fix-loop.md
 docs/constraints.md
 docs/roadmap.md
-docs/working/cycles/cycle-2026-11-19.md
+docs/working/cycles/
 docs/failure-patterns.md
 docs/working/research-2026-11-19-subagent-report-as-text.md
+docs/working/questions-archive.md
 test/scripts/build-loop-dispatch.bats
+
+## For the dev cycle
+
+Suggested roadmap change: replace the Now item "Loops wait on a file or job in the foreground" with a review brief.
+
+- Goal: add the drafted "wait inside a tool call" line to `loop_prompt` and reword "background agents" to "agents that outlive your run", as drafted in this doc's "Drafted wording"; update and extend `test/scripts/build-loop-dispatch.bats` for both.
+- Paths: `scripts/build-loop.sh`, `test/scripts/build-loop-dispatch.bats`.
+- Policy: review (gate code).
+- Precondition, before the wording lands: one live check of L1 and L2 in a dispatched loop (it starts a reviewer subagent and waits as drafted; does the report arrive, and is the `until` command allowed under H-b). E6 is one positive for L1 already. A negative L2 drops the file-wait half of the command, not the placement; a negative L1 sends the item back to research.
+- The review brief also picks the bounded wait's exit (blocked marker naming the unfinished reviewer, as drafted, or another) and confirms its bound: the drafted 30 minutes is a guess with no measured source, set from this loop's reviewers (49 s and 76 s) and the two-hour rule it must stay well under; a slow code-review round may need more.
+- After merge: the S6 count above, over twenty dispatches.
+
+F-013's unreturned tool calls stay out of this item (L4).
