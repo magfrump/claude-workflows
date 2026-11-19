@@ -65,7 +65,7 @@ hashed each content block, and printed breakpoints and first-call usage.
   what the cycle files). Review pass 1 caught a first Split that named only Q-308; pass 2
   caught the interim `🟡 Open` cell, which named Q-IDs and so read as closed to
   `scripts/lib/rubric-check.sh` while the file's status line said open. `Acknowledged` was
-  the other viable word and needs the same tracked follow-up.
+  the other viable word and needs a tracked follow-up or a revisit trigger.
 - The rubric file's status line takes the template's all-resolved form, since every other
   red and amber row there is fixed.
 - Not proposed: a byte-identical whole prompt with the role sent another way would let a
@@ -74,10 +74,13 @@ hashed each content block, and printed breakpoints and first-call usage.
 
 ## Follow-up for the cycle
 
-The skill still says the cache "serve[s] the shared block to all ~8 agents" and "Leave it on
-because it is free" (`SKILL.md:274-277`, `:352-354`), and its stable-parts-first rule claims cross-pass warmth (`:347-351`, rubric row A7); the probe shows that saving does not
-occur on the Agent-tool path. Correcting that text is a pipeline change the brief puts out of
-scope, so it is for the cycle to file.
+For the cycle to file as a roadmap item: "code-review: correct the lever #3 cache-saving text". The skill still says the
+cache "serve[s] the shared block to all ~8 agents" and "Leave it on because it is free"
+(`SKILL.md:274-277`, `:352-354`); the probe shows that saving does not occur on the Agent-tool
+path. The same claim recurs at `:307-310` and `:322-323`, and the stable-parts-first rule's
+cross-pass warmth (`:347-351`, rubric row A7) fails by the same mechanism (inferred, not
+measured). Correcting that text is a pipeline change the brief puts out of scope. The
+handoff marker carries this line, and row A8's Split names the title.
 
 ## Plan
 
