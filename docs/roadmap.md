@@ -61,6 +61,19 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   is the owner's: Q-302. First step after the answer: compare its gaps and causes with this
   repo's, and file any cause the fixes here do not cover.
 
+- **Agent: code-review lever #3 follow-ons in other files** (filed 2026-11-19, from the lever
+  #3 loop's report; not built on its branch, by its brief). Motive: the same two claims the
+  lever #3 correction removes from `skills/code-review/SKILL.md` also live elsewhere: the
+  "paste each sub-agent's skill text, it cannot read your files" rule in
+  `skills/draft-review/SKILL.md` (:172, :231-233, :560), `skills/matrix-analysis/SKILL.md`
+  (:116, :422) and `workflows/divergent-design.md` (:213); the "cacheable prefix" claim in
+  `patterns/orchestrated-review.md` (:151) and `guides/sub-agent-briefing.md` (:78). Also:
+  rubric row A7 in `docs/reviews/code-review-rubric-2026-08-07-main.md` reads Fixed for a
+  cross-pass cache warmth that does not exist on this path, and decision-log row 35 counts
+  10 contract tests where there are now 13. First step: once the lever #3 correction merges
+  (its wording is the model), one review brief over these files; `workflows/` is a never
+  glob, so review.
+
 ## In flight
 
 - **Agent: code-review: correct the lever #3 cache-saving text, and the choices built on it**
@@ -126,6 +139,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
    subagent ending, a heartbeat, a shorter age for this session's own loops) and weigh
    each against D1's case (a live loop in another session, S1's honest-slip threat model),
    then pick the threshold or mechanism; gate code, so a review merge.
+   2026-11-19, later: two loops in one evening (F-019's at 20:01 UTC, the lever #3
+   correction's at 21:47 UTC) were told to hand back before their confirming review
+   reported, with work committed and no marker; each then waits the full two hours.
 
 ## Ideas
 
