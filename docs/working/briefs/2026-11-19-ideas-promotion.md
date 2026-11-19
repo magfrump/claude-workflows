@@ -31,3 +31,5 @@ Policy: review
 - Briefing or building any of today's Ideas themselves.
 - Where worktrees live (the F-019 brief, `docs/working/briefs/2026-11-19-worktrees-outside-dot-claude.md`, in flight).
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`.
+
+Dispatched: 1
