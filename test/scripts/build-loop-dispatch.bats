@@ -165,8 +165,14 @@ lock() { git worktree unlock "$1" 2>/dev/null; git worktree lock --reason "$2" "
     printf 'wt-*\n.gitignore\n' > "$R/.worktrees/.gitignore"
     dsp --worktree-base; [ "$status" -eq 0 ] && [ "$output" = "ok $R/.worktrees" ] && [ "$(cat "$R/.worktrees/.gitignore")" = "$(printf 'wt-*\n.gitignore')" ] || { show; return 1; }
     # An existing .gitignore that does not ignore the base: refused, not left for add -A to find (H2).
+    nig="refuse worktree-base: git does not ignore everything in $R/.worktrees in the main worktree (its .gitignore, or a negation in another one); make it ignore the directory's contents, as a .gitignore of * does"
     echo '!wt-x' >> "$R/.worktrees/.gitignore"
-    dsp --worktree-base; [ "$status" -eq 2 ] && [ "$output" = "refuse worktree-base: git does not ignore $R/.worktrees in the main worktree (its .gitignore or a negation in another one); make it ignore the directory" ] || { show; return 1; }
+    dsp --worktree-base; [ "$status" -eq 2 ] && [ "$output" = "$nig" ] || { show; return 1; }
+    # A narrow .gitignore that ignores the probe's name but leaves a real checkout (and itself) to git status: refused (review i1 A2).
+    printf 'wt-x\n' > "$R/.worktrees/.gitignore"; git worktree add -q "$R/.worktrees/wt-dev-cycle-2026" -b sib
+    dsp --worktree-base; [ "$status" -eq 2 ] && [ "$output" = "$nig" ] || { show; return 1; }
+    git worktree remove "$R/.worktrees/wt-dev-cycle-2026"
+    dsp --worktree-base; [ "$status" -eq 2 ] && [ "$output" = "$nig" ] || { show; return 1; }
     rm "$R/.worktrees/.gitignore"; ln -s /dev/null "$R/.worktrees/.gitignore"
     dsp --worktree-base; [ "$status" -eq 2 ] && [ "$output" = "refuse worktree-base: $R/.worktrees/.gitignore is a symbolic link or not a plain file" ] || { show; return 1; }
     rm -rf "$R/.worktrees"; mkdir "$BATS_TEST_TMPDIR/elsewhere"; ln -s "$BATS_TEST_TMPDIR/elsewhere" "$R/.worktrees"
@@ -177,6 +183,9 @@ lock() { git worktree unlock "$1" 2>/dev/null; git worktree lock --reason "$2" "
     # From a linked worktree it still names the main worktree's base.
     rm "$R/.worktrees"; git worktree add -q "$BATS_TEST_TMPDIR/linked" -b linked
     (cd "$BATS_TEST_TMPDIR/linked" && run --separate-stderr bash "$BL" --worktree-base && [ "$status" -eq 0 ] && [ "$output" = "ok $R/.worktrees" ]) || { show; return 1; }
+    # A main worktree whose path --dir would not take: refused, made nothing (review i1 A3).
+    S="$BATS_TEST_TMPDIR/sp ace"; mkdir "$S" && git -C "$S" init -q -b main && git -C "$S" commit -q --allow-empty -m init
+    (cd "$S" && run --separate-stderr bash "$BL" --worktree-base && [ "$status" -eq 2 ] && [ "$output" = "refuse worktree-base: the worktree base $S/.worktrees is not an absolute path of letters, digits and . _ - /" ] && [ ! -e "$S/.worktrees" ]) || { show; return 1; }
 }
 
 @test "--start refuses a default base it cannot use, leaving no branch, and --dir still works (brief 2026-11-19-worktrees-outside-dot-claude)" {

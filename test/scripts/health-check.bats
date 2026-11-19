@@ -436,6 +436,18 @@ _run_gate() {
   [[ "$output" == *"✓ scripts/good.sh"* ]]
 }
 
+@test "gate 6: a loop worktree under .worktrees/ is not linted (brief 2026-11-19-worktrees-outside-dot-claude)" {
+  command -v shellcheck >/dev/null 2>&1 || skip "shellcheck not installed"
+  local root; root="$(_fixture_repo)"
+  mkdir -p "$root/scripts" "$root/.worktrees/wt-x/scripts"
+  printf '#!/bin/bash\necho ok\n' > "$root/scripts/good.sh"
+  printf '#!/bin/bash\nunused=1\n' > "$root/.worktrees/wt-x/scripts/bad.sh"   # SC2034
+  printf '#!/bin/bash\nunused=1\n' > "$root/.worktrees/wt-x/scripts/bad.bats"
+  _run_gate "$root" check_shellcheck
+  [[ "$output" != *"FAIL=1"* ]] || { echo "$output"; return 1; }
+  [[ "$output" == *"✓ scripts/good.sh"* && "$output" != *"bad."* ]] || { echo "$output"; return 1; }
+}
+
 @test "gate 6: finding no shell files at all fails rather than passing vacuously" {
   command -v shellcheck >/dev/null 2>&1 || skip "shellcheck not installed"
   local root; root="$(_fixture_repo)"

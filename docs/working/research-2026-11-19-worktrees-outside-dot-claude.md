@@ -141,10 +141,40 @@ stay HARD.
     entries stay in git's list and are freed as before.
   - FP-062 (a relative override resolved against the wrong directory): the base is built
     from MAINWT, git's absolute main-worktree path, never from `$PWD`.
+- Failure-pattern skip: the fix(...) commits fix review findings in this branch's own unmerged code (missed prunes, a one-name ignore probe), not a diagnosed failure with a reusable cause
 - `wt_of` needs a branch argument. `--worktree-base` passes an empty one only to read
   MAINWT.
 - The `.gitignore` write uses noclobber (`set -C`), so a link planted between the check
   and the write is not followed (an honest race, S1).
+
+## Review round 1 (code-review, one sample; scratch reports outside the repo)
+
+No red findings. The ambers, and what was done about each:
+
+- **A1 (prunes).** `scripts/health-check.sh`'s shellcheck `find` calls and the hermeticity
+  adapters pruned only `.claude/`. A health check run from the main worktree would lint
+  every nested checkout, at about 44 s per checkout, and stale ones could turn it red.
+  Fixed: added anchored `.worktrees/` prunes and `**/.worktrees/**` excludes, plus a
+  bats case.
+- **A2 (ignore check).** The check probed one fixed name, so a narrow existing
+  `.gitignore` (`wt-x`) passed while git status showed a real checkout. Fixed:
+  `git status --porcelain -- .worktrees` must print nothing, and a new `wt-` name must be
+  ignored. Bats case added.
+- **A3 (path form).** `ok WTB` printed a path that `--start` would refuse (a space in it).
+  Fixed: `wt_base` refuses unless `readerform` passes. Bats case added.
+- **Lows taken:** a lost race to write `.gitignore` reads the winner's file instead of
+  refusing; the header's refusal list is complete; the workflow comment now says "ignores
+  everything inside it"; the header now says `.claude/` is protected "apart from a few
+  exceptions of its own"; and the guard wording now says "`hooks` or a settings file".
+- **Not taken:** `scripts/self-improvement.sh`'s `.claude/wt` base is out of the brief's
+  scope (noted above). The orchestrator test greps the repo copy of the script, and the
+  image ships both together.
+
+The trigger is more literal than "a policy file". The guard denies a Bash write whose
+text holds `.claude` and the bare word `hooks` or a settings*.json name. The `cd
+/workspace/.claude/wt-…` prefix every loop command carries is enough to set it off, and
+this loop hit that three times while building the change. That is the brief's second
+wall, reproduced.
 
 ## Plan
 

@@ -611,16 +611,24 @@
 #             ok WTB
 #             WTB being .worktrees in the main worktree, where --start's default
 #             worktrees and the dev cycle's WT, HC and GT go (brief
-#             2026-11-19-worktrees-outside-dot-claude). Claude Code protects all
-#             of .claude/ (each Write there asks, and an allow rule does not
-#             stop it), and guard-trusted-writes.py denies a Bash write whose
-#             text names .claude together with a policy file. It makes WTB and a
-#             .gitignore of "*" in it when absent (that ignores WTB and itself,
-#             so the main worktree's git status and add -A never see a checkout,
-#             with no edit to the repo's own .gitignore), and leaves an existing
-#             .gitignore as it is. Or refuse worktree-base: WHY: no main worktree,
-#             WTB or its .gitignore a symbolic link or of another kind, a failed
-#             mkdir or write, or WTB not ignored by git in the main worktree.
+#             2026-11-19-worktrees-outside-dot-claude). It makes it when absent,
+#             then prints it. Claude Code protects .claude/, apart from a few
+#             exceptions of its own: each Write there asks, and an allow rule
+#             does not stop that. guard-trusted-writes.py also denies a Bash
+#             write whose text names .claude together with hooks or a settings
+#             file. It makes WTB and, when absent, a .gitignore of "*" in it.
+#             That ignores everything inside, the .gitignore too, so the main
+#             worktree's git status and add -A never see a checkout, and the
+#             repo's own .gitignore needs no edit. An existing .gitignore is
+#             left as it is. Or one refuse worktree-base: WHY, when:
+#             - there is no main worktree, or the worktrees could not be listed;
+#             - WTB is not a path --dir takes;
+#             - WTB or its .gitignore is a symbolic link or of another kind;
+#             - a mkdir or write failed, or git status or check-ignore failed;
+#             - git sees anything in WTB, or does not ignore a new wt- name there;
+#             - or, as for --state, a refuse state line comes from the state
+#               gate, default_gate or a GIT_DIR-style variable set in the
+#               caller's environment.
 #             A worktree made under .claude/ before this is still found by its
 #             branch and lock in git worktree list, so --prompt, --free-worktrees
 #             and the gate read it as before.
@@ -1853,29 +1861,34 @@ dispatch() {
 }
 # WT_BASE_NAME: --worktree-base's directory in the main worktree (the header
 # says why it is not under .claude/). wt_base makes it, and its .gitignore of
-# "*" when absent, and checks that git ignores it there (H2: an existing
-# .gitignore that does not ignore it refuses, rather than leave checkouts for
-# add -A to pick up). Sets WT_BASE, or WT_BASE_WHY and returns 1. MAINWT
-# comes from wt_of, git's absolute path (never $PWD: FP-062).
+# "*" when absent, and checks that git ignores what is in it (H2: an existing
+# .gitignore that leaves anything there visible to git status refuses, rather
+# than leave a checkout for add -A to pick up). Sets WT_BASE, or WT_BASE_WHY
+# and returns 1. MAINWT comes from wt_of, git's absolute path (never $PWD:
+# FP-062).
 WT_BASE_NAME=.worktrees
 wt_base() {
-  local b g rc=0
+  local b g rc=0 out
   WT_BASE=""; WT_BASE_WHY=""
   [[ -n "$MAINWT" ]] || { WT_BASE_WHY="the repository has no main worktree (bare)"; return 1; }
   b="$MAINWT/$WT_BASE_NAME"; g="$b/.gitignore"
-  if [[ -L "$b" || ( -e "$b" && ! -d "$b" ) ]]; then WT_BASE_WHY="$b is a symbolic link or not a directory"
+  if ! readerform "$b"; then WT_BASE_WHY="the worktree base $b is not an absolute path of letters, digits and . _ - /"
+  elif [[ -L "$b" || ( -e "$b" && ! -d "$b" ) ]]; then WT_BASE_WHY="$b is a symbolic link or not a directory"
   elif ! mkdir -p -- "$b" 2>/dev/null; then WT_BASE_WHY="$b could not be made"
   elif [[ -L "$g" || ( -e "$g" && ! -f "$g" ) ]]; then WT_BASE_WHY="$g is a symbolic link or not a plain file"
-  # set -C: a link planted after the test is not written through.
-  elif [[ ! -e "$g" ]] && ! ( set -C; printf '*\n' > "$g" ) 2>/dev/null; then WT_BASE_WHY="$g could not be written"
+  # set -C: no write through a link planted after the test to an absent or
+  # regular file. A run that loses a race to write it reads the winner's file.
+  elif [[ ! -e "$g" ]] && ! ( set -C; printf '*\n' > "$g" ) 2>/dev/null && [[ ! -f "$g" || -L "$g" ]]; then WT_BASE_WHY="$g could not be written"
   else
-    # check-ignore takes no pathspec magic, so git_harden's literal pathspecs are off for this one fixed name.
-    GIT_LITERAL_PATHSPECS=0 git -C "$MAINWT" check-ignore -q -- "$WT_BASE_NAME/wt-x" 2>/dev/null || rc=$?
-    case "$rc" in
-      0) WT_BASE="$b"; return 0 ;;
-      1) WT_BASE_WHY="git does not ignore $b in the main worktree (its .gitignore or a negation in another one); make it ignore the directory" ;;
-      *) WT_BASE_WHY="git could not say whether it ignores $b (check-ignore exit $rc)" ;;
-    esac
+    # Two reads: status shows nothing in the base (no checkout and no
+    # .gitignore git could stage), and a new wt- name there is ignored too.
+    # check-ignore takes no pathspec magic, so git_harden's literal pathspecs
+    # are off for its one fixed name.
+    out="$(git -C "$MAINWT" status --porcelain --untracked-files=normal -- "$WT_BASE_NAME" 2>/dev/null)" || rc=128
+    [[ "$rc" -ne 0 ]] || GIT_LITERAL_PATHSPECS=0 git -C "$MAINWT" check-ignore -q -- "$WT_BASE_NAME/wt-x" 2>/dev/null || rc=$?
+    if [[ "$rc" -gt 1 ]]; then WT_BASE_WHY="git could not say whether it ignores $b (git status or check-ignore failed)"
+    elif [[ "$rc" -eq 1 || -n "$out" ]]; then WT_BASE_WHY="git does not ignore everything in $b in the main worktree (its .gitignore, or a negation in another one); make it ignore the directory's contents, as a .gitignore of * does"
+    else WT_BASE="$b"; return 0; fi
   fi
   return 1
 }

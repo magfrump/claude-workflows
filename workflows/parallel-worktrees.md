@@ -39,12 +39,12 @@ Send the subagents in parallel — one Agent call per item (or per shared-state 
 Manual fallback. Use it for human-driven sessions, when Agent-tool isolation is not available, or when it **fails or misbehaves**. In the cc-isolated sandbox it has failed outright since 2026-09-18 ("Could not read the repository git config…"). Before that it branched from a stale base and left subagents stalled. The by-hand version has run 6 parallel agents cleanly:
 
 ```bash
-mkdir -p .worktrees && { [ -e .worktrees/.gitignore ] || echo '*' > .worktrees/.gitignore; }   # git ignores the directory, with no edit to the repo's .gitignore
+mkdir -p .worktrees && { [ -e .worktrees/.gitignore ] || echo '*' > .worktrees/.gitignore; }   # git ignores everything inside it, with no edit to the repo's .gitignore
 git worktree add .worktrees/wt-item-1 -b feat/item-1 main   # inside the project, but not under .claude/
 git worktree add .worktrees/wt-item-2 -b feat/item-2 main
 ```
 
-Don't put these under `.claude/`. Claude Code asks before every write there, and an allow rule doesn't stop the asks. This harness's guard hook also denies a Bash write that names `.claude` together with a policy file. `build-loop.sh --worktree-base` makes the same directory and checks that git ignores it; its header gives the reasons.
+Don't put these under `.claude/`. Claude Code asks before every write there, and an allow rule doesn't stop the asks. This harness's guard hook also denies a Bash write whose text names `.claude` together with `hooks` or a settings file. `build-loop.sh --worktree-base` makes the same directory and checks that git ignores what is in it; its header gives the reasons.
 
 Dispatch each agent **without** `isolation`, and tell it to work and commit only under its absolute worktree path. Put the shared brief in one scratch file and give each agent only its item-specific notes. Then poll `git log main..<branch>` rather than waiting on the agents.
 

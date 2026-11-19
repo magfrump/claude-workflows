@@ -3,7 +3,7 @@
   "_comment": "1:1 port of the original test/fixture-hermeticity.bats rule (decision 014, layer 2). Behaviour must not drift: the 13 existing bats suites are the regression test.",
 
   "test_globs": ["test/**/*.bats", "test/*.bats"],
-  "exclude_globs": ["**/.git/**", "**/.claude/**"],
+  "exclude_globs": ["**/.git/**", "**/.claude/**", "**/.worktrees/**"],
 
   "network_bins": ["claude", "curl", "wget", "gh"],
 

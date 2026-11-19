@@ -9,7 +9,7 @@
     "**/node_modules/**",
     "**/site-packages/**",
     "**/.git/**",
-    "**/.claude/**",
+    "**/.claude/**", "**/.worktrees/**",
     "**/.tox/**"
   ],
 
