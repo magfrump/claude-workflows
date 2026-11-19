@@ -73,17 +73,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   note (a review file the cycle does not write: a loop's change). The two larger settling
   runs wait on Q-308. Briefed: `docs/working/briefs/2026-11-19-a8-cache-probe.md`.
 
-- **Agent: an Idea that carries owner-reported friction never leaves Ideas** (filed
-  2026-11-19, in session). Motive: philosophy-research F-019 (permission asks on every write
-  under the worktrees) and F-011 (a subagent's report write refused) were ingested
-  2026-11-16 as Ideas and sat there while the owner kept hitting them; step 8 briefs only
-  Now and Next, and nothing promotes an Idea. Same class as the roadmap-staleness fix
-  (22735b6e), one section over. First step: in `skills/dev-cycle/SKILL.md` step 6, an Idea
-  whose signal is harness feedback (a `docs/working/feedback/` entry) or an owner report is
-  moved to Now as agent work, or asked about in one `you: judgment` entry, at the next
-  iteration, never left unranked; a digest count of such Ideas makes it checkable. Gate
-  code: a review merge. Briefed 2026-11-19: `docs/working/briefs/2026-11-19-ideas-promotion.md`.
-
 - **Worktrees and caches out of the protected config directory** (brainstorm 2026-11-16;
   moved from Ideas 2026-11-19 on the owner's request). Signal: philosophy-research F-019,
   about 18 permission asks in one session from writes into the cycle's and loops'
@@ -462,6 +451,11 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- **Agent: an Idea that carries owner-reported friction never leaves Ideas** (filed 2026-11-19).
+  Done 7661a2cf (approved merge, Q-309 [1]), brief `docs/working/briefs/closed/2026-11-19-ideas-promotion.md`:
+  the digest lists each Idea naming a feedback entry or an owner report, and step 6 moves
+  each unheld one to Now (one question per iteration for those needing a call). Live with
+  the next release (Q-303); about 12 of today's Ideas move then.
 - **A8 post-restructure token measurement** (Q-304 [1]). Done 358c2332 (approved merge, Q-306 [1]),
   brief `docs/working/briefs/closed/2026-11-19-a8-token-measurement.md`, results
   `runs/review-arms/a8-2026-11-19/results.md`: one terminal pass on csp, 852,285 tokens over 9
