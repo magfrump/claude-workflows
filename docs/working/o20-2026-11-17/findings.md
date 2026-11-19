@@ -12,7 +12,7 @@
 | `maintainer.md` | simulated | Read the attachment's statements; did not build. |
 | `builder.md` | simulated | Built the zip from a fresh unzip. |
 | `enthusiast-simulated.md` | simulated | Opened the problem page once. |
-| `enthusiast-author.md` | **real** | **Pending.** Every enthusiast finding below is uncalibrated until it is in. |
+| `enthusiast-author.md` | **real** | 2026-11-18. Contaminated on E2. Stopped ("bored") at Theorem 2's paragraph, l.41. Graded in that file. |
 
 Part A lists correctness and fidelity issues. Part B lists exposition issues. **Part A blocks posting whatever
 happens to Part B**, because a maintainer's verify pass would find each of these.
@@ -62,6 +62,7 @@ byte-identical to its log; every attached name present.
 | E4 | pass | — | Noticed qd(n) hides its k-dependence. |
 | E5 | partial | missing | The post never mentions the Prisoner's Dilemma. The reader made the connection. |
 | E6 | pass | — | |
+| *Author's session:* | | | E1 **fail** (missing), E2 **partial** (buried: no conditions), E3 **fail** (missing), E4 **fail** (misread: g read as bounding "the proof that q implies p"), E5 **partial** (missing), E6 **fail** (misread: e taken for Euler's number). Details in `sessions/enthusiast-author.md`. |
 | B1 | partial | undefined | Same as C5. |
 | B2 | pass | — | Found A2, A4, A5. |
 | B3 | pass | attachment | A8. "Checking it" doesn't say `cd lean`. |
@@ -83,10 +84,15 @@ The "Readers" column counts independent sessions that hit it. Three or four is a
 | F8 | S3 | undefined | **The open question isn't posable as written:** "budgets at the λ scale", and whether g − f = o(λ) is external or certified. | 2 |
 | F9 | S3 | undefined | **The opening's "a gap of log k" doesn't say between what.** Nor which "premise's proof length". | 3 |
 | F10 | S3 | misread | **Notation drift.** λ and log₂k are used for each other (f′ = k − λ − A against k − log₂k − A); N becomes N_P; qd(n) depends silently on k; K means three things (A1's ≤* threshold, the K axiom, the finite check's bound); "Payor's four lines" are followed by six steps. | 3 |
-| F11 | S2 (enthusiast, **uncalibrated**) | missing | **No game framing.** The post never mentions the Prisoner's Dilemma and never defines PB_k, c, □ₐ, FairBot_k or k̂*. It doesn't link the problem page. About 15 of the simulated enthusiast's 46 stops were resolved only by the problem page. | 1 |
-| F12 | S2 (enthusiast, **uncalibrated**) | undefined | **"Internally regular" carries the E2/C4 answer and is never glossed.** The conjecturer knows it, but the enthusiast and the declared ILIAD reader do not. | 2 |
-| F13 | S3 (enthusiast, **uncalibrated**) | missing | **The reason for log k is never given:** a proof of φ(k̄) has to write the numeral k̄, about log₂k symbols. | 1 |
-| F14 | S2 (enthusiast, **uncalibrated**) | buried | **The third paragraph ("What the lemma half assumes") is where a first-pass reader would stop.** It lists names before any is defined. | 2 |
+| F11 | S2 (enthusiast, **calibrated**: the author's E1 has no game setting, and E5 brings in the PD from their own knowledge) | missing | **No game framing.** The post never mentions the Prisoner's Dilemma and never defines PB_k, c, □ₐ, FairBot_k or k̂*. It doesn't link the problem page. About 15 of the simulated enthusiast's 46 stops were resolved only by the problem page. | 1 |
+| F12 | S2 (enthusiast, **still uncalibrated**: the author stopped before §3) | undefined | **"Internally regular" carries the E2/C4 answer and is never glossed.** The conjecturer knows it, but the enthusiast and the declared ILIAD reader do not. | 2 |
+| F13 | S2 (enthusiast, **calibrated**: the author's E3 is "not connected to any text") | missing | **The reason for log k is never given:** a proof of φ(k̄) has to write the numeral k̄, about log₂k symbols. | 1 |
+| F14 | S1 (enthusiast, **calibrated, revised**) | buried | **A first-pass enthusiast abandons the post by Theorem 2's paragraph (l.41).** The author read past paragraph 3 without comment, then stopped ("bored") at l.41, the simulated enthusiast's second candidate. Everything after it is unread for this archetype, including E2's conditions, the PD-relevant §3–§4, and §5's no-speed-up disclaimer. Paragraph 3 is still dense for readers without the Lean names (2 simulated). | 3 |
+| F16 | **S1** | misread | **Real reader only.** "(1+e)" in the §5 table reads as Euler's number. The author's E6: "a factor of (1+e) ≈ 3.7×" faster. Here e is the slope of 𝓔(m) = em + e₀, defined only in the sentence after the table, and §5 disclaims any speed claim. This is the misreading most likely to be repeated on the thread. | 1 (real) |
+| F17 | S2 | missing | **Real reader only. No worked numbers, and no sentence saying why there are none.** The author asked for an example like "PB^15_100 self-cooperates because…, PB^2_10 fails because…". The constants for PA_bin (C_S, c_S, N_P) are not computed (O12), so the post can't give real ones. It should say so, and could give a [toy] example from `thresholds.py`'s made-up constants. That would also give [toy] its only use (F5). | 1 (real) |
+| F18 | S2 | undefined | **C_S, c_S and λ are never defined in words, and math-only symbols can't be found with ctrl+F** in the rendered post. Real and simulated readers both stopped on them (simulated items 15 and 27). | 2 (1 real) |
+| F19 | S3 | buried | **comb and qd are given numerically, but not under their names.** Setting's `CritchBHP` bullet says "implication distribution costs a+b+c_S", and the reader, stuck on comb(qd(T₀), f) in Theorem 1, didn't connect the two. Write comb(a,b) = a+b+c_S and qd(n) = C_S+2n+log₂k. | 1 (real) |
+| F20 | S2 | undefined | **□_a and the role of g are never said in words.** The author's E4 read g as bounding "the proof that q implies p" and as a function of p and f. (Simulated stops 12 and 18. The author has been asked to confirm the reading.) | 2 (1 real) |
 | F15 | S4 | style | **`STYLE.md` avoid-list:** "gap" 6× (rule 26), bullet-point prose (rule 36), symbols in prose (rule 17). Observed by the orchestrator, not a reader. | — |
 
 ### Where the archetypes conflict
@@ -111,8 +117,13 @@ The "Readers" column counts independent sessions that hit it. Three or four is a
 5. Define every introduced name in words at first use, or drop it from the prose (F2). Split Theorem 2 into its
    two forms (F6). Rewrite the §5 sentence (F7). Make the open question posable (F8). Fix the notation (F9, F10).
 6. Sweep `STYLE.md`'s avoid-list (F15).
+6a. From the author's session: rename §5's slope e (it reads as Euler's number) and put "not a claim that the
+   Payor route is faster" in the table, not after it (F16). Say in the opening why no concrete (A, k) can be
+   given, and add one [toy] worked example (F17). A notation table with each symbol named in words: □_a, f, g,
+   comb, qd, C_S, c_S, λ, e (F18–F20). Everything an enthusiast needs, from E1 to E6's answer, has to come before
+   Theorem 2's paragraph, because that is where they stop (F14).
 7. Re-run only the failed and partial tasks against the revision: C1–C2 and C4 from the opening, C5, M3, E2, E3,
-   E5, B1. Use fresh subagents, and the author for E-tasks.
+   E5, B1. Use fresh subagents. The author is now doubly contaminated (they have seen this grading), so their next E-session tests only whether the revision fixes F14 and F16–F20, not recall.
 
 ## Notes for the `reader-testing` skill
 
