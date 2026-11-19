@@ -33,3 +33,5 @@ Paths: none
 - Editing `scripts/build-loop.sh`, any skill or workflow.
 - The two-hour re-dispatch rule itself (roadmap Next 2).
 - Editing `docs/roadmap.md`, the questions files, `docs/working/watching.md`, `docs/working/idea-log.md` or `docs/working/feedback/`: the dev cycle owns those.
+
+Dispatched: 1
