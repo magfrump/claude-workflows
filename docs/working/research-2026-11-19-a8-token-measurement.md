@@ -21,7 +21,7 @@ cell under today's skill answers part of that.
   and is NOT in the 359k per-cell figure, but is in the 2.99M canon total.
 - Baseline delivery was self-read: critics got a scope spec and read the diff and files
   with tools (levers-3-4 doc: shared prefix ~330 tokens).
-- Today's skill (`skills/code-review/SKILL.md`, last changed 44724747; 82accdd7, 2026-11-14, its child, touched only `references/rubric.md`) inlines
+- Today's skill (`skills/code-review/SKILL.md`, last changed 44724747; 82accdd7, 2026-11-14, its child, changed only `references/rubric.md` under `skills/code-review/`) inlines
   diff + enclosing files as a byte-identical shared prefix within a 25k-token budget,
   runs k=3 fact-check on a terminal pass, and adds Stage 2.5 (submitted-claims fact-check)
   when critics route endorsement claims; Stage 2.5 did not exist on 2026-08-06.
@@ -56,7 +56,8 @@ cell under today's skill answers part of that.
   pasting 14.5-34 KB of skill text into each prompt. The skill text enters each agent's
   context either way (prompt vs first tool result), so the token count differs by a tool
   call's overhead (a few hundred tokens), and the shared block, the thing A8 is about,
-  stays the cacheable first part of every prompt. Recorded as a deviation.
+  stays the first part of every prompt I write (the harness puts its own context ahead of
+  it in the request, and no cache breakpoint ends at it; results §2). Recorded as a deviation.
 - Artifacts go to `runs/review-arms/a8-2026-11-19/csp/`, not `docs/reviews/` (brief AC2).
   The override-log read (Step 3.5) targets the reviewed repo, which has no
   `docs/reviews/override-log.md`; I did not create one there (no writes to the benchmark

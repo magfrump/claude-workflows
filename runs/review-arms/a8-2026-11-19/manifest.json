@@ -1,7 +1,7 @@
 {
   "experiment": "A8 \u2014 post-restructure token measurement, one canon cell (brief docs/working/briefs/2026-11-19-a8-token-measurement.md)",
   "date": "2026-11-19",
-  "setup": "Today's skills/code-review/SKILL.md (last changed 44724747; 82accdd7 touched only references/rubric.md) at 4330e303. One terminal pass (no --loop-pass): k=3 fact-check (opus), Stage 1.5 gating, gated critic panel (opus), Stage 2.5 if routed claims, Stage 3 synthesis inline by the orchestrator.",
+  "setup": "Today's skills/code-review/SKILL.md (last changed 44724747; 82accdd7 changed only references/rubric.md under skills/code-review/) at 4330e303. One terminal pass (no --loop-pass): k=3 fact-check (opus), Stage 1.5 gating, gated critic panel (opus), Stage 2.5 if routed claims, Stage 3 synthesis inline by the orchestrator.",
   "baseline": "runs/review-arms/baseline-2026-08-06 (csp cell: fc k=1 74,274 + 4 critics = 358,626 core; test-strategy gap-fix 65,894 ran separately)",
   "method": "Scratch worktree of /workspace/external/meta-formalism-copilot at d90d6bb in the session scratchpad. Shared block (goal preamble + rules + PR intent + diff + enclosing files) inlined first and byte-identical in every prompt; per-agent tail names the skill file to read, the output path and the role task. Tokens from task notifications, written at notification time.",
   "cells": {

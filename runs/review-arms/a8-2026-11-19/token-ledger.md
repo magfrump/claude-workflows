@@ -24,4 +24,5 @@ delivery mode `inline`.
 Instrument check: for every agent, the notified figure equals its transcript's last API call
 (input + cache_creation + cache_read + output). First-call cache read was 18,900 tokens on all
 9 agents: system prompt and tools only; no agent read the inlined shared block from another
-agent's cache (each re-reads its own prefix from its second call on).
+agent's cache (an agent's later calls usually re-read its own prefix; results §2 lists the
+exceptions).

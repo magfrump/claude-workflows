@@ -14,7 +14,7 @@ adds prompt tokens each agent used to fetch selectively.
 **Cell and setup.** csp (the brief's default; no reason to pick another), range
 `d86d2dc..d90d6bb` of meta-formalism-copilot, checked out at `d90d6bb` in a scratch worktree
 outside this repo. Today's skill (`SKILL.md` last changed in 44724747; 82accdd7, its child,
-touched only `references/rubric.md`), terminal pass: k=3 fact-check, 5 critics
+changed `references/rubric.md` and nothing else under `skills/code-review/`), terminal pass: k=3 fact-check, 5 critics
 (security, performance, api-consistency, architecture, test-strategy; ui-visual not selected,
 as in the baseline), Stage 2.5 for 6 routed endorsement claims, rubric synthesized inline.
 All agents on opus. Running total peaked at 852,285 tokens, under the brief's 2M stop line.
@@ -64,18 +64,22 @@ token counts. I found no transcripts from the August run to split its figures th
   `be4a2600985537d5` ×3; Stage 2: `42374933a2ebe4a1` ×5, equal to `csp/shared-block-stage2.md`).
 - **No agent read the shared block from another agent's cache.** Each agent's first call read
   exactly 18,900 cached tokens (system prompt + tools, common to every agent) and wrote
-  32.8k-33.8k fresh, shared block included. This held for all 9 agents. (From its second call
-  on, each agent re-reads its own prefix from cache, block included; that happens with or
-  without inlining.) So the benefit the "leave it on" line expects (agents 2..N reading the
+  32.8k-33.8k fresh, shared block included. This held for all 9 agents. (Within a run, an
+  agent's later calls usually re-read its own prefix from cache, block included, which
+  happens with or without inlining. The exceptions are calls after a long gap: the final
+  calls of r1 and r2, after about 6-7 minutes, read only 18,900, and the api critic's final
+  call, after 73 minutes, read 0.) So the benefit the "leave it on" line expects (agents 2..N reading the
   shared block at the cache-read rate) was **0** in this pass.
 - **Why: the request records point to where the cache breakpoints sit.** Every agent's first
   request carries three breakpoints: `system[0]`, `system[1]` and `messages[1].content[3]`,
   the end of the first user turn, after the per-agent tail. No cache entry ever ends at the
-  shared block's last byte, so a sibling has nothing to match there. Timing does not explain
-  it. r3's first call returned about 5.5 s after r1's and r2's and still read only 18,900. The
-  Stage 2.5 agent shares the first 8,745 characters with the api critic, whose last call came
-  59 s before Stage 2.5's first, well inside the 5-minute cache lifetime, and it too read
-  18,900. I did not read API documentation on prefix matching inside one content block, so
+  shared block's last byte, so a sibling has nothing to match there. Within Stages 1 and 2
+  the agents' first requests went out within milliseconds of each other, so those stages
+  cannot separate timing from breakpoints. Stage 2.5 can. It shares the first ~8,745
+  characters with the api critic, whose last call (which had just written its full prefix
+  to cache) came 59 s before Stage 2.5's first request, well inside the 5-minute cache
+  lifetime, and Stage 2.5 still read only 18,900. That points to the breakpoints, not
+  timing. I did not read API documentation on prefix matching inside one content block, so
   this explanation is an inference from the records, not a confirmed mechanism.
 - csp says nothing about the budget's upper edge: its block is tiny. The baseline's largest
   cell (corpus, ~17.4k tokens of diff + fact-check) is the one that would test it.
@@ -110,8 +114,9 @@ is absent, which is unconfirmed on Vercel. Beyond the six labels, the pass re-fo
 items the ledger already holds. Security's `Purpose: prefetch` finding (🟡 A2) is canon N1,
 real and fix-confirmed at `ab4dbdb` (`docs/working/canon-issue-ledger.md:176-177`). The
 pdf.js `worker-src` finding (🟡 A4, worker half) is canon N7, which E7r2 refuted with spec and
-WPT evidence (`:185-189`). It counts as a known false positive: the rubric's A4 should not be
-credited.
+WPT evidence (`:185-189`); the ledger still lists its demotion as pending adjudication. So
+the worker half of the rubric's A4 should not be credited as a hit (the rest of A4, the
+export coupling, is R1's).
 
 ## 4. Verdict on A8's claim
 
