@@ -30,3 +30,5 @@ Policy: review
 - The self-read control pass and the corpus-cell pass (Q-308).
 - Any other change to the code-review pipeline, or to k.
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`.
+
+Dispatched: 1
