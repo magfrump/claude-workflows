@@ -41,7 +41,7 @@ Brief: `docs/working/briefs/2026-11-18-section5-followups.md` (at 34bbbe89).
 ## Design choices
 
 - R5 (two viable options: report NOT checked, or read `watching.md` some other way): the brief prescribes NOT checked; reading watches without a live file would need a second parser or a `questions.sh` change. Path A, NOT checked. The condition is `[[ -n "$qw_at" || -f "$QW" ]]`: with `qw_at` empty, `blocker` found no symlink on the path, so `-f` follows none.
-- "First 80 characters" (two options, the brief's call): fix the cut rather than reword only, since a split character is invalid UTF-8 and grep then reads the digest as binary (FP-170). The items awk runs under `LC_ALL=C` (bytes under any awk) and reuses `questions.sh`'s `sub`; the `sub` drops only a trailing lead byte whose continuation bytes are missing (review round 1: `questions.sh`'s `[\302-\364][\200-\277]*$` ate the last whole character of every non-ASCII title, cut or not), so a whole character always stays, and the comment says "first 80 bytes, cut back to a character boundary". A length guard was tried and dropped: with this regex it changes nothing a test could see. A symlinked or other non-plain `watching.md` with no questions file prints section 3's skip note, since `questions.sh init` refuses to write through a symlink.
+- "First 80 characters" (two options, the brief's call): fix the cut rather than reword only, since a split character is invalid UTF-8 and grep then reads the digest as binary (FP-170). The items awk runs under `LC_ALL=C` (bytes under any awk) and replaces `questions.sh`'s `sub` with one that drops only a trailing incomplete sequence, a lead byte and what the cut kept of it (review round 1: `questions.sh`'s `[\302-\364][\200-\277]*$` ate the last whole character of every non-ASCII title, cut or not), so a whole character always stays, and the comment says "first 80 bytes, cut back to a character boundary". A length guard was tried and dropped: with this regex it changes nothing a test could see. A symlinked or other non-plain `watching.md` with no questions file prints section 3's skip note, since `questions.sh init` refuses to write through a symlink.
 - Test 97's glob half (options: the real script only, which cannot fail; a mutated copy without the 0x1f mapping; extracting the loop into a function, which grows a 695-line file; dropping the guard, out of scope): one dominates under the brief's "confirm by reverting" criterion, the mutated copy. Path A.
 
 ## Plan
@@ -53,8 +53,9 @@ Brief: `docs/working/briefs/2026-11-18-section5-followups.md` (at 34bbbe89).
 
 ## Verification
 
-- `bats test/scripts/dev-cycle.bats test/scripts/convention-migrations.bats`: 114 ok.
+- `bats test/scripts/dev-cycle.bats test/scripts/convention-migrations.bats`: 115 ok (114 before review round 1's dangling-symlink test).
 - Review round 1 (fresh reviewer): one must-fix (the greedy `sub`), two should-fix (the non-plain `watching.md` message and its missing test), nits; all fixed, with tests for a short non-ASCII title, cuts on and inside 2-, 3- and 4-byte characters, and a dangling-symlink `watching.md`. Mutations of the round-1 code: the old greedy regex, no `sub`, and dropping `-n "$qw_at" ||` each fail a test.
+- Review round 2: no must-fix; one should-fix (no test cut inside a 4-byte character or right after a lone 3-byte lead, so three regex mutants passed), nits on wording and the test count; all fixed, the three mutants re-run.
 - Mutations, each in a scratch copy of `scripts/` and `test/` (the section 5 tests only): `for id in $ids` loop → test 9 (glob) fails; R5 condition removed → test 8 fails; split-sequence `sub` removed → test 10 fails; `!seen_next` guard removed → test 4 fails.
 
 ## Files read

@@ -501,8 +501,8 @@ if inrepo docs/roadmap.md; then
           for (i = 1; i <= n; i++) if (f[i] ~ /^Status:/) st = substr(f[i], 9) }
         END { fl() }' docs/working/questions.md) "
     fi
-    # LC_ALL=C: substr counts bytes under any awk, and the title then
-    # drops a trailing lead byte whose continuation bytes the cut left out (a
+    # LC_ALL=C: substr counts bytes under any awk, and the title then drops
+    # a trailing incomplete sequence (a lead byte and what the cut kept of it; a
     # split character is invalid UTF-8, and grep reads the digest as binary;
     # questions.sh drops any trailing multibyte one, FP-170), keeping a whole one.
     items="$(LC_ALL=C awk '

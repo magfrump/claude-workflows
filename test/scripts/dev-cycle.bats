@@ -1870,9 +1870,10 @@ MD
     [[ "$output" == *"- Now 1 · no open entry or watch names it · \"$want\""* ]] || { echo "$output" | sed -n '/## 5/,/## 6/p'; return 1; }
     # A title that needs no cut keeps its last character, and so does one cut
     # exactly on a character boundary (40 two-byte characters are 80 bytes;
-    # "ab" then 26 three-byte ones are too), or after a whole 4-byte one.
+    # "ab" then 26 three-byte ones are too), or after a whole 4-byte one; a
+    # cut 1, 2 or 3 bytes into a 4-byte one or 1 byte into a 3-byte one drops it.
     t80="$(printf 'é%.0s' $(seq 41))"; t3="ab$(printf '中%.0s' $(seq 27))"; t4="$(printf '😀%.0s' $(seq 21))"
-    printf '# Roadmap\n\n## Now\n\n- Fix café\n- Ends with 中\n- %s\n- %s\n- %s\n- a%s\n\n## Next\n' "$t80" "$t3" "$t4" "$t3" > docs/roadmap.md
+    printf '# Roadmap\n\n## Now\n\n- Fix café\n- Ends with 中\n- %s\n- %s\n- %s\n- a%s\n- x%s\n- xx%s\n- xxx%s\n- a%s\n\n## Next\n' "$t80" "$t3" "$t4" "$t3" "$t4" "$t4" "$t4" "$(printf '中%.0s' $(seq 27))" > docs/roadmap.md
     run --separate-stderr bash "$DC"
     [ "$status" -eq 0 ]
     section=$(echo "$output" | sed -n '/## 5/,/## 6/p')
@@ -1880,7 +1881,11 @@ MD
                 "- Now 3 · no open entry or watch names it · \"$(printf 'é%.0s' $(seq 40))\"" \
                 "- Now 4 · no open entry or watch names it · \"ab$(printf '中%.0s' $(seq 26))\"" \
                 "- Now 5 · no open entry or watch names it · \"$(printf '😀%.0s' $(seq 20))\"" \
-                "- Now 6 · no open entry or watch names it · \"aab$(printf '中%.0s' $(seq 25))\""; do
+                "- Now 6 · no open entry or watch names it · \"aab$(printf '中%.0s' $(seq 25))\"" \
+                "- Now 7 · no open entry or watch names it · \"x$(printf '😀%.0s' $(seq 19))\"" \
+                "- Now 8 · no open entry or watch names it · \"xx$(printf '😀%.0s' $(seq 19))\"" \
+                "- Now 9 · no open entry or watch names it · \"xxx$(printf '😀%.0s' $(seq 19))\"" \
+                "- Now 10 · no open entry or watch names it · \"a$(printf '中%.0s' $(seq 26))\""; do
         [[ "$section" == *"$want"* ]] || { echo "missing: $want"; echo "$section"; return 1; }
     done
 }
