@@ -33,3 +33,5 @@ Policy: review
 - Re-evaluating review k or the lite review under the current model: the owner's 2026-10-20 feedback asks for that separately, and it waits on its own go-ahead.
 - Changing the code-review skill or any review workflow.
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`.
+
+Dispatched: 1
