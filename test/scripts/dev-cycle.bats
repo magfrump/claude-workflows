@@ -1721,6 +1721,10 @@ Column-0 prose after it naming Q-010 belongs to no item.
 ## Now
 
 - **A second Now section** (Q-010)
+
+## Next
+
+1. **A second Next section** (Q-010)
 MD
     run --separate-stderr bash "$DC"
     [ "$status" -eq 0 ]
@@ -1732,6 +1736,7 @@ MD
         [[ "$section" == *"$t"* ]] || { echo "missing: $t"; echo "$section"; return 1; }
     done
     [[ "$section" != *"Now 4"* && "$section" != *"A second Now section"* ]] || { echo "$section"; return 1; }
+    [[ "$section" != *"Next 2"* && "$section" != *"A second Next section"* ]] || { echo "$section"; return 1; }
 }
 
 @test "section 5 reads an entry's Status only from its Needs line, exactly, as questions.sh does (review 2026-11-18 pass 2, claim 5b)" {
@@ -1800,16 +1805,87 @@ MD
     [[ "$section" == *'- Now 1 · no open entry or watch names it · "A"'* && "$section" != *"NOT checked"* ]] || { echo "$section"; return 1; }
 }
 
+@test "section 5 prints NOT checked, never unheld, when watching.md exists but questions.md does not (review 2026-11-18 final pass, R5)" {
+    mkdir -p docs/working
+    printf '# Watching\n\n## Open\n\n### Q-020 · a-watch\n**Needs:** trigger · **Opened:** 2026-11-01 · **Status:** OPEN\n' > docs/working/watching.md
+    printf '# Roadmap\n\n## Now\n\n- **Held by watch** (Q-020)\n\n## Next\n' > docs/roadmap.md
+    run --separate-stderr bash "$DC"
+    [ "$status" -eq 0 ]
+    s3=$(echo "$output" | sed -n '/## 3/,/## 4/p')
+    section=$(echo "$output" | sed -n '/## 5/,/## 6/p')
+    [[ "$s3" == *"**Watched questions were NOT checked** — docs/working/watching.md exists but docs/working/questions.md does not"* ]] || { echo "$s3"; return 1; }
+    [[ "$section" == *"**Now and Next items were NOT checked against open entries and watches**"* ]] || { echo "$section"; return 1; }
+    [[ "$section" != *"no open entry or watch names it"* && "$section" != *"Held by watch"* ]] || { echo "$section"; return 1; }
+}
+
+@test "section 5 prints NOT checked when watching.md is a dangling symlink and questions.md is missing; section 3 names the skip (review 2026-11-18 final pass, R5)" {
+    mkdir -p docs/working
+    # Dangling, so only the skip check (not a -f test) sees that it is there.
+    ln -s ../../gone.md docs/working/watching.md
+    printf '# Roadmap\n\n## Now\n\n- **Held by watch** (Q-020)\n\n## Next\n' > docs/roadmap.md
+    run --separate-stderr bash "$DC"
+    [ "$status" -eq 0 ]
+    s3=$(echo "$output" | sed -n '/## 3/,/## 4/p')
+    section=$(echo "$output" | sed -n '/## 5/,/## 6/p')
+    [[ "$s3" == *"**Watched questions were NOT checked** — docs/working/watching.md is not read"* && "$s3" != *"questions.sh init"* ]] || { echo "$s3"; return 1; }
+    [[ "$section" == *"**Now and Next items were NOT checked against open entries and watches**"* && "$section" != *"Held by watch"* ]] || { echo "$section"; return 1; }
+}
+
 @test "section 5: a 0x1f byte or glob character in the roadmap shifts no field and expands nothing; a verdict-like title stays quoted after the verdict (review 2026-11-18, security 1 and 2)" {
     mkdir -p docs/working
-    printf '# Running questions\n\n## Open\n\n### Q-010 · open\n**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** OPEN\n' > docs/working/questions.md
+    printf '# Running questions\n\n## Open\n\n### Q-001 · open-too\n**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** OPEN\n\n### Q-010 · open\n**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** OPEN\n' > docs/working/questions.md
     : > docs/working/questions-archive.md
-    # A tracked file named like an ID: a glob in the IDs field would match it.
+    # A tracked file named like an open entry's ID: a `*` that reached the IDs
+    # field and was expanded would match it, and Q-001 would print as a hold.
     echo x > Q-001 && git add Q-001 && git commit -q -m q
-    printf '# Roadmap\n\n## Now\n\n- **A\037B** \037 * \037 Q-0* waits\n- **B: open: Q-010 (you: judgment)** names nothing\n\n## Next\n' > docs/roadmap.md
+    printf '# Roadmap\n\n## Now\n\n- **A\037B** \037 * \037 Q-0* waits\n- **B: open: Q-010 (you: judgment)** names nothing\n- x\037* waits on nothing\n\n## Next\n' > docs/roadmap.md
     run --separate-stderr bash "$DC"
     [ "$status" -eq 0 ]
     section=$(echo "$output" | sed -n '/## 5/,/## 6/p')
     [[ "$section" == *'- Now 1 · no open entry or watch names it · "A B"'* && "$section" != *"Q-001 ("* ]] || { echo "$section"; return 1; }
     [[ "$section" == *'- Now 2 · open: Q-010 (you: judgment) · "B: open: Q-010 (you: judgment)"'* ]] || { echo "$section"; return 1; }
+    [[ "$section" == *'- Now 3 · no open entry or watch names it · "x * waits on nothing"'* ]] || { echo "$section"; return 1; }
+    # The 0x1f mapping alone keeps a `*` out of the IDS field, so the glob
+    # guard (read -a and the ID-shape recheck) is tested on a copy without
+    # it: there the `*` reaches IDS, and only that guard keeps Q-001 out.
+    cp -R "$REPO_ROOT/scripts" "$BATS_TEST_TMPDIR/mut"
+    sed -i 's|gsub(/\[\\t\\037\]/, " ")|gsub(/[\\t]/, " ")|' "$BATS_TEST_TMPDIR/mut/dev-cycle.sh"
+    ! cmp -s "$DC" "$BATS_TEST_TMPDIR/mut/dev-cycle.sh" || { echo "the 0x1f mapping was not found to remove"; return 1; }
+    run --separate-stderr bash "$BATS_TEST_TMPDIR/mut/dev-cycle.sh"
+    [ "$status" -eq 0 ]
+    section=$(echo "$output" | sed -n '/## 5/,/## 6/p')
+    [[ "$section" == *'- Now 3 · no open entry or watch names it · "x"'* && "$section" != *"Q-001 ("* ]] || { echo "$section"; return 1; }
+}
+
+@test "section 5 cuts a long no-bold title at 80 bytes without splitting a multibyte character (review 2026-11-18 final pass, A11)" {
+    mkdir -p docs/working
+    printf '# Running questions\n\n## Open\n\n' > docs/working/questions.md
+    : > docs/working/questions-archive.md
+    # "a" then 60 two-byte characters: byte 80 is the first half of one.
+    t="a$(printf 'é%.0s' $(seq 60))"
+    printf '# Roadmap\n\n## Now\n\n- %s\n\n## Next\n' "$t" > docs/roadmap.md
+    run --separate-stderr bash "$DC"
+    [ "$status" -eq 0 ]
+    want="a$(printf 'é%.0s' $(seq 39))"
+    [[ "$output" == *"- Now 1 · no open entry or watch names it · \"$want\""* ]] || { echo "$output" | sed -n '/## 5/,/## 6/p'; return 1; }
+    # A title that needs no cut keeps its last character, and so does one cut
+    # exactly on a character boundary (40 two-byte characters are 80 bytes;
+    # "ab" then 26 three-byte ones are too), or after a whole 4-byte one; a
+    # cut 1, 2 or 3 bytes into a 4-byte one or 1 byte into a 3-byte one drops it.
+    t80="$(printf 'é%.0s' $(seq 41))"; t3="ab$(printf '中%.0s' $(seq 27))"; t4="$(printf '😀%.0s' $(seq 21))"
+    printf '# Roadmap\n\n## Now\n\n- Fix café\n- Ends with 中\n- %s\n- %s\n- %s\n- a%s\n- x%s\n- xx%s\n- xxx%s\n- a%s\n\n## Next\n' "$t80" "$t3" "$t4" "$t3" "$t4" "$t4" "$t4" "$(printf '中%.0s' $(seq 27))" > docs/roadmap.md
+    run --separate-stderr bash "$DC"
+    [ "$status" -eq 0 ]
+    section=$(echo "$output" | sed -n '/## 5/,/## 6/p')
+    for want in '- Now 1 · no open entry or watch names it · "Fix café"' '- Now 2 · no open entry or watch names it · "Ends with 中"' \
+                "- Now 3 · no open entry or watch names it · \"$(printf 'é%.0s' $(seq 40))\"" \
+                "- Now 4 · no open entry or watch names it · \"ab$(printf '中%.0s' $(seq 26))\"" \
+                "- Now 5 · no open entry or watch names it · \"$(printf '😀%.0s' $(seq 20))\"" \
+                "- Now 6 · no open entry or watch names it · \"aab$(printf '中%.0s' $(seq 25))\"" \
+                "- Now 7 · no open entry or watch names it · \"x$(printf '😀%.0s' $(seq 19))\"" \
+                "- Now 8 · no open entry or watch names it · \"xx$(printf '😀%.0s' $(seq 19))\"" \
+                "- Now 9 · no open entry or watch names it · \"xxx$(printf '😀%.0s' $(seq 19))\"" \
+                "- Now 10 · no open entry or watch names it · \"a$(printf '中%.0s' $(seq 26))\""; do
+        [[ "$section" == *"$want"* ]] || { echo "missing: $want"; echo "$section"; return 1; }
+    done
 }
