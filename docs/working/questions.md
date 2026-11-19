@@ -137,24 +137,25 @@ Install the release that carries main's new dev-cycle gate code: run the one pas
 
 **If you say no:** sessions keep running the image built from a4c856bf, so the dev cycle keeps its old step 6: the new roadmap check (every Now and Next item shown with what holds it, and finished or parked items moved) does not run, and the audience-profiles and reader-testing v2 skills stay at their old text in sessions.
 
-- **C (the image's commit):** a4c856bf7cb595f6eab4923db117827ebb833cb4 · **M (main's commit):** f8453f26ae8504ac62e33244bbe98cb7540b8075
+- **C (the image's commit):** a4c856bf7cb595f6eab4923db117827ebb833cb4 · **M (main's commit):** 7661a2cfbaea35e59240adcb4a692c1f3b711793
 - **Merged without your review:**
   - 5a4d2fda Merge branch 'fix/board-fanout-flaky' (build-loop self-merge): a 6-line fix to one test's setup in `test/scripts/board.bats` (the flaky fanout case), with its research doc; no code-review rubric, the loop reviewed it itself.
   - a61f9a17 Merge branch 'docs/rewrite-q278' (build-loop self-merge): docs only (a closed brief and a research doc).
 - **What changes for you:**
+  - 7661a2cf (you approved it, Q-309 [1]): every roadmap Idea that carries harness feedback or an owner report moves to Now (or into one question for you) each iteration; about 12 of today's Ideas move at the first iteration after this release.
   - f8453f26 (you approved it, Q-307 [1]): `workflows/parallel-worktrees.md` has a subagent return a report as text for the parent to write, instead of writing a file Claude Code refuses.
   - 358c2332 (you approved it, Q-306 [1]): the A8 measurement's results, under `runs/` and `docs/` (the image carries neither).
   - 24af50da (you approved it, Q-305 [1]): the roadmap check's split-off fixes: a repo with a `watching.md` but no `questions.md` now reads as not checked, long titles are cut without splitting a character, and two tests now fail when they should.
   - 22735b6e: the dev-cycle digest's section 5 lists each roadmap Now and Next item with the open questions or watches that hold it, and step 6 moves finished or parked items every iteration, light passes too (your request in session today; rubric `docs/reviews/code-review-rubric-2026-11-18-fix-dev-cycle-roadmap-staleness.md`).
   - 386ccfa3, ded17c89: the audience-profiles and reader-testing skills' v2 and the lessons from O20's real session (merged by hand).
-  - The routine rest: 19 dev-cycle lands and 7 docs commits.
-- **Full list:** `git -c log.showSignature=false log --first-parent --format='%h %s' a4c856bf7cb595f6eab4923db117827ebb833cb4..f8453f26ae8504ac62e33244bbe98cb7540b8075`
-- **Paths changed outside `docs/` and `runs/` (47 under `docs/` and 36 under `runs/` too, which the image does not carry):** `scripts/dev-cycle.sh`, `scripts/lib/migrations.sh`, `skills/audience-profiles/SKILL.md`, `skills/audience-profiles/references/profile-template.md`, `skills/dev-cycle/SKILL.md`, `skills/reader-testing/SKILL.md`, `skills/reader-testing/references/grader-brief.md`, `skills/reader-testing/references/reader-brief.md`, `skills/reader-testing/references/run-templates.md`, `test/scripts/board.bats`, `test/scripts/dev-cycle.bats`, `workflows/parallel-worktrees.md`
+  - The routine rest: 23 dev-cycle lands and 7 docs commits.
+- **Full list:** `git -c log.showSignature=false log --first-parent --format='%h %s' a4c856bf7cb595f6eab4923db117827ebb833cb4..7661a2cfbaea35e59240adcb4a692c1f3b711793`
+- **Paths changed outside `docs/` and `runs/` (50 under `docs/` and 36 under `runs/` too, which the image does not carry):** `scripts/dev-cycle.sh`, `scripts/lib/migrations.sh`, `skills/audience-profiles/SKILL.md`, `skills/audience-profiles/references/profile-template.md`, `skills/dev-cycle/SKILL.md`, `skills/reader-testing/SKILL.md`, `skills/reader-testing/references/grader-brief.md`, `skills/reader-testing/references/reader-brief.md`, `skills/reader-testing/references/run-templates.md`, `test/scripts/board.bats`, `test/scripts/dev-cycle.bats`, `workflows/parallel-worktrees.md`
 
 Run this on the host, in your claude-workflows checkout at main's tip, then start a new sandbox session:
 
 ```
-sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "f8453f26ae8504ac62e33244bbe98cb7540b8075:$p")"; then n=$((n+1)); else echo "release refused: $p changed after f8453f26ae8504ac62e33244bbe98cb7540b8075: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
+sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "7661a2cfbaea35e59240adcb4a692c1f3b711793:$p")"; then n=$((n+1)); else echo "release refused: $p changed after 7661a2cfbaea35e59240adcb4a692c1f3b711793: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
 ```
 
 **Pass:** the installer finishes without a `release refused` line. **Send back:** `Q-303: done`, and, if the install re-blessed (its output has a `Verified live:` line), that line, the `Next:` line under it and `cc-isolated --list`'s `Blessed config` line, before you run any probe: watch Q-167 (post-install-host-probes) waits on exactly those lines.
