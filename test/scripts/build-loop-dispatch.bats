@@ -13,7 +13,7 @@ show() { echo "status $status"; echo "$output"; echo "$stderr"; git worktree lis
 # ready [LINE...]: constraints ok and brief x (open, feat/x, then LINEs); M main's commit, W the default worktree.
 ready() {
     constraints "H1: keep it small" "success: under 400 lines"
-    brief x "Status: open" "Branch: feat/x" "$@"; M="$(git rev-parse main)"; W="$R/.claude/wt-2026-10-01-x"
+    brief x "Status: open" "Branch: feat/x" "$@"; M="$(git rev-parse main)"; W="$R/.worktrees/wt-2026-10-01-x"
 }
 # refused WHY: the run refused brief x with WHY alone, exit 2.
 refused() { [ "$status" -eq 2 ] && [ "$output" = "refuse $B: $1" ] || { echo "want: $1"; show; return 1; }; }
@@ -145,6 +145,87 @@ lock() { git worktree unlock "$1" 2>/dev/null; git worktree lock --reason "$2" "
     dsp --prompt "$B" --steal; refused "its branch feat/x is checked out in $W, which is missing or a symbolic link (git worktree unlock, then git worktree prune, drop a missing one)"
     git worktree unlock "$W"; git worktree prune
     dsp --prompt "$B"; [ "$status" -eq 0 ] && [ "$(git -C "$W" rev-parse HEAD)" = "$t" ] && git worktree list --porcelain | grep -q "^locked build-loop" || { show; return 1; }
-    sed -i 's/^Branch: feat\/x/&\nDispatched: 4/' "$B" && git commit -qam cap  # -a: not the worktree under .claude/
+    sed -i 's/^Branch: feat\/x/&\nDispatched: 4/' "$B" && git commit -qam cap  # -a: tracked files only
     dsp --prompt "$B"; refused "it was dispatched 4 times, and the cap is 4"
+}
+
+@test "--start's default worktree is under .worktrees/, which a .gitignore of * in it keeps out of main's status and add -A (brief 2026-11-19-worktrees-outside-dot-claude)" {
+    ready
+    dsp --start "$B"
+    [ "$status" -eq 0 ] && [ "${lines[0]}" = "ok $B feat/x $W" ] || { show; return 1; }
+    [[ "$W" != *"/.claude/"* ]] && [ "$(cat "$R/.worktrees/.gitignore")" = "*" ] || { show; return 1; }
+    # The repo's own .gitignore is not touched, and nothing under .worktrees/ is seen or staged.
+    [ ! -e "$R/.gitignore" ] && [ -z "$(git status --porcelain)" ] || { show; return 1; }
+    git add -A && [ -z "$(git diff --cached --name-only)" ] || { show; return 1; }
+}
+
+@test "--worktree-base prints the base, makes it once, keeps an existing .gitignore, and refuses a link, another kind, or a base git does not ignore (brief 2026-11-19-worktrees-outside-dot-claude)" {
+    dsp --worktree-base x; [ "$status" -eq 1 ] && [[ "$stderr" == "--worktree-base takes no arguments"* ]] || { show; return 1; }
+    dsp --worktree-base; [ "$status" -eq 0 ] && [ "$output" = "ok $R/.worktrees" ] && [ "$(cat "$R/.worktrees/.gitignore")" = "*" ] || { show; return 1; }
+    printf 'wt-*\n.gitignore\n' > "$R/.worktrees/.gitignore"
+    dsp --worktree-base; [ "$status" -eq 0 ] && [ "$output" = "ok $R/.worktrees" ] && [ "$(cat "$R/.worktrees/.gitignore")" = "$(printf 'wt-*\n.gitignore')" ] || { show; return 1; }
+    # An existing .gitignore that does not ignore the base: refused, not left for add -A to find (H2).
+    nig="refuse worktree-base: git does not ignore everything in $R/.worktrees in the main worktree (its .gitignore, or a negation in another one); make it ignore the directory's contents, as a .gitignore of * does"
+    echo '!wt-x' >> "$R/.worktrees/.gitignore"
+    dsp --worktree-base; [ "$status" -eq 2 ] && [ "$output" = "$nig" ] || { show; return 1; }
+    # A narrow .gitignore that ignores the probe's name but leaves a real checkout (and itself) to git status: refused (review i1 A2).
+    printf 'wt-x\n' > "$R/.worktrees/.gitignore"; git worktree add -q "$R/.worktrees/wt-dev-cycle-2026" -b sib
+    dsp --worktree-base; [ "$status" -eq 2 ] && [ "$output" = "$nig" ] || { show; return 1; }
+    git worktree remove "$R/.worktrees/wt-dev-cycle-2026"
+    dsp --worktree-base; [ "$status" -eq 2 ] && [ "$output" = "$nig" ] || { show; return 1; }
+    rm "$R/.worktrees/.gitignore"; ln -s /dev/null "$R/.worktrees/.gitignore"
+    dsp --worktree-base; [ "$status" -eq 2 ] && [ "$output" = "refuse worktree-base: $R/.worktrees/.gitignore is a symbolic link or not a plain file" ] || { show; return 1; }
+    rm -rf "$R/.worktrees"; mkdir "$BATS_TEST_TMPDIR/elsewhere"; ln -s "$BATS_TEST_TMPDIR/elsewhere" "$R/.worktrees"
+    dsp --worktree-base; [ "$status" -eq 2 ] && [ "$output" = "refuse worktree-base: $R/.worktrees is a symbolic link or not a directory" ] || { show; return 1; }
+    [ -z "$(ls -A "$BATS_TEST_TMPDIR/elsewhere")" ] || { show; return 1; }
+    rm "$R/.worktrees"; touch "$R/.worktrees"
+    dsp --worktree-base; [ "$status" -eq 2 ] && [ "$output" = "refuse worktree-base: $R/.worktrees is a symbolic link or not a directory" ] || { show; return 1; }
+    # From a linked worktree it still names the main worktree's base.
+    rm "$R/.worktrees"; git worktree add -q "$BATS_TEST_TMPDIR/linked" -b linked
+    (cd "$BATS_TEST_TMPDIR/linked" && run --separate-stderr bash "$BL" --worktree-base && [ "$status" -eq 0 ] && [ "$output" = "ok $R/.worktrees" ]) || { show; return 1; }
+    # A main worktree whose path --dir would not take: refused, made nothing (review i1 A3).
+    S="$BATS_TEST_TMPDIR/sp ace"; mkdir "$S" && git -C "$S" init -q -b main && git -C "$S" commit -q --allow-empty -m init
+    (cd "$S" && run --separate-stderr bash "$BL" --worktree-base && [ "$status" -eq 2 ] && [ "$output" = "refuse worktree-base: the worktree base $S/.worktrees is not an absolute path of letters, digits and . _ - /" ] && [ ! -e "$S/.worktrees" ]) || { show; return 1; }
+}
+
+@test "--worktree-base refuses, naming the gap, when it cannot make or write the base, git cannot answer, or there is no main worktree (brief 2026-11-19-worktrees-outside-dot-claude, review r2)" {
+    [ "$(id -u)" -ne 0 ] || { echo "needs a non-root uid: root ignores the mode bits these cases rely on"; return 1; }
+    chmod a-w "$R"
+    dsp --worktree-base; chmod u+w "$R"
+    [ "$status" -eq 2 ] && [ "$output" = "refuse worktree-base: $R/.worktrees could not be made" ] && [ ! -e "$R/.worktrees" ] || { show; return 1; }
+    mkdir "$R/.worktrees"; chmod a-w "$R/.worktrees"
+    dsp --worktree-base; chmod u+w "$R/.worktrees"
+    [ "$status" -eq 2 ] && [ "$output" = "refuse worktree-base: $R/.worktrees/.gitignore could not be written" ] && [ ! -e "$R/.worktrees/.gitignore" ] || { show; return 1; }
+    # A git that fails one subcommand (FAIL_SUB) and runs the real one otherwise.
+    real="$(command -v git)"; mkdir "$BATS_TEST_TMPDIR/bin"
+    printf '#!/bin/bash\nfor a in "$@"; do [ "$a" = "$FAIL_SUB" ] && { echo "fatal: stub" >&2; exit 128; }; done\nexec %q "$@"\n' "$real" > "$BATS_TEST_TMPDIR/bin/git"
+    chmod +x "$BATS_TEST_TMPDIR/bin/git"
+    FAIL_SUB=check-ignore PATH="$BATS_TEST_TMPDIR/bin:$PATH" dsp --worktree-base
+    [ "$status" -eq 2 ] && [ "$output" = "refuse worktree-base: git could not say whether it ignores $R/.worktrees (git status or check-ignore failed)" ] || { show; return 1; }
+    FAIL_SUB=status PATH="$BATS_TEST_TMPDIR/bin:$PATH" dsp --worktree-base
+    [ "$status" -eq 2 ] && [ "$output" = "refuse worktree-base: git could not say whether it ignores $R/.worktrees (git status or check-ignore failed)" ] || { show; return 1; }
+    FAIL_SUB=list PATH="$BATS_TEST_TMPDIR/bin:$PATH" dsp --worktree-base
+    [ "$status" -eq 2 ] && [ "$output" = "refuse worktree-base: the worktrees could not be listed" ] || { show; return 1; }
+    # A bare repository has no main worktree to put the base in: the script stops before wt_base
+    # (whose own "no main worktree" refusal is a second line), and makes nothing.
+    git clone -q --bare "$R" "$BATS_TEST_TMPDIR/bare.git"
+    (cd "$BATS_TEST_TMPDIR/bare.git" && run --separate-stderr bash "$BL" --worktree-base && [ "$status" -eq 1 ] && [ -z "$output" ] && [ "$stderr" = "Not inside a git repository" ] && [ ! -e .worktrees ]) || { show; return 1; }
+}
+
+@test "--start refuses a default base it cannot use, leaving no branch, and --dir still works (brief 2026-11-19-worktrees-outside-dot-claude)" {
+    ready
+    mkdir "$BATS_TEST_TMPDIR/elsewhere"; ln -s "$BATS_TEST_TMPDIR/elsewhere" "$R/.worktrees"
+    dsp --start "$B"; refused "$R/.worktrees is a symbolic link or not a directory; give --dir"; none
+    [ -z "$(ls -A "$BATS_TEST_TMPDIR/elsewhere")" ] || { show; return 1; }
+    dsp --start "$B" --dir "$BATS_TEST_TMPDIR/wt"; [ "$status" -eq 0 ] && [ "${lines[0]}" = "ok $B feat/x $BATS_TEST_TMPDIR/wt" ] || { show; return 1; }
+}
+
+@test "a worktree --start made under .claude/ before the move is still taken by --prompt (brief 2026-11-19-worktrees-outside-dot-claude)" {
+    ready
+    echo '.claude/' > .gitignore && commit_all ignore
+    O="$R/.claude/wt-2026-10-01-x"
+    dsp --start "$B" --dir "$O"; [ "$status" -eq 0 ] || { show; return 1; }
+    git -C "$O" commit -q --allow-empty -m "handoff: stopped: test"
+    dsp --prompt "$B"; [ "$status" -eq 0 ] && [ "${lines[0]}" = "ok $B feat/x $O" ] && grep -qF "start every command with \"cd $O &&\"" <<<"$output" || { show; return 1; }
+    [ ! -e "$W" ] || { show; return 1; }
 }

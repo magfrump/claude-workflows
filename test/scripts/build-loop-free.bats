@@ -29,7 +29,7 @@ stays() { [ -d "$1" ] && git worktree list --porcelain | grep -qxF "worktree $1"
 # W its worktree.
 dispatched() {
     brief "$1" "Status: open" "Branch: feat/$1"
-    W="$R/.claude/wt-2026-10-01-$1"
+    W="$R/.worktrees/wt-2026-10-01-$1"
     bash "$BL" --start "$B" > /dev/null || { echo "--start failed"; return 1; }
 }
 # finished SLUG: a dispatched loop that committed, closed its brief and left a
@@ -218,4 +218,19 @@ SH
     [ "$status" -eq 1 ] && [[ "$stderr" == "--free-worktrees takes no arguments"* ]] || { show; return 1; }
     s="$(awk '/^### 1\. /{ on = 1; next } /^### /{ on = 0 } on' "$REPO_ROOT/skills/dev-cycle/SKILL.md")"
     [[ "$s" == *'--free-worktrees'*'Delete merged branches'* ]]
+}
+
+@test "a finished loop's worktree at the old .claude/ default is freed like one under .worktrees/ (brief 2026-11-19-worktrees-outside-dot-claude)" {
+    brief x "Status: open" "Branch: feat/x"
+    W="$R/.claude/wt-2026-10-01-x"
+    bash "$BL" --start "$B" --dir "$W" > /dev/null
+    sed -i 's/^Status: open/Status: done/' "$W/$B"
+    git -C "$W" add -A && git -C "$W" commit -q -m "work on x" && git -C "$W" commit -q --allow-empty -m "handoff: ready"
+    fr; said "hold feat/x $W: its brief is open"; stays "$W"
+    git merge -q --no-ff -m "merge x" feat/x
+    merged y; Y="$W"
+    W="$R/.claude/wt-2026-10-01-x"
+    # Git's order is its own: compare the lines sorted.
+    fr; [ "$status" -eq 0 ] && [ "$(sort <<<"$output")" = "$(printf '%s\n' "freed feat/x $W" "freed feat/y $Y")" ] || { show; return 1; }
+    gone "$W"; gone "$Y"
 }
