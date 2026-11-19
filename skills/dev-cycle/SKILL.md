@@ -583,7 +583,9 @@ is allowed. Then append `## Brainstorm YYYY-MM-DD` to the idea log and land it w
 iteration's roadmap: the next digest counts seeds and compares Now from that commit. The
 surviving ideas go to the roadmap's Ideas; one that rests on harness feedback or an owner
 report names it in a shape the digest's section 5 reads (its header lists them: the entry's
-`<project> F-NNN`, or "owner report"), so step 6 moves or asks about it.
+ID, `<project> F-NNN`, or "owner report"), and keeps "parked" and "dropped" out of its
+text before `Signal:` unless an owner answer parked or dropped it, so step 6 moves or asks
+about it.
 
 ### 6. Roadmap
 

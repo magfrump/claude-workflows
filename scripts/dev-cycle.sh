@@ -507,10 +507,12 @@ if inrepo docs/roadmap.md; then
     # questions.sh drops any trailing multibyte one, FP-170), keeping a whole one.
     # The first Ideas section's items are kept only when they carry reported
     # friction (KIND): a harness-feedback entry ID (F-NNN, not FP-NNN) or an
-    # owner report in so many words; PARKED is 1 when the item says parked or
-    # dropped, the Ideas shapes that carry the owner answer behind them.
+    # owner report in so many words; PARKED is 1 when the item's head (its text
+    # before the first "Signal:", where the Ideas shapes put "parked" or a
+    # "Dropped" lead with the answer behind it) says parked or dropped, so a
+    # report of dropped events in the signal is no parking.
     items="$(LC_ALL=C awk '
-      function flush(   title, ids, s, id, seen, lt, kind, parked) {
+      function flush(   title, ids, s, id, seen, lt, kind, parked, head) {
         if (cur == "") return
         kind = ""; parked = 0
         if (cur == "Ideas") {
@@ -518,7 +520,8 @@ if inrepo docs/roadmap.md; then
           if (match(text, /(^|[^A-Za-z0-9])F-[0-9]+/)) kind = "feedback entry"
           if (lt ~ /owner[- ](request|report|reported|brainstorm)|owner.s (request|report)/) kind = kind (kind == "" ? "" : ", ") "owner report"
           if (kind == "") { cur = ""; return }
-          parked = (lt ~ /(^|[^a-z])(parked|dropped)([^a-z]|$)/)
+          head = lt; if (index(head, "signal:")) head = substr(head, 1, index(head, "signal:") - 1)
+          parked = (head ~ /(^|[^a-z])(parked|dropped)([^a-z]|$)/)
         }
         if (match(text, /\*\*[^*]+\*\*/)) title = substr(text, RSTART + 2, RLENGTH - 4)
         else { title = text; sub(/^([-*] |[0-9]+\. )/, "", title); title = substr(title, 1, 80); sub(/([\302-\337]|[\340-\357][\200-\277]?|[\360-\364][\200-\277]?[\200-\277]?)$/, "", title); sub(/ +$/, "", title) }
@@ -572,7 +575,7 @@ if inrepo docs/roadmap.md; then
       s5_list NowNext
     fi
     echo
-    shapes="a feedback entry F-NNN, or the words owner request, owner report, owner-reported or owner brainstorm"
+    shapes="a feedback entry F-NNN, or the words owner request, owner report, owner-reported, owner brainstorm, owner's request or owner's report"
     if [[ "$ni" -eq 0 ]]; then
       echo "No Idea carries reported friction ($shapes)."
     else

@@ -4,7 +4,7 @@ Brief: `docs/working/briefs/2026-11-19-ideas-promotion.md` (read from 610130f5).
 Branch: `fix/dev-cycle-ideas-promotion`. Workflow: research-plan-implement, no plan gate.
 
 - Failure-pattern grep: `rg -n -i 'ideas|roadmap|unranked|promot|grep -c|pipefail|ifs|empty field' docs/failure-patterns.md` -> FP-176 (brainstorm trigger denominator), FP-184 (section 5 read as nothing open when the questions files were not read), FP-129, FP-175 and FP-182 (`grep` exit 1 under `pipefail`/`set -e`), FP-144 (IFS splitting). FP-184 shaped the NOT-checked case below; FP-129/182 caught a first draft that counted records with `grep -c` (exit 1 on zero matches would have ended the digest under `set -euo pipefail`), replaced with a bash loop before any commit.
-- Failure-pattern skip: the branch has no fix(...) commit; the one near-miss (the `grep -c` count) never landed and is already FP-129/FP-182's shape.
+- Failure-pattern skip: the one fix(...) commit is review round 1's narrowing of a new match (a word read anywhere in an item, before it ever ran in a cycle), a one-line obvious fix with no reusable cause; the `grep -c` near-miss never landed and is FP-129/FP-182's shape.
 
 ## What the code does today (acceptance criterion 1)
 
@@ -52,7 +52,7 @@ Motive (S5): real. F-019's friction went on for three days after ingest while it
 Path A: option A dominates on every axis the brief names. Choices inside it, each with one clear answer:
 
 - **Shapes matched**: a harness-feedback ID `F-NNN` (not `FP-NNN`, the failure-pattern IDs) anywhere in the item, or the words owner request/report/reported/brainstorm, owner's request/report. The shape list is printed in the digest's own header line, and the skill points at it rather than restating it (S3).
-- **Parked and dropped Ideas** are printed with the verdict "says parked or dropped" so step 6 skips them without rereading; the Ideas template already requires such an item to carry the owner answer behind it.
+- **Parked and dropped Ideas** are printed with the verdict "says parked or dropped" so step 6 skips them without rereading; the Ideas template already requires such an item to carry the owner answer behind it. Only the item's head (its text before the first `Signal:`) is read for the words, so a signal reporting dropped events is no parking (review round 1, A1).
 - **When section 3 failed** (questions files not read), no Idea is listed as unheld (FP-184's lesson): the NOT-checked line says Ideas were not listed either.
 - **The ask**: one `you: judgment` entry per iteration covering every Idea that needs an owner call, never one per Idea (S10). The default is Now as agent work, which costs no attention.
 - **Record template**: the `6.` line's moved list now names "Done, Ideas or Now"; `mig record-6-ideas-to-now` records the change (every older record stays valid).

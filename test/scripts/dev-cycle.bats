@@ -1915,6 +1915,7 @@ MD
 - **Sub-step idea.** Signal: none on this line.
   The signal is on its second line: belegarth-herald F-003.
 - **Both.** Signal: F-002 and the owner's request.
+- **Drop guard.** Signal: herald F-004, the hook dropped events; not parked yet.
 
 ## Done
 
@@ -1927,7 +1928,7 @@ MD
     run --separate-stderr bash "$DC"
     [ "$status" -eq 0 ]
     section=$(echo "$output" | sed -n '/## 5/,/## 6/p')
-    [[ "$section" == *"Ideas carrying reported friction (7; a feedback entry F-NNN"* ]] || { echo "$section"; return 1; }
+    [[ "$section" == *"Ideas carrying reported friction (8; a feedback entry F-NNN"* ]] || { echo "$section"; return 1; }
     for t in "- Ideas 2 · feedback entry · no open entry or watch names it · \"Feedback idea\"" \
              "- Ideas 3 · owner report · no open entry or watch names it · \"Owner idea\"" \
              "- Ideas 4 · feedback entry · open: Q-010 (you: judgment) · \"Held idea\"" \
@@ -1935,6 +1936,7 @@ MD
              "- Ideas 6 · owner report · says parked or dropped · \"Dropped 2026-10-30: an old branch\"" \
              "- Ideas 7 · feedback entry · no open entry or watch names it · \"Sub-step idea\"" \
              "- Ideas 8 · feedback entry, owner report · no open entry or watch names it · \"Both\"" \
+             "- Ideas 9 · feedback entry · no open entry or watch names it · \"Drop guard\"" \
              "- Now 1 · no open entry or watch names it · \"Now item\""; do
         [[ "$section" == *"$t"* ]] || { echo "missing: $t"; echo "$section"; return 1; }
     done
