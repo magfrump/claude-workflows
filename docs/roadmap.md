@@ -61,7 +61,32 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   is the owner's: Q-302. First step after the answer: compare its gaps and causes with this
   repo's, and file any cause the fixes here do not cover.
 
+- **Agent: an Idea that carries owner-reported friction never leaves Ideas** (filed
+  2026-11-19, in session). Motive: philosophy-research F-019 (permission asks on every write
+  under the worktrees) and F-011 (a subagent's report write refused) were ingested
+  2026-11-16 as Ideas and sat there while the owner kept hitting them; step 8 briefs only
+  Now and Next, and nothing promotes an Idea. Same class as the roadmap-staleness fix
+  (22735b6e), one section over. First step: in `skills/dev-cycle/SKILL.md` step 6, an Idea
+  whose signal is harness feedback (a `docs/working/feedback/` entry) or an owner report is
+  moved to Now as agent work, or asked about in one `you: judgment` entry, at the next
+  iteration, never left unranked; a digest count of such Ideas makes it checkable. Gate
+  code: a review merge. Waits for a free build slot (A8, F-019 and F-011 hold all three).
+
 ## In flight
+
+- **Worktrees and caches out of the protected config directory** (brainstorm 2026-11-16;
+  moved from Ideas 2026-11-19 on the owner's request). Signal: philosophy-research F-019,
+  about 18 permission asks in one session from writes into the cycle's and loops'
+  worktrees, two loops' writes refused, one iteration half-landed; the owner still sees the
+  asks (the A8 loop, the cycle's own brief writes). Briefed:
+  `docs/working/briefs/2026-11-19-worktrees-outside-dot-claude.md` (divergent design over
+  where they live, then build; the brief also says a brief write and its dependent
+  commands go in separate responses).
+
+- **parallel-worktrees: a subagent returns its report as text** (brainstorm 2026-11-16;
+  moved from Ideas 2026-11-19 on the owner's request). Signal: philosophy-research F-011 and
+  belegarth-herald F-010, the Write tool refusing a subagent's report file in two projects.
+  Briefed: `docs/working/briefs/2026-11-19-subagent-report-as-text.md`.
 
 - **A8 post-restructure token measurement** (Next 1 until 2026-11-19; go-ahead Q-304 [1],
   the owner in session: "yes, run it now"). Briefed: `docs/working/briefs/2026-11-19-a8-token-measurement.md`
@@ -111,17 +136,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   approved merge), each costing the owner a re-dispatch answer and a second merge answer.
   Three or more shapes (a repo setting listing generated paths, regenerating at merge time,
   no change), so a divergent-design pass first. Builds on the in-flight F-009 brief.
-- **parallel-worktrees: a subagent returns its report as text** (brainstorm 2026-11-16).
-  Signal: Claude Code's Write tool refused a subagent's report file in two projects
-  (philosophy-research F-011, belegarth-herald F-010). First step: say in
-  `workflows/parallel-worktrees.md` that the parent writes and commits a report the subagent
-  returns in its final message (review: `workflows/` is a never glob).
-- **Worktrees and caches outside `.claude/`** (brainstorm 2026-11-16). Signal:
-  philosophy-research F-019, about 18 brief writes under `.claude/wt-*` prompting in one
-  session, and a denied write that left one iteration half-landed. Shapes: a sibling
-  directory, a scoped allow rule shipped with the skill, or the session temp directory; a
-  divergent-design pass first. Also: the skill says a brief write and the commands that
-  depend on it go in separate responses.
 - **Step 0 tests worktree creation first, and names where a stop goes with no worktree**
   (brainstorm 2026-11-16). Signal: philosophy-research F-018, a read-only `.git/worktrees`
   stopped an iteration with nowhere to file the stop; decision-log row 88 keeps worktrees
