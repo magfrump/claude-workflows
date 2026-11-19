@@ -1916,6 +1916,8 @@ MD
   The signal is on its second line: belegarth-herald F-003.
 - **Both.** Signal: F-002 and the owner's request.
 - **Drop guard.** Signal: herald F-004, the hook dropped events; not parked yet.
+- **Unmarked park.** Reason: Q-001 [2] (not now). Signal: philosophy-research F-010.
+- **Curly.** Signal: the owner’s report in session.
 
 ## Done
 
@@ -1928,7 +1930,7 @@ MD
     run --separate-stderr bash "$DC"
     [ "$status" -eq 0 ]
     section=$(echo "$output" | sed -n '/## 5/,/## 6/p')
-    [[ "$section" == *"Ideas carrying reported friction (8; a feedback entry F-NNN"* ]] || { echo "$section"; return 1; }
+    [[ "$section" == *"Ideas carrying reported friction (10; a feedback entry F-NNN"* ]] || { echo "$section"; return 1; }
     for t in "- Ideas 2 · feedback entry · no open entry or watch names it · \"Feedback idea\"" \
              "- Ideas 3 · owner report · no open entry or watch names it · \"Owner idea\"" \
              "- Ideas 4 · feedback entry · open: Q-010 (you: judgment) · \"Held idea\"" \
@@ -1937,9 +1939,12 @@ MD
              "- Ideas 7 · feedback entry · no open entry or watch names it · \"Sub-step idea\"" \
              "- Ideas 8 · feedback entry, owner report · no open entry or watch names it · \"Both\"" \
              "- Ideas 9 · feedback entry · no open entry or watch names it · \"Drop guard\"" \
+             "- Ideas 10 · feedback entry · no open entry or watch names it · \"Unmarked park\"" \
+             "- Ideas 11 · owner report · no open entry or watch names it · \"Curly\"" \
              "- Now 1 · no open entry or watch names it · \"Now item\""; do
         [[ "$section" == *"$t"* ]] || { echo "missing: $t"; echo "$section"; return 1; }
     done
+    # A park step 6 did not mark "parked" reads as unheld (the skill writes the word);
     # FP-NNN and a Q-ID are no reported friction; Done and a second Ideas heading are not read.
     [[ "$section" != *"Plain idea"* && "$section" != *"Done item"* && "$section" != *"Second Ideas heading"* && "$section" != *"Ideas 1 "* ]] || { echo "$section"; return 1; }
 }

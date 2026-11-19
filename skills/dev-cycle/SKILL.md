@@ -624,8 +624,9 @@ docs/working/questions.md, and the cycle's watches in docs/working/watching.md.
   item that is an open question points at its `Q-NNN` rather than restating it.
 - **Ideas**: surviving brainstorm items, unranked, each with its signal; dropped items,
   each with its reason and brief; and parked items, each with the owner answer that parked
-  it and what brings it back. An Idea carrying reported friction does not stay unranked
-  (below).
+  it and what brings it back. A parked item says "parked" and a dropped one opens
+  "Dropped DATE:" before any `Signal:`, with the answer behind it, which is how the digest
+  tells them apart. An Idea carrying reported friction does not stay unranked (below).
 - **Done**: items finished since the last cycle, each with the commit `--check-brief`
   printed (agent work done in-cycle: the iteration's branch name; an item moved from Now
   or Next: the commit or answer that finished it).
@@ -636,7 +637,7 @@ docs/working/questions.md, and the cycle's watches in docs/working/watching.md.
   - finished (its last step merged or ran, or its hold was answered and nothing follows):
     → Done, with the commit or answer that finished it;
   - stopped or parked by an owner answer (build nothing, not now, wait for X): → Ideas,
-    with that answer's ID as its reason and what brings it back;
+    written "parked (Q-NNN [n])" before any `Signal:`, and what brings it back;
   - held by something outside the questions files (a date, a running trial, another
     repo's result, a host run): it stays, and the record's `6.` line names that hold for
     this item;
@@ -657,7 +658,8 @@ docs/working/questions.md, and the cycle's watches in docs/working/watching.md.
   can make); then put it in this iteration's one `you: judgment` entry, which numbers every
   such Idea and asks about them at once (build all, build these numbers, park the rest),
   never one entry per Idea. An Idea it shows as "says parked or
-  dropped" stays, as does one an open entry or watch holds. Each move goes on the `6.`
+  dropped" stays, as does one an open entry or watch holds; one an owner answer already
+  parked (it names that answer) gets "parked" before its `Signal:` and stays. Each move goes on the `6.`
   line's moved list (ITEM → Now (its signal)).
 - `docs/working/roadmap-from-questions.md` on main (left by an earlier iteration's step 1b
   `questions.sh migrate`): fold each entry into Now as agent work, its `Q-NNN` kept in the

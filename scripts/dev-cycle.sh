@@ -510,7 +510,8 @@ if inrepo docs/roadmap.md; then
     # owner report in so many words; PARKED is 1 when the item's head (its text
     # before the first "Signal:", where the Ideas shapes put "parked" or a
     # "Dropped" lead with the answer behind it) says parked or dropped, so a
-    # report of dropped events in the signal is no parking.
+    # report of dropped events in the signal is no parking (an item with no
+    # "Signal:" is read whole: the Ideas shapes always carry one).
     items="$(LC_ALL=C awk '
       function flush(   title, ids, s, id, seen, lt, kind, parked, head) {
         if (cur == "") return
@@ -518,7 +519,7 @@ if inrepo docs/roadmap.md; then
         if (cur == "Ideas") {
           lt = tolower(text)
           if (match(text, /(^|[^A-Za-z0-9])F-[0-9]+/)) kind = "feedback entry"
-          if (lt ~ /owner[- ](request|report|reported|brainstorm)|owner.s (request|report)/) kind = kind (kind == "" ? "" : ", ") "owner report"
+          if (lt ~ /owner[- ](request|report|reported|brainstorm)|owner(.|\342\200\231)s (request|report)/) kind = kind (kind == "" ? "" : ", ") "owner report"
           if (kind == "") { cur = ""; return }
           head = lt; if (index(head, "signal:")) head = substr(head, 1, index(head, "signal:") - 1)
           parked = (head ~ /(^|[^a-z])(parked|dropped)([^a-z]|$)/)
