@@ -294,3 +294,12 @@ Trigger: 16 seeds since the last brainstorm, all from the philosophy-research ha
 - A judgment entry's "Why it's yours" line quotes the constraint text it relies on (signal: philosophy-research F-007, an entry that cited H1 for a change H1 does not cover)
 - Tell a loop to run a wait on a file or job in the foreground, not through Monitor (signal: philosophy-research F-012, loops told so finished in 30 to 60 minutes; F-013's hangs have no known cause)
 - The live-verify hook ignores MERGE_HEAD, so a loop hand-resolving a merge of the default branch that brings in an enforcement-file change is asked for a trailer it cannot give (signal: the F-009 loop's pre-mortem item 5, marker a3ef5a38)
+
+## Brainstorm 2026-11-18 (iteration 2026-11-19-0300)
+
+Trigger: roadmap Now held one item ready for a brief (the Q-278 rewrite), and Now changed since 45409926. Signals read: the O20 and Q-278 reader-testing sessions merged by hand today (44000c6d, 386ccfa3, e387ec24..f4156dd0), the owner's audience profile `docs/audiences/owner.md` (ratified, Q-299 [2]), and the Q-278 misread.
+
+- Reader-test a `you: judgment` entry against `docs/audiences/owner.md` before filing it, at the light tier, only when it reopens a hard constraint or follows an earlier misread of the same question; the owner profile now exists and Q-278 showed a misread no simulated reader caught (signal: findings.md C1, both simulated readers caught the script name, the owner did not)
+- A filing check: an entry that names its subject once, and then uses a near-synonym for it three or more times, is flagged before it is filed (signal: the owner profile's decider note, "a name given once, inside a gloss, is missed when the rest of the entry uses a near-synonym")
+- Hold further reader-testing and audience-profiles skill edits until a second real session, since every lesson in ded17c89 rests on one contaminated session (signal: ded17c89's own Confidence: medium note); do nothing until then
+- Reader-test the weekly digest once against the owner profile, since it is the one page the owner is meant to read cold every week (signal: trials T11/T12 live in the weekly digest, Q-286, asked again after the 2026-11-20 edition)

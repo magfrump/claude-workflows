@@ -13,21 +13,6 @@ user's order).
 
 Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0002).
 
-- **Rewrite Q-278 (the bwrap run-or-refuse question) before anything acts on it (owner, 2026-11-18).**
-  Motive: the owner's reader test showed the entry was read as being about Claude Code's Bash sandbox,
-  the one main reverted at 7caea26d, not the test-confinement script it names. The owner "never saw a
-  reference to the test confinement script in the question text", although its question line names
-  `scripts/confine-tests.sh`. The owner says it is not meaningfully answered. The rewrite comes first;
-  nothing is implemented. Inputs, in order:
-  1. the reader-test findings and revision brief, `docs/working/reader-testing/q278-2026-11-18/findings.md`;
-  2. the post-revert research on bringing `bwrap` back without breaking worktrees,
-     `docs/working/research-2026-11-12-sandbox-return-research.md`;
-  3. the owner's frame from that session: sandboxing is a feature proposal that needs more benefit than
-     cost; the provisional H2 exception framing is disallowed; one option must be "do not use sandboxes",
-     with costs and benefits.
-  The rewritten entry must say plainly which tool it is about, and why the test-confinement script
-  is or isn't the same question as the Bash sandbox. Reader-test it (light tier) before filing.
-
 - **Models answer their own questions from the repo's docs (owner request, 2026-11-11).**
   Motive: the owner asked for a plan for how models can answer their own questions based on
   existing docs in a repo. The questions doc spends the owner's attention, the binding
@@ -147,6 +132,23 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
+- **Rewrite Q-278 (the bwrap run-or-refuse question) before anything acts on it (owner, 2026-11-18).**
+  Motive: the owner's reader test showed the entry was read as being about Claude Code's Bash sandbox,
+  the one main reverted at 7caea26d, not the test-confinement script it names. The owner "never saw a
+  reference to the test confinement script in the question text", although its question line names
+  `scripts/confine-tests.sh`. The owner says it is not meaningfully answered. The rewrite comes first;
+  nothing is implemented. Inputs, in order:
+  1. the reader-test findings and revision brief, `docs/working/reader-testing/q278-2026-11-18/findings.md`;
+  2. the post-revert research on bringing `bwrap` back without breaking worktrees,
+     `docs/working/research-2026-11-12-sandbox-return-research.md`;
+  3. the owner's frame from that session: sandboxing is a feature proposal that needs more benefit than
+     cost; the provisional H2 exception framing is disallowed; one option must be "do not use sandboxes",
+     with costs and benefits.
+  The rewritten entry must say plainly which tool it is about, and why the test-confinement script
+  is or isn't the same question as the Bash sandbox. Reader-test it (light tier) before filing.
+  2026-11-18 (iteration 2026-11-19-0300): briefed, `docs/working/briefs/2026-11-18-rewrite-q278.md`
+  (self-merge, docs-only; the loop drafts and reader-tests, the cycle files the entry).
+
 ## Next
 
 1. **A8 post-restructure token measurement.** Motive: the user deferred big compute until
@@ -221,6 +223,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   2026-11-14 (iteration 2243): step 4b fired again on 21097afa (`workflows/pr-prep.md`,
   `workflows/review-fix-loop.md` and `skills/code-review/`, the review rules you approved in
   Q-293); the same sample takes it.
+  2026-11-18 (iteration 2026-11-19-0300): step 4b fired on two new skills, `skills/audience-profiles/`
+  and `skills/reader-testing/` (900 lines, merged 44000c6d and 386ccfa3 by hand); the same sample takes
+  them, with one question added: do their lessons, each resting on one real session, hold on a second?
 - **Record out-of-cycle session answers through `--answered`.** Signal: 4306aa88 (the owner's
   Q-281..284 answers, recorded on a hand branch) read as `other` in `--main-log`, making
   iteration 2026-11-13-2237 a full cycle with a health run.
@@ -502,6 +507,18 @@ Unranked. Each names the signal that motivates it.
   2026-10-14. The auto-mode classifier refused this session's merge into main, so every
   finished branch waits on a paste (Q-162), and `--land-cycle` cannot run here either.
   The remedy is a permission rule only you can add, or a standing per-cycle merge entry.
+- **Reader-test high-stakes owner entries before filing** (brainstorm 2026-11-18). Signal: Q-278's
+  misread (`docs/working/reader-testing/q278-2026-11-18/findings.md`, C1): both simulated readers
+  caught the script's name and the owner did not. Light tier, against `docs/audiences/owner.md`, only
+  for an entry that reopens a hard constraint or follows a misread; waits on the Q-278 rewrite's own
+  test, which tries it once.
+- **Flag an entry whose subject is named once, then replaced by a near-synonym** (brainstorm
+  2026-11-18). Signal: the owner profile's decider note on Q-278.
+- **Hold the reader-testing skills until a second real session** (brainstorm 2026-11-18). Signal:
+  ded17c89's lessons each rest on one contaminated session (its Confidence: medium note). Do nothing
+  until a second session reports.
+- **Reader-test the weekly digest once against the owner profile** (brainstorm 2026-11-18). Signal:
+  trials T11/T12 live in the weekly digest; Q-286 asks about them after the 2026-11-20 edition.
 
 ## Done
 
