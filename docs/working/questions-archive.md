@@ -290,6 +290,8 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-298](#q-298--merge-gate-2026-11-14-merge-rubric-gate-e035801282ff) | Q-298: [1] | 2026-11-16 |
 | [Q-299](#q-299--profile-ratify-owner) | Q-299: [2] (owner, in session, 2026-11-18): ratify with your edits. The owner's edit was to archetype 2's w... | 2026-11-18 |
 | [Q-300](#q-300--test-confinement-question-withdrawn) | Q-300: seen | 2026-11-18 |
+| [Q-304](#q-304--a8-go-ahead) | Q-304: [1] | 2026-11-18 |
+| [Q-305](#q-305--merge-gate-2026-11-18-section5-followups-4ada2cedec7c) | Q-305: [1] | 2026-11-18 |
 <!-- index:end -->
 
 ## Answered
@@ -7477,4 +7479,71 @@ The loop's tentative pick is [2], because it follows H2 as written with no excep
 - **Interim:** [1], your Q-272 answer.
 - **If the answer differs:** [2] or [3] becomes a brief for one build loop; [1] becomes one line in `docs/constraints.md`, which you commit.
 
+
+### Q-304 · a8-go-ahead
+**Needs:** you: judgment · **Opened:** 2026-11-18 · **Status:** ANSWERED
+Q-304: [1]
+
+Should the A8 token measurement (re-running one code-review benchmark cell to measure what the review restructure saves) run now, or keep waiting?
+
+**If you say no:** it stays in the roadmap's Next, unrun, as it has since 2026-08-07; nothing else waits on it.
+
+- **Why it's yours:** you asked for no big compute until the code and prompts settle, and to be asked before it runs (and before re-evaluating review k and the lite review under the current model).
+- **Read:** the roadmap's Next item 1 (`docs/roadmap.md`); rubric row A8 in `docs/reviews/code-review-rubric-2026-08-07-main.md` (the lever it validates).
+- The code-review skill last changed on 2026-11-14 (21097afa, the review rules you approved in Q-293).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Run one cell now** | A loop re-runs one canon cell under today's code-review skill and records the tokens against the 2026-08-06 baseline | About one review pass of quota, near 1M tokens by E1's measure | A later skill change makes the number stale, and it is run again |
+| **[2] Wait for a quiet stretch** | Run it once the code-review skill has gone two weeks unchanged (from 2026-11-14, that is 2026-11-28 at the earliest); the cycle asks again then | None now | The lever stays unmeasured a while longer |
+| **[3] Drop it** | Take A8 off the roadmap; the lever stays unmeasured | None | Lever #3's saving is never confirmed |
+
+- **Blocks:** roadmap Next item 1 (A8).
+- **Interim:** [2]; nothing runs.
+- **If the answer differs:** [1] is briefed next iteration; [3] moves the item to Ideas with this answer.
+
+
+### Q-305 · merge-gate-2026-11-18-section5-followups-4ada2cedec7c
+**Needs:** you: judgment · **Opened:** 2026-11-18 · **Status:** ANSWERED
+Q-305: [1]
+
+Merge the build loop's fix for the roadmap check's split-off items (R5 and A11) into main? It changes dev-cycle gate code, so it needs your review.
+
+**If you say no:** the branch stays unmerged. In the rare repo that has a `watching.md` but no `questions.md`, the new roadmap check can still show an item an open watch holds as unheld, and a long title cut in the digest can still split a multibyte character.
+
+- **What it is:** brief `docs/working/briefs/2026-11-18-section5-followups.md`, the two findings split off at the review cap of this morning's roadmap-staleness fix on your answer "Split R5 off" (rubric `docs/reviews/code-review-rubric-2026-11-18-fix-dev-cycle-roadmap-staleness.md`, rows R5 and A11).
+- **Read:** the loop's research doc `docs/working/research-2026-11-18-section5-followups.md`; the diff: `git diff main...4ada2cedec7cfc9cc455b99b30083b27068183e5`.
+- **Tip:** 4ada2cedec7cfc9cc455b99b30083b27068183e5 (branch fix/dev-cycle-section5-followups)
+
+The gate's `--check` lines, as printed:
+
+```
+ok docs/working/briefs/2026-11-18-section5-followups.md 4ada2cedec7cfc9cc455b99b30083b27068183e5 eae4bf7d3e324c9055658c772a62194be2abc59d
+path docs/working/briefs/2026-11-18-section5-followups.md M docs/failure-patterns.md
+path docs/working/briefs/2026-11-18-section5-followups.md M docs/working/briefs/2026-11-18-section5-followups.md
+path docs/working/briefs/2026-11-18-section5-followups.md M docs/working/plan-2026-11-18-roadmap-staleness.md
+path docs/working/briefs/2026-11-18-section5-followups.md M docs/working/research-2026-11-18-roadmap-staleness.md
+path docs/working/briefs/2026-11-18-section5-followups.md A docs/working/research-2026-11-18-section5-followups.md
+path docs/working/briefs/2026-11-18-section5-followups.md M scripts/dev-cycle.sh
+path docs/working/briefs/2026-11-18-section5-followups.md M skills/dev-cycle/SKILL.md
+path docs/working/briefs/2026-11-18-section5-followups.md M test/scripts/dev-cycle.bats
+rubric docs/working/briefs/2026-11-18-section5-followups.md: none: fix/dev-cycle-section5-followups changes 3 paths outside docs/ and adds or changes no code-review rubric under docs/reviews/
+```
+
+Notes on the paths (the self-merge floor would have refused these, which is why this is yours):
+- `scripts/dev-cycle.sh` and `skills/dev-cycle/SKILL.md` are gate code: the cycle's digest and its instructions. They run from the next image release, not on merge.
+- `docs/failure-patterns.md` is a record the cycle never writes: the loop adds FP-184 (a check that failed open, fixed to fail closed).
+- The rubric line reads `none`: the loop ran two review rounds with fresh reviewer agents (recorded in its research doc) but committed no code-review rubric.
+
+What the loop reports (its words, summarized): R5: with no `questions.md` but a `watching.md`, section 3 now prints "Watched questions were NOT checked" and section 5 its NOT-checked line, never "no open entry or watch names it"; skill step 3 lists that cause. A11: the comment wording fixed; title cuts now drop only a trailing incomplete character, under `LC_ALL=C` (round 1 caught a first version that dropped the last whole non-ASCII character); test 97 now fails if the `read -a` loop is reverted; the first-heading test covers a second Next; the two working docs' stale lines fixed. Gates on the tip: `dev-cycle.bats` and `convention-migrations.bats` 115 ok, health check passed. One commit message (eab1bc93) overstates what that commit's cut did; 3e269a25 corrects it.
+
+**What an attacker would want here:** a stranger's text that reaches the roadmap or a questions file (a pasted issue title, a copied entry) shaped so the digest misreports what holds an item, so the cycle moves an item it should not. This change narrows that (an unread `watching.md` now reads as not checked); it adds no new input.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges tip 4ada2ced; it reaches sessions with the next release (Q-303's paste is then written again) | Reading the diff, 108 changed code lines | A wrong digest line in the next cycles; one `git revert` undoes it |
+| **[2] drop** | The brief closes; R5 and A11 stay as they are | None | The rare `watching.md`-only case keeps misreporting |
+| **[3] changes needed** | Your note goes back to the loop, which runs again (dispatch 2 of 4) | Writing the note | Another loop run |
+
+- **Interim:** unmerged; the image's dev cycle runs as before.
 

@@ -75,16 +75,15 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   so section 5 prints its NOT-checked line; add the test; then A11. Gate code: a review
   merge, then the next release. Briefed 2026-11-18: `docs/working/briefs/2026-11-18-section5-followups.md`.
 
+- **A8 post-restructure token measurement** (Next 1 until 2026-11-19; go-ahead Q-304 [1],
+  the owner in session: "yes, run it now"). Briefed: `docs/working/briefs/2026-11-19-a8-token-measurement.md`
+  (one canon cell, a terminal pass, tokens per the provenance convention; the review k and
+  lite re-evaluation stay deferred). Motive: rubric row A8 in
+  `docs/reviews/code-review-rubric-2026-08-07-main.md` rests on a projection.
+
 ## Next
 
-1. **A8 post-restructure token measurement** (go-ahead asked in Q-304). Motive: the user deferred big compute until
-   code and prompts settle; it validates code-review lever #3 (rubric row A8 in
-   `docs/reviews/code-review-rubric-2026-08-07-main.md`). First step: confirm
-   settlement (no open code-review SKILL changes), then re-run one canon cell. The
-   user's 2026-10-20 feedback adds re-evaluating review k and the lite review under Opus
-   5.5; deferred, ask before running. (2026-11-10: sessions here now run
-   `claude-fable-5-2`, so a re-evaluation, when you ask for it, would be under that model.)
-2. **Agent first-pass playtest before each `you: walkthrough`** (owner request, 2026-11-12;
+1. **Agent first-pass playtest before each `you: walkthrough`** (owner request, 2026-11-12;
    proposal `docs/thoughts/proposal-2026-11-12-agent-first-pass-playtest.md`). Motive: a
    walkthrough spends the owner's most expensive time, and its first stretch may go on
    problems an agent could have found (a launch that fails, a README step missing). The
