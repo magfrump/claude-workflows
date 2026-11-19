@@ -1889,3 +1889,80 @@ MD
         [[ "$section" == *"$want"* ]] || { echo "missing: $want"; echo "$section"; return 1; }
     done
 }
+
+@test "section 5 lists each Idea carrying reported friction with what it carries and its open holds (ideas promotion, 2026-11-19)" {
+    mkdir -p docs/working
+    e() { printf '### %s · %s\n**Needs:** %s · **Opened:** 2026-11-01 · **Status:** %s\n\nAbout it.\n\n' "$1" "$2" "$3" "${4:-OPEN}"; }
+    { echo '# Running questions'; echo; echo '## Open'; echo; e Q-010 ask-it 'you: judgment'; } > docs/working/questions.md
+    { echo '# Archive'; echo; e Q-001 old-answer 'you: judgment' ANSWERED; } > docs/working/questions-archive.md
+    cat > docs/roadmap.md <<'MD'
+# Roadmap
+
+## Now
+
+- **Now item**: plain.
+
+## Next
+
+## Ideas
+
+- **Plain idea.** Signal: a brainstorm hunch, FP-170 and Q-010 named.
+- **Feedback idea.** Signal: philosophy-research F-019, asks on every write.
+- **Owner idea** (Owner request 2026-11-11). Signal: the owner's report in session.
+- **Held idea.** Signal: herald F-010; asked in Q-010.
+- **Parked idea** (owner brainstorm 2026-10-29; parked by Q-001 [1]). Signal: it.
+- **Dropped 2026-10-30: an old branch.** Reason: owner-reported, then Q-001.
+- **Sub-step idea.** Signal: none on this line.
+  The signal is on its second line: belegarth-herald F-003.
+- **Both.** Signal: F-002 and the owner's request.
+- **Drop guard.** Signal: herald F-004, the hook dropped events; not parked yet.
+- **Unmarked park.** Reason: Q-001 [2] (not now). Signal: philosophy-research F-010.
+- **Curly.** Signal: the owner’s report in session.
+
+## Done
+
+- **Done item.** Signal: F-001, finished.
+
+## Ideas
+
+- **Second Ideas heading.** Signal: F-099.
+MD
+    run --separate-stderr bash "$DC"
+    [ "$status" -eq 0 ]
+    section=$(echo "$output" | sed -n '/## 5/,/## 6/p')
+    [[ "$section" == *"Ideas carrying reported friction (10; a feedback entry F-NNN"* ]] || { echo "$section"; return 1; }
+    for t in "- Ideas 2 · feedback entry · no open entry or watch names it · \"Feedback idea\"" \
+             "- Ideas 3 · owner report · no open entry or watch names it · \"Owner idea\"" \
+             "- Ideas 4 · feedback entry · open: Q-010 (you: judgment) · \"Held idea\"" \
+             "- Ideas 5 · owner report · says parked or dropped · \"Parked idea\"" \
+             "- Ideas 6 · owner report · says parked or dropped · \"Dropped 2026-10-30: an old branch\"" \
+             "- Ideas 7 · feedback entry · no open entry or watch names it · \"Sub-step idea\"" \
+             "- Ideas 8 · feedback entry, owner report · no open entry or watch names it · \"Both\"" \
+             "- Ideas 9 · feedback entry · no open entry or watch names it · \"Drop guard\"" \
+             "- Ideas 10 · feedback entry · no open entry or watch names it · \"Unmarked park\"" \
+             "- Ideas 11 · owner report · no open entry or watch names it · \"Curly\"" \
+             "- Now 1 · no open entry or watch names it · \"Now item\""; do
+        [[ "$section" == *"$t"* ]] || { echo "missing: $t"; echo "$section"; return 1; }
+    done
+    # A park step 6 did not mark "parked" reads as unheld (the skill writes the word);
+    # FP-NNN and a Q-ID are no reported friction; Done and a second Ideas heading are not read.
+    [[ "$section" != *"Plain idea"* && "$section" != *"Done item"* && "$section" != *"Second Ideas heading"* && "$section" != *"Ideas 1 "* ]] || { echo "$section"; return 1; }
+}
+
+@test "section 5 says when no Idea carries reported friction, and lists no Idea when the questions files were not read (ideas promotion, 2026-11-19)" {
+    mkdir -p docs/working
+    printf '# Running questions\n\n## Open\n' > docs/working/questions.md
+    : > docs/working/questions-archive.md
+    printf '# Roadmap\n\n## Now\n\n## Next\n\n## Ideas\n\n- **A hunch.** Signal: FP-012 and Q-003.\n' > docs/roadmap.md
+    run --separate-stderr bash "$DC"
+    [ "$status" -eq 0 ]
+    section=$(echo "$output" | sed -n '/## 5/,/## 6/p')
+    [[ "$section" == *"No items in Now or Next."* && "$section" == *"No Idea carries reported friction (a feedback entry F-NNN"* && "$section" != *"A hunch"* ]] || { echo "$section"; return 1; }
+    # An Idea that carries friction is never printed as unheld when section 3 failed.
+    printf -- '- **Reported.** Signal: herald F-001.\n' >> docs/roadmap.md
+    rm docs/working/questions-archive.md
+    run --separate-stderr bash "$DC"
+    [ "$status" -eq 0 ]
+    section=$(echo "$output" | sed -n '/## 5/,/## 6/p')
+    [[ "$section" == *"Ideas carrying reported friction were not listed either."* && "$section" != *"Reported"\"* && "$section" != *"Ideas 2 "* ]] || { echo "$section"; return 1; }
+}
