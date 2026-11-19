@@ -12,6 +12,7 @@ Fact-check: `docs/reviews/code-fact-check-report-2026-11-18-roadmap-staleness.md
 | # | Finding | Domain | Severity | Source | Location | Legibility-target | Considered overrides | Status |
 |---|---|---|---|---|---|---|---|---|
 | R1 | An entry marked ANSWERED but not archived yet still counts as holding a roadmap item: `questions.sh open` lists live-file entries of any status, so section 5 reports `open Q-NNN` for an answered hold, the stale-hold case the branch exists to catch. | Correctness | Incorrect (fact-check claim 11b, executed) | code-fact-check | `scripts/dev-cycle.sh:466` | for-author | none | Fixed: section 5 drops IDs whose live-file Status is ANSWERED; test "section 5: an entry marked ANSWERED but not archived yet holds nothing…" |
+| R2 | Pass 2: the `answered` awk matched `**Status:** ANSWERED` on any line under a heading (body text, a later `## ` section) and any status starting with ANSWERED, so an open entry could read as no hold; its comment said "the Status field". Errs the safe way. | Correctness | Incorrect (pass-2 claim 5b, executed) | code-fact-check | `scripts/dev-cycle.sh:479` | for-author | none | Fixed (57e8950a): reads Status only from the `**Needs:**` line, split on " · ", compared exactly as `questions.sh archive` does; test "section 5 reads an entry's Status only from its Needs line…" |
 
 ## 🟡 Must Address
 
