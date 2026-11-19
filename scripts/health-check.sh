@@ -484,6 +484,9 @@ check_shellcheck() {
     # copies of this repo, so linting them both double-reports every finding and
     # makes the result depend on which worktrees happen to be lying around
     # locally — a stale one keeps failing the gate long after the branch is gone.
+    # .worktrees/ is skipped for the same reason: build loops' and the dev
+    # cycle's worktrees go there (build-loop.sh --worktree-base), and find does
+    # not read the .gitignore that hides them from git.
     #
     # Both prunes are ANCHORED at $REPO_ROOT. An unanchored '*/.claude/*' is
     # matched against the absolute path, so when the checkout ITSELF sits under a
@@ -498,14 +501,14 @@ check_shellcheck() {
     while IFS= read -r -d '' f; do
         shell_files+=("$f")
     done < <(find "$REPO_ROOT" -type f \( -name '*.sh' -o -name '*.bash' \) \
-        -not -path "$REPO_ROOT/.git/*" -not -path "$REPO_ROOT/.claude/*" \
+        -not -path "$REPO_ROOT/.git/*" -not -path "$REPO_ROOT/.claude/*" -not -path "$REPO_ROOT/.worktrees/*" \
         -not -path "$REPO_ROOT/external/*" -not -path "$REPO_ROOT/archive/*" -print0)
 
     # Also include .bats files — they're bash
     while IFS= read -r -d '' f; do
         shell_files+=("$f")
     done < <(find "$REPO_ROOT" -type f -name '*.bats' \
-        -not -path "$REPO_ROOT/.git/*" -not -path "$REPO_ROOT/.claude/*" \
+        -not -path "$REPO_ROOT/.git/*" -not -path "$REPO_ROOT/.claude/*" -not -path "$REPO_ROOT/.worktrees/*" \
         -not -path "$REPO_ROOT/external/*" -not -path "$REPO_ROOT/archive/*" -print0)
 
     # A zero-file scan is a broken discovery, not a clean repo: this gate exists
