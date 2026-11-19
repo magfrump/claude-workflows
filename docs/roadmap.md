@@ -61,6 +61,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   is the owner's: Q-302. First step after the answer: compare its gaps and causes with this
   repo's, and file any cause the fixes here do not cover.
 
+## In flight
+
 - **Agent: code-review: correct the lever #3 cache-saving text, and the choices built on it**
   (filed 2026-11-19, from the cache probe, 9e89a31e; the owner asked in session to review the
   decision and what else rests on it). Motive: decision 032 adopted lever #3 ("inline the
@@ -83,9 +85,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   loops disproved by having agents read the file; pasting was the other half of why prompts
   were identical. First step: one review brief over (a), (b) and the pasting rule, with an
   amendment to decision 032 (a `docs/decisions/` change, so review) and `test/skills/code-review-context-delivery.bats`
-  updated; (c) and (d) wait on Q-308 (after the release, the owner's call).
-
-## In flight
+  updated; (c) and (d) wait on Q-308 (after the release, the owner's call). Briefed 2026-11-19 on the owner's
+  go-ahead in session: `docs/working/briefs/2026-11-19-code-review-lever3-correction.md`.
 
 - **Worktrees and caches out of the protected config directory** (brainstorm 2026-11-16;
   moved from Ideas 2026-11-19 on the owner's request). Signal: philosophy-research F-019,
