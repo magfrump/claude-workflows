@@ -292,6 +292,8 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-300](#q-300--test-confinement-question-withdrawn) | Q-300: seen | 2026-11-18 |
 | [Q-304](#q-304--a8-go-ahead) | Q-304: [1] | 2026-11-18 |
 | [Q-305](#q-305--merge-gate-2026-11-18-section5-followups-4ada2cedec7c) | Q-305: [1] | 2026-11-18 |
+| [Q-306](#q-306--merge-2026-11-19-a8-token-measurement-30bb30d43a60) | Q-306: [1] | 2026-11-19 |
+| [Q-307](#q-307--merge-2026-11-19-subagent-report-as-text-70084aadc950) | Q-307: [1] | 2026-11-19 |
 <!-- index:end -->
 
 ## Answered
@@ -7546,4 +7548,121 @@ What the loop reports (its words, summarized): R5: with no `questions.md` but a 
 | **[3] changes needed** | Your note goes back to the loop, which runs again (dispatch 2 of 4) | Writing the note | Another loop run |
 
 - **Interim:** unmerged; the image's dev cycle runs as before.
+
+### Q-306 · merge-2026-11-19-a8-token-measurement-30bb30d43a60
+**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** ANSWERED
+Q-306: [1]
+
+Merge the A8 token measurement's results (one code-review pass on the csp benchmark cell, with its token ledger and verdict) into main?
+
+**If you say no:** the results stay on the unmerged branch; rubric row A8 (the code-review skill's "inlining the shared context is free" claim) stays open on a projection, and the cycle files no follow-up from the finding below.
+
+- **What it is:** brief `docs/working/briefs/2026-11-19-a8-token-measurement.md`, run on your Q-304 [1] ("yes, run it now").
+- **Read first:** `runs/review-arms/a8-2026-11-19/results.md` on the branch: `git show 30bb30d43a60c0f9adb4096aa60748ba1ca052e9:runs/review-arms/a8-2026-11-19/results.md`
+- **Tip:** 30bb30d43a60c0f9adb4096aa60748ba1ca052e9 (branch measure/a8-token-measurement); 6,900 lines added, almost all review artifacts and the ledger under `runs/review-arms/a8-2026-11-19/`.
+
+What the loop reports (its words, summarized; the figures are in the results doc):
+- **Cost:** one terminal pass on csp used 852,285 tokens over 9 agents. Fact-check plus critics: 743,755 against the 2026-08-06 baseline's 358,626 for this cell (×2.07). Split out: the k=3 fact-check (three runs instead of one) is 311,975 against 74,274; with the fact-check at k=1 the total is +26% on the baseline.
+- **The finding:** no agent got the shared review block from Anthropic's prompt cache. Each agent's first call read only the 18,900 cached tokens of the system prompt and tools; cache breakpoints sit after the per-agent part, so no cache entry ends where the shared block ends. That cause is the loop's inference from the request records, not confirmed in the API docs.
+- **Verdict on A8:** the claim fails on its benefit (the cache saving was zero in this pass); its cost is small (the block was 2.2k to 2.9k tokens, 9-12% of the 25k budget) but unmeasured net, and its effect on recall cannot be told from one run. Three things would settle it: a two-agent cache probe, a self-read control on this cell, and a run on the larger corpus cell.
+- **Labels:** all 6 of csp's canon labels hit (the baseline: 4 and a partial), which says nothing about lever #3, since k=3, newer skill texts and the Stage 2.5 fact-check changed at the same time; the loop discloses it knew the labels when it wrote the fact-check checklist.
+- **Deviation:** it did not paste each critic's skill text into its prompt; each prompt opened with the byte-identical shared block and named the skill file to read (hashes confirm the shared part matched).
+- **Review of the write-up:** three fact-check passes; 3 Incorrect and about 15 Mostly-accurate prose claims found and fixed; the rubric line below reads clean.
+
+The gate's `--check` lines, as printed:
+
+```
+ok docs/working/briefs/2026-11-19-a8-token-measurement.md 30bb30d43a60c0f9adb4096aa60748ba1ca052e9 dfed11f77320618d6a3339ea9302bbe4d6ab2a7e
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A docs/reviews/code-fact-check-report-2026-11-19-a8-pass2.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A docs/reviews/code-fact-check-report-2026-11-19-a8-pass3.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A docs/reviews/code-fact-check-report-2026-11-19-a8-r1.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A docs/reviews/code-fact-check-report-2026-11-19-a8-r2.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A docs/reviews/code-fact-check-report-2026-11-19-a8-r3.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A docs/reviews/code-fact-check-report-2026-11-19-a8.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A docs/reviews/code-review-rubric-2026-11-19-measure-a8-token-measurement.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md M docs/working/briefs/2026-11-19-a8-token-measurement.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A docs/working/research-2026-11-19-a8-token-measurement.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/api-consistency-review-2026-11-19.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/architecture-review-2026-11-19.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/code-fact-check-report-r1.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/code-fact-check-report-r2.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/code-fact-check-report-r3.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/code-fact-check-report.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/code-fact-check-submitted-claims.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/code-review-rubric-2026-11-19-csp.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/fc-r3-logs/build-noheaders.log
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/fc-r3-logs/build-webpack.log
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/fc-r3-logs/build-webpack2.log
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/fc-r3-logs/build.log
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/fc-r3-logs/build3.log
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/fc-r3-logs/eslint.log
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/fc-r3-logs/layout.with-headers.tsx
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/fc-r3-logs/matcher.txt
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/fc-r3-logs/noheaders-body.html
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/fc-r3-logs/noheaders-headers.txt
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/fc-r3-logs/root-body.html
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/fc-r3-logs/root-headers.txt
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/fc-r3-logs/start.log
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/fc-r3-logs/start2.log
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/fc-r3-logs/vitest.log
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/part6.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/performance-review-2026-11-19.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/security-review-2026-11-19.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/shared-block-stage2.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/shared-block.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/stage25-logs/build.log
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/stage25-logs/matcher-compile.log
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/stage25-logs/proxy-invoke.log
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/stage25-logs/proxy-invoke.probe.mjs.txt
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/test-strategy-review-2026-11-19.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/manifest.json
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/results.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/token-ledger.md
+rubric docs/working/briefs/2026-11-19-a8-token-measurement.md: clean docs/reviews/code-review-rubric-2026-11-19-measure-a8-token-measurement.md: 0 red and 19 amber rows, none open
+```
+
+- No path is gate code, an instruction file or a dot path.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges tip 30bb30d4; the cycle then closes rubric row A8 with the measured verdict and files the cache finding (and the three settling runs) as roadmap items | Reading `results.md` | A wrong number lands in a results doc; one `git revert` undoes it |
+| **[2] drop** | The brief closes unmerged; A8 stays open | None | The measurement's tokens are spent with nothing kept |
+| **[3] changes needed** | Your note goes back to the loop (dispatch 2 of 4) | Writing the note | Another loop run |
+
+- **Interim:** unmerged.
+
+
+### Q-307 · merge-2026-11-19-subagent-report-as-text-70084aadc950
+**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** ANSWERED
+Q-307: [1]
+
+Merge the parallel-worktrees change that has a subagent return a report as text for the parent to write, instead of writing the file itself (feedback F-011)?
+
+**If you say no:** the workflow keeps telling subagents to commit their reports in their worktrees, and Claude Code's Write tool keeps refusing those files ("Subagents should return findings as text, not write report files"), so each parent places the report by hand, as in philosophy-research and belegarth-herald.
+
+- **What it is:** brief `docs/working/briefs/2026-11-19-subagent-report-as-text.md`, from your "Yes do that" today (the Ideas items that never left Ideas).
+- **Read:** the diff, 7 changed lines in one file: `git diff main...70084aadc95013e785793862f7cb87a689adbd00 -- workflows/parallel-worktrees.md`; the loop's research doc `docs/working/research-2026-11-19-subagent-report-as-text.md`.
+- **Tip:** 70084aadc95013e785793862f7cb87a689adbd00 (branch docs/subagent-report-as-text)
+
+What the loop reports (its words, summarized): step 3 (dispatch) gains "A report comes back as text": the item's brief names where the report lands and the subagent returns it in its final message; code and `docs/working/` handoffs are still committed by the subagent, since the two feedback entries show no refusal of those. Step 4 gains "Place returned reports first": the parent writes the report into that item's worktree and commits it there, then reviews and merges as before (a report-only item needs a worktree made by hand). The "Lost work" failure mode covers a report returned and never written down. `test/workflow-required-sections.bats` and `test/pivot-consistency.bats` pass; one independent review round, four of five points fixed.
+
+The gate's `--check` lines, as printed:
+
+```
+ok docs/working/briefs/2026-11-19-subagent-report-as-text.md 70084aadc95013e785793862f7cb87a689adbd00 9cd05281cadb305def5d848c90c3d17c5f18341a
+path docs/working/briefs/2026-11-19-subagent-report-as-text.md M docs/working/briefs/2026-11-19-subagent-report-as-text.md
+path docs/working/briefs/2026-11-19-subagent-report-as-text.md A docs/working/research-2026-11-19-subagent-report-as-text.md
+path docs/working/briefs/2026-11-19-subagent-report-as-text.md M workflows/parallel-worktrees.md
+rubric docs/working/briefs/2026-11-19-subagent-report-as-text.md: none: docs/subagent-report-as-text changes 1 paths outside docs/ and adds or changes no code-review rubric under docs/reviews/
+```
+
+- `workflows/parallel-worktrees.md` is under this repo's `Self-merge never: workflows/` line, which is why it is yours; it is not gate code and takes effect for sessions with the next release. The rubric line reads `none`: the review round is recorded in the research doc, not as a rubric.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges tip 70084aad | Reading 7 lines | A fan-out places a report in the wrong step; one `git revert` undoes it |
+| **[2] drop** | The brief closes; the workflow stays as it is | None | Report writes keep being refused |
+| **[3] changes needed** | Your note goes back to the loop (dispatch 2 of 4) | Writing the note | Another loop run |
+
+- **Interim:** unmerged.
 
