@@ -267,6 +267,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-273](#q-273--image-lag) | Q-273: met — image 80b7dabe27cac560f63f0ee4e17925139ee49004 holds the gate code of main 80b7dabe27cac560f... | 2026-11-11 |
 | [Q-274](#q-274--self-answer-plan-how-far) | Q-274: [1] (owner, answers-11-11-26.txt). Build nothing; look again when Q-272 is answered. The owner adds:... | 2026-11-11 |
 | [Q-277](#q-277--install-sandbox-with-nested-worktree-gap) | The sandbox's live check found two gaps: nested worktrees, and the credential after a token refresh. Instal... | 2026-11-11 |
+| [Q-278](#q-278--q272-returned-run-or-refuse) | Q-278: withdrawn | 2026-11-11 |
 | [Q-279](#q-279--merge-gate-2026-11-11-light-pass-9b4f98000688) | Q-279: [1] | 2026-11-11 |
 | [Q-280](#q-280--board-first-host-run) | Q-280: ran (owner, in session 2026-11-13). With the two seeded registry lines the board exited 0. After the... | 2026-11-12 |
 | [Q-281](#q-281--constraint-s4-keep-promote-drop) | Should soft constraint S4 in `docs/constraints.md` ("mechanical steps go in tested scripts, not prose") sta... | 2026-11-13 |
@@ -288,6 +289,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-297](#q-297--image-lag) | Q-297: met — image a4c856bf7cb595f6eab4923db117827ebb833cb4 holds the gate code of main f4156dd013ca713a2... | 2026-11-16 |
 | [Q-298](#q-298--merge-gate-2026-11-14-merge-rubric-gate-e035801282ff) | Q-298: [1] | 2026-11-16 |
 | [Q-299](#q-299--profile-ratify-owner) | Q-299: [2] (owner, in session, 2026-11-18): ratify with your edits. The owner's edit was to archetype 2's w... | 2026-11-18 |
+| [Q-300](#q-300--test-confinement-question-withdrawn) | Q-300: seen | 2026-11-18 |
 <!-- index:end -->
 
 ## Answered
@@ -7425,5 +7427,54 @@ sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git r
 
 - **Interim:** the image's gate (C) runs.
 - **Blocks:** nothing; the dev cycle runs on the old gate meanwhile.
+
+
+### Q-300 · test-confinement-question-withdrawn
+**Needs:** you: fyi · **Opened:** 2026-11-18 · **Status:** ANSWERED
+Q-300: seen
+
+This is about the test-confinement script (`scripts/confine-tests.sh`), not Claude Code's Bash sandbox: I am withdrawing my question about what the test-confinement script does when its strong tool, `bwrap`, is missing (Q-278), because today no answer would change what it does. Answer `seen`, or tell me to ask it now.
+
+**If you say no, `seen`, or nothing:** nothing is built, and a watch (Q-301, a condition the dev cycle checks every iteration) brings the question back when it can matter (last bullet). To close Q-278 as withdrawn, not answered, write `Q-278: withdrawn` beside your `seen`: the cycle cannot close an entry of yours itself, so without that line Q-278 stays open but nothing acts on it. **If you say "ask it now":** it comes back at once as a judgment entry, with the options in the last bullet.
+
+- **What the test-confinement script is, and why it is not the Bash sandbox question.** The test-confinement script runs one test command with the network cut off, so a test that reaches the internet fails instead of passing. The Bash sandbox you rolled back on 2026-11-12 wrapped every command a session ran, and that is what broke worktree creation in every repo. The test-confinement script wraps only the test command it is handed and never touches worktrees, so that cost does not carry over. The two share one tool, `bwrap`, which is why Q-278 read as the same question.
+- **Why there is nothing to decide now.** Q-278 was the return you asked for in your answer to Q-272 (run and warn "to start", and come back with data). It asked what the test-confinement script should do when it has its weaker tool, `unshare`, but not `bwrap`: run after a warning, or refuse. In this harness's container (cc-isolated), in any repo, it has neither tool: the image no longer installs `bwrap`, and the container refuses `unshare`. So it refuses every time, and the build loop runs the tests unconfined plus `scripts/hermeticity-lint`, a static check for tests that call the network. Every answer you could give behaves the same today. You asked how often `bwrap` is missing and what refusing would cost: it is missing every time, and refusing has cost nothing on record, because no recorded run ever reached the point where the two answers differ. While the image installs no `bwrap` and the container refuses `unshare`, no session can produce better data; `bwrap` left the image with the Bash sandbox you chose not to bring back (decision-log row 88, `docs/decisions/log.md`).
+- **How sure that is.** 7 build loops recorded a run between 2026-11-05 and 2026-11-11, and all 7 refused. Every dev-cycle record since (2026-11-13 to 2026-11-18) reports no `bwrap` in the session. That count can be low: it holds only the runs a loop wrote down, and every full test run also checks which tool the test-confinement script has without recording the result. A run that did not refuse would still need a tool the image does not have.
+- **Meanwhile:** the test-confinement script stays as merged under your Q-272 answer: if it ever has `unshare` but not `bwrap`, it warns and runs. Your Q-272 option would also have added a line to `docs/constraints.md` recording that this departs from H2, the rule that a weakened tool refuses. That line was never written, and none is needed while no session can reach the `unshare` fallback. If the question returns and you keep run and warn, the line comes with that answer.
+- **What brings it back** (watch Q-301, in `docs/working/watching.md`): a build loop's research doc or a cycle record quoting a line the test-confinement script printed in a run, `primitive available:` or `falling back to the unshare primitive`, `command -v bwrap` succeeding in a session, or something starting to run the test-confinement script on your host or in CI. It then returns as a judgment entry with three options and their observed costs: run and warn, refuse, and do not confine tests at all.
+
+- **Read:** `docs/working/research-2026-11-18-rewrite-q278.md` (merged a61f9a17: why it is withdrawn, and the reader test of this entry: both simulated readers named the right tool from the first line; no real reader yet)
+
+
+### Q-278 · q272-returned-run-or-refuse
+**Needs:** you: judgment · **Opened:** 2026-11-11 · **Status:** ANSWERED
+Q-278: withdrawn
+**Not answered: to be rewritten (owner, 2026-11-18).** The owner's reader-test answers (`docs/working/reader-testing/q278-2026-11-18/sessions/owner.md`) were a reaction to the question as they read it, not an answer. In their words: "I don't think the question is meaningfully answered. I know that after the revert there was a research session to determine how to implement bwrap without breaking worktrees. The next step should be re-writing the question to address the concerns and options, not implementing. I never saw a reference to the test confinement script in the question text!" Nothing is implemented on this entry until the rewrite is answered. The rewrite is on the roadmap's Now list. **Rewritten 2026-11-18 as fyi Q-300 (withdrawn: no answer changes anything today) and watch Q-301; answer `Q-278: withdrawn` to close this entry.**
+
+You asked for Q-272 back with data. When the test-confinement script (`scripts/confine-tests.sh`) cannot use `bwrap`, should it still run tests under its weaker tool, `unshare`, or refuse?
+
+**If you say no:** your Q-272 answer stands, [1] "to start": the script runs under `unshare` after a warning. That is a provisional exception to hard constraint H2 (a degraded tool refuses and names what went unenforced), not written into `docs/constraints.md`.
+
+**The data** (a build loop gathered it from the repo's records; nothing was run on the host):
+
+- **How often `bwrap` is missing.** Not enough data yet. In this sandbox, and in the image sessions run today (536b7082), neither tool works: `bwrap` is not installed, and Docker's default seccomp refuses user namespaces, so `--probe` exits 3 here. The image after the release (Q-273, on hold for Q-277) installs `bwrap`. But in a session, that `bwrap` would run inside Claude Code's own sandbox, and nobody has tried that yet. Your host is not on record.
+- **How much friction a refusal would cause.** None so far. 7 build loops ran the script (2026-11-05 to 2026-11-11), plus their reviewers. Every run exited 3 because neither tool worked, so the `unshare` fallback has never run and its warning has never printed. A refusal would have stopped 0 more runs. On exit 3 a loop already runs `scripts/run-tests.sh` unconfined, plus the hermeticity lint (a static check for tests that could reach the network). That fallback is weaker than `unshare`: it loses the network denial.
+- **2026-11-12, one change to the first point.** The release that was to install `bwrap` did not ship it: main rolled the Bash sandbox back (7caea26d, your Q-277 answer [3]), and that revert also took `bwrap` out of the image. Sessions now run the image built from 80b7dabe, which has neither tool working, so the script still exits 3 here and nothing above has changed in practice.
+- **One gap.** Every full test run already calls the real `--probe` (`test/scripts/confine-tests.bats:228-245`), and nothing records which tool it found.
+
+- **Why it's yours:** it is an exception to a hard constraint, which only you grant.
+- **Read:** `docs/working/research-2026-11-11-confine-tests-fallback-data.md` (merged at b9c8966a; section 3 lists six ways to track the warnings, none built) · Q-272 in `docs/working/questions-archive.md` · decision-log row 87
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Run and warn (as now)** | The fallback stays; the exception to H2 gets written into `docs/constraints.md` | One line in the constraints file | A fallback pass reads as "confined" to anyone who misses the warning; there have been 0 such runs so far |
+| **[2] Refuse unless asked** | Without `bwrap` the script exits 3, unless a new flag asks for `unshare`; the briefs' test wording passes that flag | One self-merged build loop | A run without `bwrap` that does not pass the flag stops until someone passes it; 0 runs would have stopped so far |
+| **[3] Always refuse** | Without `bwrap` the script exits 3; `unshare` only behind the existing `--no-loopback` flag | One self-merged build loop | Loops that hit the fallback lose the network denial, as every exit 3 does today |
+
+The loop's tentative pick is [2], because it follows H2 as written with no exception and loops keep `unshare`'s network denial, which [3] gives up. If you'd rather wait for data, keep [1] until the first `--probe` inside a session after the release.
+
+- **Blocks:** nothing. The script has no caller that the fallback would change today.
+- **Interim:** [1], your Q-272 answer.
+- **If the answer differs:** [2] or [3] becomes a brief for one build loop; [1] becomes one line in `docs/constraints.md`, which you commit.
 
 

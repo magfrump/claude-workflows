@@ -511,8 +511,8 @@ Items finished since the last cycle, with the merge.
 - **Rewrite Q-278 (the bwrap run-or-refuse question)** (owner, 2026-11-18). Done a61f9a17 (self-merge),
   brief `docs/working/briefs/closed/2026-11-18-rewrite-q278.md`, research
   `docs/working/research-2026-11-18-rewrite-q278.md`: no question is due (neither tool works in any
-  session, so every answer behaves the same). Filed as fyi Q-300 and watch Q-301; Q-278 closes when the
-  owner answers `Q-278: withdrawn`. Optional, not filed: a decision-log row superseding row 87's
+  session, so every answer behaves the same). Filed as fyi Q-300 and watch Q-301; the owner answered
+  `Q-300: seen, Q-278: withdrawn` (2026-11-18, in session), so both are archived and Q-301 holds the question. Optional, not filed: a decision-log row superseding row 87's
   "provisional exception" wording (`docs/decisions/` is the owner's; the research doc drafts it).
 - Agent: review-gap audit fixes (Now item filed 2026-11-13, step 7;
   `docs/working/research-2026-11-13-review-gap-audit.md`): both units merged, the written
