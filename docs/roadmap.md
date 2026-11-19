@@ -131,6 +131,14 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
      plus how this repo ingests a copied file; v2 (GitHub issues: search, comment or star,
      else open one) is an idea until v1 is used. v1 merged at a8e941a5 (Q-232 [1]).
 
+- **Agent: check cc-push's git version list against git's release notes** (filed
+  2026-11-18, from Q-084's rewrite). Motive: `devcontainer-config/cc-push.sh` refuses git
+  older than the May 2024 security fixes (2.39.4, 2.40.2, 2.41.1, 2.42.2, 2.43.4, 2.44.1,
+  2.45.1, or 2.46), and that list was written from memory; Q-084 carried the check as a
+  side note, but it needs no host. First step: compare the list with git's published
+  release notes for those versions (a web source: flag it as unverified until a host
+  fetch confirms it); a wrong version is an enforcement-file fix through pr-prep.
+
 ## In flight
 
 ## Next

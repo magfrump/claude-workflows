@@ -18,6 +18,7 @@ Maintained by `~/.claude/scripts/questions.sh` (`check` · `index` · `migrate`)
 |---|---|---|---|
 | [Q-067](#q-067--regenerate-skill-eval-reports) | deferred | When should the skill eval reports be regenerated, so that the 50 `@needs-reports` suites constrain the cur... | 2026-09-26 |
 | [Q-098](#q-098--global-allowlist-after-sandbox) | deferred | Ship a global `permissions.allow` in `hooks/wiring.json` once cc-isolated has a Bash sandbox (Q-088). Branc... | 2026-09-28 |
+| [Q-167](#q-167--post-install-host-probes) | deferred | At the next release whose install re-blesses, ask the owner for the hint text that the fresh bless prints b... | 2026-10-15 |
 | [Q-276](#q-276--q272-return-with-data) | deferred | Return the run-or-refuse question (Q-272: what the test-confinement script does when it has only its weak t... | 2026-11-11 |
 | [Q-161](#q-161--revive-hermeticity-layer2-after-q125) | trigger | When Q-125's sandbox merges (bwrap in the cc-isolated image), decision 017's T2 fires: revive hermeticity l... | 2026-10-14 |
 | [Q-262](#q-262--merge-approval-revisit) | trigger | Should merge approval be reopened? The design record picked no change on 2026-11-06, and this watch holds i... | 2026-11-06 |
@@ -97,6 +98,16 @@ Bring the test-confinement script's run-or-refuse question (`scripts/confine-tes
   (c) a CI job, host step or hook starts calling `scripts/confine-tests.sh` (a new caller outside build-loop test steps and `test/scripts/confine-tests.bats`).
 - **Interim:** the owner's Q-272 answer stands: when only `unshare` works, the script warns and runs. A loop that meets the fallback quotes its line in its research doc (that is condition (a)); it does not build a refusal and does not file the fallback as a new H2 finding. No line is added to `docs/constraints.md` while this is open.
 - **When it fires:** file a `you: judgment` entry. Its first line names the test-confinement script and says it is not Claude Code's Bash sandbox; it uses that one name throughout. Its options are run and warn (with the `docs/constraints.md` line it needs, drafted), refuse (a loop then falls back to the unconfined run plus `scripts/hermeticity-lint`), and do not confine tests at all (retire the script and the briefs' probe step), each with the costs observed by then and any count's undercount stated. Host facts go in a separate `you: terminal` entry. Then close this watch.
+
+### Q-167 · post-install-host-probes
+**Needs:** deferred · **Opened:** 2026-10-15 · **Status:** OPEN
+
+At the next release whose install re-blesses, ask the owner for the hint text that the fresh bless prints before any probe. Its four other checks passed on 2026-11-03 and 2026-11-07.
+
+- **Moved here 2026-11-18** from `you: terminal`, on the owner's go-ahead in session: the hint shows only during an install that re-blesses, so there was nothing for the owner to run until then. Full record: `docs/working/history-terminal-entries-2026-11-18.md`.
+- **Condition:** the cycle files an `image-lag` release entry (dev-cycle step 0.1). That entry then adds one line asking the owner to paste the bless output's `Verified live:` and `Next:` lines, and `cc-isolated --list`'s `Blessed config` line, before running any probe. Pass: `Verified live:  NO — a bless is a review, not a test.`, `Next: cc-isolated --probe-only <repo>` alone on its line, and `--list` showing `verified live: NO (run: cc-isolated --probe-only <repo>)`.
+- **Interim:** the rebuild-hint commits keep `Live-verified: no`; that output rests on bats. The second half (a probe marks the bless verified) is live-verified on bless 3c5dd7853cf7a3f9.
+- **Closes:** when those pasted lines are on record here.
 
 ## Closed
 
