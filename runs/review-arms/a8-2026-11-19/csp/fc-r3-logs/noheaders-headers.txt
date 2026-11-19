@@ -1,0 +1,16 @@
+HTTP/1.1 200 OK
+content-security-policy: default-src 'self'; script-src 'self' 'nonce-NmQ1YmRiNDAtYTk4Yy00ZjAzLTk5ZTEtNTE3MzgyMDNlZDRi' 'strict-dynamic'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'
+Vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding
+x-nextjs-cache: HIT
+x-nextjs-prerender: 1
+x-nextjs-prerender: 1
+x-nextjs-stale-time: 300
+X-Powered-By: Next.js
+Cache-Control: s-maxage=31536000
+ETag: "1213zp3dqswfhk"
+Content-Type: text/html; charset=utf-8
+Content-Length: 20072
+Date: Thu, 19 Nov 2026 17:08:26 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
