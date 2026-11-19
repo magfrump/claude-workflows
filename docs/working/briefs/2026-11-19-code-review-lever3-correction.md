@@ -35,3 +35,5 @@ Policy: review
 - The cross-model harness `scripts/cross-model-review.py`, where caching works and stays fenced off (decision 032, H4).
 - k, critic gating, the short-circuit, or any other lever.
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`.
+
+Dispatched: 1
