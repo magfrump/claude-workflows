@@ -61,6 +61,27 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   is the owner's: Q-302. First step after the answer: compare its gaps and causes with this
   repo's, and file any cause the fixes here do not cover.
 
+- **Agent: dev-cycle section 5 follow-ups (R5, A11)** (filed 2026-11-18, split from
+  `fix/dev-cycle-roadmap-staleness` at the review cap on the owner's answer "Split R5
+  off"). Motive: the digest's new section 5 list
+  (`docs/reviews/code-review-rubric-2026-11-18-fix-dev-cycle-roadmap-staleness.md`) shows
+  an item an open watch holds as unheld when a repo has `docs/working/watching.md` but no
+  `questions.md` (R5), and has wording and test gaps (A11: "one Needs line, which `check`
+  requires" is false; "80 characters" is bytes under mawk; test 97's glob half and test
+  92's Next half cannot fail; the plan and research docs' stale lines). First step: in
+  section 3's no-questions-file branch, leave `open_ok` unset when `watching.md` exists,
+  so section 5 prints its NOT-checked line; add the test; then A11. Gate code: a review
+  merge, then the next release.
+
+- **Agent: flaky board test, the fanout case** (filed 2026-11-18, from the health check
+  before `fix/dev-cycle-roadmap-staleness` merged). Motive: `test/scripts/board.bats`'s
+  "a symlink in the git directory refuses the write" failed once in a full run (want
+  `objects/ab … is a symlink`, got WRITTEN) and passed alone 3 of 3. Likely cause
+  [inferred]: when the fixture repo already has an `objects/ab` directory (an object
+  whose hash starts `ab`, which varies with commit timestamps), `ln -s … "$c/objects/ab"`
+  makes the link inside it, so nothing is planted. First step: confirm by forcing an
+  `ab` object, then plant the link at a fan-out name the repo does not hold.
+
 ## In flight
 
 ## Next
