@@ -153,6 +153,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   2026-11-18 (iteration 2026-11-19-0717): step 4b fired on `skills/dev-cycle/SKILL.md` as
   22735b6e changed it (step 6's check of roadmap items no open entry or watch names); the same
   sample takes it.
+  2026-11-19 (iteration 2026-11-19-2008): step 4b fired on `skills/dev-cycle/SKILL.md` as
+  7661a2cf changed it (step 6 moves Ideas that carry reported friction); the same sample
+  takes it.
 - **Record out-of-cycle session answers through `--answered`.** Signal: 4306aa88 (the owner's
   Q-281..284 answers, recorded on a hand branch) read as `other` in `--main-log`, making
   iteration 2026-11-13-2237 a full cycle with a health run.
