@@ -11,7 +11,7 @@ The digest's section 5 gains a per-item list for Now and Next: each item's title
 
 ## Steps
 
-1. `scripts/dev-cycle.sh` section 5: after the quoted Next, print `Now and Next items, with the open entries or watches each names:` and one line per column-0 item of Now and Next: `- Now N · TITLE: open Q-NNN (route), …` or `- Now N · TITLE: no open entry or watch names it`. TITLE is the item's first bold span, else its first 80 characters. When section 3 did not read the open list, print one line saying the list was not checked. Tests in `test/scripts/dev-cycle.bats`.
+1. `scripts/dev-cycle.sh` section 5: after the quoted Next, print `Now and Next items, each with the open entries and watches it names, then its title (step 6 moves or explains every item none names):` and one line per column-0 item of the first Now and the first Next: `- Now N · open: Q-NNN (route), … · "TITLE"` or `- Now N · no open entry or watch names it · "TITLE"`, the verdict before the quoted title. TITLE is the item's first bold span, else its first 80 bytes (less a multibyte character the cut split), one trailing period dropped. When section 3 did not read the open list (or found `watching.md` but no questions file), print one line saying the list was not checked. Tests in `test/scripts/dev-cycle.bats`. (Shape as shipped, corrected 2026-11-18 by `fix/dev-cycle-section5-followups`.) Tests in `test/scripts/dev-cycle.bats`.
 2. `skills/dev-cycle/SKILL.md`: step 0's section map (5 feeds steps 6 and 8); step 6's rule for flagged items, Done lines that complete part of an item, and Ideas taking parked items; step 8's free-slot reason uses the list; the record template's `6.` line says what moved; step 3's agent-item sentence notes that step 6 covers every Now item.
 
 ## Size estimate

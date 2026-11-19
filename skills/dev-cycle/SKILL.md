@@ -514,7 +514,8 @@ waits for the next digest.
   1b's `migrate` and step 6. Every other Now item is checked in step 6, which a light
   pass runs too.
 - If the digest prints "Watched questions were NOT checked" (with the cause: a skipped
-  questions file, archive or `watching.md`, questions.sh missing, or `questions.sh open` failing), fix or
+  questions file, archive or `watching.md`, a `watching.md` with no questions file, questions.sh
+  missing, or `questions.sh open` failing), fix or
   report that first (never reading, copying or rewriting through a skipped path); the section
   was not checked.
 
