@@ -32,3 +32,5 @@ Paths: none
 - Fixing any entry, or editing a hook, script, skill, workflow or guide.
 - Editing `docs/roadmap.md`, the questions files, `docs/working/watching.md`, `docs/working/idea-log.md` or `docs/working/feedback/`: the dev cycle owns those.
 - Anything in the belegarth-herald repo itself.
+
+Dispatched: 1
