@@ -398,9 +398,15 @@ qw_at=""; skipped "$QW" && qw_at="$SKIP_AT"
 nc="**Watched questions were NOT checked** —"
 if skipped docs/working/questions.md; then
   echo "$nc $(skipnote docs/working/questions.md)"
+elif ! inrepo docs/working/questions.md && [[ -n "$qw_at" || -f "$QW" ]]; then
+  # `questions.sh open` refuses a missing live file, so watching.md's watches
+  # go unread: section 5 must not report the items they hold as unheld. (With
+  # qw_at empty, -f follows no symlink: blocker found none on the path.)
+  if [[ -n "$qw_at" ]]; then SKIP_AT="$qw_at"; echo "$nc $(skipnote "$QW") docs/working/questions.md does not exist either."
+  else echo "$nc $QW exists but docs/working/questions.md does not, so no watch was read (\`questions.sh init\` creates the missing file)."; fi
 elif ! inrepo docs/working/questions.md; then
   echo "No docs/working/questions.md in this repo."
-  open_ok=1   # nothing is open: section 5 lists every item as unheld
+  open_ok=1   # no questions file and no watching.md: section 5 lists every item as unheld
 elif [[ ! -f "$QS" ]]; then
   echo "$nc questions.sh was not found (next to this script or in ~/.claude/scripts)."
 elif [[ -n "$qa_at" ]]; then
@@ -473,7 +479,8 @@ if inrepo docs/roadmap.md; then
   # in section 7. Each line prints the verdict before the item's title, the
   # title quoted, so a title cannot stand where step 6 reads the verdict.
   # One record per item: SECTION, N, TITLE (its first bold span, else its
-  # first 80 characters; one trailing period dropped), IDS, joined by \x1f,
+  # first 80 bytes, cut back to a character boundary; one trailing
+  # period dropped), IDS, joined by \x1f,
   # which the awk first turns to a space wherever the roadmap holds one (a tab
   # is IFS whitespace: an empty field would collapse and shift the rest).
   echo
@@ -481,8 +488,8 @@ if inrepo docs/roadmap.md; then
     echo "**Now and Next items were NOT checked against open entries and watches** — section 3 did not read the questions files (see it above). Step 6 reports this; it never reads as every item held."
   else
     # IDs whose live-file Status is exactly ANSWERED, read as questions.sh's
-    # parse_entries reads a well-formed entry (one **Needs:** line with all
-    # three fields, which `check` requires): the Status field of the last
+    # parse_entries reads a well-formed entry (all three fields present,
+    # which `check` requires): the Status field of the last
     # **Needs:** line under a "### Q-NNN " heading, the fields split on " · ",
     # compared whole, as `archive` compares it. Section 3's list still
     # carries these entries.
@@ -494,11 +501,15 @@ if inrepo docs/roadmap.md; then
           for (i = 1; i <= n; i++) if (f[i] ~ /^Status:/) st = substr(f[i], 9) }
         END { fl() }' docs/working/questions.md) "
     fi
-    items="$(awk '
+    # LC_ALL=C: substr counts bytes under any awk, and the title then drops
+    # a trailing incomplete sequence (a lead byte and what the cut kept of it; a
+    # split character is invalid UTF-8, and grep reads the digest as binary;
+    # questions.sh drops any trailing multibyte one, FP-170), keeping a whole one.
+    items="$(LC_ALL=C awk '
       function flush(   title, ids, s, id, seen) {
         if (cur == "") return
         if (match(text, /\*\*[^*]+\*\*/)) title = substr(text, RSTART + 2, RLENGTH - 4)
-        else { title = text; sub(/^([-*] |[0-9]+\. )/, "", title); title = substr(title, 1, 80); sub(/ +$/, "", title) }
+        else { title = text; sub(/^([-*] |[0-9]+\. )/, "", title); title = substr(title, 1, 80); sub(/([\302-\337]|[\340-\357][\200-\277]?|[\360-\364][\200-\277]?[\200-\277]?)$/, "", title); sub(/ +$/, "", title) }
         sub(/\.$/, "", title)
         ids = ""; s = text
         while (match(s, /Q-[0-9]+/)) { id = substr(s, RSTART, RLENGTH); if (!(id in seen)) { seen[id] = 1; ids = ids " " id }; s = substr(s, RSTART + RLENGTH) }
