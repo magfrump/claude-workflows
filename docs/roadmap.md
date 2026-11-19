@@ -99,12 +99,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   does not cover, so the whole entry should not have reached the owner.
   2026-11-19: moved to Now by step 6 (iteration 2316). First step: the one the signal names; if none, a research or divergent-design pass on it.
 
-- **Agent: Loops wait on a file or job in the foreground** (filed 2026-11-19, step 6; moved from Ideas: it carries reported friction). (brainstorm 2026-11-16). Signal:
-  philosophy-research F-012 (loops idle two hours on Monitor while listed as running;
-  told to wait in the foreground, they finished in 30 to 60 minutes). F-013's hung tool
-  calls have no known cause and are not covered by this.
-  2026-11-19: moved to Now by step 6 (iteration 2316). First step: the one the signal names; if none, a research or divergent-design pass on it.
-
 - **Agent: cc-isolated's manual worktree fallback as the default** (filed 2026-11-19, step 6; moved from Ideas: it carries reported friction). (brainstorm 2026-11-12).
   Signal: herald F-009 and 7caea26d both saw Agent `isolation: "worktree"` refused in the
   container. It would change `workflows/parallel-worktrees.md` to start with the
@@ -116,6 +110,14 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   F-002: `--check-fix` refuses every new file, so the owner made it by hand. Allow
   `harness-feedback.py init` and appends in-cycle outside claude-workflows.
   2026-11-19: moved to Now by step 6 (iteration 2316). First step: the one the signal names; if none, a research or divergent-design pass on it.
+
+- **Agent: Build loops start in the orchestrator's removed worktree** (filed 2026-11-19, step 7; herald F-008). Motive: every loop
+  dispatched before the cycle's land loses its first Bash call, because the cycle removes its
+  worktree after the land while the loop's shell starts there; it reproduced in the 2026-11-19
+  herald triage dispatch. First step: the hermetic probe in group F of
+  `docs/working/research-2026-11-19-herald-friction-triage.md` (does a main-session `cd` before
+  an Agent call move the subagent's start directory?), then divergent design over its four
+  approaches. Gate code, so a review merge.
 
 ## In flight
 
@@ -144,20 +146,20 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   updated; (c) and (d) wait on Q-308 (after the release, the owner's call). Briefed 2026-11-19 on the owner's
   go-ahead in session: `docs/working/briefs/2026-11-19-code-review-lever3-correction.md`.
 
-- **Agent: The live-verify hook reads a merge commit's staged diff against HEAD only** (filed 2026-11-19, step 6; moved from Ideas: it carries reported friction). Signal:
-  the F-009 loop's pre-mortem item 5 (`docs/working/research-2026-11-16-loop-may-merge-default-in.md`
-  on `fix/loop-may-merge-default-in`): `hooks/live-verify-gate.sh` ignores MERGE_HEAD, so a
-  loop hand-resolving a merge of the default branch whose main side changed an enforcement
-  file is asked for a `Live-verified:` trailer it cannot honestly give, and stops. First
-  step: count how often main's side of such a merge touches an enforcement file; an
-  enforcement-file change, so review and a live-verify trailer.
-  2026-11-19: moved by step 6 and briefed at once (iteration 2316): `docs/working/briefs/2026-11-19-live-verify-merge-head-count.md`.
+- **Agent: Loops wait on a file or job in the foreground** (filed 2026-11-19, step 6; moved from Ideas: it carries reported friction). (brainstorm 2026-11-16). Signal:
+  philosophy-research F-012 (loops idle two hours on Monitor while listed as running;
+  told to wait in the foreground, they finished in 30 to 60 minutes). F-013's hung tool
+  calls have no known cause and are not covered by this.
+  2026-11-19: moved to Now by step 6 (iteration 2316). First step: the one the signal names; if none, a research or divergent-design pass on it.
+  2026-11-19: briefed (iteration 2338): `docs/working/briefs/2026-11-19-loops-wait-foreground.md`.
 
-- **Agent: Triage the herald friction list as one unit** (filed 2026-11-19, step 6; moved from Ideas: it carries reported friction). (brainstorm 2026-11-12). Signal: 12
-  seeds from one ingest (F-001 to F-012, `docs/working/feedback/belegarth-herald.md`),
-  several about hooks and permission prompts this repo ships. It would group them by
-  cause and file the few with a fix in this repo; do nothing until a slot is free.
-  2026-11-19: moved by step 6 and briefed at once (iteration 2316): `docs/working/briefs/2026-11-19-herald-friction-triage.md`.
+- **Agent: Review subagents are told to write report files Claude Code refuses** (filed 2026-11-19,
+  step 7; herald F-010 remainder). Motive: the build-loop prompt's per-subagent scratch directory,
+  11 review skills' "save your report" lines and the code-review skill's fact-check dispatch
+  still tell a subagent to save a file, costing a refused call each time (the parallel-worktrees
+  half was fixed by cd019457). First step: group G's listing in the same research doc, then
+  divergent design over its four approaches; option 1 is gate code (review merge).
+  2026-11-19: briefed (iteration 2338): `docs/working/briefs/2026-11-19-subagent-report-files-listing.md`.
 
 ## Next
 
@@ -221,8 +223,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   7661a2cf changed it (step 6 moves Ideas that carry reported friction); the same sample
   takes it.
   2026-11-19 (iteration 2026-11-19-2316): step 4b fired on `skills/dev-cycle/SKILL.md` and
-  `workflows/parallel-worktrees.md` as b3e25cf1 changed them (worktrees under `.worktrees/`,
-  F-019); the same sample takes them.
+  `workflows/parallel-worktrees.md` as b3e25cf1 changed them (worktrees under `.worktrees/`);
+  the same sample takes them.
 - **Record out-of-cycle session answers through `--answered`.** Signal: 4306aa88 (the owner's
   Q-281..284 answers, recorded on a hand branch) read as `other` in `--main-log`, making
   iteration 2026-11-13-2237 a full cycle with a health run.
@@ -506,6 +508,19 @@ Unranked. Each names the signal that motivates it.
 ## Done
 
 Items finished since the last cycle, with the merge.
+
+- **The live-verify hook and merges of main: measured, dropped.** Done 74b9181f (self-merge),
+  brief `docs/working/briefs/closed/2026-11-19-live-verify-merge-head-count.md`, research
+  `docs/working/research-2026-11-19-live-verify-merge-head-count.md`: of 108 merges of main into
+  a branch, 4 were the case, all interactive sessions with an honest `Live-verified: no` the hook
+  accepts; no stop on record. The Idea is dropped; watch Q-313 reopens it if a loop stops on the
+  hook during a merge of main.
+
+- **Herald friction list triaged.** Done 8ffddfaf (self-merge), brief
+  `docs/working/briefs/closed/2026-11-19-herald-friction-triage.md`, research
+  `docs/working/research-2026-11-19-herald-friction-triage.md`: F-001, F-002, F-003, F-007 and
+  F-012 already fixed and live; F-004, F-005, F-006, F-009 and F-011 out of scope or herald's own
+  setup; F-008 and the rest of F-010 filed in Now.
 
 - **Release soon after Q-235.** Done 2026-11-19: the release ran; the image is built from 0feaf080, which carries unit 3 and everything since (image check, iteration 2316).
 
