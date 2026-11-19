@@ -125,6 +125,38 @@ The "Readers" column counts independent sessions that hit it. Three or four is a
 7. Re-run only the failed and partial tasks against the revision: C1–C2 and C4 from the opening, C5, M3, E2, E3,
    E5, B1. Use fresh subagents. The author is now doubly contaminated (they have seen this grading), so their next E-session tests only whether the revision fixes F14 and F16–F20, not recall.
 
+## Fresh grader, 2026-11-18
+
+The orchestrator first graded the author's session itself, and step 6 forbids that. A fresh grader then re-ran
+over the whole folder, without this file or the orchestrator's grading. Its full output is
+`findings-fresh-grader-2026-11-18.md`. **Where the two disagree, the fresh grader's grades stand.**
+
+- **Grades that changed.**
+  - Author E1: fail → **partial**. Nothing is contradicted, so it is partial, not fail.
+  - Simulated E1: pass → **fail**. "Cannot be handled by this argument; a modified agent can be" implies PB_k
+    doesn't cooperate, which is the key's fail clause.
+  - Predictions: 6 hit, 8 miss, 5 not observable. P2 and P11 are re-scored as not observable, P12 as a miss.
+- **Convergence after the reasons test.** Most of the simulated findings shrink to 1 hit, because the reasons
+  can be swapped between readers. Real-plus-simulated pairs count as independent. Only "the game is never set
+  up" (F11 here) is systemic.
+- **New Part A candidates, not yet verified,** so they block posting until checked. Grader numbering:
+  - A6: "what is missing is the diagonal lemma", while the working route adds both the diagonal lemma and inner
+    necessitation.
+  - A9: the bridge from provability to play is unstated for the literal agent, and T₀ = O(δ+log A) carries no
+    label.
+  - A13: `PayorPlay` is defined nowhere.
+  - A14: the scope of "Under it".
+  - A15: nine `.lean` files against "seven".
+  - A16: the 2^{2^{2^k}} figure has no source.
+- **Unsettled readings to ask the author** (U1–U4):
+  - where "(1+e)" came from, and whether e meant Euler's number;
+  - whether g's dependence on p and f came from reading Theorem 1's inequalities as choosing g;
+  - what "Payor prudent-bot" refers to;
+  - whether "minor flaw" meant "PB_k fails as defined".
+  E6 and E4 stay *pending reader* until these are answered. F16 stays S1 provisionally.
+- **Own process error.** The follow-up questions on E4 and E6 were asked after the author had seen the
+  orchestrator's grading, which contaminates the replies. Recorded in the skill.
+
 ## Notes for the `reader-testing` skill
 
 - **It doubles as a referee pass.** The maintainer and builder sessions found real correctness issues (A1–A6).

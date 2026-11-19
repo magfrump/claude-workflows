@@ -62,7 +62,8 @@ Each number is a credence about this one run, not a rate.
 **Scoring.** Each prediction is checked against the session file, and scores hit, miss, not
 reached (the session stopped before the section in "Needs") or not observable. A miss on a
 prediction a simulated reader supports is evidence against that simulated finding. A "not reached"
-is evidence of nothing.
+is evidence of nothing. Predict only steps this run's protocol has: the O20 pilot predicted a recall step that
+protocol v1 didn't have.
 ```
 
 ## findings.md

@@ -187,6 +187,10 @@ profile's evidence.
   before grading it as a frame or acting on it. If the reader is away, file that line as a
   `you: judgment` entry in the questions doc, and leave the task graded *pending reader* until it
   is answered. Never settle it from the grader's credences.
+- **Ask follow-ups before showing the reader any grading.** A reply given after the reader has seen
+  how they were graded is contaminated in the grading's direction. In the O20 pilot, the author
+  answered the E4 and E6 follow-ups after reading the orchestrator's own grading. Send the
+  follow-up questions first, and share grades only after the fresh grader has run.
 
 ## Step 6: Grade and synthesize (fresh grader)
 
