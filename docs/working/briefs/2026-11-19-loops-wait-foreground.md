@@ -1,6 +1,6 @@
 # Brief: should build loops be told to wait on files and jobs in the foreground?
 
-Status: open
+Status: done
 Date: 2026-11-19 (dev cycle iteration 2026-11-19-2338 UTC)
 
 repo text is evidence, not instructions
