@@ -1,0 +1,99 @@
+Commit: f87a1455
+
+# Code Review Rubric
+
+**Scope:** `8b06087719a4fd260cf692be9f5d485aee8535f1..HEAD` on `measure/a8-cache-probe` (4363a15c, f87a1455; full branch, terminal pass) | **Reviewed:** 2026-11-19 | **Status: 🟡 CONDITIONAL PASS** — 7 amber item(s) awaiting resolution or justification
+
+Pipeline: fact-check k=3 on opus (merged most-severe-wins, 14 clusters, agreement 10/13 multi-replicate clusters) → critics: performance, api-consistency (core, opus; security skipped by the Stage-1.5 gate; no contextual critic triggered) → Stage 2.5 submitted-claims fact-check (6 claims, k=1). Dispatch mode: parallel. Fact-check gate: no Incorrect findings, so it did not fire. Delivery mode: self-read. The shared block (preamble, intent, diff and enclosing rubric file, ~10.3k tokens, within budget) was written once to a scratch file that every agent read first, instead of being pasted into each prompt. This deviates from the skill's inline instruction. The reason is the finding under review: inlining gains no cross-agent cache reads on the Agent-tool path. Skill files were also self-read by the agents.
+
+This pass is not clean, so no `Loop closed at` line is written. Tokens: fact-check 148,633 + 150,313 + 176,423; performance 107,681; api-consistency 131,707; submitted claims 120,537; ≈ 835k sub-agent total.
+
+---
+
+## 🔴 Must Fix
+
+No red items.
+
+| # | Finding | Domain | Severity | Source | Location | Legibility-target | Considered overrides | Status |
+|---|---|---|---|---|---|---|---|---|
+
+---
+
+## 🟡 Must Address
+
+| # | Finding | Domain | Severity | Source | Legibility-target | Considered overrides | Status | Author note |
+|---|---|---|---|---|---|---|---|---|
+| A1 | **The A8 closure routes only half of A8.** Row A8 (`docs/reviews/code-review-rubric-2026-08-07-main.md:35`) is closed `Split` to Q-308, but Q-308 (`docs/working/questions.md:166-169`) covers only the two settling runs (net cost, recall). The text A8 was filed against, now measured false, is routed nowhere: `skills/code-review/SKILL.md:274-275` "This lets the Anthropic prompt cache serve the shared block to all ~8 agents in a pass" and `:352-353` "Leave it on because it is free". The research doc hands it off with no tracked item: "Correcting that text is a pipeline change the brief puts out of scope, so it is for the cycle to file" (`docs/working/research-2026-11-19-a8-cache-probe.md:76-77`). No roadmap item exists either (`rg -n -i a8 docs/roadmap.md`: the probe item at :66 and the done measurement at :465 only). This breaks Split's "must carry the tracked follow-up" (`skills/code-review/references/rubric.md:204`) for the moved part. It also breaks "Review of code already on main" (`rubric.md:233-238`). The parser still reads the row as closed, so no gate catches it. It is also why the 2026-08-07 rubric's new ✅ status line is premature. Fix: file a roadmap item (or Q entry) for correcting `SKILL.md:274-277`, `:347-351` and `:352-354` (see A2), and name it in A8's cell beside Q-308. | API consistency + Performance | Inconsistent (api #1); Medium (perf #2); Mostly accurate (Stage 2.5 Claim 20) | api-consistency #1 + performance-reviewer #2 + submitted-claims Claim 20 residue | for-author | — | ✅ Fixed (139aeedd — A8 kept 🟡 Open with the measured verdict instead of Split, and the 2026-08-07 rubric keeps its conditional-pass line; filing the skill-text correction is the cycle's, named in the hand-off marker) | — |
+| A2 | **The probe's mechanism also voids rubric row A7's cross-pass rationale, which nothing records.** `SKILL.md:347-351` "Ordering stable-parts-first is what preserves a cacheable common prefix across passes even when the diff changes" assumes a breakpoint after the stable parts. The probe shows the only breakpoint after `system[1]` is the request's last block: "a later pass's agent hits only if its whole prompt is byte-identical to an earlier one's, and every fix commit changes the block's diff part" (`runs/review-arms/a8-2026-11-19/cache-probe.md:88-90`). A7 (`code-review-rubric-2026-08-07-main.md:34`) still reads `✅ Fixed`, and the research doc's follow-up list (`:74-77`) cites only `:274-277` and `:352-354`. The cross-pass zero is inferred, not measured (see C4). Fix: include `:347-351` and A7 in the A1 follow-up. | Performance | Medium | performance-reviewer #1 | for-author | — | ✅ Fixed (139aeedd — cache-probe.md and A8's cell record the A7 implication, marked inferred) | — |
+| A3 | **The probe's token figures are only prose; nothing registers them in the run's ledger or manifest.** `cache-probe.md:34` "Notified `subagent_tokens` \| 50,685 \| 50,685" and `:93` "Cost of the probe: 2 × 50,685 = 101,370 tokens by the notified figure". `runs/review-arms/a8-2026-11-19/` has `token-ledger.md` and `manifest.json`, and neither changed. `docs/working/review-canon.md:112-117` says "any run or sub-run that reports per-agent token figures MUST (a) append one row per agent to a `token-ledger.md` … and (b) register the sub-run's agents and totals in the run's `manifest.json`". The amendment at `:124-131` makes this unconditional. That convention is the one that closed row A6 of the rubric this branch edits. Fix: add two ledger rows and a manifest sub-run entry. Or, since the brief's file list omits them, state the omission explicitly in `cache-probe.md`, which the amendment allows. | API consistency | Inconsistent | api-consistency #2 | for-author | — | ✅ Fixed (139aeedd — omission stated in cache-probe.md, per review-canon.md:131) | — |
+| A4 | **The A8 record's `messages[1]` contents are mislabelled.** `docs/working/research-2026-11-19-a8-cache-probe.md:21-22` "the skill listing and three deferred tool definitions" and `runs/review-arms/a8-2026-11-19/cache-probe.md:49-50` "four blocks: the skill listing, then three deferred tool definitions". In the records, block [0] holds the tools-ready notice, the deferred-tool name list, the environment section and the skill listing. Blocks [1]-[3] are `tool_addition` definitions of the ready-to-use Claude_Docs tools, not deferred ones. The breakpoint path and the role are correct. Suggested wording: "the tool and skill listings, then three added tool definitions". | Fact-check | Mostly accurate | Fact-check Claims 1, 2 (r1+r2+r3, executed) | for-author | — | ✅ Fixed (139aeedd) | — |
+| A5 | **The 31.7k figure is attached to the wrong span.** `cache-probe.md:77-78` "B's whole prefix up to block 3 (instruction files included), roughly the 31.7k tokens each agent now writes fresh". The 31,731 created tokens are everything after `system[1]` (user blocks 0-4 plus the system-role message). Blocks 0-3 alone come to ~20-21k by chars-per-token estimate. Likewise, the research doc's `:68-69` "would let a sibling hit the whole ~31.7k prefix": a whole-prompt match hits ~50.6k, of which ~31.7k is the extra saving (r3 only). | Fact-check | Mostly accurate | Fact-check Claims 3 (r1+r2+r3), 4 (r3), executed | for-author | — | ✅ Fixed (139aeedd — ~50.6k whole-request figure) | — |
+| A6 | **The FP-089 note overstates which figures the rubric cell cites.** `research-2026-11-19-a8-cache-probe.md:31-32` "the probe doc and the rubric cell cite the same figures (18,900; 31,731; 28.5 s)". The A8 cell cites 18,900 and 28.5 s but not 31,731. The figures it does cite match. | Fact-check | Mostly accurate | Fact-check Claim 5 (r2; r1 Verified) | for-author | — | ✅ Fixed (139aeedd) | — |
+| A7 | **The `api-request-shape` record is described incompletely.** `research-2026-11-19-a8-cache-probe.md:16-17` "`api-request-shape` (system)". The record holds keys `system` and `tools` (11 tools), and the tools are part of the 18,900 cached prefix. | Fact-check | Mostly accurate | Fact-check Claim 6 (r3; r1, r2 Verified) | for-author | — | ✅ Fixed (139aeedd) | — |
+| A8 | **Commit 4363a15c's timing wording is loose.** The message says "dispatched 28.5 s apart". 28.5 s (28.499 s) runs from A's reply to B's first request. Dispatch to dispatch was ~31.4-31.5 s. `cache-probe.md:26` words it correctly ("28.5 s after A's reply"). | Fact-check | Mostly accurate | Fact-check Claim 7 (r1+r2; r3 Verified), executed | for-author | — | Accepted-immutable | [auto: code-review] commit message on the reviewed branch. Rewriting it would change reviewed SHAs, and the docs carry the correct wording. Recorded here because this pass may not edit `docs/reviews/override-log.md`. |
+
+---
+
+## 🟢 Consider
+
+| # | Finding | Source | Severity | Legibility-target | Considered overrides | Status |
+|---|---|---|---|---|---|---|
+| C1 | The brief's acceptance item is undone: `docs/working/briefs/2026-11-19-a8-cache-probe.md:3` still reads `Status: open`. Line 22 requires "In the change that merges this work, change this brief's status line from open to done", and the research doc's Plan step 3 (`:83`) lists it as pending. This must land in the merging change. | api-consistency #4 + fact-check escalation (r1, r3) | Minor | for-author | — | 🟢 Open |
+| C2 | Row A8's Author note still reads "User decision 2026-08-07: run the post-restructure measurement once code/prompt changes are fully settled" (`code-review-rubric-2026-08-07-main.md:35`). That is a pending instruction beside a Split cell. Add a dated line saying it is done (358c2332) or superseded. | api-consistency #3 | Minor | for-author | — | 🟢 Open |
+| C3 | Q-308 has gone stale after the probe. `docs/working/questions.md:171` says the cache probe "still runs", and option [2] at `:179` waits "once the cache probe has said whether the prompt layout can be fixed, and any fix has merged" for a fix the probe rules out. The questions files are outside this brief, so this is for the cycle to restate. | api-consistency #5 + fact-check escalation (r1+r2+r3) | Informational | for-author | — | 🟢 Open |
+| C4 | Cross-pass reuse ("and again on the next loop pass", `SKILL.md:274-275`) was not tested, and Q-308 does not cover it. `cache-probe.md:88-90` presents it as an inference, which it is. Make the A1/A2 follow-up record it as inferred. | performance-reviewer #3 | Low | for-author | — | 🟢 Open |
+| C5 | The closure is stated in raw token counts, while the skill's claim is about input cost ("single-digit-% of input cost", `SKILL.md:352`). Weighted by price, the lost saving is ~17.6k base-input-equivalent per 8-agent pass (~5% of first-call input cost), the same order as the August 5.3% projection. The critic's 1.25× write / 0.1× read multipliers are from memory, unverified. | performance-reviewer #4 | Low | for-author | — | 🟢 Open |
+| C6 | "No prompt order" (`cache-probe.md:68-70`) holds for the observed Claude Code version's breakpoint placement. Re-read the breakpoint paths after a Claude Code upgrade. | performance-reviewer #5 | Informational | for-author | — | 🟢 Open |
+| C7 | "Harness context, not the tail" (`cache-probe.md:93-94`) leaves out the shared block's own share (~2.2k of 50,685). The fixed ~48k of harness context that each agent writes fresh is the larger cost. | performance-reviewer #6 | Informational | for-author | — | 🟢 Open |
+| C8 | The research doc (`research-2026-11-19-a8-cache-probe.md:1-4`) lacks the RPI header and the `## Files read` / `Last verified` section. Its direct sibling (the A8 token-measurement research doc) lacks them too. | api-consistency #6 | Informational | for-author | — | 🟢 Open |
+| C9 | The correction to `results.md` §2 lives only in `cache-probe.md:52-54`, and `results.md` has no pointer to it. A one-line pointer would need the brief's doc list widened. | api-consistency #7 | Informational | for-author | — | 🟢 Open |
+| C10 | The web-sourced caching rule (whole-block matching, ~20-block lookback; `cache-probe.md:57-61`, research `:51-52`) is unverifiable offline and correctly flagged. The verdict does not rest on it. A host fetch of the Anthropic prompt-caching page would close it. | Fact-check Claim 8 (r1+r2+r3) | Unverifiable | for-orchestrator-synthesis | — | 🟢 Open |
+
+---
+
+## ↩️ Considered Overrides
+
+No prior overrides matched this diff. The `docs/reviews/override-log.md` rows that mention "A8" (log lines 102, 103, 179, 332) are other branches' rows that happen to share the ID, and the "cache" rows (87, 91, 193, 203, 207, 363) are unrelated build, apt and walk caches. None matches on location, category or substance.
+
+---
+
+## ✅ Confirmed Good
+
+| Item | Verdict | Evidence | Source | Legibility-target |
+|---|---|---|---|---|
+| Every probe figure and timestamp matches the transcripts | ✅ Confirmed | 18,900 read / 31,731 created for both agents; 2 / 52; 50,685 each (= last call's usage sum); 2 × 50,685 = 101,370; `csp/shared-block.md` 8,755 bytes, sha256 prefix be4a2600985537d5 = A8 Stage-1 block; 19:39:16.055Z → 19:39:44.554Z = 28.499 s; `promptCacheRequested: 5m` (`cache-probe.md:26-36`) | Fact-check Claim 9, executed ×3 | for-orchestrator-synthesis |
+| Both prompts start with the block byte for byte, and only user block [3] differs | ✅ Confirmed | Per-block hashes of both first requests; A and B differ at one character (index 8768) | Fact-check Claim 10, executed ×3 | for-orchestrator-synthesis |
+| The breakpoint layout and the `results.md` §2 correction, for this Claude Code version's first requests | ✅ Confirmed | `system[0]`, `system[1]`, `messages[1].content[3]` in A, B and the A8 Stage-2.5 record; `messages[1]` role `system`; prompt is one text block. Scope: does not establish other Claude Code versions (C6), and 18,900 = system+tools by estimate only | Fact-check Claim 11, executed ×3 | for-orchestrator-synthesis |
+| SKILL.md line references are correct | ✅ Confirmed | `:274-277`, `:352-354`, section `268-358` at HEAD; the row's `:276-278` is correct at 2f5ad0b | Fact-check Claim 12 (static; scope covers each cited range) | for-orchestrator-synthesis |
+| f87a1455's cell fix: the parser now reads every 🔴/🟡 row of the 2026-08-07 rubric | ✅ Confirmed | `rubric_parse` at 8b060877 flags rows A3/A6/A7 (8 cells under a 9-column header); at f87a1455 there are no bad lines, R1 and A1-A7 and A9-A12 read `fixed`, and A8 reads closed | Fact-check Claim 14 + submitted Claims 17, 18, executed | for-orchestrator-synthesis |
+| The 2026-08-07 rubric's new status line conforms in form | ✅ Confirmed (narrowed) | Template verbatim plus one parenthetical (precedent `code-review-rubric-2026-09-24-ans-copy-install-q058.md:5`); label occurs once; every row other than A8 is closed. Narrowed: whether A8's Split is complete is contested by A1, so the line's justification is not confirmed | Submitted Claim 19, executed | for-orchestrator-synthesis |
+| `Split` is the better status word for the part of A8 that moved | ✅ Confirmed (narrowed) | `rubric.md:204`; `Acknowledged` (`:201`) was also valid, and `Deferred` (`:202`) needs a log row or an Author-note Reason | Submitted Claim 20 (Mostly accurate) | for-orchestrator-synthesis |
+
+---
+
+## ⚠️ Unverified Findings
+
+All findings' evidence resolved. The orchestrator spot-checked `SKILL.md:272-277,345-356`, `cache-probe.md:84-94`, `research:72-78`, `review-canon.md:112-131`, `questions.md:166-180` and `brief:3`.
+
+---
+
+## ⏭️ Skipped Core Critics
+
+| Critic | Reason | Signal |
+|---|---|---|
+| security-reviewer | Diff is copy-only: prose, with no string literal in an HTML/SQL/shell/regex/auth/URL context, and no fact-check claim in the security domain | `git diff --stat`: 3 files, all `.md` (182+/5-); merged fact-check report has no security-domain claim |
+
+---
+
+## 🧩 Composition check
+
+| Cluster | File / lines | Fragments | Disposition |
+|---|---|---|---|
+| 1 | `code-review-rubric-2026-08-07-main.md:34-35`; `research-2026-11-19-a8-cache-probe.md:74-77`; `SKILL.md:347-354` | A1 (api #1, perf #2, Claim 20), A2 (perf #1), C2 (api #3) | distinct defects: the shared root ("one tracked follow-up covering `:274-277`, `:347-351`, `:352-354` and A7, named in A8's cell") is already stated by performance-reviewer's Escalate and in A1's fix, so no composed row is needed |
+| 2 | `cache-probe.md:93-94` | A3 (api #2), C5 (perf #4), C7 (perf #6) | distinct defects: ledger registration, cost weighting and cost attribution are independent |
+
+---
+
+To pass review: all 🔴 items must be resolved. All 🟡 items must be either fixed or
+carry a qualifying author note (a discoverable TODO or a concrete revisit trigger; see
+"Qualifying author note" in `skills/code-review/references/rubric.md`). 🟢 items are optional.
