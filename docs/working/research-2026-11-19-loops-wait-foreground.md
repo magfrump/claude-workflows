@@ -37,7 +37,7 @@ Repo text, at a4509413:
 | W14 | `skills/dev-cycle/SKILL.md:1001`, `:1034-1038` | dispatch "one background subagent" per loop; wait on its task notification, 1800 s fallback | orchestrator |
 | W15 | `skills/dev-cycle/SKILL.md:707-711` | the two-hour stall rule on a working loop | orchestrator |
 
-`workflows/research-plan-implement.md` and `workflows/review-fix-loop.md` name no background job, file wait, `Monitor` or subagent wait (`rg -n -i 'monitor|background|foreground|sleep|subagent|notif'` hits only prose about not waiting for the user, at RPI `:115`, `:117`, `:281` and review-fix-loop `:55`, `:61`, `:172`). They reach W3 to W9 through pr-prep's review-fix loop.
+`workflows/research-plan-implement.md` and `workflows/review-fix-loop.md` name no background job, file wait, `Monitor` or subagent wait: `rg -n -i 'monitor|background|foreground|sleep|subagent|notif'` hits only RPI `:314` ("background that doesn't affect implementation decisions"), and their "wait" lines (RPI `:115`, `:117`, `:281`; review-fix-loop `:55`, `:61`, `:172`) are about not waiting for the user. They reach W3 to W9 through pr-prep's review-fix loop.
 
 Harness text a loop sees (not repo text; observed in this loop's own session on 2026-11-19; it may differ across Claude Code versions):
 
@@ -53,7 +53,8 @@ What the evidence shows:
 - E2. A loop told to wait on a file through `Monitor` or a background job can sit idle for about two hours while listed as running (F-012, two of three).
 - E3. A message sent to an idle loop is queued "until the next tool round" (F-012): delivery happens between tool calls, not while the loop is idle.
 - E4. Loops told to wait in the foreground finished in 30 to 60 minutes (F-012). This is one repo, one night, with no controlled comparison.
-- E5. Prior art in this repo: FP-124 (`docs/failure-patterns.md:266`, commit 9ae66943). A headless code-review orchestrator dispatched background replicates and ended its turn; `claude -p` waited out its 600 s background ceiling and stopped with one replicate written, while reporting success. Ending a turn to wait for background work is a known way to lose the rest of a run in this harness.
+- E5. Prior art in this repo: FP-124 (`docs/failure-patterns.md:266`, commit 9ae66943). A headless top-level code-review orchestrator dispatched background replicates and ended its turn; `claude -p` waited out its 600 s background ceiling and stopped with one replicate written, while reporting success. The fix set `CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0`, after which background completions did re-invoke it. So for a headless top-level session, ending a turn to wait is safe once the ceiling is off; it says nothing direct about subagents, and whether a like ceiling or re-invocation applies to a subagent is L5 below.
+- E6. One observation in this loop's own run (2026-11-19, 23:47 to about 23:49 UTC): this loop started one review subagent, then did not end its turn but kept making short `git`/`rg` reads. The reviewer's report arrived as a message between two of those tool calls, about 76 s after launch, and the loop went on. One run, one harness version; it supports I3 and answers L1 for this case only. No foreground `sleep` was used (criterion 6), so it says nothing about L2.
 
 Inferences (not shown by the evidence):
 
@@ -63,10 +64,11 @@ Inferences (not shown by the evidence):
 
 Facts only a live run could show (none was run here; criterion 6 allows only `git`, `rg` and reads):
 
-- L1. Whether a subagent's own background subagent's completion notification is delivered with its next tool result, or only after its turn ends. This decides whether "keep making tool calls until the report arrives" works at all.
+- L1. Whether a subagent's own background subagent's completion notification is delivered with its next tool result, or only after its turn ends. This decides whether "keep making tool calls until the report arrives" works at all. E6 is one positive observation; a second, in a dispatched build loop, is still owed.
 - L2. Whether H-b's "Foreground sleep is blocked" refuses `timeout 540 sh -c 'until test -e FILE; do sleep 15; done'`, or only a bare `sleep N`. A wording that names a refused command would send the loop to the `Monitor` path it was meant to avoid.
 - L3. What `[handback-send-enforce]` says, and whether a loop that ignores it and makes another tool call keeps its run.
-- L4. F-013's cause: a `tool_use` with no result is not a wait the loop chose, and no wording of the prompt is shown to prevent it. This change does not cover it (as the roadmap item says).
+- L4. F-013's cause: a `tool_use` with no result is not a wait the loop chose, and no wording of the prompt is shown to prevent it. This change does not cover it (as the roadmap item says), and a wait with no bound would turn such a hang into a two-hour stall, so the wording below is bounded.
+- L5. Whether a subagent that ends its turn is ever re-invoked by its own subagent's completion, and under what ceiling (compare E5's `CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS` for headless top-level runs).
 
 ## Design
 
@@ -74,7 +76,7 @@ Failure-pattern grep: FP-124
 
 (grep `-i -e 'monitor|background|idle|stall|handback|notification|sleep|wake|foreground|subagent'` over `docs/failure-patterns.md`; FP-124 is the only hit about waiting on background work, E5 above. The other hits match on `install-the-dependency` or unrelated background terms.)
 
-Constraints that bind: S4 (prose arrives at the moment it is needed), S2 (no more than ~30 always-loaded lines), S3 (one source of truth per rule), S5 (motive first; status quo valid), S6 (an observable that could come out negative), H3 (verifiable with hermetic tests), S8 (one revert undoes it).
+Constraints that bind: S4 (prose arrives at the moment it is needed), S2 (no more than ~30 always-loaded lines; it binds only option D, since the dispatch prompt is not always-loaded context), S3 (one source of truth per rule), S5 (motive first; status quo valid), S6 (an observable that could come out negative), H3 (verifiable with hermetic tests), S8 (one revert undoes it).
 
 Motive (S5): three early handbacks (E1) and two two-hour idles (E2) in two repos over two weeks, each costing about two hours of a slot and a re-dispatch, and in the 2026-11-19 cases nothing but a marker was left to write. The benefit is real if the wording stops even one of these a week.
 
@@ -88,7 +90,7 @@ Motive (S5): three early handbacks (E1) and two two-hour idles (E2) in two repos
 | **[D] Global instructions line** | `global-instructions/CLAUDE.md` | reaches every subagent everywhere | always-loaded for every session (S2), an instruction file (floor), most sessions never wait like this |
 | **[E] A tested wait helper** | e.g. `scripts/wait-for.sh FILE SECONDS` (S4) | a mechanical step in a tested script | a reviewer's report is a notification, not a file (reviewers cannot write report files, herald F-010), so it covers F-012's file wait but none of the three E1 cases; a new script needs its own call site (S6) |
 
-Decision (Path A, one option dominates): **[B]**. It is the only option that covers all three observed early handbacks from one source (C needs five, E covers none of them, D over-reaches S2). Against [A], it costs about three prompt lines per dispatch to remove a measured two-hour loss. Its weakness, arriving at the start rather than at the wait, is softened by the dispatch prompt staying in the loop's context for the whole run.
+Decision (Path A, one option dominates): **[B]**. It is the only option that covers all three observed early handbacks from one source (C needs five, E covers none of them, D over-reaches S2). To keep S3, the new line says only how to wait (stay inside a tool call, bounded); when to wait stays with pr-prep `:339` and code-review's checkpoints, which it points to. Against [A], it costs about three prompt lines per dispatch to remove a measured two-hour loss. Its weakness, arriving at the start rather than at the wait, is softened by the dispatch prompt staying in the loop's context for the whole run.
 
 Other choices (fewer than three viable options, one-line notes):
 
@@ -98,7 +100,7 @@ Other choices (fewer than three viable options, one-line notes):
 
 ### Drafted wording
 
-Target: `scripts/build-loop.sh`, `loop_prompt`, the heredoc line at 1978 ("Start subagents only for research and review, ..."). Gate code: needs a review merge. Replace its second sentence's first clause and add one paragraph line after it:
+Target: `scripts/build-loop.sh`, `loop_prompt`, the heredoc line at 1978 ("Start subagents only for research and review, ..."). Gate code: needs a review merge. Replace its second sentence's first clause, and add the wait rule as its own new heredoc line after 1978 (a separate line keeps the bats check at `test/scripts/build-loop-dispatch.bats:50`, which greps the "Start subagents only" line for the merge text, as it is):
 
 Current (1978, start):
 
@@ -108,11 +110,13 @@ Proposed:
 
 > Start subagents only for research and review, each with its own scratch directory under $s/ in your scratchpad directory. Never start build loops, schedules or agents that outlive your run; never send your branch to a remote, ...
 >
-> Your run ends when your turn ends, so never end a turn, or hand back, while a subagent or job you started is still running. Wait inside a tool call instead: for a file or job, one Bash call with its timeout at 600000 ms running `timeout 540 sh -c 'until test -e FILE; do sleep 15; done'` (not run_in_background and not the Monitor tool), repeated until it is there; for a subagent, whose report arrives between your tool calls, the same bounded call on its scratch directory or a short read of your branch's log, repeated until the report has arrived. If a foreground wait is refused, keep making short reads rather than ending your turn.
+> When pr-prep or code-review has you wait for a subagent or job you started, wait inside your turn: ending your turn can end your run with no marker. Wait for a subagent's report, which comes as a message between your tool calls, by making short reads (git log, git status) until it arrives; wait for a file or job with one Bash call, its timeout at 600000 ms, running timeout 540 sh -c 'until test -e "$1"; do sleep 15; done' _ ./FILE, not run_in_background or the Monitor tool. Wait 30 minutes at most in all; then write your marker, naming what did not finish.
+
+The wording claims only what the evidence shows: "can end your run" (E1, I1), and the report arriving between tool calls (E3, E6). The file path goes in as `"$1"`, never into the shell string (the repo's first Code rule in `CLAUDE.md`). The 30-minute bound keeps a hung reviewer (L4) from becoming a two-hour stall, and its exit uses the existing marker paths (`scripts/build-loop.sh:1974-1977`). "ready" needs a clean review-fix loop, which an unreturned reviewer has not given, so as drafted the loop writes "blocked" naming the unfinished reviewer; the review brief may pick another exit.
 
 `test/scripts/build-loop-dispatch.bats:36` pins "Never start build loops, background agents or schedules; never send your branch to a remote", so the review brief updates that assertion and adds one for the new line (H3).
 
-Observable that could come out negative (S6): the cycle records' step-7 lines. Count loops whose subagent "ended with no marker" while a reviewer or job it started was still running, over the next ten dispatches after the change lands, against the three in two weeks before it. Zero or one supports the change; the same rate says the wording does not hold the turn (L1 or L3 false), and the change should be reverted (one `git revert`, S8).
+Observable that could come out negative (S6): the cycle records' step-7 lines. Base rate in this repo: of the dispatches recorded in `docs/working/cycles/cycle-2026-11-19.md` (`10.` lines, about ten), two loops "ended with no marker" at a review wait; the phrase appears in no earlier cycle record (`rg -c 'ended with no marker' docs/working/cycles/`). Over the next twenty dispatches after the change lands, about four would be expected at that rate. Zero or one supports the change; three or more says the wording does not hold the turn (L1 or L3 false), and the change is reverted (one `git revert`, S8). Philosophy-research's step-7 lines can be counted the same way to widen the base.
 
 ## Invariants
 
@@ -122,6 +126,7 @@ Observable that could come out negative (S6): the cycle records' step-7 lines. C
 
 ## Gotchas
 
+- `loop_prompt`'s heredocs are unquoted (`cat <<PROMPT`, so `$s`, `$MAIN` expand): the drafted `"$1"` must be written `"\$1"` there, or the prompt prints the function's first argument (the brief path) in its place. A bats assertion on the printed `"$1"` catches it.
 - W2 and W1 conflict today in this harness (H-a): every review the loop starts is a background agent.
 - The Bash tool's 120 s default timeout is under the health check's 140 s run (W9), which pushes a loop toward `run_in_background`.
 - The fallback ("keep making short reads") costs a tool round each, each re-reading the cached context; at one round per nine minutes this is small next to a lost two-hour slot.
@@ -133,7 +138,8 @@ Suggested roadmap change: replace the Now item "Loops wait on a file or job in t
 - Goal: add the drafted "wait inside a tool call" line to `loop_prompt` and reword "background agents" to "agents that outlive your run", as drafted in this doc's "Drafted wording"; update and extend `test/scripts/build-loop-dispatch.bats` for both.
 - Paths: `scripts/build-loop.sh`, `test/scripts/build-loop-dispatch.bats`.
 - Policy: review (gate code).
-- Before merge, or as its first step: one live check of L1 and L2 (a loop-like subagent starts a reviewer subagent and waits with the drafted command; does the notification arrive and is the command allowed). A negative L2 changes the command, not the placement.
+- Precondition, before the wording lands: one live check of L1 and L2 in a dispatched loop (it starts a reviewer subagent and waits as drafted; does the report arrive, and is the `until` command allowed under H-b). E6 is one positive for L1 already. A negative L2 drops the file-wait half of the command, not the placement; a negative L1 sends the item back to research.
+- The review brief also picks the bounded wait's exit (blocked marker naming the unfinished reviewer, as drafted, or another).
 - After merge: the S6 count above, over ten dispatches.
 
 F-013's unreturned tool calls stay out of this item (L4).
