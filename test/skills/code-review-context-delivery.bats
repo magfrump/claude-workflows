@@ -122,7 +122,7 @@ assert_all_windows_conditional() {
 
 @test "agents get their skill file by path, not a pasted copy" {
   local f="$BATS_TEST_DIRNAME/../../$SKILL"
-  run grep -nE -i 'cannot read (your|the orchestrator.s) (files|filesystem)|Paste skill file contents' "$f"
+  run grep -nE -i 'cannot read (your|the orchestrator.s) (files|filesystem)|Paste skill file contents|Paste those contents directly' "$f"
   [ "$status" -eq 1 ]
   awk '/^For each of the three replicate agents:/,/^3b\./' "$f" | grep -q 'whole file'
   awk '/^For each critic agent, you MUST:/,/^4\./' "$f" | grep -q 'whole file'

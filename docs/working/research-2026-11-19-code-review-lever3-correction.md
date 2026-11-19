@@ -61,10 +61,10 @@ Reason each stands on, apart from the cache:
   truncated for one critic). This is a consistency reason, not the cache. It does not need
   *byte* identity of the whole block: the security critic's threat-model lines already go
   under the intent heading (Stage 2 step 4), inside the block.
-- R2: the goal preamble opens every dispatch (the orchestrated-review goal-preamble pattern,
-  `patterns/orchestrated-review.md#goal-preamble`; Stage 2 "Each critic dispatch is prepended
-  with the goal preamble"), and the preamble is part 1, so the block still opens the prompt,
-  now for the preamble's reason.
+- R2: no cache reason left. The orchestrated-review goal preamble is per-agent (current task,
+  success criterion), so it is not a reason for the shared block to come first either; the
+  skill now says placement is not a cache matter, keeps the dispatch steps' "at the top", and
+  puts the per-agent preamble lines in the per-agent part (review finding 2).
 - R3: no reason beyond the cache. The listed order is a sensible reading order.
 - R4: no reason beyond the cache (and it already conflicts with the threat-model paste).
 
@@ -72,8 +72,8 @@ Candidates:
 
 | Option | What | Constraint read |
 |---|---|---|
-| A. Status quo, claims only | keep R1-R4, re-label their reason | keeps rules with no reason (S5, S3: a rule must have one); keeps the R4/threat-model conflict |
-| B. Keep what has a reason | keep R5, R1 as build-once-verbatim with role-specific additions allowed, R2 via the preamble; drop R3's stability requirement and R4 | each surviving rule names its reason; smallest change (S8); no measured claim needed (S7) |
+| A. Status quo, claims only | keep R1-R4, re-label their reason | keeps rules whose motive is gone (S5); keeps the R4/threat-model conflict |
+| B. Keep what has a reason | keep R5, R1 as build-once-verbatim with role-specific additions allowed, R2 via the preamble; drop R3's stability requirement and R4 | each surviving rule names its reason; no measured claim needed (S7) |
 | C. Drop all structure | orchestrator composes each prompt freely | loses the same-material guarantee convergence detection leans on; R5 must stay anyway (decision 031) |
 | D. Reorder per-agent part first | role and skill path first, material after | a change with no measured motive (S5, S7); churns the contract test |
 
@@ -96,9 +96,10 @@ Evidence. The A8 pass's 9 agents (3 fact-check replicates, 5 critics, Stage 2.5)
 their skill file's absolute path instead of being given its text (A8 research doc, "Skill
 text delivery"). Their transcripts
 (`~/.claude/projects/-workspace/711f86df-*/subagents/agent-*.jsonl`, script in this run's
-scratchpad) show each one's first skill-file tool call read the file: 8 via Read or `cat` of the whole
-file, 1 (`a6a0ebd8`, Stage 2.5) via `head -400` then `sed -n 400,600p` (the whole 535-line
-file). The A8 write-up's review agents (fact-check replicates, prompts ~3-4k bytes) also
+scratchpad) show each one read the whole file: 6 with one Read; 2 (`a1a8fdb7` code-fact-check, `a474bd6c`
+security) with `cat`, which overflowed the Bash output cap to a ~2 KB preview, then re-read the
+saved output; 1 (`a6a0ebd8`, Stage 2.5) via `head -400` then `sed -n 400,600p` (the whole
+535-line file). So the skill now says to use the Read tool, not `cat`. The A8 write-up's review agents (fact-check replicates, prompts ~3-4k bytes) also
 read `skills/code-fact-check/SKILL.md` by path. 9 of 9 in the pass, no failure seen. Every
 critic skill is under 2,000 lines and ~35 KB (largest `ui-visual-review` 34,440 bytes), so
 one Read returns it whole. Sub-agents of the Agent tool share the orchestrator's filesystem;
@@ -131,6 +132,17 @@ Who else shares the rule (for the cycle to file; not changed here):
   the cache-saving claims and the "cannot read your files" rule stay out; parts 5/6 still exist.
 - Section heading kept ("Inline shared-context prefix (decision 032 #3)") so the anchor links
   at :137, :463, :881 stay valid.
+
+## Results
+
+- `bats` over every `test/skills/*.bats` naming code-review: 204/204 ok (the contract test now 13;
+  its 3 new cases fail on the 57711a66 skill). `scripts/health-check.sh`: All checks passed.
+- Review round 1 (one fact-check-plus-critic agent): 1 must-fix (the amendment said the
+  cross-model harness sets its own breakpoints; it sets none, H4), 3 should-fix (preamble is
+  per-agent; threat-model lines sit inside the block; the `cat` overflow), 4 nits. All fixed.
+- Residual, noted not fixed: read-by-path reads the file on disk at dispatch time, not the copy
+  the orchestrator loaded, so a skill edited mid-pass reaches later agents changed. Decision
+  log row 35 says the contract test has 10 cases (now 13); a record, left as written.
 
 ## Plan
 

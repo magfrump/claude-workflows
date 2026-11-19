@@ -271,11 +271,13 @@ Every Stage-1 replicate and Stage-2 critic prompt carries a **shared context blo
 review material for every agent in the run, and a **per-agent part** (that agent's skill-file
 path, its output path, any chain context, and role-specific material such as the security
 critic's threat-model lines). Build the shared block **once** and include it **verbatim** in
-every agent prompt. The reason is consistency, not cost: every agent reviews the same diff,
+every agent prompt, except for role-specific lines a dispatch step adds under one of its
+headings (the threat-model lines in Stage 2 step 4). The reason is consistency, not cost: every agent reviews the same diff,
 intent and fact-check summary, so Stage 3's convergence detection compares like with like, and
-no per-agent re-assembly drifts (a diff truncated for one critic only). The block opens the
-prompt because its first part, the goal preamble, opens every dispatch
-([goal preamble](../../patterns/orchestrated-review.md#goal-preamble)).
+no per-agent re-assembly drifts (a diff truncated for one critic only). Where the block sits in
+the prompt is not a cache matter: the dispatch steps put it at the top, with the agent's own
+[goal preamble](../../patterns/orchestrated-review.md#goal-preamble) lines (its current task and
+success criterion, which differ per agent) in the per-agent part.
 
 **It buys no prompt-cache saving across agents.** Decision 032 adopted this lever expecting the
 cache to serve the block to all ~8 agents of a pass. Measured on 2026-11-19, it does not on the
@@ -286,8 +288,8 @@ and tools (`runs/review-arms/a8-2026-11-19/cache-probe.md`). The Agent tool send
 as one content block, and Claude Code puts the cache breakpoints on the system prompt and the
 request's last block, so no cache entry ends at the shared block and no order of the prompt's
 parts changes that. By the same mechanism a later loop pass gets no hit either (inferred from the
-records, not measured). An agent's own later calls re-read its prompt from cache, with or
-without inlining.
+records, not measured). An agent's own later calls usually re-read its prompt from cache, with
+or without inlining (not after a gap past the 5-minute cache lifetime).
 
 **Why inline it at all.** Inlining delivers decision 021's Stage-1 context (the changeset plus the
 enclosing files of the touched hunks, so a reviewer does not misattribute code across a boundary
@@ -297,7 +299,8 @@ are unmeasured on this path (A8 `results.md` §4 could not tell); that test is t
 question Q-308. The shared block is, in this order (omit a part that does not apply; the order
 is a reading order, not a requirement):
 
-1. The goal preamble (what a review pass is). The preamble MUST include the
+1. The shared preamble (what a review pass is; the per-agent goal-preamble lines go in the
+   per-agent part). The preamble MUST include the
    **complete-unit reading rule**: before verdicting a claim or filing a finding about
    code inside a function or method, read the entire enclosing unit — signature to final
    line, explicitly including the lines *after* the last line the finding cites — plus
@@ -460,11 +463,13 @@ redundancy on that code (decision log 63, Q-087 [2]; decision 031 priced both cl
 For each of the three replicate agents:
 
 1. Give the agent the absolute path of the `code-fact-check` skill file this session loaded
-   (e.g. `~/.claude/skills/code-fact-check/SKILL.md` when installed) as its instructions.
-2. Tell it to read that whole file before anything else and follow it. Sub-agents share your
-   filesystem: all 9 agents of the 2026-11-19 A8 pass read their skill file by path
+   (e.g. `$HOME/.claude/skills/code-fact-check/SKILL.md` when installed, with `$HOME` expanded)
+   as its instructions.
+2. Tell it to read that whole file with the Read tool, not `cat` (the Bash output cap cuts a
+   skill-sized file to a preview), before anything else, and follow it. Sub-agents share your
+   filesystem: all 9 agents of the 2026-11-19 A8 pass read their whole skill file by path
    (`docs/working/research-2026-11-19-code-review-lever3-correction.md`). Paste the contents
-   instead only when the agent cannot reach the path (no file tools, or outside its sandbox)
+   instead only when the agent cannot reach the path (no file tools, or outside its sandbox).
 3. Deliver the review material per Step 1's conditional diff-delivery rule (see
    [Inline shared-context prefix](#inline-shared-context-prefix-decision-032-3)): within the
    25k-token budget → the shared block (diff + enclosing-file context, inlined) opens the
@@ -882,9 +887,9 @@ Dispatch each critique to a sub-agent via the Agent tool.
 For each critic agent, you MUST:
 
 1. Give the critic the absolute path of its skill file as this session loaded it (e.g.,
-   `~/.claude/skills/security-reviewer/SKILL.md` when installed) as its instructions
-2. Tell it to read that whole file before anything else and follow it; paste the contents
-   instead only when the agent cannot reach the path (same rule as Stage 1 step 2)
+   `$HOME/.claude/skills/security-reviewer/SKILL.md` when installed, expanded) as its instructions
+2. Tell it to read that whole file with the Read tool before anything else and follow it; paste
+   the contents instead only when the agent cannot reach the path (same rule as Stage 1 step 2)
 3. Deliver the review material per Step 1's conditional diff-delivery rule (see
    [Inline shared-context prefix](#inline-shared-context-prefix-decision-032-3)): within the
    25k-token budget → the shared block (diff + enclosing-file context, inlined) opens the

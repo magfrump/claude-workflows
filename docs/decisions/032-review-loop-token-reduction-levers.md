@@ -166,9 +166,9 @@ probe (`runs/review-arms/a8-2026-11-19/cache-probe.md`) settle the projection ab
   last block, so no cache entry ends at the shared block and no prompt order makes one.
 - **Cross-pass saving:** none by the same mechanism (inferred from the request records, not
   measured).
-- The 20–40% estimate came from the cross-model harness, which calls the API directly and sets
-  its own breakpoints; the ~5% projection (log row 34) assumed a cacheable prefix the Agent tool
-  never forms. "Leave it on because it is free" fails on its benefit.
+- The 20–40% estimate was inherited from the cross-model harness's whole-diff inlining (see
+  "Measured on the canon" above; that harness has no prompt caching, H4); the ~5% projection
+  (log row 34) assumed a cacheable prefix the Agent tool never forms. "Leave it on because it is free" fails on its benefit.
 
 **What changes in `skills/code-review/SKILL.md`** (research:
 `docs/working/research-2026-11-19-code-review-lever3-correction.md`):
@@ -179,7 +179,7 @@ probe (`runs/review-arms/a8-2026-11-19/cache-probe.md`) settle the projection ab
   order as a requirement (log row 35's reorder; the part list stays as a reading order). Kept on
   their own grounds: building the shared block once and including it verbatim in every prompt
   (every agent reviews the same material, which Stage 3's convergence detection relies on), the
-  goal preamble opening every dispatch, and the fact-check replicates differing only in output
+  per-agent goal preamble, and the fact-check replicates differing only in output
   path (decision 031's disagreement measurement).
 - Inlining the diff and enclosing files, and the 25k budget with its degrade ladder, stay:
   inlining delivers decision 021's Stage-1 context the same to every agent, and the budget guards
