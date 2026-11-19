@@ -542,7 +542,8 @@
 #             or skip BRIEF: WHY as --status skips it, or refuse BRIEF: WHY (a
 #             rule above; a worktree already has the branch checked out,
 #             unborn; DIR exists, or the default is not a path --dir
-#             takes, or --worktree-base refuses it; constraints.md, the worktrees or the branch could not be
+#             takes, or --worktree-base refuses it (a --dir is never
+#             checked that way, even under WTB); constraints.md, the worktrees or the branch could not be
 #             read, listed or created; or the worktree could not be added),
 #             leaving no branch or worktree it made (unless removing the
 #             branch fails; the refusal then says so).
@@ -1877,7 +1878,8 @@ wt_base() {
   elif ! mkdir -p -- "$b" 2>/dev/null; then WT_BASE_WHY="$b could not be made"
   elif [[ -L "$g" || ( -e "$g" && ! -f "$g" ) ]]; then WT_BASE_WHY="$g is a symbolic link or not a plain file"
   # set -C: no write through a link planted after the test to an absent or
-  # regular file. A run that loses a race to write it reads the winner's file.
+  # regular file. A run that loses a race to write it reads the winner's file
+  # (one that reads it before the winner's * lands refuses, as not ignored).
   elif [[ ! -e "$g" ]] && ! ( set -C; printf '*\n' > "$g" ) 2>/dev/null && [[ ! -f "$g" || -L "$g" ]]; then WT_BASE_WHY="$g could not be written"
   else
     # Two reads: status shows nothing in the base (no checkout and no

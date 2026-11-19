@@ -188,6 +188,30 @@ lock() { git worktree unlock "$1" 2>/dev/null; git worktree lock --reason "$2" "
     (cd "$S" && run --separate-stderr bash "$BL" --worktree-base && [ "$status" -eq 2 ] && [ "$output" = "refuse worktree-base: the worktree base $S/.worktrees is not an absolute path of letters, digits and . _ - /" ] && [ ! -e "$S/.worktrees" ]) || { show; return 1; }
 }
 
+@test "--worktree-base refuses, naming the gap, when it cannot make or write the base, git cannot answer, or there is no main worktree (brief 2026-11-19-worktrees-outside-dot-claude, review r2)" {
+    [ "$(id -u)" -ne 0 ] || { echo "needs a non-root uid: root ignores the mode bits these cases rely on"; return 1; }
+    chmod a-w "$R"
+    dsp --worktree-base; chmod u+w "$R"
+    [ "$status" -eq 2 ] && [ "$output" = "refuse worktree-base: $R/.worktrees could not be made" ] && [ ! -e "$R/.worktrees" ] || { show; return 1; }
+    mkdir "$R/.worktrees"; chmod a-w "$R/.worktrees"
+    dsp --worktree-base; chmod u+w "$R/.worktrees"
+    [ "$status" -eq 2 ] && [ "$output" = "refuse worktree-base: $R/.worktrees/.gitignore could not be written" ] && [ ! -e "$R/.worktrees/.gitignore" ] || { show; return 1; }
+    # A git that fails one subcommand (FAIL_SUB) and runs the real one otherwise.
+    real="$(command -v git)"; mkdir "$BATS_TEST_TMPDIR/bin"
+    printf '#!/bin/bash\nfor a in "$@"; do [ "$a" = "$FAIL_SUB" ] && { echo "fatal: stub" >&2; exit 128; }; done\nexec %q "$@"\n' "$real" > "$BATS_TEST_TMPDIR/bin/git"
+    chmod +x "$BATS_TEST_TMPDIR/bin/git"
+    FAIL_SUB=check-ignore PATH="$BATS_TEST_TMPDIR/bin:$PATH" dsp --worktree-base
+    [ "$status" -eq 2 ] && [ "$output" = "refuse worktree-base: git could not say whether it ignores $R/.worktrees (git status or check-ignore failed)" ] || { show; return 1; }
+    FAIL_SUB=status PATH="$BATS_TEST_TMPDIR/bin:$PATH" dsp --worktree-base
+    [ "$status" -eq 2 ] && [ "$output" = "refuse worktree-base: git could not say whether it ignores $R/.worktrees (git status or check-ignore failed)" ] || { show; return 1; }
+    FAIL_SUB=list PATH="$BATS_TEST_TMPDIR/bin:$PATH" dsp --worktree-base
+    [ "$status" -eq 2 ] && [ "$output" = "refuse worktree-base: the worktrees could not be listed" ] || { show; return 1; }
+    # A bare repository has no main worktree to put the base in: the script stops before wt_base
+    # (whose own "no main worktree" refusal is a second line), and makes nothing.
+    git clone -q --bare "$R" "$BATS_TEST_TMPDIR/bare.git"
+    (cd "$BATS_TEST_TMPDIR/bare.git" && run --separate-stderr bash "$BL" --worktree-base && [ "$status" -eq 1 ] && [ -z "$output" ] && [ "$stderr" = "Not inside a git repository" ] && [ ! -e .worktrees ]) || { show; return 1; }
+}
+
 @test "--start refuses a default base it cannot use, leaving no branch, and --dir still works (brief 2026-11-19-worktrees-outside-dot-claude)" {
     ready
     mkdir "$BATS_TEST_TMPDIR/elsewhere"; ln -s "$BATS_TEST_TMPDIR/elsewhere" "$R/.worktrees"

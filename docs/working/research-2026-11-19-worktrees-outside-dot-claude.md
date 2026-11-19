@@ -176,6 +176,28 @@ text holds `.claude` and the bare word `hooks` or a settings*.json name. The `cd
 this loop hit that three times while building the change. That is the brief's second
 wall, reproduced.
 
+## Dispatch 2: main merged in, review round 2
+
+- Merged `refs/heads/main` (clean, no conflict). No `.claude/wt` path came back in the
+  skill, `build-loop.sh`, `dev-cycle.sh` or the workflow.
+- Review round 2 (one sample, over the round-1 code): no red. One amber: five refusal
+  paths had no test (mkdir fails, the `.gitignore` write fails, git status or
+  check-ignore fails, the worktrees cannot be listed, a bare repository). Fixed with one
+  bats case. A bare repository turns out to stop before `wt_base` ("Not inside a git
+  repository", exit 1, nothing made), so the case pins that and `wt_base`'s own bare
+  refusal stays as a second line.
+- Lows taken: the race comment now says that a reader who comes before the winner's `*`
+  refuses (fails closed); the `--start` header says a `--dir` is never checked as a base,
+  even under WTB; one exclude per line in `python.json`.
+- Lows not taken: the parenthetical in `hooks/guard-trusted-writes.py` about checkouts
+  under `.claude/` is still true of any checkout left there, and that file is an
+  enforcement file (it needs a live-verified trailer), so it stays. A refused `--start`
+  can leave the base behind, and that is harmless: the header lists WTB among the side
+  effects. The separate-responses rule in the skill is the brief's criterion 4, not
+  scope creep.
+- The guard's wall came back while building this round: a Bash heredoc that wrote this
+  section was denied because its `cd` prefix holds `.claude` and the text names `hooks`.
+
 ## Plan
 
 1. `scripts/build-loop.sh`: `WT_BASE_NAME`, `wt_base()`, the `--start` default and its
