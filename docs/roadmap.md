@@ -61,6 +61,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   is the owner's: Q-302. First step after the answer: compare its gaps and causes with this
   repo's, and file any cause the fixes here do not cover.
 
+## In flight
+
 - **Agent: an Idea that carries owner-reported friction never leaves Ideas** (filed
   2026-11-19, in session). Motive: philosophy-research F-019 (permission asks on every write
   under the worktrees) and F-011 (a subagent's report write refused) were ingested
@@ -70,9 +72,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   whose signal is harness feedback (a `docs/working/feedback/` entry) or an owner report is
   moved to Now as agent work, or asked about in one `you: judgment` entry, at the next
   iteration, never left unranked; a digest count of such Ideas makes it checkable. Gate
-  code: a review merge. Waits for a free build slot (A8, F-019 and F-011 hold all three).
-
-## In flight
+  code: a review merge. Briefed 2026-11-19: `docs/working/briefs/2026-11-19-ideas-promotion.md`.
 
 - **Worktrees and caches out of the protected config directory** (brainstorm 2026-11-16;
   moved from Ideas 2026-11-19 on the owner's request). Signal: philosophy-research F-019,

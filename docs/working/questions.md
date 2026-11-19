@@ -27,6 +27,7 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-306](#q-306--merge-2026-11-19-a8-token-measurement-30bb30d43a60) | you: judgment | Merge the A8 token measurement's results (one code-review pass on the csp benchmark cell, with its token le... | 2026-11-19 |
+| [Q-307](#q-307--merge-2026-11-19-subagent-report-as-text-70084aadc950) | you: judgment | Merge the parallel-worktrees change that has a subagent return a report as text for the parent to write, in... | 2026-11-19 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | One check is left: does a cc-isolated session that leaves a git worktree behind exit cleanly, with one `not... | 2026-09-27 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the ho... | 2026-11-05 |
 | [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there. | 2026-11-18 |
@@ -237,6 +238,39 @@ rubric docs/working/briefs/2026-11-19-a8-token-measurement.md: clean docs/review
 |---|---|---|---|
 | **[1] merge** | The gate merges tip 30bb30d4; the cycle then closes rubric row A8 with the measured verdict and files the cache finding (and the three settling runs) as roadmap items | Reading `results.md` | A wrong number lands in a results doc; one `git revert` undoes it |
 | **[2] drop** | The brief closes unmerged; A8 stays open | None | The measurement's tokens are spent with nothing kept |
+| **[3] changes needed** | Your note goes back to the loop (dispatch 2 of 4) | Writing the note | Another loop run |
+
+- **Interim:** unmerged.
+
+### Q-307 · merge-2026-11-19-subagent-report-as-text-70084aadc950
+**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** OPEN
+
+Merge the parallel-worktrees change that has a subagent return a report as text for the parent to write, instead of writing the file itself (feedback F-011)?
+
+**If you say no:** the workflow keeps telling subagents to commit their reports in their worktrees, and Claude Code's Write tool keeps refusing those files ("Subagents should return findings as text, not write report files"), so each parent places the report by hand, as in philosophy-research and belegarth-herald.
+
+- **What it is:** brief `docs/working/briefs/2026-11-19-subagent-report-as-text.md`, from your "Yes do that" today (the Ideas items that never left Ideas).
+- **Read:** the diff, 7 changed lines in one file: `git diff main...70084aadc95013e785793862f7cb87a689adbd00 -- workflows/parallel-worktrees.md`; the loop's research doc `docs/working/research-2026-11-19-subagent-report-as-text.md`.
+- **Tip:** 70084aadc95013e785793862f7cb87a689adbd00 (branch docs/subagent-report-as-text)
+
+What the loop reports (its words, summarized): step 3 (dispatch) gains "A report comes back as text": the item's brief names where the report lands and the subagent returns it in its final message; code and `docs/working/` handoffs are still committed by the subagent, since the two feedback entries show no refusal of those. Step 4 gains "Place returned reports first": the parent writes the report into that item's worktree and commits it there, then reviews and merges as before (a report-only item needs a worktree made by hand). The "Lost work" failure mode covers a report returned and never written down. `test/workflow-required-sections.bats` and `test/pivot-consistency.bats` pass; one independent review round, four of five points fixed.
+
+The gate's `--check` lines, as printed:
+
+```
+ok docs/working/briefs/2026-11-19-subagent-report-as-text.md 70084aadc95013e785793862f7cb87a689adbd00 9cd05281cadb305def5d848c90c3d17c5f18341a
+path docs/working/briefs/2026-11-19-subagent-report-as-text.md M docs/working/briefs/2026-11-19-subagent-report-as-text.md
+path docs/working/briefs/2026-11-19-subagent-report-as-text.md A docs/working/research-2026-11-19-subagent-report-as-text.md
+path docs/working/briefs/2026-11-19-subagent-report-as-text.md M workflows/parallel-worktrees.md
+rubric docs/working/briefs/2026-11-19-subagent-report-as-text.md: none: docs/subagent-report-as-text changes 1 paths outside docs/ and adds or changes no code-review rubric under docs/reviews/
+```
+
+- `workflows/parallel-worktrees.md` is under this repo's `Self-merge never: workflows/` line, which is why it is yours; it is not gate code and takes effect for sessions with the next release. The rubric line reads `none`: the review round is recorded in the research doc, not as a rubric.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges tip 70084aad | Reading 7 lines | A fan-out places a report in the wrong step; one `git revert` undoes it |
+| **[2] drop** | The brief closes; the workflow stays as it is | None | Report writes keep being refused |
 | **[3] changes needed** | Your note goes back to the loop (dispatch 2 of 4) | Writing the note | Another loop run |
 
 - **Interim:** unmerged.
