@@ -67,7 +67,7 @@ token counts. I found no transcripts from the August run to split its figures th
   32.8k-33.8k fresh, shared block included. This held for all 9 agents. (Within a run, an
   agent's later calls usually re-read its own prefix from cache, block included, which
   happens with or without inlining. The exceptions are calls after a long gap: the final
-  calls of r1 and r2, after about 6-7 minutes, read only 18,900, and the api critic's final
+  calls of r1 and r2, after gaps of about 5¾ and 6¾ minutes, read only 18,900, and the api critic's final
   call, after 73 minutes, read 0.) So the benefit the "leave it on" line expects (agents 2..N reading the
   shared block at the cache-read rate) was **0** in this pass.
 - **Why: the request records point to where the cache breakpoints sit.** Every agent's first
@@ -154,5 +154,6 @@ largest block at ~17.4k tokens, to test the 25k budget and the context-window tr
 - The ledger's `tool_uses` values are the task notifications' figures. Each is one less than
   the transcript's tool-call count, on every row. Replicate r2's verdict string in the ledger
   copies its report header (14 claims, 5V), whose body has 15 verdicts with 6 Verified.
-- Reviewing this write-up (3 fact-check replicates over these docs) cost 488,455 tokens,
-  outside the measured pass.
+- Reviewing this write-up cost 738,095 tokens outside the measured pass: 3 fact-check
+  replicates over these docs (488,455), then two k=1 passes over the corrections (147,679
+  and 101,961).
