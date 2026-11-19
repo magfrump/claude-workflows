@@ -1,0 +1,9 @@
+
+ RUN  v4.1.5 /tmp/claude-1000/-workspace/711f86df-792b-492f-9d5e-95022839ec2c/scratchpad/csp-fc-r3
+
+
+ Test Files  24 passed (24)
+      Tests  221 passed (221)
+   Start at  09:09:01
+   Duration  3.52s (transform 2.55s, setup 2.55s, import 5.73s, tests 5.65s, environment 26.61s)
+

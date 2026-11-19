@@ -1,0 +1,24 @@
+
+import { NextRequest } from "next/server.js";
+const { proxy, config } = await import("./proxy.ts");
+const reNonceSrc = /^[A-Za-z0-9+\/_-]+={0,2}$/;
+const nonces = [];
+for (let i = 0; i < 3; i++) {
+  const req = new NextRequest("http://localhost:3000/", { headers: { accept: "text/html" } });
+  const res = proxy(req);
+  const csp = res.headers.get("content-security-policy");
+  const m = csp.match(/nonce-([^']+)'/);
+  const nonce = m[1];
+  nonces.push(nonce);
+  const decoded = Buffer.from(nonce, "base64").toString();
+  console.log("CSP:", csp);
+  console.log("nonce:", nonce, "len", nonce.length, "valid-nonce-source-charset", reNonceSrc.test(nonce), "decoded:", decoded, "isUUIDv4", /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(decoded), "decodedBytes", Buffer.byteLength(decoded));
+  const scriptSrc = csp.split("; ").find(d => d.startsWith("script-src"));
+  console.log("script-src:", scriptSrc, "has unsafe-inline", scriptSrc.includes("unsafe-inline"), "has unsafe-eval", scriptSrc.includes("unsafe-eval"));
+  console.log("directive count", csp.split("; ").length);
+  console.log("x-middleware-request-x-nonce:", res.headers.get("x-middleware-request-x-nonce"));
+  console.log("return type", res.constructor.name, "is promise", res instanceof Promise);
+}
+console.log("distinct nonces", new Set(nonces).size, "of", nonces.length);
+console.log("config", JSON.stringify(config));
+

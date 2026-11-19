@@ -1,0 +1,21 @@
+ts=2026-11-19T18:36:00+00:00 cwd=/tmp/claude-1000/-workspace/711f86df-792b-492f-9d5e-95022839ec2c/scratchpad/csp-fc-r3
+cmd: timeout 60 node -e <probe>
+probe: 
+const { getMiddlewareMatchers } = require("next/dist/build/analysis/get-page-static-info.js");
+const { matchHas } = (() => { try { return require("next/dist/shared/lib/router/utils/prepare-destination.js"); } catch (e) { return {}; } })();
+const cfg = {"source":"/((?!api|_next/static|_next/image|favicon.ico).*)","missing":[{"type":"header","key":"next-router-prefetch"},{"type":"header","key":"purpose","value":"prefetch"}]};
+const ms = getMiddlewareMatchers([cfg], { i18n: undefined, basePath: "" });
+console.log(JSON.stringify(ms));
+const re = new RegExp(ms[0].regexp);
+for (const p of ["/api/analytics","/api/edit/inline","/api/formalization/lean","/api","/api/","/apiary","/","/foo"]) console.log(p, "matches-proxy:", re.test(p));
+
+[{"missing":[{"type":"header","key":"next-router-prefetch"},{"type":"header","key":"purpose","value":"prefetch"}],"regexp":"^(?:\\/(_next\\/data\\/[^/]{1,}))?(?:\\/((?!api|_next\\/static|_next\\/image|favicon.ico).*))(\\.json)?[\\/#\\?]?$","originalSource":"/((?!api|_next/static|_next/image|favicon.ico).*)"}]
+/api/analytics matches-proxy: false
+/api/edit/inline matches-proxy: false
+/api/formalization/lean matches-proxy: false
+/api matches-proxy: false
+/api/ matches-proxy: false
+/apiary matches-proxy: false
+/ matches-proxy: true
+/foo matches-proxy: true
+exit=0
