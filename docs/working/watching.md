@@ -23,6 +23,7 @@ Maintained by `~/.claude/scripts/questions.sh` (`check` · `index` · `migrate`)
 | [Q-262](#q-262--merge-approval-revisit) | trigger | Should merge approval be reopened? The design record picked no change on 2026-11-06, and this watch holds i... | 2026-11-06 |
 | [Q-264](#q-264--gloss-rule-falsifier) | trigger | Q-264: met — counted on 2026-11-11 at five entries opened since the install (Q-269 to Q-273): the falsifi... | 2026-11-06 |
 | [Q-275](#q-275--self-answer-plan-after-q272) | trigger | Q-275: met — the owner answered Q-272 on 2026-11-11 with [1] "to start" (run and warn). The exception is ... | 2026-11-11 |
+| [Q-301](#q-301--test-confinement-fallback-reachable) | trigger | Bring the test-confinement script's run-or-refuse question (`scripts/confine-tests.sh`: run under `unshare`... | 2026-11-18 |
 <!-- index:end -->
 
 ## Open
@@ -83,6 +84,19 @@ Should merge approval be reopened? The design record picked no change on 2026-11
 
 - **Read:** `docs/working/research-2026-11-06-merge-friction-design.md`, section 11.
 - **Interim:** merge entries stay as they are. The conditions are that section's list: the owner names merge entries or approvals as a blocker; merge entries exceed 11 a week in 3 of the next 4 weekly digests, which reopens the record's candidate [5]; or the record's median-wait trigger.
+
+### Q-301 · test-confinement-fallback-reachable
+**Needs:** trigger · **Opened:** 2026-11-18 · **Status:** OPEN
+
+Bring the test-confinement script's run-or-refuse question (`scripts/confine-tests.sh`: run under `unshare` after a warning, or refuse, when `bwrap` is unusable) back to the owner once an answer could change what the script does.
+
+- **Read:** `docs/working/research-2026-11-18-rewrite-q278.md` (why it was withdrawn, and what the returning entry must hold) · Q-272 in `docs/working/questions-archive.md`, Q-278 and fyi Q-300 in `docs/working/questions.md` (or the archive once answered) · decision-log rows 87 and 88 (`docs/decisions/log.md`)
+- **Condition** (any one, checked each iteration in the watches step):
+  (a) a build loop's research doc, a review or a cycle record, added or changed since the last iteration, quotes a line the script printed in a run: `confine-tests: primitive available:` or `falling back to the unshare primitive` (`rg -l` over those files under `docs/`, excluding `docs/working/questions*.md`, `docs/working/watching.md` and `docs/working/research-2026-11-18-rewrite-q278.md`, which quote the strings to describe this watch);
+  (b) `command -v bwrap` succeeds in a session;
+  (c) a CI job, host step or hook starts calling `scripts/confine-tests.sh` (a new caller outside build-loop test steps and `test/scripts/confine-tests.bats`).
+- **Interim:** the owner's Q-272 answer stands: when only `unshare` works, the script warns and runs. A loop that meets the fallback quotes its line in its research doc (that is condition (a)); it does not build a refusal and does not file the fallback as a new H2 finding. No line is added to `docs/constraints.md` while this is open.
+- **When it fires:** file a `you: judgment` entry. Its first line names the test-confinement script and says it is not Claude Code's Bash sandbox; it uses that one name throughout. Its options are run and warn (with the `docs/constraints.md` line it needs, drafted), refuse (a loop then falls back to the unconfined run plus `scripts/hermeticity-lint`), and do not confine tests at all (retire the script and the briefs' probe step), each with the costs observed by then and any count's undercount stated. Host facts go in a separate `you: terminal` entry. Then close this watch.
 
 ## Closed
 
