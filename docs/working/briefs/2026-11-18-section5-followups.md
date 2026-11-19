@@ -33,3 +33,5 @@ Policy: review
 - Any other change to section 5's output shape or to step 6's moves.
 - The review rubric's performance note (one `awk` per ID) and the malformed-entry route note: both are Won't-Fix rows in `docs/reviews/override-log.md`.
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`.
+
+Dispatched: 1
