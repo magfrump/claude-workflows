@@ -25,6 +25,7 @@ Maintained by `~/.claude/scripts/questions.sh` (`check` · `index` · `migrate`)
 | [Q-264](#q-264--gloss-rule-falsifier) | trigger | Q-264: met — counted on 2026-11-11 at five entries opened since the install (Q-269 to Q-273): the falsifi... | 2026-11-06 |
 | [Q-275](#q-275--self-answer-plan-after-q272) | trigger | Q-275: met — the owner answered Q-272 on 2026-11-11 with [1] "to start" (run and warn). The exception is ... | 2026-11-11 |
 | [Q-301](#q-301--test-confinement-fallback-reachable) | trigger | Bring the test-confinement script's run-or-refuse question (`scripts/confine-tests.sh`: run under `unshare`... | 2026-11-18 |
+| [Q-313](#q-313--live-verify-merge-of-main-stop) | trigger | Reopen the dropped roadmap Idea "The live-verify hook reads a merge commit's staged diff against HEAD only"... | 2026-11-19 |
 <!-- index:end -->
 
 ## Open
@@ -108,6 +109,15 @@ At the next release whose install re-blesses, ask the owner for the hint text th
 - **Condition:** the cycle files an `image-lag` release entry (dev-cycle step 0.1). That entry then adds one line asking the owner to paste the bless output's `Verified live:` and `Next:` lines, and `cc-isolated --list`'s `Blessed config` line, before running any probe. Pass: `Verified live:  NO — a bless is a review, not a test.`, `Next: cc-isolated --probe-only <repo>` alone on its line, and `--list` showing `verified live: NO (run: cc-isolated --probe-only <repo>)`.
 - **Interim:** the rebuild-hint commits keep `Live-verified: no`; that output rests on bats. The second half (a probe marks the bless verified) is live-verified on bless 3c5dd7853cf7a3f9.
 - **Closes:** when those pasted lines are on record here.
+
+### Q-313 · live-verify-merge-of-main-stop
+**Needs:** trigger · **Opened:** 2026-11-19 · **Status:** OPEN
+
+Reopen the dropped roadmap Idea "The live-verify hook reads a merge commit's staged diff against HEAD only" if a build loop or session is ever stopped by `hooks/live-verify-gate.sh` (the hook that asks for a `Live-verified:` trailer on enforcement-file commits) while merging main into its branch.
+
+- **Read:** `docs/working/research-2026-11-19-live-verify-merge-head-count.md` (the count, 4 of 108 merges in the case, none stopped; its Recommendation section holds the fix sketch and bypass list).
+- **Condition:** a `blocked` or `stopped` marker, or a cycle record, names this hook during a merge of main.
+- **Interim:** nothing is built; such merges carry `Live-verified: no — merge of main; main's commit carries its own trailer`, which the hook accepts.
 
 ## Closed
 
