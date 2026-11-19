@@ -108,6 +108,14 @@ answers the tasks leaves no first take, stops or links opened. In Q-278 four of 
 couldn't be scored. Either collect those observations: ask the opening-alone task before they read
 on, and one line on where they stopped and what they opened. Or don't predict them.
 
+**Predict the stop first, and make the rest depend on reaching it.** A real reader may quit early,
+so a prediction about a later section can't be scored. Make P1 *where this reader stops* (a
+section, or "the end"). Give every other prediction the section it **needs**, and score a
+prediction whose section was never reached as **not reached**, not as a miss. In the O20 pilot
+the author stopped a third of the way in. Seven of nineteen predictions assumed a full read, and
+the stop-count prediction (15–30) missed at 4, which said more about the assumption than about the
+post.
+
 ## Step 4: Run the simulated readers
 
 One fresh subagent per archetype, all in one message so they run in parallel. Fill in
@@ -163,6 +171,12 @@ asks the orchestrator something mid-session, answer neutrally once, log it in th
 and mark everything after it as contaminated. Append every question a real reader asks to the
 profile's evidence.
 
+- **Mark the answers given after a stop.** Ask a real reader for one line on where they stopped,
+  and which tasks they answered after it. Those answers come from a skim and their own knowledge,
+  not from the post. The grader still grades them, but tags each one **post-stop**. A post-stop
+  fail on a point the post makes only after the stop is *buried*, not *missing*: the point is in
+  the post, but past where this reader got. In the O20 pilot the author answered E3–E6 after
+  "bored".
 - **A test of a live entry is testimony, not the entry's answer.** When the stimulus is still awaiting
   a decision (an open questions entry), the real reader's task answers don't answer it, even when a
   task asks "answer this in one line". Record an answer only when the reader gives it with the
@@ -238,6 +252,16 @@ counted as reader testimony. The venue's labelling rules belong here too: search
 bracketed label (`\[[A-Za-z]`), not only the ones the post declares; the pilot's narrower search
 missed one.
 
+**The symbol inventory.** List every math symbol and introduced name the post uses, and for each
+one record three things. (1) Where it is first defined **in words**, if anywhere. (2) Whether it
+collides with a standard constant or reading (e, π, i, an unbracketed □x → y). (3) Whether a
+reader could find it with ctrl+F in the rendered page: a symbol that appears only inside math
+can't be found. Each symbol that fails any of the three goes into Part B as a finding observed by
+the orchestrator. If the post has more than a few, the fix is a notation table that gives each
+symbol in words. Simulated readers read the definitions, so they rarely catch a collision. In the
+O20 pilot only the real reader did: they took the §5 slope e for Euler's number and read a
+"(1+e) ≈ 3.7×" speed-up that the post explicitly disclaims. That rests on one real session.
+
 ## Step 8: The revision brief
 
 Written from the author's chair, at the end of `findings.md`. Readers report; they don't
@@ -283,6 +307,8 @@ grader that wasn't fresh, a verifier that wasn't run (and why). A stated gap is 
       verifier didn't run), and Part A is marked as blocking
 - [ ] Every unsettled reading was asked of the reader, or filed and graded *pending reader*
 - [ ] A fresh grader re-ran after any late real session
+- [ ] The symbol inventory is in Part B, observed by the orchestrator
+- [ ] Real readers' post-stop answers are tagged, and predictions past their stop scored "not reached"
 - [ ] The revision brief lists the claims a revision may change
 - [ ] Real readers' questions were appended to the profile's evidence
 - [ ] No real reader's test answers were recorded as a live entry's answer unless they gave it by ID

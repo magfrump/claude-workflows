@@ -51,7 +51,7 @@ for or found missing. Cite threads. Note where practice breaks the venue's own r
 
 **How they read.** <Their reading path: which parts, in what order, how many passes. When they stop.>
 
-**Patience budget.** <A time or a section count.> **Pain triggers:** <what makes them close the
+**Patience budget.** <A time or a section count, and its source: an observed stop, or the interview. Never inferred from the reader's own questions.> **Pain triggers:** <what makes them close the
 tab.> **Wins:** <what makes them come back.>
 
 **What they do next.** <The action the post should enable.>

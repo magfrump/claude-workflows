@@ -120,7 +120,12 @@ Fill in every field of `references/profile-template.md`. Three fields fail most 
   Without one, a sympathetic reader's wanting the post to be good turns into rating it good.
 - **The patience budget and pain triggers say when they stop**: a time or a section, and the
   things that make them close the tab. Simulated readers finish out of politeness unless the
-  profile says when this reader would quit, and that quitting is a finding.
+  profile says when this reader would quit, and that quitting is a finding. **Don't derive it
+  from the reader's own questions.** Those are asked while the reader is engaged, so they show how
+  this reader reads, never where they give up. Take the budget from an observed stop (a real
+  reader-testing session, or a thread where they went quiet), or ask for it in the interview, and
+  say which. In the MAIS pilot, the enthusiast's questions said "line by line, precisely". The
+  first real session stopped "bored" a third of the way in. That rests on one run.
 
 Name the **register** by pointing to the venue's style guide, not by restating it. The profile
 selects the rule set; the skill does not carry one.

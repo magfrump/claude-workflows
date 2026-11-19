@@ -179,6 +179,20 @@ newly familiar, but the bounded cost model is not.
   name (memory `comprehension-questions-no-edits`). Those questions are a check on the author's own
   understanding, not edit requests.
 
+- From the O20 reader test (2026-11-18, `docs/working/o20-2026-11-17/sessions/enthusiast-author.md`):
+  "I would appreciate an example like PB_{100}^{15} self-cooperates because... while PB_{10}^{2} fails because...";
+  "what are C_S and c_S? I don't see any definition, and also I can't ctrl+F for them in the markdown"; "what is
+  lambda?"; and, as the thread's likely first question, "How much shorter is the proof search using Payor's lemma
+  rather than Lob's theorem?". They want concrete numbers for a concrete program, and they search for symbols
+  rather than scroll.
+
+**Patience budget.** Observed once (O20, 2026-11-18): four unresolved stops, then "bored" about a third of the
+way in, at the first theorem's explanatory paragraph. The questions above show how they read while engaged. They
+can't show where the reader stops, so this budget comes from the observed stop, not from them. **Pain triggers:**
+undefined symbols that pile up, a role given with no numbers ("I see what *role* comb and qd are playing, but I
+don't know what they are numerically"), a reason the text never gives. **Wins:** a concrete example; a
+connection to their own questions.
+
 **What they do next.** Decide whether to sign and post. Answer follow-up questions on the thread. Carry the result
 back to their own questions.
 

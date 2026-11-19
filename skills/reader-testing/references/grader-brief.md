@@ -26,7 +26,9 @@ You are grading a reader test of a draft post. You did not write the post, the t
    assumes, grade **key contested** rather than fail, and say why. Where you can't tell a deliberate
    reframe from a misreading the text invited, grade **pending reader** and list it under item 7.
    Don't grade it key contested. A point resolved only from a linked doc is *missing*. A point
-   resolved from a knowledge file is logged, not graded.
+   resolved from a knowledge file is logged, not graded. Tag every answer a reader gave after
+   they stopped reading as **post-stop**. A post-stop failure on a point the post makes only after
+   the stop is *buried*, not *missing*.
 2. **Recall.** Compare each reader's recall with the key's intended gist. A section the reader
    called clear and then misrecalled is a finding, whatever the reader said about it.
 3. **Candidate findings.** Gather every stop, failure and complaint across sessions. Mark each
@@ -41,8 +43,9 @@ You are grading a reader test of a draft post. You did not write the post, the t
    simulated readers caught. S1 (a misreading likely to be repeated, or a rejection at the venue's
    screen), S2 (a task this archetype exists to do can't be done), S3 (doable with friction), S4
    (cosmetic). Kind: text-surface, affective or institutional.
-6. **Calibration.** A simulated reader's catch never clears a real reader's miss of the same point. Score every prediction against the real session it names: hit, miss, or not
-   observable. For each archetype with a real session, list the simulated findings the real reader
+6. **Calibration.** A simulated reader's catch never clears a real reader's miss of the same point. Score every prediction against the real session it names: hit, miss, **not
+   reached** (the session stopped before the section the prediction needs), or not observable.
+   A "not reached" is evidence of nothing. For each archetype with a real session, list the simulated findings the real reader
    confirmed, contradicted, or didn't reach, and the real-only findings. Mark each archetype
    without a real session **uncalibrated**.
 7. **Unsettled readings.** List every real-reader answer that could be either a deliberate reframe
