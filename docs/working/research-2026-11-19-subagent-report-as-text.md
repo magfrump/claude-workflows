@@ -31,3 +31,7 @@ Failure-pattern grep: FP-011, FP-013, FP-014, FP-062, FP-068
 2. Step 4: add a "Place returned reports first" paragraph.
 3. Extend "Lost work".
 4. Run the two bats files and the health check; review-fix loop; set the brief's Status to done.
+
+## Review
+
+Round 1 (independent general-purpose reviewer, read-only, report returned as text): no Incorrect findings; two Unclear and three Nits. Fixed in 559e7804: the no-worktree rule for read-only items now excepts a report to be committed; the refused path is narrowed to `docs/thoughts/`; code is stated as "no refused write recorded" rather than inferred; the brief names the report's destination path. Nit 5 (the manual-fallback trigger list does not name report-only items) left as is: step 4 points to the fallback directly. Delta re-checked by hand; `test/workflow-required-sections.bats`, `test/pivot-consistency.bats` and `scripts/health-check.sh` pass. No `fix(...)` commits, so no failure-pattern entry is due.
