@@ -146,12 +146,12 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   updated; (c) and (d) wait on Q-308 (after the release, the owner's call). Briefed 2026-11-19 on the owner's
   go-ahead in session: `docs/working/briefs/2026-11-19-code-review-lever3-correction.md`.
 
-- **Agent: Loops wait on a file or job in the foreground** (filed 2026-11-19, step 6; moved from Ideas: it carries reported friction). (brainstorm 2026-11-16). Signal:
-  philosophy-research F-012 (loops idle two hours on Monitor while listed as running;
-  told to wait in the foreground, they finished in 30 to 60 minutes). F-013's hung tool
-  calls have no known cause and are not covered by this.
-  2026-11-19: moved to Now by step 6 (iteration 2316). First step: the one the signal names; if none, a research or divergent-design pass on it.
-  2026-11-19: briefed (iteration 2338): `docs/working/briefs/2026-11-19-loops-wait-foreground.md`.
+- **Agent: Tell build loops to wait inside their turn** (filed 2026-11-19, step 6; philosophy-research
+  F-012 and two early hand-backs here on 2026-11-19). Motive: every recorded early hand-back came
+  while a loop waited for a reviewer, and each then waited the full two-hour rule. The research
+  (d6c987f3, `docs/working/research-2026-11-19-loops-wait-foreground.md`) picked one wait rule in
+  the dispatch prompt. Briefed 2026-11-19 (iteration 2351), review (gate code):
+  `docs/working/briefs/2026-11-19-loop-wait-rule.md`.
 
 - **Agent: Review subagents are told to write report files Claude Code refuses** (filed 2026-11-19,
   step 7; herald F-010 remainder). Motive: the build-loop prompt's per-subagent scratch directory,
@@ -508,6 +508,11 @@ Unranked. Each names the signal that motivates it.
 ## Done
 
 Items finished since the last cycle, with the merge.
+
+- **Where loops wait, and why they hand back early: researched.** Done d6c987f3 (self-merge), brief
+  `docs/working/briefs/closed/2026-11-19-loops-wait-foreground.md`, research
+  `docs/working/research-2026-11-19-loops-wait-foreground.md`: 15 wait points; one prompt rule
+  recommended, now In flight as its own review brief.
 
 - **The live-verify hook and merges of main: measured, dropped.** Done 74b9181f (self-merge),
   brief `docs/working/briefs/closed/2026-11-19-live-verify-merge-head-count.md`, research
