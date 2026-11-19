@@ -52,7 +52,7 @@ Other choices, one line each:
 
 ## 3. The smaller findings, each named
 
-Quotes are from the final draft (v2).
+Quotes are from the final draft; a few were reworded in the review loop (section 4).
 
 | Finding (from `findings.md`) | What the draft does |
 |---|---|
@@ -120,7 +120,7 @@ Dropped by the grader: F13 (a stumble on "That count can be low" that the same b
 
 ## Draft entry
 
-The fyi (final, v2):
+The fyi (final: v2 plus the review-loop fixes in section 4; those fixes were not reader-tested):
 
 ```text
 ### Q-NNN · test-confinement-question-withdrawn
