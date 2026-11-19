@@ -475,17 +475,17 @@ if inrepo docs/roadmap.md; then
   # entry marked ANSWERED but not archived yet (step 1 archives after this
   # digest runs) is left out here too. An item is its column-0 line and the
   # indented lines under it; a column-0 line that is no item (prose, a ###
-  # heading) ends it. Only the first Now and the first Next heading count, as
+  # heading) ends it. Only the first Now, Next and Ideas heading count, as
   # in section 7. Each line prints the verdict before the item's title, the
   # title quoted, so a title cannot stand where step 6 reads the verdict.
   # One record per item: SECTION, N, TITLE (its first bold span, else its
   # first 80 bytes, cut back to a character boundary; one trailing
-  # period dropped), IDS, joined by \x1f,
+  # period dropped), KIND, PARKED (both Ideas only), IDS, joined by \x1f,
   # which the awk first turns to a space wherever the roadmap holds one (a tab
   # is IFS whitespace: an empty field would collapse and shift the rest).
   echo
   if [[ "$open_ok" != 1 ]]; then
-    echo "**Now and Next items were NOT checked against open entries and watches** — section 3 did not read the questions files (see it above). Step 6 reports this; it never reads as every item held."
+    echo "**Now and Next items were NOT checked against open entries and watches** — section 3 did not read the questions files (see it above). Step 6 reports this; it never reads as every item held. Ideas carrying reported friction were not listed either."
   else
     # IDs whose live-file Status is exactly ANSWERED, read as questions.sh's
     # parse_entries reads a well-formed entry (all three fields present,
@@ -505,32 +505,50 @@ if inrepo docs/roadmap.md; then
     # a trailing incomplete sequence (a lead byte and what the cut kept of it; a
     # split character is invalid UTF-8, and grep reads the digest as binary;
     # questions.sh drops any trailing multibyte one, FP-170), keeping a whole one.
+    # The first Ideas section's items are kept only when they carry reported
+    # friction (KIND): a harness-feedback entry ID (F-NNN, not FP-NNN) or an
+    # owner report in so many words; PARKED is 1 when the item's head (its text
+    # before the first "Signal:", where the Ideas shapes put "parked" or a
+    # "Dropped" lead with the answer behind it) says parked or dropped, so a
+    # report of dropped events in the signal is no parking (an item with no
+    # "Signal:" is read whole: the Ideas shapes always carry one).
     items="$(LC_ALL=C awk '
-      function flush(   title, ids, s, id, seen) {
+      function flush(   title, ids, s, id, seen, lt, kind, parked, head) {
         if (cur == "") return
+        kind = ""; parked = 0
+        if (cur == "Ideas") {
+          lt = tolower(text)
+          if (match(text, /(^|[^A-Za-z0-9])F-[0-9]+/)) kind = "feedback entry"
+          if (lt ~ /owner[- ](request|report|reported|brainstorm)|owner(.|\342\200\231)s (request|report)/) kind = kind (kind == "" ? "" : ", ") "owner report"
+          if (kind == "") { cur = ""; return }
+          head = lt; if (index(head, "signal:")) head = substr(head, 1, index(head, "signal:") - 1)
+          parked = (head ~ /(^|[^a-z])(parked|dropped)([^a-z]|$)/)
+        }
         if (match(text, /\*\*[^*]+\*\*/)) title = substr(text, RSTART + 2, RLENGTH - 4)
         else { title = text; sub(/^([-*] |[0-9]+\. )/, "", title); title = substr(title, 1, 80); sub(/([\302-\337]|[\340-\357][\200-\277]?|[\360-\364][\200-\277]?[\200-\277]?)$/, "", title); sub(/ +$/, "", title) }
         sub(/\.$/, "", title)
         ids = ""; s = text
         while (match(s, /Q-[0-9]+/)) { id = substr(s, RSTART, RLENGTH); if (!(id in seen)) { seen[id] = 1; ids = ids " " id }; s = substr(s, RSTART + RLENGTH) }
-        printf "%s\037%d\037%s\037%s\n", cur, num, title, ids
+        printf "%s\037%d\037%s\037%s\037%d\037%s\n", cur, num, title, kind, parked, ids
         cur = ""
       }
       { sub(/\r$/, ""); gsub(/[\t\037]/, " "); t = tolower($0) }
       /^## / { flush(); sec = ""
         if (!seen_now && (t == "## now" || index(t, "## now ") == 1 || index(t, "## now(") == 1)) { sec = "Now"; seen_now = 1 }
         else if (!seen_next && (t == "## next" || index(t, "## next ") == 1 || index(t, "## next(") == 1)) { sec = "Next"; seen_next = 1 }
+        else if (!seen_ideas && (t == "## ideas" || index(t, "## ideas ") == 1 || index(t, "## ideas(") == 1)) { sec = "Ideas"; seen_ideas = 1 }
         next }
       sec != "" && /^([-*] |[0-9]+\. )/ { flush(); cur = sec; num = ++n[sec]; text = $0; next }
       cur != "" && /^[ ]/ && NF { text = text " " $0; next }
       NF { flush() }
       END { flush() }' docs/roadmap.md)"
-    if [[ -z "$items" ]]; then
-      echo "No items in Now or Next."
-    else
-      echo "Now and Next items, each with the open entries and watches it names, then its title (step 6 moves or explains every item none names):"
-      echo
-      while IFS=$'\x1f' read -r sec num title ids; do
+    # One printer for both lists (Now and Next first, then the Ideas that
+    # carry reported friction), each filtered from the records by section.
+    s5_list() {  # $1: NowNext or Ideas
+      local sec num title kind parked ids held id r pre id_list
+      while IFS=$'\x1f' read -r sec num title kind parked ids; do
+        [[ -n "$sec" ]] || continue
+        if [[ "$1" == Ideas ]]; then [[ "$sec" == Ideas ]] || continue; else [[ "$sec" != Ideas ]] || continue; fi
         held=""
         # read -a splits without pathname expansion; each word is checked
         # again against the ID shape the awk extracts.
@@ -540,9 +558,31 @@ if inrepo docs/roadmap.md; then
           r="$(printf '%s\n' "$open_q" | awk -v id="$id" '$1 == id { r = substr($0, index($0, "  ") + 2, 16); sub(/ +$/, "", r); print r; exit }')"
           [[ -z "$r" ]] || held+="${held:+, }$id ($r)"
         done
-        if [[ -n "$held" ]]; then echo "- $sec $num · open: $held · \"$title\""
-        else echo "- $sec $num · no open entry or watch names it · \"$title\""; fi
+        pre="- $sec $num · "; [[ "$sec" != Ideas ]] || pre+="$kind · "
+        if [[ -n "$held" ]]; then echo "${pre}open: $held · \"$title\""
+        elif [[ "$sec" == Ideas && "$parked" == 1 ]]; then echo "${pre}says parked or dropped · \"$title\""
+        else echo "${pre}no open entry or watch names it · \"$title\""; fi
       done <<< "$items"
+    }
+    nn=0; ni=0
+    while IFS=$'\x1f' read -r sec _; do
+      if [[ "$sec" == Ideas ]]; then ni=$((ni + 1)); elif [[ -n "$sec" ]]; then nn=$((nn + 1)); fi
+    done <<< "$items"
+    if [[ "$nn" -eq 0 ]]; then
+      echo "No items in Now or Next."
+    else
+      echo "Now and Next items, each with the open entries and watches it names, then its title (step 6 moves or explains every item none names):"
+      echo
+      s5_list NowNext
+    fi
+    echo
+    shapes="a feedback entry F-NNN, or the words owner request, owner report, owner-reported, owner brainstorm, owner's request or owner's report"
+    if [[ "$ni" -eq 0 ]]; then
+      echo "No Idea carries reported friction ($shapes)."
+    else
+      echo "Ideas carrying reported friction ($ni; $shapes), each with what it carries, then the open entries and watches it names, then its title (step 6 moves to Now, or asks about, every one none names and that does not say parked or dropped):"
+      echo
+      s5_list Ideas
     fi
   fi
 elif skipped docs/roadmap.md; then
