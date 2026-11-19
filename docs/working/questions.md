@@ -27,10 +27,10 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-308](#q-308--a8-settling-runs) | you: judgment | Run the two larger measurements that would settle the A8 question (the code-review skill's "inlining the sh... | 2026-11-19 |
+| [Q-312](#q-312--friction-ideas-owner-brainstorm-areas) | you: judgment | Two roadmap Ideas from your 2026-10-29 brainstorm carry your own friction report. Build them now, or keep t... | 2026-11-19 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | One check is left: does a cc-isolated session that leaves a git worktree behind exit cleanly, with one `not... | 2026-09-27 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the ho... | 2026-11-05 |
 | [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there. | 2026-11-18 |
-| [Q-303](#q-303--image-lag) | you: terminal | Install the release that carries main's new dev-cycle gate code: run the one paste below on the host. | 2026-11-18 |
 <!-- index:end -->
 
 ## Open
@@ -130,42 +130,6 @@ Output, in chat (write no files):
 - **Interim:** nothing is built from the audit for other repos; the fixes merged here cover this repo's causes only.
 - **If the answer differs:** a cause the fixes here don't cover becomes a roadmap item here (the gate and rules are shared), and anything specific to Behemoth Arsenal is for a session in that repo.
 
-### Q-303 · image-lag
-**Needs:** you: terminal · **Opened:** 2026-11-18 · **Status:** OPEN
-
-Install the release that carries main's new dev-cycle gate code: run the one paste below on the host.
-
-**If you say no:** sessions keep running the image built from a4c856bf, so the dev cycle keeps its old step 6: the new roadmap check (every Now and Next item shown with what holds it, and finished or parked items moved) does not run, and the audience-profiles and reader-testing v2 skills stay at their old text in sessions.
-
-- **C (the image's commit):** a4c856bf7cb595f6eab4923db117827ebb833cb4 · **M (main's commit):** b3e25cf11174f620b3c49774a95ab9afb62f59dc
-- **Merged without your review:**
-  - 5a4d2fda Merge branch 'fix/board-fanout-flaky' (build-loop self-merge): a 6-line fix to one test's setup in `test/scripts/board.bats` (the flaky fanout case), with its research doc; no code-review rubric, the loop reviewed it itself.
-  - a61f9a17 Merge branch 'docs/rewrite-q278' (build-loop self-merge): docs only (a closed brief and a research doc).
-- **What changes for you:**
-  - b3e25cf1 (you approved it, Q-311 [1]): build loops' worktrees and the dev cycle's own checkouts move to a gitignored `.worktrees/` directory, so routine writes there stop asking you for permission (feedback F-019); worktrees already in the old place are still collected.
-  - 9e89a31e (you approved it, Q-310 [1]): the A8 cache probe's records, under `runs/` and `docs/`.
-  - 7661a2cf (you approved it, Q-309 [1]): every roadmap Idea that carries harness feedback or an owner report moves to Now (or into one question for you) each iteration; about 12 of today's Ideas move at the first iteration after this release.
-  - f8453f26 (you approved it, Q-307 [1]): `workflows/parallel-worktrees.md` has a subagent return a report as text for the parent to write, instead of writing a file Claude Code refuses.
-  - 358c2332 (you approved it, Q-306 [1]): the A8 measurement's results, under `runs/` and `docs/` (the image carries neither).
-  - 24af50da (you approved it, Q-305 [1]): the roadmap check's split-off fixes: a repo with a `watching.md` but no `questions.md` now reads as not checked, long titles are cut without splitting a character, and two tests now fail when they should.
-  - 22735b6e: the dev-cycle digest's section 5 lists each roadmap Now and Next item with the open questions or watches that hold it, and step 6 moves finished or parked items every iteration, light passes too (your request in session today; rubric `docs/reviews/code-review-rubric-2026-11-18-fix-dev-cycle-roadmap-staleness.md`).
-  - 386ccfa3, ded17c89: the audience-profiles and reader-testing skills' v2 and the lessons from O20's real session (merged by hand).
-  - The routine rest: 35 dev-cycle lands and 7 docs commits.
-- **Full list:** `git -c log.showSignature=false log --first-parent --format='%h %s' a4c856bf7cb595f6eab4923db117827ebb833cb4..b3e25cf11174f620b3c49774a95ab9afb62f59dc`
-- **Paths changed outside `docs/` and `runs/` (68 under `docs/` and 37 under `runs/` too, which the image does not carry):** `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/health-check.sh`, `scripts/hermeticity/adapters/bash.json`, `scripts/hermeticity/adapters/python.json`, `scripts/lib/migrations.sh`, `skills/audience-profiles/SKILL.md`, `skills/audience-profiles/references/profile-template.md`, `skills/dev-cycle/SKILL.md`, `skills/reader-testing/SKILL.md`, `skills/reader-testing/references/grader-brief.md`, `skills/reader-testing/references/reader-brief.md`, `skills/reader-testing/references/run-templates.md`, `test/scripts/board.bats`, `test/scripts/build-loop-dispatch.bats`, `test/scripts/build-loop-free.bats`, `test/scripts/build-loop-orchestrator.bats`, `test/scripts/dev-cycle.bats`, `test/scripts/health-check.bats`, `workflows/parallel-worktrees.md`
-
-Run this on the host, in your claude-workflows checkout at main's tip, then start a new sandbox session:
-
-```
-sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "b3e25cf11174f620b3c49774a95ab9afb62f59dc:$p")"; then n=$((n+1)); else echo "release refused: $p changed after b3e25cf11174f620b3c49774a95ab9afb62f59dc: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
-```
-
-**Pass:** the installer finishes without a `release refused` line. **Send back:** `Q-303: done`, and, if the install re-blessed (its output has a `Verified live:` line), that line, the `Next:` line under it and `cc-isolated --list`'s `Blessed config` line, before you run any probe: watch Q-167 (post-install-host-probes) waits on exactly those lines.
-
-- **Interim:** the image's gate (a4c856bf) runs; nothing breaks.
-
-
-
 ### Q-308 · a8-settling-runs
 **Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** OPEN
 
@@ -184,6 +148,29 @@ Run the two larger measurements that would settle the A8 question (the code-revi
 
 - **Interim:** [2]; nothing runs. The owner, in session 2026-11-19: delaying this until after the release (Q-303), so no iteration asks it again before then.
 - **Blocks:** the A8 follow-up item on the roadmap (Next).
+- **2026-11-19, iteration 2316:** the release (Q-303) has run: sessions now run the image built from main 0feaf080. Option [2]'s "after the release" has arrived, so this is the cycle asking again: [1] or [3] now settles it.
 
 
 
+### Q-312 · friction-ideas-owner-brainstorm-areas
+**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** OPEN
+
+Two roadmap Ideas from your 2026-10-29 brainstorm carry your own friction report. Build them now, or keep them parked while the trial runs?
+
+**If you say no:** both stay in the roadmap's Ideas, marked parked with this answer, and the trial set you are running (T8-T12, to about 2026-11-20) goes on unchanged.
+
+- **Why it's yours:** both change how your merges, releases and asks work, which the trial set (`docs/working/trials/2026-11-06-attention-and-trust.md`) is measuring now; building them mid-trial would reorder your stated plan to ask about the trial after the 2026-11-20 weekly digest. The cycle's step 6 (merged 7661a2cf, which you approved in Q-309) moves every other such Idea to Now on its own; seven moved this iteration and two were briefed.
+- **Read:** `docs/working/brainstorm-2026-10-29-friction-and-engagement.md` (areas A and B, 18 ideas); `docs/roadmap.md`, Ideas.
+
+The two Ideas:
+1. **Cut merge and release friction (area A).** 19 of 19 merge entries approved; merged gate fixes wait on a host release. A1/A2/A3/A10 (how gate merges and releases are bundled) go to divergent design first; A4, A6, A7, A8 are independent of that. (A1/A3/A10 were already answered "no change" on 2026-11-06; watch Q-262 holds their revisit.)
+2. **Keep you from habituating to asks (area B).** Always-[1] merge entries and month-old open entries train skimming; eight ideas, with the security-channel form (B1) to divergent design first.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Park both until the trial ends** | Both stay in Ideas, marked parked (Q-312 [1]); they come back when you answer the trial question after the 2026-11-20 digest | None now | Friction you reported waits about a week more |
+| **[2] Build both now** | Both move to Now as agent work; the next free slots brief the independent parts first (A4, A6, A7, A8; then B) | A merge entry per unit that touches gate code or `workflows/` | The trial's readings mix with the changes |
+| **[3] Build these numbers** | Write the numbers (say `[3] 1`); the rest park as in [1] | As [2], for those | As [2], for those |
+
+- **Interim:** [1]: both stay in Ideas, unbuilt; nothing else waits on this.
+- **If the answer differs:** nothing to redo; the cycle moves them to Now next iteration.
