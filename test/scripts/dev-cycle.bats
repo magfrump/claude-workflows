@@ -1818,6 +1818,19 @@ MD
     [[ "$section" != *"no open entry or watch names it"* && "$section" != *"Held by watch"* ]] || { echo "$section"; return 1; }
 }
 
+@test "section 5 prints NOT checked when watching.md is a dangling symlink and questions.md is missing; section 3 names the skip (review 2026-11-18 final pass, R5)" {
+    mkdir -p docs/working
+    # Dangling, so only the skip check (not a -f test) sees that it is there.
+    ln -s ../../gone.md docs/working/watching.md
+    printf '# Roadmap\n\n## Now\n\n- **Held by watch** (Q-020)\n\n## Next\n' > docs/roadmap.md
+    run --separate-stderr bash "$DC"
+    [ "$status" -eq 0 ]
+    s3=$(echo "$output" | sed -n '/## 3/,/## 4/p')
+    section=$(echo "$output" | sed -n '/## 5/,/## 6/p')
+    [[ "$s3" == *"**Watched questions were NOT checked** — docs/working/watching.md is not read"* && "$s3" != *"questions.sh init"* ]] || { echo "$s3"; return 1; }
+    [[ "$section" == *"**Now and Next items were NOT checked against open entries and watches**"* && "$section" != *"Held by watch"* ]] || { echo "$section"; return 1; }
+}
+
 @test "section 5: a 0x1f byte or glob character in the roadmap shifts no field and expands nothing; a verdict-like title stays quoted after the verdict (review 2026-11-18, security 1 and 2)" {
     mkdir -p docs/working
     printf '# Running questions\n\n## Open\n\n### Q-001 · open-too\n**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** OPEN\n\n### Q-010 · open\n**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** OPEN\n' > docs/working/questions.md
@@ -1855,4 +1868,19 @@ MD
     [ "$status" -eq 0 ]
     want="a$(printf 'é%.0s' $(seq 39))"
     [[ "$output" == *"- Now 1 · no open entry or watch names it · \"$want\""* ]] || { echo "$output" | sed -n '/## 5/,/## 6/p'; return 1; }
+    # A title that needs no cut keeps its last character, and so does one cut
+    # exactly on a character boundary (40 two-byte characters are 80 bytes;
+    # "ab" then 26 three-byte ones are too), or after a whole 4-byte one.
+    t80="$(printf 'é%.0s' $(seq 41))"; t3="ab$(printf '中%.0s' $(seq 27))"; t4="$(printf '😀%.0s' $(seq 21))"
+    printf '# Roadmap\n\n## Now\n\n- Fix café\n- Ends with 中\n- %s\n- %s\n- %s\n- a%s\n\n## Next\n' "$t80" "$t3" "$t4" "$t3" > docs/roadmap.md
+    run --separate-stderr bash "$DC"
+    [ "$status" -eq 0 ]
+    section=$(echo "$output" | sed -n '/## 5/,/## 6/p')
+    for want in '- Now 1 · no open entry or watch names it · "Fix café"' '- Now 2 · no open entry or watch names it · "Ends with 中"' \
+                "- Now 3 · no open entry or watch names it · \"$(printf 'é%.0s' $(seq 40))\"" \
+                "- Now 4 · no open entry or watch names it · \"ab$(printf '中%.0s' $(seq 26))\"" \
+                "- Now 5 · no open entry or watch names it · \"$(printf '😀%.0s' $(seq 20))\"" \
+                "- Now 6 · no open entry or watch names it · \"aab$(printf '中%.0s' $(seq 25))\""; do
+        [[ "$section" == *"$want"* ]] || { echo "missing: $want"; echo "$section"; return 1; }
+    done
 }
