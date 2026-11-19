@@ -60,8 +60,9 @@ parse and drew prompts.
 - Fixed on main: da07a77c (2026-11-05) replaced the block with `scripts/d6.sh` one-liners
   (`cd WT && bash /opt/claude-workflows/scripts/d6.sh SCRIPT ARG...`, skill line 55). Live: yes.
 - What's left is the other repo's own setup: herald's `.claude/settings.json` allow list still
-  names the old `~/.claude/scripts/...` forms. This repo ships no allow rules at all
-  (`hooks/wiring.json` has `permissions.deny` only), and herald runs every session in `auto`
+  names the old `~/.claude/scripts/...` forms. The harness wiring ships no allow rules
+  (`hooks/wiring.json` has `permissions.deny` only; only the separate
+  `profiles/interview/settings.json` carries an allow list), and herald runs every session in `auto`
   mode, so no prompt was seen. Not checked: whether a rule like
   `Bash(bash /opt/claude-workflows/scripts/d6.sh:*)` matches the `cd WT && ...` form in Claude
   Code's own matching.
@@ -80,9 +81,8 @@ files under `~/.claude` in herald loops.
 self-merge brief, which then fell through to a review entry.
 - Cause: the cycle wrote `Policy: self-merge` on a brief whose `Paths:` held a working doc
   not its own. The floor (`floor()` in `scripts/lib/dev-cycle-read.sh`) did its job and failed
-  closed. `check_brief` in the same lib reads `Policy:` and `Paths:` but, as far as its
-  comment block and an `rg` for floor or policy show, does not test one against the other, so
-  nothing catches the mismatch when the brief is written.
+  closed. `check_brief` in the same lib (lines 449-492) has `brief_fields` parse `Policy:` and
+  `Paths:`, but itself tests only the Status field (lines 474-475), so nothing catches the mismatch when the brief is written.
 - Fixed on main: not as code. The dispatch prompt has spelled out the floor since 23ba4511
   (2026-10-10, before this entry), and herald saw no recurrence across five self-merge briefs
   on 2026-11-12. Live: n/a.
@@ -101,12 +101,13 @@ self-merge brief, which then fell through to a review entry.
 **F-007 · web-taint-hook-asks-on-build-files.** After a web search, the guard asked on writes
 to `CLAUDE.md`, memory files, and also `app/build.gradle.kts`, `gradle/libs.versions.toml` and
 `tools/train/requirements.txt`.
-- Cause: `hooks/guard-trusted-writes.py`, `classify_path` (lines 246-259). A path with a
+- Cause: `hooks/guard-trusted-writes.py`, `classify_path` (line 224; its SOFT rules are lines 246-259, the
+  `.claude` rule 257-258). A path with a
   `.claude` segment anywhere is SOFT, and a SOFT write in a web-tainted session asks. The
   build files were in herald worktrees under `/workspace/.claude/wt-*`, so they counted as
-  SOFT. None of the other SOFT rules can match them (their names and suffixes are not
-  `.md`/`.txt` under skills, memories, commands or agents, not `CLAUDE.md`, not `.mdc`), so this is the
-  only route. The `CLAUDE.md` and memory-file asks are by design.
+  SOFT. None of the other SOFT rules can match them (they are not `.md`, `.txt` or
+  suffix-less files under skills, memories, commands or agents; not `CLAUDE.md`, `AGENTS.md`,
+  `CLAUDE.local.md` or `managed-settings.json`; not `.mdc`), so this is the only route. The `CLAUDE.md` and memory-file asks are by design.
 - Fixed on main: same as F-001, b3e25cf1 (worktrees moved to `.worktrees`). Live: yes.
   Inferred from the code, not observed: herald has not had a tainted session since the move.
 
@@ -134,11 +135,14 @@ confirm the repo's `.git` belongs to its folder.
 a build loop were refused when they wrote their reports to their scratch directories.
 - Cause: Claude Code's Write tool refuses a report file from a subagent (platform). On this
   repo's side, prose tells a subagent to write one: the build-loop dispatch prompt gives
-  review subagents "its own scratch directory" (`scripts/build-loop.sh` line 1978), and 12
-  review skills say "When run standalone, save your report/critique as `docs/reviews/...`"
-  (e.g. `skills/code-fact-check/SKILL.md` 477, `skills/security-reviewer/SKILL.md` 574; `rg -l`
-  for "save (your|the) (report|critique|review|output)" lists 12 skills and 2 workflows). A
-  reviewer subagent that loads one of these skills reads itself as standalone.
+  review subagents "its own scratch directory" (`scripts/build-loop.sh` line 1978), 11
+  review skills have a standalone save line (worded variously, e.g. "When run standalone, save
+  your report as `docs/reviews/...`" in `skills/code-fact-check/SKILL.md` 477 and
+  `skills/security-reviewer/SKILL.md` 574), and `skills/code-review/SKILL.md` 1039 tells its
+  fact-check subagent to save a report file outright, the nearest match to F-010. `rg -l` for
+  "save (your|the) (report|critique|review|output)" lists those 12 skills and 2 workflows
+  (`pr-prep.md` 145 and `user-testing-workflow.md` 404, weaker matches). A reviewer subagent
+  that loads a skill with a standalone line reads itself as standalone.
 - Partly fixed on main: cd0194572 (2026-11-19) makes parallel-worktrees report items return
   text and has the parent write and commit them. Live: yes. Still open: the build-loop
   prompt and the review skills' standalone lines.
@@ -208,9 +212,10 @@ work. Status quo is valid.
 Fix: choose among three approaches, plus the status quo (not picked):
 1. One line in the build-loop dispatch prompt: review subagents return their report as text,
    and the loop writes it. Path: `scripts/build-loop.sh` (gate code, review merge).
-2. Each review skill's "When run standalone, save ..." line gains "(a subagent returns it as
-   text instead)". Paths: 12 `skills/*/SKILL.md` files. S3 (one source of truth per
-   rule) weighs against restating it 12 times.
+2. Each review skill's standalone save line gains "(a subagent returns it as text
+   instead)", and code-review line 1039 asks its subagent for text. Paths: 12
+   `skills/*/SKILL.md` files. S3 (one source of truth per rule) weighs against restating it
+   11 times.
 3. One rule in a place every session loads, `global-instructions/CLAUDE.md` (an instruction
    file, on the self-merge floor, and S2's always-loaded budget applies), or a guide the
    skills link to.
@@ -232,7 +237,7 @@ One event, failed closed, not recurred in five tries. If it is filed at all: `--
 (the `check_brief` function in `scripts/lib/dev-cycle-read.sh`, gate code) could print an
 advisory line when a self-merge brief's `Paths:` names a floor path. Its first step is to
 check whether `floor()` can be called on a brief's `Paths:` before a branch exists (it takes
-the brief stem and a diff status letter). This is one approach, not a choice among three or
+the path, the brief stem, a diff status letter and an optional lower-cased path). This is one approach, not a choice among three or
 more.
 
 ## Design choices in this unit
@@ -255,8 +260,8 @@ File as roadmap items:
    directory?), then choose among group F's four approaches. Paths are gate code (review merge).
 2. **Review subagents are told to write report files Claude Code refuses (herald F-010
    remainder)**.
-   Motive: the build-loop prompt and 12 review skills still tell a subagent to save its
-   report, which costs a refused call each time. First step: the listing in group G above,
+   Motive: the build-loop prompt, 11 review skills' standalone lines and code-review's
+   fact-check dispatch still tell a subagent to save its report, which costs a refused call each time. First step: the listing in group G above,
    then choose among its four approaches. Option 1 is gate code (review merge).
 
 Close as already fixed (live in image 0feaf080):
