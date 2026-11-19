@@ -99,6 +99,18 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
    no answered `you: walkthrough` entry, so "too few to decide". The three open questions
    are drafted in the loop's marker and held until another repo reports its own count,
    since the first (which project to try first) depends on which repos have walkthroughs.
+2. **Revisit the 2-hour wait before re-dispatching an unfinished loop** (owner request,
+   2026-11-19: "seems excessive"; not for this release). Motive: `build-loop.sh --prompt
+   --steal` takes a loop's locked worktree only when the loop left a marker, or when both
+   lock and tip are over `STEAL_AGE` (7200 s, decision D1 in
+   `docs/working/plan-build-loop-handoff.md`), because the gate cannot tell a dead loop
+   from a live one, perhaps another session's, from git state alone. On 2026-11-19 the
+   F-019 loop ended without a marker 7 minutes after its last commit, this session's task
+   notification said so, and the re-dispatch still waited two hours. First step: list what
+   a lock holder could prove it is gone (the dispatching session's own record of its
+   subagent ending, a heartbeat, a shorter age for this session's own loops) and weigh
+   each against D1's case (a live loop in another session, S1's honest-slip threat model),
+   then pick the threshold or mechanism; gate code, so a review merge.
 
 ## Ideas
 

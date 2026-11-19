@@ -180,6 +180,6 @@ Run the two larger measurements that would settle the A8 question (the code-revi
 | **[2] After the cache fix** | Run them once the cache probe has said whether the prompt layout can be fixed, and any fix has merged; the cycle asks again then | None now | A8 stays unsettled a while longer |
 | **[3] Don't run them** | Close A8 on today's verdict | None | The inline cost and recall effect stay unknown |
 
-- **Interim:** [2]; nothing runs.
+- **Interim:** [2]; nothing runs. The owner, in session 2026-11-19: delaying this until after the release (Q-303), so no iteration asks it again before then.
 - **Blocks:** the A8 follow-up item on the roadmap (Next).
 
