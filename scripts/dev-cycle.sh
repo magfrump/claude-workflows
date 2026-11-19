@@ -382,6 +382,7 @@ if [[ $found -eq 0 ]]; then
 fi
 
 printf '\n%s\n\n' "## 3. Watched questions (trigger and deferred routes)"
+open_ok=0; open_q=""
 QS="$SCRIPT_DIR/questions.sh"
 [[ -f "$QS" ]] || QS="$HOME/.claude/scripts/questions.sh"
 QA=docs/working/questions-archive.md
@@ -414,6 +415,7 @@ else
   # lists the live file alone: its watches are legacy.
   qopen() { QUESTIONS_LIVE="$ROOT/docs/working/questions.md" QUESTIONS_ARCHIVE="$ROOT/$QA" QUESTIONS_WATCHING="$1" bash "$QS" open; }
   if open_q="$(qopen "$ROOT/$QW" 2>"$qs_err")" && open_l="$(qopen "$qs_err.none" 2>>"$qs_err")"; then
+    open_ok=1   # section 5 reads open_q too
     # `open` prints "ID  ROUTE  slug", ROUTE padded to 16 (the longest
     # route); it is read by position, since a route can hold a space ("you:
     # judgment") or be empty (a malformed entry) and a slug can hold
@@ -459,6 +461,50 @@ if inrepo docs/roadmap.md; then
   echo "docs/roadmap.md last committed on this branch: ${d:-never, uncommitted}. Its Next section:"
   echo
   awk '{ sub(/\r$/, ""); t = tolower($0) } t == "## next" || index(t, "## next ") == 1 || index(t, "## next(") == 1 { on = 1; next } on && /^## / { exit } on && NF { print "> " $0 }' docs/roadmap.md
+  # Each column-0 item of Now and Next, with the open entries and watches it
+  # names (section 3's open_q), so step 6 sees every item nothing open holds.
+  # An item names old answered IDs in its history, so only an open one counts.
+  # One record per item: SECTION, N, TITLE (its first bold span, else its first
+  # 80 characters), IDS, joined by \x1f (a tab is IFS whitespace: an empty
+  # field would collapse and shift the rest).
+  echo
+  if [[ "$open_ok" != 1 ]]; then
+    echo "Now and Next items were NOT checked against open entries and watches: section 3 did not read them."
+  else
+    items="$(awk '
+      function flush(   title, ids, s, id, seen) {
+        if (cur == "") return
+        if (match(text, /\*\*[^*]+\*\*/)) title = substr(text, RSTART + 2, RLENGTH - 4)
+        else { title = text; sub(/^([-*] |[0-9]+\. )/, "", title); title = substr(title, 1, 80); sub(/ +$/, "", title) }
+        ids = ""; s = text
+        while (match(s, /Q-[0-9]+/)) { id = substr(s, RSTART, RLENGTH); if (!(id in seen)) { seen[id] = 1; ids = ids " " id }; s = substr(s, RSTART + RLENGTH) }
+        printf "%s\037%d\037%s\037%s\n", cur, num, title, ids
+        cur = ""
+      }
+      { sub(/\r$/, ""); gsub(/\t/, " "); t = tolower($0) }
+      /^## / { flush(); sec = ""
+        if (t == "## now" || index(t, "## now ") == 1 || index(t, "## now(") == 1) sec = "Now"
+        else if (t == "## next" || index(t, "## next ") == 1 || index(t, "## next(") == 1) sec = "Next"
+        next }
+      sec != "" && /^([-*] |[0-9]+\. )/ { flush(); cur = sec; num = ++n[sec]; text = $0; next }
+      cur != "" && NF { text = text " " $0 }
+      END { flush() }' docs/roadmap.md)"
+    if [[ -z "$items" ]]; then
+      echo "No items in Now or Next."
+    else
+      echo "Now and Next items, with the open entries and watches each names (step 6 moves or explains every item none names):"
+      echo
+      while IFS=$'\x1f' read -r sec num title ids; do
+        held=""
+        for id in $ids; do
+          r="$(printf '%s\n' "$open_q" | awk -v id="$id" '$1 == id { r = substr($0, index($0, "  ") + 2, 16); sub(/ +$/, "", r); print r; exit }')"
+          [[ -z "$r" ]] || held+="${held:+, }$id ($r)"
+        done
+        if [[ -n "$held" ]]; then echo "- $sec $num · $title: open $held"
+        else echo "- $sec $num · $title: no open entry or watch names it"; fi
+      done <<< "$items"
+    fi
+  fi
 elif skipped docs/roadmap.md; then
   skipnote docs/roadmap.md
 else
