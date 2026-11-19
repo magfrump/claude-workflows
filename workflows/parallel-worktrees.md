@@ -33,9 +33,9 @@ Send the subagents in parallel — one Agent call per item (or per shared-state 
 
 - **Focused brief**: the item, its workflow, acceptance criteria, and any constraints ("don't modify files outside X"). Each brief must be self-contained — subagent N should not need to know about item M. See `guides/sub-agent-briefing.md`.
 - **Worktree isolation for any item that writes code**: pass `isolation: "worktree"` on the Agent call so parallel implementations never touch the same working tree. The harness creates the worktree and auto-cleans it if unchanged.
-- Read-only/triage items don't need a worktree.
+- Read-only/triage items don't need a worktree, unless their report is to be committed (next bullet).
 - Instruct each implementing subagent to **commit its work inside its worktree** before finishing (conventional prefixes; autonomous commit format in /away mode). Uncommitted worktree changes are what get lost.
-- **A report comes back as text.** When an item's deliverable is a report (findings, an analysis, a review), tell its subagent to return the report in its final message and not to write it to a file: Claude Code's Write tool refuses a subagent's report file ("Subagents should return findings as text, not write report files"), both under `docs/` and in a scratch directory. The parent writes and commits it (step 4). The refusal has been recorded only for report files; the same subagent's handoff under `docs/working/` was accepted, so code and handoffs stay with the subagent, committed in its worktree.
+- **A report comes back as text.** When an item's deliverable is a report (findings, an analysis, a review), name the path it should land at in the brief, and tell the subagent to return the report in its final message and not to write it to a file: Claude Code's Write tool refuses a subagent's report file ("Subagents should return findings as text, not write report files"), under `docs/thoughts/` and in a scratch directory. The parent writes and commits it (step 4). The refusal has been recorded only for report files: the same subagent's handoff under `docs/working/` was accepted, and no refused code write has been recorded, so code and handoffs stay with the subagent, committed in its worktree.
 
 Manual fallback. Use it for human-driven sessions, when Agent-tool isolation is not available, or when it **fails or misbehaves**. In the cc-isolated sandbox it has failed outright since 2026-09-18 ("Could not read the repository git config…"). Before that it branched from a stale base and left subagents stalled. The by-hand version has run 6 parallel agents cleanly:
 
@@ -48,7 +48,7 @@ Dispatch each agent **without** `isolation`, and tell it to work and commit only
 
 ### 4. Review and merge each item
 
-**Place returned reports first.** For an item whose report came back as text, the parent writes it to the path the brief named, inside that item's worktree, and commits it there, so it is reviewed and merged like any other item. A harness worktree with no changes is auto-cleaned, so for an item whose only output is a report, create the worktree by hand (manual fallback above).
+**Place returned reports first.** For an item whose report is to be committed and came back as text, the parent writes it to the path the brief named, inside that item's worktree, and commits it there, so it is reviewed and merged like any other item. A harness worktree with no changes is auto-cleaned, so for an item whose only output is a report, create the worktree by hand (manual fallback above).
 
 The review unit is the item (or the shared-state group from step 1), not the batch. Each one runs its own `pr-prep` — review-fix loop, iteration cap and all — and merges as soon as it is clean:
 
