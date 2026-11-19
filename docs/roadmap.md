@@ -101,15 +101,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   updated; (c) and (d) wait on Q-308 (after the release, the owner's call). Briefed 2026-11-19 on the owner's
   go-ahead in session: `docs/working/briefs/2026-11-19-code-review-lever3-correction.md`.
 
-- **Worktrees and caches out of the protected config directory** (brainstorm 2026-11-16;
-  moved from Ideas 2026-11-19 on the owner's request). Signal: philosophy-research F-019,
-  about 18 permission asks in one session from writes into the cycle's and loops'
-  worktrees, two loops' writes refused, one iteration half-landed; the owner still sees the
-  asks (the A8 loop, the cycle's own brief writes). Briefed:
-  `docs/working/briefs/2026-11-19-worktrees-outside-dot-claude.md` (divergent design over
-  where they live, then build; the brief also says a brief write and its dependent
-  commands go in separate responses).
-
 ## Next
 
 1. **Agent first-pass playtest before each `you: walkthrough`** (owner request, 2026-11-12;
@@ -497,6 +488,12 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- **Worktrees and caches out of the protected config directory** (F-019). Done b3e25cf1
+  (approved merge, Q-311 [1]), brief `docs/working/briefs/closed/2026-11-19-worktrees-outside-dot-claude.md`,
+  research `docs/working/research-2026-11-19-worktrees-outside-dot-claude.md`: loops' worktrees and
+  the cycle's three checkouts go under a gitignored `.worktrees/` (`build-loop.sh --worktree-base`);
+  old worktrees are still collected. Live with the next release (Q-303). Residual risk
+  "worktree-hooks-bash" accepted; `scripts/self-improvement.sh`'s own worktrees not moved.
 - **Agent: A8 follow-ups: the cache probe and closing rubric row A8** (filed 2026-11-19). Done
   9e89a31e (approved merge, Q-310 [1]), brief `docs/working/briefs/closed/2026-11-19-a8-cache-probe.md`,
   record `runs/review-arms/a8-2026-11-19/cache-probe.md`: two agents with a byte-identical shared
