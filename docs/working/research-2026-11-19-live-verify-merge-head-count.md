@@ -15,7 +15,7 @@ Failure-pattern grep: `rg -n -i 'merge|live-verif|trailer' docs/failure-patterns
 
 A trailer's value is free text "on purpose" (header comment). `Live-verified: no — <why, and what will run it>` passes the hook, and `git log --grep 'Live-verified: no'` is the list of outstanding debt.
 
-So the case only arises when a merge of main hits a conflict, the session resolves it by hand and finishes with `git commit`, and main's side changed a gated file. The staged diff against HEAD then includes main's change, and the hook asks for a trailer.
+So the case only arises when a merge of main hits a conflict, the session resolves it by hand and finishes with `git commit`, and main's side changed a gated file. The staged diff against HEAD then includes main's change, and the hook asks for a trailer. A hand-resolved merge finished with `git merge --continue` never matches the trigger, so it skips the hook altogether. The hook also reads the index in its own working directory, the project directory. It does not follow a `cd X &&` or a `git -C X` in the command, so in a worktree flow it may not read the merge's index at all.
 
 `docs/working/research-2026-11-16-loop-may-merge-default-in.md` item 5 calls this "friction, not a bypass". It says the loop is asked for a trailer "it cannot honestly give" and so stops. The history below contradicts the "cannot honestly give" part.
 
@@ -45,7 +45,7 @@ Paths in the table are under `devcontainer-config/`.
 
 Reading the table:
 
-- **4 merges actually hit the case**: 536678c0, c70b221a, 90a70554 and 5c878776. Each had a conflict, was resolved by hand and finished with a commit, and main's side brought a gated file. Each passed the hook with an honest negative trailer that names where the real verification lives. Two examples: "the Dockerfile change arrives from main (9e5477a carries its own trailer); nothing new here", and "merge of main; main's boundary commits carry their own trailers". The last case was 2026-10-30, about three weeks ago.
+- **4 merges were in the case**: 536678c0, c70b221a, 90a70554 and 5c878776. Each had a conflict, was resolved by hand and finished with a commit, and main's side brought a gated file. Each carries an honest negative trailer that names where the real verification lives. History shows the trailers but cannot show that the hook demanded them: 2f55faef had no conflict, so the hook never ran on it, and it carries the same trailer, which means sessions add these trailers on their own. All 4 were owner-attended interactive sessions (09-28 to 10-30), not autonomous build loops. Two examples: "the Dockerfile change arrives from main (9e5477a carries its own trailer); nothing new here", and "merge of main; main's boundary commits carry their own trailers". The last case was 2026-10-30, about three weeks ago.
 - 5 merges had no conflict. The four `chore/dev-cycle` ones carry no trailer because a clean `git merge` never wakes the hook. 2f55faef carries one anyway.
 - In 536678c0 the branch's own side also changed a gated file (link-claude-home.sh conflicted). That trailer was needed on the branch's own account, so a MERGE_HEAD-aware hook would still have asked for it.
 - The hook did not gate install.sh until 2026-09-26 (addae610) or host tools until 2026-10-14 (5650145a). I counted with today's lists, so the count can only be higher than what the hook demanded at the time. Every row is dated after addae610.
@@ -62,7 +62,7 @@ Out of scope for the count, but the same hook firing: e0c5b5e4 merged the old `f
 
 ## Loops that stopped on the trailer (acceptance criterion 3)
 
-None found. The repo holds 4 `handoff: blocked` markers (27c32c32, fc2eeb03, 11d299cf, 502296b7), and no body mentions a trailer or live verification. It holds no `handoff: stopped` marker. Searching `docs/` for `MERGE_HEAD`, `live-verif … merge` and `merge … live-verif` finds only the 2026-11-16 pre-mortem item, the roadmap Idea that came from it, and this brief. `docs/harness-feedback.md` does not exist. The friction is predicted in the record and has never been observed.
+None found. The repo holds 4 `handoff: blocked` markers (27c32c32, fc2eeb03, 11d299cf, 502296b7), and no body mentions a trailer or live verification. It holds no `handoff: stopped` marker. Searching `docs/` for `MERGE_HEAD`, `live-verif … merge` and `merge … live-verif` finds 24 files. Most are about other merges (the build loop's `land` step, the Q-180 reviews). The hits about this hook are the 2026-11-16 pre-mortem item, the roadmap Idea that came from it, `docs/working/idea-log.md:296`, `docs/working/questions-archive.md:7247` (which quotes the a3ef5a38 ready marker), `docs/reviews/api-consistency-review-2026-11-19-measure-a8-cache-probe-pass3.md:21`, and this brief. Every one is a prediction or a restatement of the idea. None records a stop. `docs/harness-feedback.md` does not exist. The friction is predicted in the record and has never been observed.
 
 ## Recommendation (acceptance criterion 4)
 
@@ -70,7 +70,7 @@ The three options are fix now, fix later, or drop. One option dominates (diverge
 
 - **Fix now** is ruled out by S5 and S10. The motive doesn't hold up: in 4 of 4 real cases the hook accepted an honest `Live-verified: no — merge of main; <sha> carries its own trailer`, and no session or loop stopped. A fix is an enforcement-file change, which costs a review merge, a pre-mortem and a live check from the owner. It would remove four false-debt lines over two months.
 - **Fix later** saves nothing over dropping. The Idea comes back if the case arises, so keeping it open only holds a roadmap slot.
-- **Drop** is the pick. The pre-mortem's claim that the loop cannot honestly answer is wrong: the hook was designed to take `no — <why>`, and history shows sessions doing exactly that. The only cost seen is false debt in `git log --grep 'Live-verified: no'`. A reader clears it by noticing the commit is a merge whose trailer names main's commit.
+- **Drop** is the pick. The pre-mortem's claim that a loop cannot honestly answer has no support. The hook was designed to take `no — <why>`, and interactive sessions answered exactly that way all 4 times. No build loop has met the case yet: since 2026-11-16, one loop has merged main in, and that merge brought in no gated file. The reopen trigger below covers the loop case. The only cost seen is false debt in `git log --grep 'Live-verified: no'`. A reader clears it by noticing the commit is a merge whose trailer names main's commit.
 
 Reopen trigger: a loop's marker or a cycle record shows a stop or block on this hook during a merge of main, or false merge debt starts misleading a host-step hold (the dev-cycle skill's "hold on a host step" rule reads `Live-verified: no` trailers).
 
@@ -80,8 +80,9 @@ Reopen trigger: a loop's marker or a cycle record shows a stop or block on this 
 2. **Octopus merges** put several MERGE_HEAD lines. Require exactly one, or else gate everything.
 3. **A merge commit that also edits a gated file** (`git commit -a`, or edits after the resolution). A blob that matches neither side stays gated, and `-a` must compare the worktree blob as well.
 4. **Rename or mode change.** Keep `--no-renames`, and compare mode as well as blob.
-5. **Look-alikes.** CHERRY_PICK_HEAD and REVERT_HEAD must not be treated as MERGE_HEAD, and `--amend` of a merge keeps its existing exemption only with `--no-edit`.
-6. **Fail closed (H2).** Any failure of `rev-parse` or `ls-files` must fall through to the gate, never to a pass.
+5. **Look-alikes.** CHERRY_PICK_HEAD and REVERT_HEAD must not be treated as MERGE_HEAD. The sketch adds nothing for `--amend`, and the existing `--amend --no-edit` exemption is unchanged.
+6. **Working-directory mismatch.** With `cd X && git commit` or `git -C X commit`, the hook reads MERGE_HEAD and the index from the project directory, not from X. That is a gap already, and the exemption would widen it: a MERGE_HEAD in the wrong checkout could let a gated file through. Resolve the target checkout first, or gate whenever the command names another directory.
+7. **Fail closed (H2).** Any failure of `rev-parse` or `ls-files` must fall through to the gate, never to a pass.
 
 ## Choices made without a design fork
 
@@ -91,4 +92,4 @@ Reopen trigger: a loop's marker or a cycle record shows a stop or block on this 
 
 ## For the dev cycle
 
-Drop the roadmap item "The live-verify hook reads a merge commit's staged diff against HEAD only". Reason: of 108 merges of main into a branch, 9 brought in a gated file and 4 actually hit the hook. All 4 passed with an honest `Live-verified: no — merge of main; main's commit carries its own trailer`, which the hook accepts by design, and no loop or session stopped. The only cost is four false-debt lines in `git log --grep 'Live-verified: no'`, and fixing it would need an enforcement-file change with a review merge and a live check. Suggested watch: reopen if a marker or cycle record shows a stop or block on this hook during a merge of main. The fix sketch and bypass list are in this doc's Recommendation section.
+Drop the roadmap item "The live-verify hook reads a merge commit's staged diff against HEAD only". Reason: of 108 merges of main into a branch, 9 brought in a gated file, and 4 were in the case (a conflict resolved by hand, with a gated file from main). All 4 were interactive sessions, and each carries an honest `Live-verified: no — merge of main; main's commit carries its own trailer`, which the hook accepts by design. Nothing in the repo records a stop. No build loop has met the case yet: one loop has merged main since 2026-11-16, and that merge brought in no gated file. The only cost is four false-debt lines in `git log --grep 'Live-verified: no'`, and fixing it would need an enforcement-file change with a review merge and a live check. Suggested watch: reopen if a marker or cycle record shows a stop or block on this hook during a merge of main. The fix sketch and bypass list are in this doc's Recommendation section.
