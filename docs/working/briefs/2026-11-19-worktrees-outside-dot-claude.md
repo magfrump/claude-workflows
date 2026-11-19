@@ -36,3 +36,5 @@ Policy: review
 - F-016's health-checkout cache line and F-018's worktree-creation test (their own roadmap Ideas).
 - Weakening `hooks/guard-trusted-writes.py` for real policy files.
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`.
+
+Dispatched: 1

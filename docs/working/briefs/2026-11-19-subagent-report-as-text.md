@@ -31,3 +31,5 @@ Policy: review
 - Where worktrees live (`docs/working/briefs/2026-11-19-worktrees-outside-dot-claude.md`, F-019).
 - Any other workflow, or the build-loop prompt.
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`.
+
+Dispatched: 1
