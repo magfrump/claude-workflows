@@ -280,9 +280,13 @@ refused() {
         case $k in
             reflog) mv "$c/logs/refs/heads/main" "$BATS_TEST_TMPDIR/out/log"; ln -s "$BATS_TEST_TMPDIR/out/log" "$c/logs/refs/heads/main"; want="logs/refs/heads/main" ;;
             heads) mv "$c/refs/heads" "$BATS_TEST_TMPDIR/out/heads"; ln -s "$BATS_TEST_TMPDIR/out/heads" "$c/refs/heads"; want="refs/heads" ;;
-            fanout) mkdir "$BATS_TEST_TMPDIR/out/ab"; ln -s "$BATS_TEST_TMPDIR/out/ab" "$c/objects/ab"; want="objects/ab" ;;
+            # The fixture may already hold objects/ab (an object hash starting ab
+            # varies with commit times), and ln into a directory links inside it,
+            # so always move the directory out, as reflog and heads do.
+            fanout) mkdir -p "$c/objects/ab"; mv "$c/objects/ab" "$BATS_TEST_TMPDIR/out/ab"; ln -s "$BATS_TEST_TMPDIR/out/ab" "$c/objects/ab"; want="objects/ab" ;;
             packed) git -C "$c/.." pack-refs --all; mv "$c/packed-refs" "$BATS_TEST_TMPDIR/out/p"; ln -s "$BATS_TEST_TMPDIR/out/p" "$c/packed-refs"; want="packed-refs" ;;
         esac
+        [ -L "$c/$want" ] || { echo "$k: setup did not plant a symlink at $want"; false; }
         ls -lR "$BATS_TEST_TMPDIR/out" > "$BATS_TEST_TMPDIR/out.before"
         ans alpha Q-001 x; refused alpha "$want in the git directory is a symlink or leaves it"
         ls -lR "$BATS_TEST_TMPDIR/out" | cmp -s - "$BATS_TEST_TMPDIR/out.before" || { echo "$k: a write landed outside"; false; }
