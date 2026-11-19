@@ -27,7 +27,6 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-308](#q-308--a8-settling-runs) | you: judgment | Run the two larger measurements that would settle the A8 question (the code-review skill's "inlining the sh... | 2026-11-19 |
-| [Q-309](#q-309--merge-gate-2026-11-19-ideas-promotion-ecf9daf1549a) | you: judgment | Merge the dev-cycle change that moves every roadmap Idea carrying harness feedback or an owner report out o... | 2026-11-19 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | One check is left: does a cc-isolated session that leaves a git worktree behind exit cleanly, with one `not... | 2026-09-27 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the ho... | 2026-11-05 |
 | [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there. | 2026-11-18 |
@@ -183,47 +182,3 @@ Run the two larger measurements that would settle the A8 question (the code-revi
 - **Interim:** [2]; nothing runs.
 - **Blocks:** the A8 follow-up item on the roadmap (Next).
 
-### Q-309 · merge-gate-2026-11-19-ideas-promotion-ecf9daf1549a
-**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** OPEN
-
-Merge the dev-cycle change that moves every roadmap Idea carrying harness feedback or an owner report out of Ideas (to Now, or into one question for you), so friction like F-019's permission prompts can no longer sit there unranked?
-
-**If you say no:** the branch stays unmerged; an Idea that carries feedback you or a project reported can still sit in Ideas indefinitely, as F-019 and F-011 did from 2026-11-16 to today.
-
-- **What it is:** brief `docs/working/briefs/2026-11-19-ideas-promotion.md`, from your "Yes do that" today.
-- **Read:** the diff, 171 changed code lines: `git diff main...ecf9daf1549a16f8b97d528e668cc05480ae6feb`; the loop's research doc `docs/working/research-2026-11-19-ideas-promotion.md` (its table of today's 13 such Ideas); the rubric `docs/reviews/code-review-rubric-2026-11-19-fix-dev-cycle-ideas-promotion.md`.
-- **Tip:** ecf9daf1549a16f8b97d528e668cc05480ae6feb (branch fix/dev-cycle-ideas-promotion)
-
-What the loop reports (its words, summarized):
-- **Digest:** section 5 also lists each Idea naming a feedback entry (`F-NNN`; failure-pattern `FP-NNN` IDs do not count) or an owner report ("owner request", "owner report", "owner brainstorm" and similar), with the open entries or watches holding it, or "no open entry or watch names it", or "says parked or dropped" (read only before the item's first `Signal:`).
-- **Skill, step 6:** every iteration, a light pass included, each unheld such Idea moves to Now as agent work; one that needs a call from you goes into one `you: judgment` entry per iteration covering all of them, never one entry per Idea. A parked item is written "parked (Q-NNN [n])" before its `Signal:`, so it is not moved back every iteration. Step 5 tells a brainstorm idea from feedback to name it in that form.
-- **Effect next iteration:** today 13 Ideas carry such a signal; 1 is parked, so about 12 move to Now at once (F-009, F-010, F-006, F-018, F-016, F-007, F-012, herald F-009, the herald triage, owner brainstorm areas A and B, F-002, F-001). Step 8's three build slots pace how fast they are briefed.
-- **Design:** five options weighed (feedback straight into Now, the status quo, a skill-text rule with no digest list, an age threshold); the digest list plus a step 6 rule won clearly (Path A).
-- **Review:** three single-pass reviews by fresh reviewers, not the full k=3 panel; round 1 found the word "dropped" anywhere made an Idea read as parked, round 2 that step 6's own parking did not write "parked"; both fixed with tests; round 3 clean. Won't-fix rows: any `F-NNN` matches, whatever its source (errs toward asking); the one-time move of about 12 Ideas; an Idea with no `Signal:` is read whole.
-- **Gates:** `dev-cycle.bats` 102/102; the health check passed; `migrations.sh check` passes (a new `record-6-ideas-to-now` line, no remedy needed).
-
-The gate's `--check` lines, as printed:
-
-```
-ok docs/working/briefs/2026-11-19-ideas-promotion.md ecf9daf1549a16f8b97d528e668cc05480ae6feb 86e03814eb8dd01c068a746246ec46077cd947a8
-path docs/working/briefs/2026-11-19-ideas-promotion.md A docs/reviews/code-review-rubric-2026-11-19-fix-dev-cycle-ideas-promotion.md
-path docs/working/briefs/2026-11-19-ideas-promotion.md M docs/working/briefs/2026-11-19-ideas-promotion.md
-path docs/working/briefs/2026-11-19-ideas-promotion.md A docs/working/research-2026-11-19-ideas-promotion.md
-path docs/working/briefs/2026-11-19-ideas-promotion.md M scripts/dev-cycle.sh
-path docs/working/briefs/2026-11-19-ideas-promotion.md M scripts/lib/migrations.sh
-path docs/working/briefs/2026-11-19-ideas-promotion.md M skills/dev-cycle/SKILL.md
-path docs/working/briefs/2026-11-19-ideas-promotion.md M test/scripts/dev-cycle.bats
-rubric docs/working/briefs/2026-11-19-ideas-promotion.md: clean docs/reviews/code-review-rubric-2026-11-19-fix-dev-cycle-ideas-promotion.md: 0 red and 3 amber rows, none open
-```
-
-- `scripts/dev-cycle.sh`, `scripts/lib/migrations.sh` and `skills/dev-cycle/SKILL.md` are gate code: they run from the next image release, not on merge.
-
-**What an attacker would want here:** a stranger's text copied into the roadmap (an issue title in an Idea) shaped to read as "owner request" or a feedback ID, so the cycle moves it to Now and briefs a loop on it. The move only makes it agent work that step 8 briefs from the repo's own text, which every brief already treats as evidence, not instructions; it adds no new input source.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] merge** | The gate merges tip ecf9daf1; with the next release, about 12 Ideas move to Now and are briefed three at a time | Reading the diff, 171 code lines | A wrong Idea is briefed; its merge question still comes to you, and one `git revert` undoes the rule |
-| **[2] drop** | The brief closes; Ideas stay as they are | None | Reported friction can sit in Ideas again |
-| **[3] changes needed** | Your note goes back to the loop (dispatch 2 of 4), for example to run the full k=3 review panel first | Writing the note | Another loop run |
-
-- **Interim:** unmerged.
