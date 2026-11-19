@@ -63,6 +63,16 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
+- **Agent: A8 follow-ups: the cache probe and closing rubric row A8** (filed 2026-11-19,
+  from the A8 results). Motive: the measurement (358c2332) found no agent got the shared
+  review block from the prompt cache, inferred from the request records (cache breakpoints
+  sit after the per-agent part). First step: the results doc's two-agent cache probe (same
+  shared block, dispatched one after the other, read each agent's cache-read count); if the
+  layout is the cause, brief a fix to `skills/code-review/SKILL.md`'s prompt order. Then
+  rubric row A8 in `docs/reviews/code-review-rubric-2026-08-07-main.md` gets its closing
+  note (a review file the cycle does not write: a loop's change). The two larger settling
+  runs wait on Q-308. Briefed: `docs/working/briefs/2026-11-19-a8-cache-probe.md`.
+
 - **Agent: an Idea that carries owner-reported friction never leaves Ideas** (filed
   2026-11-19, in session). Motive: philosophy-research F-019 (permission asks on every write
   under the worktrees) and F-011 (a subagent's report write refused) were ingested
@@ -82,17 +92,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   `docs/working/briefs/2026-11-19-worktrees-outside-dot-claude.md` (divergent design over
   where they live, then build; the brief also says a brief write and its dependent
   commands go in separate responses).
-
-- **parallel-worktrees: a subagent returns its report as text** (brainstorm 2026-11-16;
-  moved from Ideas 2026-11-19 on the owner's request). Signal: philosophy-research F-011 and
-  belegarth-herald F-010, the Write tool refusing a subagent's report file in two projects.
-  Briefed: `docs/working/briefs/2026-11-19-subagent-report-as-text.md`.
-
-- **A8 post-restructure token measurement** (Next 1 until 2026-11-19; go-ahead Q-304 [1],
-  the owner in session: "yes, run it now"). Briefed: `docs/working/briefs/2026-11-19-a8-token-measurement.md`
-  (one canon cell, a terminal pass, tokens per the provenance convention; the review k and
-  lite re-evaluation stay deferred). Motive: rubric row A8 in
-  `docs/reviews/code-review-rubric-2026-08-07-main.md` rests on a projection.
 
 ## Next
 
@@ -463,6 +462,13 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- **A8 post-restructure token measurement** (Q-304 [1]). Done 358c2332 (approved merge, Q-306 [1]),
+  brief `docs/working/briefs/closed/2026-11-19-a8-token-measurement.md`, results
+  `runs/review-arms/a8-2026-11-19/results.md`: one terminal pass on csp, 852,285 tokens over 9
+  agents; no agent got the shared review block from the prompt cache, so the skill's "free"
+  claim (rubric row A8) fails on its benefit; net cost and recall effect unmeasured.
+- **parallel-worktrees: a subagent returns its report as text** (F-011). Done f8453f26
+  (approved merge, Q-307 [1]), brief `docs/working/briefs/closed/2026-11-19-subagent-report-as-text.md`.
 - **Agent: dev-cycle section 5 follow-ups (R5, A11)** (filed 2026-11-18). Done 24af50da
   (approved merge, Q-305 [1]), brief `docs/working/briefs/closed/2026-11-18-section5-followups.md`,
   research `docs/working/research-2026-11-18-section5-followups.md`: a `watching.md` with no

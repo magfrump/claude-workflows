@@ -26,6 +26,7 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
+| [Q-308](#q-308--a8-settling-runs) | you: judgment | Run the two larger measurements that would settle the A8 question (the code-review skill's "inlining the sh... | 2026-11-19 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | One check is left: does a cc-isolated session that leaves a git worktree behind exit cleanly, with one `not... | 2026-09-27 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the ho... | 2026-11-05 |
 | [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there. | 2026-11-18 |
@@ -136,22 +137,24 @@ Install the release that carries main's new dev-cycle gate code: run the one pas
 
 **If you say no:** sessions keep running the image built from a4c856bf, so the dev cycle keeps its old step 6: the new roadmap check (every Now and Next item shown with what holds it, and finished or parked items moved) does not run, and the audience-profiles and reader-testing v2 skills stay at their old text in sessions.
 
-- **C (the image's commit):** a4c856bf7cb595f6eab4923db117827ebb833cb4 · **M (main's commit):** 24af50da1f2d2805e762a841c5dc20787335bf10
+- **C (the image's commit):** a4c856bf7cb595f6eab4923db117827ebb833cb4 · **M (main's commit):** f8453f26ae8504ac62e33244bbe98cb7540b8075
 - **Merged without your review:**
   - 5a4d2fda Merge branch 'fix/board-fanout-flaky' (build-loop self-merge): a 6-line fix to one test's setup in `test/scripts/board.bats` (the flaky fanout case), with its research doc; no code-review rubric, the loop reviewed it itself.
   - a61f9a17 Merge branch 'docs/rewrite-q278' (build-loop self-merge): docs only (a closed brief and a research doc).
 - **What changes for you:**
+  - f8453f26 (you approved it, Q-307 [1]): `workflows/parallel-worktrees.md` has a subagent return a report as text for the parent to write, instead of writing a file Claude Code refuses.
+  - 358c2332 (you approved it, Q-306 [1]): the A8 measurement's results, under `runs/` and `docs/` (the image carries neither).
   - 24af50da (you approved it, Q-305 [1]): the roadmap check's split-off fixes: a repo with a `watching.md` but no `questions.md` now reads as not checked, long titles are cut without splitting a character, and two tests now fail when they should.
   - 22735b6e: the dev-cycle digest's section 5 lists each roadmap Now and Next item with the open questions or watches that hold it, and step 6 moves finished or parked items every iteration, light passes too (your request in session today; rubric `docs/reviews/code-review-rubric-2026-11-18-fix-dev-cycle-roadmap-staleness.md`).
   - 386ccfa3, ded17c89: the audience-profiles and reader-testing skills' v2 and the lessons from O20's real session (merged by hand).
-  - The routine rest: 11 dev-cycle lands and 7 docs commits.
-- **Full list:** `git -c log.showSignature=false log --first-parent --format='%h %s' a4c856bf7cb595f6eab4923db117827ebb833cb4..24af50da1f2d2805e762a841c5dc20787335bf10`
-- **Paths changed outside `docs/` (35 under `docs/` too, which the image does not carry):** `scripts/dev-cycle.sh`, `scripts/lib/migrations.sh`, `skills/audience-profiles/SKILL.md`, `skills/audience-profiles/references/profile-template.md`, `skills/dev-cycle/SKILL.md`, `skills/reader-testing/SKILL.md`, `skills/reader-testing/references/grader-brief.md`, `skills/reader-testing/references/reader-brief.md`, `skills/reader-testing/references/run-templates.md`, `test/scripts/board.bats`, `test/scripts/dev-cycle.bats`
+  - The routine rest: 19 dev-cycle lands and 7 docs commits.
+- **Full list:** `git -c log.showSignature=false log --first-parent --format='%h %s' a4c856bf7cb595f6eab4923db117827ebb833cb4..f8453f26ae8504ac62e33244bbe98cb7540b8075`
+- **Paths changed outside `docs/` and `runs/` (47 under `docs/` and 36 under `runs/` too, which the image does not carry):** `scripts/dev-cycle.sh`, `scripts/lib/migrations.sh`, `skills/audience-profiles/SKILL.md`, `skills/audience-profiles/references/profile-template.md`, `skills/dev-cycle/SKILL.md`, `skills/reader-testing/SKILL.md`, `skills/reader-testing/references/grader-brief.md`, `skills/reader-testing/references/reader-brief.md`, `skills/reader-testing/references/run-templates.md`, `test/scripts/board.bats`, `test/scripts/dev-cycle.bats`, `workflows/parallel-worktrees.md`
 
 Run this on the host, in your claude-workflows checkout at main's tip, then start a new sandbox session:
 
 ```
-sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "24af50da1f2d2805e762a841c5dc20787335bf10:$p")"; then n=$((n+1)); else echo "release refused: $p changed after 24af50da1f2d2805e762a841c5dc20787335bf10: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
+sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "f8453f26ae8504ac62e33244bbe98cb7540b8075:$p")"; then n=$((n+1)); else echo "release refused: $p changed after f8453f26ae8504ac62e33244bbe98cb7540b8075: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
 ```
 
 **Pass:** the installer finishes without a `release refused` line. **Send back:** `Q-303: done`, and, if the install re-blessed (its output has a `Verified live:` line), that line, the `Next:` line under it and `cc-isolated --list`'s `Blessed config` line, before you run any probe: watch Q-167 (post-install-host-probes) waits on exactly those lines.
@@ -159,3 +162,22 @@ sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git r
 - **Interim:** the image's gate (a4c856bf) runs; nothing breaks.
 
 
+
+### Q-308 · a8-settling-runs
+**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** OPEN
+
+Run the two larger measurements that would settle the A8 question (the code-review skill's "inlining the shared context is free" claim): a self-read control pass on the csp cell and a pass on the larger corpus cell?
+
+**If you say no:** A8's verdict stays "fails on its benefit, net cost unmeasured", as the merged results (`runs/review-arms/a8-2026-11-19/results.md`) say; the cheap cache probe (a roadmap agent item, no ask) still runs.
+
+- **Why it's yours:** each is a full review pass of new compute, and your go-ahead (Q-304 [1]) covered one cell only.
+- **Read:** the results doc's last section ("Three things would tell"); the pass just run cost 852,285 tokens on csp, and corpus cost about 616k at k=1 in the 2026-08-06 baseline.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Run both now** | Two loops: csp with agents reading the files themselves, and corpus inline as today | Quota for two full passes, roughly 2M tokens | Measures a cache layout the probe may show is about to change |
+| **[2] After the cache fix** | Run them once the cache probe has said whether the prompt layout can be fixed, and any fix has merged; the cycle asks again then | None now | A8 stays unsettled a while longer |
+| **[3] Don't run them** | Close A8 on today's verdict | None | The inline cost and recall effect stay unknown |
+
+- **Interim:** [2]; nothing runs.
+- **Blocks:** the A8 follow-up item on the roadmap (Next).
