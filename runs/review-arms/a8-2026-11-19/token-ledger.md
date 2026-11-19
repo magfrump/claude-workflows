@@ -1,8 +1,8 @@
 # A8 token ledger (csp, one terminal pass, today's code-review skill)
 
-Tokens = `total_tokens` from each Agent task notification (same instrument as E1/E3 and the
-2026-08-06 baseline). One row per dispatched agent, appended when its notification arrived
-(review-canon.md §3). Shared block: `csp/shared-block.md`, 8,755 bytes ≈ 2,189 tokens (chars/4),
+Tokens = `subagent_tokens` from each Agent task notification (the field the 2026-08-06
+baseline and E1/E3 report; I assume the same harness definition). One row per dispatched agent, appended when its notification arrived
+(review-canon.md §3). Shared block: `csp/shared-block.md`, 8,755 bytes ≈ 2,189 tokens (bytes/4),
 delivery mode `inline`.
 
 | # | Stage | Agent | Model | tokens | tool_uses | duration | outcome |
@@ -23,4 +23,5 @@ delivery mode `inline`.
 
 Instrument check: for every agent, the notified figure equals its transcript's last API call
 (input + cache_creation + cache_read + output). First-call cache read was 18,900 tokens on all
-9 agents: system prompt and tools only, never the inlined shared block.
+9 agents: system prompt and tools only; no agent read the inlined shared block from another
+agent's cache (each re-reads its own prefix from its second call on).

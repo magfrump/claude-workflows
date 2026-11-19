@@ -21,7 +21,7 @@ cell under today's skill answers part of that.
   and is NOT in the 359k per-cell figure, but is in the 2.99M canon total.
 - Baseline delivery was self-read: critics got a scope spec and read the diff and files
   with tools (levers-3-4 doc: shared prefix ~330 tokens).
-- Today's skill (`skills/code-review/SKILL.md`, last changed 82accdd7, 2026-11-14) inlines
+- Today's skill (`skills/code-review/SKILL.md`, last changed 44724747; 82accdd7, 2026-11-14, its child, touched only `references/rubric.md`) inlines
   diff + enclosing files as a byte-identical shared prefix within a 25k-token budget,
   runs k=3 fact-check on a terminal pass, and adds Stage 2.5 (submitted-claims fact-check)
   when critics route endorsement claims; Stage 2.5 did not exist on 2026-08-06.
@@ -37,7 +37,7 @@ cell under today's skill answers part of that.
 2. One terminal pass (no `--loop-pass`): k=3 fact-check (opus), Stage 1.5 gating, the gated
    critic panel (opus), Stage 2.5 if routed claims exist, Stage 3 synthesis inline by the
    orchestrator (as the baseline did; not part of the core total).
-3. Tokens: the `total_tokens` each Agent task notification reports, appended to
+3. Tokens: the `subagent_tokens` each Agent task notification reports, appended to
    `runs/review-arms/a8-2026-11-19/token-ledger.md` as each arrives, and registered in
    `manifest.json` (review-canon.md §3 convention, incl. the 2026-08-18 amendment).
 4. Comparison split three ways so the k=3 change is not read as lever #3's effect:
@@ -53,7 +53,7 @@ cell under today's skill answers part of that.
   ran it later as a gap-fix.
 - Skill text delivery: each agent's prompt opens with the byte-identical shared block and
   its per-agent tail tells it to read its own skill file by absolute path, instead of my
-  pasting ~25-34 KB of skill text into each prompt. The skill text enters each agent's
+  pasting 14.5-34 KB of skill text into each prompt. The skill text enters each agent's
   context either way (prompt vs first tool result), so the token count differs by a tool
   call's overhead (a few hundred tokens), and the shared block, the thing A8 is about,
   stays the cacheable first part of every prompt. Recorded as a deviation.
@@ -72,7 +72,7 @@ cell under today's skill answers part of that.
 - Skill-text delivery: three options (paste verbatim, read-by-path in the tail, inline
   everything into a file the agent reads). Path A: read-by-path in the tail. Pasting is
   the skill's literal instruction but costs ~60k orchestrator output tokens and risks
-  transcription drift over 190 KB; reading the whole prompt from a file would remove the
+  transcription drift over ~250 KB across the 9 prompts; reading the whole prompt from a file would remove the
   inline shared prefix that A8 measures. Read-by-path keeps the prefix and the content.
 - ui-visual: not selected, same as the baseline (the layout.tsx hunks are header/nonce
   plumbing; the className line is unchanged context).
@@ -92,7 +92,9 @@ Failure-pattern grep: FP-071, FP-108, FP-110
   last API call's input + cache-creation + cache-read + output. It is a final-context figure,
   not a sum over calls. I assume the baseline's figures came from the same field.
 - Every agent's first call read 18,900 cached tokens (system + tools) and wrote 32.8k-33.8k
-  fresh, so the inlined shared block was never served from cache (results §2).
+  fresh, so no agent read the inlined shared block from another agent's cache; the first
+  request's breakpoints are `system[0]`, `system[1]` and the end of the first user turn
+  (results §2).
 - Fact-check replicate r3 found a pre-installed `node_modules` for this exact commit at
   `/workspace/external/cc-review-eval/mfc-csp` and ran `next build`/`next start` in its own
   copy; the Stage 2.5 agent reused that copy. The baseline had no executed verdicts. The copy
