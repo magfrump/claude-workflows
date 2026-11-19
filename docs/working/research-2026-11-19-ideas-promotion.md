@@ -4,7 +4,7 @@ Brief: `docs/working/briefs/2026-11-19-ideas-promotion.md` (read from 610130f5).
 Branch: `fix/dev-cycle-ideas-promotion`. Workflow: research-plan-implement, no plan gate.
 
 - Failure-pattern grep: `rg -n -i 'ideas|roadmap|unranked|promot|grep -c|pipefail|ifs|empty field' docs/failure-patterns.md` -> FP-176 (brainstorm trigger denominator), FP-184 (section 5 read as nothing open when the questions files were not read), FP-129, FP-175 and FP-182 (`grep` exit 1 under `pipefail`/`set -e`), FP-144 (IFS splitting). FP-184 shaped the NOT-checked case below; FP-129/182 caught a first draft that counted records with `grep -c` (exit 1 on zero matches would have ended the digest under `set -euo pipefail`), replaced with a bash loop before any commit.
-- Failure-pattern skip: the one fix(...) commit is review round 1's narrowing of a new match (a word read anywhere in an item, before it ever ran in a cycle), a one-line obvious fix with no reusable cause; the `grep -c` near-miss never landed and is FP-129/FP-182's shape.
+- Failure-pattern skip: the two fix(...) commits are review rounds 1 and 2 narrowing a new match before it ever ran in a cycle (a word read anywhere in an item; a parking shape the skill did not yet write), one-line obvious fixes with no reusable cause; the `grep -c` near-miss never landed and is FP-129/FP-182's shape.
 
 ## What the code does today (acceptance criterion 1)
 

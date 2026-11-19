@@ -1,8 +1,8 @@
-Commit: d0fbf078
+Commit: 329d48ce
 
 # Code Review Rubric
 
-**Scope:** fix/dev-cycle-ideas-promotion vs main at 610130f5 (full branch) | **Reviewed:** 2026-11-19 | **Status: 🟡 IN PROGRESS** — iteration 1 found 0 red, 2 amber, 4 green (fixed in d0fbf078); iteration 2 found 0 red, 1 amber, 2 green (fixed in the next commit)
+**Scope:** fix/dev-cycle-ideas-promotion vs main at 610130f5 (full branch) | **Reviewed:** 2026-11-19 | **Status: 🟢 PASS** — iteration 1 found 0 red, 2 amber, 4 green (fixed in d0fbf078); iteration 2 found 0 red, 1 amber, 2 green (fixed in 329d48ce); iteration 3 (final confirming pass, full branch) found 0 red, 0 amber, 1 green (C7, fixed) and confirmed every Fixed row
 
 Iterations 1 and 2: a fresh reviewer each, iteration 2 on the full branch with the rubric checked row by row (102/102 bats). Iteration 1: one fresh reviewer, single pass (k=1 loop pass), no sub-critic panel (the reviewer read the 5-file diff itself, ran the 16 section-5 bats cases, `migrations.sh check`, the digest on the real roadmap and a hermetic probe repo). Override log: row 170 (section 5 reads `questions.sh open`'s columns, Won't-Fix) touches the reused holds path, unchanged here; no other override matched.
 
@@ -30,6 +30,7 @@ None.
 | C3 | The first run moves about 12 Ideas to Now at once. | reviewer | Won't-Fix: one-time, recorded on the `6.` line; step 8's slots pace the briefs (research doc) |
 | C5 | Iteration 2: an Idea with no `Signal:` label is read whole for parked or dropped. | reviewer r2 | Won't-Fix: the Ideas shapes always carry a signal (80 of 81 today); the comment says so |
 | C6 | Iteration 2: a curly apostrophe ("owner’s report") was not matched under the C locale. | reviewer r2 | Fixed: the pattern takes `'` or U+2019; test "Curly" |
+| C7 | Iteration 3: the section 5 header comment still said only the first Now and Next headings count. | reviewer r3 | Fixed in the final commit |
 | C4 | No test had parked or dropped inside signal prose. | reviewer | Fixed with A1 |
 
 ## ⏭️ Skipped Core Critics

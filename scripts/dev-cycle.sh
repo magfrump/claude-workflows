@@ -475,7 +475,7 @@ if inrepo docs/roadmap.md; then
   # entry marked ANSWERED but not archived yet (step 1 archives after this
   # digest runs) is left out here too. An item is its column-0 line and the
   # indented lines under it; a column-0 line that is no item (prose, a ###
-  # heading) ends it. Only the first Now and the first Next heading count, as
+  # heading) ends it. Only the first Now, Next and Ideas heading count, as
   # in section 7. Each line prints the verdict before the item's title, the
   # title quoted, so a title cannot stand where step 6 reads the verdict.
   # One record per item: SECTION, N, TITLE (its first bold span, else its
