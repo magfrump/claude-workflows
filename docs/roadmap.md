@@ -61,6 +61,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   is the owner's: Q-302. First step after the answer: compare its gaps and causes with this
   repo's, and file any cause the fixes here do not cover.
 
+## In flight
+
 - **Agent: dev-cycle section 5 follow-ups (R5, A11)** (filed 2026-11-18, split from
   `fix/dev-cycle-roadmap-staleness` at the review cap on the owner's answer "Split R5
   off"). Motive: the digest's new section 5 list
@@ -71,7 +73,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   92's Next half cannot fail; the plan and research docs' stale lines). First step: in
   section 3's no-questions-file branch, leave `open_ok` unset when `watching.md` exists,
   so section 5 prints its NOT-checked line; add the test; then A11. Gate code: a review
-  merge, then the next release.
+  merge, then the next release. Briefed 2026-11-18: `docs/working/briefs/2026-11-18-section5-followups.md`.
 
 - **Agent: flaky board test, the fanout case** (filed 2026-11-18, from the health check
   before `fix/dev-cycle-roadmap-staleness` merged). Motive: `test/scripts/board.bats`'s
@@ -80,13 +82,12 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   [inferred]: when the fixture repo already has an `objects/ab` directory (an object
   whose hash starts `ab`, which varies with commit timestamps), `ln -s … "$c/objects/ab"`
   makes the link inside it, so nothing is planted. First step: confirm by forcing an
-  `ab` object, then plant the link at a fan-out name the repo does not hold.
-
-## In flight
+  `ab` object, then plant the link at a fan-out name the repo does not hold. Briefed
+  2026-11-18: `docs/working/briefs/2026-11-18-board-fanout-flaky.md`.
 
 ## Next
 
-1. **A8 post-restructure token measurement.** Motive: the user deferred big compute until
+1. **A8 post-restructure token measurement** (go-ahead asked in Q-304). Motive: the user deferred big compute until
    code and prompts settle; it validates code-review lever #3 (rubric row A8 in
    `docs/reviews/code-review-rubric-2026-08-07-main.md`). First step: confirm
    settlement (no open code-review SKILL changes), then re-run one canon cell. The
@@ -170,6 +171,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   2026-11-18 (iteration 2026-11-19-0300): step 4b fired on two new skills, `skills/audience-profiles/`
   and `skills/reader-testing/` (900 lines, merged 44000c6d and 386ccfa3 by hand); the same sample takes
   them, with one question added: do their lessons, each resting on one real session, hold on a second?
+  2026-11-18 (iteration 2026-11-19-0717): step 4b fired on `skills/dev-cycle/SKILL.md` as
+  22735b6e changed it (step 6's check of roadmap items no open entry or watch names); the same
+  sample takes it.
 - **Record out-of-cycle session answers through `--answered`.** Signal: 4306aa88 (the owner's
   Q-281..284 answers, recorded on a hand branch) read as `other` in `--main-log`, making
   iteration 2026-11-13-2237 a full cycle with a health run.

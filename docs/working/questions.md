@@ -26,9 +26,11 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
+| [Q-304](#q-304--a8-go-ahead) | you: judgment | Should the A8 token measurement (re-running one code-review benchmark cell to measure what the review restr... | 2026-11-18 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | One check is left: does a cc-isolated session that leaves a git worktree behind exit cleanly, with one `not... | 2026-09-27 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the ho... | 2026-11-05 |
 | [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there. | 2026-11-18 |
+| [Q-303](#q-303--image-lag) | you: terminal | Install the release that carries main's new dev-cycle gate code: run the one paste below on the host. | 2026-11-18 |
 <!-- index:end -->
 
 ## Open
@@ -127,3 +129,51 @@ Output, in chat (write no files):
 
 - **Interim:** nothing is built from the audit for other repos; the fixes merged here cover this repo's causes only.
 - **If the answer differs:** a cause the fixes here don't cover becomes a roadmap item here (the gate and rules are shared), and anything specific to Behemoth Arsenal is for a session in that repo.
+
+### Q-303 · image-lag
+**Needs:** you: terminal · **Opened:** 2026-11-18 · **Status:** OPEN
+
+Install the release that carries main's new dev-cycle gate code: run the one paste below on the host.
+
+**If you say no:** sessions keep running the image built from a4c856bf, so the dev cycle keeps its old step 6: the new roadmap check (every Now and Next item shown with what holds it, and finished or parked items moved) does not run, and the audience-profiles and reader-testing v2 skills stay at their old text in sessions.
+
+- **C (the image's commit):** a4c856bf7cb595f6eab4923db117827ebb833cb4 · **M (main's commit):** 22735b6ee051a3653f47811aae63c8ebc1c66551
+- **Merged without your review:**
+  - a61f9a17 Merge branch 'docs/rewrite-q278' (build-loop self-merge): docs only (a closed brief and a research doc).
+- **What changes for you:**
+  - 22735b6e: the dev-cycle digest's section 5 lists each roadmap Now and Next item with the open questions or watches that hold it, and step 6 moves finished or parked items every iteration, light passes too (your request in session today; rubric `docs/reviews/code-review-rubric-2026-11-18-fix-dev-cycle-roadmap-staleness.md`).
+  - 386ccfa3, ded17c89: the audience-profiles and reader-testing skills' v2 and the lessons from O20's real session (merged by hand).
+  - The routine rest: 7 dev-cycle lands and 7 docs commits.
+- **Full list:** `git -c log.showSignature=false log --first-parent --format='%h %s' a4c856bf7cb595f6eab4923db117827ebb833cb4..22735b6ee051a3653f47811aae63c8ebc1c66551`
+- **Paths changed outside `docs/` (28 under `docs/` too, which the image does not carry):** `scripts/dev-cycle.sh`, `scripts/lib/migrations.sh`, `skills/audience-profiles/SKILL.md`, `skills/audience-profiles/references/profile-template.md`, `skills/dev-cycle/SKILL.md`, `skills/reader-testing/SKILL.md`, `skills/reader-testing/references/grader-brief.md`, `skills/reader-testing/references/reader-brief.md`, `skills/reader-testing/references/run-templates.md`, `test/scripts/dev-cycle.bats`
+
+Run this on the host, in your claude-workflows checkout at main's tip, then start a new sandbox session:
+
+```
+sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "22735b6ee051a3653f47811aae63c8ebc1c66551:$p")"; then n=$((n+1)); else echo "release refused: $p changed after 22735b6ee051a3653f47811aae63c8ebc1c66551: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
+```
+
+**Pass:** the installer finishes without a `release refused` line. **Send back:** `Q-303: done`, and, if the install re-blessed (its output has a `Verified live:` line), that line, the `Next:` line under it and `cc-isolated --list`'s `Blessed config` line, before you run any probe: watch Q-167 (post-install-host-probes) waits on exactly those lines.
+
+- **Interim:** the image's gate (a4c856bf) runs; nothing breaks.
+
+### Q-304 · a8-go-ahead
+**Needs:** you: judgment · **Opened:** 2026-11-18 · **Status:** OPEN
+
+Should the A8 token measurement (re-running one code-review benchmark cell to measure what the review restructure saves) run now, or keep waiting?
+
+**If you say no:** it stays in the roadmap's Next, unrun, as it has since 2026-08-07; nothing else waits on it.
+
+- **Why it's yours:** you asked for no big compute until the code and prompts settle, and to be asked before it runs (and before re-evaluating review k and the lite review under the current model).
+- **Read:** the roadmap's Next item 1 (`docs/roadmap.md`); rubric row A8 in `docs/reviews/code-review-rubric-2026-08-07-main.md` (the lever it validates).
+- The code-review skill last changed on 2026-11-14 (21097afa, the review rules you approved in Q-293).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Run one cell now** | A loop re-runs one canon cell under today's code-review skill and records the tokens against the 2026-08-06 baseline | About one review pass of quota, near 1M tokens by E1's measure | A later skill change makes the number stale, and it is run again |
+| **[2] Wait for a quiet stretch** | Run it once the code-review skill has gone two weeks unchanged (from 2026-11-14, that is 2026-11-28 at the earliest); the cycle asks again then | None now | The lever stays unmeasured a while longer |
+| **[3] Drop it** | Take A8 off the roadmap; the lever stays unmeasured | None | Lever #3's saving is never confirmed |
+
+- **Blocks:** roadmap Next item 1 (A8).
+- **Interim:** [2]; nothing runs.
+- **If the answer differs:** [1] is briefed next iteration; [3] moves the item to Ideas with this answer.
