@@ -325,7 +325,7 @@ the iteration with no record, so the next one starts from the same `Main at:`:
 reads the window start, triggers, questions, roadmap and idea log from that working tree. Keep
 its output. It is read-only. Its sections feed the steps: 1 activity (context), 2 triggers
 (step 2), 3 watched questions (step 3), 4 spot-check sample and 6 merges with code but no
-docs (step 4), 5 roadmap (step 6), 7 inputs (steps 4b and 5), 7b pending migrations (step
+docs (step 4), 5 roadmap (steps 6 and 8), 7 inputs (steps 4b and 5), 7b pending migrations (step
 1b), 8 skipped inputs (the record's `### Skipped inputs`). If the digest says the repo has no
 `docs/working/questions.md`, step 1 creates it unless section 8 blocks the path. Then check the Window line, in this order:
 
@@ -510,7 +510,8 @@ waits for the next digest.
   most 3 per cycle, oldest first, and move it to Done; otherwise it stays with a note on why
   it is stuck, and only one stuck on a choice becomes `you: judgment`. Newer items are listed
   and may be left. Legacy `agent` entries in `questions.md` go to the roadmap through step
-  1b's `migrate` and step 6.
+  1b's `migrate` and step 6. Every other Now item is checked in step 6, which a light
+  pass runs too.
 - If the digest prints "Watched questions were NOT checked" (with the cause: a skipped
   questions file, archive or `watching.md`, questions.sh missing, or `questions.sh open` failing), fix or
   report that first (never reading, copying or rewriting through a skipped path); the section
@@ -615,10 +616,27 @@ docs/working/questions.md, and the cycle's watches in docs/working/watching.md.
      matter.
 - **Next**: at most five items, ranked. Each names its motive and its first concrete step. An
   item that is an open question points at its `Q-NNN` rather than restating it.
-- **Ideas**: surviving brainstorm items, unranked, each with its signal, and dropped items,
-  each with its reason and brief.
+- **Ideas**: surviving brainstorm items, unranked, each with its signal; dropped items,
+  each with its reason and brief; and parked items, each with the owner answer that parked
+  it and what brings it back.
 - **Done**: items finished since the last cycle, each with the commit `--check-brief`
   printed (agent work done in-cycle: the iteration's branch name).
+- **Items nothing open holds.** The digest's section 5 lists each Now and Next item with the
+  open entries and watches it names. Every iteration, a light pass included, reads that list
+  and acts on each item it shows as "no open entry or watch names it", and on each whose
+  only open ID it names in passing (history, not its hold):
+  - finished (its last step merged or ran, or its hold was answered and nothing follows):
+    → Done, with the commit or answer that finished it;
+  - stopped or parked by an owner answer (build nothing, not now, wait for X): → Ideas,
+    with that answer's ID as its reason and what brings it back;
+  - held by something outside the questions files (a date, a running trial, another
+    repo's result, a host run): it stays, and the record's `6.` line names that hold for
+    this item;
+  - held by an owner call no entry asks: file the entry this iteration (step 8's rule:
+    a call no entry asks holds nothing).
+  A Done line that records one part of a Now or Next item (a unit merged, a run done)
+  is written in the same edit that updates that item's text, so the item never names a
+  finished part as still to come.
 - `docs/working/roadmap-from-questions.md` on main (left by an earlier iteration's step 1b
   `questions.sh migrate`): fold each entry into Now as agent work, its `Q-NNN` kept in the
   title, then `git rm` the file. One this iteration's migrate wrote waits for the next:
@@ -768,7 +786,9 @@ holds only that step: brief the code, its acceptance criteria naming the host st
 one `you: terminal` entry once it merges. A queue left under its slots is explained on the
 record's `8.` line, in one plain clause: why each free slot stayed free, naming each held
 item and its hold, not a category (`D12 doc item: rides a review unit; source_lines_ok:
-Q-278`, say), so the next iteration can check it.
+Q-278`, say), so the next iteration can check it. The holds come from the digest's
+section 5 list and step 6's `6.` line, never from the last record's `8.` line: a hold
+copied forward outlives what it names.
 For each, write `docs/working/briefs/YYYY-MM-DD-<slug>.md`, where the slug is lowercase
 letters, digits and hyphens only (a file name no brief has used before, in `briefs/` or
 `briefs/closed/`, nor by a brief this cycle has written: `--check-brief` prints `new` for
@@ -835,7 +855,7 @@ Model: <the model id running this cycle>
 4. spot-check: <what was checked / skipped: light pass (REASON)>
 4b. deep-audit check: <none fired / task filed: trigger / skipped: light pass (REASON)>
 5. brainstorm: <ran: trigger / not due>
-6. roadmap: <done>
+6. roadmap: <done; moved to Done or Ideas: ITEMS (why) / none; items no open entry names: each with its hold>
 7. collect: <per brief: STEM LOOP TIP, and what was done>
 8. briefs: <written this iteration, or none>; queue <k>/<slots> (<full: no new briefs / under: why each free slot stayed free>)
 9. land: <NEW, written with the 10. line before step 10's land>
