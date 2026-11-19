@@ -27,6 +27,7 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-304](#q-304--a8-go-ahead) | you: judgment | Should the A8 token measurement (re-running one code-review benchmark cell to measure what the review restr... | 2026-11-18 |
+| [Q-305](#q-305--merge-gate-2026-11-18-section5-followups-4ada2cedec7c) | you: judgment | Merge the build loop's fix for the roadmap check's split-off items (R5 and A11) into main? It changes dev-c... | 2026-11-18 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | One check is left: does a cc-isolated session that leaves a git worktree behind exit cleanly, with one `not... | 2026-09-27 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the ho... | 2026-11-05 |
 | [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there. | 2026-11-18 |
@@ -137,21 +138,21 @@ Install the release that carries main's new dev-cycle gate code: run the one pas
 
 **If you say no:** sessions keep running the image built from a4c856bf, so the dev cycle keeps its old step 6: the new roadmap check (every Now and Next item shown with what holds it, and finished or parked items moved) does not run, and the audience-profiles and reader-testing v2 skills stay at their old text in sessions.
 
-- **C (the image's commit):** a4c856bf7cb595f6eab4923db117827ebb833cb4 · **M (main's commit):** 5a4d2fda492828ed496fa36797dd40f98b91143c
+- **C (the image's commit):** a4c856bf7cb595f6eab4923db117827ebb833cb4 · **M (main's commit):** a977276dcfa95d2a56aca7ec9a4828f979ac1a85
 - **Merged without your review:**
   - 5a4d2fda Merge branch 'fix/board-fanout-flaky' (build-loop self-merge): a 6-line fix to one test's setup in `test/scripts/board.bats` (the flaky fanout case), with its research doc; no code-review rubric, the loop reviewed it itself.
   - a61f9a17 Merge branch 'docs/rewrite-q278' (build-loop self-merge): docs only (a closed brief and a research doc).
 - **What changes for you:**
   - 22735b6e: the dev-cycle digest's section 5 lists each roadmap Now and Next item with the open questions or watches that hold it, and step 6 moves finished or parked items every iteration, light passes too (your request in session today; rubric `docs/reviews/code-review-rubric-2026-11-18-fix-dev-cycle-roadmap-staleness.md`).
   - 386ccfa3, ded17c89: the audience-profiles and reader-testing skills' v2 and the lessons from O20's real session (merged by hand).
-  - The routine rest: 8 dev-cycle lands and 7 docs commits.
-- **Full list:** `git -c log.showSignature=false log --first-parent --format='%h %s' a4c856bf7cb595f6eab4923db117827ebb833cb4..5a4d2fda492828ed496fa36797dd40f98b91143c`
+  - The routine rest: 9 dev-cycle lands and 7 docs commits.
+- **Full list:** `git -c log.showSignature=false log --first-parent --format='%h %s' a4c856bf7cb595f6eab4923db117827ebb833cb4..a977276dcfa95d2a56aca7ec9a4828f979ac1a85`
 - **Paths changed outside `docs/` (31 under `docs/` too, which the image does not carry):** `scripts/dev-cycle.sh`, `scripts/lib/migrations.sh`, `skills/audience-profiles/SKILL.md`, `skills/audience-profiles/references/profile-template.md`, `skills/dev-cycle/SKILL.md`, `skills/reader-testing/SKILL.md`, `skills/reader-testing/references/grader-brief.md`, `skills/reader-testing/references/reader-brief.md`, `skills/reader-testing/references/run-templates.md`, `test/scripts/board.bats`, `test/scripts/dev-cycle.bats`
 
 Run this on the host, in your claude-workflows checkout at main's tip, then start a new sandbox session:
 
 ```
-sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "5a4d2fda492828ed496fa36797dd40f98b91143c:$p")"; then n=$((n+1)); else echo "release refused: $p changed after 5a4d2fda492828ed496fa36797dd40f98b91143c: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
+sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "a977276dcfa95d2a56aca7ec9a4828f979ac1a85:$p")"; then n=$((n+1)); else echo "release refused: $p changed after a977276dcfa95d2a56aca7ec9a4828f979ac1a85: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
 ```
 
 **Pass:** the installer finishes without a `release refused` line. **Send back:** `Q-303: done`, and, if the install re-blessed (its output has a `Verified live:` line), that line, the `Next:` line under it and `cc-isolated --list`'s `Blessed config` line, before you run any probe: watch Q-167 (post-install-host-probes) waits on exactly those lines.
@@ -178,3 +179,46 @@ Should the A8 token measurement (re-running one code-review benchmark cell to me
 - **Blocks:** roadmap Next item 1 (A8).
 - **Interim:** [2]; nothing runs.
 - **If the answer differs:** [1] is briefed next iteration; [3] moves the item to Ideas with this answer.
+
+### Q-305 · merge-gate-2026-11-18-section5-followups-4ada2cedec7c
+**Needs:** you: judgment · **Opened:** 2026-11-18 · **Status:** OPEN
+
+Merge the build loop's fix for the roadmap check's split-off items (R5 and A11) into main? It changes dev-cycle gate code, so it needs your review.
+
+**If you say no:** the branch stays unmerged. In the rare repo that has a `watching.md` but no `questions.md`, the new roadmap check can still show an item an open watch holds as unheld, and a long title cut in the digest can still split a multibyte character.
+
+- **What it is:** brief `docs/working/briefs/2026-11-18-section5-followups.md`, the two findings split off at the review cap of this morning's roadmap-staleness fix on your answer "Split R5 off" (rubric `docs/reviews/code-review-rubric-2026-11-18-fix-dev-cycle-roadmap-staleness.md`, rows R5 and A11).
+- **Read:** the loop's research doc `docs/working/research-2026-11-18-section5-followups.md`; the diff: `git diff main...4ada2cedec7cfc9cc455b99b30083b27068183e5`.
+- **Tip:** 4ada2cedec7cfc9cc455b99b30083b27068183e5 (branch fix/dev-cycle-section5-followups)
+
+The gate's `--check` lines, as printed:
+
+```
+ok docs/working/briefs/2026-11-18-section5-followups.md 4ada2cedec7cfc9cc455b99b30083b27068183e5 eae4bf7d3e324c9055658c772a62194be2abc59d
+path docs/working/briefs/2026-11-18-section5-followups.md M docs/failure-patterns.md
+path docs/working/briefs/2026-11-18-section5-followups.md M docs/working/briefs/2026-11-18-section5-followups.md
+path docs/working/briefs/2026-11-18-section5-followups.md M docs/working/plan-2026-11-18-roadmap-staleness.md
+path docs/working/briefs/2026-11-18-section5-followups.md M docs/working/research-2026-11-18-roadmap-staleness.md
+path docs/working/briefs/2026-11-18-section5-followups.md A docs/working/research-2026-11-18-section5-followups.md
+path docs/working/briefs/2026-11-18-section5-followups.md M scripts/dev-cycle.sh
+path docs/working/briefs/2026-11-18-section5-followups.md M skills/dev-cycle/SKILL.md
+path docs/working/briefs/2026-11-18-section5-followups.md M test/scripts/dev-cycle.bats
+rubric docs/working/briefs/2026-11-18-section5-followups.md: none: fix/dev-cycle-section5-followups changes 3 paths outside docs/ and adds or changes no code-review rubric under docs/reviews/
+```
+
+Notes on the paths (the self-merge floor would have refused these, which is why this is yours):
+- `scripts/dev-cycle.sh` and `skills/dev-cycle/SKILL.md` are gate code: the cycle's digest and its instructions. They run from the next image release, not on merge.
+- `docs/failure-patterns.md` is a record the cycle never writes: the loop adds FP-184 (a check that failed open, fixed to fail closed).
+- The rubric line reads `none`: the loop ran two review rounds with fresh reviewer agents (recorded in its research doc) but committed no code-review rubric.
+
+What the loop reports (its words, summarized): R5: with no `questions.md` but a `watching.md`, section 3 now prints "Watched questions were NOT checked" and section 5 its NOT-checked line, never "no open entry or watch names it"; skill step 3 lists that cause. A11: the comment wording fixed; title cuts now drop only a trailing incomplete character, under `LC_ALL=C` (round 1 caught a first version that dropped the last whole non-ASCII character); test 97 now fails if the `read -a` loop is reverted; the first-heading test covers a second Next; the two working docs' stale lines fixed. Gates on the tip: `dev-cycle.bats` and `convention-migrations.bats` 115 ok, health check passed. One commit message (eab1bc93) overstates what that commit's cut did; 3e269a25 corrects it.
+
+**What an attacker would want here:** a stranger's text that reaches the roadmap or a questions file (a pasted issue title, a copied entry) shaped so the digest misreports what holds an item, so the cycle moves an item it should not. This change narrows that (an unread `watching.md` now reads as not checked); it adds no new input.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges tip 4ada2ced; it reaches sessions with the next release (Q-303's paste is then written again) | Reading the diff, 108 changed code lines | A wrong digest line in the next cycles; one `git revert` undoes it |
+| **[2] drop** | The brief closes; R5 and A11 stay as they are | None | The rare `watching.md`-only case keeps misreporting |
+| **[3] changes needed** | Your note goes back to the loop, which runs again (dispatch 2 of 4) | Writing the note | Another loop run |
+
+- **Interim:** unmerged; the image's dev cycle runs as before.
