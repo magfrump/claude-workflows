@@ -1653,11 +1653,11 @@ MD
     run --separate-stderr bash "$DC"
     [ "$status" -eq 0 ]
     section=$(echo "$output" | sed -n '/## 5/,/## 6/p')
-    for t in "- Now 1 · Finished work: no open entry or watch names it" \
-             "- Now 2 · Held work: open Q-010 (you: judgment), Q-020 (trigger)" \
-             "- Now 3 · plain item with no bold title and no IDs at all: no open entry or watch names it" \
-             "- Next 1 · Ranked one.: open Q-010 (you: judgment)" \
-             "- Next 2 · Ranked two.: no open entry or watch names it"; do
+    for t in "- Now 1 · no open entry or watch names it · \"Finished work\"" \
+             "- Now 2 · open: Q-010 (you: judgment), Q-020 (trigger) · \"Held work\"" \
+             "- Now 3 · no open entry or watch names it · \"plain item with no bold title and no IDs at all\"" \
+             "- Next 1 · open: Q-010 (you: judgment) · \"Ranked one\"" \
+             "- Next 2 · no open entry or watch names it · \"Ranked two\""; do
         [[ "$section" == *"$t"* ]] || { echo "missing: $t"; echo "$section"; return 1; }
     done
     # An indented sub-step belongs to its item (its IDs count there), not an item of
@@ -1666,12 +1666,12 @@ MD
     # CRLF endings read the same.
     sed -i 's/$/\r/' docs/roadmap.md
     run --separate-stderr bash "$DC"
-    [[ "$output" == *"- Now 2 · Held work: open Q-010 (you: judgment), Q-020 (trigger)"$'\n'* ]] || { echo "$output" | sed -n '/## 5/,/## 6/p'; return 1; }
+    [[ "$output" == *"- Now 2 · open: Q-010 (you: judgment), Q-020 (trigger) · \"Held work\""$'\n'* ]] || { echo "$output" | sed -n '/## 5/,/## 6/p'; return 1; }
     # Section 3 failing (no archive): the list says it was not checked, never flags each item.
     rm docs/working/questions-archive.md
     run --separate-stderr bash "$DC"
     section=$(echo "$output" | sed -n '/## 5/,/## 6/p')
-    [[ "$section" == *"Now and Next items were NOT checked against open entries and watches"* && "$section" != *"no open entry or watch names it"* ]] || { echo "$section"; return 1; }
+    [[ "$section" == *"**Now and Next items were NOT checked against open entries and watches** — section 3 did not read the questions files"* && "$section" != *"no open entry or watch names it"* ]] || { echo "$section"; return 1; }
 }
 
 @test "section 5 says when Now and Next hold no items, and prints no list without a roadmap" {
@@ -1693,7 +1693,7 @@ MD
     : > docs/working/questions-archive.md
     printf '# Roadmap\n\n## Now\n\n- **Item**: plan.\n  1. Step one waits on Q-010.\n\n## Next\n' > docs/roadmap.md
     run --separate-stderr bash "$DC"
-    [[ "$output" == *"- Now 1 · Item: open Q-010 (you: judgment)"* && "$output" != *"Now 2"* ]] || { echo "$output" | sed -n '/## 5/,/## 6/p'; return 1; }
+    [[ "$output" == *"- Now 1 · open: Q-010 (you: judgment) · \"Item\""* && "$output" != *"Now 2"* ]] || { echo "$output" | sed -n '/## 5/,/## 6/p'; return 1; }
 }
 
 @test "section 5: an entry marked ANSWERED but not archived yet holds nothing; column-0 prose ends an item; only the first Now and Next count (review 2026-11-18, claims 11b, 9a, 9b)" {
@@ -1725,10 +1725,10 @@ MD
     run --separate-stderr bash "$DC"
     [ "$status" -eq 0 ]
     section=$(echo "$output" | sed -n '/## 5/,/## 6/p')
-    for t in "- Now 1 · Answered, not archived: no open entry or watch names it" \
-             "- Now 2 · No hold of its own: no open entry or watch names it" \
-             "- Now 3 · Held: open Q-010 (you: judgment)" \
-             "- Next 1 · Ranked: open Q-010 (you: judgment)"; do
+    for t in "- Now 1 · no open entry or watch names it · \"Answered, not archived\"" \
+             "- Now 2 · no open entry or watch names it · \"No hold of its own\"" \
+             "- Now 3 · open: Q-010 (you: judgment) · \"Held\"" \
+             "- Next 1 · open: Q-010 (you: judgment) · \"Ranked\""; do
         [[ "$section" == *"$t"* ]] || { echo "missing: $t"; echo "$section"; return 1; }
     done
     [[ "$section" != *"Now 4"* && "$section" != *"A second Now section"* ]] || { echo "$section"; return 1; }
@@ -1765,7 +1765,51 @@ MD
     run --separate-stderr bash "$DC"
     section=$(echo "$output" | sed -n '/## 5/,/## 6/p')
     # Q-012's status is not exactly ANSWERED, so archive would not move it and it still holds.
-    for t in "- Now 1 · A: open Q-010 (you: judgment)" "- Now 2 · B: open Q-012 (you: judgment)" "- Now 3 · C: no open entry or watch names it"; do
+    for t in "- Now 1 · open: Q-010 (you: judgment) · \"A\"" "- Now 2 · open: Q-012 (you: judgment) · \"B\"" "- Now 3 · no open entry or watch names it · \"C\""; do
         [[ "$section" == *"$t"* ]] || { echo "missing: $t"; echo "$section"; return 1; }
     done
+}
+
+@test "section 5: the last Needs line of an entry wins, as in questions.sh parse_entries (review 2026-11-18 pass 3, claim 6b)" {
+    mkdir -p docs/working
+    cat > docs/working/questions.md <<'MD'
+# Running questions
+
+## Open
+
+### Q-001 · open-then-answered
+**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** ANSWERED
+
+### Q-002 · answered-then-open
+**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** ANSWERED
+**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** OPEN
+MD
+    : > docs/working/questions-archive.md
+    printf '# Roadmap\n\n## Now\n\n- **A** (Q-001)\n- **B** (Q-002)\n\n## Next\n' > docs/roadmap.md
+    run --separate-stderr bash "$DC"
+    section=$(echo "$output" | sed -n '/## 5/,/## 6/p')
+    [[ "$section" == *'- Now 1 · no open entry or watch names it · "A"'* && "$section" == *'- Now 2 · open: Q-002 (you: judgment) · "B"'* ]] || { echo "$section"; return 1; }
+}
+
+@test "section 5 lists every item as unheld when the repo has no questions file, never as NOT checked (review 2026-11-18, api-consistency 1)" {
+    mkdir -p docs
+    printf '# Roadmap\n\n## Now\n\n- **A** (Q-001)\n\n## Next\n' > docs/roadmap.md
+    run --separate-stderr bash "$DC"
+    section=$(echo "$output" | sed -n '/## 5/,/## 6/p')
+    [[ "$section" == *'- Now 1 · no open entry or watch names it · "A"'* && "$section" != *"NOT checked"* ]] || { echo "$section"; return 1; }
+}
+
+@test "section 5: a 0x1f byte or glob character in the roadmap shifts no field and expands nothing; a verdict-like title stays quoted after the verdict (review 2026-11-18, security 1 and 2)" {
+    mkdir -p docs/working
+    printf '# Running questions\n\n## Open\n\n### Q-010 · open\n**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** OPEN\n' > docs/working/questions.md
+    : > docs/working/questions-archive.md
+    # A tracked file named like an ID: a glob in the IDs field would match it.
+    echo x > Q-001 && git add Q-001 && git commit -q -m q
+    printf '# Roadmap\n\n## Now\n\n- **A\037B** \037 * \037 Q-0* waits\n- **B: open: Q-010 (you: judgment)** names nothing\n\n## Next\n' > docs/roadmap.md
+    run --separate-stderr bash "$DC"
+    [ "$status" -eq 0 ]
+    section=$(echo "$output" | sed -n '/## 5/,/## 6/p')
+    [[ "$section" == *'- Now 1 · no open entry or watch names it · "A B"'* && "$section" != *"Q-001 ("* ]] || { echo "$section"; return 1; }
+    [[ "$section" == *'- Now 2 · open: Q-010 (you: judgment) · "B: open: Q-010 (you: judgment)"'* ]] || { echo "$section"; return 1; }
 }

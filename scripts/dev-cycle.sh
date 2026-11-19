@@ -400,6 +400,7 @@ if skipped docs/working/questions.md; then
   echo "$nc $(skipnote docs/working/questions.md)"
 elif ! inrepo docs/working/questions.md; then
   echo "No docs/working/questions.md in this repo."
+  open_ok=1   # nothing is open: section 5 lists every item as unheld
 elif [[ ! -f "$QS" ]]; then
   echo "$nc questions.sh was not found (next to this script or in ~/.claude/scripts)."
 elif [[ -n "$qa_at" ]]; then
@@ -469,32 +470,42 @@ if inrepo docs/roadmap.md; then
   # digest runs) is left out here too. An item is its column-0 line and the
   # indented lines under it; a column-0 line that is no item (prose, a ###
   # heading) ends it. Only the first Now and the first Next heading count, as
-  # in section 7. One record per item: SECTION, N, TITLE (its first bold span, else its first
-  # 80 characters), IDS, joined by \x1f (a tab is IFS whitespace: an empty
-  # field would collapse and shift the rest).
+  # in section 7. Each line prints the verdict before the item's title, the
+  # title quoted, so a title cannot stand where step 6 reads the verdict.
+  # One record per item: SECTION, N, TITLE (its first bold span, else its
+  # first 80 characters; one trailing period dropped), IDS, joined by \x1f,
+  # which the awk first turns to a space wherever the roadmap holds one (a tab
+  # is IFS whitespace: an empty field would collapse and shift the rest).
   echo
   if [[ "$open_ok" != 1 ]]; then
-    echo "Now and Next items were NOT checked against open entries and watches: section 3 did not read them."
+    echo "**Now and Next items were NOT checked against open entries and watches** — section 3 did not read the questions files (see it above). Step 6 reports this; it never reads as every item held."
   else
     # IDs whose live-file Status is exactly ANSWERED, read as questions.sh's
-    # parse_entries reads it: the Status field of the **Needs:** line under a
-    # "### Q-NNN " heading, the fields split on " · ", compared as `archive`
-    # compares it. Section 3's list still carries these entries.
-    answered=" $(awk '/^### Q-[0-9]+ / { id = $2; next }
-      /^\*\*Needs:\*\*/ && id != "" { l = $0; gsub(/\*\*/, "", l); n = split(l, f, " · ")
-        for (i = 1; i <= n; i++) if (f[i] ~ /^Status:/ && substr(f[i], 9) == "ANSWERED") printf "%s ", id
-        id = "" }' docs/working/questions.md) "
+    # parse_entries reads a well-formed entry (one **Needs:** line with all
+    # three fields, which `check` requires): the Status field of the last
+    # **Needs:** line under a "### Q-NNN " heading, the fields split on " · ",
+    # compared whole, as `archive` compares it. Section 3's list still
+    # carries these entries.
+    answered=" "
+    if [[ -f docs/working/questions.md ]]; then
+      answered=" $(awk 'function fl() { if (id != "" && st == "ANSWERED") printf "%s ", id; id = ""; st = "" }
+        /^### Q-[0-9]+ / { fl(); id = $2; next }
+        /^\*\*Needs:\*\*/ && id != "" { l = $0; gsub(/\*\*/, "", l); n = split(l, f, " · ")
+          for (i = 1; i <= n; i++) if (f[i] ~ /^Status:/) st = substr(f[i], 9) }
+        END { fl() }' docs/working/questions.md) "
+    fi
     items="$(awk '
       function flush(   title, ids, s, id, seen) {
         if (cur == "") return
         if (match(text, /\*\*[^*]+\*\*/)) title = substr(text, RSTART + 2, RLENGTH - 4)
         else { title = text; sub(/^([-*] |[0-9]+\. )/, "", title); title = substr(title, 1, 80); sub(/ +$/, "", title) }
+        sub(/\.$/, "", title)
         ids = ""; s = text
         while (match(s, /Q-[0-9]+/)) { id = substr(s, RSTART, RLENGTH); if (!(id in seen)) { seen[id] = 1; ids = ids " " id }; s = substr(s, RSTART + RLENGTH) }
         printf "%s\037%d\037%s\037%s\n", cur, num, title, ids
         cur = ""
       }
-      { sub(/\r$/, ""); gsub(/\t/, " "); t = tolower($0) }
+      { sub(/\r$/, ""); gsub(/[\t\037]/, " "); t = tolower($0) }
       /^## / { flush(); sec = ""
         if (!seen_now && (t == "## now" || index(t, "## now ") == 1 || index(t, "## now(") == 1)) { sec = "Now"; seen_now = 1 }
         else if (!seen_next && (t == "## next" || index(t, "## next ") == 1 || index(t, "## next(") == 1)) { sec = "Next"; seen_next = 1 }
@@ -506,17 +517,20 @@ if inrepo docs/roadmap.md; then
     if [[ -z "$items" ]]; then
       echo "No items in Now or Next."
     else
-      echo "Now and Next items, with the open entries and watches each names (step 6 moves or explains every item none names):"
+      echo "Now and Next items, each with the open entries and watches it names, then its title (step 6 moves or explains every item none names):"
       echo
       while IFS=$'\x1f' read -r sec num title ids; do
         held=""
-        for id in $ids; do
-          [[ "$answered" != *" $id "* ]] || continue
+        # read -a splits without pathname expansion; each word is checked
+        # again against the ID shape the awk extracts.
+        read -ra id_list <<< "$ids"
+        for id in "${id_list[@]}"; do
+          [[ "$id" =~ ^Q-[0-9]+$ && "$answered" != *" $id "* ]] || continue
           r="$(printf '%s\n' "$open_q" | awk -v id="$id" '$1 == id { r = substr($0, index($0, "  ") + 2, 16); sub(/ +$/, "", r); print r; exit }')"
           [[ -z "$r" ]] || held+="${held:+, }$id ($r)"
         done
-        if [[ -n "$held" ]]; then echo "- $sec $num · $title: open $held"
-        else echo "- $sec $num · $title: no open entry or watch names it"; fi
+        if [[ -n "$held" ]]; then echo "- $sec $num · open: $held · \"$title\""
+        else echo "- $sec $num · no open entry or watch names it · \"$title\""; fi
       done <<< "$items"
     fi
   fi

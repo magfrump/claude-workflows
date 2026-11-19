@@ -360,8 +360,9 @@ last good one.
    brainstorm gate themselves); each of the four record lines reads `skipped: light pass (REASON)`,
    REASON naming what decided it (`only chore lines since SHA12; full at DATE-HHMM`), and
    `### Trigger verdicts` stays empty. What is not a commit on main (a model change, a
-   release, a dated trigger, a stale item) waits for the day's first iteration: the cost
-   the owner accepted in Q-270.
+   release, a dated trigger, a stale agent item in step 3) waits for the day's first
+   iteration: the cost the owner accepted in Q-270. Step 6's check of roadmap items that
+   no open entry or watch names runs in a light pass too.
 
 ### 1. Health and cleanup
 
@@ -620,11 +621,12 @@ docs/working/questions.md, and the cycle's watches in docs/working/watching.md.
   each with its reason and brief; and parked items, each with the owner answer that parked
   it and what brings it back.
 - **Done**: items finished since the last cycle, each with the commit `--check-brief`
-  printed (agent work done in-cycle: the iteration's branch name).
-- **Items nothing open holds.** The digest's section 5 lists each Now and Next item with the
-  open entries and watches it names. Every iteration, a light pass included, reads that list
-  and acts on each item it shows as "no open entry or watch names it", and on each whose
-  only open ID it names in passing (history, not its hold):
+  printed (agent work done in-cycle: the iteration's branch name; an item moved from Now
+  or Next: the commit or answer that finished it).
+- **Items no open entry or watch names**: the digest's section 5 lists each Now and Next
+  item with the open entries and watches it names, then its title. Every iteration, a light
+  pass included, reads that list and acts on each item it shows as "no open entry or watch
+  names it", and on each whose only open ID it names in passing (history, not its hold):
   - finished (its last step merged or ran, or its hold was answered and nothing follows):
     → Done, with the commit or answer that finished it;
   - stopped or parked by an owner answer (build nothing, not now, wait for X): → Ideas,
@@ -636,7 +638,9 @@ docs/working/questions.md, and the cycle's watches in docs/working/watching.md.
     a call no entry asks holds nothing).
   A Done line that records one part of a Now or Next item (a unit merged, a run done)
   is written in the same edit that updates that item's text, so the item never names a
-  finished part as still to come.
+  finished part as still to come. When section 5 prints "Now and Next items were NOT
+  checked", no item is moved on its account: the `6.` line says so, with section 3's
+  cause, and the next iteration checks them.
 - `docs/working/roadmap-from-questions.md` on main (left by an earlier iteration's step 1b
   `questions.sh migrate`): fold each entry into Now as agent work, its `Q-NNN` kept in the
   title, then `git rm` the file. One this iteration's migrate wrote waits for the next:
@@ -787,7 +791,7 @@ one `you: terminal` entry once it merges. A queue left under its slots is explai
 record's `8.` line, in one plain clause: why each free slot stayed free, naming each held
 item and its hold, not a category (`D12 doc item: rides a review unit; source_lines_ok:
 Q-278`, say), so the next iteration can check it. The holds come from the digest's
-section 5 list and step 6's `6.` line, never from the last record's `8.` line: a hold
+section 5 list and the record's `6.` line, never from the last record's `8.` line: a hold
 copied forward outlives what it names.
 For each, write `docs/working/briefs/YYYY-MM-DD-<slug>.md`, where the slug is lowercase
 letters, digits and hyphens only (a file name no brief has used before, in `briefs/` or
@@ -855,7 +859,7 @@ Model: <the model id running this cycle>
 4. spot-check: <what was checked / skipped: light pass (REASON)>
 4b. deep-audit check: <none fired / task filed: trigger / skipped: light pass (REASON)>
 5. brainstorm: <ran: trigger / not due>
-6. roadmap: <done; moved to Done or Ideas: ITEMS (why) / none; items no open entry names: each with its hold>
+6. roadmap: <done>; moved: <ITEM → Done or Ideas (why), … / none>; unheld: <ITEM: its hold, … / none / not checked: why>
 7. collect: <per brief: STEM LOOP TIP, and what was done>
 8. briefs: <written this iteration, or none>; queue <k>/<slots> (<full: no new briefs / under: why each free slot stayed free>)
 9. land: <NEW, written with the 10. line before step 10's land>
