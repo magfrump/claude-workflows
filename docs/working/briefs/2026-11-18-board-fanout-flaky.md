@@ -30,3 +30,5 @@ Paths: test/scripts/board.bats
 
 - Any other test in `board.bats`, and `scripts/board.sh` itself (see criterion 2).
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`.
+
+Dispatched: 1
