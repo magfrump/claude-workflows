@@ -597,7 +597,11 @@ keeps one, and the record says which file was used), and generate 3–8 ideas. E
 A choice among 3+ approaches is flagged for `divergent-design`, not picked here. "Do nothing"
 is allowed. Then append `## Brainstorm YYYY-MM-DD` to the idea log and land it with this
 iteration's roadmap: the next digest counts seeds and compares Now from that commit. The
-surviving ideas go to the roadmap's Ideas.
+surviving ideas go to the roadmap's Ideas; one that rests on harness feedback or an owner
+report names it in a shape the digest's section 5 reads (its header lists them: the entry's
+ID, `<project> F-NNN`, or "owner report"), and keeps "parked" and "dropped" out of its
+text before `Signal:` unless an owner answer parked or dropped it, so step 6 moves or asks
+about it.
 
 ### 6. Roadmap
 
@@ -636,7 +640,9 @@ docs/working/questions.md, and the cycle's watches in docs/working/watching.md.
   item that is an open question points at its `Q-NNN` rather than restating it.
 - **Ideas**: surviving brainstorm items, unranked, each with its signal; dropped items,
   each with its reason and brief; and parked items, each with the owner answer that parked
-  it and what brings it back.
+  it and what brings it back. A parked item says "parked" and a dropped one opens
+  "Dropped DATE:" before any `Signal:`, with the answer behind it, which is how the digest
+  tells them apart. An Idea carrying reported friction does not stay unranked (below).
 - **Done**: items finished since the last cycle, each with the commit `--check-brief`
   printed (agent work done in-cycle: the iteration's branch name; an item moved from Now
   or Next: the commit or answer that finished it).
@@ -647,7 +653,7 @@ docs/working/questions.md, and the cycle's watches in docs/working/watching.md.
   - finished (its last step merged or ran, or its hold was answered and nothing follows):
     → Done, with the commit or answer that finished it;
   - stopped or parked by an owner answer (build nothing, not now, wait for X): → Ideas,
-    with that answer's ID as its reason and what brings it back;
+    written "parked (Q-NNN [n])" before any `Signal:`, and what brings it back;
   - held by something outside the questions files (a date, a running trial, another
     repo's result, a host run): it stays, and the record's `6.` line names that hold for
     this item;
@@ -658,6 +664,19 @@ docs/working/questions.md, and the cycle's watches in docs/working/watching.md.
   finished part as still to come. When section 5 prints "Now and Next items were NOT
   checked", no item is moved on its account: the `6.` line says so, with section 3's
   cause, and the next iteration checks them.
+- **Ideas carrying reported friction**: section 5 also lists each Idea that names a
+  harness-feedback entry or an owner report (the shapes its header names), with the open
+  entries and watches it names. Every iteration, a light pass included, acts on each it
+  shows as "no open entry or watch names it": the friction goes on while it waits, so it
+  does not stay in Ideas. Move it to Now as agent work, its signal as the motive and a
+  first step (a research or divergent-design pass is one), unless building it needs an
+  owner call (it would reorder their stated priorities, or the fix is a choice only they
+  can make); then put it in this iteration's one `you: judgment` entry, which numbers every
+  such Idea and asks about them at once (build all, build these numbers, park the rest),
+  never one entry per Idea. An Idea it shows as "says parked or
+  dropped" stays, as does one an open entry or watch holds; one an owner answer already
+  parked (it names that answer) gets "parked" before its `Signal:` and stays. Each move goes on the `6.`
+  line's moved list (ITEM → Now (its signal)).
 - `docs/working/roadmap-from-questions.md` on main (left by an earlier iteration's step 1b
   `questions.sh migrate`): fold each entry into Now as agent work, its `Q-NNN` kept in the
   title, then `git rm` the file. One this iteration's migrate wrote waits for the next:
@@ -876,7 +895,7 @@ Model: <the model id running this cycle>
 4. spot-check: <what was checked / skipped: light pass (REASON)>
 4b. deep-audit check: <none fired / task filed: trigger / skipped: light pass (REASON)>
 5. brainstorm: <ran: trigger / not due>
-6. roadmap: <done>; moved: <ITEM → Done or Ideas (why), … / none>; unheld: <ITEM: its hold, … / none / not checked: why>
+6. roadmap: <done>; moved: <ITEM → Done, Ideas or Now (why), … / none>; unheld: <ITEM: its hold, … / none / not checked: why>
 7. collect: <per brief: STEM LOOP TIP, and what was done>
 8. briefs: <written this iteration, or none>; queue <k>/<slots> (<full: no new briefs / under: why each free slot stayed free>)
 9. land: <NEW, written with the 10. line before step 10's land>

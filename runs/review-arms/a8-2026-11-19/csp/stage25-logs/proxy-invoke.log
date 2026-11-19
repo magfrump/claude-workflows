@@ -1,0 +1,24 @@
+ts=2026-11-19T18:35:52+00:00 cwd=/tmp/claude-1000/-workspace/711f86df-792b-492f-9d5e-95022839ec2c/scratchpad/csp-fc-r3
+cmd: timeout 60 node --experimental-strip-types --import 'data:text/javascript,<register resolve hook: next/server -> next/server.js>' --input-type=module -e "$(cat proxy-invoke.probe.mjs.txt)"
+hook: export async function resolve(s, c, n) { return n(s === "next/server" ? "next/server.js" : s, c); }
+CSP: default-src 'self'; script-src 'self' 'nonce-NDUzMTM5NjktOTA1MS00ODNkLTgxNjgtNTMwZjllYTNlNmQ4' 'strict-dynamic'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'
+nonce: NDUzMTM5NjktOTA1MS00ODNkLTgxNjgtNTMwZjllYTNlNmQ4 len 48 valid-nonce-source-charset true decoded: 45313969-9051-483d-8168-530f9ea3e6d8 isUUIDv4 true decodedBytes 36
+script-src: script-src 'self' 'nonce-NDUzMTM5NjktOTA1MS00ODNkLTgxNjgtNTMwZjllYTNlNmQ4' 'strict-dynamic' has unsafe-inline false has unsafe-eval false
+directive count 9
+x-middleware-request-x-nonce: NDUzMTM5NjktOTA1MS00ODNkLTgxNjgtNTMwZjllYTNlNmQ4
+return type NextResponse is promise false
+CSP: default-src 'self'; script-src 'self' 'nonce-MTgyNDNhOWYtZmFlNS00N2IwLTgyODgtOTdhMWVhOGEwYWY3' 'strict-dynamic'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'
+nonce: MTgyNDNhOWYtZmFlNS00N2IwLTgyODgtOTdhMWVhOGEwYWY3 len 48 valid-nonce-source-charset true decoded: 18243a9f-fae5-47b0-8288-97a1ea8a0af7 isUUIDv4 true decodedBytes 36
+script-src: script-src 'self' 'nonce-MTgyNDNhOWYtZmFlNS00N2IwLTgyODgtOTdhMWVhOGEwYWY3' 'strict-dynamic' has unsafe-inline false has unsafe-eval false
+directive count 9
+x-middleware-request-x-nonce: MTgyNDNhOWYtZmFlNS00N2IwLTgyODgtOTdhMWVhOGEwYWY3
+return type NextResponse is promise false
+CSP: default-src 'self'; script-src 'self' 'nonce-ZGVmNDRlYWMtZmMyNy00ZDQwLWJjODYtZjI4YTZhM2M2YzY1' 'strict-dynamic'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'
+nonce: ZGVmNDRlYWMtZmMyNy00ZDQwLWJjODYtZjI4YTZhM2M2YzY1 len 48 valid-nonce-source-charset true decoded: def44eac-fc27-4d40-bc86-f28a6a3c6c65 isUUIDv4 true decodedBytes 36
+script-src: script-src 'self' 'nonce-ZGVmNDRlYWMtZmMyNy00ZDQwLWJjODYtZjI4YTZhM2M2YzY1' 'strict-dynamic' has unsafe-inline false has unsafe-eval false
+directive count 9
+x-middleware-request-x-nonce: ZGVmNDRlYWMtZmMyNy00ZDQwLWJjODYtZjI4YTZhM2M2YzY1
+return type NextResponse is promise false
+distinct nonces 3 of 3
+config {"matcher":[{"source":"/((?!api|_next/static|_next/image|favicon.ico).*)","missing":[{"type":"header","key":"next-router-prefetch"},{"type":"header","key":"purpose","value":"prefetch"}]}]}
+exit=0

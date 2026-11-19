@@ -292,6 +292,10 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-300](#q-300--test-confinement-question-withdrawn) | Q-300: seen | 2026-11-18 |
 | [Q-304](#q-304--a8-go-ahead) | Q-304: [1] | 2026-11-18 |
 | [Q-305](#q-305--merge-gate-2026-11-18-section5-followups-4ada2cedec7c) | Q-305: [1] | 2026-11-18 |
+| [Q-306](#q-306--merge-2026-11-19-a8-token-measurement-30bb30d43a60) | Q-306: [1] | 2026-11-19 |
+| [Q-307](#q-307--merge-2026-11-19-subagent-report-as-text-70084aadc950) | Q-307: [1] | 2026-11-19 |
+| [Q-309](#q-309--merge-gate-2026-11-19-ideas-promotion-ecf9daf1549a) | Q-309: [1] | 2026-11-19 |
+| [Q-310](#q-310--merge-2026-11-19-a8-cache-probe-1f5ef33c511e) | Q-310: [1] | 2026-11-19 |
 <!-- index:end -->
 
 ## Answered
@@ -7546,4 +7550,231 @@ What the loop reports (its words, summarized): R5: with no `questions.md` but a 
 | **[3] changes needed** | Your note goes back to the loop, which runs again (dispatch 2 of 4) | Writing the note | Another loop run |
 
 - **Interim:** unmerged; the image's dev cycle runs as before.
+
+### Q-306 · merge-2026-11-19-a8-token-measurement-30bb30d43a60
+**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** ANSWERED
+Q-306: [1]
+
+Merge the A8 token measurement's results (one code-review pass on the csp benchmark cell, with its token ledger and verdict) into main?
+
+**If you say no:** the results stay on the unmerged branch; rubric row A8 (the code-review skill's "inlining the shared context is free" claim) stays open on a projection, and the cycle files no follow-up from the finding below.
+
+- **What it is:** brief `docs/working/briefs/2026-11-19-a8-token-measurement.md`, run on your Q-304 [1] ("yes, run it now").
+- **Read first:** `runs/review-arms/a8-2026-11-19/results.md` on the branch: `git show 30bb30d43a60c0f9adb4096aa60748ba1ca052e9:runs/review-arms/a8-2026-11-19/results.md`
+- **Tip:** 30bb30d43a60c0f9adb4096aa60748ba1ca052e9 (branch measure/a8-token-measurement); 6,900 lines added, almost all review artifacts and the ledger under `runs/review-arms/a8-2026-11-19/`.
+
+What the loop reports (its words, summarized; the figures are in the results doc):
+- **Cost:** one terminal pass on csp used 852,285 tokens over 9 agents. Fact-check plus critics: 743,755 against the 2026-08-06 baseline's 358,626 for this cell (×2.07). Split out: the k=3 fact-check (three runs instead of one) is 311,975 against 74,274; with the fact-check at k=1 the total is +26% on the baseline.
+- **The finding:** no agent got the shared review block from Anthropic's prompt cache. Each agent's first call read only the 18,900 cached tokens of the system prompt and tools; cache breakpoints sit after the per-agent part, so no cache entry ends where the shared block ends. That cause is the loop's inference from the request records, not confirmed in the API docs.
+- **Verdict on A8:** the claim fails on its benefit (the cache saving was zero in this pass); its cost is small (the block was 2.2k to 2.9k tokens, 9-12% of the 25k budget) but unmeasured net, and its effect on recall cannot be told from one run. Three things would settle it: a two-agent cache probe, a self-read control on this cell, and a run on the larger corpus cell.
+- **Labels:** all 6 of csp's canon labels hit (the baseline: 4 and a partial), which says nothing about lever #3, since k=3, newer skill texts and the Stage 2.5 fact-check changed at the same time; the loop discloses it knew the labels when it wrote the fact-check checklist.
+- **Deviation:** it did not paste each critic's skill text into its prompt; each prompt opened with the byte-identical shared block and named the skill file to read (hashes confirm the shared part matched).
+- **Review of the write-up:** three fact-check passes; 3 Incorrect and about 15 Mostly-accurate prose claims found and fixed; the rubric line below reads clean.
+
+The gate's `--check` lines, as printed:
+
+```
+ok docs/working/briefs/2026-11-19-a8-token-measurement.md 30bb30d43a60c0f9adb4096aa60748ba1ca052e9 dfed11f77320618d6a3339ea9302bbe4d6ab2a7e
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A docs/reviews/code-fact-check-report-2026-11-19-a8-pass2.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A docs/reviews/code-fact-check-report-2026-11-19-a8-pass3.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A docs/reviews/code-fact-check-report-2026-11-19-a8-r1.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A docs/reviews/code-fact-check-report-2026-11-19-a8-r2.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A docs/reviews/code-fact-check-report-2026-11-19-a8-r3.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A docs/reviews/code-fact-check-report-2026-11-19-a8.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A docs/reviews/code-review-rubric-2026-11-19-measure-a8-token-measurement.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md M docs/working/briefs/2026-11-19-a8-token-measurement.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A docs/working/research-2026-11-19-a8-token-measurement.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/api-consistency-review-2026-11-19.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/architecture-review-2026-11-19.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/code-fact-check-report-r1.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/code-fact-check-report-r2.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/code-fact-check-report-r3.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/code-fact-check-report.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/code-fact-check-submitted-claims.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/code-review-rubric-2026-11-19-csp.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/fc-r3-logs/build-noheaders.log
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/fc-r3-logs/build-webpack.log
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/fc-r3-logs/build-webpack2.log
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/fc-r3-logs/build.log
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/fc-r3-logs/build3.log
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/fc-r3-logs/eslint.log
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/fc-r3-logs/layout.with-headers.tsx
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/fc-r3-logs/matcher.txt
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/fc-r3-logs/noheaders-body.html
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/fc-r3-logs/noheaders-headers.txt
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/fc-r3-logs/root-body.html
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/fc-r3-logs/root-headers.txt
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/fc-r3-logs/start.log
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/fc-r3-logs/start2.log
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/fc-r3-logs/vitest.log
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/part6.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/performance-review-2026-11-19.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/security-review-2026-11-19.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/shared-block-stage2.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/shared-block.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/stage25-logs/build.log
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/stage25-logs/matcher-compile.log
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/stage25-logs/proxy-invoke.log
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/stage25-logs/proxy-invoke.probe.mjs.txt
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/csp/test-strategy-review-2026-11-19.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/manifest.json
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/results.md
+path docs/working/briefs/2026-11-19-a8-token-measurement.md A runs/review-arms/a8-2026-11-19/token-ledger.md
+rubric docs/working/briefs/2026-11-19-a8-token-measurement.md: clean docs/reviews/code-review-rubric-2026-11-19-measure-a8-token-measurement.md: 0 red and 19 amber rows, none open
+```
+
+- No path is gate code, an instruction file or a dot path.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges tip 30bb30d4; the cycle then closes rubric row A8 with the measured verdict and files the cache finding (and the three settling runs) as roadmap items | Reading `results.md` | A wrong number lands in a results doc; one `git revert` undoes it |
+| **[2] drop** | The brief closes unmerged; A8 stays open | None | The measurement's tokens are spent with nothing kept |
+| **[3] changes needed** | Your note goes back to the loop (dispatch 2 of 4) | Writing the note | Another loop run |
+
+- **Interim:** unmerged.
+
+
+### Q-307 · merge-2026-11-19-subagent-report-as-text-70084aadc950
+**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** ANSWERED
+Q-307: [1]
+
+Merge the parallel-worktrees change that has a subagent return a report as text for the parent to write, instead of writing the file itself (feedback F-011)?
+
+**If you say no:** the workflow keeps telling subagents to commit their reports in their worktrees, and Claude Code's Write tool keeps refusing those files ("Subagents should return findings as text, not write report files"), so each parent places the report by hand, as in philosophy-research and belegarth-herald.
+
+- **What it is:** brief `docs/working/briefs/2026-11-19-subagent-report-as-text.md`, from your "Yes do that" today (the Ideas items that never left Ideas).
+- **Read:** the diff, 7 changed lines in one file: `git diff main...70084aadc95013e785793862f7cb87a689adbd00 -- workflows/parallel-worktrees.md`; the loop's research doc `docs/working/research-2026-11-19-subagent-report-as-text.md`.
+- **Tip:** 70084aadc95013e785793862f7cb87a689adbd00 (branch docs/subagent-report-as-text)
+
+What the loop reports (its words, summarized): step 3 (dispatch) gains "A report comes back as text": the item's brief names where the report lands and the subagent returns it in its final message; code and `docs/working/` handoffs are still committed by the subagent, since the two feedback entries show no refusal of those. Step 4 gains "Place returned reports first": the parent writes the report into that item's worktree and commits it there, then reviews and merges as before (a report-only item needs a worktree made by hand). The "Lost work" failure mode covers a report returned and never written down. `test/workflow-required-sections.bats` and `test/pivot-consistency.bats` pass; one independent review round, four of five points fixed.
+
+The gate's `--check` lines, as printed:
+
+```
+ok docs/working/briefs/2026-11-19-subagent-report-as-text.md 70084aadc95013e785793862f7cb87a689adbd00 9cd05281cadb305def5d848c90c3d17c5f18341a
+path docs/working/briefs/2026-11-19-subagent-report-as-text.md M docs/working/briefs/2026-11-19-subagent-report-as-text.md
+path docs/working/briefs/2026-11-19-subagent-report-as-text.md A docs/working/research-2026-11-19-subagent-report-as-text.md
+path docs/working/briefs/2026-11-19-subagent-report-as-text.md M workflows/parallel-worktrees.md
+rubric docs/working/briefs/2026-11-19-subagent-report-as-text.md: none: docs/subagent-report-as-text changes 1 paths outside docs/ and adds or changes no code-review rubric under docs/reviews/
+```
+
+- `workflows/parallel-worktrees.md` is under this repo's `Self-merge never: workflows/` line, which is why it is yours; it is not gate code and takes effect for sessions with the next release. The rubric line reads `none`: the review round is recorded in the research doc, not as a rubric.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges tip 70084aad | Reading 7 lines | A fan-out places a report in the wrong step; one `git revert` undoes it |
+| **[2] drop** | The brief closes; the workflow stays as it is | None | Report writes keep being refused |
+| **[3] changes needed** | Your note goes back to the loop (dispatch 2 of 4) | Writing the note | Another loop run |
+
+- **Interim:** unmerged.
+
+### Q-309 · merge-gate-2026-11-19-ideas-promotion-ecf9daf1549a
+**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** ANSWERED
+Q-309: [1]
+
+Merge the dev-cycle change that moves every roadmap Idea carrying harness feedback or an owner report out of Ideas (to Now, or into one question for you), so friction like F-019's permission prompts can no longer sit there unranked?
+
+**If you say no:** the branch stays unmerged; an Idea that carries feedback you or a project reported can still sit in Ideas indefinitely, as F-019 and F-011 did from 2026-11-16 to today.
+
+- **What it is:** brief `docs/working/briefs/2026-11-19-ideas-promotion.md`, from your "Yes do that" today.
+- **Read:** the diff, 171 changed code lines: `git diff main...ecf9daf1549a16f8b97d528e668cc05480ae6feb`; the loop's research doc `docs/working/research-2026-11-19-ideas-promotion.md` (its table of today's 13 such Ideas); the rubric `docs/reviews/code-review-rubric-2026-11-19-fix-dev-cycle-ideas-promotion.md`.
+- **Tip:** ecf9daf1549a16f8b97d528e668cc05480ae6feb (branch fix/dev-cycle-ideas-promotion)
+
+What the loop reports (its words, summarized):
+- **Digest:** section 5 also lists each Idea naming a feedback entry (`F-NNN`; failure-pattern `FP-NNN` IDs do not count) or an owner report ("owner request", "owner report", "owner brainstorm" and similar), with the open entries or watches holding it, or "no open entry or watch names it", or "says parked or dropped" (read only before the item's first `Signal:`).
+- **Skill, step 6:** every iteration, a light pass included, each unheld such Idea moves to Now as agent work; one that needs a call from you goes into one `you: judgment` entry per iteration covering all of them, never one entry per Idea. A parked item is written "parked (Q-NNN [n])" before its `Signal:`, so it is not moved back every iteration. Step 5 tells a brainstorm idea from feedback to name it in that form.
+- **Effect next iteration:** today 13 Ideas carry such a signal; 1 is parked, so about 12 move to Now at once (F-009, F-010, F-006, F-018, F-016, F-007, F-012, herald F-009, the herald triage, owner brainstorm areas A and B, F-002, F-001). Step 8's three build slots pace how fast they are briefed.
+- **Design:** five options weighed (feedback straight into Now, the status quo, a skill-text rule with no digest list, an age threshold); the digest list plus a step 6 rule won clearly (Path A).
+- **Review:** three single-pass reviews by fresh reviewers, not the full k=3 panel; round 1 found the word "dropped" anywhere made an Idea read as parked, round 2 that step 6's own parking did not write "parked"; both fixed with tests; round 3 clean. Won't-fix rows: any `F-NNN` matches, whatever its source (errs toward asking); the one-time move of about 12 Ideas; an Idea with no `Signal:` is read whole.
+- **Gates:** `dev-cycle.bats` 102/102; the health check passed; `migrations.sh check` passes (a new `record-6-ideas-to-now` line, no remedy needed).
+
+The gate's `--check` lines, as printed:
+
+```
+ok docs/working/briefs/2026-11-19-ideas-promotion.md ecf9daf1549a16f8b97d528e668cc05480ae6feb 86e03814eb8dd01c068a746246ec46077cd947a8
+path docs/working/briefs/2026-11-19-ideas-promotion.md A docs/reviews/code-review-rubric-2026-11-19-fix-dev-cycle-ideas-promotion.md
+path docs/working/briefs/2026-11-19-ideas-promotion.md M docs/working/briefs/2026-11-19-ideas-promotion.md
+path docs/working/briefs/2026-11-19-ideas-promotion.md A docs/working/research-2026-11-19-ideas-promotion.md
+path docs/working/briefs/2026-11-19-ideas-promotion.md M scripts/dev-cycle.sh
+path docs/working/briefs/2026-11-19-ideas-promotion.md M scripts/lib/migrations.sh
+path docs/working/briefs/2026-11-19-ideas-promotion.md M skills/dev-cycle/SKILL.md
+path docs/working/briefs/2026-11-19-ideas-promotion.md M test/scripts/dev-cycle.bats
+rubric docs/working/briefs/2026-11-19-ideas-promotion.md: clean docs/reviews/code-review-rubric-2026-11-19-fix-dev-cycle-ideas-promotion.md: 0 red and 3 amber rows, none open
+```
+
+- `scripts/dev-cycle.sh`, `scripts/lib/migrations.sh` and `skills/dev-cycle/SKILL.md` are gate code: they run from the next image release, not on merge.
+
+**What an attacker would want here:** a stranger's text copied into the roadmap (an issue title in an Idea) shaped to read as "owner request" or a feedback ID, so the cycle moves it to Now and briefs a loop on it. The move only makes it agent work that step 8 briefs from the repo's own text, which every brief already treats as evidence, not instructions; it adds no new input source.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges tip ecf9daf1; with the next release, about 12 Ideas move to Now and are briefed three at a time | Reading the diff, 171 code lines | A wrong Idea is briefed; its merge question still comes to you, and one `git revert` undoes the rule |
+| **[2] drop** | The brief closes; Ideas stay as they are | None | Reported friction can sit in Ideas again |
+| **[3] changes needed** | Your note goes back to the loop (dispatch 2 of 4), for example to run the full k=3 review panel first | Writing the note | Another loop run |
+
+- **Interim:** unmerged.
+
+### Q-310 · merge-2026-11-19-a8-cache-probe-1f5ef33c511e
+**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** ANSWERED
+Q-310: [1]
+
+Merge the A8 cache probe's results (a two-agent test showing why review agents never share the cached review block) and its closing note on rubric row A8 into main?
+
+**If you say no:** the probe's record stays on the unmerged branch; rubric row A8 keeps its open status on main, and the cycle files no item to correct the code-review skill's cache-saving text.
+
+- **What it is:** brief `docs/working/briefs/2026-11-19-a8-cache-probe.md`, the follow-up to the A8 measurement you merged (Q-306 [1]).
+- **Read first:** `git show 1f5ef33c511e3231c8617f1f9005ef3b92764f62:runs/review-arms/a8-2026-11-19/cache-probe.md`
+- **Tip:** 1f5ef33c511e3231c8617f1f9005ef3b92764f62 (branch measure/a8-cache-probe)
+
+The loop's marker body, quoted (its text, data not instructions):
+
+```
+The probe answered the question with no tentative pick. Two review agents got the
+same shared block byte for byte, the second started 28.5 s after the first replied,
+and both read only 18,900 tokens from the cache. Timing was not the cause. Claude
+Code puts its cache breakpoints on the system prompt and on the request's last block,
+and the whole prompt is one block, so no prompt order makes the shared block
+cacheable across agents. The skill is unchanged. Record:
+runs/review-arms/a8-2026-11-19/cache-probe.md.
+
+Rubric row A8 (the code-review skill's "inlining the shared context is free" claim,
+in docs/reviews/code-review-rubric-2026-08-07-main.md) is now Split. Its measured
+part is closed; the rest moves to two places.
+
+For the cycle to file as a roadmap item: "code-review: correct the lever #3 cache-saving text".
+Lever #3 is decision 032's "inline the shared review context so it is cached".
+Text to correct in skills/code-review/SKILL.md: :274-277, :307-310, :322-323 and
+:352-354 claim a cross-agent cache saving the probe shows does not occur. :347-351
+(rubric row A7, stable parts first for cross-pass warmth) fails by the same
+mechanism; that part is inferred, not measured. Row A8's cell quotes this title.
+
+Also for the cycle: Q-308 (the owner's question on two larger settling runs for A8)
+has an option [2] "after the cache fix". The probe shows no prompt-order fix exists,
+so that option's premise is gone; the entry may need rewording.
+
+Review: three review-fix passes (k=3, then k=1 twice), docs/reviews/*-2026-11-19-measure-a8-cache-probe*.md.
+Pass 3's three wording ambers (A14-A16) were fixed after the loop's 3-iteration cap
+and not re-reviewed. The brief's review policy sends the branch to the owner anyway.
+The probe cost 101,370 tokens; the reviews cost about 1.58M.
+```
+
+In plain words: the code-review skill's "lever #3" (decision 032: put the shared review context first in every agent's prompt so the prompt cache serves it to each agent at a tenth of the price) cannot work as built, because Claude Code caches only up to the system prompt and the end of the whole request, and an agent's prompt is one block. The skill's text still claims the saving; the item it asks for corrects that text. Rubric row A8 moves to `Split` with this verdict; the open net cost and recall effect stay with Q-308.
+
+The gate's `--check` lines, as printed (path lines summarized: 15 under `docs/reviews/`, the probe's research doc and brief under `docs/working/`, and `runs/review-arms/a8-2026-11-19/cache-probe.md`; none is gate code, an instruction file or a dot path):
+
+```
+ok docs/working/briefs/2026-11-19-a8-cache-probe.md 1f5ef33c511e3231c8617f1f9005ef3b92764f62 0fb67559fe44de27ea54b002d92b538cda742504
+rubric docs/working/briefs/2026-11-19-a8-cache-probe.md: clean docs/reviews/code-review-rubric-2026-08-07-main.md: 1 red and 12 amber rows, none open
+rubric docs/working/briefs/2026-11-19-a8-cache-probe.md: clean docs/reviews/code-review-rubric-2026-11-19-measure-a8-cache-probe.md: 0 red and 16 amber rows, none open
+```
+
+- The first rubric line names the 2026-08-07 rubric this branch edits (row A8 to Split; empty Author note cells added to rows A3, A6 and A7 so the merge check's parser reads them).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges tip 1f5ef33c; the cycle files the "correct the lever #3 cache-saving text" item | Reading `cache-probe.md` | A wrong conclusion lands in a record; one `git revert` undoes it |
+| **[2] drop** | The brief closes unmerged; A8 stays open | None | The probe's 101k tokens are spent with nothing kept |
+| **[3] changes needed** | Your note goes back to the loop (dispatch 2 of 4) | Writing the note | Another loop run |
+
+- **Interim:** unmerged.
 

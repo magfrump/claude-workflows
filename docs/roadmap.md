@@ -61,18 +61,45 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   is the owner's: Q-302. First step after the answer: compare its gaps and causes with this
   repo's, and file any cause the fixes here do not cover.
 
-- **Agent: an Idea that carries owner-reported friction never leaves Ideas** (filed
-  2026-11-19, in session). Motive: philosophy-research F-019 (permission asks on every write
-  under the worktrees) and F-011 (a subagent's report write refused) were ingested
-  2026-11-16 as Ideas and sat there while the owner kept hitting them; step 8 briefs only
-  Now and Next, and nothing promotes an Idea. Same class as the roadmap-staleness fix
-  (22735b6e), one section over. First step: in `skills/dev-cycle/SKILL.md` step 6, an Idea
-  whose signal is harness feedback (a `docs/working/feedback/` entry) or an owner report is
-  moved to Now as agent work, or asked about in one `you: judgment` entry, at the next
-  iteration, never left unranked; a digest count of such Ideas makes it checkable. Gate
-  code: a review merge. Waits for a free build slot (A8, F-019 and F-011 hold all three).
+- **Agent: code-review lever #3 follow-ons in other files** (filed 2026-11-19, from the lever
+  #3 loop's report; not built on its branch, by its brief). Motive: the same two claims the
+  lever #3 correction removes from `skills/code-review/SKILL.md` also live elsewhere: the
+  "paste each sub-agent's skill text, it cannot read your files" rule in
+  `skills/draft-review/SKILL.md` (:172, :231-233, :560), `skills/matrix-analysis/SKILL.md`
+  (:116, :422) and `workflows/divergent-design.md` (:213); the "cacheable prefix" claim in
+  `patterns/orchestrated-review.md` (:151) and `guides/sub-agent-briefing.md` (:78). Also:
+  rubric row A7 in `docs/reviews/code-review-rubric-2026-08-07-main.md` reads Fixed for a
+  cross-pass cache warmth that does not exist on this path, and decision-log row 35 counts
+  10 contract tests where there are now 13. First step: once the lever #3 correction merges
+  (its wording is the model), one review brief over these files; `workflows/` is a never
+  glob, so review.
 
 ## In flight
+
+- **Agent: code-review: correct the lever #3 cache-saving text, and the choices built on it**
+  (filed 2026-11-19, from the cache probe, 9e89a31e; the owner asked in session to review the
+  decision and what else rests on it). Motive: decision 032 adopted lever #3 ("inline the
+  shared review context so the prompt cache serves it to every agent") on a 20-40% estimate
+  taken from the cross-model harness, which calls the API directly and sets its own cache
+  breakpoints; the production loop runs through Claude Code's Agent tool, which sets them
+  itself, and that transport was never probed before 2f5ad0b restructured the skill around
+  it. The probe shows the saving is zero on this path. What rests on the assumption, in
+  `skills/code-review/SKILL.md` "Inline shared-context prefix" and log rows 33-35:
+  (a) the cache-saving claims (:274-277, :307-310, :322-323, :352-354) and the cross-pass
+  warmth claim (:347-351, rubric row A7): wrong, rewrite; (b) the byte-identical, stable-first
+  part order and "only the tail varies" rule: a constraint with no benefit now, relax or keep
+  only where it costs nothing; (c) inlining the diff and enclosing files itself: it still has
+  a recall rationale of its own (decision 021's Stage-1 enclosing-file context, which caught
+  csp's gold R1 in the 2026-08-06 baseline), so it stays unless Q-308's self-read arm shows
+  it costs more than it finds; (d) the 25k budget: keep, re-justified on context-window
+  grounds alone (log row 35). Also found: the skill says to paste each sub-agent's skill text
+  into its prompt because "sub-agents cannot read your files" (:461, :879, :1293), which
+  `guides/sub-agent-briefing.md` contradicts ("pass the path, not the contents") and both A8
+  loops disproved by having agents read the file; pasting was the other half of why prompts
+  were identical. First step: one review brief over (a), (b) and the pasting rule, with an
+  amendment to decision 032 (a `docs/decisions/` change, so review) and `test/skills/code-review-context-delivery.bats`
+  updated; (c) and (d) wait on Q-308 (after the release, the owner's call). Briefed 2026-11-19 on the owner's
+  go-ahead in session: `docs/working/briefs/2026-11-19-code-review-lever3-correction.md`.
 
 - **Worktrees and caches out of the protected config directory** (brainstorm 2026-11-16;
   moved from Ideas 2026-11-19 on the owner's request). Signal: philosophy-research F-019,
@@ -82,17 +109,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   `docs/working/briefs/2026-11-19-worktrees-outside-dot-claude.md` (divergent design over
   where they live, then build; the brief also says a brief write and its dependent
   commands go in separate responses).
-
-- **parallel-worktrees: a subagent returns its report as text** (brainstorm 2026-11-16;
-  moved from Ideas 2026-11-19 on the owner's request). Signal: philosophy-research F-011 and
-  belegarth-herald F-010, the Write tool refusing a subagent's report file in two projects.
-  Briefed: `docs/working/briefs/2026-11-19-subagent-report-as-text.md`.
-
-- **A8 post-restructure token measurement** (Next 1 until 2026-11-19; go-ahead Q-304 [1],
-  the owner in session: "yes, run it now"). Briefed: `docs/working/briefs/2026-11-19-a8-token-measurement.md`
-  (one canon cell, a terminal pass, tokens per the provenance convention; the review k and
-  lite re-evaluation stay deferred). Motive: rubric row A8 in
-  `docs/reviews/code-review-rubric-2026-08-07-main.md` rests on a projection.
 
 ## Next
 
@@ -111,6 +127,21 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
    no answered `you: walkthrough` entry, so "too few to decide". The three open questions
    are drafted in the loop's marker and held until another repo reports its own count,
    since the first (which project to try first) depends on which repos have walkthroughs.
+2. **Revisit the 2-hour wait before re-dispatching an unfinished loop** (owner request,
+   2026-11-19: "seems excessive"; not for this release). Motive: `build-loop.sh --prompt
+   --steal` takes a loop's locked worktree only when the loop left a marker, or when both
+   lock and tip are over `STEAL_AGE` (7200 s, decision D1 in
+   `docs/working/plan-build-loop-handoff.md`), because the gate cannot tell a dead loop
+   from a live one, perhaps another session's, from git state alone. On 2026-11-19 the
+   F-019 loop ended without a marker 7 minutes after its last commit, this session's task
+   notification said so, and the re-dispatch still waited two hours. First step: list what
+   a lock holder could prove it is gone (the dispatching session's own record of its
+   subagent ending, a heartbeat, a shorter age for this session's own loops) and weigh
+   each against D1's case (a live loop in another session, S1's honest-slip threat model),
+   then pick the threshold or mechanism; gate code, so a review merge.
+   2026-11-19, later: two loops in one evening (F-019's at 20:01 UTC, the lever #3
+   correction's at 21:47 UTC) were told to hand back before their confirming review
+   reported, with work committed and no marker; each then waits the full two hours.
 
 ## Ideas
 
@@ -165,6 +196,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   2026-11-18 (iteration 2026-11-19-0717): step 4b fired on `skills/dev-cycle/SKILL.md` as
   22735b6e changed it (step 6's check of roadmap items no open entry or watch names); the same
   sample takes it.
+  2026-11-19 (iteration 2026-11-19-2008): step 4b fired on `skills/dev-cycle/SKILL.md` as
+  7661a2cf changed it (step 6 moves Ideas that carry reported friction); the same sample
+  takes it.
 - **Record out-of-cycle session answers through `--answered`.** Signal: 4306aa88 (the owner's
   Q-281..284 answers, recorded on a hand branch) read as `other` in `--main-log`, making
   iteration 2026-11-13-2237 a full cycle with a health run.
@@ -463,6 +497,24 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- **Agent: A8 follow-ups: the cache probe and closing rubric row A8** (filed 2026-11-19). Done
+  9e89a31e (approved merge, Q-310 [1]), brief `docs/working/briefs/closed/2026-11-19-a8-cache-probe.md`,
+  record `runs/review-arms/a8-2026-11-19/cache-probe.md`: two agents with a byte-identical shared
+  block 28.5 s apart both read only the 18,900-token system prefix from the cache; Claude Code's
+  breakpoints sit on the system blocks and the request's last block, and an agent's prompt is one
+  block, so no prompt order makes the shared block cacheable across agents. Rubric row A8: Split.
+- **Agent: an Idea that carries owner-reported friction never leaves Ideas** (filed 2026-11-19).
+  Done 7661a2cf (approved merge, Q-309 [1]), brief `docs/working/briefs/closed/2026-11-19-ideas-promotion.md`:
+  the digest lists each Idea naming a feedback entry or an owner report, and step 6 moves
+  each unheld one to Now (one question per iteration for those needing a call). Live with
+  the next release (Q-303); about 12 of today's Ideas move then.
+- **A8 post-restructure token measurement** (Q-304 [1]). Done 358c2332 (approved merge, Q-306 [1]),
+  brief `docs/working/briefs/closed/2026-11-19-a8-token-measurement.md`, results
+  `runs/review-arms/a8-2026-11-19/results.md`: one terminal pass on csp, 852,285 tokens over 9
+  agents; no agent got the shared review block from the prompt cache, so the skill's "free"
+  claim (rubric row A8) fails on its benefit; net cost and recall effect unmeasured.
+- **parallel-worktrees: a subagent returns its report as text** (F-011). Done f8453f26
+  (approved merge, Q-307 [1]), brief `docs/working/briefs/closed/2026-11-19-subagent-report-as-text.md`.
 - **Agent: dev-cycle section 5 follow-ups (R5, A11)** (filed 2026-11-18). Done 24af50da
   (approved merge, Q-305 [1]), brief `docs/working/briefs/closed/2026-11-18-section5-followups.md`,
   research `docs/working/research-2026-11-18-section5-followups.md`: a `watching.md` with no

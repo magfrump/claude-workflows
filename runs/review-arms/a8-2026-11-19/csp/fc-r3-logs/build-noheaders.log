@@ -1,0 +1,40 @@
+▲ Next.js 16.2.4 (Turbopack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 3.2s
+  Running TypeScript ...
+  Finished TypeScript in 3.3s ...
+  Collecting page data using 15 workers ...
+  Generating static pages using 15 workers (0/20) ...
+  Generating static pages using 15 workers (5/20) 
+  Generating static pages using 15 workers (10/20) 
+  Generating static pages using 15 workers (15/20) 
+✓ Generating static pages using 15 workers (20/20) in 205ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /api/analytics
+├ ƒ /api/decomposition/extract
+├ ƒ /api/edit/artifact
+├ ƒ /api/edit/inline
+├ ƒ /api/edit/whole
+├ ƒ /api/explanation/lean-error
+├ ƒ /api/formalization/causal-graph
+├ ƒ /api/formalization/counterexamples
+├ ƒ /api/formalization/dialectical-map
+├ ƒ /api/formalization/lean
+├ ƒ /api/formalization/property-tests
+├ ƒ /api/formalization/semiformal
+├ ƒ /api/formalization/statistical-model
+├ ƒ /api/predict
+├ ƒ /api/refine/context
+└ ƒ /api/verification/lean
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

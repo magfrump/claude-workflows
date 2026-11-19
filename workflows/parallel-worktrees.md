@@ -33,8 +33,9 @@ Send the subagents in parallel — one Agent call per item (or per shared-state 
 
 - **Focused brief**: the item, its workflow, acceptance criteria, and any constraints ("don't modify files outside X"). Each brief must be self-contained — subagent N should not need to know about item M. See `guides/sub-agent-briefing.md`.
 - **Worktree isolation for any item that writes code**: pass `isolation: "worktree"` on the Agent call so parallel implementations never touch the same working tree. The harness creates the worktree and auto-cleans it if unchanged.
-- Read-only/triage items don't need a worktree.
+- Read-only/triage items don't need a worktree, unless their report is to be committed (next bullet).
 - Instruct each implementing subagent to **commit its work inside its worktree** before finishing (conventional prefixes; autonomous commit format in /away mode). Uncommitted worktree changes are what get lost.
+- **A report comes back as text.** When an item's deliverable is a report (findings, an analysis, a review), name the path it should land at in the brief, and tell the subagent to return the report in its final message and not to write it to a file: Claude Code's Write tool refuses a subagent's report file ("Subagents should return findings as text, not write report files"), under `docs/thoughts/` and in a scratch directory. The parent writes and commits it (step 4). The refusal has been recorded only for report files: the same subagent's handoff under `docs/working/` was accepted, and no refused code write has been recorded, so code and handoffs stay with the subagent, committed in its worktree.
 
 Manual fallback. Use it for human-driven sessions, when Agent-tool isolation is not available, or when it **fails or misbehaves**. In the cc-isolated sandbox it has failed outright since 2026-09-18 ("Could not read the repository git config…"). Before that it branched from a stale base and left subagents stalled. The by-hand version has run 6 parallel agents cleanly:
 
@@ -49,6 +50,8 @@ Don't put these under `.claude/`. Claude Code asks before every write there, and
 Dispatch each agent **without** `isolation`, and tell it to work and commit only under its absolute worktree path. Put the shared brief in one scratch file and give each agent only its item-specific notes. Then poll `git log main..<branch>` rather than waiting on the agents.
 
 ### 4. Review and merge each item
+
+**Place returned reports first.** For an item whose report is to be committed and came back as text, the parent writes it to the path the brief named, inside that item's worktree, and commits it there, so it is reviewed and merged like any other item. A harness worktree with no changes is auto-cleaned, so for an item whose only output is a report, create the worktree by hand (manual fallback above).
 
 The review unit is the item (or the shared-state group from step 1), not the batch. Each one runs its own `pr-prep` — review-fix loop, iteration cap and all — and merges as soon as it is clean:
 
@@ -65,7 +68,7 @@ The review unit is the item (or the shared-state group from step 1), not the bat
 - **Sequential collapse**: grinding through the batch one item at a time in the main agent. That's the default failure; fan out instead.
 - **Shared-tree collisions**: parallel subagents editing one working tree. Worktree isolation is not optional for implementing items.
 - **Batch-held review**: reviewing the batch as one unit, so the hardest item sets everyone's iteration count and merge time, and each re-review re-reads items that did not change. Review and merge per item (step 4).
-- **Lost work**: subagents finishing without committing in their worktree.
+- **Lost work**: subagents finishing without committing in their worktree, or a report that came back as text and was never written down.
 - **Stale base / stalled agents**: harness-created worktrees can branch from a commit behind `main`, which makes every merge a conflict, and an agent can hang on a tool call. Branch from `main` yourself. If an agent goes quiet for more than about 10 minutes with a dirty tree, check what is still running (a long test suite is not a hang) before stopping it. Then `git merge main` into its worktree and finish its remaining edits by hand.
 
 ## When to pivot

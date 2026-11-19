@@ -163,6 +163,7 @@ mig record-1b-ran record f7ccbaa72beae11c - - 'none: the record'"'"'s 1b. line o
 mig record-8-free-slot record edf34f56aed13b61 - - 'none: the record'"'"'s 8. line only gained a reason for a queue under its slots; every record written before stays valid'
 mig record-light-pass record cd3e54279e1ed41b - - 'none: the record'"'"'s 4. and 4b. lines only gained a "skipped: light pass (REASON)" form; every record written before stays valid'
 mig record-6-roadmap-holds record f7f4746bca47b0bd - - 'none: the record'"'"'s 6. line only gained what moved and each unheld item'"'"'s hold; every record written before stays valid'
+mig record-6-ideas-to-now record 27e00a653c3ba2a2 - - 'none: the record'"'"'s 6. line'"'"'s moved list only gained an Ideas-to-Now move; every record written before stays valid'
 
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   set -uo pipefail
