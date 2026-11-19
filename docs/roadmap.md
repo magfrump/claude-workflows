@@ -61,17 +61,31 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   is the owner's: Q-302. First step after the answer: compare its gaps and causes with this
   repo's, and file any cause the fixes here do not cover.
 
-## In flight
+- **Agent: code-review: correct the lever #3 cache-saving text, and the choices built on it**
+  (filed 2026-11-19, from the cache probe, 9e89a31e; the owner asked in session to review the
+  decision and what else rests on it). Motive: decision 032 adopted lever #3 ("inline the
+  shared review context so the prompt cache serves it to every agent") on a 20-40% estimate
+  taken from the cross-model harness, which calls the API directly and sets its own cache
+  breakpoints; the production loop runs through Claude Code's Agent tool, which sets them
+  itself, and that transport was never probed before 2f5ad0b restructured the skill around
+  it. The probe shows the saving is zero on this path. What rests on the assumption, in
+  `skills/code-review/SKILL.md` "Inline shared-context prefix" and log rows 33-35:
+  (a) the cache-saving claims (:274-277, :307-310, :322-323, :352-354) and the cross-pass
+  warmth claim (:347-351, rubric row A7): wrong, rewrite; (b) the byte-identical, stable-first
+  part order and "only the tail varies" rule: a constraint with no benefit now, relax or keep
+  only where it costs nothing; (c) inlining the diff and enclosing files itself: it still has
+  a recall rationale of its own (decision 021's Stage-1 enclosing-file context, which caught
+  csp's gold R1 in the 2026-08-06 baseline), so it stays unless Q-308's self-read arm shows
+  it costs more than it finds; (d) the 25k budget: keep, re-justified on context-window
+  grounds alone (log row 35). Also found: the skill says to paste each sub-agent's skill text
+  into its prompt because "sub-agents cannot read your files" (:461, :879, :1293), which
+  `guides/sub-agent-briefing.md` contradicts ("pass the path, not the contents") and both A8
+  loops disproved by having agents read the file; pasting was the other half of why prompts
+  were identical. First step: one review brief over (a), (b) and the pasting rule, with an
+  amendment to decision 032 (a `docs/decisions/` change, so review) and `test/skills/code-review-context-delivery.bats`
+  updated; (c) and (d) wait on Q-308 (after the release, the owner's call).
 
-- **Agent: A8 follow-ups: the cache probe and closing rubric row A8** (filed 2026-11-19,
-  from the A8 results). Motive: the measurement (358c2332) found no agent got the shared
-  review block from the prompt cache, inferred from the request records (cache breakpoints
-  sit after the per-agent part). First step: the results doc's two-agent cache probe (same
-  shared block, dispatched one after the other, read each agent's cache-read count); if the
-  layout is the cause, brief a fix to `skills/code-review/SKILL.md`'s prompt order. Then
-  rubric row A8 in `docs/reviews/code-review-rubric-2026-08-07-main.md` gets its closing
-  note (a review file the cycle does not write: a loop's change). The two larger settling
-  runs wait on Q-308. Briefed: `docs/working/briefs/2026-11-19-a8-cache-probe.md`.
+## In flight
 
 - **Worktrees and caches out of the protected config directory** (brainstorm 2026-11-16;
   moved from Ideas 2026-11-19 on the owner's request). Signal: philosophy-research F-019,
@@ -466,6 +480,12 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- **Agent: A8 follow-ups: the cache probe and closing rubric row A8** (filed 2026-11-19). Done
+  9e89a31e (approved merge, Q-310 [1]), brief `docs/working/briefs/closed/2026-11-19-a8-cache-probe.md`,
+  record `runs/review-arms/a8-2026-11-19/cache-probe.md`: two agents with a byte-identical shared
+  block 28.5 s apart both read only the 18,900-token system prefix from the cache; Claude Code's
+  breakpoints sit on the system blocks and the request's last block, and an agent's prompt is one
+  block, so no prompt order makes the shared block cacheable across agents. Rubric row A8: Split.
 - **Agent: an Idea that carries owner-reported friction never leaves Ideas** (filed 2026-11-19).
   Done 7661a2cf (approved merge, Q-309 [1]), brief `docs/working/briefs/closed/2026-11-19-ideas-promotion.md`:
   the digest lists each Idea naming a feedback entry or an owner report, and step 6 moves
