@@ -1733,3 +1733,39 @@ MD
     done
     [[ "$section" != *"Now 4"* && "$section" != *"A second Now section"* ]] || { echo "$section"; return 1; }
 }
+
+@test "section 5 reads an entry's Status only from its Needs line, exactly, as questions.sh does (review 2026-11-18 pass 2, claim 5b)" {
+    mkdir -p docs/working
+    cat > docs/working/questions.md <<'MD'
+# Running questions
+
+## Open
+
+### Q-010 · open-but-quotes-answered
+**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** OPEN
+
+The text quotes **Status:** ANSWERED, which is not its status.
+
+### Q-012 · answered-with-date
+**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** ANSWERED (2026-11-02)
+
+About it.
+
+### Q-013 · answered
+**Needs:** you: judgment · **Opened:** 2026-11-01 · **Status:** ANSWERED
+
+About it.
+
+## Notes
+
+Q-010 again: **Status:** ANSWERED
+MD
+    : > docs/working/questions-archive.md
+    printf '# Roadmap\n\n## Now\n\n- **A** (Q-010)\n- **B** (Q-012)\n- **C** (Q-013)\n\n## Next\n' > docs/roadmap.md
+    run --separate-stderr bash "$DC"
+    section=$(echo "$output" | sed -n '/## 5/,/## 6/p')
+    # Q-012's status is not exactly ANSWERED, so archive would not move it and it still holds.
+    for t in "- Now 1 · A: open Q-010 (you: judgment)" "- Now 2 · B: open Q-012 (you: judgment)" "- Now 3 · C: no open entry or watch names it"; do
+        [[ "$section" == *"$t"* ]] || { echo "missing: $t"; echo "$section"; return 1; }
+    done
+}

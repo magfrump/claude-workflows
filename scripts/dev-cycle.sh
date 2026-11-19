@@ -476,9 +476,14 @@ if inrepo docs/roadmap.md; then
   if [[ "$open_ok" != 1 ]]; then
     echo "Now and Next items were NOT checked against open entries and watches: section 3 did not read them."
   else
-    # IDs marked ANSWERED in the live file (the Status field on the line under
-    # each "### Q-NNN" heading), which section 3's list still carries.
-    answered=" $(awk '/^### Q-[0-9]+/ { id = $2; next } id != "" && /\*\*Status:\*\*[ \t]*ANSWERED/ { printf "%s ", id; id = "" }' docs/working/questions.md) "
+    # IDs whose live-file Status is exactly ANSWERED, read as questions.sh's
+    # parse_entries reads it: the Status field of the **Needs:** line under a
+    # "### Q-NNN " heading, the fields split on " · ", compared as `archive`
+    # compares it. Section 3's list still carries these entries.
+    answered=" $(awk '/^### Q-[0-9]+ / { id = $2; next }
+      /^\*\*Needs:\*\*/ && id != "" { l = $0; gsub(/\*\*/, "", l); n = split(l, f, " · ")
+        for (i = 1; i <= n; i++) if (f[i] ~ /^Status:/ && substr(f[i], 9) == "ANSWERED") printf "%s ", id
+        id = "" }' docs/working/questions.md) "
     items="$(awk '
       function flush(   title, ids, s, id, seen) {
         if (cur == "") return

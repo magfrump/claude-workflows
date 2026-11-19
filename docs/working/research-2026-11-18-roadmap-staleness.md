@@ -32,7 +32,7 @@
 - Failure-pattern grep: no matches found
 - Every item names old answered IDs in its history ("Unit 1 merged at 236f21ee (Q-224 [1])"), so "names an answered ID" would flag every item. The signal is an item with **no open** ID: nothing in the questions files holds it [observed: the roadmap at 686258b1].
 - Next items are numbered (`1. **…**`) and Now items are bullets (`- **…**`), with indented numbered sub-steps inside items that are not items [observed]. An item starts only at column 0.
-- When section 3 could not read the questions files, `open_q` may still hold a partial list (the first `qopen` succeeded, the second failed), so section 5 gates on `open_ok`, set only when both succeed, and says the list was not checked instead of reporting every item as unheld [observed: review 2026-11-18, claim 8].
+- When section 3 could not read the questions files, `open_q` may still hold the first `qopen` call's full list (the first call succeeded, the second failed), so section 5 gates on `open_ok`, set only when both succeed, and says the list was not checked instead of reporting every item as unheld [observed: review 2026-11-18, claim 8].
 - The `--cycle-diff` refusal for a blanket `8.` line, proposed in session, is not mechanical: the record's `8.` line is prose, Now has no item IDs, and an iteration edits Now before writing the line, so a check would match titles against a moving list. The digest's per-item list makes the blanket line visibly false instead, and step 8 is told to use it [inferred]. The plan records this change of approach.
 
 ## Files read
