@@ -75,16 +75,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   so section 5 prints its NOT-checked line; add the test; then A11. Gate code: a review
   merge, then the next release. Briefed 2026-11-18: `docs/working/briefs/2026-11-18-section5-followups.md`.
 
-- **Agent: flaky board test, the fanout case** (filed 2026-11-18, from the health check
-  before `fix/dev-cycle-roadmap-staleness` merged). Motive: `test/scripts/board.bats`'s
-  "a symlink in the git directory refuses the write" failed once in a full run (want
-  `objects/ab … is a symlink`, got WRITTEN) and passed alone 3 of 3. Likely cause
-  [inferred]: when the fixture repo already has an `objects/ab` directory (an object
-  whose hash starts `ab`, which varies with commit timestamps), `ln -s … "$c/objects/ab"`
-  makes the link inside it, so nothing is planted. First step: confirm by forcing an
-  `ab` object, then plant the link at a fan-out name the repo does not hold. Briefed
-  2026-11-18: `docs/working/briefs/2026-11-18-board-fanout-flaky.md`.
-
 ## Next
 
 1. **A8 post-restructure token measurement** (go-ahead asked in Q-304). Motive: the user deferred big compute until
@@ -472,6 +462,11 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- **Agent: flaky board test, the fanout case** (filed 2026-11-18). Done 5a4d2fda (self-merge),
+  brief `docs/working/briefs/closed/2026-11-18-board-fanout-flaky.md`, research
+  `docs/working/research-2026-11-18-board-fanout-flaky.md`: cause confirmed (an existing
+  `objects/ab` directory made `ln` link inside it); the case now moves the directory out and
+  links it back, and every case checks its link landed. 20 of 20 runs passed.
 - **Agent: check cc-push's git version list against git's release notes** (filed and done
   2026-11-18, branch `docs/roadmap-cleanup-2026-11-18`). The list in
   `devcontainer-config/cc-push.sh` (2.39.4, 2.40.2, 2.41.1, 2.42.2, 2.43.4, 2.44.1, 2.45.1,
