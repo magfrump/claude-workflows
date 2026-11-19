@@ -285,6 +285,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-294](#q-294--blocked-2026-11-14-merge-rubric-gate-1) | Q-294: [1] | 2026-11-14 |
 | [Q-295](#q-295--blocked-2026-11-14-merge-rubric-gate-2) | Q-295: [1] | 2026-11-14 |
 | [Q-296](#q-296--merge-gate-2026-11-16-loop-may-merge-default-in-a3ef5a381c94) | Q-296: [1] | 2026-11-16 |
+| [Q-297](#q-297--image-lag) | Q-297: met — image a4c856bf7cb595f6eab4923db117827ebb833cb4 holds the gate code of main f4156dd013ca713a2... | 2026-11-16 |
 | [Q-298](#q-298--merge-gate-2026-11-14-merge-rubric-gate-e035801282ff) | Q-298: [1] | 2026-11-16 |
 | [Q-299](#q-299--profile-ratify-owner) | Q-299: [2] (owner, in session, 2026-11-18): ratify with your edits. The owner's edit was to archetype 2's w... | 2026-11-18 |
 <!-- index:end -->
@@ -7391,5 +7392,38 @@ Is the draft profile of you as a reader of agent-written entries and messages (`
 - **Blocks:** nothing. The Q-278 reader test runs on the draft either way.
 - **Interim:** draft, with every call at its interim answer.
 - **If the answer differs:** the profile's affected sections are redrafted. Any reader-test finding that rested on a changed call is re-graded.
+
+
+### Q-297 · image-lag
+**Needs:** you: terminal · **Opened:** 2026-11-16 · **Status:** ANSWERED
+Q-297: met — image a4c856bf7cb595f6eab4923db117827ebb833cb4 holds the gate code of main f4156dd013ca713a21656544eb3687b006fc31a0
+
+Run the release paste below on the host, from your claude-workflows checkout at main's tip, then start a new sandbox session.
+
+**If you say no:** nothing breaks. Sessions keep running the installed image at C, so the two merges below stay on main but do not run: a loop's prompt still forbids every merge, and `--check` and `--merge` print no `rubric` lines.
+
+**Release notes** (rewritten 2026-11-17, iteration 2026-11-17-2049 UTC, from the log). The installed image is the root-owned copy of the dev-cycle scripts and skill that every session runs as the gate. It is at C = `10a50983ade4c51f2ee3db3fc2046905318b618f` (read from `/opt/claude-workflows/.manifest`). Main is at M = `39cd8bc71520c23c8cd6933644e1d26aca9b8cb5`.
+
+**Merged without your review:** none (no subject ends "build-loop self-merge").
+
+**What changes for you** (the two merges you approved):
+
+- A build loop may merge the default branch into its own branch (`c1c7a4f3`, your Q-296 answer): the prompt `build-loop.sh --start` and `--prompt` give a loop now forbids only merging into another branch, and says to re-run review and tests after merging the default branch in, or to abort and stop on a conflict it cannot resolve cleanly. This is the fix for the philosophy-research project's feedback F-009.
+- The merge-time rubric check (`1b50402c`, your Q-298 answer): `--check` and `--merge` print a `rubric` line for each red or amber row of a branch's code-review rubric that they cannot count as closed (a red closes only by a fix or a Q-ID you have answered). It is report-only and changes no verdict. It adds `scripts/lib/rubric-check.sh`, which `d6.sh` now requires: the installer copies all of `scripts/`, so it ships with this release.
+
+**The rest:** 11 commits, cycle lands, the philosophy-research feedback ingest and the Q-292 answer, records only. The full list: `git -c log.showSignature=false log --first-parent --format='%h %s' 10a50983ade4c51f2ee3db3fc2046905318b618f..39cd8bc71520c23c8cd6933644e1d26aca9b8cb5`
+
+**Gate files changed:** `scripts/build-loop.sh`, `scripts/d6.sh`, `scripts/lib/rubric-check.sh`, `skills/dev-cycle/SKILL.md`.
+
+**Paths outside `docs/`** (13 paths under `docs/` also changed; the image carries none of them): `scripts/build-loop.sh`, `scripts/d6.sh`, `scripts/lib/rubric-check.sh`, `skills/dev-cycle/SKILL.md`, `test/lib/build-loop-fixtures.bash`, `test/scripts/build-loop-check.bats`, `test/scripts/build-loop-dispatch.bats`, `test/scripts/build-loop-merge.bats`, `test/scripts/build-loop-orchestrator.bats`
+
+The paste (one line; it refuses, saying why, unless the checkout is at main's tip and the gate code and installer are still M's):
+
+```
+sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "39cd8bc71520c23c8cd6933644e1d26aca9b8cb5:$p")"; then n=$((n+1)); else echo "release refused: $p changed after M: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
+```
+
+- **Interim:** the image's gate (C) runs.
+- **Blocks:** nothing; the dev cycle runs on the old gate meanwhile.
 
 
