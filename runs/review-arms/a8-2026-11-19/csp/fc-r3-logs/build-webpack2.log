@@ -1,0 +1,82 @@
+▲ Next.js 16.2.4 (webpack)
+
+  Creating an optimized production build ...
+Failed to compile.
+
+../../../../../../workspace/external/cc-review-eval/mfc-csp/node_modules/bluebird/js/release/async.js
+Module not found: /workspace/external/package.json (directory description file): /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: No file content
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+../../../../../../workspace/external/cc-review-eval/mfc-csp/node_modules/bluebird/js/release/promise.js
+../../../../../../workspace/external/cc-review-eval/mfc-csp/node_modules/mammoth/lib/promises.js
+../../../../../../workspace/external/cc-review-eval/mfc-csp/node_modules/mammoth/lib/document-to-html.js
+../../../../../../workspace/external/cc-review-eval/mfc-csp/node_modules/mammoth/lib/index.js
+./app/lib/utils/fileExtraction.ts
+./app/components/features/source-input/FileUpload.tsx
+./app/components/panels/InputPanel.tsx
+./app/page.tsx
+
+../../../../../../workspace/external/cc-review-eval/mfc-csp/node_modules/bluebird/js/release/debuggability.js
+Module not found: /workspace/external/package.json (directory description file): /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: No file content
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+../../../../../../workspace/external/cc-review-eval/mfc-csp/node_modules/bluebird/js/release/promise.js
+../../../../../../workspace/external/cc-review-eval/mfc-csp/node_modules/mammoth/lib/promises.js
+../../../../../../workspace/external/cc-review-eval/mfc-csp/node_modules/mammoth/lib/document-to-html.js
+../../../../../../workspace/external/cc-review-eval/mfc-csp/node_modules/mammoth/lib/index.js
+./app/lib/utils/fileExtraction.ts
+./app/components/features/source-input/FileUpload.tsx
+./app/components/panels/InputPanel.tsx
+./app/page.tsx
+
+../../../../../../workspace/external/cc-review-eval/mfc-csp/node_modules/bluebird/js/release/promise.js
+Module not found: /workspace/external/package.json (directory description file): /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: No file content
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+../../../../../../workspace/external/cc-review-eval/mfc-csp/node_modules/mammoth/lib/promises.js
+../../../../../../workspace/external/cc-review-eval/mfc-csp/node_modules/mammoth/lib/document-to-html.js
+../../../../../../workspace/external/cc-review-eval/mfc-csp/node_modules/mammoth/lib/index.js
+./app/lib/utils/fileExtraction.ts
+./app/components/features/source-input/FileUpload.tsx
+./app/components/panels/InputPanel.tsx
+./app/page.tsx
+
+../../../../../../workspace/external/cc-review-eval/mfc-csp/node_modules/bluebird/js/release/schedule.js
+Module not found: /workspace/external/package.json (directory description file): /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: No file content
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+../../../../../../workspace/external/cc-review-eval/mfc-csp/node_modules/bluebird/js/release/async.js
+../../../../../../workspace/external/cc-review-eval/mfc-csp/node_modules/bluebird/js/release/promise.js
+../../../../../../workspace/external/cc-review-eval/mfc-csp/node_modules/mammoth/lib/promises.js
+../../../../../../workspace/external/cc-review-eval/mfc-csp/node_modules/mammoth/lib/document-to-html.js
+../../../../../../workspace/external/cc-review-eval/mfc-csp/node_modules/mammoth/lib/index.js
+./app/lib/utils/fileExtraction.ts
+./app/components/features/source-input/FileUpload.tsx
+./app/components/panels/InputPanel.tsx
+./app/page.tsx
+
+../../../../../../workspace/external/cc-review-eval/mfc-csp/node_modules/bluebird/js/release/util.js
+Module not found: /workspace/external/package.json (directory description file): /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: No file content
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+../../../../../../workspace/external/cc-review-eval/mfc-csp/node_modules/bluebird/js/release/promise.js
+../../../../../../workspace/external/cc-review-eval/mfc-csp/node_modules/mammoth/lib/promises.js
+../../../../../../workspace/external/cc-review-eval/mfc-csp/node_modules/mammoth/lib/document-to-html.js
+../../../../../../workspace/external/cc-review-eval/mfc-csp/node_modules/mammoth/lib/index.js
+./app/lib/utils/fileExtraction.ts
+./app/components/features/source-input/FileUpload.tsx
+./app/components/panels/InputPanel.tsx
+./app/page.tsx
+
+
+> Build failed because of webpack errors

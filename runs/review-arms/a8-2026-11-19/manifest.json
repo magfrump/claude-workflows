@@ -1,0 +1,63 @@
+{
+  "experiment": "A8 \u2014 post-restructure token measurement, one canon cell (brief docs/working/briefs/2026-11-19-a8-token-measurement.md)",
+  "date": "2026-11-19",
+  "setup": "Today's skills/code-review/SKILL.md (last changed 82accdd7, 2026-11-14) at 4330e303. One terminal pass (no --loop-pass): k=3 fact-check (opus), Stage 1.5 gating, gated critic panel (opus), Stage 2.5 if routed claims, Stage 3 synthesis inline by the orchestrator.",
+  "baseline": "runs/review-arms/baseline-2026-08-06 (csp cell: fc k=1 74,274 + 4 critics = 358,626 core; test-strategy gap-fix 65,894 ran separately)",
+  "method": "Scratch worktree of /workspace/external/meta-formalism-copilot at d90d6bb in the session scratchpad. Shared block (goal preamble + rules + PR intent + diff + enclosing files) inlined first and byte-identical in every prompt; per-agent tail names the skill file to read, the output path and the role task. Tokens from task notifications, written at notification time.",
+  "cells": {
+    "csp": {
+      "range": "d86d2dc..d90d6bb",
+      "commit": "d90d6bb",
+      "labels_RA": "2/4",
+      "delivery_mode": "inline",
+      "shared_block_bytes": 8755,
+      "shared_block_tokens_est": 2189,
+      "shared_block_budget_tokens": 25000,
+      "critic_candidates": [
+        "security",
+        "performance",
+        "api-consistency",
+        "architecture",
+        "test-strategy"
+      ],
+      "tokens": {
+        "fc_r1": 100755,
+        "fc_r2": 90196,
+        "fc_r3": 121024,
+        "stage1_total": 311975,
+        "security": 103326,
+        "performance": 78987,
+        "api_consistency": 88378,
+        "architecture": 81399,
+        "test_strategy": 79690,
+        "stage2_total": 431780,
+        "stage2_5_submitted_claims": 108530,
+        "core_total": 743755,
+        "total_tokens": 852285
+      },
+      "critics_skipped": {
+        "ui-visual": "Step 5: layout.tsx hunks are header/nonce plumbing; className line is unchanged context (same call as the baseline)"
+      },
+      "shared_block_stage2_bytes": 11716,
+      "prompt_prefix_sha256_16": {
+        "stage1": "be4a2600985537d5 (3/3 prompts)",
+        "stage2": "42374933a2ebe4a1 (5/5 prompts)"
+      },
+      "first_call_cache_read_tokens": "18,900 on all 9 agents (system+tools only; shared block never served from cache)",
+      "labels_hit": "6/6 (R1,R2,A1,A2,A3,A4)"
+    }
+  },
+  "totals": {
+    "stage1_factcheck_tokens": 311975,
+    "stage2_critic_tokens": 431780,
+    "core_pipeline_tokens": 743755,
+    "stage2_5_tokens": 108530,
+    "all_agents_tokens": 852285,
+    "agents": 9,
+    "baseline_csp_core": 358626,
+    "baseline_csp_core_with_testgap": 424520
+  },
+  "run_status": "complete (2026-11-19)",
+  "instrument_note": "subagent_tokens equals the last API call's input+cache_creation+cache_read+output (checked against each transcript)",
+  "authoritative_records": "token-ledger.md (per-agent rows written at notification time), results.md, csp/ artifacts (all Commit: d90d6bb)"
+}

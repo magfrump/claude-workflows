@@ -1,0 +1,8 @@
+/ -> HTTP/1.1 200 OK content-security-policy: default-src 'self'; script-src 'self' 'nonce-ZGMyMzQ3ZjItZWVjYS00NDViLWFjYjctZjcwYTE4Nzk0MTUw' 'strict-dynamic'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none' 
+/api/analytics -> HTTP/1.1 200 OK 
+/_next/static/chunks/0n8t6.w.o7eel.js -> HTTP/1.1 200 OK 
+/favicon.ico -> HTTP/1.1 200 OK 
+/foo -> HTTP/1.1 404 Not Found content-security-policy: default-src 'self'; script-src 'self' 'nonce-ZjBmMTViYmQtZTdkMy00ODVhLTk1MzctYTczMjRhY2QxZWRi' 'strict-dynamic'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none' 
+prefetch next-router-prefetch:1 -> HTTP/1.1 200 OK 
+purpose:prefetch -> HTTP/1.1 200 OK 
+rsc nav (no prefetch) -> HTTP/1.1 200 OK content-security-policy: default-src 'self'; script-src 'self' 'nonce-Y2Q4YTYwZTItNmNkMC00MDgxLWEwOTktYTc1ZjUwOTNlZDAz' 'strict-dynamic'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none' 
