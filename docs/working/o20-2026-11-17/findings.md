@@ -153,7 +153,13 @@ over the whole folder, without this file or the orchestrator's grading. Its full
   - whether g's dependence on p and f came from reading Theorem 1's inequalities as choosing g;
   - what "Payor prudent-bot" refers to;
   - whether "minor flaw" meant "PB_k fails as defined".
-  E6 and E4 stay *pending reader* until these are answered. F16 stays S1 provisionally.
+  **Answered 2026-11-18** (`sessions/enthusiast-author.md`, end):
+  - E6: a settled misread. **F16 is confirmed S1.** The author: "This sort of mistake is why I haven't posted the
+    issue yet."
+  - E4: a settled misread. g was read as a function of q, partly for want of a toy example (F17).
+  - E2 and the first take: "PB" read as a Payor-hypothesis PrudentBot. **New finding, F21 (S2, undefined): the post
+    never expands "PB_k".** If it is read as a PrudentBot, it implies defection against DefectBot, which the post
+    says is not shown. Name the agent in words at first use, and say that "prudent" isn't claimed.
 - **Own process error.** The follow-up questions on E4 and E6 were asked after the author had seen the
   orchestrator's grading, which contaminates the replies. Recorded in the skill.
 

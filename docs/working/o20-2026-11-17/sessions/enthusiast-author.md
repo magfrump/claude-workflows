@@ -79,3 +79,18 @@ E6: How much shorter is the proof search using Payor's lemma rather than Lob's t
 stop. That is weak evidence against those simulated findings *for this reader*, who already knows the Lean names.
 P4 missed badly in the other direction. The prediction assumed the reader would push through. The real reader
 abandoned the post a third of the way in, which matters more than the stop count.
+
+## Unsettled readings, answered by the author (2026-11-18)
+
+These are the fresh grader's U1–U4. The author answered them after seeing the orchestrator's grading.
+
+- **U1 (E6):** "yes I read e as Euler's number at a glance. This sort of mistake is why I haven't posted the issue
+  yet, because I don't have confidence in my understanding." → E6 **fail, misread** (settled).
+- **U2 (E4):** "I was interpreting g as a function of q, that's partly lazy reading and partly that I want a toy
+  example to track." → E4 **fail, misread** (settled). Part of the cause is the missing worked example (F17).
+- **U3 (E2):** "loose name for PB_k, assuming it defines prudence using the hypothesis for the payor lemma." → E2
+  stays **partial**. The post never says what "PB" stands for. Reading it as a PrudentBot carries an implication
+  the post disclaims: in the literature a PrudentBot also defects against DefectBot, and the post says
+  unexploitability is not claimed for either agent.
+- **U4 (first take):** "can't use the payor shortcut", on the same assumption as U3. → The first take agrees with
+  the post.

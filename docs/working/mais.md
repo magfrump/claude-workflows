@@ -184,7 +184,9 @@ newly familiar, but the bounded cost model is not.
   "what are C_S and c_S? I don't see any definition, and also I can't ctrl+F for them in the markdown"; "what is
   lambda?"; and, as the thread's likely first question, "How much shorter is the proof search using Payor's lemma
   rather than Lob's theorem?". They want concrete numbers for a concrete program, and they search for symbols
-  rather than scroll.
+  rather than scroll. On a misread symbol (e taken as Euler's number): "This sort of mistake is why I haven't
+  posted the issue yet, because I don't have confidence in my understanding." That is the stake in practice: they
+  hold a post back until they can explain it.
 
 **Patience budget.** Observed once (O20, 2026-11-18): four unresolved stops, then "bored" about a third of the
 way in, at the first theorem's explanatory paragraph. The questions above show how they read while engaged. They
