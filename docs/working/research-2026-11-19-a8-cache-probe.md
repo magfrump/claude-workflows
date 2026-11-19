@@ -14,12 +14,12 @@ timing (agents launched within milliseconds). A two-agent sequential probe can.
 
 - Request records live in each subagent's transcript,
   `~/.claude/projects/-workspace/<session>/subagents/agent-<id>.jsonl`: `api-request-shape`
-  (system), `api-request-blob` (per-message content blocks), `api-request` (`cacheControl`
+  (system and tools), `api-request-blob` (per-message content blocks), `api-request` (`cacheControl`
   paths, `tail` blob hashes, timestamp). This is how the A8 run read them.
 - In an A8 record (Stage 2.5's agent), the first request is: system (2 blocks, breakpoints on
   both); `messages[0]` user with 5 text blocks (instructions, git status, attribution, the
-  prompt, the hand-off reminder); `messages[1]` a system-role message with the skill listing
-  and three deferred tool definitions, breakpoint on its last block.
+  prompt, the hand-off reminder); `messages[1]` a system-role message with the tool, deferred-name,
+  environment and skill listings, then three newly ready tool definitions, breakpoint on its last block.
 - Skill section under test: `skills/code-review/SKILL.md` "Inline shared-context prefix
   (decision 032 #3)", lines 268-358.
 - Rubric row: `docs/reviews/code-review-rubric-2026-08-07-main.md:35`, `🟡 Open`; status
@@ -29,7 +29,7 @@ timing (agents launched within milliseconds). A two-agent sequential probe can.
 
 Failure-pattern grep: FP-089, FP-091
 - FP-089 (count claims drift across citing documents): the probe doc and the rubric cell cite
-  the same figures (18,900; 31,731; 28.5 s); keep them copied from the probe output, not retyped.
+  the same figures (18,900; 28.5 s); keep them copied from the probe output, not retyped.
 - FP-091 (a stale note inverts a premise): the web source for cache matching was seen only
   through a search summary (no egress), so the docs say it is unverified and the verdict rests
   on the records, not on it.
@@ -59,20 +59,20 @@ hashed each content block, and printed breakpoints and first-call usage.
 ## Design choices
 
 - Change the skill or not: not a choice; criterion 2 decides on the probe result (no order works).
-- Rubric status word for A8: two viable words, `Split` (remaining work moved to a tracked
-  follow-up, Q-308) and `Acknowledged` (stands with a qualifying note). `Split` fits: the
-  measured part is done and the unmeasured part (net cost, recall) is Q-308's unit.
-- The rubric file's own status line still says A8 is awaiting resolution; with A8 split and
-  every other row fixed, it becomes the template's all-resolved line (one-line consistency
-  edit in the same file).
+- Rubric status word for A8: `🟡 Open` with the measured verdict. `Split` (to Q-308) was the
+  first pick, but review found Q-308 covers only the settling runs, while the skill text A8
+  cites is now measured false and no tracked item corrects it; this branch cannot file one
+  (questions and roadmap are off limits). `Acknowledged` needs a tracked follow-up or a revisit
+  trigger for the same reason. So the row stays open until the cycle files the correction.
+- The rubric file's status line keeps the conditional-pass form, now naming the measured verdict.
 - Not proposed: a byte-identical whole prompt with the role sent another way would let a
-  sibling hit the whole ~31.7k prefix. That is a pipeline change, out of scope; noted in the
+  sibling read its whole request (~50.6k) from cache. That is a pipeline change, out of scope; noted in the
   probe doc for whoever weighs lever #3 next.
 
 ## Follow-up for the cycle
 
 The skill still says the cache "serve[s] the shared block to all ~8 agents" and "Leave it on
-because it is free" (`SKILL.md:274-277`, `:352-354`); the probe shows that saving does not
+because it is free" (`SKILL.md:274-277`, `:352-354`), and its stable-parts-first rule claims cross-pass warmth (`:347-351`, rubric row A7); the probe shows that saving does not
 occur on the Agent-tool path. Correcting that text is a pipeline change the brief puts out of
 scope, so it is for the cycle to file.
 

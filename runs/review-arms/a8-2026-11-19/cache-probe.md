@@ -46,9 +46,10 @@ The request records show the layout of each agent's first request:
 - `messages[0]` (user), five text blocks: [0] the instruction files, [1] git status,
   [2] commit attribution, **[3] the whole prompt (shared block + tail)**, [4] the hand-off
   reminder. Blocks 0-2 and 4 hash the same in A and B; only block 3 differs.
-- `messages[1]` (a system-role message), four blocks: the skill listing, then three deferred
-  tool definitions. Breakpoint 3 is on its last block, `messages[1].content[3]`: the end of
-  the request.
+- `messages[1]` (a system-role message), four blocks: [0] the tool, deferred-tool-name,
+  environment and skill listings; [1]-[3] the definitions of three tools that became ready to
+  use (the Claude Docs connector). Breakpoint 3 is on its last block, `messages[1].content[3]`:
+  the end of the request.
 
 A small correction to `results.md` §2, which reads this path as "the end of the first user
 turn": `messages[1]` is the system-role message after the user turn, so breakpoint 3 is the
@@ -74,8 +75,8 @@ unchanged.
 
 Only a byte-identical whole prompt would match, with the per-agent part delivered some other
 way. That is a different mechanism, not a prompt order, and it is outside this brief.
-Matching would serve more than the block: B's whole prefix up to block 3 (instruction files
-included), roughly the 31.7k tokens each agent now writes fresh. It is noted here for whoever
+Matching would serve more than the block: B would read its whole request from cache, about
+50.6k tokens (18,900 + 31,731) instead of 18,900, instruction files and listings included. It is noted here for whoever
 weighs lever #3 next, not proposed.
 
 ## What this means for A8
@@ -87,8 +88,15 @@ yields no cross-agent cache reads on the Agent-tool path, parallel or sequential
 saving that does not occur. What remains is each agent's own reuse within its run, which
 happens with or without inlining (`results.md` §2). The probe did not test reuse across
 loop passes. By the same mechanism, a later pass's agent hits only if its whole prompt is
-byte-identical to an earlier one's, and every fix commit changes the block's diff part. The net inline cost and the recall effect remain Q-308's (the owner's open question
+byte-identical to an earlier one's, and every fix commit changes the block's diff part. This
+also bears on rubric row A7 of `docs/reviews/code-review-rubric-2026-08-07-main.md` (marked
+Fixed): its stable-parts-first order (`SKILL.md:347-351`) keeps parts 1-4 a common prefix, but
+no breakpoint ends there either, so by this mechanism it buys no cross-pass cache hit. That is
+inferred from the records, not measured. The net inline cost and the recall effect remain Q-308's (the owner's open question
 on two larger settling runs).
 
 Cost of the probe: 2 × 50,685 = 101,370 tokens by the notified figure. Nearly all of that is
-the harness context every agent starts with, not the tail.
+the harness context every agent starts with, not the tail. These two agents are not rows in
+`token-ledger.md` or `manifest.json`: those record the A8 review pass, and the probe is a
+separate two-call measurement whose full per-agent record is the table above (the omission
+`docs/working/review-canon.md:131` asks a results doc to state).
