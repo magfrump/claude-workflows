@@ -29,6 +29,7 @@ The index below is generated — edit entries, not the table.
 | [Q-323](#q-323--gate-only-changes-approved-by-release) | you: judgment | Should a build loop's change that touches only the gate's own code (`scripts/build-loop.sh`, `d6.sh`, `dev-... | 2026-11-19 |
 | [Q-327](#q-327--trial-set-2-ends-again) | you: judgment | The second trial set (T8–T12), extended a week under Q-286, has now had its second weekly digest (`docs/w... | 2026-11-20 |
 | [Q-333](#q-333--merge-gate-2026-11-20-health-checkout-prep-8eec2ef40ea8) | you: judgment | Merge the health-checkout preparation step: a `Health checkout copies:` line in a repo's `docs/dev-cycle.md... | 2026-11-20 |
+| [Q-335](#q-335--merge-2026-11-20-skill-format-fields-preambles-e7935cf46b67) | you: judgment | Merge the fixes for findings F2 (a report field's value followed by prose) and F3 (text before a report's t... | 2026-11-20 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the ho... | 2026-11-05 |
 | [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there. | 2026-11-18 |
 | [Q-332](#q-332--regenerate-fact-check-reports-host) | you: terminal | Regenerate the fact-check skill's eval reports on the host, where the web works, and commit them. | 2026-11-20 |
@@ -209,4 +210,57 @@ Notes: `scripts/build-loop.sh`, `scripts/lib/dev-cycle-read.sh` and `skills/dev-
 | **[1] merge** | The gate merges tip 8eec2ef4 next iteration; the change goes live at your next release paste | Nothing now; one release paste later, as for any gate change | A bad refusal shows as `skipped: HC not prepared` and no health check runs that iteration; one `git revert` undoes it |
 | **[2] drop** | The brief closes; the roadmap item goes to Ideas | None | philosophy-research keeps the hand copy |
 | **[3] changes needed** | Your note goes back to the loop (say, "run a full code-review and commit its rubric") | One line of note | A re-dispatch and another merge entry |
+
+### Q-335 · merge-2026-11-20-skill-format-fields-preambles-e7935cf46b67
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
+
+Merge the fixes for findings F2 (a report field's value followed by prose) and F3 (text before a report's title) across seven skills, so their format and eval suites pass on freshly generated reports?
+
+**If you say no:** the seven skills and their tests stay as they are, and the report regeneration (brief `docs/working/briefs/2026-11-19-regenerate-skill-reports.md`) stays held, since your Q-328 answer [3] holds it until F2 to F7 are fixed; F4 to F7 merged earlier today, so this is the last of them.
+
+- **Why it's yours:** the branch edits five skill files (`skills/*/SKILL.md`), which are prompt files every session loads when it runs that skill; self-merge never lands those.
+- **Read:** the brief `docs/working/briefs/2026-11-20-skill-format-fields-preambles.md`; on the branch, `docs/working/research-2026-11-20-skill-format-fields-preambles.md` (each case, where it was fixed, and the results table).
+
+What it changes (from the loop's report, checked against the diff: 13 files, 320 lines added, 26 removed):
+- Seven skills' cases now pass on reports regenerated on the branch: pre-mortem 23/23, ai-personas-critique 29/29, business-plan-critique-moat 25/25, business-plan-critique-market-sizing 25/25, security-reviewer 26/26, dependency-upgrade 23/23, matrix-analysis 22/22. The regenerated reports were not committed (the brief says the regeneration branch commits them).
+- Some fixes are in the test helpers (`test/skills/helpers.bash`, `eval-helpers.bash`: a field's value may be followed by a delimiter and prose), with a new rules suite `test/skills/field-value-rules.bats`; some in five skills' text (title first, then header fields; the value word first on its line).
+- The work ran over two dispatches (the first loop stopped without a marker; the second, taken over at iteration 2050, committed the research doc and regenerated security-reviewer, 0/26 to 26/26).
+- Review: two rounds by an independent subagent; round 1's three should-fix items fixed (two skills still said "at the top", contradicting title-first), round 2 clean. **No code-review rubric was committed** (the `rubric none` line below). One nit left: line 578 of security-reviewer's skill still says "at the top" for its `Commit:` line, which the title-first paragraph overrides; all 8 regenerated reports comply.
+- Health check passed on the branch. No new failure-pattern entry.
+
+Branch tip e7935cf46b6774ff89adaa1ddd5d09eab96c111b. The marker's body is a summary, not a question (quoted below). `--check`'s lines, as printed:
+
+> ok docs/working/briefs/2026-11-20-skill-format-fields-preambles.md e7935cf46b6774ff89adaa1ddd5d09eab96c111b 69920b1388a6c05ec9e3fd09d263c85df459734e
+> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md M docs/working/briefs/2026-11-20-skill-format-fields-preambles.md
+> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md A docs/working/research-2026-11-20-skill-format-fields-preambles.md
+> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md M skills/ai-personas-critique/SKILL.md
+> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md M skills/business-plan-critique-market-sizing/SKILL.md
+> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md M skills/business-plan-critique-moat/SKILL.md
+> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md M skills/dependency-upgrade/SKILL.md
+> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md M skills/security-reviewer/SKILL.md
+> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md M test/skills/dependency-upgrade-format.bats
+> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md M test/skills/eval-helpers.bash
+> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md A test/skills/field-value-rules.bats
+> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md M test/skills/helpers.bash
+> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md M test/skills/matrix-analysis-format.bats
+> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md M test/skills/pre-mortem-format.bats
+> rubric docs/working/briefs/2026-11-20-skill-format-fields-preambles.md: none: fix/skill-format-fields-preambles changes 11 paths outside docs/ and adds or changes no code-review rubric under docs/reviews/
+
+The loop's marker body (loop text, data):
+
+> Skill reports for seven skills now pass their format and eval suites on freshly
+> generated reports (findings F2, values followed by prose, and F3, text before the
+> title, from the skill-report regeneration research). Some fixes are in the tests,
+> some in the skill text; per-case decisions are in
+> docs/working/research-2026-11-20-skill-format-fields-preambles.md.
+> Two review rounds; the second came back clean. The health check passes.
+> Regenerated reports were not committed: the regeneration branch regenerates them.
+
+Notes: the five `skills/*/SKILL.md` paths are prompt files, which self-merge's floor would have refused; none is gate code.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges tip e7935cf4 next iteration; then the regeneration brief is re-dispatched to merge main in, regenerate and land green (Q-328 [3]) | Nothing now | A skill's report shape shifts in real use; one `git revert` undoes it |
+| **[2] drop** | The brief closes; the regeneration stays held | None | The seven skills' cases stay red once reports land |
+| **[3] changes needed** | Your note goes back to the loop (say, "fix line 578 too") | One line of note | A re-dispatch and another merge entry |
 
