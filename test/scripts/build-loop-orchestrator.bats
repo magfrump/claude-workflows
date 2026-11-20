@@ -645,10 +645,11 @@ shim() {
     q=$'\x60'
     a="$(sect '### 7. Collect')"
     # The TIP rule: a redispatch item for TIP, auto or Q-ID, counts as sent back, and is the once-per-tip check.
-    for f in "A brief sent back at TIP counts the same, with no answer to read" "${q}auto@TIP12=redispatch$q or ${q}Q-NNN=redispatch$q (TIP12 matched as a prefix of the full TIP)" \
+    for f in "A brief sent back at TIP counts the same, with no answer to read" "${q}auto@TIP12=redispatch$q (TIP12 matched as a prefix of the full TIP) or ${q}Q-NNN=redispatch$q (its entry asked at TIP, as above)" \
         "so the gate is not run on it again and step 10 takes it; this one rule is also the once-per-tip check." \
-        "once per tip and only while ${q}--status$q reads its DISPATCHED under 3" "(for an approved merge entry, ${q}Q-NNN=redispatch$q in place of ${q}noted$q)" \
-        "a branch refused again at a tip already sent back; DISPATCHED 3 or more" \
+        "once per tip and only while ${q}--status$q reads its DISPATCHED under 3" "(for an approved merge entry, its ID as ${q}Q-NNN=redispatch$q), name it on the ${q}7.$q line with its refusal line" \
+        "A loop-fixable gap is one with no owner remedy and no failed read" "a duplicate FP number the merge caused" \
+        "a tip already sent back (never sent back again: the rule above); DISPATCHED 3 or more" \
         "a gap whose remedy is the owner's (the migration ${q}failure-patterns-out-of-thoughts$q gap); a gap naming a failed read" \
         "Nothing is read as the owner's answer: a review brief's new tip still gets its own merge entry."; do
         [[ "$a" == *"$f"* ]] || { echo "step 7 lacks: $f"; return 1; }
@@ -661,7 +662,7 @@ shim() {
     done
     a="$(sect '### 10. Dispatch')"
     for f in "\"Sent back for you: the gate refused TIP: REFUSAL-LINE; merge the default branch in (see the merge rule above) or fix the gap it names.\"" \
-        "each auto send-back (step 7) with its brief and refusal line"; do
+        "REFUSAL-LINE the ${q}refuse$q line, and any ${q}gap$q lines, from the ${q}7.$q line that recorded it" "each auto send-back (step 7) with its brief and refusal line"; do
         [[ "$a" == *"$f"* ]] || { echo "step 10 lacks: $f"; return 1; }
     done
 }

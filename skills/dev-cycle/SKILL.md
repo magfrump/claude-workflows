@@ -703,24 +703,26 @@ item reads `Q-NNN=redispatch`, below),
 the brief is still open and no subagent of this session runs it, step 10 re-dispatches it
 (a loop that ended without a new commit, or a dispatch left to retry). A brief sent back
 at TIP counts the same, with no answer to read: its `Applied:` line holds a redispatch item
-for TIP, `auto@TIP12=redispatch` or `Q-NNN=redispatch` (TIP12 matched as a prefix of the
-full TIP), so the gate is not run on it again and step 10 takes it; this one rule is also
-the once-per-tip check.
+for TIP, `auto@TIP12=redispatch` (TIP12 matched as a prefix of the full TIP) or
+`Q-NNN=redispatch` (its entry asked at TIP, as above), so the gate is not run on it again
+and step 10 takes it; this one rule is also the once-per-tip check.
 
 **Auto send-back** (no owner entry). A ready branch refused below for a conflict with the
 default branch (`conflicts with the default branch`), or for failure-pattern gaps every one
 of which the loop can fix, goes straight back to its loop, once per tip and only while
 `--status` reads its DISPATCHED under 3: add `auto@TIP12=redispatch` to its `Applied:`
-line (for an approved merge entry, `Q-NNN=redispatch` in place of `noted`), name it on the
+line (for an approved merge entry, its ID as `Q-NNN=redispatch`), name it on the
 `7.` line with its refusal line, and step 10 sends it back. A loop-fixable gap is one with
 no owner remedy and no failed read: a missing `Failure-pattern grep:` line, fix(...)
 commits with no new entry and no `Failure-pattern skip:` line, a research doc not (as a
 regular file) in the tip, or a duplicate FP number the merge caused ("renumber the
-branch's entry"). These keep today's route, a `stopped` entry: a branch refused again at a
-tip already sent back; DISPATCHED 3 or more (so the owner keeps a re-dispatch under the
-cap of 4); a gap whose remedy is the owner's (the migration
-`failure-patterns-out-of-thoughts` gap); a gap naming a failed read (the environment's, as
-below); and every other refusal. Nothing is read as the owner's answer: a review brief's
+branch's entry"). These keep today's route, a `stopped` entry: a tip already sent back
+(never sent back again: the rule above); DISPATCHED 3 or more, so a refusal at a new tip
+leaves the owner a re-dispatch under the cap of 4 (a sent-back loop that ends with no new
+commit can still use that last dispatch, as after an owner's re-dispatch); a gap whose
+remedy is the owner's (the migration `failure-patterns-out-of-thoughts` gap); a gap naming
+a failed read (the environment's, as below); a library that is not a regular file; and
+every other refusal. Nothing is read as the owner's answer: a review brief's
 new tip still gets its own merge entry.
 
 - **absent**: not dispatched yet; step 10 takes it.
