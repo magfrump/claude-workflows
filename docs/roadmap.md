@@ -96,12 +96,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
-- **Agent: The cycle cannot create a project's harness-feedback file** (filed 2026-11-19, step 6; moved from Ideas: it carries reported friction). Signal: philosophy-research
-  F-002: `--check-fix` refuses every new file, so the owner made it by hand. Allow
-  `harness-feedback.py init` and appends in-cycle outside claude-workflows.
-  2026-11-19: moved to Now by step 6 (iteration 2316). First step: the one the signal names; if none, a research or divergent-design pass on it.
-  2026-11-19: briefed (iteration 0014 UTC): `docs/working/briefs/2026-11-19-harness-feedback-file-in-cycle.md`.
-
 - **A8 settling runs: csp self-read and corpus inline** (Q-308 [1], owner in session 2026-11-19).
   Motive: the first A8 pass found inlining saves nothing on the Agent-tool path, leaving its net
   cost and recall effect unmeasured; these two passes measure both. Briefed (iteration 0056 UTC):
@@ -123,6 +117,24 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   2026-11-19: briefed (iteration 0110 UTC), the correction having merged (d383a484):
   `docs/working/briefs/2026-11-19-lever3-followons.md`.
 
+- **Revisit the 2-hour wait before re-dispatching an unfinished loop** (owner request,
+  2026-11-19: "seems excessive"; not for this release). Motive: `build-loop.sh --prompt
+  --steal` takes a loop's locked worktree only when the loop left a marker, or when both
+  lock and tip are over `STEAL_AGE` (7200 s, decision D1 in
+  `docs/working/plan-build-loop-handoff.md`), because the gate cannot tell a dead loop
+  from a live one, perhaps another session's, from git state alone. On 2026-11-19 the
+  F-019 loop ended without a marker 7 minutes after its last commit, this session's task
+  notification said so, and the re-dispatch still waited two hours. First step: list what
+  a lock holder could prove it is gone (the dispatching session's own record of its
+  subagent ending, a heartbeat, a shorter age for this session's own loops) and weigh
+  each against D1's case (a live loop in another session, S1's honest-slip threat model),
+  then pick the threshold or mechanism; gate code, so a review merge.
+  2026-11-19, later: two loops in one evening (F-019's at 20:01 UTC, the lever #3
+  correction's at 21:47 UTC) were told to hand back before their confirming review
+  reported, with work committed and no marker; each then waits the full two hours.
+  2026-11-19: the release ran and the wait rule merged (acbff6c6), so it is no longer "not for this release";
+  briefed (iteration 0121 UTC) as research: `docs/working/briefs/2026-11-19-steal-wait-research.md`.
+
 ## Next
 
 1. **Agent first-pass playtest before each `you: walkthrough`** (owner request, 2026-11-12;
@@ -140,21 +152,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
    no answered `you: walkthrough` entry, so "too few to decide". The three open questions
    are drafted in the loop's marker and held until another repo reports its own count,
    since the first (which project to try first) depends on which repos have walkthroughs.
-2. **Revisit the 2-hour wait before re-dispatching an unfinished loop** (owner request,
-   2026-11-19: "seems excessive"; not for this release). Motive: `build-loop.sh --prompt
-   --steal` takes a loop's locked worktree only when the loop left a marker, or when both
-   lock and tip are over `STEAL_AGE` (7200 s, decision D1 in
-   `docs/working/plan-build-loop-handoff.md`), because the gate cannot tell a dead loop
-   from a live one, perhaps another session's, from git state alone. On 2026-11-19 the
-   F-019 loop ended without a marker 7 minutes after its last commit, this session's task
-   notification said so, and the re-dispatch still waited two hours. First step: list what
-   a lock holder could prove it is gone (the dispatching session's own record of its
-   subagent ending, a heartbeat, a shorter age for this session's own loops) and weigh
-   each against D1's case (a live loop in another session, S1's honest-slip threat model),
-   then pick the threshold or mechanism; gate code, so a review merge.
-   2026-11-19, later: two loops in one evening (F-019's at 20:01 UTC, the lever #3
-   correction's at 21:47 UTC) were told to hand back before their confirming review
-   reported, with work committed and no marker; each then waits the full two hours.
 
 ## Ideas
 
@@ -187,6 +184,10 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   2026-11-19 (iteration 2026-11-19-2316): step 4b fired on `skills/dev-cycle/SKILL.md` and
   `workflows/parallel-worktrees.md` as b3e25cf1 changed them (worktrees under `.worktrees/`);
   the same sample takes them.
+  2026-11-19 (iteration 0121 UTC): step 4b fired on `skills/code-review/SKILL.md` and decision
+  032's amendment (d383a484, Q-315: the lever #3 cache claims withdrawn); the same sample takes
+  them, with one question: do other review-cost decisions (log rows 33-35) rest on the same
+  untested transport assumption?
 - **Record out-of-cycle session answers through `--answered`.** Signal: 4306aa88 (the owner's
   Q-281..284 answers, recorded on a hand branch) read as `other` in `--main-log`, making
   iteration 2026-11-13-2237 a full cycle with a health run.
@@ -470,6 +471,13 @@ Unranked. Each names the signal that motivates it.
 ## Done
 
 Items finished since the last cycle, with the merge.
+
+- **The cycle and a project's harness-feedback file: closed, no change.** Done d9f475df (self-merge),
+  brief `docs/working/briefs/closed/2026-11-19-harness-feedback-file-in-cycle.md`, research
+  `docs/working/research-2026-11-19-harness-feedback-file-in-cycle.md`: only creating the file is
+  blocked (appends pass `--check-fix` once it exists); one event in two projects, both now have
+  the file, and a self-merge brief with `Paths: docs/harness-feedback.md` can create it today.
+  Reopen with a one-line skill note if a third project reports it (philosophy-research F-002).
 
 - **Build loops wait inside their turn; their subagents return reports as text.** Done acbff6c6
   (approved merge, Q-314 [1]), brief `docs/working/briefs/closed/2026-11-19-loop-wait-rule.md`,
