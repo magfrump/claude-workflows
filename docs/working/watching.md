@@ -2,16 +2,7 @@
 
 Watches the agents own and close: conditions and events being waited on, moved
 out of `questions.md` (decision 040). Same entry grammar; a closed watch gets
-Status ANSWERED and moves under `### Q-322 · quarterly-threat-model-walkthrough-due
-**Needs:** deferred · **Opened:** 2026-11-19 · **Status:** OPEN
-
-Bring the owner's quarterly threat-model walk-through of Q-103's accepted residual risks (area B's idea B8) back as a question when it first falls due, in 2027-01, unless trial T12's verdict covers it first.
-
-- **Read:** `docs/working/research-2026-11-19-area-b-ask-habituation.md` §6 (set aside: about 20 owner minutes a quarter; T12, `docs/working/trials/2026-11-06-attention-and-trust.md`, tests a cheaper answer to the same need) · the idea-log line "Quarterly threat-model walk-through of Q-103's residuals".
-- **Condition:** the first cycle iteration on or after 2027-01-01, or the owner's T12 verdict, whichever comes first.
-- **Interim:** nothing is scheduled; T12 runs.
-
-## Closed`.
+Status ANSWERED and moves under `## Closed`.
 
 | Route | Meaning |
 |---|---|
@@ -29,6 +20,7 @@ Maintained by `~/.claude/scripts/questions.sh` (`check` · `index` · `migrate`)
 | [Q-098](#q-098--global-allowlist-after-sandbox) | deferred | Ship a global `permissions.allow` in `hooks/wiring.json` once cc-isolated has a Bash sandbox (Q-088). Branc... | 2026-09-28 |
 | [Q-167](#q-167--post-install-host-probes) | deferred | At the next release whose install re-blesses, ask the owner for the hint text that the fresh bless prints b... | 2026-10-15 |
 | [Q-276](#q-276--q272-return-with-data) | deferred | Return the run-or-refuse question (Q-272: what the test-confinement script does when it has only its weak t... | 2026-11-11 |
+| [Q-322](#q-322--quarterly-threat-model-walkthrough-due) | deferred | Bring the owner's quarterly threat-model walk-through of Q-103's accepted residual risks (area B's idea B8)... | 2026-11-19 |
 | [Q-161](#q-161--revive-hermeticity-layer2-after-q125) | trigger | When Q-125's sandbox merges (bwrap in the cc-isolated image), decision 017's T2 fires: revive hermeticity l... | 2026-10-14 |
 | [Q-262](#q-262--merge-approval-revisit) | trigger | Should merge approval be reopened? The design record picked no change on 2026-11-06, and this watch holds i... | 2026-11-06 |
 | [Q-264](#q-264--gloss-rule-falsifier) | trigger | Q-264: met — counted on 2026-11-11 at five entries opened since the install (Q-269 to Q-273): the falsifi... | 2026-11-06 |
@@ -76,6 +68,7 @@ Should merge approval be reopened? The design record picked no change on 2026-11
 
 - **Read:** `docs/working/research-2026-11-06-merge-friction-design.md`, section 11.
 - **Interim:** merge entries stay as they are. The conditions are that section's list: the owner names merge entries or approvals as a blocker; merge entries exceed 11 a week in 3 of the next 4 weekly digests, which reopens the record's candidate [5]; or the record's median-wait trigger.
+- **2026-11-19, iteration 0331 UTC:** the record's section 11 lists five conditions; this watch held three. The other two: an approved merge is reverted (which goes first to the entry's wording, area B's B7, then here), and a T5 sample reply is recorded. The revert condition fired on 2026-11-12 (the sandbox merge 3cd6d9bb, reverted by 7caea26d), and area A's research (e9fb762c) reopened the question; it is asked in Q-323. The watch stays open for the remaining conditions.
 
 ### Q-301 · test-confinement-fallback-reachable
 **Needs:** trigger · **Opened:** 2026-11-18 · **Status:** OPEN
@@ -109,6 +102,15 @@ Reopen the dropped roadmap Idea "The live-verify hook reads a merge commit's sta
 - **Read:** `docs/working/research-2026-11-19-live-verify-merge-head-count.md` (the count, 4 of 108 merges in the case, none stopped; its Recommendation section holds the fix sketch and bypass list).
 - **Condition:** a `blocked` or `stopped` marker, or a cycle record, names this hook during a merge of main.
 - **Interim:** nothing is built; such merges carry `Live-verified: no — merge of main; main's commit carries its own trailer`, which the hook accepts.
+
+### Q-322 · quarterly-threat-model-walkthrough-due
+**Needs:** deferred · **Opened:** 2026-11-19 · **Status:** OPEN
+
+Bring the owner's quarterly threat-model walk-through of Q-103's accepted residual risks (area B's idea B8) back as a question when it first falls due, in 2027-01, unless trial T12's verdict covers it first.
+
+- **Read:** `docs/working/research-2026-11-19-area-b-ask-habituation.md` §6 (set aside: about 20 owner minutes a quarter; T12, `docs/working/trials/2026-11-06-attention-and-trust.md`, tests a cheaper answer to the same need) · the idea-log line "Quarterly threat-model walk-through of Q-103's residuals".
+- **Condition:** the first cycle iteration on or after 2027-01-01, or the owner's T12 verdict, whichever comes first.
+- **Interim:** nothing is scheduled; T12 runs.
 
 ## Closed
 

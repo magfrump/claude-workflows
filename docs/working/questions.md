@@ -27,6 +27,7 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-321](#q-321--regenerate-skill-eval-reports-after-a8) | you: judgment | Regenerate the skill eval reports now that the A8 measurement has run, so the 51 test files marked `@needs-... | 2026-11-19 |
+| [Q-323](#q-323--gate-only-changes-approved-by-release) | you: judgment | Should a build loop's change that touches only the gate's own code (`scripts/build-loop.sh`, `d6.sh`, `dev-... | 2026-11-19 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the ho... | 2026-11-05 |
 | [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there. | 2026-11-18 |
 | [Q-316](#q-316--blessed-config-line) | you: terminal | Paste one line: what `cc-isolated --list` says about the blessed config after today's re-bless. | 2026-11-19 |
@@ -174,3 +175,25 @@ Regenerate the skill eval reports now that the A8 measurement has run, so the 51
 | **[3] Not now** | Keep the suites NOT RUN | None | Prompt regressions stay uncaught |
 
 - **Interim:** [3]; nothing runs.
+
+### Q-323 · gate-only-changes-approved-by-release
+**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** OPEN
+
+Should a build loop's change that touches only the gate's own code (`scripts/build-loop.sh`, `d6.sh`, `dev-cycle.sh`, `questions.sh`, `scripts/lib/`, `skills/dev-cycle/`, plus its own tests and records) land on main without its own merge entry, with the release paste that installs it serving as your approval?
+
+**If you say no:** every gate change keeps its own `merge-gate-` entry and then waits for a release paste, as tonight: about 12.5 merge entries a week, 24 of the last 25 answered [1].
+
+- **Why it's yours:** it moves where you review the code that gates every other merge; area A's research found no clear winner (55% for the pick) and named your Q-312 answer ("build area A now") as the tiebreaker.
+- **Read:** `docs/working/research-2026-11-19-area-a-merge-friction.md` (merged e9fb762c), sections 4 to 6 (the options and why A1, A2 and A3 still fail), section 8 (the drafted brief).
+
+What the research found, 2026-11-06 to 2026-11-19: 25 merge entries, 24 answered [1], median answer 1.7 hours, 8 answer sittings on 2026-11-19 alone. The pick would have removed 6 of the 25 (24%). Under it, the next release entry would list each self-landed gate change first, under "this paste approves these", with a one-line hold; workflows, decision records, instruction files and the failure-pattern library keep their own entries.
+
+One thing the research's summary does not say, which the cycle adds: a self-landed gate change would not run in sessions until your paste, but it would run sooner in one place. The health check runs the merged tree's own `scripts/` and `test/` (the known exception to constraint H1, Q-149 [2], `docs/constraints.md`), so between the merge and your paste the cycle's own health check executes code no one has reviewed.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] The release approves gate-only changes** (the research's pick) | The cycle briefs the drafted change (one review merge entry for the change itself), then gate-only branches self-land and are listed in the release entry | About 6 fewer entries a fortnight; read the release list before pasting | A gate change slips past in a skimmed list, and the health check has run it before you read it; a hold costs a revert and a second paste |
+| **[2] Keep one entry per gate merge** | No change; watch Q-262 reopens it if entries pass 11 a week in 3 of 4 digests | Today's rate | You keep answering what a paste would cover |
+
+- **Interim:** [2]; nothing is briefed. The drafted brief waits on [1], and after the auto send-back build (in flight) merges.
+- **Also found:** watch Q-262 (`docs/working/watching.md`) listed three of the 2026-11-06 record's five reopen conditions; one of the two it left out, "an approved merge is reverted", fired on 2026-11-12 (the sandbox merge 3cd6d9bb, reverted by 7caea26d). The watch now lists all five; this entry is that reopening.
