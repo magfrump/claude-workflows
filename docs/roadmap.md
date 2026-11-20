@@ -109,6 +109,29 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   `docs/working/research-2026-11-19-area-a-merge-friction.md`, after the auto send-back build merges.
   Held: Q-323 asks whether to build it at all.
 
+- **Agent: The write guard asks on every edit in a `.claude/` worktree once a session is web-tainted**
+  (filed 2026-11-19, owner report: a math-research repo's rewrite workflow asked for approval on
+  each of hundreds of file edits; the owner confirmed in session that the asks were this guard's
+  web-taint ask). Motive: `hooks/guard-trusted-writes.py` puts any Edit/Write path with a `.claude`
+  segment in its SOFT tier (`classify_path`, the `".claude" in low` test), and SOFT asks whenever
+  the session's taint marker exists (one web fetch taints the whole session). So every edit in a
+  worktree under `.claude/` asks, Claude Code's own exempt `.claude/worktrees/` included, though
+  Claude Code itself would not ask there. Reproduced hermetically on 2026-11-19 (a fake path and a
+  test taint marker): ask for `.claude/worktrees/agent-x/chapter3.md` and `.claude/wt-item-1/chapter3.md`
+  when tainted, no opinion when clean; no opinion either way for `.worktrees/wt-x/` and the main
+  checkout. First step: one review brief (the hook is an enforcement file: a pre-mortem listing the
+  bypass families, and a `Live-verified:` trailer). Shape to weigh in its divergent design: for the
+  file tools only, a path inside a linked worktree under `.claude/worktrees/*/` or `.claude/wt-*/`
+  is classified by its path relative to that worktree's root, so a chapter file is no opinion and
+  the worktree's own skills, agents, commands, CLAUDE.md, settings and hooks stay SOFT; Bash
+  classification stays as it is, since Q-048's worktree exemption for Bash was withdrawn after three
+  review passes found bypasses. Tests: the probe's table as bats cases in
+  `test/hooks/guard-trusted-writes.bats`, plus a worktree's own `.claude/settings.json` and
+  `skills/x.md` still asking when tainted. Related, smaller: `scripts/self-improvement.sh` still
+  defaults its worktrees to `.claude/wt-*` (move it to `.worktrees/`, as b3e25cf1 did for build loops).
+  Interim relief, until this lands: work in worktrees under `.worktrees/` (sessions started after
+  the 0feaf080 install do so by default), where the guard has no opinion.
+
 ## In flight
 
 - **Agent: Send a gate-refused ready branch back to its loop, with no owner entry** (filed 2026-11-19,
