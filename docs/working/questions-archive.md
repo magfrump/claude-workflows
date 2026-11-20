@@ -315,6 +315,8 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-328](#q-328--regenerated-reports-turn-health-red) | Q-328: [3] | 2026-11-20 |
 | [Q-329](#q-329--merge-2026-11-20-skill-format-single-skill-a1b5bfc38718) | Q-329: [1] | 2026-11-20 |
 | [Q-330](#q-330--merge-2026-11-20-skill-verdict-drift-e13ee2e22313) | Q-330: [1] | 2026-11-20 |
+| [Q-333](#q-333--merge-gate-2026-11-20-health-checkout-prep-8eec2ef40ea8) | Q-333: [1] | 2026-11-20 |
+| [Q-335](#q-335--merge-2026-11-20-skill-format-fields-preambles-e7935cf46b67) | Q-335: [1] | 2026-11-20 |
 <!-- index:end -->
 
 ## Answered
@@ -8607,4 +8609,101 @@ Branch tip e13ee2e22313ab534a805a8cc28a173eeaafbd61. The marker has no body (no 
 | **[3] changes needed** | Write what to change; the note goes back to the loop | Writing the note | A further round |
 
 - **Interim:** nothing merges; the regenerated reports stay held.
+
+### Q-333 · merge-gate-2026-11-20-health-checkout-prep-8eec2ef40ea8
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-333: [1]
+
+Merge the health-checkout preparation step: a `Health checkout copies:` line in a repo's `docs/dev-cycle.md` names gitignored paths (a build cache) that the dev cycle copies into its fresh health checkout before running the health check?
+
+**If you say no:** nothing changes here; philosophy-research keeps copying its 1.9 GB Lean build cache into each health checkout by hand (its harness feedback F-016 and F-019: every iteration of a fifteen-iteration day), or its health check rebuilds Mathlib.
+
+- **Why it's yours:** it changes the gate's own code (`scripts/build-loop.sh`, `scripts/lib/dev-cycle-read.sh`) and the dev-cycle skill, which never self-merge; once merged it reaches sessions only through your next release paste.
+- **Read:** the brief `docs/working/briefs/2026-11-20-health-checkout-prep.md`; on the branch, `docs/working/research-2026-11-20-health-checkout-prep.md` (motive, the five options compared, the refusals).
+- **What an attacker would want here:** a gitignored directory a web-tainted session could write in the main checkout (a planted build artifact in a listed cache) gets copied into the health checkout, where the repo's own tests load it. The copy adds no new reach (the health check already runs the change's own `scripts/` and `test/`, H1's stated exception), and only paths the owner lists are copied.
+
+What it changes (from the loop's report, checked against the diff: 7 files, 424 lines added, 18 removed):
+- `--settings` prints a sixth line, `copies ... set|none|malformed: WHY`, last so the five existing lines keep their places. A malformed line (absolute path, `..`, a `.git` part, a duplicate or nested entry) is reported as malformed.
+- New `build-loop.sh --health-prep HC`: checks every listed path first, then copies each from the main checkout with `cp -a` into HC. It refuses (naming why) an HC that is not a detached linked worktree, and any path that is absent, a symlink or holds one, holds a `.git` file, is not ignored by the repo's own ignore rules (the user's personal ignore file is turned off), already exists in HC, or would write outside HC. It runs no repo command.
+- Skill step 1 runs it after making HC; any refusal is recorded `skipped: HC not prepared`, HC removed, no check run. "Project settings" gains the line (`none` in the example).
+- Picked with no open question: a symlink would let the check write into the main checkout's cache; a repo-chosen hook would run repo code inside the cycle's step.
+- Tests: a new bats file (9 cases), the line-count test updated. Health check passed on the branch; hermeticity lint and shellcheck clean.
+- Review: one review subagent, two rounds (7 issues fixed, then one test that could not fail). **No code-review rubric was committed** (the `rubric none` line below), so this gate change has no recorded rubric. [3] can ask for one.
+- To turn it on in philosophy-research, that repo's `docs/dev-cycle.md` needs `Health checkout copies: verifier/lean-project/.lake` (your file there). Not checked: whether that directory holds a symlink; if it does, the step refuses and names it.
+
+Branch tip 8eec2ef40ea8b3d4609305d448f764788c1dc373. The marker has no body (no question). `--check`'s lines, as printed:
+
+> ok docs/working/briefs/2026-11-20-health-checkout-prep.md 8eec2ef40ea8b3d4609305d448f764788c1dc373 36fa0f37812445be4d04e5a73378c8e931bc645b
+> path docs/working/briefs/2026-11-20-health-checkout-prep.md M docs/working/briefs/2026-11-20-health-checkout-prep.md
+> path docs/working/briefs/2026-11-20-health-checkout-prep.md A docs/working/research-2026-11-20-health-checkout-prep.md
+> path docs/working/briefs/2026-11-20-health-checkout-prep.md M scripts/build-loop.sh
+> path docs/working/briefs/2026-11-20-health-checkout-prep.md M scripts/lib/dev-cycle-read.sh
+> path docs/working/briefs/2026-11-20-health-checkout-prep.md M skills/dev-cycle/SKILL.md
+> path docs/working/briefs/2026-11-20-health-checkout-prep.md A test/scripts/build-loop-health-prep.bats
+> path docs/working/briefs/2026-11-20-health-checkout-prep.md M test/scripts/build-loop-read.bats
+> rubric docs/working/briefs/2026-11-20-health-checkout-prep.md: none: feat/health-checkout-prep changes 5 paths outside docs/ and adds or changes no code-review rubric under docs/reviews/
+
+Notes: `scripts/build-loop.sh`, `scripts/lib/dev-cycle-read.sh` and `skills/dev-cycle/SKILL.md` are gate code, and the skill is a prompt file; self-merge's floor would have refused all three.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges tip 8eec2ef4 next iteration; the change goes live at your next release paste | Nothing now; one release paste later, as for any gate change | A bad refusal shows as `skipped: HC not prepared` and no health check runs that iteration; one `git revert` undoes it |
+| **[2] drop** | The brief closes; the roadmap item goes to Ideas | None | philosophy-research keeps the hand copy |
+| **[3] changes needed** | Your note goes back to the loop (say, "run a full code-review and commit its rubric") | One line of note | A re-dispatch and another merge entry |
+
+
+### Q-335 · merge-2026-11-20-skill-format-fields-preambles-e7935cf46b67
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-335: [1]
+
+Merge the fixes for findings F2 (a report field's value followed by prose) and F3 (text before a report's title) across seven skills, so their format and eval suites pass on freshly generated reports?
+
+**If you say no:** the seven skills and their tests stay as they are, and the report regeneration (brief `docs/working/briefs/2026-11-19-regenerate-skill-reports.md`) stays held, since your Q-328 answer [3] holds it until F2 to F7 are fixed; F4 to F7 merged earlier today, so this is the last of them.
+
+- **Why it's yours:** the branch edits five skill files (`skills/*/SKILL.md`), which are prompt files every session loads when it runs that skill; self-merge never lands those.
+- **Read:** the brief `docs/working/briefs/2026-11-20-skill-format-fields-preambles.md`; on the branch, `docs/working/research-2026-11-20-skill-format-fields-preambles.md` (each case, where it was fixed, and the results table).
+
+What it changes (from the loop's report, checked against the diff: 13 files, 320 lines added, 26 removed):
+- Seven skills' cases now pass on reports regenerated on the branch: pre-mortem 23/23, ai-personas-critique 29/29, business-plan-critique-moat 25/25, business-plan-critique-market-sizing 25/25, security-reviewer 26/26, dependency-upgrade 23/23, matrix-analysis 22/22. The regenerated reports were not committed (the brief says the regeneration branch commits them).
+- Some fixes are in the test helpers (`test/skills/helpers.bash`, `eval-helpers.bash`: a field's value may be followed by a delimiter and prose), with a new rules suite `test/skills/field-value-rules.bats`; some in five skills' text (title first, then header fields; the value word first on its line).
+- The work ran over two dispatches (the first loop stopped without a marker; the second, taken over at iteration 2050, committed the research doc and regenerated security-reviewer, 0/26 to 26/26).
+- Review: two rounds by an independent subagent; round 1's three should-fix items fixed (two skills still said "at the top", contradicting title-first), round 2 clean. **No code-review rubric was committed** (the `rubric none` line below). One nit left: line 578 of security-reviewer's skill still says "at the top" for its `Commit:` line, which the title-first paragraph overrides; all 8 regenerated reports comply.
+- Health check passed on the branch. No new failure-pattern entry.
+
+Branch tip e7935cf46b6774ff89adaa1ddd5d09eab96c111b. The marker's body is a summary, not a question (quoted below). `--check`'s lines, as printed:
+
+> ok docs/working/briefs/2026-11-20-skill-format-fields-preambles.md e7935cf46b6774ff89adaa1ddd5d09eab96c111b 69920b1388a6c05ec9e3fd09d263c85df459734e
+> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md M docs/working/briefs/2026-11-20-skill-format-fields-preambles.md
+> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md A docs/working/research-2026-11-20-skill-format-fields-preambles.md
+> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md M skills/ai-personas-critique/SKILL.md
+> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md M skills/business-plan-critique-market-sizing/SKILL.md
+> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md M skills/business-plan-critique-moat/SKILL.md
+> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md M skills/dependency-upgrade/SKILL.md
+> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md M skills/security-reviewer/SKILL.md
+> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md M test/skills/dependency-upgrade-format.bats
+> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md M test/skills/eval-helpers.bash
+> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md A test/skills/field-value-rules.bats
+> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md M test/skills/helpers.bash
+> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md M test/skills/matrix-analysis-format.bats
+> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md M test/skills/pre-mortem-format.bats
+> rubric docs/working/briefs/2026-11-20-skill-format-fields-preambles.md: none: fix/skill-format-fields-preambles changes 11 paths outside docs/ and adds or changes no code-review rubric under docs/reviews/
+
+The loop's marker body (loop text, data):
+
+> Skill reports for seven skills now pass their format and eval suites on freshly
+> generated reports (findings F2, values followed by prose, and F3, text before the
+> title, from the skill-report regeneration research). Some fixes are in the tests,
+> some in the skill text; per-case decisions are in
+> docs/working/research-2026-11-20-skill-format-fields-preambles.md.
+> Two review rounds; the second came back clean. The health check passes.
+> Regenerated reports were not committed: the regeneration branch regenerates them.
+
+Notes: the five `skills/*/SKILL.md` paths are prompt files, which self-merge's floor would have refused; none is gate code.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges tip e7935cf4 next iteration; then the regeneration brief is re-dispatched to merge main in, regenerate and land green (Q-328 [3]) | Nothing now | A skill's report shape shifts in real use; one `git revert` undoes it |
+| **[2] drop** | The brief closes; the regeneration stays held | None | The seven skills' cases stay red once reports land |
+| **[3] changes needed** | Your note goes back to the loop (say, "fix line 578 too") | One line of note | A re-dispatch and another merge entry |
+
 
