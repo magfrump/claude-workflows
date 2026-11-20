@@ -54,19 +54,19 @@ Failure-pattern grep: `rg -n -i 'habitu|skim|warning|owner.*ask|attention|securi
 | `you: fyi` | 1 (Q-300, `seen`) | n/a | |
 
 What this shows:
-- **The always-[1] habit is real, but it is confined to merge and re-dispatch entries.** On real choices the owner picks something other than [1] more often than not. The 2026-10-30 digest saw the same contrast (0 of 3 defaults on real choices). The 2026-11-06 digest called it untested because of a small sample, and the larger sample here supports it.
+- **The always-[1] habit is real, but it is confined to merge and re-dispatch entries.** On real choices the owner picks something other than [1] more often than not. The 2026-10-30 digest saw the same contrast (0 of 3 defaults on real choices). The 2026-11-06 digest found that "last week's contrast does not show up", because its "other" answers were mostly re-dispatch calls and its two real choices were still unanswered. Separating those classes, the larger sample here shows the contrast.
 - **Q-288 shows the owner reads merge entries at least sometimes.** It is the one non-[1] merge answer, a correction of failure-pattern numbering. The archive cannot tell how often the owner reads a merge entry closely and still answers [1].
 - **Merge volume is rising.** Merge entries opened per weekly window:
   - 15 (2026-10-30 to 11-05);
   - 8 (11-06 to 11-12);
   - 18 (11-13 to 11-19), 10 of them on 2026-11-19 alone.
-  - Watch Q-262 (the merge-approval revisit) has a trigger: more than 11 merge entries a week in 3 of 4 digests. The 11-20 digest will record its first week over 11. Whether that trigger is met is area A's question (`docs/working/briefs/2026-11-19-area-a-merge-friction.md`), not this one.
+  - Watch Q-262 (the merge-approval revisit) has a trigger: more than 11 merge entries a week in 3 of 4 digests. The watch opened 2026-11-06, so the 11-20 digest will record the first week over 11 since then. Whether that trigger is met is area A's question (`docs/working/briefs/2026-11-19-area-a-merge-friction.md`), not this one.
 
 ### 3.3 How long entries waited
 
-- **Judgment entries are answered fast.** Of the 66, 43 were answered the same day (65%), 17 the next day, 3 after two days and 1 after three. Two waited four days: Q-267 and Q-268, both opened 2026-11-07 and answered with the 11-11 answer file. The median is 0 days. This agrees with the owner profile's median of 1 day over the whole archive.
+- **Judgment entries are answered fast.** Of the 66, 43 were answered the same day (65%), 17 the next day, 3 after two days and 1 after three. Two waited four days: Q-267 and Q-268, both opened 2026-11-07 and answered in session on 2026-11-11. The median is 0 days. That is faster than the owner profile's figure over the whole archive: a median of 1 day, with 82 of 194 answered the same day.
 - **Terminal entries are where waits get long.**
-  - The image-lag (release) entries took 1 to 4 days, and Q-222, Q-227, Q-234, Q-280 and Q-292 took 1 to 6 days.
+  - The image-lag (release) entries, Q-227 included, took 1 to 5 days. The others (Q-222, Q-234, Q-280, Q-292) took 1 to 6 days.
   - Q-084 was open 53 days (2026-09-27 to 2026-11-19).
   - Q-255 (the herald egress check) has been open since 2026-11-05, 14 days now.
   - Q-167 is the post-install host probes. It moved to `watching.md` as `deferred`, so it is no longer an owner entry.
@@ -215,15 +215,15 @@ Add `scripts/questions.sh counts --since YYYY-MM-DD [--until YYYY-MM-DD]`, which
 
 ## Motive
 
-`docs/working/research-2026-11-19-area-b-ask-habituation.md` sections 3 and 5: each digest edition counts asks by hand with its own method; no edition gives sittings, which the merge-friction record (`docs/working/research-2026-11-06-merge-friction-design.md` section 11) names as half of the check on area A; and "other judgment" mixes re-dispatch calls (100% first option) with real choices (46%). Watch Q-262 keys on this count.
+`docs/working/research-2026-11-19-area-b-ask-habituation.md` sections 3 and 5: each digest edition counts asks by hand with its own method; no edition gives sittings, which the merge-friction record (`docs/working/research-2026-11-06-merge-friction-design.md` section 11) names as half of the check on area A (cutting the owner's merge friction); and "other judgment" mixes re-dispatch and confirmation calls (100% first option, 9 of 9) with real choices (46%, 6 of 13), while merge entries got the first option 43 times in 44. Watch Q-262 (the merge-approval revisit, in `docs/working/watching.md`) reopens on this count: more than 11 merge entries a week in 3 of 4 digests.
 
 ## Acceptance criteria
 
 1. `counts` reuses `parse_entries` and `ROUTES` (no second grammar parser). For entries answered in the window, it prints one table:
-   - one row per class: merge (slug `merge-`), re-dispatch (slug `stopped-` or `blocked-`), real choice (other `you: judgment`), terminal, walkthrough, fyi;
+   - one row per class: merge (slug `merge-`), re-dispatch (slug `stopped-` or `blocked-`), real choice (other `you: judgment`), terminal, walkthrough, fyi. The research doc's hand count also put four "keep the interim?" confirmations (Q-281 to Q-284) under re-dispatch; `counts` has no mechanical mark for those, so on that sample it prints 5 re-dispatch and 17 real choices, and the build loop's research doc says so rather than adding a judgment-based class;
    - per row: opened, answered, first-option answers, and median and maximum wait in days;
-   - then one line of sittings (distinct answer dates across all judgment classes).
-2. The answer date is the date the entry's heading first appears in `questions-archive.md` (from `git log`). An entry with no such commit is listed by ID as `undated`, never silently dropped (H2).
+   - then sittings, as the merge-friction record (section 3) counts them: distinct commits that record one or more judgment answers, with distinct answer dates beside them as a cross-check.
+2. The answer date is the date the entry's heading first appears in `questions-archive.md` (from `git log`). An entry with no such commit is listed by ID as `undated`, never silently dropped (hard constraint H2 in `docs/constraints.md`: a check fails loudly and names what it could not count).
 3. An answer line it cannot read as an option number (free text, `withdrawn`) is counted as "not first option" and listed by ID.
 4. `skills/dev-cycle/SKILL.md`'s ask-counter bullet (weekly digest, step 9) says to paste `counts` output for the digest's window, with no other change.
 5. Bats cases in `test/questions-doc.bats` (or a new `test/scripts/questions-counts.bats`), on fixture files and a fixture git repo:
@@ -248,7 +248,7 @@ If `parse_entries` cannot expose what `counts` needs without pushing the unit pa
 ## Observable that would show it failed
 
 Over the next 4 weekly digests, any of these:
-- a hand recount of one digest's window disagrees with `counts` by more than one entry in any class;
+- a hand recount of one digest's window, using the classes above, disagrees with `counts` by more than one entry in any class;
 - an edition prints the counter without using `counts`;
 - a Q-262 trigger read or a B2 class proposal in a cycle record cites a hand count instead.
 
@@ -258,16 +258,18 @@ Over the next 4 weekly digests, any of these:
 - Counting deliberate looks (T11 counts them by hand until its verdict).
 ```
 
-Policy note: `scripts/questions.sh` and `skills/dev-cycle/` are in `GATE_CODE`, so this is a review merge and costs one owner merge entry.
+Policy note: `scripts/questions.sh` and `skills/dev-cycle/` are in `GATE_CODE` (the list in `scripts/lib/dev-cycle-read.sh` of files whose merge always goes to the owner's review), so this is a review merge and costs one owner merge entry.
 
 ### Set aside, with reasons
 
-- **B1 alternatives [1] to [6]:** section 4. Status quo, with three revisit triggers (section 4.3) for the cycle to keep where it keeps triggers.
-- **B3, B5, B6, B7:** already in force through T5, T4, T7 and T2 plus the gloss rule (section 6).
-- **B4:** waits on T11's verdict after the 2026-11-20 digest. The evidence for that question: 0 replies in 3 offers.
-- **B8:** set aside until T12's verdict. It is first due 2027-01, and only an idea-log line records it. The cycle may want a dated watch for 2027-01 so it is not lost. This doc cannot write `watching.md`.
+The B numbers are the brainstorm's ideas (`docs/working/brainstorm-2026-10-29-friction-and-engagement.md`, area B). T1 to T7 are the first trial set (`docs/working/trials/2026-10-30-friction-engagement.md`), all kept and written into the dev-cycle skill. T8 to T12 are the running second set (`docs/working/trials/2026-11-06-attention-and-trust.md`). "Path A" means one option dominated, so it was decided without an owner question.
+
+- **B1, a security channel used for nothing else; the alternatives to today's reserved `⚠ SECURITY` marker** (a new questions route, a separate file, notification only, a detector script, a narrower trigger, a fire drill): section 4. Status quo, with three revisit triggers (section 4.3) for the cycle to keep where it keeps triggers.
+- **B3 (weekly digest), B5 (stale entries), B6 (zero recurring warnings), B7 (asks readable cold):** already in force through T5 (the weekly digest), T4 (the stale sweep), T7 (zero recurring warnings) and T2 (the `**If you say no:**` line) plus the gloss rule (section 6).
+- **B4 (sampled review):** waits on the verdict for T11 (one deliberate look a week), which the cycle asks for after the 2026-11-20 digest. The evidence for that question: 0 replies in 3 offers.
+- **B8 (quarterly threat-model walk-through):** set aside until the verdict on T12 (what the checks caught), which tests a cheaper answer to the same need. It is first due 2027-01, and only an idea-log line records it. The cycle may want a dated watch for 2027-01 so it is not lost. This doc cannot write `watching.md`.
 
 ### Notes for other work
 
-- **Area A** (`docs/working/briefs/2026-11-19-area-a-merge-friction.md`): merge entries opened 2026-11-13 to 11-19 number 18 (10 on 11-19). That is the first week over Q-262's 11 since the watch opened (8 the week before).
+- **Area A** (`docs/working/briefs/2026-11-19-area-a-merge-friction.md`): merge entries opened 2026-11-13 to 11-19 number 18 (10 on 11-19). Watch Q-262 (the merge-approval revisit) reopens the merge decision when merge entries exceed 11 a week in 3 of 4 digests. This is the first week over 11 since the watch opened (8 the week before).
 - **No owner question.** Both decisions are Path A.
