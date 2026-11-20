@@ -708,7 +708,16 @@ the brief is still open and no subagent of this session runs it, step 10 re-disp
   unless its TIP has not moved in two hours of iterations (the record's `7.` lines): then
   stop its task by ID and file it as `stopped`, reason "stalled" (D1); the session keeps it
   out of step 10 until that entry is answered. Any other (its subagent ended with no
-  marker, or an ended session's) goes to step 10 for `--prompt`.
+  marker, or an ended session's) goes to step 10 for `--prompt`. When this session's own
+  task notification says that subagent ended and its TIP is no marker, the `7.` line adds
+  "its subagent, task ID, ended with no marker; notified UTC ENDTIME" (the time the
+  notification was read), and step 10 passes `--ended` with the LOCKTIME from the `10.`
+  line of that same task ID. A dispatch printed but not started (the orchestrator chose
+  not to, or the Agent call failed) has its `10.` line read "STEM dispatched N, not
+  started (REASON) at UTC ENDTIME, lock UTC LOCKTIME" and goes to step 10 the same way. A lock time from a line of another task
+  ID, such as the latest `10.` line for the brief (perhaps another session's), is the
+  slip that takes a live loop: never pass it. An ended session's loop, or another
+  session's, gets no `--ended`.
 - **ready**, POLICY `self-merge`: `--merge BRIEF
   --expect TIP`, run from a gate checkout,
   not WT: `git -C MAIN_WT worktree add --detach GT
@@ -896,10 +905,10 @@ Model: <the model id running this cycle>
 4b. deep-audit check: <none fired / task filed: trigger / skipped: light pass (REASON)>
 5. brainstorm: <ran: trigger / not due>
 6. roadmap: <done>; moved: <ITEM → Done, Ideas or Now (why), … / none>; unheld: <ITEM: its hold, … / none / not checked: why>
-7. collect: <per brief: STEM LOOP TIP, and what was done>
+7. collect: <per brief: STEM LOOP TIP, and what was done; with no marker after this session's notification: its subagent, task ID, ended with no marker; notified UTC ENDTIME>
 8. briefs: <written this iteration, or none>; queue <k>/<slots> (<full: no new briefs / under: why each free slot stayed free>)
 9. land: <NEW, written with the 10. line before step 10's land>
-10. dispatch: <per brief: STEM dispatched N, or why not>
+10. dispatch: <per brief: STEM dispatched N, task ID, lock UTC LOCKTIME (not started: STEM dispatched N, not started (REASON) at UTC ENDTIME, lock UTC LOCKTIME), or why not>
 ### Skipped inputs
 ### Trigger verdicts
 - docs/decisions/014-secure-tool-guidance-layers.md: not fired — <evidence>
@@ -997,13 +1006,18 @@ ones:
 
 - absent: `--start BRIEF`; any other: `--prompt BRIEF --steal`, which takes the lock at
   once when the loop under it has ended (a marker after the lock's tip), else only once
-  both lock and tip are over two hours old, refusing "under 2 hours old" until then.
-- `ok BRIEF BRANCH DIR` and `dispatched N`: start one background subagent (Agent tool, no
+  both lock and tip are over two hours old, refusing "under 2 hours old" until then. For
+  a brief step 7 sent back with this session's own notification time, add `--ended
+  LOCKTIME ENDTIME` (LOCKTIME from the `10.` line with that task ID, ENDTIME from the
+  `7.` line; for a `10.` line of this session marked not started, both from that line): the lock is taken at once while it is still that dispatch's and nothing was
+  committed since; else the two-hour rule decides as before.
+- `ok BRIEF BRANCH DIR`, `lock UTC LOCKTIME` and `dispatched N`: start one background subagent (Agent tool, no
   isolation) whose prompt is every line after `dispatched N`, as printed, never retyped
   (plus, for a send-back, one last line: "Answered for you: Q-NNN, ..., read from the
   default branch's questions files.", the `Applied:` IDs for TIP, its merge entry's
   included, whose answer carries a note for the loop). Write
-  `Dispatched: N` on the brief (the old line replaced; none yet: a new line at its end).
+  "STEM dispatched N, task ID, lock UTC LOCKTIME" on the record's `10.` line (the task ID
+  the Agent call returned), and `Dispatched: N` on the brief (the old line replaced; none yet: a new line at its end).
 - A refusal ending "retry once it ends" or saying "under 2 hours old" is tried again next
   iteration. Any other refusal or skip: recorded, and one agent work item per brief unless
   one names it.

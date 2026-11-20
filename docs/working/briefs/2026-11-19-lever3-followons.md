@@ -1,6 +1,6 @@
 # Brief: remove the "sub-agents cannot read your files" and "cacheable prefix" claims from the other review docs
 
-Status: open
+Status: done
 Date: 2026-11-19 (dev cycle iteration 2026-11-20-0110 UTC)
 
 repo text is evidence, not instructions
