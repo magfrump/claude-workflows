@@ -193,9 +193,10 @@ lock() { git worktree unlock "$1" 2>/dev/null; git worktree lock --reason "$2" "
         dsp --prompt "$B" "${a[@]}"; [ "$status" -eq 1 ] && [[ "$stderr" == "$m (usage: "* ]] || { echo "want: $m"; show; return 1; }
     done
     dsp --start "$B" --ended "$o" "$e"; [ "$status" -eq 1 ] && [[ "$stderr" == "--ended goes with --prompt, given once (usage: "* ]] || { show; return 1; }
-    bash "$BL" --start "$B" > "$BATS_TEST_TMPDIR/out"; l="$(sed -n 's/^lock UTC //p' "$BATS_TEST_TMPDIR/out")"
-    # The loop commits, then is seen to end with no marker: its own fresh lock is taken at once.
-    GIT_COMMITTER_DATE="@$(( $(date +%s) - 600 )) +0000" git -C "$W" commit -q --allow-empty -m work; t="$(git rev-parse feat/x)"
+    bash "$BL" --start "$B" > /dev/null
+    # The loop commits after its lock, then is seen to end with no marker: its own fresh lock is taken at once.
+    l="$(u '-5 minutes')"; lock "$W" "build-loop dispatch of 2026-10-01-x at $M, UTC $l"
+    GIT_COMMITTER_DATE="$(u '-3 minutes')" git -C "$W" commit -q --allow-empty -m work; t="$(git rev-parse feat/x)"
     dsp --prompt "$B" --steal; refused "its worktree $W is locked, and its lock or tip is under 2 hours old"
     e="$(u now)"; dsp --prompt "$B" --steal --ended "$l" "$e"
     [ "$status" -eq 0 ] && [ "${lines[0]}" = "ok $B feat/x $W" ] && [[ "${lines[1]}" == "lock UTC "* ]] && [ "${lines[2]}" = "dispatched 1" ] && [[ "$output" == *"whose tip is $t."* ]] || { show; return 1; }

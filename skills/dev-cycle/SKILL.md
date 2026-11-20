@@ -712,8 +712,9 @@ the brief is still open and no subagent of this session runs it, step 10 re-disp
   task notification says that subagent ended and its TIP is no marker, the `7.` line adds
   "its subagent, task ID, ended with no marker; notified UTC ENDTIME" (the time the
   notification was read), and step 10 passes `--ended` with the LOCKTIME from the `10.`
-  line of that same task ID; a dispatch this session chose not to start records its
-  `10.` line's LOCKTIME and the time it chose. A lock time from a line of another task
+  line of that same task ID. A dispatch printed but not started (the orchestrator chose
+  not to, or the Agent call failed) has its `10.` line read "STEM dispatched N, not
+  started (REASON) at UTC ENDTIME, lock UTC LOCKTIME" and goes to step 10 the same way. A lock time from a line of another task
   ID, such as the latest `10.` line for the brief (perhaps another session's), is the
   slip that takes a live loop: never pass it. An ended session's loop, or another
   session's, gets no `--ended`.
@@ -907,7 +908,7 @@ Model: <the model id running this cycle>
 7. collect: <per brief: STEM LOOP TIP, and what was done; with no marker after this session's notification: its subagent, task ID, ended with no marker; notified UTC ENDTIME>
 8. briefs: <written this iteration, or none>; queue <k>/<slots> (<full: no new briefs / under: why each free slot stayed free>)
 9. land: <NEW, written with the 10. line before step 10's land>
-10. dispatch: <per brief: STEM dispatched N, task ID, lock UTC LOCKTIME, or why not>
+10. dispatch: <per brief: STEM dispatched N, task ID, lock UTC LOCKTIME (not started: STEM dispatched N, not started (REASON) at UTC ENDTIME, lock UTC LOCKTIME), or why not>
 ### Skipped inputs
 ### Trigger verdicts
 - docs/decisions/014-secure-tool-guidance-layers.md: not fired — <evidence>
@@ -1008,7 +1009,7 @@ ones:
   both lock and tip are over two hours old, refusing "under 2 hours old" until then. For
   a brief step 7 sent back with this session's own notification time, add `--ended
   LOCKTIME ENDTIME` (LOCKTIME from the `10.` line with that task ID, ENDTIME from the
-  `7.` line): the lock is taken at once while it is still that dispatch's and nothing was
+  `7.` line; for a `10.` line of this session marked not started, both from that line): the lock is taken at once while it is still that dispatch's and nothing was
   committed since; else the two-hour rule decides as before.
 - `ok BRIEF BRANCH DIR`, `lock UTC LOCKTIME` and `dispatched N`: start one background subagent (Agent tool, no
   isolation) whose prompt is every line after `dispatched N`, as printed, never retyped

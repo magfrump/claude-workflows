@@ -538,7 +538,8 @@
 #             ok BRIEF BRANCH DIR
 #             lock UTC TIME
 #                 TIME: the time its lock reason ends with, for the caller to
-#                 keep as --ended's LOCKTIME should this loop end unseen.
+#                 keep as --ended's LOCKTIME should this loop be seen
+#                 to end with no marker.
 #             dispatched N
 #                 N: the brief's Dispatched: count plus one, for the caller to
 #                 write on the brief; then the loop's prompt, every line after.
