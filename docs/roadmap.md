@@ -104,6 +104,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   `docs/working/research-2026-11-19-area-a-merge-friction.md`, after the auto send-back build merges.
   Held: Q-323 asks whether to build it at all.
 
+## In flight
+
 - **Agent: Headless eval runs are denied WebSearch and WebFetch, so fact-check reports are all Unverified**
   (filed 2026-11-20, step 7; finding F1 of the regeneration run). Motive: `test/skills/generate-reports.bash`
   offers the web tools with `--tools` but never grants them, so the 23 fact-check reports came out
@@ -111,8 +113,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   a small brief to add the grant (an allow rule passed to the headless run, or the runner's own flag),
   then regenerate fact-check alone; the sandbox has no web egress (`WebFetch` fails here), so the run may
   need a host step: say so in the brief.
-
-## In flight
+  2026-11-20: briefed (iteration 1949), self-merge (`test/`), the regeneration left as a host step:
+  `docs/working/briefs/2026-11-20-eval-web-tools-grant.md`.
 
 - **Agent: `scripts/self-improvement.sh` still puts its worktrees under `.claude/`** (filed 2026-11-20,
   step 7; split from the write-guard item). Motive: Claude Code asks before writes under `.claude/`
