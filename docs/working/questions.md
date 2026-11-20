@@ -26,9 +26,7 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
-| [Q-321](#q-321--regenerate-skill-eval-reports-after-a8) | you: judgment | Q-321: [2] | 2026-11-19 |
 | [Q-323](#q-323--gate-only-changes-approved-by-release) | you: judgment | Should a build loop's change that touches only the gate's own code (`scripts/build-loop.sh`, `d6.sh`, `dev-... | 2026-11-19 |
-| [Q-325](#q-325--stopped-2026-11-19-guard-worktree-taint-1) | you: judgment | Q-325: [1] | 2026-11-19 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the ho... | 2026-11-05 |
 | [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there. | 2026-11-18 |
 | [Q-316](#q-316--blessed-config-line) | you: terminal | Paste one line: what `cc-isolated --list` says about the blessed config after today's re-bless. | 2026-11-19 |
@@ -162,25 +160,6 @@ sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git r
 
 - **Interim:** the image's gate (0feaf080) runs; nothing breaks. The write guard fix (in flight) is not in this release; the next one carries it.
 
-### Q-321 · regenerate-skill-eval-reports-after-a8
-**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** ANSWERED
-Q-321: [2]
-
-Regenerate the skill eval reports now that the A8 measurement has run, so the 51 test files marked `@needs-reports` check the current skill text instead of printing NOT RUN?
-
-**If you say no:** those suites keep printing NOT RUN and the health check keeps warning with the count, as it has since 2026-09-26; a skill-prompt regression stays uncaught by them. Nothing breaks.
-
-- **Why it's yours:** each regeneration is one headless model run per fixture, about 180 across 23 skills, which spends your quota; it was held until the A8 measurement (watch Q-067, `docs/working/watching.md`, now closed), which merged as eddcaf16 under Q-320.
-- **Read:** `docs/working/audit-test-constraint-2026-09-26.md` batch G; `test/skills/generate-reports.bash`.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] One skill now** | Regenerate one high-value skill (code-review, whose text changed tonight) to prove the loop end to end | About 12 model runs | A little quota for one skill's coverage |
-| **[2] All now** | Regenerate every skill's reports | About 180 model runs | Quota spent; reports go stale at each skill edit |
-| **[3] Not now** | Keep the suites NOT RUN | None | Prompt regressions stay uncaught |
-
-- **Interim:** [3]; nothing runs.
-
 ### Q-323 · gate-only-changes-approved-by-release
 **Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** OPEN
 
@@ -203,26 +182,3 @@ One thing the research's summary does not say, which the cycle adds: a self-land
 - **Interim:** [2]; nothing is briefed. The drafted brief waits on [1], and after the auto send-back build (in flight) merges.
 - **Also found:** watch Q-262 (`docs/working/watching.md`) listed three of the 2026-11-06 record's five reopen conditions; one of the two it left out, "an approved merge is reverted", fired on 2026-11-12 (the sandbox merge 3cd6d9bb, reverted by 7caea26d). The watch now lists all five; this entry is that reopening.
 
-### Q-325 · stopped-2026-11-19-guard-worktree-taint-1
-**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** ANSWERED
-Q-325: [1]
-
-Brief 2026-11-19-guard-worktree-taint's build loop stopped; re-dispatch or drop?
-
-**If you say no:** the write-guard fix (in a web-tainted session, ordinary edits inside a worktree under `.claude/` stop asking) stays on its unmerged branch, and every such edit keeps asking.
-
-> Reason: pass-3 confirmation review still running at handback; passes 1-2 fixed
-
-The loop's marker line, as printed (the loop's text):
-
-> ok docs/working/briefs/2026-11-19-guard-worktree-taint.md 3cf3551c83a6a3c16abdf39be4f0b012c2f78fcb
-
-What the loop reports (from its hand-back, not yet checked by the cycle): the fix is built on `fix/guard-worktree-taint` (three commits on f5fbc9be); `test/hooks/guard-trusted-writes.bats` passes 105/105, with tonight's reproduction as a case that fails on the old hook; two review passes found and fixed one must-fix (a symlinked CLAUDE.md inside a worktree lost its ask) and the rest. The third, confirming pass was still running when the loop handed back early, which is the failure the wait rule merged under Q-314 prevents once it is released (Q-317). The branch also adds a failure-pattern entry, FP-185, which is on the self-merge floor, so the merge was always going to come to you. The next loop would finish that review, commit its rubric, set the brief to done and mark the branch ready; the merge then comes to you as its own entry.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] re-dispatch** | The cycle starts the loop again; it finishes the confirming review and hands back ready | None now; one merge entry later | Another round if the review finds something |
-| **[2] drop** | The brief closes; the branch stays unmerged | None | The per-edit asks in `.claude/` worktrees go on |
-
-- **Interim:** nothing runs; the branch waits.
-- **2026-11-19, iteration 0552 UTC: the third review has since reported, and it does not pass.** Its rubric is at `/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-guard-worktree-taint/review3/rubric.md` (first line `Commit: 3cf3551c`; a session scratch file, so a re-dispatch should read it soon or re-run the review). One red, introduced by 076ba817: `hooks/guard-trusted-writes.py:394` builds `os.path.abspath` of a relative path outside any `try`, so with a deleted working directory the hook crashes (exit 1, no decision) and the edit goes ahead with no ask, for CLAUDE.md, AGENTS.md and skills files too; the reviewer's repro and a one-line fix (wrap it, fall back to no extra candidate) are in the rubric. Three ambers: A12, folders above the project named like `agents/` or `Skills/` make ordinary worktree files ask again (over-asks only); A13 and A14, two places in the header and research doc that describe the rule wrongly. The reviewer confirmed that no HARD (real config) decision changed across 26,164 inputs. So [1] re-dispatch now means: fix the red and the ambers, re-run the confirming review, then hand back ready.
