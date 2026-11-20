@@ -43,12 +43,17 @@ Two tiers of policy path:
           `.claude/` dir (`.claude/wt-*/`, `.claude/worktrees/<name>/`) is judged by
           its path RELATIVE to the worktree root, so an ordinary file there gets no
           opinion, as in the main checkout. The worktree's own policy files stay SOFT:
-          its `.claude/`, skills, agents, commands, memories, CLAUDE.md, AGENTS.md
-          anywhere in it, and its root `hooks/`, root `settings*.json` and `.git`.
+          everything the SOFT name rules above match, judged on the relative path
+          (_is_soft_parts: its `.claude/`, `.md`/`.txt`/extensionless files under
+          skills/agents/commands/memories, CLAUDE.md, CLAUDE.local.md, AGENTS.md,
+          managed-settings.json, `*.mdc`), plus its root `hooks/`, root
+          `settings*.json` and root `.git`. A worktree with a skills, agents,
+          commands or memories folder above its root gets no relaxation.
           The root counts only when verified from git's own files (a regular `.git`
           file whose `gitdir:` sits in a `worktrees/` dir and points back), the root
           is not a symlink, and it is not in, at or holding the config dir, nor at or
-          holding home. Every candidate (as given, `..`-folded, resolved) is judged,
+          holding home. Every candidate (as given, `..`-folded, resolved, and for a
+          relative path its unresolved absolute form) is judged,
           each relative to the root both as written and resolved, so a symlinked
           CLAUDE.md keeps its ask and a link out of the worktree does too. Anything
           unverifiable or erroring keeps the blanket `.claude` SOFT (fail closed).
@@ -261,11 +266,15 @@ def _is_soft_parts(parts) -> bool:
 
 def _worktree_root(cand: Path):
     """The innermost `.claude/wt-*` or `.claude/worktrees/<name>` prefix of `cand`
-    (exact case: a case variant is not a worktree root and stays SOFT), or None."""
+    (exact case: a case variant is not a worktree root and stays SOFT), or None.
+    None too when a skills/agents/commands/memories segment (any case) sits above
+    the root: a worktree nested in a policy folder keeps that folder's ask."""
     parts = cand.parts
     for i in range(len(parts) - 2, -1, -1):
         if parts[i] != ".claude":
             continue
+        if {seg.lower() for seg in parts[:i]} & _SOFT_SEGS:
+            return None
         nxt = parts[i + 1]
         if nxt.startswith("wt-") and len(parts) > i + 2:
             return Path(*parts[:i + 2])
@@ -275,9 +284,10 @@ def _worktree_root(cand: Path):
 
 def _verified_worktree(root: Path):
     """The real path of `root` when it is a linked git worktree that is not in, at
-    or holding the config dir, nor at or holding home; else None. Checked from the files git itself writes: `root/.git`
-    is a regular file `gitdir: <G>`, G sits in a `worktrees/` dir, and G/gitdir
-    points back at `root/.git`. Any error is None (not verified: stays SOFT)."""
+    or holding the config dir, nor at or holding home; else None. Checked from the
+    files git itself writes: `root/.git` is a regular file `gitdir: <G>`, G sits in
+    a `worktrees/` dir, and G/gitdir points back at `root/.git`. Any error is None
+    (not verified: stays SOFT)."""
     try:
         if not root.is_absolute():        # a relative candidate as written; its
             return None                   # resolved form is anchored at the hook's cwd
@@ -319,9 +329,10 @@ def _verified_worktree(root: Path):
         return None
 
 def _is_soft_rel(rel: Path) -> bool:
-    """SOFT for a path relative to a worktree root: the SOFT name rules, plus the
-    root's own `hooks/`, `settings*.json` and `.git` (in this repo a checkout's
-    root hooks and settings are the harness's own; `.git` redirects git's hooks)."""
+    """SOFT for a path relative to a worktree root: the SOFT name rules
+    (_is_soft_parts), plus the root's own `hooks/`, `settings*.json` and `.git` (in
+    this repo a checkout's root `hooks/` is the harness's own and a root
+    settings*.json is the shape of a config dir; `.git` redirects git's hooks)."""
     if not rel.parts or rel.parts[0] == "..":
         return True                       # the root itself, or above it
     low = [seg.lower() for seg in rel.parts]
@@ -377,7 +388,10 @@ def classify_path(fp: str) -> str:
     # Case-folded on purpose: SOFT only ever asks, so over-matching is safe.
     # A candidate inside a verified linked worktree under `.claude/` is judged by its
     # path relative to that worktree (_is_soft_path); any candidate SOFT is SOFT.
-    for cand in cands:
+    # A relative path is also judged in its absolute, unresolved form (anchored at the
+    # hook's cwd), so a symlinked root settings.json keeps its ask (SOFT only: the
+    # HARD candidates above are unchanged).
+    for cand in cands + (Path(os.path.abspath(str(p))),):
         if _is_soft_path(cand):
             return "soft"
     return "none"

@@ -846,6 +846,33 @@ assert_file_decisions() {  # $1 = expected (ask|defer|deny), $2 = session, rest 
   assert_file_decisions defer sess1 "$w/notes.md"
 }
 
+@test "worktree taint: a relative path to a symlinked root settings.json or hooks/ keeps its ask (review A6)" {
+  worktree_layout
+  local w="$REPO/.claude/wt-foo"
+  mkdir -p "$w/docs/hk" "$w/sub"
+  echo x > "$w/docs/x.md"
+  ln -s docs/x.md "$w/settings.json"
+  ln -s docs/x.md "$w/settings.local.json"
+  ln -s docs/hk "$w/hooks"
+  taint sess1
+  cd "$w"
+  assert_file_decisions ask sess1 settings.json settings.local.json hooks/x.sh CLAUDE.md
+  assert_file_decisions defer sess1 chapter3.md
+  cd "$w/sub"
+  assert_file_decisions ask sess1 ../settings.json
+  cd "$REPO/.claude"
+  assert_file_decisions ask sess1 wt-foo/settings.json
+}
+
+@test "worktree taint: a worktree nested in a policy folder keeps that folder's ask (review C7)" {
+  worktree_layout
+  git -C "$REPO" worktree add -q "$REPO/.claude/commands/.claude/wt-c" -b wt-c
+  git -C "$REPO" worktree add -q "$REPO/Skills/.claude/wt-s" -b wt-s
+  taint sess1
+  assert_file_decisions ask sess1 "$REPO/.claude/commands/.claude/wt-c/evil.md" \
+    "$REPO/Skills/.claude/wt-s/evil.md"
+}
+
 @test "worktree taint: hooks/ and settings*.json ask only at the worktree root (review A1)" {
   worktree_layout
   taint sess1
@@ -937,7 +964,7 @@ assert_file_decisions() {  # $1 = expected (ask|defer|deny), $2 = session, rest 
   assert_file_decisions defer sess1 "$REPO/.claude/wt-foo/chapter3.md"
 }
 
-@test "worktree taint: a worktree in or around the config dir keeps the ask" {
+@test "worktree taint: a worktree in or holding the config dir keeps the ask" {
   worktree_layout
   git -C "$REPO" worktree add -q "$HOME/.claude/wt-home" -b wt-home
   taint sess1

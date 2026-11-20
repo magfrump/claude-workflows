@@ -91,9 +91,14 @@ Other choices, one line each:
 - Each of the three candidates is judged on its own and any SOFT wins; for a candidate
   under a root, its resolved path must lie under the root's real path, so a symlink or
   `..` that leaves the worktree keeps the ask.
-- A relative file path as written is never a worktree root; its resolved form is
-  anchored at the hook's cwd and judged like any absolute path (harmless: same result
-  as the absolute spelling).
+- A relative file path as written is never a worktree root. Its resolved form and
+  its unresolved absolute form (both anchored at the hook's cwd) are judged like any
+  absolute path, so a relative spelling gets the absolute spelling's result; the
+  absolute form is a SOFT-only candidate, added in pass 2 (review A6) so a symlinked
+  root `settings.json` reached by a relative path keeps its ask.
+- A worktree with a skills/agents/commands/memories folder (any case) above its root
+  gets no relaxation, so nesting one in a policy folder keeps that folder's ask
+  (review C7).
 - Any exception inside the worktree judgement (e.g. a symlink chain too deep for
   realpath) returns SOFT (review C1); G/gitdir gets the same regular-file and size
   check as `.git` (review C2).
@@ -104,7 +109,7 @@ Other choices, one line each:
    `_is_soft_rel`, `_is_soft_path`, `_is_soft_parts` (the old SOFT name rules, now one
    function used by both paths); `classify_path`'s SOFT loop calls `_is_soft_path`. Header
    SOFT paragraph and the Bash "no worktree exemption" line updated.
-2. Tests: 12 new cases in `test/hooks/guard-trusted-writes.bats` (reproduction table,
+2. Tests: 12 new cases (17 after review) in `test/hooks/guard-trusted-writes.bats` (reproduction table,
    own policy files, HARD unchanged incl. resolved-deny through a worktree link,
    symlinks, `..`, fail-closed roots, unreadable `.git`, config-dir containment, case
    variants, relative gitdir pointers, Write/MultiEdit/`path` key, Bash unchanged).
@@ -147,17 +152,18 @@ tainted session. The ways it could happen, and what bounds each:
 
 - **R1 forged-worktree-ordinary-files**: a session that can run Bash can make a plain
   `.claude/wt-*` dir look like a linked worktree, after which ordinary-named files
-  there are edited with no ask. Nothing loads those files as policy, and Bash could
-  write them anyway.
+  there are edited with no ask. Those files are the kind the main checkout leaves
+  ungated (R2), and Bash could write them anyway.
 - **R2 worktree-equals-checkout**: files that are policy-shaped but not on the SOFT
-  list (`.mcp.json`, files a CLAUDE.md `@`-imports, and similar) get no opinion in a
+  list (`.mcp.json`, files a CLAUDE.md `@`-imports, `hooks/` or `settings*.json`
+  below the root, a nested repo's `.git/hooks`, and similar) get no opinion in a
   worktree, exactly as in the main checkout today. Where they asked before this change
   (inside `.claude/` worktrees), they no longer do.
 - **R3 check-then-write race**: as for every path check in this hook.
 
 ## Review-fix loop
 
-- Pass 1 (rubric at f2829bcf, `docs/reviews/code-review-rubric-2026-11-19-guard-worktree-taint.md`):
+- Pass 1 (rubric at f2829bcf, `docs/reviews/code-review-rubric-2026-11-19-guard-worktree-taint-pass1.md`):
   R1 (symlinked policy names lost the ask) fixed by judging the as-written relative
   path too; A1 (hooks/settings at any depth) narrowed to the root; A2-A5 wording fixed
   here and in the hook; C1 (deep symlink chain raised and exited 1) and C2 (FIFO
@@ -165,11 +171,18 @@ tainted session. The ways it could happen, and what bounds each:
   commit-body wording in f2829bcf is immutable. C3 (re-verification per candidate,
   about 0.8 ms) and C6 left as is; C5 (roadmap item) is the cycle's to close.
 - Three new cases (R1, A1, C1) fail on f2829bcf and pass now.
+- Pass 2 (rubric at 881d87a9, `docs/reviews/code-review-rubric-2026-11-19-guard-worktree-taint-pass2.md`):
+  no red. A6 (relative path to a symlinked root settings.json/hooks lost the ask)
+  fixed with a SOFT-only absolute candidate; C7 (worktree nested in a policy folder)
+  fixed in `_worktree_root`; A7-A11 wording fixed in the hook header, `_is_soft_rel`
+  and here. Two new cases (A6, C7) fail on 881d87a9 and pass now. C8 (pre-existing
+  fail-opens in `main()`, outside the diff), C9 (follows the documented rule), C3,
+  C11-C13 left as is.
 
 ## Verification
 
-- `bats test/hooks/guard-trusted-writes.bats`: 103/103 (88 before, 15 new).
-- `bats test/hooks/`: 220/220. `scripts/hermeticity-lint --root .`: pass.
+- `bats test/hooks/guard-trusted-writes.bats`: 105/105 (88 before, 17 new).
+- `bats test/hooks/`: 225/225. `scripts/hermeticity-lint --root .`: pass.
 - Live check (not runnable in this sandbox): in a web-tainted session, an Edit to an
   ordinary file inside a `.claude/worktrees/` worktree applies with no ask, and an
   Edit to that worktree's `CLAUDE.md` still asks.
