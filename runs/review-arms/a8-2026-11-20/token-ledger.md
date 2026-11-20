@@ -11,7 +11,7 @@ output). One row per dispatched agent, appended when its notification arrived
 | # | Stage | Agent | Model | tokens | tool_uses | duration | outcome |
 |---|---|---|---|---|---|---|---|
 | 1 | Stage 1 fact-check | r1 | opus | 103,630 | 13 | 227 s | 10V/3MA/0S/6I/3U (22 claims; static, no node_modules found) |
-| 2 | Stage 1 fact-check | r3 | opus | 109,582 | 19 | 233 s | 5V/2MA/0S/6I/2U (15 claims; static, read Next 16.2.4 source in cc-review-eval/mfc-csp) |
+| 2 | Stage 1 fact-check | r3 | opus | 109,582 | 19 | 233 s | 5V/2MA/0S/6I/2U per its header (15 claims; its body verdicts 17 sections, 6V/2MA/7I/2U; static, read Next 16.2.4 source in cc-review-eval/mfc-csp) |
 | 3 | Stage 1 fact-check | r2 | opus | 122,438 | 31 | 334 s | 14V/2MA/0S/6I/2U (24 claims; executed vitest 221/221 + eslint; Next source read statically) |
 | — | Stage 1 subtotal | 3 replicates | | 335,650 | 63 | | first pass (inline) 311,975 |
 | 4 | Stage 2 critic | test-strategy | opus | 77,354 | 7 | 113 s | advisory: 9 gaps G1-G9 (G1 directive list unpinned, G3 CSP not on forwarded request, G7 connect-src export) |
@@ -21,7 +21,7 @@ output). One row per dispatched agent, appended when its notification arrived
 | 8 | Stage 2 critic | security | opus | 108,306 | 14 | 268 s | 1 Medium (CSP only on response; nonce via router copy, E1) / 3 Low (no form-action; matcher gaps incl. prefetch and /apiary; connect-src export at Low) / 3 Info; 2 routed claims |
 | — | Stage 2 subtotal | 5 critics | | 436,098 | 44 | | 4 baseline-comparable critics (sec, perf, api, arch) = 358,744; first pass (inline) 431,780 / 352,090 |
 | — | **Core total** (Stage 1 + Stage 2) | 8 agents | | **771,748** | | | first pass (inline) 743,755 |
-| 9 | Stage 2.5 submitted claims | fact-check k=1 | opus | 126,985 | 37 | 547 s | 8 entries (S3 split): 6V (4 executed) / 1MA / 1I (perf "constant work" refuted, executed) |
+| 9 | Stage 2.5 submitted claims | fact-check k=1 | opus | 126,985 | 37 | 547 s | 8 entries (S3 split): 6V / 1MA / 1I; 5 executed (3 of the 6 V, plus 27b and 31) (perf "constant work" refuted, executed) |
 | — | **Pass 1 all agents** | 9 agents | | **898,733** | | | first pass (inline) 852,285 |
 
 ## Pass 2: corpus, inline (skill as written)

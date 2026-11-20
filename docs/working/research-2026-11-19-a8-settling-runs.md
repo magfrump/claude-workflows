@@ -14,13 +14,17 @@ control on csp, and the corpus cell inline.
 
 ## Precondition check
 
-The brief asks that `skills/code-review/SKILL.md` on the base commit be the version merged under
-Q-315 (the lever #3 correction). `git log -1 -- skills/code-review/SKILL.md` at 14d450d9 prints
+The brief asks me to check that `git log -1 --format=%H -- skills/code-review/SKILL.md` on the
+base commit is the merge made under Q-315 (the lever #3 correction), and to end blocked if it is
+not. `git log -1 -- skills/code-review/SKILL.md` at 14d450d9 prints
 ca328816, a commit on `fix/code-review-lever3-correction`; it is not in the first parent of
 d383a484 (the build-loop merge of that branch), the merge changes SKILL.md (+68/-53), and nothing
 under `skills/code-review/` changed between d383a484 and 14d450d9. Git's default path
 simplification never prints a merge commit that is TREESAME to its second parent, so the literal
-command cannot print the merge hash; the skill at base is the one that merge brought in. Proceeded.
+command cannot print the merge hash (`--first-parent` would). What the check is for holds: the
+skill at base is the one that merge brought in, so I proceeded rather than block. That reads the
+brief's stop condition by its purpose, not its letter, so the ready marker asks the owner to
+confirm it.
 
 ## What I know (context)
 
@@ -77,8 +81,10 @@ command cannot print the merge hash; the skill at base is the one that merge bro
   output tokens, risk transcription drift in a 1,300-line diff, and likely overrun my own
   context mid-pass. Instead each prompt opens by telling the agent to Read the block file
   (`runs/review-arms/a8-2026-11-20/corpus/shared-block.md`, byte-identical for all) before
-  anything else. The agent's context holds the same bytes from its first step either way; the
-  difference is one tool call (a few hundred tokens) and the block arriving as a tool result
+  anything else. The agent's context holds the same content from its first step either way; the
+  difference is the Read calls (one for a Stage-1 agent; two for each Stage-2 critic, whose first
+  Read stopped at line 1068), the Read tool's line numbers (about 1.4k tokens), and the block
+  arriving as a tool result
   rather than prompt text, which the cache probe showed makes no cache difference on this path.
   This is a deviation from pasting, recorded in results. It dominates on the run finishing at
   all, so no divergent design pass.

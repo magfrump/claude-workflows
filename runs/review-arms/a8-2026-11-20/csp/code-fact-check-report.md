@@ -621,14 +621,6 @@ which the d90d6bb commit message itself lists ("add explicit return type"). A pr
 
 ---
 
-## Claims Requiring Attention
-
-### Incorrect
-- **Claim 27b** (`proxy.ts:34-49`): proxy cost is linear in request-header count and is dominated by `NextResponse.next`'s `x-middleware-request-*` copy (~15 µs vs ~0.5 µs for the nonce), not by `randomUUID` plus the clone. The performance-reviewer's "What Looks Good" line should drop the "dominated by" attribution.
-
-### Mostly Accurate
-- **Claim 31** (`proxy.ts:34`): the directives are byte-identical, but the 9b4e453→d90d6bb diff also adds the `: NextResponse` return type, so "touches only" should name it.
-
 (Appended by the orchestrator from `code-fact-check-submitted-claims.md`, Stage 2.5, k=1.)
 
 ## Escalations

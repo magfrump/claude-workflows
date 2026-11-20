@@ -10,7 +10,7 @@ Commit: 2dc403e
 **Commit:** 2dc403e
 **Replication:** k=3
 
-Merged by the orchestrator from `code-fact-check-report-r1.md` (33 claims), `-r2.md` (35) and `-r3.md` (22), all `Commit: 2dc403e`, most-severe-wins, delivery mode inline-diff-only. Replicates split some claims finer than this merge does (per-file rows of Claim 1, per-field rows of Claim 3); this merge keeps one row per distinct assertion, so its count is lower than the largest replicate's. Evidence is carried by reference to the replicate reports.
+Merged by the orchestrator from `code-fact-check-report-r1.md` (33 claims), `-r2.md` (35) and `-r3.md` (22), all `Commit: 2dc403e`, most-severe-wins, delivery mode inline-diff-only. Replicates split some claims finer than this merge does (per-file rows of Claim 1, per-field rows of Claim 3); this merge keeps one row per assertion, so its count is lower than the largest replicate's. Five single-replicate Verified assertions have no row here (r1 Claims 14, 22, 23; r2 Claims 21, 23); every non-Verified verdict has one. Evidence is carried by reference to the replicate reports.
 
 ## Claim 1: The OPFS adapter is held to the same shared contract suite as the fake (out-of-CI Playwright); substitutability is verified, not assumed
 
@@ -185,7 +185,7 @@ Merged by the orchestrator from `code-fact-check-report-r1.md` (33 claims), `-r2
 **Confidence:** Medium
 **Verification mode:** static
 **Scope:** Covers the store's onRehydrateStorage path.
-**Replicate verdicts:** r1=— · r2=Mostly accurate · r3=— · single-replicate detection
+**Replicate verdicts:** r1=Verified (r1 Claim 6c) · r2=Mostly accurate · r3=—
 **Replicate annotations:** r2: with the flag on, onRehydrateStorage (workspaceStore.ts:533-540) can still copy legacy workspace-v2 localStorage into the store via migrateFromV2
 **Evidence:** see the replicate reports' matching claims
 **Legibility-target:** for-author
@@ -678,22 +678,6 @@ Provenance: command `timeout 120 node --experimental-strip-types --no-warnings p
 
 ---
 
-## Claims Requiring Attention
-
-### Incorrect
-- None.
-
-### Stale
-- None.
-
-### Mostly Accurate
-- **Claim 27** (`app/lib/corpus/types.ts:69-71`): the round trip is lossless for `detail`, `message`, `name` and the class, but drops `stack` and `cause`.
-- **Claim 28** (`app/lib/corpus/opfsAdapter.ts:57-62`): the not-found contract is uniform only for paths that have a file component. For `""` and `"/"`, OPFS `readFile`/`stat`/`rm` throw `io`, while the fake returns `null` or a no-op.
-- **Claim 29** (`app/lib/stores/workspaceStore.ts:25,499`): the exported surface is identical, but the diff also adds an import and removes a private helper. With the flag on, hydration and `set()` become Promise-returning.
-
-### Unverifiable
-- None.
-
 (Appended by the orchestrator from `code-fact-check-submitted-claims.md`, Stage 2.5, k=1.)
 
 ## Escalations
@@ -707,5 +691,5 @@ Provenance: command `timeout 120 node --experimental-strip-types --no-warnings p
 
 ## Verdict stability
 
-- Total clusters: 25. All reporting replicates agreed: 22. Disagreed: 3 — Claim 4 (I compound / MA / MA), 9 (MA/V/MA), 22 (U/U/V). Single-replicate detections: Claims 12, 13, 14, 25 (all r2).
-- Agreement rate: 22/25 = 88%.
+- Total clusters: 25. All reporting replicates agreed: 21. Disagreed: 4 — Claim 4 (I compound / MA / MA), 9 (MA/V/MA), 12 (V/MA/—), 22 (U/U/V). Single-replicate detections: Claims 13, 14, 25 (all r2).
+- Agreement rate: 21/25 = 84%.
