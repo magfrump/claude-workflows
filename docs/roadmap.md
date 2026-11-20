@@ -112,20 +112,14 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   then regenerate fact-check alone; the sandbox has no web egress (`WebFetch` fails here), so the run may
   need a host step: say so in the brief.
 
+## In flight
+
 - **Agent: `scripts/self-improvement.sh` still puts its worktrees under `.claude/`** (filed 2026-11-20,
   step 7; split from the write-guard item). Motive: Claude Code asks before writes under `.claude/`
   outside its own `.claude/worktrees/`, so self-improvement runs keep asking; b3e25cf1 moved build
   loops to `.worktrees/`. First step: a small brief to move its default to `.worktrees/`, as b3e25cf1 did.
-
-## In flight
-
-- **Agent: Step 0 tests worktree creation first, and names where a stop goes with no worktree** (filed 2026-11-19, step 6; moved from Ideas: it carries reported friction).
-  (brainstorm 2026-11-16). Signal: philosophy-research F-018, a read-only `.git/worktrees`
-  stopped an iteration with nowhere to file the stop; decision-log row 88 keeps worktrees
-  as how agents work.
-  2026-11-19: moved to Now by step 6 (iteration 2316). First step: the one the signal names; if none, a research or divergent-design pass on it.
-  2026-11-20: briefed (iteration 1904), research first, self-merge (docs only):
-  `docs/working/briefs/2026-11-20-step0-worktree-first-research.md`.
+  2026-11-20: briefed (iteration 1917), self-merge (`scripts/self-improvement.sh`, `test/`):
+  `docs/working/briefs/2026-11-20-self-improvement-worktrees.md`.
 
 - **Regenerate the skill eval reports** (Q-321 [2], owner in session 2026-11-19: "yes"). Motive: 51
   test files marked `@needs-reports` print NOT RUN; the regeneration waited on the A8 measurement
@@ -481,6 +475,13 @@ Unranked. Each names the signal that motivates it.
 ## Done
 
 Items finished since the last cycle, with the merge.
+
+- **Step 0 and a missing worktree: no change, closed.** Done d6480ebc (self-merge), brief
+  `docs/working/briefs/closed/2026-11-20-step0-worktree-first-research.md`, research
+  `docs/working/research-2026-11-20-step0-worktree-first-research.md`: the one stop on record
+  (philosophy-research F-018, a read-only `.git/worktrees`) came from the Bash sandbox rolled back
+  at 7caea26d, and the Rules already send every stop to the final message. Reopen if decision-log
+  row 88's revisit trigger fires or a second stop before WT is recorded (its "For the dev cycle").
 
 - **The write guard stops asking on ordinary files in `.claude/` worktrees when web-tainted.** Done
   61122f34 (approved merge, Q-326 [1]), brief `docs/working/briefs/closed/2026-11-19-guard-worktree-taint.md`,
