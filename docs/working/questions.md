@@ -152,24 +152,25 @@ Install the release that carries the build-loop prompt's new wait rule (Q-314) a
 
 **If you say no:** sessions keep running the image built from 0feaf080, so build loops keep the old prompt (they may hand back early while a reviewer runs, and their reviewers keep trying to save report files that get refused), and review passes keep the old code-review skill text. Nothing breaks.
 
-- **C (the image's commit):** 0feaf08085b524c0c4345c52f8e285d842558f23 · **M (main's commit):** d383a48423772b52000eb4878d7e54dd0fc79756
-- **Merged without your review** (all five change only research docs under `docs/`, which the image does not carry):
+- **C (the image's commit):** 0feaf08085b524c0c4345c52f8e285d842558f23 · **M (main's commit):** d9f475df43a1370199c09d108973fb9a707dd7fe
+- **Merged without your review** (all six change only research docs under `docs/`, which the image does not carry):
   - 74b9181f Merge branch 'docs/live-verify-merge-head-count' (build-loop self-merge)
   - 8ffddfaf Merge branch 'docs/herald-friction-triage' (build-loop self-merge)
   - d6c987f3 Merge branch 'docs/loops-wait-foreground' (build-loop self-merge)
   - a8a0a496 Merge branch 'docs/subagent-report-files-listing' (build-loop self-merge)
   - 7c137d5d Merge branch 'docs/generated-file-conflicts' (build-loop self-merge)
+  - d9f475df Merge branch 'docs/harness-feedback-file-in-cycle' (build-loop self-merge)
 - **What changes for you:**
   - acbff6c6 (you approved it, Q-314 [1]): the build-loop dispatch prompt tells a loop to wait inside its turn for reviewers and files (at most 30 minutes per wait, then a `stopped` marker), and has its subagents return reports as text.
   - d383a484 (you approved it, Q-315 [1]): the code-review skill drops its prompt-cache saving claims and the rules that existed only for them; critics read their skill file by path; decision 032 is amended.
-  - The routine rest: 11 dev-cycle lands.
-- **Full list:** `git -c log.showSignature=false log --first-parent --format='%h %s' 0feaf08085b524c0c4345c52f8e285d842558f23..d383a48423772b52000eb4878d7e54dd0fc79756`
-- **Paths changed outside `docs/` (23 under `docs/` too, which the image does not carry):** `scripts/build-loop.sh`, `skills/code-review/SKILL.md`, `test/scripts/build-loop-dispatch.bats`, `test/skills/code-review-context-delivery.bats`
+  - The routine rest: 13 dev-cycle lands.
+- **Full list:** `git -c log.showSignature=false log --first-parent --format='%h %s' 0feaf08085b524c0c4345c52f8e285d842558f23..d9f475df43a1370199c09d108973fb9a707dd7fe`
+- **Paths changed outside `docs/` (25 under `docs/` too, which the image does not carry):** `scripts/build-loop.sh`, `skills/code-review/SKILL.md`, `test/scripts/build-loop-dispatch.bats`, `test/skills/code-review-context-delivery.bats`
 
 Run this on the host, in your claude-workflows checkout at main's tip, then start a new sandbox session:
 
 ```
-sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "d383a48423772b52000eb4878d7e54dd0fc79756:$p")"; then n=$((n+1)); else echo "release refused: $p changed after d383a48423772b52000eb4878d7e54dd0fc79756: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
+sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "d9f475df43a1370199c09d108973fb9a707dd7fe:$p")"; then n=$((n+1)); else echo "release refused: $p changed after d9f475df43a1370199c09d108973fb9a707dd7fe: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
 ```
 
 **Pass:** the installer finishes without a `release refused` line. **Send back:** `Q-317: done`. If it re-blesses, you can add `| tee "$TMPDIR/install.log"` to the end of the paste and send back `grep -E 'Verified live:|^Next:' "$TMPDIR/install.log"` (two lines) for watch Q-167; optional.
