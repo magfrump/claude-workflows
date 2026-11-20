@@ -142,6 +142,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 - **Fix the single-skill findings F4, F6 and F7** (Q-328 [3]; filed and briefed 2026-11-20, step 6):
   arithmetic-eval's program drift, what-if-analysis's missing Assumption entries, and pattern misses
   in three skills. Review: `docs/working/briefs/2026-11-20-skill-format-single-skill.md`.
+  2026-11-20: ready at a1b5bfc3 (four skills, three tests; yglesias-critique still red by chance on a
+  body-keyword rule): merge asked in Q-329.
 
 - **Resolve the verdict drift F5** (Q-328 [3]; filed and briefed 2026-11-20, step 6): six skills'
   judgments differ from the expected verdicts; rerun first to separate noise, then fix the skill or
