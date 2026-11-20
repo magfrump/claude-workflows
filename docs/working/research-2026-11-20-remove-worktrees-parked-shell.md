@@ -71,4 +71,5 @@ so this command was not run" within minutes of it. Negative if any appears: then
 
 - `bats test/scripts/build-loop-dispatch.bats test/scripts/build-loop-orchestrator.bats`: pass.
 - `scripts/hermeticity-lint --root .`: pass.
-- `scripts/health-check.sh`: see the branch's last commit body.
+- `scripts/health-check.sh` at 70cebc49: "All checks passed." (exit 0).
+- Review: round 1 (code-fact-check and clarity) found four ambers, fixed in 70cebc49; round 2 clean.
