@@ -74,14 +74,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   (its wording is the model), one review brief over these files; `workflows/` is a never
   glob, so review.
 
-- **Agent: Re-dispatch a conflict that touches only generated files, with no owner entry** (filed 2026-11-19, step 6; moved from Ideas: it carries reported friction).
-  (brainstorm 2026-11-16). Signal: philosophy-research F-010 (a generated catalog README
-  made approved branches go stale within minutes) and F-006 (a newer gate rule refusing an
-  approved merge), each costing the owner a re-dispatch answer and a second merge answer.
-  Three or more shapes (a repo setting listing generated paths, regenerating at merge time,
-  no change), so a divergent-design pass first. Builds on the in-flight F-009 brief.
-  2026-11-19: moved to Now by step 6 (iteration 2316). First step: the one the signal names; if none, a research or divergent-design pass on it.
-
 - **Agent: Step 0 tests worktree creation first, and names where a stop goes with no worktree** (filed 2026-11-19, step 6; moved from Ideas: it carries reported friction).
   (brainstorm 2026-11-16). Signal: philosophy-research F-018, a read-only `.git/worktrees`
   stopped an iteration with nowhere to file the stop; decision-log row 88 keeps worktrees
@@ -151,15 +143,17 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   while a loop waited for a reviewer, and each then waited the full two-hour rule. The research
   (d6c987f3, `docs/working/research-2026-11-19-loops-wait-foreground.md`) picked one wait rule in
   the dispatch prompt. Briefed 2026-11-19 (iteration 2351), review (gate code):
-  `docs/working/briefs/2026-11-19-loop-wait-rule.md`.
+  `docs/working/briefs/2026-11-19-loop-wait-rule.md`. The same brief carries the report-file
+  fix (herald F-010 remainder: loops' subagents return reports as text), which edits the same line.
 
-- **Agent: Review subagents are told to write report files Claude Code refuses** (filed 2026-11-19,
-  step 7; herald F-010 remainder). Motive: the build-loop prompt's per-subagent scratch directory,
-  11 review skills' "save your report" lines and the code-review skill's fact-check dispatch
-  still tell a subagent to save a file, costing a refused call each time (the parallel-worktrees
-  half was fixed by cd019457). First step: group G's listing in the same research doc, then
-  divergent design over its four approaches; option 1 is gate code (review merge).
-  2026-11-19: briefed (iteration 2338): `docs/working/briefs/2026-11-19-subagent-report-files-listing.md`.
+- **Agent: Re-dispatch a conflict that touches only generated files, with no owner entry** (filed 2026-11-19, step 6; moved from Ideas: it carries reported friction).
+  (brainstorm 2026-11-16). Signal: philosophy-research F-010 (a generated catalog README
+  made approved branches go stale within minutes) and F-006 (a newer gate rule refusing an
+  approved merge), each costing the owner a re-dispatch answer and a second merge answer.
+  Three or more shapes (a repo setting listing generated paths, regenerating at merge time,
+  no change), so a divergent-design pass first. Builds on the in-flight F-009 brief.
+  2026-11-19: moved to Now by step 6 (iteration 2316). First step: the one the signal names; if none, a research or divergent-design pass on it.
+  2026-11-19: briefed (iteration 2351): `docs/working/briefs/2026-11-19-generated-file-conflicts.md`.
 
 ## Next
 
@@ -508,6 +502,15 @@ Unranked. Each names the signal that motivates it.
 ## Done
 
 Items finished since the last cycle, with the merge.
+
+- **Report-file lines: listed, mostly closed.** Done a8a0a496 (self-merge), brief
+  `docs/working/briefs/closed/2026-11-19-subagent-report-files-listing.md`, research
+  `docs/working/research-2026-11-19-subagent-report-files-listing.md`: 13 of 13 refused writes
+  were a subagent's scratch `report.md`; 95 of 95 writes to `docs/reviews/` were accepted, so the
+  skills' save lines stay. The one fix (the build-loop prompt's scratch-directory line) rides in
+  `docs/working/briefs/2026-11-19-loop-wait-rule.md`. Revisit if a refusal is recorded on a
+  `docs/reviews/` path or a name other than `report.md`. The evidence came from this machine's
+  Claude Code transcripts, which the loop read with `rg`.
 
 - **Where loops wait, and why they hand back early: researched.** Done d6c987f3 (self-merge), brief
   `docs/working/briefs/closed/2026-11-19-loops-wait-foreground.md`, research
