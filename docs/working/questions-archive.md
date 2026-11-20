@@ -306,6 +306,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-318](#q-318--merge-2026-11-19-lever3-followons-65dd7d2b0927) | Q-318: [1] | 2026-11-19 |
 | [Q-319](#q-319--merge-gate-2026-11-19-steal-ended-2e687f12a30b) | Q-319: [1] | 2026-11-19 |
 | [Q-320](#q-320--merge-2026-11-19-a8-settling-runs-fd8d009f846d) | Q-320: [1] | 2026-11-19 |
+| [Q-324](#q-324--merge-gate-2026-11-19-auto-send-back-d35f9fa06e91) | Q-324: [1] | 2026-11-19 |
 <!-- index:end -->
 
 ## Answered
@@ -8253,4 +8254,44 @@ No path is gate code, an instruction file or a dot path. The rubric's 17 ambers 
 | **[3] changes needed** | Write what to change (or "[2]" to re-run); the note goes back to the loop | Writing the note, and about 2.2M tokens for a re-run | A further round |
 
 - **Interim:** nothing merges; A8 stays as it was.
+
+### Q-324 · merge-gate-2026-11-19-auto-send-back-d35f9fa06e91
+**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** ANSWERED
+Q-324: [1]
+
+Merge the dev-cycle change that sends a gate-refused ready branch straight back to its loop, with no entry for you, when the refusal is a conflict with main or a failure-pattern gap the loop can fix (built on your Q-312 answer)?
+
+**If you say no:** each such refusal keeps becoming a `stopped` entry you answer "re-dispatch", followed on review briefs by a second merge entry, about 9 such round trips across the repos so far (philosophy-research feedback F-006, F-009, F-010).
+
+- **Why it's yours:** it changes `skills/dev-cycle/SKILL.md`, the gate's own instructions, which the cycle never self-merges; it reaches sessions at the next release.
+- **Read:** the brief `docs/working/briefs/2026-11-19-auto-send-back.md`; the design, merged 7c137d5d, `docs/working/research-2026-11-19-generated-file-conflicts.md`; on the branch, `docs/working/research-2026-11-19-auto-send-back.md` (the build and its six-item pre-mortem). Show the diff: `git diff main...d35f9fa06e9122cb1f952c7cdb58b693c199aead`.
+
+What it changes:
+- Step 7: a ready branch the gate refuses for a conflict with main, or under the gate's `refuse ... failure-pattern gaps` line, goes back to its loop, once per branch tip and only while its dispatch count is under 3 (so you keep at least one re-dispatch of your own under the cap of 4). The brief's `Applied:` line records `auto@TIP12=redispatch`; a redispatch item for the current tip also stops the gate from being run on that tip again.
+- Still your `stopped` entry: a dispatch count of 3 or more; the gap whose fix is yours (the failure-patterns migration); a gap naming a failed read; a failure-pattern library that is not a plain file; every other refusal.
+- Step 10: the sent-back loop's prompt ends "Sent back for you: the gate refused TIP: REFUSAL-LINE; merge the default branch in ... or fix the gap it names", and the final message lists each send-back with its brief and refusal, so nothing happens out of your sight.
+- Tests: a new text pin in `test/scripts/build-loop-orchestrator.bats` (52/52 pass; deleting any pinned phrase fails it), plus the other suites that read the skill and the hermeticity lint.
+- Review: three rounds (5, then 3 should-fixes, all fixed; the third clean). No security, performance or API critic ran, since the diff is prose and a text pin with no script reading it; the rubric names that as a coverage gap.
+
+Branch tip d35f9fa06e9122cb1f952c7cdb58b693c199aead. `--check`'s lines, as printed:
+
+> ok docs/working/briefs/2026-11-19-auto-send-back.md d35f9fa06e9122cb1f952c7cdb58b693c199aead 75100c32f49024aa91f94c1bc4bbfaab42c3b400
+> path docs/working/briefs/2026-11-19-auto-send-back.md A docs/reviews/code-review-rubric-2026-11-19-fix-auto-send-back.md
+> path docs/working/briefs/2026-11-19-auto-send-back.md M docs/working/briefs/2026-11-19-auto-send-back.md
+> path docs/working/briefs/2026-11-19-auto-send-back.md A docs/working/research-2026-11-19-auto-send-back.md
+> path docs/working/briefs/2026-11-19-auto-send-back.md M skills/dev-cycle/SKILL.md
+> path docs/working/briefs/2026-11-19-auto-send-back.md M test/scripts/build-loop-orchestrator.bats
+> rubric docs/working/briefs/2026-11-19-auto-send-back.md: clean docs/reviews/code-review-rubric-2026-11-19-fix-auto-send-back.md: 0 red and 8 amber rows, none open
+
+`skills/dev-cycle/SKILL.md` is gate code (self-merge's floor would have refused it).
+
+**What an attacker would want here:** the gate's refusal is what stops a bad branch landing; an outside party who could put text in a loop's branch (the input here) would want a refusal turned into a silent retry until something slips through. The send-back changes no gate check: the new tip is checked again in full, the route covers only two named refusal kinds, it runs once per tip, and it stops under the dispatch cap.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The cycle merges d35f9fa0 next iteration; it ships at the next release | Reading the diff | A loop is re-dispatched you would have dropped; one `git revert` |
+| **[2] drop** | The brief closes; refusals keep coming to you | None | The round trips go on |
+| **[3] changes needed** | Write what to change; the note goes back to the loop | Writing the note | A further round |
+
+- **Interim:** nothing merges.
 
