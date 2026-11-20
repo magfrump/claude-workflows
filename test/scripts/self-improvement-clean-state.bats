@@ -25,16 +25,16 @@
 SI="$BATS_TEST_DIRNAME/../../scripts/self-improvement.sh"
 
 setup() {
-  # An inherited GIT_LITERAL_PATHSPECS=1 (the dev-cycle reader exports it)
-  # breaks this file's bare `git check-ignore` assertions; the one case that
-  # tests it sets it again.
-  unset GIT_LITERAL_PATHSPECS
+  # GIT_LITERAL_PATHSPECS is left as inherited (the dev-cycle reader exports
+  # 1), so these cases run in the environment a real run meets; this file's
+  # own `git check-ignore` assertions turn it off, as the script does.
   # Stub claude (hermeticity convention: test/fixture-hermeticity.bats).
   BIN="$BATS_TEST_TMPDIR/bin"
   mkdir -p "$BIN"
   cat > "$BIN/claude" <<'STUB'
 #!/usr/bin/env bash
 prompt="${!#}"
+printf '%s\n' "${TMPDIR-unset}" > "$STUB_DIR/claude.tmpdir"
 round() { printf '%s' "$prompt" | grep -oE 'feature-ideas-round-[0-9]+' | head -1 | grep -oE '[0-9]+$'; }
 case "$prompt" in
   *"Follow the divergent-design workflow"*)
@@ -275,7 +275,7 @@ run_si() {
   run grep -c '/\.claude/' "$STUB_DIR/impl.cwd"
   [ "$output" = 0 ]
   [ "$(cat "$REPO/.worktrees/.gitignore")" = '*' ]
-  git -C "$REPO" check-ignore -q -- .worktrees/si-wt-a
+  GIT_LITERAL_PATHSPECS=0 git -C "$REPO" check-ignore -q -- .worktrees/si-wt-a
   [ -z "$(git -C "$REPO" status --porcelain --untracked-files=all)" ]
   [ ! -e "$REPO/.claude" ]
 }
@@ -317,7 +317,7 @@ run_si() {
 @test "a .worktrees/.gitignore that ignores the worktrees but not itself refuses the run" {
   mkdir -p "$REPO/.worktrees"
   printf 'si-wt-*\n' > "$REPO/.worktrees/.gitignore"
-  git -C "$REPO" check-ignore -q -- .worktrees/si-wt-x
+  GIT_LITERAL_PATHSPECS=0 git -C "$REPO" check-ignore -q -- .worktrees/si-wt-x
   run_si
   [ "$status" -ne 0 ]
   [[ "$output" == *"git does not ignore everything in $REPO/.worktrees"* ]]
@@ -349,6 +349,90 @@ run_si() {
   run_si
   [ "$status" -eq 0 ]
   grep -qx "$REPO/.worktrees/si-wt-a" "$STUB_DIR/impl.cwd"
+}
+
+@test "an inherited GIT_LITERAL_PATHSPECS=1 still commits and merges the implementer's work" {
+  # si_commit_child_work's `git add` excludes the message file with
+  # ":(exclude)" magic, which literal pathspecs break unless the call turns
+  # them off: every task was rejected with "git add failed".
+  export GIT_LITERAL_PATHSPECS=1 STUB_RESOLVER_RC=1
+  run_si
+  [ "$status" -eq 0 ]
+  [ "$(jq -r '.validation.a.commits' "$WD/round-1-report.json")" = pass ]
+  git -C "$REPO" log --format=%s main | grep -qx 'feat: change from si-wt-a'
+  run git -C "$REPO" log --all --name-only --format=
+  [[ "$output" != *".si-commit-msg"* ]]
+}
+
+# TMPDIR: an exported writable one wins; unset or unwritable, the run uses
+# .worktrees/si-tmp, set up and checked as the worktrees are, never .claude/.
+@test "an exported writable TMPDIR is used as given" {
+  export STUB_RESOLVER_RC=1
+  run_si
+  [ "$status" -eq 0 ]
+  [ "$(cat "$STUB_DIR/claude.tmpdir")" = "$BATS_TEST_TMPDIR" ]
+  [ ! -e "$REPO/.worktrees/si-tmp" ]
+}
+
+@test "with TMPDIR unset the run's temp files go under .worktrees/si-tmp, gitignored" {
+  unset TMPDIR
+  export STUB_RESOLVER_RC=1
+  run_si
+  [ "$status" -eq 0 ]
+  [ "$(cat "$STUB_DIR/claude.tmpdir")" = "$REPO/.worktrees/si-tmp" ]
+  [ -d "$REPO/.worktrees/si-tmp" ]
+  [ ! -e "$REPO/.claude" ]
+  [ -z "$(git -C "$REPO" status --porcelain --untracked-files=all)" ]
+}
+
+@test "an unwritable TMPDIR falls back to .worktrees/si-tmp" {
+  export TMPDIR="$BATS_TEST_TMPDIR/absent" STUB_RESOLVER_RC=1
+  run_si
+  [ "$status" -eq 0 ]
+  [ "$(cat "$STUB_DIR/claude.tmpdir")" = "$REPO/.worktrees/si-tmp" ]
+  [ ! -e "$REPO/.claude" ]
+}
+
+@test "the TMPDIR fallback refuses when git would see .worktrees, even with an explicit WORKTREE_BASE" {
+  mkdir -p "$BATS_TEST_TMPDIR/own" "$REPO/.worktrees"
+  printf 'other\n' > "$REPO/.worktrees/.gitignore"
+  unset TMPDIR
+  export WORKTREE_BASE="$BATS_TEST_TMPDIR/own/x"
+  run_si
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"git does not ignore everything in $REPO/.worktrees"*"export TMPDIR"* ]]
+  [ ! -e "$REPO/.worktrees/si-tmp" ]
+  [ ! -e "$STUB_DIR/claude.tmpdir" ]
+  [ ! -e "$WD/si-run-id.txt" ]
+}
+
+@test "the TMPDIR fallback refuses an ignore file that hides si-tmp-* names but not si-tmp/" {
+  mkdir -p "$REPO/.worktrees"
+  printf '.gitignore\nsi-wt-*\nsi-tmp-*\n' > "$REPO/.worktrees/.gitignore"
+  unset TMPDIR
+  run_si
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"git does not ignore everything in $REPO/.worktrees"*"export TMPDIR"* ]]
+  [ ! -e "$STUB_DIR/claude.tmpdir" ]
+}
+
+@test "the TMPDIR fallback refuses a .worktrees/si-tmp that is a symbolic link" {
+  mkdir -p "$REPO/.worktrees" "$BATS_TEST_TMPDIR/elsewhere"
+  ln -s "$BATS_TEST_TMPDIR/elsewhere" "$REPO/.worktrees/si-tmp"
+  unset TMPDIR
+  run_si
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"$REPO/.worktrees/si-tmp is a symbolic link; remove it, or export TMPDIR"* ]]
+  [ ! -e "$STUB_DIR/claude.tmpdir" ]
+  [ -z "$(ls -A "$BATS_TEST_TMPDIR/elsewhere")" ]
+}
+
+@test "a TMPDIR that is a writable file, not a directory, falls back to .worktrees/si-tmp" {
+  : > "$BATS_TEST_TMPDIR/afile"
+  export TMPDIR="$BATS_TEST_TMPDIR/afile" STUB_RESOLVER_RC=1
+  run_si
+  [ "$status" -eq 0 ]
+  [ "$(cat "$STUB_DIR/claude.tmpdir")" = "$REPO/.worktrees/si-tmp" ]
 }
 
 @test "an explicit WORKTREE_BASE is used as given, with no .worktrees made" {
