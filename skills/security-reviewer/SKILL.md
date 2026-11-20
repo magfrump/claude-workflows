@@ -35,8 +35,8 @@ requires:
 > `User goal:` / `Current task:` / `Success criterion:` lines), do this **before**
 > producing the critique:
 >
-> 1. **Capture the user's goal in 1-2 sentences.** State it back to confirm (in chat, never
->    ahead of the report's title); ask one clarifying question only if the request is genuinely ambiguous.
+> 1. **Capture the user's goal in 1-2 sentences.** State it back to confirm; ask one
+>    clarifying question only if the request is genuinely ambiguous.
 > 2. **Record it verbatim below the report's title and header fields** as a `**User goal:**` line,
 >    alongside the `Commit: <hash>` metadata line of the saved artifact. The User-goal
 >    anchor must persist in the saved file so downstream readers and tools see what frame
@@ -294,8 +294,8 @@ Each candidate must then be dispatched one of two ways:
 
 - **Tested** — traced through the actual code, or exercised via a fixture/execution, with
   the outcome recorded.
-- **Listed** — placed under an explicit **"Untested bypass candidates"** heading in the
-  report, naming the input and the reason it wasn't tested.
+- **Listed** — placed under an explicit `## Untested bypass candidates` section of the
+  report (level 2, after Findings, never inside it), naming the input and the reason it wasn't tested.
 
 A guardrail with untested bypass candidates may not appear in Endorsement Claims. Enumerating
 what would break a guard and then declining to check is the honest state to report — it is
