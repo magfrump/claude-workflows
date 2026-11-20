@@ -30,6 +30,7 @@ The index below is generated — edit entries, not the table.
 | [Q-327](#q-327--trial-set-2-ends-again) | you: judgment | The second trial set (T8–T12), extended a week under Q-286, has now had its second weekly digest (`docs/w... | 2026-11-20 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the ho... | 2026-11-05 |
 | [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there. | 2026-11-18 |
+| [Q-332](#q-332--regenerate-fact-check-reports-host) | you: terminal | Regenerate the fact-check skill's eval reports on the host, where the web works, and commit them. | 2026-11-20 |
 <!-- index:end -->
 
 ## Open
@@ -147,4 +148,24 @@ To be honest about how they ran: on 2026-11-19 and 20 the cycle's final messages
 
 - **Interim:** all five keep running, and the cycle keeps T8–T10 in its final messages from now on.
 - **If the answer differs:** dropped trials stop at the next iteration; kept ones go into one skill change.
+
+### Q-332 · regenerate-fact-check-reports-host
+**Needs:** you: terminal · **Opened:** 2026-11-20 · **Status:** OPEN
+
+Regenerate the fact-check skill's eval reports on the host, where the web works, and commit them.
+
+**If you say no:** fact-check's 3 report-dependent test suites stay NOT RUN in every health check (they need generated reports to test against), and the skill's web-search behaviour goes untested; nothing else waits on it.
+
+- **Why it's yours:** the reports need live WebSearch and WebFetch calls, and this sandbox has no web egress; only the host has it.
+- **Read:** `docs/working/research-2026-11-20-eval-web-tools-grant.md` (the fix that merged at 6c0563b5: the report generator, `test/skills/generate-reports.bash`, now grants the web tools a fixture lists; before it, all 23 fact-check reports came out Unverified because every web call was denied) · the closed brief `docs/working/briefs/closed/2026-11-20-eval-web-tools-grant.md`.
+
+**Where:** your claude-workflows checkout on the host, at main's tip (6c0563b5 or later), signed in to Claude Code. It runs the skill on each fixture with headless `claude` (subscription usage), then the three suites:
+
+```
+bash test/skills/generate-reports.bash fact-check && bats test/skills/fact-check-eval.bats test/skills/fact-check-edge-cases.bats test/skills/fact-check-format.bats
+```
+
+**Pass:** the bats run ends with no `not ok`; then commit `test/skills/fact-check/output/`. **Send back:** `Q-332: done`, or the first `not ok` lines if any fail (a failure is a skill finding for the cycle to file, not something to fix by hand).
+
+- **Interim:** the suites stay NOT RUN; the regeneration of the other skills' reports (brief `docs/working/briefs/2026-11-19-regenerate-skill-reports.md`, held by Q-328 [3] until the F2 and F3 format fixes merge) excludes fact-check.
 
