@@ -14,7 +14,7 @@
 #        scripts/build-loop.sh --check BRIEF... [--expect SHA]
 #        scripts/build-loop.sh --merge BRIEF --expect SHA [--approved Q-NNN]
 #        scripts/build-loop.sh --start BRIEF [--dir DIR]
-#        scripts/build-loop.sh --prompt BRIEF [--dir DIR] [--steal]
+#        scripts/build-loop.sh --prompt BRIEF [--dir DIR] [--steal [--ended LOCKTIME ENDTIME]]
 #        scripts/build-loop.sh --free-worktrees
 #        scripts/build-loop.sh -h | --help
 #
@@ -536,6 +536,10 @@
 #             of STEM at TIP, UTC TIME" (TIP: the tip the loop starts from).
 #             Prints
 #             ok BRIEF BRANCH DIR
+#             lock UTC TIME
+#                 TIME: the time its lock reason ends with, for the caller to
+#                 keep as --ended's LOCKTIME should this loop be seen
+#                 to end with no marker.
 #             dispatched N
 #                 N: the brief's Dispatched: count plus one, for the caller to
 #                 write on the brief; then the loop's prompt, every line after.
@@ -558,7 +562,18 @@
 #             lock taken at this marker is a newer, live dispatch). Else it
 #             refuses unless --steal is given, its lock reason ends "UTC
 #             TIME", and that time and the tip's commit time are both over 2
-#             hours ago. A taken lock is replaced with a new reason. Also
+#             hours ago. --ended LOCKTIME ENDTIME (with --steal; each exactly
+#             YYYY-MM-DDTHH:MM:SSZ, ENDTIME neither in the future nor before
+#             LOCKTIME, else a usage error) also takes it at any age when the
+#             lock reason is --start's or --prompt's for this brief and ends
+#             "UTC LOCKTIME" (still the lock the caller's own dispatch took)
+#             and the tip's commit time is before ENDTIME (nothing committed
+#             since the caller saw that loop end); else the 2-hour rule
+#             decides, and its refusal adds which --ended check failed. A
+#             caller passes it only for a loop it dispatched and saw end, with
+#             the time that dispatch printed: another dispatch's lock, another
+#             session's included, has another time and is refused (D1's live
+#             loop). A taken lock is replaced with a new reason. Also
 #             refused: the branch in two worktrees, or in one whose directory
 #             is missing or a symbolic link (locked or not) or whose path is
 #             not one --dir takes. Both refuse while another --start or
@@ -720,8 +735,15 @@ constraints_line() {
     *) echo "constraints unreadable: line $c looks like a constraint but is not exactly \"H<n>: text\" or \"S<n>: text\" (optionally after \"- \", n without a leading 0)" ;;
   esac
 }
-usage() { echo "$1 (usage: build-loop.sh --settings | --check-constraints FILE | --status BRIEF... | --marker BRIEF | --state | --main-log SINCE | --cycle-diff [--answered Q-NNN]... [--migrated ID]... | --land-cycle --main SHA [--answered Q-NNN]... [--migrated ID]... | --check BRIEF... [--expect SHA] | --merge BRIEF --expect SHA [--approved Q-NNN] | --start BRIEF [--dir DIR] | --prompt BRIEF [--dir DIR] [--steal] | --free-worktrees | --worktree-base)" >&2; exit 1; }
-MODE=""; ARGS=(); EXPECT=""; APPROVED=""; DIR=""; STEAL=""; ANSWERED=(); MIGRATED=(); LAND_MAIN=""
+usage() { echo "$1 (usage: build-loop.sh --settings | --check-constraints FILE | --status BRIEF... | --marker BRIEF | --state | --main-log SINCE | --cycle-diff [--answered Q-NNN]... [--migrated ID]... | --land-cycle --main SHA [--answered Q-NNN]... [--migrated ID]... | --check BRIEF... [--expect SHA] | --merge BRIEF --expect SHA [--approved Q-NNN] | --start BRIEF [--dir DIR] | --prompt BRIEF [--dir DIR] [--steal [--ended LOCKTIME ENDTIME]] | --free-worktrees | --worktree-base)" >&2; exit 1; }
+# utc_epoch TIME: prints TIME's epoch seconds when TIME is exactly YYYY-MM-DDTHH:MM:SSZ
+# and a real UTC time (the round trip refuses one date would normalise, such as 02-30).
+utc_epoch() {
+  local e
+  [[ "$1" =~ ^$DIGIT{4}-$DIGIT{2}-$DIGIT{2}T$DIGIT{2}:$DIGIT{2}:$DIGIT{2}Z$ ]] && e="$(date -u -d "$1" +%s 2>/dev/null)" \
+    && [[ "$e" =~ ^$DIGIT+$ && "$(date -u -d "@$e" +%Y-%m-%dT%H:%M:%SZ)" == "$1" ]] && echo "$e"
+}
+MODE=""; ARGS=(); EXPECT=""; APPROVED=""; DIR=""; STEAL=""; ENDED_LOCK=""; ENDED_LOCK_AT=""; ENDED_AT=""; ENDED_END=""; ANSWERED=(); MIGRATED=(); LAND_MAIN=""
 case "${1:-}" in
   --settings) MODE=settings; [[ $# -eq 1 ]] || usage "--settings takes no arguments" ;;
   --check-constraints)
@@ -771,8 +793,17 @@ case "${1:-}" in
       elif [[ "$1" == --steal ]]; then
         [[ "$MODE" == prompt && -z "$STEAL" ]] || usage "--steal goes with --prompt, given once"
         STEAL=1; shift
+      elif [[ "$1" == --ended ]]; then
+        [[ "$MODE" == prompt && -z "$ENDED_LOCK" ]] || usage "--ended goes with --prompt, given once"
+        [[ $# -ge 3 ]] || usage "--ended takes two values, LOCKTIME (the lock time a dispatch printed) and ENDTIME (when its loop was seen to end)"
+        ENDED_LOCK_AT="$(utc_epoch "$2")" || usage "--ended's LOCKTIME is not a UTC time YYYY-MM-DDTHH:MM:SSZ"
+        ENDED_AT="$(utc_epoch "$3")" || usage "--ended's ENDTIME is not a UTC time YYYY-MM-DDTHH:MM:SSZ"
+        [[ "$ENDED_AT" -le "$(date -u +%s)" ]] || usage "--ended's ENDTIME is in the future"
+        [[ "$ENDED_AT" -ge "$ENDED_LOCK_AT" ]] || usage "--ended's ENDTIME is before its LOCKTIME: a loop cannot end before its dispatch"
+        ENDED_LOCK="$2"; ENDED_END="$3"; shift 3
       else ARGS+=("$1"); shift; fi
     done
+    [[ -z "$ENDED_LOCK" || -n "$STEAL" ]] || usage "--ended goes with --steal"
     [[ ${#ARGS[@]} -eq 1 ]] || usage "--$MODE takes one brief path" ;;
   --free-worktrees) MODE=free-worktrees; [[ $# -eq 1 ]] || usage "--free-worktrees takes no arguments" ;;
   --worktree-base) MODE=worktree-base; [[ $# -eq 1 ]] || usage "--worktree-base takes no arguments" ;;
@@ -1780,23 +1811,33 @@ wt_of() {
 }
 # D1: dispatches per brief in all; the age (seconds) of a lock and tip --steal takes.
 DISPATCH_CAP=4; STEAL_AGE=7200
-# steal: whether --prompt may take the locked worktree WT (D1, F44): --steal
-# given, and both the time WT_LOCK's reason ends with and the tip's commit
-# time over STEAL_AGE ago (a loop dispatched on an old tip has a new lock). A
-# lock reason not ending " UTC TIME" is never taken. Sets STEAL_WHY and
-# returns 1 when not.
+# steal STEM: whether --prompt may take the locked worktree WT (D1, F44):
+# --steal given, and either --ended's two checks pass (the lock is a dispatch
+# lock of STEM ending "UTC LOCKTIME", and the tip's commit time is before
+# ENDTIME) or both the time WT_LOCK's reason ends with and the tip's commit
+# time are over STEAL_AGE ago (a loop dispatched on an old tip has a new lock).
+# A lock reason not ending " UTC TIME" is never taken. Sets STEAL_WHY (with
+# the --ended check that failed, if given) and returns 1 when not.
 steal() {
-  local l t
+  local l t e=""
   STEAL_WHY="its worktree $WT is locked (${WT_LOCK//[$'\n\r']/ }): a live loop may hold it; --steal takes it once the lock and the tip are over $(( STEAL_AGE / 3600 )) hours old"
   [[ -n "$STEAL" ]] || return 1
+  t="$(git cat-file commit "${STATUS[sha]}" | LC_ALL=C awk 'h { next } /^$/ { h = 1; next } /^committer / { print $(NF - 1) }')" || t=""
+  [[ "$t" =~ ^[0123456789]+$ ]] || t=""
+  if [[ -n "$ENDED_LOCK" ]]; then
+    if ! [[ "$WT_LOCK" =~ $LOCK_RE($LOCK_TIME)$ && "${BASH_REMATCH[1]}" == "$1" ]]; then e="its lock reason is not a dispatch lock of $1"
+    elif [[ "${BASH_REMATCH[3]}" != "$ENDED_LOCK" ]]; then e="its lock is from UTC ${BASH_REMATCH[3]}, not LOCKTIME $ENDED_LOCK (another dispatch has locked it since)"
+    elif [[ -z "$t" ]]; then e="the tip's commit time could not be read"
+    elif [[ "$t" -ge "$ENDED_AT" ]]; then e="the tip was committed at UTC $(date -u -d "@$t" +%Y-%m-%dT%H:%M:%SZ), not before ENDTIME $ENDED_END (the loop committed after it was seen to end)"
+    else return 0; fi
+    e="; --ended did not take it: $e"
+  fi
   if ! [[ "$WT_LOCK" =~ \ UTC\ ([0123456789]{4}-[0123456789]{2}-[0123456789]{2}T[0123456789]{2}:[0123456789]{2}:[0123456789]{2}Z)$ ]] \
-    || ! l="$(date -u -d "${BASH_REMATCH[1]}" +%s)" \
-    || ! t="$(git cat-file commit "${STATUS[sha]}" | LC_ALL=C awk 'h { next } /^$/ { h = 1; next } /^committer / { print $(NF - 1) }')" \
-    || [[ ! "$t" =~ ^[0123456789]+$ ]]; then
-    STEAL_WHY="its worktree $WT is locked, and --steal cannot read the time its lock reason ends with or the tip's commit time"; return 1
+    || ! l="$(date -u -d "${BASH_REMATCH[1]}" +%s)" || [[ -z "$t" ]]; then
+    STEAL_WHY="its worktree $WT is locked, and --steal cannot read the time its lock reason ends with or the tip's commit time$e"; return 1
   fi
   [[ "$t" -le "$l" ]] || l="$t"
-  [[ $(( $(date -u +%s) - l )) -gt "$STEAL_AGE" ]] || { STEAL_WHY="its worktree $WT is locked, and its lock or tip is under $(( STEAL_AGE / 3600 )) hours old"; return 1; }
+  [[ $(( $(date -u +%s) - l )) -gt "$STEAL_AGE" ]] || { STEAL_WHY="its worktree $WT is locked, and its lock or tip is under $(( STEAL_AGE / 3600 )) hours old$e"; return 1; }
 }
 # ended: whether the loop under WT's lock has ended (D3): the tip is a handoff
 # marker and the lock reason names the tip it was dispatched at, another one
@@ -1814,16 +1855,17 @@ lock_behind() {
   [[ "${BASH_REMATCH[2]}" != "$2" ]] && git merge-base --is-ancestor "${BASH_REMATCH[2]}" "$2" 2>/dev/null
 }
 # dispatch BRIEF: --start or --prompt (D1) for one brief, under the dispatch
-# lock its caller holds. Prints "ok BRIEF BRANCH DIR", "dispatched N" and the
-# loop prompt, or one refuse or skip line and returns 1, leaving no branch or
-# worktree it made (unless removing the branch fails; the line says so).
+# lock its caller holds. Prints "ok BRIEF BRANCH DIR", "lock UTC TIME",
+# "dispatched N" and the loop prompt, or one refuse or skip line and returns
+# 1, leaving no branch or worktree it made (unless removing the branch fails;
+# the line says so).
 dispatch() {
-  local a="$1" br stem x="" ct reason n tip
+  local a="$1" br stem x="" ct reason n tip now
   status_fields "$a"
   [[ "${STATUS[line]}" == "ok "* ]] || { echo "${STATUS[line]}"; return 1; }
   br="${STATUS[branch]}"; stem="${a##*/}"; stem="${stem%.md}"; n=$(( ${STATUS[dispatched]} + 1 )); tip="${STATUS[sha]}"
   [[ "$MODE" == prompt ]] || tip="$MAIN_SHA"
-  reason="build-loop dispatch of $stem at $tip, UTC $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  now="$(date -u +%Y-%m-%dT%H:%M:%SZ)"; reason="build-loop dispatch of $stem at $tip, UTC $now"
   if [[ "$CONSTRAINTS" != ok ]]; then x="no loop is dispatched until --settings reads the constraints as ok (${CONSTRAINTS_LINE#constraints })"
   elif [[ "${STATUS[state]}" != open ]]; then x="the brief is ${STATUS[state]} on the default branch; only an open brief is dispatched"
   elif [[ "${STATUS[dispatched]}" -ge "$DISPATCH_CAP" ]]; then x="it was dispatched ${STATUS[dispatched]} times, and the cap is $DISPATCH_CAP"
@@ -1840,7 +1882,7 @@ dispatch() {
     elif [[ -n "$DIR" && "$DIR" != "$WT" ]]; then x="its branch $br is checked out in $WT, not in --dir's directory"
     # git never calls a locked worktree prunable, and dispatch always locks: test the directory too.
     elif [[ -n "$WT_PRUNE" || ! -d "$WT" || -L "$WT" ]]; then x="its branch $br is checked out in $WT, which is missing or a symbolic link (git worktree unlock, then git worktree prune, drop a missing one)"
-    elif [[ -n "$WT_LOCK" ]] && ! ended && ! steal; then x="$STEAL_WHY"
+    elif [[ -n "$WT_LOCK" ]] && ! ended && ! steal "$stem"; then x="$STEAL_WHY"
     elif ! { [[ -z "$WT_LOCK" ]] || git worktree unlock "$WT"; } || ! git worktree lock --reason "$reason" "$WT"; then x="its worktree $WT could not be locked (it may be left unlocked)"
     else DIR="$WT"; fi
   else
@@ -1857,7 +1899,7 @@ dispatch() {
     fi
   fi
   [[ -z "$x" ]] || { echo "refuse $a: $x"; return 1; }
-  printf 'ok %s %s %s\ndispatched %s\n' "$a" "$br" "$DIR" "$n"
+  printf 'ok %s %s %s\nlock UTC %s\ndispatched %s\n' "$a" "$br" "$DIR" "$now" "$n"
   loop_prompt "$a" "$stem" "$ct" "$n" "$tip"
 }
 # WT_BASE_NAME: --worktree-base's directory in the main worktree (the header
