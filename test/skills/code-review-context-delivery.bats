@@ -1,9 +1,11 @@
 #!/usr/bin/env bats
 # @category fast
 # Contract tests for the code-review skill's conditional diff-delivery policy
-# (decision 032 #3, shipped 2f5ad0b): a normal-sized diff is inlined once as the
-# shared cacheable prefix of every agent prompt; only large diffs fall back to
-# per-agent `git diff` self-read.
+# (decision 032 #3, shipped 2f5ad0b): a normal-sized diff is inlined once and the
+# same shared block goes into every agent prompt; only large diffs fall back to
+# per-agent `git diff` self-read. The 2026-11-19 amendment to decision 032 records
+# that this buys no cross-agent prompt-cache saving on the Agent-tool path, so the
+# last tests guard against the cache claims and the skill-pasting rule returning.
 #
 # The load-bearing case is the NEGATIVE assertion: any instruction in SKILL.md
 # that tells an agent to run its own `git diff` (or says "pass scope, not
@@ -90,7 +92,10 @@ assert_all_windows_conditional() {
 }
 
 @test "degrade ladder inlines the diff alone before falling back to full self-read" {
-  awk '/\*\*Size guard/,/^\*\*Stability rules/' "$BATS_TEST_DIRNAME/../../$SKILL" \
+  # The awk range ends at the production-loop-only line; assert it exists so a reword
+  # cannot let the range run silently to end of file.
+  grep -q '^This section is \*\*production-loop-only' "$BATS_TEST_DIRNAME/../../$SKILL"
+  awk '/\*\*Size guard/,/^This section is \*\*production-loop-only/' "$BATS_TEST_DIRNAME/../../$SKILL" \
     | grep -qi 'diff only'
 }
 
@@ -98,7 +103,30 @@ assert_all_windows_conditional() {
   grep -q 'plays no part in this delivery gate' "$BATS_TEST_DIRNAME/../../$SKILL"
 }
 
-@test "mutable diff/enclosing part sits second-to-last in the shared block (part 5 of 6)" {
+@test "shared block still lists the diff (part 5) and the fact-check summary (part 6)" {
   grep -qE '^5\. \*\*The unified diff itself\*\*' "$BATS_TEST_DIRNAME/../../$SKILL"
   grep -qE '^6\. The Stage-1 merged fact-check summary' "$BATS_TEST_DIRNAME/../../$SKILL"
+}
+
+# --- decision 032 amendment 2026-11-19: no cross-agent cache saving on this path ---
+
+@test "skill states the measured no-cache-saving result and cites both A8 docs" {
+  local f="$BATS_TEST_DIRNAME/../../$SKILL"
+  grep -q 'It buys no prompt-cache saving across agents' "$f"
+  grep -q 'runs/review-arms/a8-2026-11-19/results.md' "$f"
+  grep -q 'runs/review-arms/a8-2026-11-19/cache-probe.md' "$f"
+}
+
+@test "the refuted cache-saving claims are gone from the skill" {
+  local f="$BATS_TEST_DIRNAME/../../$SKILL"
+  run grep -nE -i 'cacheable|cache-warm|prompt cache serve|because it is free|make the cache actually hit|only the tail varies|per-agent variation lives in the tail' "$f"
+  [ "$status" -eq 1 ]
+}
+
+@test "agents get their skill file by path, not a pasted copy" {
+  local f="$BATS_TEST_DIRNAME/../../$SKILL"
+  run grep -nE -i 'cannot read (your|the orchestrator.s) (files|filesystem)|Paste skill file contents|Paste those contents directly' "$f"
+  [ "$status" -eq 1 ]
+  awk '/^For each of the three replicate agents:/,/^3b\./' "$f" | grep -q 'whole file'
+  awk '/^For each critic agent, you MUST:/,/^4\./' "$f" | grep -q 'whole file'
 }
