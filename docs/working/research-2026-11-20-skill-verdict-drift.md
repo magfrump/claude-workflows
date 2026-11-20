@@ -5,7 +5,7 @@ Branch: fix/skill-verdict-drift
 Date: 2026-11-20
 
 Failure-pattern grep: `rg -n '^- \*\*FP-' docs/failure-patterns.md | rg -i 'fixture|expected verdict|eval|leak|noise|severity'` -> FP-035 and FP-059 (an evaluator guard and an AST evaluator; neither is about a skill fixture's expected verdict). No entry covers a fixture whose planted verdict is wrong, so nothing changes the plan.
-Failure-pattern skip: the fix commits correct test fixtures, expectations and two skill rubrics whose drift was found by a measurement run; no shipped guard failed open or missed its subject, so no failure pattern earns an entry.
+Failure-pattern entry: FP-186 (a negative eval fixture planted as clean had real defects, so fresh runs that found them read as skill drift; the fix shape is to check the fixture against the skill's own rules before touching the skill or loosening the check). It applies to c2.5, arch6 and ts6; the other cases are test regexes or skill rubric text and earn no entry.
 
 ## What I read
 
