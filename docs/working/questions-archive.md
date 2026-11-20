@@ -302,6 +302,8 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-311](#q-311--merge-gate-2026-11-19-worktrees-outside-dot-claude-feb8ed708fe2) | Q-311: [1] | 2026-11-19 |
 | [Q-314](#q-314--merge-gate-2026-11-19-loop-wait-rule-6505ccec60db) | Q-314: [1] | 2026-11-19 |
 | [Q-315](#q-315--merge-2026-11-19-code-review-lever3-correction-e100fc0dd7c4) | Q-315: [1] | 2026-11-19 |
+| [Q-318](#q-318--merge-2026-11-19-lever3-followons-65dd7d2b0927) | Q-318: [1] | 2026-11-19 |
+| [Q-319](#q-319--merge-gate-2026-11-19-steal-ended-2e687f12a30b) | Q-319: [1] | 2026-11-19 |
 <!-- index:end -->
 
 ## Answered
@@ -8023,4 +8025,95 @@ Two things the lines above do not show. First, the branch has no committed code-
 
 - **Interim:** nothing merges.
 
+
+### Q-318 · merge-2026-11-19-lever3-followons-65dd7d2b0927
+**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** ANSWERED
+Q-318: [1]
+
+Merge the follow-on to Q-315: the same two false claims ("sub-agents cannot read your files", so paste their skill text; and "a shared prompt prefix is cached across agents") removed from draft-review, matrix-analysis, divergent design and two review guides?
+
+**If you say no:** those docs keep telling an orchestrator to paste whole skill files into each sub-agent's prompt, for a reason the A8 measurement (358c2332) and its cache probe (9e89a31e) showed is false; the code-review skill, already corrected under Q-315, then disagrees with them.
+
+- **Why it's yours:** it edits `workflows/divergent-design.md` (a never glob in `docs/dev-cycle.md`), two skills, a decision-log row and an old rubric, none of which the cycle self-merges.
+- **Read:** the brief `docs/working/briefs/2026-11-19-lever3-followons.md`; on the branch, `docs/working/research-2026-11-19-lever3-followons.md` (each line changed and each kept, with reasons). Show the diff: `git diff main...65dd7d2b0927eba08612d52d7eaace918116e247`.
+
+What it changes:
+- `skills/draft-review/SKILL.md`: fact-check and critic agents get their skill file's absolute path and read the whole file with the Read tool; ai-personas-critique reads `personas.md` beside its skill. Draft and intent text are still pasted, since they exist only in the conversation.
+- `skills/matrix-analysis/SKILL.md`: code and docs go by path; conversation-only context stays in the prompt.
+- `workflows/divergent-design.md`: item context still goes in the prompt, now for its real reason (a curated prompt keeps each scoring agent on its axis); the false reason is removed.
+- `patterns/orchestrated-review.md`, `guides/sub-agent-briefing.md`: code-review's inlining is described as giving every agent the same material, not a cacheable prefix.
+- Rubric row A7 (`docs/reviews/code-review-rubric-2026-08-07-main.md`) gets a dated note that its premise does not hold on the Agent-tool path; its status is unchanged. Decision-log row 35 now reads "13 tests as of 2026-11-19; 10 when this row was written".
+- New guard test `test/skills/subagent-context-delivery.bats` (4 cases): it fails on the old text of every file. 77 of 77 related bats cases pass; the hermeticity lint is clean.
+- Review: two reviewer rounds with no must-fix (three should-fixes, all fixed); the third round closed on a mutation run and the final tests rather than a third reviewer, so the rubric shows one clean pass after the last fix, not two in a row.
+
+Branch tip 65dd7d2b0927eba08612d52d7eaace918116e247. `--check`'s lines, as printed:
+
+> ok docs/working/briefs/2026-11-19-lever3-followons.md 65dd7d2b0927eba08612d52d7eaace918116e247 e5efb21e1a04e308373f057169396027147ee11a
+> path docs/working/briefs/2026-11-19-lever3-followons.md M docs/decisions/log.md
+> path docs/working/briefs/2026-11-19-lever3-followons.md M docs/reviews/code-review-rubric-2026-08-07-main.md
+> path docs/working/briefs/2026-11-19-lever3-followons.md A docs/reviews/code-review-rubric-2026-11-19-lever3-followons.md
+> path docs/working/briefs/2026-11-19-lever3-followons.md M docs/working/briefs/2026-11-19-lever3-followons.md
+> path docs/working/briefs/2026-11-19-lever3-followons.md A docs/working/research-2026-11-19-lever3-followons.md
+> path docs/working/briefs/2026-11-19-lever3-followons.md M guides/sub-agent-briefing.md
+> path docs/working/briefs/2026-11-19-lever3-followons.md M patterns/orchestrated-review.md
+> path docs/working/briefs/2026-11-19-lever3-followons.md M skills/draft-review/SKILL.md
+> path docs/working/briefs/2026-11-19-lever3-followons.md M skills/matrix-analysis/SKILL.md
+> path docs/working/briefs/2026-11-19-lever3-followons.md A test/skills/subagent-context-delivery.bats
+> path docs/working/briefs/2026-11-19-lever3-followons.md M workflows/divergent-design.md
+> rubric docs/working/briefs/2026-11-19-lever3-followons.md: clean docs/reviews/code-review-rubric-2026-08-07-main.md: 1 red and 12 amber rows, none open
+> rubric docs/working/briefs/2026-11-19-lever3-followons.md: clean docs/reviews/code-review-rubric-2026-11-19-lever3-followons.md: 0 red and 3 amber rows, none open
+
+No path is gate code, an instruction file or a dot path. The first rubric line is the old 2026-08-07 rubric, touched only by the A7 note; its red row was closed long ago.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The cycle merges 65dd7d2b next iteration | Reading the diff | An agent reads only part of its skill file; one `git revert` |
+| **[2] drop** | The brief closes; the docs keep the old claims | None | Skills disagree with code-review on how to brief agents |
+| **[3] changes needed** | Write what to change; the note goes back to the loop | Writing the note | A further round |
+
+- **Interim:** nothing merges.
+
+
+### Q-319 · merge-gate-2026-11-19-steal-ended-2e687f12a30b
+**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** ANSWERED
+Q-319: [1]
+
+Merge the change that lets the dev cycle re-dispatch its own dead build loop at once, instead of waiting two hours (your request of 2026-11-19)?
+
+**If you say no:** a loop that ends with work committed and no marker keeps its worktree locked for two hours before the cycle can send it back, as three did recently (one held up the release); another session's locks are unaffected either way.
+
+- **Why it's yours:** it changes `scripts/build-loop.sh`, `scripts/lib/migrations.sh` and `skills/dev-cycle/SKILL.md`, the gate's own code, which the cycle never self-merges; it reaches sessions at the next release.
+- **Read:** the brief `docs/working/briefs/2026-11-19-steal-ended.md`; the design, merged 012b20f9, `docs/working/research-2026-11-19-steal-wait-research.md`; on the branch, `docs/working/research-2026-11-19-steal-ended.md` (the build and its six-item pre-mortem). Show the diff: `git diff main...2e687f12a30b5d4af6c327f351ac3972b5e17a94`.
+
+What it changes:
+- `--start` and `--prompt` print one more line, `lock UTC TIME`, the time of the lock they wrote.
+- New `--prompt BRIEF --steal --ended LOCKTIME ENDTIME`: takes the locked worktree at any age only when its lock is this brief's dispatch lock, its time equals LOCKTIME, and the branch's last commit is older than ENDTIME (when this session saw its loop end). Otherwise the two-hour rule decides as now; malformed or out-of-order `--ended` values are refused, naming the problem.
+- The skill: step 7 records the loop's task ID and the time its end was seen; step 10 records "dispatched N, task ID, lock UTC TIME" and passes `--ended` only with the lock time from that same task's line. It names the honest slip to avoid: taking another session's lock time from the record.
+- `scripts/lib/migrations.sh`: a registry line for the record template's changed `7.` and `10.` lines (no file needs rewriting).
+- Accepted risk, from the design: if the cycle pairs a notification with the wrong task, it could take a live loop of its own, but only one that has not committed since. The success measure: one case of a live loop taken means revert.
+- Tests: one new hermetic case in `test/scripts/build-loop-dispatch.bats` (12/12 pass), the migrations file (15/15), the health check, and the hermeticity lint. The loop's full-suite run before its last fix passed 2790 of 2794; three of the failures were its own shellcheck slip, fixed, and the fourth, in `test/q125-verify-check.bats`, passed on rerun. The whole suite was not run again after the fix.
+
+Branch tip 2e687f12a30b5d4af6c327f351ac3972b5e17a94. `--check`'s lines, as printed:
+
+> ok docs/working/briefs/2026-11-19-steal-ended.md 2e687f12a30b5d4af6c327f351ac3972b5e17a94 f98fa188e12d6dc563cd167856126faf38cb5287
+> path docs/working/briefs/2026-11-19-steal-ended.md A docs/reviews/steal-ended-code-review-rubric-2026-11-19.md
+> path docs/working/briefs/2026-11-19-steal-ended.md M docs/working/briefs/2026-11-19-steal-ended.md
+> path docs/working/briefs/2026-11-19-steal-ended.md A docs/working/research-2026-11-19-steal-ended.md
+> path docs/working/briefs/2026-11-19-steal-ended.md M scripts/build-loop.sh
+> path docs/working/briefs/2026-11-19-steal-ended.md M scripts/lib/migrations.sh
+> path docs/working/briefs/2026-11-19-steal-ended.md M skills/dev-cycle/SKILL.md
+> path docs/working/briefs/2026-11-19-steal-ended.md M test/scripts/build-loop-dispatch.bats
+> rubric docs/working/briefs/2026-11-19-steal-ended.md: clean docs/reviews/steal-ended-code-review-rubric-2026-11-19.md: 0 red and 3 amber rows, none open
+
+`scripts/build-loop.sh`, `scripts/lib/migrations.sh` and `skills/dev-cycle/SKILL.md` are gate code (self-merge's floor would have refused them). The rubric's three ambers (a dispatch printed but never started had no record line; a header read opposite to the spec; no test of a commit made after the lock) were fixed on the branch, and a second review round confirmed them closed. One oddity in the loop's report: its reviewer said it also sent its round-2 report to an agent the loop did not recognise; nothing acted on it, and the branch's content is what this entry asks about.
+
+**What an attacker would want here:** the lock is what keeps one loop's worktree from being taken while it works; an outside party who could put text into a brief or the cycle record (the inputs here) would want `--ended` to accept a lock time it did not take. It accepts only an exact match to the lock now on the worktree, which another session's dispatch rewrites, plus a tip older than the stated end, and the record is written only by the cycle.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The cycle merges 2e687f12 next iteration; it ships at the next release | Reading the diff | The cycle takes a live loop of its own; one `git revert` |
+| **[2] drop** | The brief closes; the two-hour wait stays | None | Dead loops keep holding their worktrees for two hours |
+| **[3] changes needed** | Write what to change; the note goes back to the loop | Writing the note | A further round |
+
+- **Interim:** nothing merges.
 
