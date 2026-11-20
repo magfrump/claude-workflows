@@ -28,6 +28,7 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-323](#q-323--gate-only-changes-approved-by-release) | you: judgment | Should a build loop's change that touches only the gate's own code (`scripts/build-loop.sh`, `d6.sh`, `dev-... | 2026-11-19 |
 | [Q-327](#q-327--trial-set-2-ends-again) | you: judgment | The second trial set (T8–T12), extended a week under Q-286, has now had its second weekly digest (`docs/w... | 2026-11-20 |
+| [Q-333](#q-333--merge-gate-2026-11-20-health-checkout-prep-8eec2ef40ea8) | you: judgment | Merge the health-checkout preparation step: a `Health checkout copies:` line in a repo's `docs/dev-cycle.md... | 2026-11-20 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the ho... | 2026-11-05 |
 | [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there. | 2026-11-18 |
 | [Q-332](#q-332--regenerate-fact-check-reports-host) | you: terminal | Regenerate the fact-check skill's eval reports on the host, where the web works, and commit them. | 2026-11-20 |
@@ -168,4 +169,44 @@ bash test/skills/generate-reports.bash fact-check && bats test/skills/fact-check
 **Pass:** the bats run ends with no `not ok`; then commit `test/skills/fact-check/output/`. **Send back:** `Q-332: done`, or the first `not ok` lines if any fail (a failure is a skill finding for the cycle to file, not something to fix by hand).
 
 - **Interim:** the suites stay NOT RUN; the regeneration of the other skills' reports (brief `docs/working/briefs/2026-11-19-regenerate-skill-reports.md`, held by Q-328 [3] until the F2 and F3 format fixes merge) excludes fact-check.
+
+### Q-333 · merge-gate-2026-11-20-health-checkout-prep-8eec2ef40ea8
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
+
+Merge the health-checkout preparation step: a `Health checkout copies:` line in a repo's `docs/dev-cycle.md` names gitignored paths (a build cache) that the dev cycle copies into its fresh health checkout before running the health check?
+
+**If you say no:** nothing changes here; philosophy-research keeps copying its 1.9 GB Lean build cache into each health checkout by hand (its harness feedback F-016 and F-019: every iteration of a fifteen-iteration day), or its health check rebuilds Mathlib.
+
+- **Why it's yours:** it changes the gate's own code (`scripts/build-loop.sh`, `scripts/lib/dev-cycle-read.sh`) and the dev-cycle skill, which never self-merge; once merged it reaches sessions only through your next release paste.
+- **Read:** the brief `docs/working/briefs/2026-11-20-health-checkout-prep.md`; on the branch, `docs/working/research-2026-11-20-health-checkout-prep.md` (motive, the five options compared, the refusals).
+- **What an attacker would want here:** a gitignored directory a web-tainted session could write in the main checkout (a planted build artifact in a listed cache) gets copied into the health checkout, where the repo's own tests load it. The copy adds no new reach (the health check already runs the change's own `scripts/` and `test/`, H1's stated exception), and only paths the owner lists are copied.
+
+What it changes (from the loop's report, checked against the diff: 7 files, 424 lines added, 18 removed):
+- `--settings` prints a sixth line, `copies ... set|none|malformed: WHY`, last so the five existing lines keep their places. A malformed line (absolute path, `..`, a `.git` part, a duplicate or nested entry) is reported as malformed.
+- New `build-loop.sh --health-prep HC`: checks every listed path first, then copies each from the main checkout with `cp -a` into HC. It refuses (naming why) an HC that is not a detached linked worktree, and any path that is absent, a symlink or holds one, holds a `.git` file, is not ignored by the repo's own ignore rules (the user's personal ignore file is turned off), already exists in HC, or would write outside HC. It runs no repo command.
+- Skill step 1 runs it after making HC; any refusal is recorded `skipped: HC not prepared`, HC removed, no check run. "Project settings" gains the line (`none` in the example).
+- Picked with no open question: a symlink would let the check write into the main checkout's cache; a repo-chosen hook would run repo code inside the cycle's step.
+- Tests: a new bats file (9 cases), the line-count test updated. Health check passed on the branch; hermeticity lint and shellcheck clean.
+- Review: one review subagent, two rounds (7 issues fixed, then one test that could not fail). **No code-review rubric was committed** (the `rubric none` line below), so this gate change has no recorded rubric. [3] can ask for one.
+- To turn it on in philosophy-research, that repo's `docs/dev-cycle.md` needs `Health checkout copies: verifier/lean-project/.lake` (your file there). Not checked: whether that directory holds a symlink; if it does, the step refuses and names it.
+
+Branch tip 8eec2ef40ea8b3d4609305d448f764788c1dc373. The marker has no body (no question). `--check`'s lines, as printed:
+
+> ok docs/working/briefs/2026-11-20-health-checkout-prep.md 8eec2ef40ea8b3d4609305d448f764788c1dc373 36fa0f37812445be4d04e5a73378c8e931bc645b
+> path docs/working/briefs/2026-11-20-health-checkout-prep.md M docs/working/briefs/2026-11-20-health-checkout-prep.md
+> path docs/working/briefs/2026-11-20-health-checkout-prep.md A docs/working/research-2026-11-20-health-checkout-prep.md
+> path docs/working/briefs/2026-11-20-health-checkout-prep.md M scripts/build-loop.sh
+> path docs/working/briefs/2026-11-20-health-checkout-prep.md M scripts/lib/dev-cycle-read.sh
+> path docs/working/briefs/2026-11-20-health-checkout-prep.md M skills/dev-cycle/SKILL.md
+> path docs/working/briefs/2026-11-20-health-checkout-prep.md A test/scripts/build-loop-health-prep.bats
+> path docs/working/briefs/2026-11-20-health-checkout-prep.md M test/scripts/build-loop-read.bats
+> rubric docs/working/briefs/2026-11-20-health-checkout-prep.md: none: feat/health-checkout-prep changes 5 paths outside docs/ and adds or changes no code-review rubric under docs/reviews/
+
+Notes: `scripts/build-loop.sh`, `scripts/lib/dev-cycle-read.sh` and `skills/dev-cycle/SKILL.md` are gate code, and the skill is a prompt file; self-merge's floor would have refused all three.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges tip 8eec2ef4 next iteration; the change goes live at your next release paste | Nothing now; one release paste later, as for any gate change | A bad refusal shows as `skipped: HC not prepared` and no health check runs that iteration; one `git revert` undoes it |
+| **[2] drop** | The brief closes; the roadmap item goes to Ideas | None | philosophy-research keeps the hand copy |
+| **[3] changes needed** | Your note goes back to the loop (say, "run a full code-review and commit its rubric") | One line of note | A re-dispatch and another merge entry |
 
