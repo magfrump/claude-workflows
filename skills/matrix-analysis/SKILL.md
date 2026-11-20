@@ -112,8 +112,11 @@ Collect any context the user provides or that you need to pass to sub-agents:
 - Links, documents, or code to evaluate
 - Any domain context that criterion evaluators will need
 
-If items reference things in the codebase, read the relevant code now so you can include it
-in sub-agent prompts. Sub-agents cannot read your filesystem.
+If items reference things in the codebase, read the relevant code now so you can point
+sub-agents at it: give them the paths (and the lines that matter), and they read the files
+themselves, since sub-agents share your filesystem. Put directly in the prompt what exists
+only in this conversation (the user's descriptions, constraints and pasted material), and
+paste file content only for an agent that cannot reach the path.
 
 ### Step 4: Communicate the plan and capture decision-intent
 
@@ -419,7 +422,8 @@ At the end of your chat synthesis, link to the document.
 - **Do not evaluate items yourself.** Your job is to orchestrate and synthesize.
 - **Be honest about the data.** If scores are close, say they're close. If data is missing,
   say so. Don't manufacture a clear winner when one doesn't exist.
-- **Sub-agents cannot read your filesystem.** All context (item descriptions, code, docs) must
-  be included directly in the agent prompt.
+- **Pass paths for files; put conversation-only context in the prompt.** Sub-agents share your
+  filesystem and read code and docs by path. Item descriptions, constraints and anything else
+  that exists only in this conversation must be included directly in the agent prompt.
 - **The matrix is designed for re-runs.** If the user refines items or criteria and runs again,
   overwrite the prior document.

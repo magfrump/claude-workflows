@@ -137,7 +137,7 @@ After each between-stage handoff (end of Stage 1, end of Stage 2), emit a single
 
 Every Stage 1 and Stage 2 dispatch opens with the three-line goal preamble from
 [`patterns/orchestrated-review.md`](../../patterns/orchestrated-review.md#goal-preamble), above
-the pasted skill content. `fact-check` and `ai-personas-critique` skip their standalone
+the agent's skill-file path. `fact-check` and `ai-personas-critique` skip their standalone
 goal-capture block only when this preamble is present. For example:
 
 ```
@@ -168,8 +168,13 @@ For each fact-check agent, you MUST:
 1. Begin the prompt with the [goal preamble](../../patterns/orchestrated-review.md#goal-preamble)
    (see [Dispatch goal preamble](#dispatch-goal-preamble) above). Without it, the sub-agent runs
    its standalone goal-capture block and tries to ask the user a clarifying question.
-2. Read the full contents of `skills/fact-check/SKILL.md`
-3. Paste those contents directly into the Agent tool prompt (sub-agents cannot read your files)
+2. Give the agent the absolute path of the `fact-check` skill file this session loaded (e.g.
+   `$HOME/.claude/skills/fact-check/SKILL.md` when installed, with `$HOME` expanded) as its
+   instructions, and tell it to read that whole file with the Read tool, not `cat` (the Bash
+   output cap cuts a skill-sized file to a preview), before anything else, and follow it
+3. Paste the contents instead only when the agent cannot reach the path (no file tools, or
+   outside its sandbox). Sub-agents share your filesystem: all 9 agents of the 2026-11-19 A8
+   review pass read their whole skill file by path (`docs/working/research-2026-11-19-code-review-lever3-correction.md`)
 4. Include the full draft text in the prompt
 5. Instruct the agent to save its report as `docs/reviews/fact-check-report.md`. In ensemble
    mode, give each instance its own path — `docs/reviews/fact-check-report-<i>.md` for
@@ -227,10 +232,13 @@ Dispatch each critique to a sub-agent via the Agent tool.
 
 For each critic agent instance, you MUST:
 1. Begin the prompt with the goal preamble (see [Dispatch goal preamble](#dispatch-goal-preamble))
-2. Read the full contents of that critic's skill file (e.g., `skills/cowen-critique/SKILL.md`)
-3. Paste those contents directly into the Agent tool prompt. For `ai-personas-critique`, also
-   paste the full contents of `skills/ai-personas-critique/personas.md` — its Step 1 reads the
-   persona catalog from that sibling file, and the sub-agent cannot read it itself.
+2. Give the agent the absolute path of that critic's skill file as this session loaded it
+   (e.g., `$HOME/.claude/skills/cowen-critique/SKILL.md` when installed, expanded) and tell it
+   to read that whole file with the Read tool, not `cat`, before anything else and follow it
+3. Paste the contents instead only when the agent cannot reach the path (same rule as Stage 1
+   step 3). `ai-personas-critique`'s Step 1 reads its persona catalog from the sibling file
+   `personas.md` beside that path, so an agent that can read the skill file reads the catalog
+   too; when you paste the skill instead, paste `personas.md` with it.
 4. Include the full draft text
 5. Include the draft intent captured in "Before You Begin" Step 3, prepended under a
    `## What this draft is trying to accomplish` heading so the critic can scope feedback to
@@ -557,7 +565,9 @@ At the end of your chat synthesis, link to all documents.
 ## Important Reminders
 
 - **Always run fact-checking first.** Even if the user only asks for critic perspectives.
-- **Paste skill file contents into agent prompts.** Sub-agents cannot read your filesystem.
+- **Give each agent its skill file by path; it reads the file itself.** Sub-agents share your
+  filesystem (Stage 1 step 3 has the evidence); paste a skill's contents only when an agent
+  cannot reach the path.
 - **All agents of the same stage run in parallel.** They must not see each other's output.
 - **Be honest about convergence.** Don't present a minority finding as consensus.
 - **The rubric is designed for re-runs.** When the author submits a revised draft, the pipeline re-runs and updates each status.
