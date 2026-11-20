@@ -184,7 +184,7 @@ create_task_worktree() {
 # ($2-x), so an existing .gitignore that ignores itself and only some $2-*
 # names (say ".gitignore" and "si-wt-?") passes; a fresh "*" file has no such
 # gap.
-# Args: $1 = repo dir (absolute), $2 = worktree name prefix (e.g. si-wt),
+# Args: $1 = repo dir (absolute), $2 = name prefix under .worktrees (si-wt; si-tmp/tmp),
 #       $3 = the way forward the errors name (default: set WORKTREE_BASE).
 ensure_worktree_dir() {
     local repo=$1 prefix=$2 b g out rc=0
@@ -529,9 +529,14 @@ fi
 # The ignore check probes a name inside si-tmp/, where mktemp's files land.
 if [ -z "${TMPDIR:-}" ] || [ ! -d "${TMPDIR}" ] || [ ! -w "${TMPDIR}" ]; then
     SI_TMP_FIX="or export TMPDIR as a writable directory of your own"
+    SI_TMP="$REPO_DIR/.worktrees/si-tmp"
+    if [ -L "$SI_TMP" ]; then
+        echo "Error: $SI_TMP is a symbolic link; remove it, $SI_TMP_FIX" >&2
+        exit 1
+    fi
     ensure_worktree_dir "$REPO_DIR" si-tmp/tmp "$SI_TMP_FIX" || exit 1
-    export TMPDIR="$REPO_DIR/.worktrees/si-tmp"
-    if [ -L "$TMPDIR" ] || ! mkdir -p -- "$TMPDIR" 2>/dev/null; then
+    export TMPDIR="$SI_TMP"
+    if ! mkdir -p -- "$TMPDIR" 2>/dev/null; then
         echo "Error: $TMPDIR is a symbolic link or could not be made; remove it, $SI_TMP_FIX" >&2
         exit 1
     fi

@@ -422,9 +422,7 @@ run_si() {
   unset TMPDIR
   run_si
   [ "$status" -ne 0 ]
-  # git's check-ignore refuses a path beyond a symbolic link, so the ignore
-  # read is what stops it; the [ -L ] test after it is the backstop.
-  [[ "$output" == *"git could not say whether it ignores $REPO/.worktrees"*"export TMPDIR"* ]]
+  [[ "$output" == *"$REPO/.worktrees/si-tmp is a symbolic link; remove it, or export TMPDIR"* ]]
   [ ! -e "$STUB_DIR/claude.tmpdir" ]
   [ -z "$(ls -A "$BATS_TEST_TMPDIR/elsewhere")" ]
 }
