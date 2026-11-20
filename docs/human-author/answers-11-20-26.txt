@@ -1,0 +1,247 @@
+Q-255:
+```
+# Egress check — 2026-11-20T20:11Z
+# Note: check 3 ran while check 1's probe window was open, so proxy-window.log includes the build's own fetches.
+
+## 1. bash probe.sh "$(mktemp -d)" 1800 20   (outdir: /tmp/claude-1000/-workspace/f388c9c1-1818-458e-a453-999765e8cd80/scratchpad/tmp.pbAkCmJL0m)
+done: 0 rejected addresses; summary at /tmp/claude-1000/-workspace/f388c9c1-1818-458e-a453-999765e8cd80/scratchpad/tmp.pbAkCmJL0m/summary.txt
+
+[exited with code 0]
+
+### summary.txt
+# Rejected upstream addresses (ipset refused): count name ip
+
+# Allowed upstream addresses: count name ip
+     86 api.anthropic.com 160.79.104.10:443
+     79 claude.ai 160.79.104.10:443
+     79 claude.com 160.79.104.10:443
+     77 code.claude.com 160.79.104.10:443
+     79 console.anthropic.com 160.79.104.10:443
+     36 dl.google.com 192.178.142.136:443
+     36 dl.google.com 192.178.142.190:443
+     34 dl.google.com 192.178.142.91:443
+     34 dl.google.com 192.178.142.93:443
+     80 downloads.claude.ai 35.190.46.17:443
+      1 github.com 20.169.109.160:443
+     40 maven.google.com 142.251.108.100:443
+     38 maven.google.com 142.251.108.139:443
+     79 mcp-proxy.anthropic.com 160.79.104.10:443
+     79 platform.claude.com 160.79.104.10:443
+     40 plugins-artifacts.gradle.org 104.16.72.101:443
+     39 plugins-artifacts.gradle.org 104.16.73.101:443
+     40 plugins.gradle.org 104.16.72.101:443
+     39 plugins.gradle.org 104.16.73.101:443
+     20 registry.npmjs.org 104.16.1.34:443
+     20 registry.npmjs.org 104.16.5.34:443
+     20 registry.npmjs.org 104.16.8.34:443
+     19 registry.npmjs.org 104.16.2.34:443
+      1 registry.npmjs.org 104.16.7.34:443
+      1 release-assets.githubusercontent.com 185.199.108.133:443
+     57 repo.maven.apache.org 104.18.18.12:443
+     54 repo.maven.apache.org 104.18.19.12:443
+     40 repo1.maven.org 104.18.18.12:443
+     39 repo1.maven.org 104.18.19.12:443
+     41 services.gradle.org 104.16.72.101:443
+     39 services.gradle.org 104.16.73.101:443
+
+# Distinct DNS answers per name over the window: n_distinct name
+     12 registry.npmjs.org
+      6 maven.google.com
+      4 dl.google.com
+      2 services.gradle.org
+      2 repo1.maven.org
+      2 repo.maven.apache.org
+      2 plugins.gradle.org
+      2 plugins-artifacts.gradle.org
+      1 platform.claude.com
+      1 mcp-proxy.anthropic.com
+      1 downloads.claude.ai
+      1 console.anthropic.com
+      1 code.claude.com
+      1 claude.com
+      1 claude.ai
+      1 api.anthropic.com
+
+# Probe HTTP codes per name (000 = connection failed): count name code
+     79 api.anthropic.com	404
+     79 claude.ai	403
+     79 claude.com	200
+     77 code.claude.com	302
+      2 code.claude.com	000
+     79 console.anthropic.com	301
+     79 dl.google.com	302
+     79 downloads.claude.ai	403
+     78 maven.google.com	301
+      1 maven.google.com	000
+     79 mcp-proxy.anthropic.com	404
+     79 platform.claude.com	200
+     79 plugins-artifacts.gradle.org	200
+     79 plugins.gradle.org	200
+     79 registry.npmjs.org	200
+     79 repo.maven.apache.org	200
+     79 repo1.maven.org	200
+     79 services.gradle.org	200
+
+### grep -c 'FAIL sni=dl.google.com' proxy-window.log
+0
+
+## 2. grep -c host-record /etc/dnsmasq.d/cc-allowlist.conf
+40
+
+## 3. ./gradlew :app:assembleDebug --refresh-dependencies   (ANDROID_HOME=~/.cache/herald-sdk-overlay; last 30 lines)
+> Task :app:checkDebugDuplicateClasses
+> Task :app:mergeDebugNativeLibs
+> Task :app:validateSigningDebug
+> Task :app:writeDebugAppMetadata
+> Task :app:mergeLibDexDebug
+> Task :app:writeDebugSigningConfigVersions
+> Task :app:processDebugManifestForPackage
+
+> Task :app:stripDebugDebugSymbols
+Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so, libtensorflowlite_jni.so.
+
+> Task :app:processDebugResources
+> Task :app:mergeExtDexDebug
+> Task :app:compileDebugKotlin
+> Task :app:compileDebugJavaWithJavac NO-SOURCE
+> Task :app:dexBuilderDebug
+> Task :app:mergeDebugGlobalSynthetics
+> Task :app:processDebugJavaRes
+> Task :app:mergeProjectDexDebug
+> Task :app:mergeDebugJavaResource
+> Task :app:packageDebug
+> Task :app:createDebugApkListingFileRedirect
+> Task :app:assembleDebug
+WARNING: The following problems were found when resolving the SDK location:
+Where: sdk.dir property in local.properties file. Problem: Directory does not exist
+
+
+BUILD SUCCESSFUL in 3m 5s
+35 actionable tasks: 35 executed
+gradle exit=0
+```
+
+Q-302:
+```
+Agent "Audit mid-Sept to Oct rubrics" finished · 9m 19s
+
+Did red or amber review findings reach main unresolved?
+
+Yes: 44 rows, all landed between 2026-08-22 and 2026-09-17. Nothing that landed after 2026-09-17 carries one, and no red has ever reached main without either a fix or an owner decision.
+
+An earlier read-only audit, filed 2026-11-14 at docs/roadmap.md:95-128, also counted 44, split 30 bypassed and 14 with only a written rule. This independent pass agrees with it. It adds six still-true rows that the roadmap doesn't name, listed after the GAP table.
+
+Rules that apply:
+- The written rule (review-fix-loop.md § Exit conditions, rubric.md § Status words):
+  - No red may remain. A red closed by anything other than Fixed, Split or Carried needs the owner's Q-NNN.
+  - Every amber must be fixed or carry a qualifying author note: a TODO, a tracked entry, or a named revisit trigger.
+  - A conditional pass needs a filled author note on every open amber, and the merge message must list them.
+  - The September rubrics' own footers were looser: any author note counted.
+- The only gate is advisory. ~/.claude/scripts/build-loop.sh (with lib/rubric-check.sh) prints the open rubric rows at a build-loop merge. It changes no verdict and no exit status. Hand merges and fast-forwards of main get no check at all.
+
+Counts
+
+- Records read: 41. That is the 40 code-review-rubric-*.md files plus verification-rubric.md. The ~300 per-critic reports feed those rubrics and were not tallied on their own.
+- Set aside: 1. verification-rubric.md is a review of a written draft (CLAUDE.md), not code; its one open amber is A9. No record was set aside for unmerged code, because every reviewed slice reached main.
+- Records with candidate open rows: about 26 of the 40.
+- Rows by disposition: the non-GAP counts are approximate, and a row split by halves is counted once per half.
+
+┌────────────────────────────────────────────────────────────────┬────────────────────────────────────────────────────────────┐
+│                          Disposition                           │                            Rows                            │
+├────────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────┤
+│ RESOLVED-IN-RECORD                                             │ ~38 (6 of them meet the rule of the time but fail today's) │
+├────────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────┤
+│ RESOLVED-LATER-RECORD                                          │ ~15                                                        │
+├────────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────┤
+│ RESOLVED-COMMIT (fixed before the merge, record never updated) │ ~29                                                        │
+├────────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────┤
+│ SETTLED                                                        │ ~30                                                        │
+├────────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────┤
+│ DOCUMENTED-AT-MERGE                                            │ 4                                                          │
+├────────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────┤
+│ NOT-MERGED                                                     │ 0                                                          │
+├────────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────┤
+│ GAP                                                            │ 44                                                         │
+└────────────────────────────────────────────────────────────────┴────────────────────────────────────────────────────────────┘
+
+- GAPs by cause: 31 bypassed, 13 no-gate. None were stale-record: every stale record turned out to be RESOLVED-COMMIT.
+- Landings carrying a GAP: 4 or 5.
+  - Direct commits on main, reviewed after the code had landed (beadssolver, 2026-08-22).
+  - The --no-ff merge 3cc65ef4 (ui-polish), then main fast-forwarded on 2026-08-27.
+  - The web-rewrite fast-forward of 2026-09-08. Its only record is a line in f406d721's body, which says nothing about findings.
+  - The later fast-forward or fast-forwards that carried defeat-terminal and multiplayer. They left no record, so I can't tell whether that was one landing or two.
+
+GAPs
+
+┌────────────────────────────────────────────────┬──────────────────────────────────┬─────────────────────────────────────────────────────────────────┬────────────────────────────────────────────────────────────┬───────────────────────────────────────────────────────────────────────────────────────────┐
+│                 Record · rows                  │             Landing              │                   Rule or gate that missed it                   │                           Cause                            │                                    Still holds today?                                     │
+├────────────────────────────────────────────────┼──────────────────────────────────┼─────────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────┤
+│ beadssolver · R2 ("Partly fixed", yet counted  │ direct commits on main           │ all reds resolved                                               │ no-gate (reviewed after landing)                           │ yes: 3 of 4 sites have a witness                                                          │
+│ as resolved in the header)                     │                                  │                                                                 │                                                            │                                                                                           │
+├────────────────────────────────────────────────┼──────────────────────────────────┼─────────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────┤
+│ beadssolver · R3 ("DEFERRED"; a split the      │ same                             │ a deferred red needs the owner's Q; a split needs a tracked     │ no-gate                                                    │ yes, in web/src/game/movement/executor.ts                                                 │
+│ agent made but never carried out)              │                                  │ follow-up                                                       │                                                            │                                                                                           │
+├────────────────────────────────────────────────┼──────────────────────────────────┼─────────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────┤
+│ beadssolver · A1, A4, A6, A7, A8, A9, A14,     │ same                             │ an amber needs a fix or a note                                  │ no-gate                                                    │ A4, A6–A9 yes (they need a solver ruling); A1 in part; A16 yes but unreachable; A14 and   │
+│ A15, A16 (blank or non-justifying notes)       │                                  │                                                                 │                                                            │ A15 no                                                                                    │
+├────────────────────────────────────────────────┼──────────────────────────────────┼─────────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────┤
+│ ui-polish · L1–L4 (red), composed X1 and X2,   │ 3cc65ef4, merged while its       │ the rubric's own pass line and the loop's exit conditions       │ bypassed: a general "best judgment" owner authorisation, a │ only in frozen C#: marked Stale after the fact (Q-155, Q-121). B15 still holds in live    │
+│ B1–B19                                         │ header read "🔴 DOES NOT PASS"   │                                                                 │  merge message silent on findings, loop 3 still open       │ code (labelFontSize has no floor). X1 and X2 never got a status cell                      │
+├────────────────────────────────────────────────┼──────────────────────────────────┼─────────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────┤
+│ 09-04 · A13                                    │ 09-08 fast-forward               │ its own trigger ("rename with the next e2e edit") had fired     │ no-gate                                                    │ yes: web/e2e/move.spec.ts:96                                                              │
+│                                                │                                  │ three times before the merge                                    │                                                            │                                                                                           │
+├────────────────────────────────────────────────┼──────────────────────────────────┼─────────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────┤
+│ S4 (09-06) · A11                               │ 09-08 fast-forward               │ trigger "trim at S5 close" had fired before the merge           │ no-gate                                                    │ yes: log/index.ts still exports names nothing imports                                     │
+├────────────────────────────────────────────────┼──────────────────────────────────┼─────────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────┤
+│ S5 · A10, A14 (blank notes under "CONDITIONAL  │ 09-08 fast-forward               │ a conditional pass needs a note on every open amber             │ bypassed                                                   │ A10 yes; A14 yes but never reproduced                                                     │
+│ PASS")                                         │                                  │                                                                 │                                                            │                                                                                           │
+├────────────────────────────────────────────────┼──────────────────────────────────┼─────────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────┤
+│ defeat-terminal · A6, A7, A12                  │ unrecorded fast-forward          │ an escalate at the iteration cap must file a question before    │ bypassed (also a stale record: no row was updated during   │ A6 and A7 no; A12 has an untracked residue (an old save with no monsters list)            │
+│                                                │                                  │ any merge (review-fix-loop.md:83); none was filed               │ the loop)                                                  │                                                                                           │
+├────────────────────────────────────────────────┼──────────────────────────────────┼─────────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────┤
+│ multiplayer · A36 (blank note)                 │ unrecorded fast-forward          │ a conditional pass needs a note on every open amber             │ bypassed                                                   │ no (fixed 2026-10-29)                                                                     │
+└────────────────────────────────────────────────┴──────────────────────────────────┴─────────────────────────────────────────────────────────────────┴────────────────────────────────────────────────────────────┴───────────────────────────────────────────────────────────────────────────────────────────┘
+
+How I checked these. I re-read the evidence myself for:
+- the ui-polish header at 3cc65ef4
+- S5's A10 and A14 notes at ddb5fb26
+- S4's A8, A9 and A11 notes at e57e1c71
+- move.spec.ts:96
+- the multiplayer A31 and A36 cells at 5c9b574b
+- the defeat-terminal A6, A7 and A12 notes at e4824a56
+
+The beadssolver rows rest on one agent's report and line up with the roadmap's earlier audit. I traced the four November rubrics myself; they carry no GAP.
+
+Reds closed without an owner decision, none of them GAPs today:
+- 09-05 R2, far half: deferred on the agent's own call, but fixed in 73ce7d64 before the merge.
+- actionlog-core B5: closed as "subsumed", which was a fix in substance.
+- action-log-refactor A7 and A8: amber in the rubric, but recorded as red in override-log.md:192,194, and deferred with no owner Q.
+- Two Accepted-immutable reds on commit messages (override-log.md:179,195). Today's rule allows Accepted-immutable on amber only.
+
+Not GAPs, but they fail today's stricter rule: beadssolver A10 and A12, S3 A11's second half, S4 A8 and A9, and multiplayer A31. Their notes justified the row but named no trigger, which the September rule allowed.
+
+Still true and missing from the roadmap's list: 09-04 A13, S4 A11, S5 A10 and A14, the defeat-terminal A12 residue, and multiplayer A31. A31 is still literally true: docs/working/spike-rtc.md:28 gives "622 bytes" while multiplayer.spec.ts:84 asserts >100.
+
+Also seen, not a GAP:
+- The agent-dispatch pass-1 rubric still reads "🔴 DOES NOT PASS / Unresolved" on main. Pass 2 closed it, but no Carried-forward table says so, and the loop2- and final- file names break the naming rule.
+- merge/session-5 reached main by fast-forward on 2026-11-19, although pr-prep.md says main is never fast-forwarded. Its two leftover ambers are Split to Q-168 and Q-182, so nothing went untracked.
+
+Proposed fixes, one per cause (not built)
+
+- Bypassed: make the rubric check block, and run it on every change to main, not only build-loop merges: a hook on refs/heads/main that catches hand merges and fast-forwards too. It would refuse an open red, or an amber with no qualifying note, unless the merge message quotes the owner's Q-ID. It would also refuse an escalate at the cap that has no filed question.
+- No-gate (reviewed after landing): the same gate refuses a merge whose rubric's Commit: stamp isn't an ancestor of the tip being merged. It would also need a rule that a review never starts on code already on main.
+- No-gate (lapsed triggers): at merge, the gate tests each revisit trigger the branch's rubrics name: "with the next edit to X" against the branch's diff, "at slice close" against the merge itself. A fired trigger counts as an open row.
+- Stale records (no GAPs, but they produced most of the false alarms): the gate's existing stale line, which flags fix commits newer than the rubric, becomes blocking.
+- Rule drift: a one-time re-tally of the six rows above against today's rule, each closed with a trigger or a Won't-Fix row.
+```
+
+Q-327:
+Final messages only occur in some circumstances; I'm often kicking off dev-cycle loops that last long enough that they are interrupted before reaching a final message.
+This is a good thing in general but it means that T8/T9 are hard to answer when "final message" isn't as dominant as a surface.
+
+T8 isn't super meaningful on my end.
+T9 is good, more than two links is fine when appropriate but links in `questions.md` when I'm more focused is when they're most valuable.
+T10: I mostly haven't noticed this, most changes have been driven by my feedback rather than fully autonomous ideas I need help tracking
+T11: I think the weekly digest is worthwhile, I don't think it's surfaced as easily as I'd like and I don't yet have a habit of when during the week I catch up with it. Integrating it into the cross-project active board script would help
+T12: this is alright, but it doesn't really address the chain of trust between the reports and the facts in the code.
+I think a good trust answer looks more like the next section, "your asks this week", which is reporting on numbers I've actually seen so I can know if it's not accurate.
