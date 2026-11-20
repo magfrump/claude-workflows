@@ -185,11 +185,18 @@ tainted session. The ways it could happen, and what bounds each:
   and here. Two new cases (A6, C7) fail on 881d87a9 and pass now. C8 (pre-existing
   fail-opens in `main()`, outside the diff), C9 (follows the documented rule), C3,
   C11-C13 left as is.
+- Pass 3, the final pass (rubric at 98d78d32,
+  `docs/reviews/code-review-rubric-2026-11-19-fix-guard-worktree-taint.md`, full
+  branch, k=3 fact-check): one red, R1. Pass 2's abspath candidate crashed the hook
+  when the cwd was gone (exit 1, so the edit got no ask). Fixed in 5070403e: abspath
+  failing is SOFT. A1-A3 wording also fixed there. Two new cases: M1 fails on
+  98d78d32, M2 pins the relative `.claude/wt-x` spelling. At the 3-iteration cap the
+  fix was checked by tests and a fix-drift pass, not a fourth full pass.
 
 ## Verification
 
-- `bats test/hooks/guard-trusted-writes.bats`: 105/105 (88 before, 17 new).
-- `bats test/hooks/`: 225/225. `scripts/hermeticity-lint --root .`: pass.
+- `bats test/hooks/guard-trusted-writes.bats`: 107/107 (88 before, 19 new).
+- `bats test/hooks/`: 227/227. `scripts/hermeticity-lint --root .`: pass.
 - Live check (not runnable in this sandbox): in a web-tainted session, an Edit to an
   ordinary file inside a `.claude/worktrees/` worktree applies with no ask, and an
   Edit to that worktree's `CLAUDE.md` still asks.
