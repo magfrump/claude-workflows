@@ -35,3 +35,5 @@ Policy: review
 - F-013's tool calls that never return.
 - Any skill or workflow's own wait lines.
 - Editing `docs/roadmap.md`, the questions files, `docs/working/watching.md` or `docs/working/idea-log.md`: the dev cycle owns those.
+
+Dispatched: 1
