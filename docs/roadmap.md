@@ -137,18 +137,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   field values followed by explanation, and text before the title, across seven skills. Review
   (skill files): `docs/working/briefs/2026-11-20-skill-format-fields-preambles.md`.
 
-- **Fix the single-skill findings F4, F6 and F7** (Q-328 [3]; filed and briefed 2026-11-20, step 6):
-  arithmetic-eval's program drift, what-if-analysis's missing Assumption entries, and pattern misses
-  in three skills. Review: `docs/working/briefs/2026-11-20-skill-format-single-skill.md`.
-  2026-11-20: ready at a1b5bfc3 (four skills, three tests; yglesias-critique still red by chance on a
-  body-keyword rule): merge asked in Q-329.
-
-- **Resolve the verdict drift F5** (Q-328 [3]; filed and briefed 2026-11-20, step 6): six skills'
-  judgments differ from the expected verdicts; rerun first to separate noise, then fix the skill or
-  the expectation. Review: `docs/working/briefs/2026-11-20-skill-verdict-drift.md`.
-  2026-11-20: ready at e13ee2e2 (all ten cases repeated; four fixtures, two skills, tests fixed; FP-186):
-  merge asked in Q-330. Follow-ons named in its research doc: test-strategy's intermittent missing
-  "What it verifies" field, and the fixture headers that name the expected verdict.
 
 ## Next
 
@@ -477,6 +465,16 @@ Unranked. Each names the signal that motivates it.
 ## Done
 
 Items finished since the last cycle, with the merge.
+
+- **Fix the single-skill findings F4, F6 and F7** (Q-328 [3]): arithmetic-eval's program drift,
+  what-if-analysis's missing Assumption entries, pattern misses in three skills. Done cef30487
+  (approved merge, Q-329 [1]), brief `docs/working/briefs/closed/2026-11-20-skill-format-single-skill.md`.
+
+- **Resolve the verdict drift F5** (Q-328 [3]): ten cases rerun, each fixed on the side that was
+  wrong (FP-186). Done ead9191a (approved merge, Q-330 [1]), brief
+  `docs/working/briefs/closed/2026-11-20-skill-verdict-drift.md`. Follow-ons named in its research
+  doc: test-strategy's intermittent missing "What it verifies" field, and the fixture headers that
+  name the expected verdict.
 
 - **Step 0 and a missing worktree: no change, closed.** Done d6480ebc (self-merge), brief
   `docs/working/briefs/closed/2026-11-20-step0-worktree-first-research.md`, research
