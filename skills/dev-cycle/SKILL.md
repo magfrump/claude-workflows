@@ -708,21 +708,23 @@ for TIP, `auto@TIP12=redispatch` (TIP12 matched as a prefix of the full TIP) or
 and step 10 takes it; this one rule is also the once-per-tip check.
 
 **Auto send-back** (no owner entry). A ready branch refused below for a conflict with the
-default branch (`conflicts with the default branch`), or for failure-pattern gaps every one
-of which the loop can fix, goes straight back to its loop, once per tip and only while
+default branch (`conflicts with the default branch`), or for failure-pattern gaps (its
+`refuse` line reads `failure-pattern gaps`, not a `gap` line alone) every one of which the
+loop can fix, goes straight back to its loop, once per tip and only while
 `--status` reads its DISPATCHED under 3: add `auto@TIP12=redispatch` to its `Applied:`
 line (for an approved merge entry, its ID as `Q-NNN=redispatch`), name it on the
 `7.` line with its refusal line, and step 10 sends it back. A loop-fixable gap is one with
 no owner remedy and no failed read: a missing `Failure-pattern grep:` line, fix(...)
 commits with no new entry and no `Failure-pattern skip:` line, a research doc not (as a
 regular file) in the tip, or a duplicate FP number the merge caused ("renumber the
-branch's entry"). These keep today's route, a `stopped` entry: a tip already sent back
-(never sent back again: the rule above); DISPATCHED 3 or more, so a refusal at a new tip
+branch's entry"). A tip already sent back is never gated again (the rule above): it is
+only re-dispatched, up to the cap. These keep today's route, a `stopped` entry: DISPATCHED
+3 or more, so a refusal at a new tip
 leaves the owner a re-dispatch under the cap of 4 (a sent-back loop that ends with no new
 commit can still use that last dispatch, as after an owner's re-dispatch); a gap whose
 remedy is the owner's (the migration `failure-patterns-out-of-thoughts` gap); a gap naming
-a failed read (the environment's, as below); a library that is not a regular file; and
-every other refusal. Nothing is read as the owner's answer: a review brief's
+a failed read (the environment's, as below); the failure-pattern library
+(`docs/failure-patterns.md`) that is not a regular file; and every other refusal. Nothing is read as the owner's answer: a review brief's
 new tip still gets its own merge entry.
 
 - **absent**: not dispatched yet; step 10 takes it.
@@ -831,7 +833,7 @@ An `other` or `refuse` line holds no answer.
 Add each ID acted on to the brief's `Applied:` line as `Q-NNN=ACTION` (", " between items;
 none yet: a line `Applied: ITEM` at its end), ACTION being `redispatch`, `merged`, `drop`
 or `noted` (`unrecognized`), so each answer is acted on once and the action survives a
-restart. An auto send-back's item is `auto@TIP12=redispatch`, which holds no ID to read.
+restart. An auto send-back's item is `auto@TIP12=redispatch`, which holds no ID to read (an approved merge's: its `Q-NNN=redispatch`).
 
 A merged brief whose acceptance criteria name a host step (step 8) gets that step filed as
 one `you: terminal` entry this iteration. A `merged` line moved main. After this step's last one, run step 0.1's image check again,
