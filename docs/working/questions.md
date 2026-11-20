@@ -26,13 +26,14 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
-| [Q-308](#q-308--a8-settling-runs) | you: judgment | Run the two larger measurements that would settle the A8 question (the code-review skill's "inlining the sh... | 2026-11-19 |
+| [Q-308](#q-308--a8-settling-runs) | you: judgment | Q-308: [1] | 2026-11-19 |
 | [Q-312](#q-312--friction-ideas-owner-brainstorm-areas) | you: judgment | Two roadmap Ideas from your 2026-10-29 brainstorm carry your own friction report. Build them now, or keep t... | 2026-11-19 |
-| [Q-314](#q-314--merge-gate-2026-11-19-loop-wait-rule-6505ccec60db) | you: judgment | Merge the build-loop prompt change that tells loops to wait inside their turn, and to have their reviewers ... | 2026-11-19 |
-| [Q-315](#q-315--merge-2026-11-19-code-review-lever3-correction-e100fc0dd7c4) | you: judgment | Merge the code-review skill's correction of its prompt-cache claims (decision 032's "lever #3"), with the d... | 2026-11-19 |
-| [Q-084](#q-084--q076-live-checks) | you: terminal | One check is left: does a cc-isolated session that leaves a git worktree behind exit cleanly, with one `not... | 2026-09-27 |
+| [Q-314](#q-314--merge-gate-2026-11-19-loop-wait-rule-6505ccec60db) | you: judgment | Q-314: [1] | 2026-11-19 |
+| [Q-315](#q-315--merge-2026-11-19-code-review-lever3-correction-e100fc0dd7c4) | you: judgment | Q-315: [1] | 2026-11-19 |
+| [Q-084](#q-084--q076-live-checks) | you: terminal | Q-084: done — note: exit scan: only linked worktrees in git's standard layout changed (added: probe). The... | 2026-09-27 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the ho... | 2026-11-05 |
 | [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there. | 2026-11-18 |
+| [Q-316](#q-316--blessed-config-line) | you: terminal | Paste one line: what `cc-isolated --list` says about the blessed config after today's re-bless. | 2026-11-19 |
 <!-- index:end -->
 
 ## Open
@@ -71,7 +72,8 @@ If check 1 counts 0 and the build finishes, retire the "dl.google.com refused TL
 - **If the answer differs:** a `FAIL sni=dl.google.com` for an address that is not pinned is decision 039's revisit trigger; a failed build gets a follow-up fix.
 
 ### Q-084 · q076-live-checks
-**Needs:** you: terminal · **Opened:** 2026-09-27 · **Status:** OPEN
+**Needs:** you: terminal · **Opened:** 2026-09-27 · **Status:** ANSWERED
+Q-084: done — note: exit scan: only linked worktrees in git's standard layout changed (added: probe). They take config and hooks from the checkout's own .git, so this is not a finding. / cc-isolated exit=0 (no WARNING)
 
 One check is left: does a cc-isolated session that leaves a git worktree behind exit cleanly, with one `note:` line and no WARNING?
 
@@ -133,7 +135,8 @@ Output, in chat (write no files):
 - **If the answer differs:** a cause the fixes here don't cover becomes a roadmap item here (the gate and rules are shared), and anything specific to Behemoth Arsenal is for a session in that repo.
 
 ### Q-308 · a8-settling-runs
-**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** ANSWERED
+Q-308: [1]
 
 Run the two larger measurements that would settle the A8 question (the code-review skill's "inlining the shared context is free" claim): a self-read control pass on the csp cell and a pass on the larger corpus cell?
 
@@ -179,7 +182,8 @@ The two Ideas:
 - **If the answer differs:** nothing to redo; the cycle moves them to Now next iteration.
 
 ### Q-314 · merge-gate-2026-11-19-loop-wait-rule-6505ccec60db
-**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** ANSWERED
+Q-314: [1]
 
 Merge the build-loop prompt change that tells loops to wait inside their turn, and to have their reviewers return reports as text?
 
@@ -217,7 +221,8 @@ Branch tip 6505ccec60db9a64ab4dfdb9061c0d014c021636. `--check`'s lines, as print
 - **Interim:** nothing merges; loops run the old prompt.
 
 ### Q-315 · merge-2026-11-19-code-review-lever3-correction-e100fc0dd7c4
-**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** ANSWERED
+Q-315: [1]
 
 Merge the code-review skill's correction of its prompt-cache claims (decision 032's "lever #3"), with the decision record's amendment?
 
@@ -251,3 +256,20 @@ Two things the lines above do not show. First, the branch has no committed code-
 | **[3] changes needed** | Write what to change; the note goes back to the loop | Writing the note | A further round |
 
 - **Interim:** nothing merges.
+
+### Q-316 · blessed-config-line
+**Needs:** you: terminal · **Opened:** 2026-11-19 · **Status:** OPEN
+
+Paste one line: what `cc-isolated --list` says about the blessed config after today's re-bless.
+
+**If you say no:** watch Q-167 (post-install-host-probes, `docs/working/watching.md`) stays open until the next re-bless, and the rebuild-hint commits keep `Live-verified: no`; nothing breaks.
+
+Run on the host:
+
+```
+cc-isolated --list 2>&1 | grep -i 'blessed config'
+```
+
+**Pass:** a line `Blessed config HASH — verified live: NO (run: cc-isolated --probe-only <repo>)` (or `verified live: yes` if you have since run a probe). **Send back:** `Q-316:` and that line.
+
+- **Interim:** Q-167 waits; the `Verified live:` and `Next:` lines the bless printed are not asked for again (the watch says how the next release entry captures them).

@@ -148,6 +148,12 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   2026-11-19: moved to Now by step 6 (iteration 2316). First step: the one the signal names; if none, a research or divergent-design pass on it.
   2026-11-19: briefed (iteration 0014 UTC): `docs/working/briefs/2026-11-19-harness-feedback-file-in-cycle.md`.
 
+- **A8 settling runs: csp self-read and corpus inline** (Q-308 [1], owner in session 2026-11-19).
+  Motive: the first A8 pass found inlining saves nothing on the Agent-tool path, leaving its net
+  cost and recall effect unmeasured; these two passes measure both. Briefed (iteration 0056 UTC):
+  `docs/working/briefs/2026-11-19-a8-settling-runs.md`; dispatched once the lever #3 correction
+  (Q-315 [1]) merges, so both passes run the corrected skill.
+
 ## Next
 
 1. **Agent first-pass playtest before each `you: walkthrough`** (owner request, 2026-11-12;
