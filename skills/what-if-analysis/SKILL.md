@@ -144,6 +144,8 @@ What does reversal require at each stage? What data has been created that depend
 
 A change with a steep reversibility gradient — easy to undo today, catastrophic later — needs more upfront scrutiny than one equally reversible at any point. Flag any cliff edges: specific moments where reversal suddenly becomes much harder.
 
+Only the change itself has a cliff: a point after which undoing it needs a migration, a rewrite or another party's work. Three things are not cliffs, so do not tag them `[REVERSIBILITY CLIFF]`: harm done while the change ran (a bad result already sent is a consequence chain), the one-off cost of the rollback itself (a cold cache, a load spike), and a later removal step the proposal already schedules as its own reviewed change. Name them in the map if they matter; when nothing else remains, say the gradient is flat.
+
 ### 7. Ask what success costs
 
 Even if the proposal works perfectly — every assumption holds, every step succeeds, every outcome as intended — what do you lose?
@@ -179,6 +181,15 @@ List every load-bearing assumption (move #1). For each, use these fields:
 - **Source:** explicit (cite location) or implicit
 - **If wrong:** tweak / redesign / full retreat
 - **Tag:** `[NOVEL]` if not surfaced by any upstream critique, otherwise omit
+
+Each assumption opens with its `**Assumption:**` field line, not a heading or a bold title, and `**If wrong:**` starts with one of the three words:
+
+```
+- **Assumption:** translators deliver every locale before the release freeze
+  - **Source:** implicit (the timeline has no slack for late locales)
+  - **If wrong:** tweak. Ship the late locales in the next patch.
+  - **Tag:** `[NOVEL]`
+```
 
 ### Consequence Chains
 
