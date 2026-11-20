@@ -29,6 +29,7 @@ The index below is generated — edit entries, not the table.
 | [Q-308](#q-308--a8-settling-runs) | you: judgment | Run the two larger measurements that would settle the A8 question (the code-review skill's "inlining the sh... | 2026-11-19 |
 | [Q-312](#q-312--friction-ideas-owner-brainstorm-areas) | you: judgment | Two roadmap Ideas from your 2026-10-29 brainstorm carry your own friction report. Build them now, or keep t... | 2026-11-19 |
 | [Q-314](#q-314--merge-gate-2026-11-19-loop-wait-rule-6505ccec60db) | you: judgment | Merge the build-loop prompt change that tells loops to wait inside their turn, and to have their reviewers ... | 2026-11-19 |
+| [Q-315](#q-315--merge-2026-11-19-code-review-lever3-correction-e100fc0dd7c4) | you: judgment | Merge the code-review skill's correction of its prompt-cache claims (decision 032's "lever #3"), with the d... | 2026-11-19 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | One check is left: does a cc-isolated session that leaves a git worktree behind exit cleanly, with one `not... | 2026-09-27 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the ho... | 2026-11-05 |
 | [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there. | 2026-11-18 |
@@ -214,3 +215,39 @@ Branch tip 6505ccec60db9a64ab4dfdb9061c0d014c021636. `--check`'s lines, as print
 | **[3] changes needed** | Write what to change; the note goes back to the loop | Writing the note | A further round before it lands |
 
 - **Interim:** nothing merges; loops run the old prompt.
+
+### Q-315 · merge-2026-11-19-code-review-lever3-correction-e100fc0dd7c4
+**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** OPEN
+
+Merge the code-review skill's correction of its prompt-cache claims (decision 032's "lever #3"), with the decision record's amendment?
+
+**If you say no:** the code-review skill keeps saying that inlining the shared review context makes the prompt cache serve it to every critic, which the A8 measurement and its cache probe (merged 358c2332 and 9e89a31e) showed saves nothing on the Agent-tool path, and it keeps telling the orchestrator to paste each critic's skill text into its prompt.
+
+- **Why it's yours:** you asked in session for this review of decision 032 and what rests on it, and the branch amends a decision record (`docs/decisions/032-review-loop-token-reduction-levers.md`), which the cycle never self-merges.
+- **Read:** the brief `docs/working/briefs/2026-11-19-code-review-lever3-correction.md`; on the branch, `docs/working/research-2026-11-19-code-review-lever3-correction.md`. Show the diff: `git diff main...e100fc0dd7c4d73d30fe680df956680795e5f188`.
+
+What it changes:
+- `skills/code-review/SKILL.md`: the cache-saving and cross-pass "warm cache" claims are rewritten to what A8 found. The "only the tail varies" rule and the stable-first part order go, since they existed only for the cache. Kept, with their own reasons: one shared block included verbatim (every critic reviews the same material, so Stage 3 can compare findings), fact-check replicates that differ only in output path (decision 031's disagreement measure), inlining the diff and enclosing files (decision 021's enclosing-file context), and the 25k budget (context window).
+- Critics get their skill file's path and read it themselves instead of having it pasted in (all 9 A8 agents did this); pasting stays as a fallback.
+- Decision 032 gets an amendment; `test/skills/code-review-context-delivery.bats` gains 3 cases, which fail on the old skill.
+- Not done here, filed for later (roadmap Now 4): the same two claims in `skills/draft-review/`, `skills/matrix-analysis/`, `workflows/divergent-design.md`, `patterns/orchestrated-review.md` and `guides/sub-agent-briefing.md`.
+
+Branch tip e100fc0dd7c4d73d30fe680df956680795e5f188. `--check`'s lines, as printed:
+
+> ok docs/working/briefs/2026-11-19-code-review-lever3-correction.md e100fc0dd7c4d73d30fe680df956680795e5f188 72998e6f2120e660bc44a363cfc6fb3872e92322
+> path docs/working/briefs/2026-11-19-code-review-lever3-correction.md M docs/decisions/032-review-loop-token-reduction-levers.md
+> path docs/working/briefs/2026-11-19-code-review-lever3-correction.md M docs/working/briefs/2026-11-19-code-review-lever3-correction.md
+> path docs/working/briefs/2026-11-19-code-review-lever3-correction.md A docs/working/research-2026-11-19-code-review-lever3-correction.md
+> path docs/working/briefs/2026-11-19-code-review-lever3-correction.md M skills/code-review/SKILL.md
+> path docs/working/briefs/2026-11-19-code-review-lever3-correction.md M test/skills/code-review-context-delivery.bats
+> rubric docs/working/briefs/2026-11-19-code-review-lever3-correction.md: none: fix/code-review-lever3-correction changes 2 paths outside docs/ and adds or changes no code-review rubric under docs/reviews/
+
+Two things the lines above do not show. First, the branch has no committed code-review rubric: its loop ran three fresh-reviewer rounds (the last clean) recorded in its research doc, not a code-review pass. Second, the full health check passed on a tree partway through round 2's edits, and its rerun on the final tree was stopped by the system for low memory; the 13-case contract test and the 11 code-review bats files passed on the final edits (34/34 and 204/204). No path is gate code, an instruction file or a dot path.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The cycle merges e100fc0d next iteration, after its health check runs | Reading the diff | A review pass reads its skill text by path and an agent misses part of it; one `git revert` |
+| **[2] drop** | The brief closes; the skill keeps its old claims | None | The skill keeps a measured-false rationale |
+| **[3] changes needed** | Write what to change; the note goes back to the loop | Writing the note | A further round |
+
+- **Interim:** nothing merges.
