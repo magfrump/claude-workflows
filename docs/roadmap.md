@@ -451,7 +451,8 @@ Items finished since the last cycle, with the merge.
 
 - **Re-dispatch the cycle's own dead loop at once (`--steal --ended`).** Done 8ec5a900 (approved merge,
   Q-319 [1]), the owner's 2026-11-19 request; brief `docs/working/briefs/closed/2026-11-19-steal-ended.md`,
-  research `docs/working/research-2026-11-19-steal-wait-research.md` and
+  research brief `docs/working/briefs/closed/2026-11-19-steal-wait-research.md`, research
+  `docs/working/research-2026-11-19-steal-wait-research.md` and
   `docs/working/research-2026-11-19-steal-ended.md`. Gate code: live at the next release (Q-317).
   Success measure: one live loop taken means revert.
 
