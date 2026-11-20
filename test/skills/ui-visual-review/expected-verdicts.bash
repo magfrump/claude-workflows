@@ -30,9 +30,9 @@ EXPECTED_VERDICT["tc-uv3-wrong-positioning.tsx"]="Major"
 CLAIM_ACCURACY["tc-uv3-wrong-positioning.tsx"]="bug"  # Absolute positioning anchored to wrong parent
 KEY_CHECK["tc-uv3-wrong-positioning.tsx"]="finding_match:Major=relative[^.]{0,80}(SectionA|section a|its (own )?(section|parent|container))|(SectionA|section a)[^.]{0,80}relative|positioned ancestor|containing block|nearest (positioned|relative)"
 
-EXPECTED_VERDICT["tc-uv4-flex-sizing-error.tsx"]="Major"
+EXPECTED_VERDICT["tc-uv4-flex-sizing-error.tsx"]="Critical|Major"
 CLAIM_ACCURACY["tc-uv4-flex-sizing-error.tsx"]="bug"  # shrink-0 on content area instead of flex-1 min-h-0
-KEY_CHECK["tc-uv4-flex-sizing-error.tsx"]="finding_match:Major=flex-1|min-h-0|flex-grow|min-height: ?0"
+KEY_CHECK["tc-uv4-flex-sizing-error.tsx"]="finding_match:Critical|Major=flex-1|min-h-0|flex-grow|min-height: ?0"
 
 EXPECTED_VERDICT["tc-uv5-hidden-overflow.tsx"]="Major"
 CLAIM_ACCURACY["tc-uv5-hidden-overflow.tsx"]="bug"  # overflow-hidden silently clips error list
@@ -40,13 +40,13 @@ KEY_CHECK["tc-uv5-hidden-overflow.tsx"]="finding_match:Major=overflow-(y-)?(auto
 
 # --- Checklist items 6-7: Affordance / responsive (full audit mode) ---
 
-EXPECTED_VERDICT["tc-uv6-disappearing-controls.tsx"]="Minor"
+EXPECTED_VERDICT["tc-uv6-disappearing-controls.tsx"]="Major"
 CLAIM_ACCURACY["tc-uv6-disappearing-controls.tsx"]="bug"  # Button disappears on completion instead of relabeling
-KEY_CHECK["tc-uv6-disappearing-controls.tsx"]="finding_match:Minor=re-?run|(update|change|swap|switch)[a-z]* (the |its )?(button.s )?label|keep (the )?button (visible|rendered|mounted|in place)|instead of (disappear|hid|remov|unmount)"
+KEY_CHECK["tc-uv6-disappearing-controls.tsx"]="finding_match:Major=re-?run|(update|change|swap|switch)[a-z]* (the |its )?(button.s )?label|keep (the )?button (visible|rendered|mounted|in place)|instead of (disappear|hid|remov|unmount)"
 
-EXPECTED_VERDICT["tc-uv7-weak-affordance.tsx"]="Minor"
+EXPECTED_VERDICT["tc-uv7-weak-affordance.tsx"]="Major"
 CLAIM_ACCURACY["tc-uv7-weak-affordance.tsx"]="bug"  # Interactive div looks like static text
-KEY_CHECK["tc-uv7-weak-affordance.tsx"]="finding_match:Minor=<button|role=.?button|cursor-pointer|cursor: ?pointer|hover:[a-z]|\bborder(-[a-z0-9]+)+\b|\bbg-[a-z]+-[0-9]+|underline"
+KEY_CHECK["tc-uv7-weak-affordance.tsx"]="finding_match:Major=<button|role=.?button|cursor-pointer|cursor: ?pointer|hover:[a-z]|\bborder(-[a-z0-9]+)+\b|\bbg-[a-z]+-[0-9]+|underline"
 
 # --- Cross-framework: Unity/C# ---
 

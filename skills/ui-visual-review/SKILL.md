@@ -375,7 +375,8 @@ Document the review context so readers can reproduce or extend it:
 If the review surfaces no findings, keep this section and write the single line
 `No findings.` under it in place of finding entries.
 
-For each finding, use this structure:
+For each finding, use this structure. Every field is required; only an Informational
+finding may leave out **Recommendation:**.
 
 ```markdown
 #### [Finding title]
@@ -398,7 +399,9 @@ mechanical.]
 
 - **Critical** — Content is inaccessible or invisible at common viewport sizes; user
   cannot complete the primary task; accessibility violation that locks out a class of
-  users (e.g., focus trap, missing labels on AI content adjacent to human content)
+  users (e.g., focus trap, missing labels on AI content adjacent to human content).
+  A primary action that growing content pushes out of view (Step 2 items 1–2) is
+  Critical even when scrolling would reach it: the user cannot see how to finish.
 - **Major** — Content is accessible but hard to discover or use; affordance is weak;
   tab order disagrees with visible order; touch target below AA minimum
 - **Minor** — Cosmetic issues or suboptimal patterns that work but could be better;
