@@ -34,7 +34,8 @@ directory.
   way also in the final message." Both the entry and the agent item are written in WT. So
   for **every** stop before WT exists (0.1, 0.2 and 0.3), the text names a home that cannot
   be written. Only the final message is left. A `--state` refusal also opens that message
-  with `⚠ SECURITY` and is sent as a push notification (`SKILL.md:1067`).
+  with `⚠ SECURITY`, sent as a push notification when the session has a tool for one
+  (`SKILL.md:1067`).
 - **`--worktree-base`** (`scripts/build-loop.sh:626-652` header, `wt_base` at 1905-1940,
   mode at 2655-2659). It runs the state gate's caller and default-branch checks. It then
   makes `MAINWT/.worktrees` and its `.gitignore` of `*`, and checks that git ignores what
@@ -63,18 +64,25 @@ stopped step-0 lines.
 - **A stop because no worktree could be made: once, F-018 itself.** No cycle record and no
   other feedback entry reports one. Belegarth-herald F-009 is about the Agent tool's own
   worktree isolation, not the cycle's WT.
-- **Its cause was removed the same evening, and row 88 keeps it removed.** F-018's branch
-  name is 2026-11-13 00:37 UTC. The Q-125 sandbox rollback, 7caea26d ("agents cannot create
+- **Its cause was removed the same evening, and row 88 keeps it removed.** The branch
+  F-018 names (in philosophy-research, not this repo) reads 2026-11-13 00:37 UTC, since
+  step 0.3 names branches in UTC (`SKILL.md:332`). The Q-125 sandbox rollback, 7caea26d ("agents cannot create
   worktrees under it"), was committed at 2026-11-12 17:16 -0800, which is 01:16 UTC, about
   40 minutes later. So F-018 ran under the sandbox that was being withdrawn for exactly
   this reason. (Assumed: philosophy-research launches through cc-isolated, so the rollback
   reaches it at its next release. Not checked from here.)
-- **A related near-miss, in this repo: one.** `cycle-2026-11-19.md:1144`, iteration
-  2026-11-20-0237. A first try reused the minute just used (0236), and `worktree add`
-  refused. "The commands after it ran in the main checkout": the digest and
+- **A related slip, in this repo: one, and not a gap in the text.** `cycle-2026-11-19.md:1144`,
+  iteration 2026-11-20-0237. A first try reused the minute just used (0236), and
+  `worktree add` refused. "The commands after it ran in the main checkout": the digest and
   `questions.sh archive`, which moved two entries in MAIN_WT's working tree. They were
-  restored by hand. That is a failed `worktree add` that the iteration went past instead
-  of stopping. Nothing in step 0.3's text says such a failure is a stop.
+  restored by hand. That was a taken name, which step 0.3 already handles ("a name taken:
+  the next minute", `SKILL.md:332`). The commands could only run in MAIN_WT because they
+  did not name WT, against D13's "every command names its checkout (`cd WT && …`), so one
+  run in the wrong place fails" (`SKILL.md:30-32`) and the d6 rule's `cd WT && bash …d6.sh`
+  (`SKILL.md:52-55`). The orchestrator slipped against rules that already exist. (A
+  review of this doc's first draft caught this. The draft read it as a text gap.)
+- **No rule names a failed `worktree add` as a stop** (beyond the taken-name retry). The
+  only instance of any other failure is F-018's read-only directory.
 - **Earlier step-0 stops** (`cycle-2026-10-15.md`, `cycle-2026-10-17.md`: "stopped: step
   0.2") ran under an older step order that made WT first and filed entries from it. They
   do not bear on this question.
@@ -85,9 +93,11 @@ stopped step-0 lines.
 **Reading.** The motive for *detecting* a read-only `.git/worktrees` early is weak. It
 happened once, under a sandbox that was rolled back for this very reason, and row 88 rules
 out bringing it back without a revisit. The motive for *saying what a pre-WT stop does* is
-real but small. The skill names homes that cannot exist before WT, and 0237 shows that a
-failed `worktree add` with no stated rule let the iteration run on in the main checkout.
-Neither of those needs new code.
+latent, not observed. The skill names homes (a judgment entry, an agent item) that cannot
+be written before WT. But the Rules already send every stop to the final message, which
+is where F-018's stop went, and that ambiguity has cost nothing on record. The skill
+already uses a "once WT exists" pattern for step 0.1's non-stop entries (`SKILL.md:250`,
+`:290`). A stop never gets there, because it ends the iteration (`SKILL.md:231`).
 
 ## Divergent design (criterion 3)
 
@@ -122,58 +132,68 @@ How each one fares:
   test, and it already fails loudly. B could still earn its place if the read-only mount
   returns (row 88's revisit trigger).
 - **C, state it.** A few lines in `SKILL.md`, step 0.3 and the Rules' stop list:
-  1. A failed `worktree add` at 0.3, other than a taken name, is a stop. This covers the
-     0237 near-miss.
+  1. A failed `worktree add` at 0.3, other than a taken name, is a stop. Today that
+     covers only F-018's read-only directory. The 0237 slip was a taken name, which the
+     text already handles.
   2. A stop before WT exists is reported in the final message only. It writes no file and
      makes no worktree to file it. The next iteration meets the same condition again, so
      nothing is lost: the stop rebuilds its own record.
   3. A branch that a failed `worktree add -b` left at MAIN is removed with `git branch -d`
-     (it is merged), or left for step 1's cleanup when git refuses.
-  4. The `--state`/`Main at:` judgment-entry clause either becomes "once a WT exists" or
-     is dropped for stops before 0.3.
-  No code, no new owner chore (S10), and no new dispatch (S2).
+     (it is merged), or left for step 1's cleanup when git refuses. Under F-018's mounts,
+     `-d` also printed "could not lock config file" (`philosophy-research.md:151`).
+  4. The `--state`/`Main at:` judgment-entry clause either becomes "once a WT exists",
+     reusing the pattern at `SKILL.md:250` and `:290`, or is dropped for stops before 0.3.
+  No code, no new dispatch (S2). But it is a review merge of gate code, and so a release
+  entry for the owner (S10). The text it fixes has never misled a run.
 - **D, no change.** Free. The Rules already put every stop in the final message, so
-  F-018's stop did reach the owner. But the text still names homes that cannot be written
-  before WT, and it does not call a failed `worktree add` a stop. The 0237 iteration ran
-  on past exactly that gap and changed files in the main checkout.
+  F-018's stop did reach the owner. The only recorded run-on, 0237, broke rules that
+  already exist (the taken-name retry and D13's `cd WT &&`); it was not a gap in the text.
+  What D leaves is a latent ambiguity: the skill names a judgment entry or an agent item
+  for a pre-WT stop, and neither can be written there. A reader who meets that case falls
+  back on "either way also in the final message", which is what C would say.
 
-**Pick: C (Path A, one option dominates).** C closes the two gaps that showed up in real
-use (0237's run-on, and the unwritable homes) at the cost of a few lines. B's extra gain,
-the half-made branch, is already cleaned up by step 1, and its cause is retired by row 88.
-A is dominated by B. D leaves a gap that has already let an iteration write in the main
-checkout. Runner-up: D. If the follow-up review finds that step 0.3's existing "every
-command names its checkout" rule (`cd WT && …`) should already have stopped 0237, so that
-the slip was the orchestrator's and not the text's, then D is an equally valid outcome.
+**Pick: D, no change; the roadmap item closes (Path A, one option dominates).** The first
+draft picked C on the strength of 0237. Review showed 0237 was an orchestrator slip
+against existing rules, so C's observed benefit is gone. Its remaining value is clearing up
+a latent ambiguity, at the price of a gate-code review merge and an image-release entry
+for the owner. S5 (the status quo is a valid outcome) and S10 (spend the owner's attention
+last) both favour D. B's only gain over D, the half-made branch, is already cleaned up by
+step 1, and row 88 retired B's cause. A is dominated by B. If a brief touches step 0.3 or
+the stop Rules for another reason anyway, C's four lines can ride along at no extra
+release cost. That is an option for the cycle, not a reason to dispatch.
 
 One-line notes on the smaller choices (each has fewer than 3 viable options):
-- **Where a 0.1 `--state` refusal goes:** final message only (plus its existing
-  `⚠ SECURITY` push), not a worktree made in a state `--state` just refused. A judgment
-  entry with nowhere to be written is dropped from the pre-WT case.
+- **Where a 0.1 `--state` refusal goes, if C is ever written:** final message only (plus
+  its existing `⚠ SECURITY` push), not a worktree made in a state `--state` just refused.
 - **Whether to make `--state` refuse a read-only `.git/worktrees`, as F-018 suggests:**
   no. `--state` writes nothing by design (it is the read-only first call), and B is the
   better place should that test ever be wanted.
 
 ## For the dev cycle
 
-Suggested brief (an Agent item could replace the Now item "Step 0 tests worktree creation
-first"):
+**Item closed: no brief.** The roadmap Now item "Step 0 tests worktree creation first, and
+names where a stop goes with no worktree" closes for these reasons:
 
-- **Goal:** `skills/dev-cycle/SKILL.md` says that a failed `worktree add` at step 0.3
-  (other than a taken name) is a stop, and that any stop before WT exists is reported in
-  the final message only, with no file and no worktree made to file it. It says how the
-  half-made branch is removed. The Rules' "filed once" sentence no longer names a judgment
-  entry for a stop that has no WT. Option C above.
-- **Paths:** `skills/dev-cycle/SKILL.md` only.
-- **Policy:** review (`skills/dev-cycle/` is GATE_CODE; the change reaches the gate at the
-  next image release, through step 0.1's `image-lag` entry).
-- **Tests:** none new (prose only, H3 is met by the existing suite). Run the suites that
-  read `SKILL.md`: `test/scripts/build-loop-orchestrator.bats`,
-  `test/scripts/build-loop-free.bats`, `test/scripts/build-loop-check.bats`,
-  `test/scripts/convention-migrations.bats` and `test/questions-doc.bats`. If any of them
-  pins the changed lines, update them in the same change.
-- **Doc change:** the skill text is the doc. Answer F-018 in
-  `docs/working/feedback/philosophy-research.md` through the cycle's usual feedback
-  handling.
-- **Not in it:** a writability probe or a change to `--worktree-base` (option B). Note B as
-  the follow-up only if row 88's revisit trigger fires, that is, if a sandbox that mounts
-  `.git/worktrees` read-only comes back.
+- Only one stop for lack of a worktree is on record, F-018. It ran under the Q-125 sandbox,
+  which was rolled back about 40 minutes later for this very failure (7caea26d). Decision-log
+  row 88 keeps that sandbox out.
+- The Rules already send every stop to the final message, which is where F-018's stop went.
+- The one run-on in this repo (iteration 0237) broke rules that already exist; the text
+  had no gap there.
+- A skill change would be a gate-code review merge plus an image-release entry for the
+  owner, spent on an ambiguity that has never misled a run (S5, S10).
+
+Reopen it as a brief when either of these happens:
+
+- **Row 88's revisit trigger fires:** a sandbox that mounts `.git/worktrees` read-only
+  comes back. Then do option B (`--worktree-base` tests that a worktree can be made, with a
+  bats refusal case), plus C's lines.
+- **A second stop for lack of a worktree, or any pre-WT stop, is recorded in a cycle
+  record or a feedback file.** Then do option C (`skills/dev-cycle/SKILL.md` only, review
+  merge, run the full bats suite: several suites read every `skills/*/SKILL.md`, for
+  example `test/skills/workflow-routers.bats`).
+
+F-018 in `docs/working/feedback/philosophy-research.md` can be answered with this doc
+through the cycle's usual feedback handling. Optional, at the cycle's choice: when another
+brief changes step 0.3 or the stop Rules anyway, it may carry C's four lines at no extra
+release cost.
