@@ -28,6 +28,7 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-312](#q-312--friction-ideas-owner-brainstorm-areas) | you: judgment | Two roadmap Ideas from your 2026-10-29 brainstorm carry your own friction report. Build them now, or keep t... | 2026-11-19 |
 | [Q-318](#q-318--merge-2026-11-19-lever3-followons-65dd7d2b0927) | you: judgment | Merge the follow-on to Q-315: the same two false claims ("sub-agents cannot read your files", so paste thei... | 2026-11-19 |
+| [Q-319](#q-319--merge-gate-2026-11-19-steal-ended-2e687f12a30b) | you: judgment | Merge the change that lets the dev cycle re-dispatch its own dead build loop at once, instead of waiting tw... | 2026-11-19 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the ho... | 2026-11-05 |
 | [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there. | 2026-11-18 |
 | [Q-316](#q-316--blessed-config-line) | you: terminal | Paste one line: what `cc-isolated --list` says about the blessed config after today's re-bless. | 2026-11-19 |
@@ -220,6 +221,48 @@ No path is gate code, an instruction file or a dot path. The first rubric line i
 |---|---|---|---|
 | **[1] merge** | The cycle merges 65dd7d2b next iteration | Reading the diff | An agent reads only part of its skill file; one `git revert` |
 | **[2] drop** | The brief closes; the docs keep the old claims | None | Skills disagree with code-review on how to brief agents |
+| **[3] changes needed** | Write what to change; the note goes back to the loop | Writing the note | A further round |
+
+- **Interim:** nothing merges.
+
+### Q-319 · merge-gate-2026-11-19-steal-ended-2e687f12a30b
+**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** OPEN
+
+Merge the change that lets the dev cycle re-dispatch its own dead build loop at once, instead of waiting two hours (your request of 2026-11-19)?
+
+**If you say no:** a loop that ends with work committed and no marker keeps its worktree locked for two hours before the cycle can send it back, as three did recently (one held up the release); another session's locks are unaffected either way.
+
+- **Why it's yours:** it changes `scripts/build-loop.sh`, `scripts/lib/migrations.sh` and `skills/dev-cycle/SKILL.md`, the gate's own code, which the cycle never self-merges; it reaches sessions at the next release.
+- **Read:** the brief `docs/working/briefs/2026-11-19-steal-ended.md`; the design, merged 012b20f9, `docs/working/research-2026-11-19-steal-wait-research.md`; on the branch, `docs/working/research-2026-11-19-steal-ended.md` (the build and its six-item pre-mortem). Show the diff: `git diff main...2e687f12a30b5d4af6c327f351ac3972b5e17a94`.
+
+What it changes:
+- `--start` and `--prompt` print one more line, `lock UTC TIME`, the time of the lock they wrote.
+- New `--prompt BRIEF --steal --ended LOCKTIME ENDTIME`: takes the locked worktree at any age only when its lock is this brief's dispatch lock, its time equals LOCKTIME, and the branch's last commit is older than ENDTIME (when this session saw its loop end). Otherwise the two-hour rule decides as now; malformed or out-of-order `--ended` values are refused, naming the problem.
+- The skill: step 7 records the loop's task ID and the time its end was seen; step 10 records "dispatched N, task ID, lock UTC TIME" and passes `--ended` only with the lock time from that same task's line. It names the honest slip to avoid: taking another session's lock time from the record.
+- `scripts/lib/migrations.sh`: a registry line for the record template's changed `7.` and `10.` lines (no file needs rewriting).
+- Accepted risk, from the design: if the cycle pairs a notification with the wrong task, it could take a live loop of its own, but only one that has not committed since. The success measure: one case of a live loop taken means revert.
+- Tests: one new hermetic case in `test/scripts/build-loop-dispatch.bats` (12/12 pass), the migrations file (15/15), the health check, and the hermeticity lint. The loop's full-suite run before its last fix passed 2790 of 2794; three of the failures were its own shellcheck slip, fixed, and the fourth, in `test/q125-verify-check.bats`, passed on rerun. The whole suite was not run again after the fix.
+
+Branch tip 2e687f12a30b5d4af6c327f351ac3972b5e17a94. `--check`'s lines, as printed:
+
+> ok docs/working/briefs/2026-11-19-steal-ended.md 2e687f12a30b5d4af6c327f351ac3972b5e17a94 f98fa188e12d6dc563cd167856126faf38cb5287
+> path docs/working/briefs/2026-11-19-steal-ended.md A docs/reviews/steal-ended-code-review-rubric-2026-11-19.md
+> path docs/working/briefs/2026-11-19-steal-ended.md M docs/working/briefs/2026-11-19-steal-ended.md
+> path docs/working/briefs/2026-11-19-steal-ended.md A docs/working/research-2026-11-19-steal-ended.md
+> path docs/working/briefs/2026-11-19-steal-ended.md M scripts/build-loop.sh
+> path docs/working/briefs/2026-11-19-steal-ended.md M scripts/lib/migrations.sh
+> path docs/working/briefs/2026-11-19-steal-ended.md M skills/dev-cycle/SKILL.md
+> path docs/working/briefs/2026-11-19-steal-ended.md M test/scripts/build-loop-dispatch.bats
+> rubric docs/working/briefs/2026-11-19-steal-ended.md: clean docs/reviews/steal-ended-code-review-rubric-2026-11-19.md: 0 red and 3 amber rows, none open
+
+`scripts/build-loop.sh`, `scripts/lib/migrations.sh` and `skills/dev-cycle/SKILL.md` are gate code (self-merge's floor would have refused them). The rubric's three ambers (a dispatch printed but never started had no record line; a header read opposite to the spec; no test of a commit made after the lock) were fixed on the branch, and a second review round confirmed them closed. One oddity in the loop's report: its reviewer said it also sent its round-2 report to an agent the loop did not recognise; nothing acted on it, and the branch's content is what this entry asks about.
+
+**What an attacker would want here:** the lock is what keeps one loop's worktree from being taken while it works; an outside party who could put text into a brief or the cycle record (the inputs here) would want `--ended` to accept a lock time it did not take. It accepts only an exact match to the lock now on the worktree, which another session's dispatch rewrites, plus a tip older than the stated end, and the record is written only by the cycle.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The cycle merges 2e687f12 next iteration; it ships at the next release | Reading the diff | The cycle takes a live loop of its own; one `git revert` |
+| **[2] drop** | The brief closes; the two-hour wait stays | None | Dead loops keep holding their worktrees for two hours |
 | **[3] changes needed** | Write what to change; the note goes back to the loop | Writing the note | A further round |
 
 - **Interim:** nothing merges.
