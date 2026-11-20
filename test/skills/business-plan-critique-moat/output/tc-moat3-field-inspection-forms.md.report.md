@@ -1,128 +1,111 @@
-# Business-Plan Moat & Distribution Critique: Checkwise Strategy Brief
-
 > ⚠️ **No fact-check report provided.** This critique does not include independent factual verification. Checkable claims in the draft (market sizes, named partnerships, traction figures, competitor counts) have not been assessed. For full verification, run the `fact-check` skill first or use the `draft-review` orchestrator.
 
-**Summary:** The brief claims switching costs as its moat, but its own evidence argues against it. Easy export, ten-minute training, month-to-month terms and 2.1% monthly logo churn all point the other way. The real asset is a distribution loop: the landlord sees the report and pulls in more contractors. That loop is not defended yet. The best use of the integrations budget is to turn that landlord-side pull into structural lock-in.
+# Business-Plan Moat & Distribution Critique: Checkwise Strategy Brief
 
 ## Moat Type Assessment
 
 **Verdict:** Weak
 **Confidence:** High
 
-The brief names **switching costs** as its core defensibility, and the moat archetype is the right one to aim for in workflow SaaS. The problem is that the brief's own evidence takes the claim apart.
+The brief names one moat: **switching costs**. That maps to a real durable archetype, but the brief's own evidence argues against it.
 
-- **Templates:** this is the only item that is real today. Rebuilding 10–30 checklists costs a supervisor a day or two. That is friction, not lock-in.
-- **History:** the brief says the full archive exports in one click. That is good for trust, but it removes data gravity by design.
-- **Technician training:** ten minutes. That is a low retraining cost, and the brief presents it as a selling point.
-- **Contracts:** month-to-month with no minimums, so there is no contractual lock-in.
-- **Customers expect the reports:** this is the most interesting item, because the expectation sits with a third party (the landlord) rather than the contractor. But a PDF layout can be imitated. As it stands, this is closer to a format habit than a moat.
+- **Month-to-month contracts, no seat minimums.** This removes contractual lock-in.
+- **One-click full-archive export to PDF/CSV.** This removes data gravity. The brief says contractors required it before trusting a new vendor, which suggests it is the right commercial decision. It also means history is no longer a switching cost.
+- **Ten-minute technician training.** This removes retraining cost.
+- **"Customers stay because they want to… genuine loyalty rather than lock-in."** This is an argument for preference, not switching cost. The brief claims "high switching costs" and "no lock-in" in the same section. Both cannot be the moat.
 
-The asset the brief actually describes is different from the one it names. The report reaches the landlord, the landlord asks for it again, and the contractor upgrades. That is a **distribution advantage that looks like a brand or format standard**. It is valuable, but it is not one of the durable archetypes yet.
+What remains is template rebuild effort (10–30 templates) and landlord familiarity with the report layout. Neither compounds with time or scale. A competitor can neutralise both with a template importer and a look-alike PDF.
 
-**For a moat to compound, one of these would need to be true:**
-- (a) Landlords consume Checkwise output in a way they cannot get elsewhere, such as a landlord-side view across all their contractors. This would create a cross-side dependency.
-- (b) Contractors' job, billing and ticketing flows run through Checkwise. This is the v3 integrations thesis.
+The real asset is something the brief files under distribution: **the Checkwise report has become a format landlords ask for by name.** That is the start of a de facto standard on the buyer's buyer's side. It could compound into something durable, either brand or a cross-side network if landlords become users. Today it is a growth loop, not a moat.
 
-Neither exists today. The honest framing is: *"We have no structural moat yet. We have strong pull-through distribution and roughly an 18-month window to convert it into one."*
+**For a moat to compound:** leaving Checkwise would have to cost the contractor something they cannot export. Examples include a landlord relationship that runs through Checkwise, live integrations, or accumulated structured data the landlord relies on. The one-click export rules out data as a source.
 
 ## Distribution Channel Assessment
 
 **Verdict:** Plausible
 **Confidence:** Medium
 
-This is the strongest part of the plan.
+This is the strongest part of the brief.
 
-**Free tier / landlord pull-through (≈80% of new paying firms)**
-- **Who owns the demand surface:** mostly Checkwise. The report is the advertisement, and it travels through the contractor–landlord relationship, not through Google or an app-store auction. That is unusual and valuable. Mobile app-store dependency for the technician app is a minor exposure.
-- **CAC trajectory at scale:** the loop spreads through landlords' contractor rosters, so its reach is bounded by landlord overlap. Once Checkwise saturates the contractors working for already-exposed landlords, the loop needs new landlords to seed it. The brief gives no data on whether growth is broadening (new landlords) or deepening (the same landlords). That split is worth reporting to the board.
-- **Concentration:** 80% from one loop is high. It is less dangerous than 80% from a rented channel, but the loop has a single point of failure: **brand visibility on the report**. If paid-tier reports are contractor-branded with little Checkwise attribution, or if a competitor's report looks equivalent, the landlord's request becomes "send reports like these" rather than "use Checkwise." That shift can happen quietly.
-- **Deal-size match:** good. Neither motion uses sales effort heavier than a ~$350/month firm can support.
+**Free tier / report-as-advertisement loop (~80% of new paying firms)**
+- **Demand surface:** Partly owned. The report travels through the contractor to the landlord, who then pulls other contractors in. No ad platform mediates that loop, which is valuable. The brief doesn't say how contractors first find the free tier (search, app stores, word of mouth). That initial discovery step is where platform dependence would hide.
+- **CAC at scale:** Viral and artifact-driven loops tend to stay cheaper than paid channels. They do saturate, though: one landlord's contractor roster is finite. Growth then depends on reaching new landlord portfolios, and the brief doesn't say how that happens. Nine percent monthly growth sustained for a year is strong evidence the loop works now. It is not evidence that it holds as the denser landlord networks fill up.
+- **Concentration:** High. Most acquisition depends on one mechanism: the report impressing the landlord. That mechanism is a PDF, and a PDF can be copied. If a cheaper tool produces an equally good report, the loop works for them too.
 
-**Inside sales (≈20%, firms with 20+ technicians)**
-- About $7K ACV supports a short, demo-led motion, and the team works free-tier-warmed leads. This is coherent and sized correctly.
-- The brief rightly says "nothing heavier."
+**Inside sales (2 people, 20+ technician firms)**
+- **Channel/deal-size match:** Good. About $7K ACV supports a short, demo-led, free-tier-assisted motion and nothing heavier, and the brief says exactly that. This is well reasoned.
 
-**Single biggest distribution weakness:** the loop's value is captured by a *format* that Checkwise does not control once a competitor copies it. The landlord, the node that actually generates referrals, has no account, no login and no reason to prefer Checkwise specifically. The brief notes this under "Network effect." It is also the main distribution risk.
+**Landlord referrals**
+- Real, but landlords "gain nothing from more contractors joining." Their motivation is a preference for consistent reports, which is a weak and copyable reason.
+
+**Single weakness most likely to cap growth:** Checkwise does not own the landlord relationship that drives its distribution. Landlords receive a PDF. They have no account, no inbox and no data in Checkwise. Whoever eventually owns the landlord's workflow, including the maintenance-ticket portals Checkwise plans to integrate with, can capture this loop.
 
 ## Switching Cost Assessment
 
 **Verdict:** Weak
 **Confidence:** High
 
-**Test:** a contractor one year in is offered a tool that is 30% cheaper, offers template import, and produces a near-identical report. What stops them switching?
+**The test:** a firm one year in is offered a tool 30% cheaper with a comparable branded report and a template importer. What stops it from switching?
 
-- **Templates:** a day or two of rebuilding, or less if the competitor parses exported Checkwise reports into templates. That is a straightforward feature to build.
-- **History:** one-click export, so nothing is lost.
-- **Training:** about ten minutes per technician.
+- **Templates:** an afternoon of rebuilding, or none if the competitor imports them.
+- **History:** exported in one click by design.
+- **Technicians:** ten minutes of retraining.
 - **Contract:** none.
-- **Landlord expectation:** met by the cloned layout.
+- **Landlord expectations:** met by a look-alike report.
 
-The honest answer is "very little," and the brief's retention numbers agree:
-- **2.1% monthly logo churn is about 22% annual logo churn**, an average customer life of roughly four years.
-- That is respectable for small-business SaaS, but it is inconsistent with "leaving becomes very painful."
-- **118% NRR** is driven by seat expansion within the firms that stay. It shows customers value the product, not that they cannot leave.
+Honestly, nothing structural stops them. The retention data fits this reading. **2.1% monthly logo churn compounds to about 22% annual logo loss**, which is not what "very painful to leave" looks like. Net revenue retention of 118% shows that firms who stay expand. It does not show that firms can't leave. These are revealed-preference numbers in a market where, by the brief's own account, no strong low-priced competitor has yet pitched these customers hard.
 
-The brief's own line, "customers stay because they want to," is the accurate description. That is product satisfaction, which is worth having but is not a moat. Keep the easy export, because it is a real trust asset in sales. Just stop counting it on the defensibility side.
+**Lock-in today vs. roadmap.** The only structural switching cost in the brief is the v3 integrations module, expected in the second half of next year. Until it ships, the moat is hypothetical. The two halves of v3 also differ in kind:
 
-**Is the lock-in available today or only on the roadmap?** The only structural lock-in in the brief is the **v3 integrations module, planned for H2 next year**. Until then the switching-cost moat is hypothetical. There are also two risks with the v3 design itself:
-- **Contractor-side integrations:** two-way sync with the field-service suites does raise switching costs. But it also makes Checkwise dependent on APIs controlled by those suites, which are the very competitors the brief names as its most serious threat. See below.
-- **Landlord-side integrations:** sync with maintenance-ticket portals is the more interesting half. It is the first point where a party other than the contractor would depend on Checkwise.
+- **Landlord ticketing-portal sync** puts Checkwise between the contractor and their customer. Leaving would then disrupt a relationship the contractor cares about. That is durable.
+- **Field-service suite sync** creates switching cost only as long as the suites don't offer native inspection. It also makes the suites dependent-free observers of exactly how small contractors use inspections. See Competitive Response.
 
 ## Network Effect Assessment
 
 **Verdict:** Not Claimed
 **Confidence:** High
 
-The brief explicitly and correctly declines to claim one. The landlord referral loop is a growth loop, not a network effect, because landlords gain nothing as more contractors join. (There is a latent opportunity here, covered in the Overall Assessment, but it does not exist today.)
+The brief explicitly and correctly claims no network effect. Landlords aren't users, and landlord referrals are a growth loop, not a structural moat.
+
+Note the latent opportunity, though. Checkwise already has a cold-started second side: landlords receive its reports on many jobs. A landlord-facing product would turn that loop into a two-sided network effect. Examples: a free portfolio view of every inspection across all contractors, or the planned ticketing sync with Checkwise as the system of record. More contractors on Checkwise would make the landlord view more complete, and more landlords using it would pull more contractors in.
+
+Density would be per landlord portfolio, not global. That is a good local unit, and the existing referral behaviour suggests it already exists. This is not a network effect today, and the brief is right not to claim one. It is the clearest path to one.
 
 ## Competitive Response Assessment
 
 **Verdict:** Weak
 **Confidence:** Medium
 
-Assume Checkwise reaches the next milestone, for example 5,000 firms or a visible share of contractors serving large landlords. Three players are best positioned to respond.
+The brief's competitive section rests on one "incumbents too slow" bet: the suites' pricing and sales models make a low-priced product "unlikely within two years." Three likely responses:
 
-**1. Field-service management suites.** The brief names these as its most serious threat but does not name them. Their response is not to cut the price of their full suite. It is to **bundle**: a free or near-free "inspections" tier, or an inspection-only SKU priced to win small firms, built to feed users into the full suite later. These companies already have inspection forms, mobile apps, and brand awareness among contractors. Adding a branded PDF and offline mode is a quarter of engineering work, not two years.
+**1. Field-service / job-management suites: bundling (most likely).** The brief groups suites as five to ten times the price and slow to roll out. The suites most relevant to five-to-fifty-person firms, however, are the job-management tools those firms already pay for, which is why they are integration targets. Their likely move is not a separate low-priced inspection product. It is better inspection forms, plus a branded PDF, shipped free inside the subscription the contractor already has. The v3 plan helps them. Two-way sync shows them which templates and report formats small contractors use, and they control the API Checkwise relies on. Being a partner protects Checkwise only if Checkwise brings the suite business: referrals, upsell, or retention it couldn't get alone. The brief doesn't claim that. Without it, integration partners often become competitors.
 
-The brief's plan to integrate with all three by then cuts both ways:
-- Integration does make Checkwise a partner.
-- It also gives each suite a clear view of how many of their customers want lightweight inspections, and it puts Checkwise's v3 moat behind APIs those suites control.
-- "Partner rather than target" holds only if Checkwise is more valuable to them as a feeder than as a feature. The brief does not argue that point.
+**2. Generic form builders: price compression plus feature catch-up.** They are cheaper and missing offline mode, photo annotation and branded reports. All three are buildable features, not structural advantages. A form-builder vendor that adds a "contractor inspection" template pack and a polished PDF competes directly on Checkwise's distribution loop, the report. The planned rise to $35 for new customers widens the price gap they would compete on.
 
-**Most likely pattern: bundling, with distribution preemption through API terms.**
+**3. Vertical inspection apps or landlord ticketing portals: expansion or acquisition.** The brief omits one competitor class: the landlord maintenance-ticket portals. They own the landlord relationship Checkwise's distribution depends on. If a portal adds a built-in inspection checklist for contractors, it preempts distribution at the source. Separately, a suite could acquire a vertical inspection app as a faster route than building.
 
-**2. Property-management and maintenance-ticketing platforms on the landlord side.** The brief treats these only as integration targets. These platforms already have vendor portals that contractors log into to close tickets. Their response is to **add inspection capture to the vendor portal** and nudge landlords to require it. Inspections would then arrive in the landlord's system with no PDF at all.
-
-This attacks the loop at the node that generates it. If landlords start saying "submit it through our portal" instead of "send it like Checkwise," the 80% channel weakens without any contractor-side competitor winning. **Pattern: distribution preemption.**
-
-**3. Vertical inspection apps and generic form builders.** These are the most likely to copy the visible differentiators: offline mode, photo annotation, the branded report. Form builders in particular can ship a "contractor inspection report" template and compete on price. Individually they are weaker threats, but they erode the format advantage. **Pattern: price compression.**
-
-**Does the moat survive?** Not as currently built.
-- The brief's response thesis rests on "the suites' pricing and sales models make that unlikely within two years." That is a bet on incumbent inaction, with a timeline that roughly matches v3 shipping.
-- The stronger response, where incumbent action makes Checkwise more valuable, requires Checkwise to hold something the incumbents need. That would mean the landlord relationship or the cross-contractor inspection record. Today it holds neither.
+**Does the moat survive?** Not on current switching costs. The plan contains a partial version of the strong shape, "response makes us more valuable," in the partner framing. That only holds if Checkwise is a funnel into the suites rather than a feature they lack. It holds more robustly if Checkwise owns the landlord side, because then a suite's bundled forms would not reach the landlord's workflow.
 
 ## Factual Foundation
 
-No fact-check report was provided. These claims carry the most weight and would benefit most from verification:
+No fact-check report was provided. These claims carry the most moat and distribution weight and would benefit most from verification:
 
-1. **"Field-service suites cost five to ten times as much per seat and take months to roll out."** This underpins the two-year competitive window. Some field-service products already target small contractors at lower price points and with quick self-serve onboarding. I have not verified pricing for the specific suites the brief means. If any of them already sells to 5–50-person firms, the window is shorter than stated.
-2. **The 80% free-tier attribution and the landlord-referral mechanism.** How is "came from a landlord request" measured? Whether the loop is broadening (new landlords) or deepening (the same landlords) determines how durable the main channel is.
-3. **The 2.1% monthly logo churn and 118% NRR.** Neither figure is checked. The more useful check is internal: does churn fall for firms with more templates, more seats, or landlord-driven acquisition? That would show whether any switching cost exists today.
+1. **The field-service suite claim:** that suites cost five to ten times as much per seat, take months to roll out, and sell to much larger firms. This is the entire basis for the two-year safety window. I haven't verified it. If job-management tools aimed at small firms are already Checkwise's integration partners, they may be closer to this segment than the brief implies.
+2. **Retention metrics:** 2.1% monthly logo churn alongside 118% net revenue retention. It is worth checking cohort-level churn and whether churned firms went to a competitor or stopped needing the product. That distinction decides whether switching cost or product need explains retention.
+3. **Distribution attribution:** whether roughly 80% of new paying firms from the free tier, and the landlord-referral share, are measured or estimated. The single-loop concentration risk depends on it.
 
 ## Overall Assessment
 
-- **Strongest lens: distribution.** A pull-through loop where the customer's customer sells the product, with demand Checkwise mostly owns and a sales motion correctly matched to deal size.
-- **Weakest lens: switching cost.** This is the moat the brief actually claims. The brief's own facts (one-click export, ten-minute training, month-to-month terms, about 22% annual logo churn) show it is not there yet, and the version that would create it is roadmap-dependent and partly routed through competitors' APIs.
+**Strongest lens:** Distribution. The report-as-advertisement loop is organic, not platform-mediated, and well matched to deal size. The inside-sales motion is sized correctly.
 
-**The single most important revision:** rewrite the moat section to say *"no structural moat yet; strong distribution; here is how we convert it."* Then point the integrations investment at the **landlord side first**:
+**Weakest lens:** Switching cost, which is also the moat the brief names. The company has deliberately, and probably correctly, removed most lock-in levers. What remains does not compound, and roughly 22% annual logo churn suggests customers already know it.
 
-1. **Give the referral node a reason to prefer Checkwise.** Make the landlord-ticketing sync, or a lightweight landlord view of all inspections across their contractors, the priority deliverable rather than the second half of v3.
-2. **Create a real cross-side network effect.** Once landlords consume inspections from several contractors in one place, they benefit as more contractors join.
-3. **Move the switching cost to a different party.** A contractor's switching cost then includes "my landlord would have to accept a different system." That is far stickier than template rebuilding.
-4. **Pre-empt the landlord-side competitive response.** This blunts the most dangerous response identified above, the ticketing platforms building inspections into their own vendor portals.
+**The single most important revision:** rebuild the defensibility thesis around the landlord, not the contractor, and resequence v3 to match.
 
-The contractor-side suite integrations still matter, but they should come second, with a clear position on API dependency.
+- **Keep** the one-click export and month-to-month terms. They are trust advantages, and reversing them would hurt the free-tier loop.
+- **Make landlords users.** Give them a free, persistent view of inspections across their contractors and ship the landlord ticketing-portal sync first. That would turn the existing growth loop into a cross-side network and create switching cost competitors can't copy with a look-alike PDF.
+- **Treat the field-service suite integrations as a later, deliberate bet.** Frame them as "we send you customers" rather than "we're too integrated to attack." Otherwise they deepen dependence on the most likely competitor.
 
-When presenting the hiring ask to the board, frame it as a race to convert the format advantage into structural lock-in before the 2-year window closes. That is an honest pitch, and a more fundable one than "switching costs already protect us."
+The board ask for four integration engineers is reasonable. The question is which integration they build first.
 
-**Out of scope (for the sibling skills):** the $29→$35 price increase and whether seat-based pricing holds up under bundled competition are unit-economics questions for `business-plan-critique-unit-economics`. One note from this lens: raising prices increases the gap a 30%-cheaper competitor can exploit, so the timing relative to v3 matters. The ceiling on landlord-loop reach is a market-sizing question for `business-plan-critique-market-sizing`.
+*Out of scope for this critique:* the $35 price change and seat-expansion economics. Those belong to the unit-economics critique, though the competitive-response section notes the price gap they create with generic form builders.

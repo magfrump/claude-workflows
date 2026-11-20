@@ -1,36 +1,36 @@
-## Tech Debt Triage: statements-renderer still on the Quarrel 2.9 runtime
+## Tech Debt Triage: statements-renderer on Quarrel 2.9 runtime
 
-**Location:** `statements-renderer` service (render path using `q2.pdfkit.{Document, Page, FontCache}`, template `statement_v7`)
-**Nature:** Dependency / runtime lifecycle. The service is pinned to an end-of-life runtime by a module (`q2.pdfkit`) that was removed in Quarrel 3.
-**Cost of Deferral:** `+0 until 2026-12-31, then +1 unpatched runtime vulnerability (bundled TLS/XML) per Halloway security advisory`. A compliance cliff also lands at the 2027-02 exam.
-**Failure Cost:** `Low × High` now, rising to `Med × High` after 2026-12-31. The service handles statement data for about 210,000 members, and from January its bundled TLS and XML libraries stop receiving patches. A regulator finding is close to certain if the service is still on 2.x at the 2027-02 exam, because the board declined a risk acceptance in 2025.
+**Location:** `statements-renderer` service (single input queue → single output bucket); dependency on `q2.pdfkit`
+**Nature:** Dependency / runtime EOL. The code is stable and tested. The debt is in the platform under it.
+**Cost of Deferral:** `+0 per month until 2026-12-31`, then a step change. After EOL, each new Quarrel 2.x security advisory against the bundled TLS/XML libraries stays permanently unpatched, so the count of unpatched vulnerabilities grows with every disclosure. The system is also out of compliance from that date.
+**Failure Cost:** `Med × High`. After 2026-12-31 an unpatched TLS/XML library sits in a service handling statement data for ~210,000 members. Probability depends on how exposed those libraries are, which the write-up doesn't say. Severity is high either way: member-data exposure plus a regulatory finding. Separately, a 2027-02 exam finding is close to certain if this isn't fixed, since the board declined a risk acceptance in 2025.
 
 ### Carrying Cost: Low
-Day to day, this debt costs almost nothing. The code is stable: 11 commits in three years, and the last functional change was in 2025-02. It has had no incidents, member complaints are at their normal level, and byte-for-byte golden-file tests protect it. Nobody is being slowed down by it. The case for fixing it comes entirely from the external deadlines below. Developer friction plays no part.
+Today this debt costs almost nothing. The service has had 11 commits in three years and no functional change since 2025-02. It has no incidents and on-time monthly output, and byte-for-byte golden tests protect it. Nobody is slowed down by it. The case for fixing it comes from the calendar and the compliance requirement, not from friction.
 
 ### Fix Cost
-- **Scope:** Localized. The service is self-contained, with one input queue and one output bucket, so no callers have to change.
-- **Effort:** Days. The write-up estimates 8–10 engineer-days, mostly rebuilding the `statement_v7` template on `quire-pdf` and re-baselining golden files. This estimate comes from the write-up. I have not checked it against the code.
-- **Risk:** Medium. A new PDF library will change every output byte, so all golden files fail at once. Re-baselining them removes the regression safety net exactly when it is most needed. Layout, pagination (the 42-line page split) and font differences then have to be caught by human or semantic review, which byte comparison can no longer provide.
-- **Incremental?** Mostly no. The port is one change. However, the new renderer can be built and shadow-run next to the old one, rendering both and comparing them, before cutover. That breaks the risk into stages even though the code change is a single piece.
+- **Scope:** Localized. One self-contained service with one queue and one bucket, and no callers to migrate.
+- **Effort:** Days. Estimated at 8–10 engineer-days, mostly rebuilding the `statement_v7` template on `quire-pdf` and re-baselining golden files.
+- **Risk:** Medium. Swapping the PDF library changes every output byte, so the golden-file suite can't detect regressions during the port. Re-baselining defines a new "truth", and someone has to verify that truth by hand. Layout regressions in pagination (42 lines/page), fonts, or totals would reach members on legally significant documents.
+- **Incremental?** Mostly no. The runtime and library swap is one coordinated change. Cutover can be de-risked by shadow-rendering a real statement cycle on both versions before switching.
 
 ### Urgency Triggers
-- **Quarrel 2.x end of life on 2026-12-31.** That is about 6 weeks from today (2026-11-19), and the holiday period falls inside it. After that date there are no security patches for a service that holds member data.
-- **Regulator IT examination in 2027-02.** Last year's report requires a vendor-supported runtime for every system handling member data. The board refused a risk acceptance in 2025, so the usual exception path is not available.
-- **Team capacity.** The logging migration was planned to finish in early November. The write-up is from 2026-10-05, so I can't tell whether it has finished or slipped. About six weeks of the original runway have already passed since the item was raised.
+- **Quarrel 2.x EOL on 2026-12-31.** That is 6 weeks from today (2026-11-20), and the window includes the holiday period and the December statement run. This is the real deadline.
+- **Regulatory IT exam in 2027-02.** Last year's report requires vendor-supported runtimes for member-data systems. The usual escape hatch, board risk acceptance, was refused in 2025, so don't count on it now.
+- **Team capacity.** The logging migration was planned to finish in early November. It should be done or nearly done by now, so confirm its status, because it is the only competing claim on the four engineers.
 
 ### Recommendation
 
 **Recommendation:** Fix now
 
-The carrying cost is low, but two imminent triggers override it. The runtime goes out of support on 2026-12-31, and the 2027-02 exam has no realistic risk-acceptance fallback. Together they turn a debt that was inert into a hard deadline with severe failure cost. The fix is small and contained (8–10 engineer-days on one self-contained service), so this item should start this week. If the logging migration has slipped, this should take priority over it, because the logging work has no external deadline and this does.
+Carrying cost is low, but both conditions for an imminent trigger are met. Vendor EOL lands in six weeks, and a compliance requirement with no fallback follows in February. The fix is also small, localized, and well-scoped. Treat 2026-12-31 as the deadline, not the February exam. Running a member-data service on an unpatched runtime for two months is exactly the exposure the exam rule exists to prevent, and "we fixed it just before the exam" is a weak position.
 
-Suggested approach:
-1. **Start immediately.** Put one or two engineers on the work so it fits within the ~6 weeks, with buffer for the holidays and for estimate overrun.
-2. **Plan around the monthly statement cycle.** Cut over between statement runs. Shadow-render at least one real cycle (November's, if timing allows) on `quire-pdf`, and compare the output by text extraction, page count and visual diff before switching.
-3. **Re-baseline the golden files only after the shadow comparison has been reviewed and signed off.** Have someone outside the porting work review a sample of statements, so that "matches the new golden file" never ends up meaning "matches whatever we generated."
-4. **Contingency.** Ask Halloway now whether extended or paid support for 2.x is available, as insurance in case the cutover slips past 12-31. Treat it only as a bridge. It probably doesn't satisfy the exam requirement without board sign-off.
+### Suggested plan and timing
+1. **This week:** confirm the logging migration has wrapped. Assign two engineers so the 8–10 days fit into about one calendar week plus slack. Everyone loses capacity over the holidays.
+2. **Weeks of 11-23 to 12-07:** do the port. Before re-baselining, have a human (ideally someone from member services or ops as well as engineering) review a sample of new PDFs against old ones. Cover edge cases: multi-page statements, page-boundary splits at 42 lines, zero-activity accounts, long names and addresses. Consider adding text-extraction or field-level comparisons (balances, transaction lines) alongside the new byte-level goldens, so content correctness is tested independently of layout bytes.
+3. **December statement cycle:** shadow-render on Quarrel 4 in parallel with production Quarrel 2. Diff the extracted content across the full member set, then cut over before 12-31. Keep the Quarrel 2 deployment available for one cycle as a rollback only.
+4. **Before the exam:** record the migration date and the decommissioning of the Quarrel 2 runtime as evidence for the examiner.
 
-**Handoff:** This fix touches multiple files and involves a dependency migration, so it should go through the research-plan-implement workflow (`workflows/research-plan-implement.md`), using this triage as input to the research phase. Research should concentrate on how `q2.pdfkit` APIs map to `quire-pdf` (the `FontCache` and `Page.fromTemplate` equivalents), what the template rebuild involves, and the cutover date relative to the statement schedule.
+**Contingency:** if the port can't land by 12-31, ask Halloway now whether paid extended support for 2.x exists. Treat that as a short bridge, not a plan.
 
-**Uncertainties to resolve first:** whether the logging migration is done, the exact statement-run dates for December and January, and whether the 8–10 day estimate holds once someone has actually looked at what `quire-pdf` supports in templates.
+Since this touches more than one file and involves a library migration, carry it out through the research-plan-implement workflow (`workflows/research-plan-implement.md`), using this triage as input to the research phase.

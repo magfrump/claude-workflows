@@ -1,99 +1,98 @@
 ## Dependency Upgrade Evaluation: pixelgrain 4.2.0 → 5.0.0
 
 ### Summary
-**Recommendation:** Upgrade soon. No code changes are needed. Finish the rollback rehearsal and a benchmark first.
-**Breaking change impact:** None
-**Estimated effort:** Hours (zero source edits; the time goes to rollback rehearsal, the test run, and a before/after benchmark)
+**Recommendation:** Upgrade soon
+**Breaking change impact:** None (no 5.0 breaking change touches the project's single call site)
+**Estimated effort:** hours (bump, test, benchmark, rehearse the rollback)
 **Risk:** Low
-**Audit state:** Unverified. No shell or registry access in this session, so no audit was run.
+**Audit state:** Unverified (no shell or registry access in this session, so no audit was run)
 
 ### Motivation
-The thumbnail queue backs up during evening peaks, and 5.0.0 claims 30–45% faster `resize()` for JPEG and PNG on x86-64 and arm64. This is a performance motivation, not a security or end-of-life one. The upgrade is only worth taking if it relieves the backlog. Three caveats limit that:
+The thumbnail queue backs up during evening peaks, and 5.0 claims `resize()` is 30–45% faster for JPEG and PNG input on x86-64 and arm64. This is a performance upgrade, not a security or end-of-life upgrade. There is no deadline, but the operational problem is real, which is why the recommendation is "soon" rather than "defer."
 
-- **Only `resize()` gets faster.** The notes say nothing about decode, encode (`toFile` at quality 82), or file I/O. If those dominate `makeThumb`, end-to-end throughput will improve by much less than 30–45%.
-- **HEIC input gets no claimed speedup.** The SIMD claim covers only JPEG and PNG. If most evening uploads are phone photos in HEIC, the gain on the actual peak workload could be small.
-- **The backlog may not be CPU-bound in pixelgrain at all.** Worker concurrency, I/O, or queue configuration could be the real limit.
+Two caveats limit how much the upgrade can help the queue:
 
-So the ask is low-risk, but the payoff is unproven for this workload. Measure before attributing peak relief to it.
+1. **The speedup only covers JPEG and PNG.** The release notes make no performance claim for HEIC, and the test fixtures show HEIC is an accepted input. If evening uploads are mostly phone photos (often HEIC), the real-world gain may be much smaller than 30–45%.
+2. **The speedup is to `resize()` only.** `makeThumb` also decodes (`open`) and encodes (`toFile` with `quality: 82`). The notes claim no speedup for either. If decode, encode or queue I/O dominates per-job time, a faster resize step moves the needle less. Measure before relying on it to clear the backlog. See Migration Plan step 5.
 
 ### Breaking Changes That Affect This Project
 
 No breaking changes affect this project's usage.
 
-The only call site, `src/thumbs.js`, uses three things:
-- `grain.open(path)`
-- `.resize(320, 320, { fit: "cover" })`
-- `.toFile(path, { quality: 82 })`
+The only call site, in `src/thumbs.js`, is:
 
-None of these changed signature in 5.0.0.
+```js
+grain.open(inputPath).resize(320, 320, { fit: "cover" }).toFile(outputPath, { quality: 82 })
+```
+
+None of `open(path)`, `resize(w, h, { fit })` or `toFile(path, { quality })` is listed as changed in 5.0.0.
 
 ### Breaking Changes That Don't Affect This Project
 
-| Change | Why it doesn't apply |
+| Change (5.0.0) | Why it's dismissed |
 |---|---|
-| `grain.stream()` removed | Not used. The project opens file paths. |
-| `composite(layers)` now array-of-objects only | `composite` not used. |
-| Node.js 16 and 18 dropped; Node 20+ required | Runtime is `node:22-slim` (Dockerfile and CI), and `engines` is already `>=20`. |
-| `grain.cache(false)` global removed | Not used. Caching is left at defaults. |
-| 4.3.0: HEIC decoding moved into the main package | 4.2 already bundled HEIC on Linux, which is where production and CI run, so HEIC support continues. Non-Linux dev machines get HEIC that 4.2 only offered as an optional add-on. |
+| `grain.stream()` removed | Not called. The project uses `grain.open(inputPath)` with a file path. |
+| `composite(layers)` now requires an array of `{ input, top, left }` | `composite` is not called. |
+| Node.js 16 and 18 dropped; Node 20+ required | `engines.node` is already `>=20`. Runtime and CI both use `node:22-slim`. |
+| `grain.cache(false)` global switch removed | Not called. No caching configuration anywhere. |
 
-**Behavioral note:** 5.0.0 states that `resize()` output is pixel-identical for the `cover` fit, which is the fit this project uses. `test/thumbs.test.js` (dimensions plus perceptual hash against checked-in thumbnails) will confirm this. Treat it as a vendor claim until that test passes on 5.0.0.
+From 4.3.0: HEIC decoding moved into the main package. This is not breaking for this project. The manifest lists only `pixelgrain`, with no separate HEIC add-on to remove, and the notes say 4.2 already bundled HEIC on Linux, which is what Docker and CI run.
+
+One thing to check: if any developer runs tests outside Docker on macOS or Windows, HEIC support there under 4.2 may have depended on the optional add-on. Under 5.0 it should simply work. This is a possible improvement, not a risk.
 
 ### Transitive Effects
-- **Runtime:** none. Node 22 meets the new Node 20+ minimum.
-- **Peer dependencies:** none stated in the release notes.
-- **Native binary:** the SIMD path implies architecture-specific code. Prebuilt binaries for `node:22-slim` on x86-64 or arm64 should be covered by the stated support. Confirm with a clean `npm ci` in the image.
-- **Lockfile resolution is unknown.** No lockfile was provided. Because the range is `^4.2.0`, the installed version may already be 4.3.x rather than 4.2.0. Either way, 4.3.0 introduces nothing that affects this project.
+- **Runtime:** none. Node 22 satisfies the new Node 20+ floor, and `engines` already declares `>=20`.
+- **Peer dependencies and conflicts:** none listed in the release notes. Only one dependency is in the manifest.
+- **Version resolution:** `^4.2.0` may already resolve to 4.3.x in the lockfile, depending on when it was last regenerated. That is unverified. Either way, the manifest must change to `^5.0.0`, because the caret range will never pick up 5.0.0.
+- **Native or SIMD binaries:** the new SIMD path targets x86-64 and arm64. Confirm the production host architecture is one of these, or the speedup won't apply.
 
 ### Execution Evidence
 
-| Command | Exit | As-of | Evidence |
-|---|---|---|---|
-| `npm ci` in `node:22-slim` after bumping to `pixelgrain@^5.0.0` | — | — | Unverified. Recommended pre-merge check. |
-| `npm test -- test/thumbs.test.js` on 5.0.0 (JPEG/PNG/HEIC dimensions and perceptual hash) | — | — | Unverified. Recommended pre-merge check. |
-| `npm audit` (or equivalent) against the 5.0.0 lockfile | — | — | Unverified. Recommended pre-merge check. |
-| Before/after benchmark of `makeThumb` on a representative upload mix | — | — | Unverified. Recommended pre-merge check. |
-| Rollback rehearsal and verification (see below) | — | — | Unverified. Recommended pre-merge check. |
+Nothing was run in this session. There was no repository, shell, registry or web access. Every row below is a recommended check, not a result.
 
-No command was run in this session. There was no shell, repository, or network access. Every statement above about compatibility comes from reading the provided manifest, source, and release notes. None of it is an observed execution result.
+| Command | Exit | As-of | Evidence |
+|---------|------|-------|----------|
+| `npm ls pixelgrain` (resolved version actually installed today) | — | — | Unverified — recommended pre-merge check |
+| `npm install pixelgrain@^5.0.0` | — | — | Unverified — recommended pre-merge check |
+| `npm audit` (after bump; record the advisory-DB state the tool reports) | — | — | Unverified — recommended pre-merge check |
+| `npm test` (JPEG/PNG/HEIC dimension and perceptual-hash comparison) | — | — | Unverified — recommended pre-merge check |
+| Benchmark of `makeThumb` on a representative mix of production formats, 4.x vs 5.0 | — | — | Unverified — recommended pre-merge check |
+| Rollback rehearsal plus verification step (see below) | — | — | Unverified — recommended pre-merge check |
+| Search for any other `pixelgrain` usage, e.g. `grep -rn "pixelgrain\|grain\." src test scripts` | — | — | Unverified — the request states `src/thumbs.js` holds all call sites. Re-confirm before merging. |
+
+When these are run, capture the verdict-bearing gates (audit, install, test) to `docs/reviews/{branch}/evidence/{n}-{cmd-slug}.txt`, with cwd, commit SHA, lockfile hash, exit code and timestamp.
 
 ### Risk Factors
-- **Low API risk.** The used surface is unchanged.
-- **Visual-output risk is low and well detected.** The vendor claims pixel-identical `cover` output, and the perceptual-hash test covers all three input formats in use.
-- **New SIMD code path.** This is a fresh native code path in a major release, so edge-case inputs (unusual color profiles, very large images, odd EXIF orientations) may behave differently even if the fixtures pass. If production has a broad input mix, consider a canary or a staged rollout.
-- **Expectation risk.** The main risk is that the upgrade ships and the evening backlog persists, because resize wasn't the bottleneck or because HEIC dominates. The benchmark below addresses this.
-- **Security review:** not required by the skill's triggers, since this is not CVE-motivated and not a crypto/auth package. Image decoders are attack surface, though, so a quick look at the audit result is worthwhile.
+- **Output drift.** The vendor claims the SIMD path is pixel-identical for `cover`, which is the fit used here. Treat that as a claim to verify, not a fact. The existing test checks dimensions and a perceptual hash against checked-in thumbnails for all three formats, so it should catch visible output changes in CI.
+- **Encoder output not covered by the claim.** The pixel-identical claim covers `resize()`. The notes say nothing about the JPEG encoder at `quality: 82`. The perceptual-hash test would catch visible changes. Byte-level changes (file size) would not fail it, so compare output file sizes in the benchmark.
+- **Performance gain smaller than hoped.** Covered under Motivation (HEIC mix, non-resize costs). This is the main way the upgrade could disappoint, though it wouldn't break anything.
+- **Detectability:** high for correctness, since tests run in the same image as production. Low for performance, since nothing in the test suite measures throughput. Hence the explicit benchmark step.
+- **Security reviewer:** not required by policy. The upgrade isn't CVE-driven and isn't crypto or auth. However, pixelgrain parses untrusted uploaded images, and the decoder internals changed (SIMD path, HEIC packaging in 4.3). A quick security-reviewer pass on the diff and an `npm audit` are cheap and reasonable.
 
-### Rollback Plan (precondition: complete before starting the Migration Plan)
+### Rollback Plan (precondition — complete before starting Migration Plan)
 
-**Exact rollback commands:**
+**Exact rollback commands** (this assumes npm with `package-lock.json`; adjust if the project uses a different lockfile):
 ```
-git checkout -- package.json package-lock.json
+git checkout <pre-upgrade-commit> -- package.json package-lock.json
 npm ci
-# No data or config changes are made by this upgrade; nothing else to unwind.
+# No data or config changes are involved: the upgrade touches no code, and
+# thumbnails already written stay valid.
+docker build -t thumbnailer:rollback-check .
 ```
-(If the project uses a different lockfile, e.g. `yarn.lock` or `pnpm-lock.yaml`, substitute it and the matching `yarn install --frozen-lockfile` / `pnpm install --frozen-lockfile`.)
 
-**Verification step** (run after rollback; must pass to confirm the rollback worked):
-```
-node -e "console.log(require('pixelgrain/package.json').version)"   # must print the pre-upgrade 4.x version
-npm test -- test/thumbs.test.js                                     # must pass against checked-in thumbnails
-```
-The version check fails if the lockfile didn't fully revert. The thumbnail test exercises the project's only use of pixelgrain.
+**Verification step** (run after rollback; it must pass to confirm the rollback worked):
+`npm ls pixelgrain` must report a 4.x version, and `npm test` must pass. The test exercises the project's only use of pixelgrain on JPEG, PNG and HEIC, and would fail if the lockfile left a mismatched build behind. Run both inside the `node:22-slim` image to match CI and production.
 
-**Rehearsal status:** [ ] Not yet rehearsed. Rehearse on a scratch branch (e.g. `scratch/pixelgrain-5-rollback`): upgrade, run the rollback commands, run the verification step, and capture the output as evidence.
+**Rehearsal status:** [ ] Not rehearsed. Rehearse on a scratch branch, e.g. `scratch/pixelgrain-5-rollback`: apply the upgrade, run the rollback commands, then run the verification step. Record "Rehearsed on {YYYY-MM-DD} on branch `{name}`; verification step passed", along with the captured verification output or its evidence-file path.
 
 ### Migration Plan
-1. Complete and record the rollback rehearsal above.
-2. **Baseline benchmark on 4.x:** time `makeThumb` over a representative sample of real uploads, with the actual production mix of JPEG, PNG, and HEIC, in the `node:22-slim` image. Also note where time goes per call (decode / resize / encode).
-3. Bump the dependency: `npm install pixelgrain@^5.0.0`, then commit `package.json` and the lockfile.
-4. Run `npm ci` in the CI image to confirm the native/SIMD binary installs cleanly.
-5. Run `npm test -- test/thumbs.test.js`. Dimensions and perceptual hashes must match the checked-in thumbnails for all three formats.
-6. Run the audit and record its timestamp and advisory-DB state. Re-run at merge time if more than 24h have passed or the lockfile changed.
-7. Re-run the benchmark from step 2 on 5.0.0 and compare. If the HEIC share is high or resize is a small fraction of per-call time, set expectations accordingly and look at concurrency or queue tuning alongside this upgrade.
-8. Ship. Optionally canary on a fraction of the queue workers first, and watch error rates and queue depth during the next evening peak.
-
-No source changes to `src/thumbs.js` are expected.
+1. Record the baseline. Run `npm ls pixelgrain` to confirm the currently resolved 4.x version. Run the benchmark (step 5) against 4.x and save the numbers.
+2. Complete and rehearse the Rollback Plan above.
+3. Set `"pixelgrain": "^5.0.0"` in `package.json` and run `npm install` to regenerate the lockfile. No source changes are needed in `src/thumbs.js`.
+4. Run `npm test` in the `node:22-slim` image. All three fixtures (JPEG, PNG, HEIC) must match dimensions and perceptual hash. Check for any deprecation warnings in the output.
+5. Benchmark `makeThumb` against 4.x on the same host. Use a sample of real evening-peak inputs in their actual format mix, not just JPEG. Record per-job latency, throughput and output file sizes. Confirm the production host is x86-64 or arm64.
+6. Run `npm audit` and record the advisory-DB state. Optionally do a security-reviewer pass on the diff (see Risk Factors).
+7. Merge if tests pass and the benchmark shows a meaningful gain. After deploy, watch queue depth during the next evening peak. If the gain is marginal, the upgrade is still low-cost to keep, but look elsewhere for the backlog fix (worker concurrency, decode/encode cost, HEIC share).
 
 ### If Not Upgrading
-There is no urgency: no security advisory, no end-of-life notice, and 4.x works on the current runtime. If the step-2 benchmark shows resize is a negligible share of `makeThumb` time, or the peak traffic is mostly HEIC, deferring is reasonable. Address the backlog through worker concurrency or queue scaling instead, and revisit the upgrade when a 5.x feature is needed or 4.x stops receiving fixes.
+Staying on 4.x costs nothing in correctness or security, based on the information given (audit unverified). But it forgoes a cheap, low-risk throughput gain for the format types it covers. If the benchmark in step 5 shows that resize isn't the bottleneck, deferring is reasonable. In that case, the queue problem needs a different fix regardless of the pixelgrain version.

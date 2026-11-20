@@ -1,33 +1,31 @@
 ## Tech Debt Triage: VAT rate lookup in the invoicing module
 
-**Location:** `billing/legacy/vat_rates.py` (`rate_for()`), called only from the invoice builder
-**Nature:** Readability/structural debt: 780 lines of nested conditionals, magic numbers, opaque names (`r2`, `flg`, `tmpcat`), no type hints. Behaviour is correct and fully tested.
-**Cost of Deferral:** `+0 (inert)`. Three commits in ~3.7 years, none since 2024-03-14. One call site, nothing else imports from `billing/legacy/`. No rate changes planned, so neither the debt nor the fix gets bigger with time.
-**Failure Cost:** `Low × Med`. This is a tax-compliance path, so a wrong rate would mean under- or over-charged VAT, correctable with credit notes and amended returns. Probability is low because every category × region combination (412 cases) is tested against finance's rate sheet and re-checked quarterly, and no incident has ever been traced here.
+**Location:** `billing/legacy/vat_rates.py` (`rate_for()`), called once from the invoice builder
+**Nature:** Structural / readability. 780 lines of nested conditionals with magic numbers, no type hints, and opaque names (`r2`, `flg`, `tmpcat`).
+**Cost of Deferral:** `+0 — inert`. The file has 3 commits in ~3.5 years, the last in March 2024. It has one caller, nothing else imports from `billing/legacy/`, and no rate changes are planned.
+**Failure Cost:** `Low × Med`. Wrong VAT on B2B invoices would mean credit notes, re-issued invoices and possibly a tax correction. The probability is low because the code isn't changing, and 412 table-driven cases are re-checked against finance's rate sheet every quarter.
 
 ### Carrying Cost: Low
-The code is ugly but inert. Nobody has needed to change it in over two and a half years, and the quarterly finance check of the full test table catches drift. Day-to-day friction is close to zero because the Q4 portal work and other billing work don't go near it. The real cost is cognitive, and it appears only at edit time: whoever handles the next legal rate change has to work out what `reg == 2`, `cat 7` and `flg` mean in 780 lines. The exhaustive tests limit how much that costs.
+The code is unpleasant to read, but almost nobody has to read it. Day-to-day friction is close to zero because it changes only when tax law changes, and that has happened twice since import. It has never caused an incident. The tests are unusually strong: every category × region combination is covered and finance revalidates them quarterly. Any behavioural regression would be caught, whether it came from an edit or a rewrite. The real cost is cognitive load at the rare moment someone has to edit it. For example, the meaning of `flg` for category 7 and the integer region and category codes are undocumented. That cost only arises at an edit, not continuously.
 
 ### Fix Cost
-- **Scope:** Localized. One file, one call site, no API change needed if `rate_for()` keeps its signature.
-- **Effort:** Days. The team estimates 6–8 engineer-days, including finance sign-off on the new data file.
-- **Risk:** Low–medium. The 412 tests make a mistranscribed rate unlikely to ship. Still, rewriting correct tax code adds risk to a file that currently carries almost none, and it pulls finance into a sign-off cycle.
-- **Incremental?** Partly. Region by region is possible, but finance sign-off pushes toward a single coordinated cutover.
-
-**Opportunity cost:** The billing team is four engineers, and 6–8 days is roughly 2 engineer-weeks out of a quarter whose priority is the self-service invoice portal.
+- **Scope:** Localized. One file and one call site, with a clean boundary.
+- **Effort:** Days. 6–8 engineer-days including finance sign-off, which is about 10% of the team's capacity for a quarter where the self-service portal is the priority.
+- **Risk:** Medium. Transcribing 780 lines of branching into a data file can introduce errors in edge cases like `flg`. The 412 tests reduce this risk a lot, but the rewrite is still the most likely way this file would cause an incident in the near term.
+- **Incremental?** Mostly no. The code could technically be migrated region by region, but finance sign-off on the data file makes it effectively one coordinated change.
 
 ### Urgency Triggers
-- **A VAT rate or rule change in law.** None is announced. When one comes, someone has to edit this file anyway, so that is the cheapest moment to do the data-file rewrite, with finance already engaged.
-- **A new region or category scheme.** The last one was region 4 in 2023-11. Each new nested branch makes the file harder to edit.
-- **A new consumer of VAT logic**, e.g. if the portal or a later feature needs to show rates, explain them, or calculate them outside the invoice builder. That would end the single-call-site isolation.
-- **None of these is imminent today.**
+- **The next legislated VAT rate change**, or a new region or category. This is the natural time to fix it: the file must be touched, finance sign-off is needed anyway, and the marginal cost of converting to a data file is lowest then. Nothing is currently announced.
+- **Northern Ireland (region 2) rule changes**, e.g. further Windsor Framework adjustments. This is a specific case of the trigger above, worth watching because those rules are the most likely to diverge.
+- **Knowledge loss.** No one on the team appears to own the semantics of `flg` and the code mappings. If the team turns over before the next rate change, a future editor faces the full cognitive load.
+- No imminent trigger exists today.
 
 ### Recommendation
 
 **Recommendation:** Carry intentionally
 
-The code looks bad, but every signal that matters here is reassuring: zero incidents, exhaustive tests re-verified quarterly by finance, no changes since 2024, a single call site, and no planned rate changes. Spending 6–8 engineer-days plus finance's time on it now would cut into the Q4 portal priority to "fix" correct, tested, untouched code, and the rewrite itself would be the riskiest thing to happen to this file in years. Ines's instinct makes sense for someone new to the repo, but "ugliest code" doesn't mean "about to bite us." The tests are what stop it biting, and they are already in place.
+The file is ugly but inert. It has a single caller, has never caused an incident, has stayed unchanged for over two years, and has test coverage that finance verifies every quarter. Spending 6–8 days of a four-person team's Q4 on it would take capacity from the portal and add more short-term risk than leaving it alone. Ines's instinct about the code quality is right, but the evidence doesn't support "before it bites us": the safeguards that would catch it biting are already in place.
 
-Two cheap things are worth doing now, at hours of effort with no formal plan needed:
-1. **Add a short header comment or docstring** that maps the region codes (1, 2 = NI, …, 4), the category codes, and what `flg` means. This removes most of the edit-time cognitive cost for whoever handles the next change.
-2. **Record a revisit trigger** next to the file or in the backlog: *"Do the data-file rewrite when the next statutory VAT change requires editing this file, or if a second caller of VAT logic appears."* That ties the 6–8 days to the moment finance is already involved and the file has to change anyway.
+Two low-cost actions are worth taking now:
+1. **Record the decision** with the revisit condition: *"Convert to a data-driven table as part of the next VAT rate change, region addition, or category addition."* The fix then happens when the file has to be opened anyway.
+2. **Optionally add a short header comment** (an hour or two, done in place) mapping the region and category codes and explaining `flg`. This removes most of the cognitive-load risk for whoever makes the next legal change, without touching behaviour.

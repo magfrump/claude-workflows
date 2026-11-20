@@ -1,134 +1,169 @@
-# Market-Sizing Critique: Stockvet Seed Memo
-
 > ⚠️ **No fact-check report provided.** This critique does not include independent factual verification. Checkable claims in the draft (quoted TAM/SAM figures, market-growth rates, research firm reports, comparable-company revenue or share figures) have not been assessed. For full verification, run the `fact-check` skill first or use the `draft-review` orchestrator.
+
+# Market-Sizing Critique: Stockvet Seed Memo
 
 ## TAM Definition Assessment
 
 **Verdict:** Inflated
 **Confidence:** High
 
-The $62B TAM is the weakest number in the memo. Most of the rest of the market story is careful, which makes the weakness easy to fix.
+The $62B TAM is the value of animal-health *products*, but Stockvet sells a $4,800/year *software subscription*. Stockvet doesn't earn a share of the product dollars that flow through a clinic. It earns a fixed fee per clinic. "Every dollar in the category is a dollar some clinic has to forecast" may be true, but it doesn't make that dollar addressable revenue. This is a category-report misfit, and it fails at the unit of measure itself.
 
-**Category-report misfit.** The $62B (Meridian Research Partners) measures spend on animal health *products*. Stockvet sells *software subscriptions* at $4,800/year. It earns nothing from the product dollars that pass through the clinic. The memo's reasoning that "every dollar in the category is a dollar some clinic has to forecast, order, store and track" describes where Stockvet sits in the flow of goods. It does not describe what Stockvet can charge. By the same reasoning a clinic's accounting software could claim the whole $62B. The 8% growth rate has the same problem: it is the growth rate of product spend, not of clinic software spend.
+**The bottom-up figures, using the memo's own inputs:**
 
-**Geography and segment over-inclusion.** Within the $62B itself, the plan claims the full global figure while serving only the US, starting with the Pacific Northwest. The memo also says "almost every product in the category passes through a clinic's shelves." That claim carries a lot of weight and I have not verified it. Animal health market totals usually include production-animal (livestock and poultry) spend, which often goes through farm distribution channels rather than clinic shelves. They also include companion-animal products sold through retail and online pharmacies. Before relying on this claim, check Meridian's definition.
+| Build | Clinics | × $4,800 | Revenue ceiling |
+|---|---|---|---|
+| All US clinics (corporate included) | 32,000 | | ~$154M |
+| US independents | 18,000 | | ~$86M |
+| Stated SAM | 11,000 | | $52.8M |
 
-**Top-down vs bottom-up reconciliation.** The memo already has the inputs for a bottom-up build:
+- The gap between the $62B headline and the most generous US bottom-up figure (~$154M) is about **400×**. The reconciliation threshold for top-down versus bottom-up is roughly 3×.
+- Adding non-US clinics at several times the US count still leaves the software TAM well under $1B.
 
-| Build | Clinics | × $4,800 ACV |
-|---|---|---|
-| All US clinics (incl. corporate) | 32,000 | $153.6M |
-| US independents | 18,000 | $86.4M |
-| Plan's SAM | 11,000 | $52.8M |
+**Further problems with the $62B figure:**
 
-A realistic US TAM at current pricing is about **$150M**. Even with a generous international multiplier, it stays in the hundreds of millions. The gap between the headline and the bottom-up figure is about **400×**, far beyond the ~3× threshold at which one of the two numbers has to be wrong. Here the top-down number is wrong.
+- **Geography.** The figure is global. The plan sells only in the US, and only in the western states for the next three years.
+- **Channel.** "Almost every product passes through a clinic's shelves" is load-bearing and unverified. Animal-health totals usually include livestock and production-animal products and retail/online pet-pharmacy sales. Much of that never touches a companion-animal clinic's inventory. The claim needs a source or should be dropped.
+- **Buyer.** The figure includes spend flowing through corporate-group clinics. The memo itself says those are "not our buyer."
+- **Growth rate.** The 8% growth applies to product spend. Stockvet's market grows with clinic count and price, not with what each clinic dispenses.
 
-**Adjacency creep.** The $62B could become relevant if Stockvet charged a take rate on order flow (for example, a distributor-paid fee or a percentage of automated reorders) instead of a flat subscription. The memo describes no such model. If the founders have that in mind, it should be presented as a future revenue model with its own build, not counted as today's TAM.
+**Why this matters.** The $62B number hides the most important fact in the memo: on current pricing, **100% of the serviceable market is $52.8M ARR.** That is the real market-sizing question for a venture seed round. The memo should face it directly rather than paper over it with a product-spend figure. If the team believes Stockvet's ceiling is above $52.8M, there are two valid paths:
 
-**Why it matters.** A sophisticated seed investor will spot the misfit immediately, and it costs credibility that the rest of the memo earns. It also obscures the question that matters most for this company: the honest market is roughly $150M of US subscription revenue, so what is the path to venture scale? (See Overall Assessment.)
+- **Value-based pricing.** Price against write-offs of 2–4% of inventory value, recovered stock-out revenue, and 6.5 hours/week of practice-manager time.
+- **Flow-based revenue.** A take rate on orders placed through the platform.
+
+Either path would justify a larger TAM. Neither is in the memo today.
 
 ## SAM Realism Assessment
 
 **Verdict:** Plausible
 **Confidence:** Medium
 
-This section is the memo's strongest piece of sizing work. SAM is built bottom-up, it excludes a buyer the company cannot sell to (corporate groups with centralised procurement), and the resulting dollar figure ($52.8M) is honest about its size. Several filters still need tightening.
+This is the strongest-built number in the memo:
 
-**Possible inconsistency in the integration filter.** SAM counts clinics that "already run one of the four practice-management systems we integrate with." The raise, however, funds "two engineers for the California and Texas practice-management integrations." There are two possible readings:
-- The 11,000 includes clinics on PMS platforms Stockvet has not yet integrated with. In that case today's SAM is smaller than stated and part of the 11,000 depends on the raise.
-- CA and TX clinics run different PMS platforms that are outside the 11,000. In that case the year-4–5 expansion targets clinics that are not in SAM at all.
+- Excluding corporate groups is a correct *buyer* filter, not a user filter.
+- The PMS-integration filter is a real technical gate.
+- The >400 SKU threshold is a reasonable proxy for pain intensity.
+- SAM × ACV gives a coherent $52.8M ceiling, and the ACV is the actual current price, not an aspirational enterprise number.
 
-Either way, the memo should state which PMS platforms are live today and what the SAM is on those platforms alone.
+**Issues to tighten:**
 
-**Missing distributor gate.** Automated reordering works through two distributors' APIs, which handle "most" of an independent clinic's purchasing. Clinics that buy significantly from regional distributors, or directly from manufacturers (vaccines and some parasiticides are often bought direct), get only partial automation. That weakens the value at $4,800. SAM should be filtered by distributor coverage, or the memo should say what share of a typical clinic's SKUs can be auto-reordered.
+- **The filters are still mostly descriptive.** None of them tests purchase behavior. The obvious behavioral filter is missing: **share of the clinic's purchasing that runs through Pallas or Northgate.** Stockvet's automation only works through those APIs. A clinic buying heavily from regional distributors or directly from manufacturers gets partial value at full price. "Those two distributors handle most of the product" is an aggregate claim. The SAM should count clinics where they handle most of *that clinic's* product.
+- **The integration story is internally inconsistent.** The 11,000 count includes "clinics that already run one of the four PMS systems we integrate with." Yet the raise funds "two engineers for the California and Texas practice-management integrations."
+  - If CA/TX clinics run PMS systems Stockvet doesn't yet support, they aren't in the 11,000 today. The current SAM is then smaller than stated, perhaps much smaller if those four systems skew regional.
+  - If they are already in the count, it isn't clear what the engineers are building.
+  - The memo should state how the 11,000 splits by region and PMS.
+- **The two filters are blended.** The 18,000 → 11,000 step combines the PMS filter and the SKU filter, so neither can be judged separately. The problem section says a typical clinic stocks 400–1,200 SKUs, which suggests the SKU floor removes few clinics. If so, the PMS gate is doing most of the narrowing. That matters because the PMS gate moves as integrations are added.
+- **Controlled substances may be a gate.** Ordering controlled substances in the US runs through DEA-regulated processes. It is not clear whether the distributor APIs cover them. If they don't, part of the "full shelf" value proposition is out of scope for automation. This doesn't shrink clinic count, but it may shrink the value per clinic that the SAM implicitly assumes.
+- **SAM direction over time.** The memo treats 18,000 independents as stable. Veterinary-practice consolidation into corporate groups has been a persistent trend (unverified here). If the independent share keeps falling, the SAM erodes over the plan horizon. The memo should state whether it expects the 11,000 to grow or shrink.
 
-**Descriptive vs behavioral filters.** PMS platform is descriptive. The >400-SKU filter is a reasonable proxy for pain, but the memo itself says a typical clinic stocks 400–1,200 SKUs, so the filter removes very few clinics. Going from 18,000 to 11,000 (61% retained) appears to be driven mostly by PMS coverage, not by pain. The behavioral evidence (6.5 hours/week, two or more stock-outs per quarter, 2–4% write-offs) comes from *pilot* clinics, which chose to pilot and so are likely to be the most pained. The memo should state what fraction of the general independent population shows that pain. Unlike most plans, though, this one has revealed preference: 41 clinics are paying. A modest contraction for non-buyers (say 2–3×, not the typical 5–20×) seems reasonable.
-
-**Structural erosion risk.** Independents are the buyer, and corporate groups that centralise procurement are not. My understanding is that US vet-clinic consolidation has been a sustained trend, though I have not verified current rates. If so, SAM may be shrinking each year, and customers acquired by a consolidator may churn. The memo should state the trend in independent clinic counts and its effect on the 11,000.
-
-**What works:**
-- The wedge is explicit: the 1,200-clinic beachhead gives a year-1 addressable revenue of $5.76M.
-- The buyer (owner-operator or practice manager) is correctly identified.
-- The ACV is consistent with the segment. Against the pilot pain figures (6.5 hours/week of labour plus several thousand dollars of write-offs), $4,800/year is a coherent price.
+**Wedge.** The wedge is well defined: 1,200 beachhead clinics. Year-1 SAM is clearly separated from steady-state SAM.
 
 ## SOM Achievability Assessment
 
 **Verdict:** Plausible
 **Confidence:** Medium
 
-The share targets are modest and come with a defined path. The main problem is the *ceiling*, not the capture rate.
+**The capture math:**
 
-**Implied share.**
-- Year 5: 700 / 11,000 = **6.4% of SAM**. $3.36M ARR checks out (700 × $4,800).
-- Beachhead: 300 / 1,200 = 25% by end of year 3. This sits inside the 20–40% range that is often achievable in a small, well-reached wedge. Founder networks and association endorsements make it credible.
-- Current: 41 clinics = 3.4% of the beachhead.
+- Year 5: 700 clinics ÷ 11,000 = **6.4% of SAM**, at $3.36M ARR (consistent with $4,800 ACV).
+- Year 3: 300 ÷ 1,200 = **25% of the beachhead**.
 
-**Sales capacity points in an unexpected direction.** Three reps × 8 closes/month = 24 clinics/month, or about **288/year at full ramp**. The beachhead target needs roughly 260 more clinics over the 24-month runway. Even after a few months of ramp, the stated rep productivity would *overshoot* the 300 target. The memo is therefore internally inconsistent in one of two ways:
-- Rep productivity is overstated. Going from founder-led sales of about 3/month to 24/month is a large jump, and 8 field closes per rep per month is aggressive across the sparse Mountain-state geography.
-- The binding constraint is beachhead demand, not sales capacity. If so, the reps will run out of willing buyers well before month 24.
+Taking 25% of a narrow wedge, backed by founder networks and two regional association endorsements, is within the range that beachhead strategies achieve. The beachhead → expansion logic (PNW/Mountain → CA/TX) is named explicitly, which many seed plans skip.
 
-The memo should say which one applies. If it is demand, the 25% beachhead share is the critical assumption and needs supporting evidence: conversion rates from the association meetings and pipeline data.
+**Sales capacity doesn't reconcile with the target, but in the opposite direction from usual:**
 
-**Expansion logic.** Years 4–5 add 400 clinics in California and Texas, which depends on the integrations discussed above. This step has much less support than the beachhead. The founders have no comparable network there, and no association commitment is mentioned. Show what CA/TX acquisition looks like without warm channels.
+- 3 reps × 8 clinics/month = 24/month, or ~288/year at full ramp.
+- Even with a generous six-month ramp, that capacity reaches 300 net new clinics in well under 24 months. Over the full period it would close roughly 40–50% of the 1,200-clinic beachhead.
+- So either the rep-productivity figure is not grounded in actual close rates from the first 41 clinics, or the 300-clinic target sits far below what the funded sales capacity implies.
+- The memo should show the actual close rate per rep per month so far and size the target from that.
 
-**Competitive density.** The memo frames the competition as "spreadsheet + Friday-afternoon walk." The real displacement risks are the PMS vendors' own inventory modules and the distributors' own auto-replenishment tools. Both are well placed to use the same APIs (see Timing). The memo does not address either.
+**Timeline mismatch.** The GTM section says 300 clinics "by the end of year three." The raise section says 300 clinics at the end of 24 months of runway. Pick one. If it is three years, the plan needs bridge capital the memo doesn't mention.
 
-**The real constraint is the ceiling.** Even 30% of SAM is about $16M ARR. A Series A raised on 300 clinics ($1.44M ARR) will be judged on whether there is a path well beyond the current SAM. Some candidates:
-- Pricing expansion or additional modules.
-- Corporate groups, with a different product and sales motion.
-- Take-rate revenue on reorders.
-- Adjacent markets such as dental and optometry, which the comp section suggests the founders know.
-- International.
+**The constraint is the ceiling, not achievability.** Year 5 at 700 clinics and $3.4M ARR is a modest outcome, and it sits close to the Optistock failure case (see Comparable Benchmarks). Even 3–4× the year-5 plan would reach only ~20–25% of a $52.8M SAM.
 
-Today the plan's capture assumptions are reasonable, but it is optimising for share of a market that may be too small to fund.
+**Competitive density is not addressed.** No competitors are named. The two plausible ones are:
+
+- PMS vendors bundling an inventory module.
+- The distributors themselves offering auto-replenishment, now that they have built the APIs.
+
+A 25% beachhead share depends on neither entering seriously within three years. I'll flag this for the moat critique rather than assess it here.
 
 ## Market Timing Assessment
 
 **Verdict:** Defensible
 **Confidence:** Medium
 
-This is a textbook "why now": a specific trigger with a date, a clear before and after, and a mechanism that ties it to product feasibility. In March 2025 the two large national distributors opened ordering APIs, and before that, screen-scraping was prohibited. That is a platform-primitive change, not a ten-year trend. Confidence is Medium only because the claim is unverified and the trigger has some fragility.
+This is a genuine trigger, not a trend:
 
-**Pressure points:**
-- **Reversibility.** The thesis rests on one catalyst controlled by two counterparties. The distributors could restrict access, charge API fees, or favour their own tools. Note that a distributor benefits when reordering stays inside its portal, which may lock the clinic in. What is the API access agreement, and has either distributor signalled a long-term commitment? Having two distributors is some protection, but both acted at the same moment, which suggests a shared cause (regulation? competitive pressure?) that could reverse for both at once.
-- **The window is closing.** It is now about 20 months after the APIs opened. Any PMS vendor, distributor, or well-funded entrant has had the same primitive for the same length of time. The trigger explains why the market is newly *possible*. It does not explain why Stockvet in particular will win it. That question belongs to the moat critic, but it affects how durable the timing advantage is.
-- **Adoption curve.** At 41 of 11,000 clinics (0.4%), the market is at the innovator stage. Founder-network selling and association endorsements fit that stage. The CA/TX expansion is where the plan crosses into early adopters without warm channels, and the motion will need to change.
-- **Too early vs too late.** Not too early: clinics already spend money on the problem in labour (6.5 hours/week) and write-offs, and 41 are paying. Possibly too late is the risk to watch, if incumbents with existing clinic relationships ship a "good enough" auto-reorder module.
+- The two national distributors opened ordering APIs to third parties in March 2025, about 20 months before today.
+- Before that, automated reordering required screen-scraping, which both distributors prohibited.
+- This is exactly the kind of platform-primitive change a "why now" should name. It also explains why no one had built this before, which pre-empts the "if this is so good, why doesn't it exist?" objection.
+
+**Too-early risk is low.** Clinics already pay for the substitute: 6.5 practice-manager hours per week, write-offs, and stock-outs. 41 paying clinics is direct revealed preference. The market sits in the early-adopter phase, and a $400/month self-serve-plus-field-rep motion fits that phase.
+
+**Remaining risks:**
+
+- **Single-catalyst reversibility.** The thesis rests entirely on two distributors keeping their APIs open on acceptable terms. They could rate-limit, charge per call, restrict which partners get access, or launch a competing first-party product. The memo should say what agreements, if any, govern Stockvet's access, and how the product degrades if one distributor withdraws.
+- **The trigger is not exclusive.** The same API opening that enables Stockvet enables every PMS vendor and every competing startup. The timing window may be short. That strengthens the case for speed but weakens any implied "we're alone here."
+- **The trigger is unverified.** The claim that "most of the product" flows through those two distributors matters both for timing and for SAM, and it should be sourced.
 
 ## Comparable Benchmarks Assessment
 
 **Verdict:** Plausible
 **Confidence:** Medium
 
-The comp set is unusually honest. It includes a failure (Clinicshelf) and a stall (Optistock), and draws an explicit structural lesson about SKU count that is reflected in the SAM filter. That is better than most seed memos manage. Gaps remain.
+The comp set is better than most because it includes **negative comps with a stated failure mechanism**:
 
-**Stage and denominator matching for Dentrack.** "2,100 practices six years after launch" is meaningful only relative to its addressable base. To my knowledge, the US has many more independent dental practices than independent vet clinics. If so, Dentrack's *share* may be well below Stockvet's projected 6.4%, even though its absolute count is higher. The memo should state Dentrack's share of its SAM at year 5. That is the comparison that tests the 6.4% figure. Also: when did Dentrack launch, and did dental distributors offer ordering APIs then? If Dentrack had a structurally different integration path, the comp is weaker.
+- Optistock: too few SKUs to justify the price.
+- Clinicshelf: never found a segment.
 
-**Selection logic.** All three comps are horizontal "inventory for independent clinical practices" plays in *other* verticals. The negative comps that matter most are missing: earlier attempts at veterinary inventory or reordering software, distributor-built replenishment tools, and PMS inventory modules. If nobody tried before March 2025 because the APIs did not exist, say so explicitly. That strengthens the timing thesis. If someone tried via screen-scraping or manual workflows and failed, explain why.
+The plan then argues explicitly why veterinary clinics resemble the success case (Dentrack) rather than the failures: high SKU counts, perishables, an owner-operator buyer. That is how a comp set should be used. The year-5 projection of 700 clinics is also *below* Dentrack's 2,100 at year 6, so the plan isn't projecting outlier performance against its own best comp.
 
-**Outcome conditioning.** Three comps make a thin base rate. The memo implicitly ranks Stockvet with the winner (Dentrack) using qualitative reasoning about SKU count, perishability, and owner-operators. The reasoning is sensible, but it is the only thing keeping Stockvet out of the Optistock bucket. The founders appear to have spoken to Optistock's founders. One quantitative point would turn that argument into evidence: a SKU-count or savings-per-clinic comparison across dental, vet, and optometry.
+**What to add:**
 
-**Implied trajectory vs comps.** The plan projects 700 practices at year 5, against Dentrack's 2,100 at year 6. In absolute terms Stockvet is *below* its best comp, which is conservative. The share comparison above is still needed to confirm this.
+- **Convert comps to share, not counts.** 2,100 dental practices means little without the size of Dentrack's addressable base. The number of independent US dental practices is likely much larger than 11,000 qualifying vet clinics (unverified). If so, Dentrack's *share* may be well below Stockvet's 6.4% year-5 target, and the comp would support the count but not the share.
+- **Report outcomes in revenue and exit terms.** What ACV does Dentrack charge? What ARR did 2,100 practices produce? Was it venture-scale, and how was it financed and exited? That answers whether the success case is a venture outcome or a good small business.
+- **Read the Optistock comp more closely.** It stalled at 400 practices and sold for its team. At Stockvet pricing, 400 clinics is ~$1.9M ARR. Stockvet's year-5 target of 700 clinics / $3.4M sits much closer to that failure outcome than to the Dentrack outcome. That should prompt the memo to explain what pushes Stockvet past 700.
+- **Stage and era matching.** Dentrack's launch year and market conditions aren't given. If it launched before cheap integrations and distributor APIs existed, its trajectory may understate what is possible now, or reflect a less crowded field.
+- **Veterinary-specific negative comps are missing.** Has anyone tried inventory software for vet clinics before, through PMS add-ons, distributor tools, or startups? Even pre-API attempts that failed on screen-scraping would strengthen the "why now" if named.
 
 ## Factual Foundation
 
-No fact-check report was provided. The claims that most need verification, in order of how much they carry:
+No fact-check report was provided. These claims would benefit most from verification, roughly in order of how much weight they carry:
 
-1. **The March 2025 distributor API launch and the distributors' coverage.** The timing thesis and the product's feasibility rest entirely on it. Verify the launch date, the terms of third-party access, and what "most of the product an independent clinic buys" means as a percentage.
-2. **US clinic counts (32,000 total, 18,000 independent) and the 11,000 qualifying figure.** SAM is built on these. Verify the source, the direction of the trend in independents, and how the PMS and SKU filters were applied.
-3. **Meridian Research Partners' $62B and 8% growth.** Lower priority, because the critique above argues the figure should not be the TAM at all. If it stays in the memo as context, verify the figure and its segment composition (companion vs production animal, clinic vs retail channel).
-
-Dentrack's 2,100-practice figure and launch date also need checking if the comp is kept.
+1. **"Pallas and Northgate handle most of the product an independent clinic buys," and the March 2025 API opening.** This underpins both the timing thesis and the effective SAM. If the combined share is materially lower than "most" for many clinics, both lenses weaken.
+2. **Clinic counts: 32,000 US clinics, 18,000 independents, 11,000 qualifying.** The SAM rests entirely on these. The 11,000 needs a disclosed source for PMS market share, ideally broken down by region.
+3. **The $62B Meridian Research Partners figure, the 8% growth rate, and the claim that "almost every product" passes through clinics.** I recommend removing the $62B as TAM regardless. If it stays as context, it needs verification and a scope note (global, all species, all channels).
+4. **Dentrack's 2,100 practices at year 6**, ideally with its ARR and addressable base.
 
 ## Overall Assessment
 
-**Strongest lenses:** Market Timing and SAM Realism. The memo names a dated, specific, mechanistic trigger. It builds SAM bottom-up with explicit exclusions, names a wedge, and supports its pricing with pilot pain data and paying customers. Few seed memos do this.
+**Strongest lenses: Market Timing and Comparable Benchmarks.**
 
-**Weakest lens:** TAM Definition. The $62B figure counts product throughput as software revenue, overstates the bottom-up TAM by about 400×, and conflicts with the disciplined sizing in the rest of the memo.
+- The API opening is a specific, recent, falsifiable trigger.
+- The comp set honestly includes failures with mechanisms and argues which side Stockvet falls on.
+- The SAM build and beachhead plan are also more disciplined than most seed memos: buyer-level filtering, real current ACV, and a named wedge.
 
-**Secondary issues to resolve:**
-- Whether the 11,000-clinic SAM includes PMS integrations that are not yet built.
-- Whether sales capacity (about 288 clinics/year at full ramp) or beachhead demand is the binding constraint, since they do not reconcile.
-- The missing in-vertical negative comps: PMS modules and distributor tools.
+**Weakest lens: TAM Definition, by a wide margin.**
 
-**The single most important revision:** Replace the $62B TAM with the bottom-up build (about $150M US at current pricing) and add an explicit **path-to-scale** section. Name the one or two expansion vectors that could take the market beyond the current SAM's roughly $16M realistic ceiling, such as order-flow take rates, corporate groups, or adjacent clinical verticals, and size each one bottom-up. This trades a large number that investors will discount for a small number they will trust, paired with a credible plan to make it bigger. The beachhead and timing story is good enough to support that honesty.
+- Treating $62B of product spend as the addressable market for a $4,800/year subscription is off by roughly 400× against the memo's own bottom-up numbers.
+- A sophisticated investor will do this arithmetic in under a minute, and it undermines the credibility of the more careful work elsewhere.
+
+**The most important revision:** replace the $62B TAM with an honest bottom-up software TAM (~$86–154M in the US at current pricing). Then state directly how Stockvet gets beyond a $52.8M SAM ceiling. Either:
+
+- **(a)** a value-based pricing case, anchored in the write-off, stock-out and labor figures you already have, or
+- **(b)** an expansion path with its own sizing: a take rate on orders, adjacent clinical segments, or eventually corporate groups.
+
+Keep today's TAM and the expansion TAM visibly separate. The underlying business may be good. The memo is strongest when it shows the real ceiling and argues for raising it, rather than hiding it behind a number that doesn't measure what Stockvet sells.
+
+**Smaller fixes worth making in the same pass:**
+
+- Reconcile the 24-month versus three-year timeline.
+- Ground the 8-clinics-per-rep-per-month figure in your first 41 sales.
+- Clarify whether the CA/TX clinics are already in the 11,000.
+
+**Out of scope, noted for the sibling critiques:**
+
+- Distributor and PMS-vendor competitive response, and API dependency as a moat question: `business-plan-critique-moat`.
+- Whether $400/month is well priced against the 6.5 hours/week and the 2–4% write-off savings, plus rep cost versus the payback implied by 8 closes/month: `business-plan-critique-unit-economics`.

@@ -1,140 +1,124 @@
-**User goal:** Run a security review of `subject.go` and print the report here, without saving a file.
-
-Commit: 7dace286a0b3d071ae3b15cc4b4ff64155dd47d0
-
 # Security Review: subject.go
 
-**Scope:** `subject.go` (a single file; `SessionFrom` and the code that builds `Handler` aren't in the repo)
-**Date:** 2026-11-19
+**Scope:** `subject.go` (handler `CommitStat` in package `repoview`)
+**Date:** 2026-11-20
+Commit: ce4a8bb4969f076cb9df74236d4dd8138bdfbfe8
+**User goal:** Check `subject.go` for security vulnerabilities and print the report to stdout. No file is saved.
 
-> ⚠️ **No code fact-check report provided.** Claims in comments and documentation about security properties haven't been checked independently. For full verification, run the `code-fact-check` skill first or use the code-review orchestrator.
+> ⚠️ **No code fact-check report provided.** Claims about security properties in comments and documentation have not been independently verified. For full verification, run the `code-fact-check` skill first or use the code-review orchestrator.
 
-No HALT patterns matched. There are no hardcoded secrets or keys, and TLS is never disabled. Authentication is present. The command is built from an argument vector, not a shell string, and its user-supplied argument has to match a strict regex.
+No `docs/constraints.md` exists in the repo, so every attacker the code exposes is in scope. `SessionFrom` is defined outside the scope (it is not in the repo), so its behavior is assumed, not verified.
 
 ## Trust Boundary Map
 
 ```
-B1: [HTTP request: session ctx]    → [SessionFrom(r.Context()) check, :18]  → [handler body]
-B2: [HTTP query param "sha"]       → [commitSHA regex ^[0-9a-f]{40}$, :24]  → [git argv, :32]
-B3: [git object DB in RepoDir]     → [git show --stat (child process), :32] → [HTTP response body, :40]
-B4: [server process env/RepoDir]   → [exec.CommandContext (inherits env)]   → [git child process]
+B1: [HTTP request ctx]            → [SessionFrom(r.Context()) presence check] → [CommitStat body]
+B2: [query param "sha"]           → [commitSHA regex ^[0-9a-f]{40}$]          → [git argv (exec, no shell)]
+B3: [git repo objects in RepoDir] → [git show --stat output, unfiltered]      → [HTTP response body, text/plain]
+B4: [authenticated caller]        → [none: no rate/concurrency limit]         → [git subprocess spawn, 5s timeout]
 ```
 
+**Input sources:**
+
 ```
-S1: query param "sha"          — request-time    — UNTRUSTED (all sinks)
-S2: session from r.Context()   — request-time    — trusted for authN only if SessionFrom is sound (not visible)
-S3: Handler.RepoDir            — deploy-time (assumed; not visible where it's set) — trusted for path/exec sinks
-S4: repo object contents       — runtime-mutable (anyone who can push) — UNTRUSTED for HTML/output sinks
-                                 and for driver/config-triggered exec
-S5: server process env (GIT_*) — deploy-time     — trusted
-S6: timeout 5s / regex consts  — code-constant   — trusted
+S1: r.URL.Query()["sha"]         — request-time    — UNTRUSTED (all sinks)
+S2: session from r.Context()     — request-time    — trusted only as "some session exists";
+                                                      carries no authorization for this repo
+S3: Handler.RepoDir              — deploy-time     — trusted for path/exec sinks (set at construction)
+S4: commit/blob contents in repo — runtime-mutable if anyone can push — UNTRUSTED toward
+                                    HTML sinks; this handler only emits text/plain
+S5: "git" binary name, fixed args — code-constant — trusted
 ```
 
-The only value the user controls directly is `sha` (S1). It's checked against a strict 40-hex regex and then passed as a separate argv element to `git`, so no shell ever sees it. The output of `git` (S4) can contain commit authors and messages written by whoever pushed to the repo. It goes back to the client unchanged. The code assumes that a valid hex ID always refers to a commit, and nothing enforces that.
+The only value an attacker controls directly is `sha` (S1). It is checked against an anchored regex before it reaches `exec.CommandContext`, which takes a list of arguments and does not use a shell. Repository content (S4) goes back to the client unchanged. The handler checks that a session exists. It does not check what that session is allowed to see.
 
 ## Findings
 
-#### 1. The endpoint returns any object type, not just commits: a blob ID dumps the whole file
+#### 1. Authentication without authorization: any session can read any object in RepoDir
 
 **Severity:** Medium
-**Location:** `subject.go:24-40`
-**Boundary:** B2, B3
-**Move:** #2 (implicit sanitization assumption), #5 (invert the access model)
-**Confidence:** Low. This only matters if the endpoint is meant to expose less than the full repo; see below.
-
-The regex checks that `sha` looks like an object ID, not that it names a commit. `git show` takes any object ID. Given a blob it prints the raw file contents, given a tree it lists the tree, and given an annotated tag it shows the tag and its target. Any authenticated user who knows or learns a blob ID can therefore read the whole file through an endpoint called `CommitStat`. This includes objects that no branch points to anymore, such as a secret that was force-pushed out but not yet garbage-collected. If every session holder is already allowed to read the entire repo, this is only a contract mismatch. If the endpoint is meant to expose commit summaries only, or if sessions are scoped per user or per repo, it breaks that read boundary.
-
-**Recommendation:** Pass `sha+"^{commit}"`, which makes git fail on anything that isn't a commit or doesn't peel to one. Or run `git cat-file -t` first and require the output `commit`. If any repo-level authorization exists, apply it here too; `SessionFrom` only checks that a session exists.
-
-#### 2. No limit on concurrent work or output size per request
-
-**Severity:** Medium
-**Location:** `subject.go:29-40`
+**Location:** `subject.go:18-21, 32`
 **Boundary:** B1, B3
-**Move:** #8 (a million of these)
+**Move:** #5 (Invert the access control model)
 **Confidence:** Medium
 
-Each authenticated request starts a `git` process. Nothing limits how many run at once or how often one user can call the endpoint. `cmd.Output()` keeps all of stdout in memory before writing it out. The 5-second timeout limits how long each request runs but not how much memory it uses. A large commit `--stat`, or a large blob reached through Finding 1, can push a lot of data into memory within those 5 seconds. Many parallel requests multiply both the process count and the memory. Exploiting this needs a valid session, so the attack surface is limited to authenticated users.
+The guard only checks `ok` from `SessionFrom`. The session value is thrown away (`_`), and nothing ties the user to `h.RepoDir`. Also, `git show <sha>` is not limited to commits. Given a 40-character blob or tree id, it prints the raw file contents or a tree listing. Any logged-in user who knows or obtains an object id can read files at any revision, including content from branches they shouldn't see. In a single-tenant deployment where every user may read the whole repo, this is fine. In a multi-tenant setup, or one with access controlled per branch or per repo, it is an access bypass. Which case applies depends on how the routing registers `Handler` and on what `SessionFrom` returns, and neither is in scope.
 
-**Recommendation:** Add a per-session rate limit or a semaphore that caps concurrent `git` processes. Read stdout through `io.LimitReader` instead of `Output()`, or stream it with a size cap. Fixing Finding 1 also removes the large-blob case.
+**Recommendation:** Check the session's permission for this repo. Limit the lookup to commits, either with `sha + "^{commit}"` or by checking `git cat-file -t` first. If access is controlled per ref, also check that the commit is reachable from a ref the user may read.
 
-#### 3. The timeout may not end the request if git starts child processes (`WaitDelay` not set)
+#### 2. No rate or concurrency limit on spawning a subprocess per request
 
-**Severity:** Low
+**Severity:** Medium
 **Location:** `subject.go:29-33`
 **Boundary:** B4
-**Move:** #3 (error path)
-**Confidence:** Low
+**Move:** #8 ("What if there are a million of these?")
+**Confidence:** Medium
 
-`CommandContext` kills only the direct `git` process. If git starts children that keep the stdout pipe open, `Output()` can block after the context expires. Examples are diff/textconv drivers configured in the repo or system git config, or an external diff helper. Since Go 1.20, setting `cmd.WaitDelay` caps this wait. Plain `git show --stat` with a default config usually doesn't start such helpers, so this depends on config that isn't visible here.
+Each authenticated request that passes the regex forks a `git` process. That process can run for up to 5 seconds, and `cmd.Output()` holds all of its stdout in memory with no size cap. One low-privilege user can send many requests at once, each naming a large commit (or a large blob, see Finding 1). That can use up process slots, CPU and memory, because nothing limits how many run at the same time. The 5-second timeout limits how long each request lasts, but not how many requests run together.
 
-**Recommendation:** Set `cmd.WaitDelay` (for example 1s) and add `--no-ext-diff --no-textconv` to the git argv. That also stops attribute-selected drivers from running when commits are viewed.
+**Recommendation:** Put a semaphore or worker pool around the exec and add a per-session rate limit. Stream stdout through an `io.LimitReader` instead of buffering it all with `Output()`.
 
-#### 4. Repo content returned without `X-Content-Type-Options: nosniff`
+#### 3. Response lacks `X-Content-Type-Options: nosniff`
 
 **Severity:** Informational
 **Location:** `subject.go:39-40`
 **Boundary:** B3
-**Move:** #2
-**Confidence:** Medium
+**Move:** #2 (Implicit sanitization assumption)
+**Confidence:** Low
 
-Author names, commit subjects and, through Finding 1, blob contents are written by whoever pushes, and they're reflected to the client. The response is `text/plain; charset=utf-8`, which current browsers don't sniff into HTML. Adding `nosniff` is a cheap extra layer, which matters most if blob output stays reachable.
+The handler writes author names, commit subjects and (via Finding 1) blob contents taken from S4, and labels them `text/plain; charset=utf-8`. Current browsers don't sniff `text/plain` into HTML when a charset is set, so I don't know of a working attack. Adding `nosniff` is cheap protection if anyone can push to the repo.
 
-**Recommendation:** Add `w.Header().Set("X-Content-Type-Options", "nosniff")`.
+**Recommendation:** Set `X-Content-Type-Options: nosniff`. Consider adding `Content-Disposition: inline` with a sandboxed CSP if blobs stay reachable.
 
 ## Untested bypass candidates
 
-None. Every regex bypass candidate was checked by reading the code (see Endorsement Claims).
+Guardrail: the `commitSHA` regex (B2). Candidates and what happened to each:
+
+- **Tested: `"<40 hex>\n"` (trailing newline).** Go RE2's `$` matches only at the end of the text when the `m` flag is off, so this is rejected.
+- **Tested: leading `-` / option injection (`--output=/tmp/x`).** The character class `[0-9a-f]` doesn't allow `-`, so this is rejected. No shell is involved because `exec.CommandContext` passes the arguments directly.
+- **Tested: uppercase hex, or a short or abbreviated SHA.** Both are rejected by the character class and the `{40}` count.
+- **Tested: a 40-hex blob or tree id instead of a commit.** It passes the regex and `git show` prints the object. This is Finding 1.
+- **Listed: a ref whose name is 40 hex characters.** Git resolves a full 40-hex string as an object id first and only warns if a ref has the same name. I didn't run this to confirm it has no effect.
+- **Listed: repo-local config or attributes that run code during `git show --stat` (`diff.*.textconv`, `core.fsmonitor`).** Only relevant if untrusted parties can write RepoDir's `.git/config` or `info/attributes`. That ownership is outside the scope, so I didn't test it.
+
+Guardrail: the `SessionFrom` presence check (B1). I didn't test it because `SessionFrom` isn't in scope, so I can't tell whether an expired or forged session yields `ok == true`.
 
 ## Endorsement Claims
 
-- **Claim:** The `sha` regex rejects values with a leading `-`, a trailing newline, uppercase hex or a different length. So `sha` can't be read as a git option and can't carry extra content.
-  **Location:** `subject.go:11, 24`
-  **Evidence:** read-static
-  **Verified:** The pattern is `^[0-9a-f]{40}$`, compiled with no `(?m)` flag. In Go RE2, `$` without `m` matches only at the end of the text, so `"<40hex>\n"` fails. `-` isn't in the character class. Percent-encoded input such as `%0a` is decoded by `Query()` before the match, so it's still rejected. For repeated `?sha=` parameters, `Get` returns the first value, and that same value is the one checked and then used (no check/use gap).
-  **Not verified:** How git resolves a 40-hex string when a ref with that exact name also exists. Git prefers the object ID and warns, but this wasn't run. Not executed against a test suite.
-  **route: code-fact-check**
+Neither guardrail can be endorsed because both have untested bypass candidates. Scoped observations only:
 
-- **Claim:** The user input reaches `git` as one argv element, with no shell interpolation.
+- **Claim:** The `sha` value reaches `git` as a single argument with no shell in between.
   **Location:** `subject.go:32`
   **Evidence:** read-static
-  **Verified:** It uses `exec.CommandContext` with fixed literal arguments, plus `h.RepoDir` and `sha` as separate elements. No `sh -c`.
-  **Not verified:** Where `h.RepoDir` is assigned (the constructor or wiring isn't in scope), and whether it could ever come from a runtime-mutable source.
-  **route: code-fact-check**
+  **Verified:** I read the `exec.CommandContext` call. It uses a fixed binary name and a literal argument list, and contains no `sh -c`.
+  **Not verified:** whether a `git` wrapper on the server's `PATH` re-parses its arguments.
+  **route: code-fact-check** (*pending execution verification*)
 
-- **Claim:** The handler stops before any work when there's no session.
-  **Location:** `subject.go:18-21`
+- **Claim:** Error responses don't include git's stderr or the error text.
+  **Location:** `subject.go:34-36`
   **Evidence:** read-static
-  **Verified:** If `!ok`, it calls `http.Error` and then `return`. Nothing falls through.
-  **Not verified:** How `SessionFrom` is implemented: what sets that context value and whether it checks expiry or revocation. It isn't in the repo.
-  **route: code-fact-check**
-
-- **Claim:** A failed git call doesn't send stderr or partial output to the client.
-  **Location:** `subject.go:33-37`
-  **Evidence:** read-static
-  **Verified:** If `err != nil`, the response is the fixed string "commit not found" and `out` is thrown away.
-  **Not verified:** Whether the server logs elsewhere capture `*exec.ExitError.Stderr` (no logging appears in this file).
+  **Verified:** I read the error branch. It writes a fixed "commit not found" string, and `cmd.Output()` captures stderr into `err` without echoing it.
+  **Not verified:** whether middleware upstream logs or returns `err`. Nothing here passes it on, but the server's panic and recovery handling wasn't read.
 
 ## Primitive sweep
 
 ```
-Primitive: os/exec process execution
-| Call site          | Source             | Guard                          | Disposition |
-|--------------------|--------------------|--------------------------------|-------------|
-| `subject.go:32`    | S1 sha, S3 RepoDir | 40-hex regex; argv (no shell)  | Cleared for injection. Findings 1, 2, 3 (object-type, resource, timeout) |
+Primitive: os/exec (process exec)
+| Call site | Source | Guard | Disposition |
+|---|---|---|---|
+| `subject.go:32` | S1 sha, S3 RepoDir | anchored hex regex; argument list, no shell | cleared for injection (bypass candidates above); Findings 1 and 2 for object scope and DoS |
 ```
 
-This is the only process-exec call in scope. There's no SQL, deserialization, HTML templating, path join from user input, or URL fetch.
+There are no other dangerous primitives (SQL, deserialization, path joins with request data, HTML templating, or `eval`) in scope.
 
 ## Summary Table
 
 | # | Finding | Severity | Boundary | Location | Confidence |
 |---|---------|----------|----------|----------|------------|
-| 1 | Any object type accepted; blob ID dumps file contents | Medium | B2, B3 | `subject.go:24-40` | Low |
-| 2 | No concurrency, rate or output-size limit | Medium | B1, B3 | `subject.go:29-40` | Medium |
-| 3 | `WaitDelay` not set; timeout may not end the request | Low | B4 | `subject.go:29-33` | Low |
-| 4 | No `nosniff` header on repo-content response | Informational | B3 | `subject.go:39-40` | Medium |
+| 1 | Authentication without authorization; blob or tree ids readable | Medium | B1, B3 | `subject.go:18-21,32` | Medium |
+| 2 | Unbounded subprocess spawning and output buffering | Medium | B4 | `subject.go:29-33` | Medium |
+| 3 | Missing `nosniff` on repo-derived output | Informational | B3 | `subject.go:39-40` | Low |
 
 ## Overall Assessment
 
-The basic protections are in place. The command-injection and option-injection guard holds up against every bypass I tried, there's no shell, the authentication check returns early, and errors don't leak details. The issues left are about scope and resources, not injection, and each can be fixed in a line or two without changing the design. The most important fix is to restrict the lookup to commits with `sha+"^{commit}"`, so this endpoint can't read arbitrary files or unreferenced objects. Whether that matters depends on whether every session holder is supposed to see the whole repo. That can't be told from this file, and neither can how `SessionFrom` works. No findings within the code paths read are severe enough to block a merge. The endorsement claims are still waiting on execution-backed verification.
+The command-injection surface is handled well. The anchored regex blocks option injection and trailing-newline tricks, and the argument-list form of `exec` avoids shell parsing. No HALT pattern applies. The two real issues can be fixed in this file and don't point to a design problem. The more important one is Finding 1: the handler confirms someone is logged in but never asks what they may see, and `git show` will print any object, not just commits. How serious that is depends on whether the deployment controls access per user or per ref, which this file doesn't show. Fix it first by checking the session's permission and adding `^{commit}`. Then add concurrency and output limits for Finding 2. No findings within the code paths read beyond these; endorsement claims pending execution verification.

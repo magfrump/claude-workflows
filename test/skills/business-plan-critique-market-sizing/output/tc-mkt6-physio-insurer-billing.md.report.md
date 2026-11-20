@@ -2,119 +2,96 @@
 
 # Market-Sizing Critique: Claimwell, Market Case for a £600k Seed Round
 
-This is an unusually honest market story. It uses a bottom-up build, checks price against what clinics already spend, dates its timing trigger, names a failed comp, and declines to claim venture scale. The arithmetic is internally consistent:
-
-- 6,500 × £3,600 = £23.4M
-- 55% × 6,500 = 3,575 clinics, which × £3,600 ≈ £12.9M
-- 30% × 120 = 36 clinics
-- 160 × £3,600 = £576k
-- 160 ÷ 3,575 ≈ 4.5%
-
-The findings below are about which inputs carry the weight, not about inflation.
-
 ## TAM Definition Assessment
-
-**Verdict:** Plausible
-**Confidence:** Medium
-
-The TAM is bottom-up (clinics × price), with no top-down category figure to reconcile against. For a niche this narrow that is the right choice. The £380/month that pilot clinics already pay bureaus or admin staff is good revealed-preference evidence that £300 sits below an existing spend line.
-
-Three inputs need tightening:
-
-- **Counting unit.** "Clinics, counting independents and small chains of up to five sites" leaves unclear whether a five-site chain is one account or five. At £300 per account, the TAM could move by a meaningful fraction depending on the answer. State whether price is per site or per business, and count the same unit.
-- **Uniform price across uneven claim volume.** £3,600/year applies to every clinic, from a solo practitioner with a handful of insured patients to a five-site chain. The £380 benchmark comes from pilot clinics, who likely self-selected for heavy insured volume. Low-volume clinics may not value the product at £300.
-- **Benchmark scope.** "The same work" may not be like-for-like. If bureaus also chase rejected claims or handle self-pay invoicing, part of the £380 pays for things Claimwell doesn't do.
-
-**Gap:** The headline £23.4M is a ceiling at one price point. A volume-tiered or volume-weighted version would likely be lower but more credible. The plan's honest framing of £23.4M as a total market, not a venture-scale opportunity, already absorbs much of this risk.
-
-## SAM Realism Assessment
-
-**Verdict:** Plausible
-**Confidence:** Medium
-
-The two SAM filters are better than typical descriptive filters:
-
-- "Takes insured patients" is a behavioral condition.
-- "Uses one of four integrated booking systems" is a hard technical gate.
-
-The weakness is that both are binary. What predicts purchase is the **share of a clinic's visits that are insured**. A clinic where 5% of visits are insured and a clinic where 60% are insured both pass the filter, but only the second has a £300/month problem. Splitting the 3,575 by insured-visit share would turn SAM into a purchase-predicting number. My rough guess is that it shrinks SAM by 1.5–3×, though the plan has no data to confirm this.
-
-Two further issues:
-
-- **Clinics that have already solved the problem.** The trigger was April 2025, 19 months before today. Every serviceable clinic that bills Albion or Crestmoor has by now had to integrate, hire admin, or pay a bureau. So the SAM is no longer "clinics with an unsolved problem." It is "clinics willing to switch from their current workaround." That market is real, since the £380 spend shows the workaround is costly, but it converts more slowly. Segment SAM by current solution (bureau, in-house admin, direct portal use) and estimate how switchable each group is.
-- **Unverified survey input.** The 55% comes from trade-association survey data, and every downstream number depends on it. Report the sample, the year, and whether the two conditions were measured jointly or multiplied as if independent. Clinics on modern booking systems may be more likely to take insured patients, so multiplying the rates could distort the result.
-
-Buyer vs user is not a concern here. In small clinics the owner is both buyer and beneficiary.
-
-## SOM Achievability Assessment
-
-**Verdict:** Plausible for the beachhead; the national expansion path is unsupported
-**Confidence:** Medium
-
-**Beachhead.** 19 of 120 regional clinics is about 16% share today. Reaching 36 (30%) by the end of year two means about 17 net new clinics over roughly two years, from two founders who can visit in person. That is achievable. The beachhead logic is the strongest part of the capture story.
-
-**National expansion.** Moving from 36 to 160 means about 124 clinics in three years, about 3.5 per month, mostly outside the region where in-person selling works. The plan doesn't name a sales motion for this phase: no hires, channel, booking-vendor partnership, or referral mechanism. The 4.5% end-state share is modest, but the share isn't the constraint. The constraint is how out-of-region clinics get acquired.
-
-**Acquisition pace (inferred, so treat with care).** If roughly 15 of 23 customers (two thirds) signed within three months of April 2025, then about 8 have signed in the roughly 16 months since, or about 0.5 per month. The year-5 target needs about 2.5 net per month on average. If that reading is correct, it is the most important number missing from the plan: post-trigger acquisition is running at roughly a fifth of the required rate. If the company launched after the switch, or the reading is otherwise wrong, show the monthly signup curve to rule it out.
-
-**Regional density check.** Greater Manchester plus Yorkshire hold very roughly 12% of the UK population. On a population basis, that would imply about 400 serviceable clinics rather than 120. Private physio likely skews toward London and the South East, so a lower figure is plausible. Still, 120 is about 3.4% of the national SAM, so either the regional count is restricted to a drivable radius or the national 3,575 runs high. One sentence explaining the 120 would settle it.
-
-**Churn.** It is not mentioned. Year-5 clinic counts should be net figures.
-
-## Market Timing Assessment
-
 **Verdict:** Defensible
 **Confidence:** Medium
 
-This is a textbook "why now":
+This TAM avoids the usual failures. It is built bottom-up (6,500 clinics × £3,600 = £23.4M, which is arithmetically correct). It does not borrow a research-firm category, does not add future products, and does not include allied-health neighbours such as osteopathy, chiropractic or sports therapy. The plan also checks the price against revealed spend: pilot clinics already paid an average of £380/month for the same work. Most plans never attempt that check.
 
-- A specific, dated trigger: April 2025 insurer API mandates.
-- A forcing function: email and paper invoicing stopped being accepted.
-- Revealed-preference evidence: two thirds of customers signed within three months.
+There is no top-down figure to reconcile against. For a market this narrow that is acceptable, and arguably better, because no honest category report exists for "UK physio claims software."
 
-Reversal risk is low, since insurers rarely reinstate paper channels.
+Three issues are worth tightening:
 
-The timing issues are about what happens after the trigger:
+- **Clinic vs. site counting.** The 6,500 includes "small chains of up to five sites." If a five-site chain counts as one clinic but would buy per site (or the reverse), the clinic count and the price are measured in different units. State which unit the £300 applies to and count in that unit.
+- **Flat price across very different clinics.** A sole practitioner who sees few insured patients will not pay £300/month. A busy multi-physio clinic might pay more. The £380 benchmark comes from pilot clinics, which chose to look for a solution and are therefore likely higher-volume than average. It confirms willingness to pay among motivated clinics, not across all 6,500.
+- **"Same work" comparison.** Bureaus and part-time admin staff often do more than submit claims. They may chase rejected claims, bill patients for shortfalls, and handle insurer queries. If Claimwell replaces only part of that work, the £380 overstates what clinics would pay for the software alone.
 
-- **The forced cohort has largely chosen.** A forcing-function trigger creates a short rush, then a long tail of switching from whatever clinics picked in the rush. The plan's year-5 timeline should be built on the switching-market dynamic, not the trigger dynamic.
-- **The trigger creates competitors as well as customers.** The same mandate that created demand also gives booking-system vendors a clear reason to build claims modules, and insurers a reason to offer free direct-entry portals for low-volume providers. The plan lists the vendor risk, at about a quarter of SAM if the largest vendor acts, but not the insurer-portal substitute. Responding to either is moat territory (see Out of scope). The market-sizing point is that a 25% SAM contraction is a live scenario, not a tail risk, and the plan should show results with and without it.
-- **Concentration in two insurers.** Albion and Crestmoor "together cover most privately insured physiotherapy patients." This makes the trigger strong but concentrated. Any change in their API terms, provider fees, or bundled tooling flows straight through to Claimwell's market.
+None of these moves the number by an order of magnitude. The TAM is honest. The 6,500 count is the unverified input.
 
-## Comparable Benchmarks Assessment
-
+## SAM Realism Assessment
 **Verdict:** Plausible
 **Confidence:** Medium
 
-The comp set is small but well-constructed. It pairs a positive comp (Dentaclaim) with a negative comp (Optiform) and gives a structural reason why physio resembles the first: high insured share and weekly recurring claims. Few plans name their failure case.
+The SAM filter is mostly behavioural ("takes insured patients"), which is the right kind. The integration constraint is a real serviceability gate, not a demographic proxy. The arithmetic holds: 6,500 × 55% = 3,575, and 3,575 × £3,600 ≈ £12.9M.
+
+Four questions decide whether 3,575 is the right count:
+
+1. **Joint vs. multiplied probability.** "About 55% of clinics meet both conditions." Did the trade-association survey report the joint figure directly? Or was it built by multiplying the share that takes insured patients by the share on a supported booking system? Multiplying assumes the two are independent. They probably are not: clinics on modern booking systems may skew larger and more insurance-heavy. Say which method was used.
+2. **Insured-patient share, not just yes/no.** A clinic where 5% of visits are insured and one where 60% are insured both pass the filter, but only the second will pay £300/month. A threshold such as "insured visits above X% of volume" would likely shrink SAM. That is my main reason this lens is Plausible rather than Defensible.
+3. **Already-solved clinics.** The mandate took effect in April 2025, about 19 months ago. Every serviceable clinic that bills insurers has had to choose something: a bureau, admin time, a booking-system add-on, a competitor, or Claimwell. SAM today is therefore not 3,575 clinics with an open problem. It is 3,575 clinics that each already chose a solution, some fraction of whom would switch. That changes the sales motion (see SOM and Timing).
+4. **Insurer access as a gate.** SAM assumes Claimwell can submit through Albion's and Crestmoor's provider APIs, and covers the insurers outside "most" of the market. If either insurer must accredit third-party submitters, that accreditation is a serviceability gate like a certification. State whether it is in hand.
+
+The risk section's figure (losing about a quarter of SAM if the largest booking vendor builds its own module) is useful. Treat it as a live sizing scenario. A SAM of about 2,700 clinics (£9.7M) is the downside number to quote alongside 3,575.
+
+## SOM Achievability Assessment
+**Verdict:** Plausible
+**Confidence:** Medium
+
+**Implied share:** 160 / 3,575 = 4.5%, giving £576,000 ARR at £3,600, as stated. The headline share is not alarming. Benchmarked against Dentaclaim's roughly 400 practices in five years, it looks modest, though that depends on Dentaclaim's denominator (see Comparables).
+
+**The beachhead logic is the plan's best feature.** It names a geography, counts it (about 120 clinics), names the sales capacity (two founders, in person), and targets 30%. Claimwell already has 19 clinics there, about 16% of the beachhead. Reaching 36 means 17 more in two years, which is believable.
+
+The constraint is not the share. It is the **acquisition rate after the April 2025 surge**, together with the **unnamed sales motion for years three to five**:
+
+- **Post-surge rate.** Two-thirds of 23 customers (about 15) signed within three months of the April 2025 switch. If the plan is current, the other ~8 arrived over roughly the following 16 months, about 0.5 clinics per month. Reaching 160 by year five needs about 137 net additions, roughly 27 per year, against an observed post-surge pace of about 6 per year. The plan should show its monthly signups since July 2025. That single number would confirm or undercut the whole projection. (I am inferring dates; if the company launched later than I assume, the rate improves.)
+- **Years three to five.** The beachhead reaches 36 clinics through in-person founder selling. The remaining 124 clinics are national, mostly outside visiting range. The plan does not say who sells to them or how: inside sales, booking-vendor partnership, or physio association referrals. That path is the most load-bearing unstated assumption in the plan.
+- **Beachhead density looks low.** Greater Manchester plus Yorkshire holds roughly an eighth of the UK population, yet 120 is about 3.4% of the 3,575 SAM. Private physio may genuinely concentrate in the South East, or 120 may be the subset within visiting distance. Either way, explain it. If national density is much higher than the beachhead's, the expansion is easier than it looks. If the 120 is undercounted, the 30% target is softer.
+- **Churn.** A booking vendor shipping its own module would cause churn among existing customers, not just shrink the future SAM. The SOM should show a net figure that allows for this.
+
+## Market Timing Assessment
+**Verdict:** Plausible
+**Confidence:** Medium
+
+This is a real trigger, not a persistent trend. It is a dated, named regulatory-style change: insurers stopped accepting email and paper invoices in April 2025. It is effectively irreversible, since insurers will not return to paper. The plan also offers revealed-preference evidence: two-thirds of customers signed within three months. That is the strongest timing thesis a plan can present.
+
+The problem is that **the trigger was a one-time forcing event, and it is roughly 19 months old.** A forced migration creates a demand spike, and most of it is captured or lost within months. The cohort data in the plan confirms this. That shifts the "why now" in two ways:
+
+- The market has moved from **forced adoption** (clinics must act) to **displacement** (clinics that chose a bureau or admin staff could save money by switching). The £380 revealed spend supports the displacement case. But displacement is a slower, ROI-driven sale with a lower urgency. The plan should restate its timing thesis for that second phase.
+- **Too-late risk.** Nineteen months after a mandate is long enough for booking vendors, bureaus and new entrants to respond. The plan names one such risk, booking vendors building their own modules, but not insurer-provided submission portals or other software entrants (see Comparables).
+
+Adoption-curve placement fits the motion: low price, founder-led sales, small clinics. That part is consistent.
+
+Two further triggers would strengthen the thesis if they exist: other insurers following Albion and Crestmoor with their own mandates, or claim-volume growth such as rising private physio uptake. Name them if they exist.
+
+## Comparable Benchmarks Assessment
+**Verdict:** Plausible
+**Confidence:** Medium
+
+The plan names one positive comp and one negative comp, and explains the mechanism behind the negative one: few optician patients claim on insurance. It then argues on that mechanism (insured share of visits, weekly recurring claims) why physio resembles dental rather than optics. This is better practice than most pitches show.
 
 Gaps:
 
-- **No denominators.** "About 400 practices in five years" can't be compared with Claimwell's 160 without knowing how many UK dental practices were addressable. Give Dentaclaim's share of its serviceable market, then compare it with Claimwell's 4.5%. Claimwell's absolute target is well below the comp, which looks conservative. If dental's serviceable base was much larger, the share comparison may tell a different story.
-- **Stage conditions.** Dentaclaim's 2019 trigger was followed almost immediately by COVID disruption to dental practices. That could have helped (admin outsourcing) or hurt (closures). Either way, its five-year trajectory may not transfer cleanly.
-- **Go-to-market match.** How did Dentaclaim expand beyond its first region? That is exactly the step Claimwell's plan leaves unexplained, so the comp could supply the missing mechanism.
-- **The negative comp's lesson is under-used.** Optiform's failure was low insured-claim frequency. That is the same variable that should split Claimwell's SAM (see SAM above). Apply Optiform's lesson within physio, not just between physio and optics.
-- **One positive comp is thin.** Other insurer-mandate-driven claims tools in the UK or comparable markets would show whether 400 practices is typical or an outlier. A vet-practice insurance-claims tool is one possible example.
+- **Raw count vs. share.** "About 400 practices in five years" matters only relative to Dentaclaim's serviceable base. State Dentaclaim's share of its SAM and compare it with Claimwell's projected 4.5%. That is the like-for-like test. On raw count, Claimwell's 160 looks conservative. Depending on the dental denominator, the shares may be close.
+- **Stage and conditions.** Dentaclaim's five years ran from 2019, which includes COVID-era dental closures. That could have depressed its trajectory, making it a conservative comp, or reshaped it. Say how it should be read.
+- **Claim mechanics.** Check whether dental and physio insurance claims share the same structure: per-visit claims vs. plan or capitation arrangements, and how often patients pay directly. The plan's argument relies on claim frequency, so confirm the comp shares it.
+- **Outcome after year five.** What happened to Dentaclaim next: plateau, acquisition by a practice-management vendor, or continued growth? That reveals the ceiling and the likely exit. Acquisition by a booking or PMS vendor would also preview the plan's main risk.
+- **Missing direct competition.** The plan names no current competitors in UK physio claims. After a mandate this visible, at least bureaus, booking-system add-ons, and possibly insurer portals compete for the same clinics. Name them and show where Claimwell wins.
+- **Small set.** Two comps is a thin base. A third data point, such as another allied-health vertical or a non-UK physio claims market, would help.
 
 ## Factual Foundation
+No fact-check report was provided. The claims that would most benefit from verification, in order of how much they carry:
 
-No fact-check report was provided. The claims that most need verification, in order of load-bearing weight:
+1. **The 55% joint serviceability figure and its source.** It sets SAM directly. Confirm whether it is a joint survey result or a product of two separate figures.
+2. **The Albion/Crestmoor mandate:** its date, its scope, and the claim that the two "cover most privately insured physiotherapy patients," plus whether insurers must accredit API submitters. The timing thesis and SAM both rest on this.
+3. **Dentaclaim's ~400 practices in five years, and the size of the dental base it drew from.** The SOM benchmark depends on it.
 
-1. **The 55% serviceable rate from trade-association survey data.** All SAM and share figures depend on it. Verify the source, sample, and year, and whether the two conditions were measured jointly.
-2. **The April 2025 Albion/Crestmoor API mandate and their combined coverage of "most" insured physio patients.** The whole timing thesis rests on this. Confirm the mandate's scope, any exemptions for low-volume providers, and whether either insurer offers a free direct-submission portal.
-3. **Dentaclaim's "about 400 practices in five years" and its addressable base.** This is the only positive comp, and it can't be read without a denominator.
-
-The 6,500-clinic count is also worth sourcing, but it matters less because the plan relies on the 3,575 figure.
+The 6,500 clinic count and the £380 pilot-spend average are secondary candidates. Overall internal consistency is good: every figure in the plan reconciles arithmetically.
 
 ## Overall Assessment
+**Strongest:** TAM definition. It is bottom-up, checked against revealed spend, and free of adjacency creep. The comp set (with a negative comp and a stated mechanism) and the beachhead plan are close behind. This is an unusually honest market story.
 
-**Strongest lens: market timing.** The trigger is specific, dated, hard to reverse, and backed by observed signup behavior. The TAM build is also commendably transparent.
+**Weakest:** the gap between timing and SOM. The trigger is real but in the past. The plan's own cohort data shows most demand arrived in a three-month burst. Yet the five-year projection assumes a steady acquisition rate roughly four times the apparent post-surge pace. It also assumes a national sales motion after year two that the plan never describes.
 
-**Weakest lens: SOM, specifically the path from beachhead to national.** The end-state share is modest, but the plan doesn't explain how roughly 124 out-of-region clinics will be acquired. The customer timeline suggests post-trigger signups may be running well below the required pace.
+**The single most important revision:** add a chart of monthly customer signups since launch, split into the April–June 2025 surge and everything after. Then rebuild the year-five SOM from the post-surge rate plus a named sales channel for clinics outside the beachhead. Reframe the "why now" from "clinics are being forced to switch" to "clinics already paying £380/month to bureaus will switch for £300." If the post-surge rate supports the projection, the plan becomes very hard to argue with. If it does not, the honest year-five number is lower, and it is better to say so now than to be found out in diligence.
 
-**Most important revision:** Add one table showing monthly net new clinics since April 2025 and the source of each (regional in-person, referral, inbound). Then state the acquisition mechanism for years three to five and the rate it must hit. If the post-trigger rate supports the plan, this table will be the most persuasive evidence in the document. If it doesn't, the revision is either a smaller year-5 target or a named channel, such as a booking-vendor partnership, that changes the rate. Splitting SAM by insured-visit share is the close second.
-
-The plan's candor about scale is a strength. One note on audience, outside the sizing critique itself: a £12.9M serviceable ceiling and £576k year-5 ARR are a fit for angels or revenue-based financing more than for typical seed funds. The plan already seems to know this.
-
-**Out of scope, flagged for sibling skills:**
-- Booking-vendor and insurer-portal competitive response belongs to moat critique.
-- Profitability at £576k ARR against a £600k raise, and CAC for out-of-region sales, belong to unit-economics critique.
+*Out of scope but worth noting:* whether a £600k raise fits a business projected at £576k ARR in year five is a question of burn, payback and investor fit, not market size. That belongs to `business-plan-critique-unit-economics`. Whether booking-system vendors can be held off as competitors belongs to `business-plan-critique-moat`.

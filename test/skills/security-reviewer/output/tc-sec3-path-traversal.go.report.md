@@ -1,141 +1,138 @@
-**User goal:** Run a security review of `subject.go` and print the report to stdout. I won't save it to `docs/reviews/`.
-
----
-
-Commit: 0856184281b5df5294e7c7d77abe11249f487c3c
-
 # Security Review: subject.go
 
-**User goal:** Security review of `subject.go`, printed to stdout.
-**Scope:** `subject.go` (single file, `HandleDownload` handler)
-**Date:** 2026-11-19
+**Scope:** `subject.go` (single file, as you specified)
+**Date:** 2026-11-20
+Commit: c1e3cc9f0bb581630b5ede184d4186ac5f7993e9
 
-> ⚠️ **No code fact-check report provided.** Claims about security properties in comments and documentation have not been independently verified. For full verification, run the `code-fact-check` skill first or use the code-review orchestrator.
+**User goal:** Find the security flaws in the `subject.go` export-download handler and print the report to stdout.
 
-No HALT patterns matched. The main finding is path traversal, which is Critical, but path traversal isn't on the escalation list.
+> ⚠️ **No code fact-check report provided.** Claims about security properties in comments and
+> documentation have not been independently verified. For full verification, run the
+> `code-fact-check` skill first or use the code-review orchestrator.
+
+*(Note: `userKey`, `User` and the middleware that sets the request context are defined outside this file and were not read. The repo contains only `subject.go`, and there's no `docs/constraints.md`, so every attacker the code exposes is treated as in scope.)*
 
 ## Trust Boundary Map
 
 ```
-B1: [HTTP query param `file`]          → [strings.HasSuffix(".csv") check] → [filepath.Join → os.Open]
-B2: [auth middleware ctx value userKey] → [type assertion to *User]         → [path component user.ID]
-B3: [filesystem under ExportDir]        → [os.Open / io.Copy]               → [HTTP response body + Content-Disposition]
+B1: [HTTP request context (auth middleware)] → [type assertion r.Context().Value(userKey).(*User)] → [user.ID used as path segment]
+B2: [query param ?file= (attacker-controlled)] → [HasSuffix(".csv") check + filepath.Join]       → [os.Open on server filesystem]
+B3: [server filesystem contents]             → [io.Copy / Content-Disposition]                  → [HTTP response to client]
 ```
 
-**Input-source classification:**
+| Label | Source | Mutability | Trust classification |
+|---|---|---|---|
+| S1 | `r.URL.Query().Get("file")` | request-time | UNTRUSTED for all sinks (path construction, response headers) |
+| S2 | `user.ID` from request context | runtime-mutable (comes from the user store or session, set by middleware not shown here) | Trusted to identify the user only if the middleware is sound. UNTRUSTED for path construction unless the ID format is enforced (not visible here) |
+| S3 | `s.ExportDir` | deploy-time | trusted for all sinks |
+| S4 | File contents under `ExportDir` | runtime-mutable (export jobs write them) | UNTRUSTED for HTML sinks. Here it only reaches a CSV attachment body |
 
-```
-S1: r.URL.Query().Get("file") — request-time    — UNTRUSTED (all sinks; path construction especially)
-S2: user.ID (from ctx userKey) — request-time    — trusted for identity *if* middleware is sound (not in scope);
-                                                   UNVERIFIED for path construction (format/charset of ID not visible)
-S3: s.ExportDir               — deploy-time (assumed; set at struct construction) — trusted (all sinks)
-S4: file names/contents on disk — runtime-mutable — untrusted toward response headers (filename interpolation)
-```
-
-The handler takes a filename from the attacker (S1) and builds a filesystem path from it. The only check is that the name ends in `.csv`. The code assumes that adding `user.ID` to the path confines the read to that user's directory, but nothing enforces that. `filepath.Join` resolves `..` segments, so the joined path can leave both the user directory and `ExportDir`.
+The handler takes an attacker-controlled filename (S1) and joins it into a filesystem path under a per-user directory. The only check is that the name ends in `.csv`. The code assumes that `filepath.Join` plus a suffix check keeps the path inside `ExportDir/<user.ID>`. It doesn't: `filepath.Join` cleans `..` segments, it doesn't stop them.
 
 ## Findings
 
-#### 1. Path traversal lets any user read other tenants' exports and any `.csv` file on the host
+#### 1. Path traversal lets a user read other users' exports and any `.csv` file on the host
 
-**Severity:** Critical
+**Severity:** High
 **Location:** `subject.go:22-29`
-**Boundary:** B1 (with B3 as the exfiltration path)
-**Move:** #2 (implicit sanitization assumption), #5 (invert access control), #11 (bypass enumeration)
+**Boundary:** B2
+**Move:** #2 (implicit sanitization assumption), #5 (invert the access control model), #11 (guardrail bypass)
 **Confidence:** High
 
-The `HasSuffix(name, ".csv")` check only looks at the file extension. It doesn't stop `name` from containing `/` or `..`. `filepath.Join(s.ExportDir, user.ID, name)` calls `Clean` on the result, which resolves `..` segments. Two examples:
-- `?file=../victim-id/report.csv` resolves to `ExportDir/victim-id/report.csv`, which is another tenant's export.
-- `?file=../../../../srv/app/data/customers.csv` resolves to a path outside `ExportDir` altogether.
+The per-user directory is supposed to keep each user to their own exports, but nothing enforces that. `filepath.Join(ExportDir, user.ID, name)` calls `Clean`, which resolves `..` instead of rejecting it. Two examples:
 
-Percent-encoded input (`%2e%2e%2f`) works the same way because `Query().Get` decodes it first. Any logged-in user can therefore read every tenant's exports, which is the whole dataset this endpoint is meant to protect. They can also read any `.csv` file the process can access. The per-user directory scoping is the only access control on this path, and it can be bypassed completely.
+- `?file=../victim-id/payroll.csv` resolves to `ExportDir/victim-id/payroll.csv`. Any logged-in user can read any other user's export if they know or guess the user ID. This is an IDOR (insecure direct object reference) that bypasses the per-user isolation entirely.
+- `?file=../../../../srv/app/secrets.csv` escapes `ExportDir` altogether and reads any file ending in `.csv` that the process can read.
 
-**Recommendation:** Treat `name` as a single path component. Reject it unless `filepath.IsLocal(name)` is true and `name` contains no separator (or `name == filepath.Base(name)`). If you're on Go ≥1.24, it's better to open through `os.OpenRoot(filepath.Join(s.ExportDir, user.ID))` and call `root.Open(name)`. That enforces confinement at the syscall level and also blocks escapes through symlinks.
+`Query().Get` percent-decodes the value first, so `..%2F` behaves exactly like `../`. The `.csv` suffix check limits which files can be read, but it doesn't confine the path.
 
-#### 2. `user.ID` is used as a path component without validation
+**Recommendation:** Reject any `name` that isn't a single plain path element: `name != filepath.Base(name)`, or a name containing `/`, `\` or `..`. Better still, use an allowlist regex like `^[A-Za-z0-9._-]+\.csv$`. Then check that the resolved path is still inside `filepath.Join(ExportDir, user.ID)`. On Go 1.24+, open the user directory with `os.OpenRoot` and call `root.Open(name)`, which rejects escapes and symlinks that leave the root. Ideally, look exports up by an opaque ID with an ownership check in the database instead of a filename.
+
+#### 2. `user.ID` goes into the path without validation
 
 **Severity:** Medium
 **Location:** `subject.go:16, 28`
-**Boundary:** B2
-**Move:** #1 (per-consequence trust), #5
-**Confidence:** Low. This depends on how `User.ID` is populated, which is outside the scope.
+**Boundary:** B1, B2
+**Move:** #1 (trust boundaries, runtime-mutable ⇒ compromise-reachable)
+**Confidence:** Low
 
-`user.ID` may be trustworthy as an identity, but it isn't validated for use in a path. If it's empty, the path becomes `ExportDir/<name>` and the user can read shared top-level files. If it can contain `/` or `..` (for example, a username or an IdP-supplied subject such as `auth0|abc` or `a/b`), the per-user boundary moves or falls apart. Fixing Finding 1 doesn't fix this.
+`user.ID` is used directly as a path segment. If an ID can ever be empty, `.`, contain `/`, or contain `..`, the per-user directory collapses or shifts. For example, an empty ID resolves to `ExportDir/<name>`, which could expose shared exports. Whether this can happen depends on how IDs are generated or set (for instance, a user-chosen username used as the ID). That code isn't in scope, so this finding depends on it.
 
-**Recommendation:** Require `user.ID` to be non-empty and to match a strict pattern (such as `^[A-Za-z0-9_-]+$`) before using it in the path. Alternatively, build the directory from an opaque, server-generated key.
+**Recommendation:** Check that `user.ID` matches a strict format (UUID or numeric) before using it in a path, or map users to directories through a server-generated key.
 
-#### 3. Filesystem-derived filename is interpolated into `Content-Disposition` unescaped
+#### 3. `Content-Disposition` filename isn't escaped
 
 **Severity:** Low
 **Location:** `subject.go:37`
-**Boundary:** B3
+**Boundary:** B2, B3
 **Move:** #2
 **Confidence:** Medium
 
-`filepath.Base(full)` is placed directly inside a quoted `filename="..."`. A file whose name contains `"` or `;` on disk would let someone inject extra header parameters, such as a misleading download filename. Go's `net/http` replaces CR/LF in header values when it writes them, so this doesn't allow response splitting. The attacker would also need a file with that name to already exist. Once Finding 1 is fixed, the filename is basically the user's own input, so the impact is small.
+`filepath.Base(full)` comes from the attacker-supplied name and is put inside a quoted header value without escaping. A name like `a";x=y.csv` breaks out of the quoted string and injects extra header parameters. Go's `net/http` replaces CR/LF in header values, so this doesn't give header splitting. The impact is limited to a mangled or attacker-chosen download filename, and since the attacker is the one downloading, it mostly matters if a crafted link is sent to a victim.
 
-**Recommendation:** Build the header with `mime.FormatMediaType("attachment", map[string]string{"filename": base})`.
+**Recommendation:** Build the header with `mime.FormatMediaType("attachment", map[string]string{"filename": base})`, or apply the strict filename allowlist from Finding 1. The allowlist fixes this as well.
 
-#### 4. Only the extension is checked, not the file type
+#### 4. Non-regular files aren't rejected
 
 **Severity:** Informational
-**Location:** `subject.go:23, 29-38`
-**Boundary:** B1, B3
+**Location:** `subject.go:29-38`
+**Boundary:** B3
 **Move:** #8
-**Confidence:** Medium
+**Confidence:** Low
 
-The handler opens anything whose name ends in `.csv`, including directories, FIFOs and device nodes. A FIFO would make the request block until a writer appears, which ties up the goroutine. This only matters after Finding 1, or if attackers can create files inside the export directory. There's also no `X-Content-Type-Options: nosniff` header. With `attachment` set, the risk is minimal.
+`os.Open` succeeds on directories, FIFOs and device nodes. Combined with Finding 1, a `.csv`-named FIFO or special file anywhere readable could make a request block forever, holding a goroutine and file descriptor. This needs such a file to exist, which is unlikely. Fixing Finding 1 removes most of the exposure.
 
-**Recommendation:** After opening, call `f.Stat()` and require `Mode().IsRegular()`. Add `nosniff` as defense in depth.
+**Recommendation:** After opening, call `f.Stat()` and require `Mode().IsRegular()`.
 
-### Untested bypass candidates
+## Untested bypass candidates
 
-These are guard bypasses for the `.csv` suffix check and the join:
-- **Symlinks inside `ExportDir/<user.ID>/`.** Whether this works depends on how export files are created and whether a user can influence their names or targets. That code isn't in scope.
-- **Case and Unicode variants (`.CSV`, fullwidth characters).** These are rejected by the case-sensitive suffix check, so they're a functional limitation, not a bypass. I worked this out from the code but didn't run it.
-- **Windows-style `..\`.** This only matters if the service runs on Windows, where `filepath` treats `\` as a separator. The deployment platform is unknown, so I didn't test it.
+These apply to the guard on S1 (the `.csv` suffix check plus `filepath.Join`):
 
-Tested candidates, traced through the code: `../victim/x.csv` (bypass), `../../../../abs/x.csv` (bypass), percent-encoded `..%2f` (bypass, decoded by `Query().Get`), absolute `/etc/x.csv` (not a bypass: it's joined under the user directory), embedded NUL (not a bypass: `os.Open` rejects paths containing NUL).
-
-## Endorsement Claims
-
-- **Claim:** If the request context has no `*User` under `userKey`, the handler returns 401 before reading any input or touching the filesystem.
-  **Location:** `subject.go:16-20`
-  **Evidence:** read-static
-  **Verified:** I read the type assertion and the early `return` on `!ok`.
-  **Not verified:** The middleware that sets `userKey`, i.e. whether it ever stores a non-nil `*User` for an unauthenticated request. A typed-nil `*User` would pass `ok` and then panic at `user.ID`. `userKey` and `User` aren't defined in this file.
-  **route: code-fact-check** (pending execution verification)
-
-- **Claim:** When the file can't be opened, the response is a fixed `"not found"` body and doesn't include the path or the OS error.
-  **Location:** `subject.go:30-32`
-  **Evidence:** read-static
-  **Verified:** I read the error branch. `err` isn't written to the response.
-  **Not verified:** Whether a recovery or logging middleware upstream logs the request, including the `file` parameter, somewhere with broader access.
+| Candidate | Status |
+|---|---|
+| `../<other-id>/x.csv` | **Tested** (traced): `Join`/`Clean` resolves it to another user's directory. This is Finding 1. |
+| `..%2F..%2Fetc%2Fx.csv` | **Tested** (traced): `Query().Get` decodes it to `../../etc/x.csv`, which escapes. Same as Finding 1. |
+| `/etc/x.csv` (absolute) | **Tested** (traced): `Join` treats it as relative, giving `ExportDir/<id>/etc/x.csv`. No escape. |
+| `x.csv\x00.txt` / NUL injection | **Tested** (traced): the suffix check fails, and Go's `os.Open` rejects NUL anyway. No bypass. |
+| `..\\other\\x.csv` on a Windows host | **Listed**: on Windows `\` is a path separator, so traversal works the same way. Not checked here because the deployment OS is unknown. |
+| A symlink inside `ExportDir/<id>` pointing outside | **Listed**: `os.Open` follows symlinks. This depends on whether the export writer can be made to create symlinks, and that code isn't in scope. |
 
 ## Primitive sweep
 
-Primitive: path construction / file open
+Primitive: filesystem path construction / `os.Open`
 
 | Call site | Source | Guard | Disposition |
 |---|---|---|---|
-| `subject.go:28` `filepath.Join` | S1 `file`, S2 `user.ID`, S3 `ExportDir` | `.csv` suffix only | Finding 1 (S1 traversal), Finding 2 (S2 unvalidated) |
-| `subject.go:29` `os.Open(full)` | S1/S2 via `full` | none beyond the line 28 guard | Finding 1, Finding 4 (non-regular files) |
+| `subject.go:28` `filepath.Join(s.ExportDir, user.ID, name)` | S3, S2, S1 | `.csv` suffix only | Finding 1 (traversal), Finding 2 (ID segment) |
+| `subject.go:29` `os.Open(full)` | S1 via `full` | none beyond the above | Finding 1, Finding 4 |
+| `subject.go:37` `filepath.Base(full)` → header | S1 | none | Finding 3 |
 
-Primitive: header value interpolation
+The file has no other dangerous primitives (exec, SQL, deserialization, HTML).
 
-| Call site | Source | Guard | Disposition |
-|---|---|---|---|
-| `subject.go:37` `Content-Disposition` | S4 on-disk name (S1-derived) | `filepath.Base`; net/http CR/LF replacement | Finding 3 |
+## Endorsement Claims
+
+- **Claim:** Requests with no `*User` in the context get a 401 and return before touching the filesystem.
+  **Location:** `subject.go:16-20`
+  **Evidence:** read-static
+  **Verified:** The type assertion's `!ok` branch calls `http.Error` and then `return`.
+  **Not verified:** Whether the middleware that fills `userKey` is mounted on this route and authenticates the user properly. That code is outside `subject.go`.
+  **route: code-fact-check** (*pending execution verification*)
+
+- **Claim:** `os.Open` errors return a generic "not found" without the path or error text.
+  **Location:** `subject.go:30-32`
+  **Evidence:** read-static
+  **Verified:** The error branch writes the fixed string `"not found"`.
+  **Not verified:** Whether a 404 vs. 200 response lets an attacker probe which `.csv` files exist, once combined with Finding 1. It does, until Finding 1 is fixed.
 
 ## Summary Table
 
 | # | Finding | Severity | Boundary | Location | Confidence |
 |---|---------|----------|----------|----------|------------|
-| 1 | Path traversal enables cross-tenant / arbitrary `.csv` read | Critical | B1, B3 | `subject.go:22-29` | High |
-| 2 | `user.ID` used as path component without validation | Medium | B2 | `subject.go:16,28` | Low |
-| 3 | Unescaped filename in `Content-Disposition` | Low | B3 | `subject.go:37` | Medium |
-| 4 | Non-regular files opened; no `nosniff` | Informational | B1, B3 | `subject.go:23,29-38` | Medium |
+| 1 | Path traversal via `?file=` gives cross-user and host `.csv` reads | High | B2 | `subject.go:22-29` | High |
+| 2 | `user.ID` used in path without validation | Medium | B1, B2 | `subject.go:28` | Low |
+| 3 | Unescaped `Content-Disposition` filename | Low | B2, B3 | `subject.go:37` | Medium |
+| 4 | Non-regular files can be opened | Informational | B3 | `subject.go:29-38` | Low |
 
 ## Overall Assessment
 
-**Do not merge this as it stands.** The per-user directory is the endpoint's only access control, and a single `../` gets around it. Any authenticated user can download every other tenant's exports and any `.csv` file the process can reach. The problem is a missing confinement check, not a design flaw, so it can be fixed inside this function. The most important fix is to open files through `os.OpenRoot` on the per-user directory, or at minimum to reject any `name` that isn't a single local path component. After that, validate `user.ID` (Finding 2), because the confinement fix only works if that path component is also well-formed. The review covers this file only. The auth middleware and the code that creates export files weren't read, and the endorsement claims are still waiting on execution verification.
+This handler isn't safe to merge. The core problem (Finding 1) is that the code treats `filepath.Join` as if it confined the path, when it only cleans it. Any logged-in user can read other users' exports and any `.csv` file the process can read. The fix belongs in this handler and is small: allow only a plain filename (which also fixes Finding 3), then open it inside the user's directory with `os.OpenRoot` or with an explicit check that the path stays inside it. Longer term, serving exports by an opaque database ID with an ownership check would remove the need to trust filenames at all. The single most important fix is to reject `..` and path separators in `file`, or to use `os.OpenRoot`.

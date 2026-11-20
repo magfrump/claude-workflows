@@ -1,181 +1,152 @@
-# Yglesias Critique: Finish the Line, the Case for Fully Funding the Eastline Extension
+> ⚠️ **No fact-check report provided.** This critique does not include independent factual verification. Checkable claims in the draft have not been assessed. For full verification, run the `fact-check` skill first or use the `draft-review` orchestrator.
 
-> ⚠️ **No fact-check report provided.** This critique does not include independent factual
-> verification. Checkable claims in the draft have not been assessed. For full verification,
-> run the `fact-check` skill first or use the `draft-review` orchestrator.
+# Yglesias Critique: Finish the Line, The Case for Fully Funding the Eastline Extension
 
 ## The Goal vs. the Mechanism
 
-The **goal** is good. Holbrook, where 40 percent of households don't own a car, should have fast, reliable access to the region's biggest employment center. Cutting a 70-minute commute to 24 minutes is life-changing for those households. The memo is also right that the Westline was a success worth repeating.
+The **goal** is worth taking seriously. East-side residents, especially in Holbrook where 40% of households don't own a car, should get fast, reliable access to the region's job centers. The region also made a promise it hasn't kept. A 70-minute commute cut to 24 minutes is a large, concrete benefit to people with few alternatives. I'm not going to argue the Eastline shouldn't exist.
 
 The **mechanism** has three parts:
-- commit to $7.8B "at the current estimate";
-- deliver it with the same consultant team and delivery model that produced the estimate;
-- fund it with a 30-year regional sales tax.
 
-That mechanism works against the goal in three ways.
+- **Commit to the full $7.8B at the current estimate.**
+- **Fund the gap with a 30-year half-cent sales tax.**
+- **Deliver it the same way as the Westline**, with the same consultant team that has carried the project since 2016.
 
-**It turns scope growth into a virtue.** The cost grew from $4.1B to $7.8B, about 90 percent. Most of the drivers the memo lists are choices, not physics:
-- tunneling through Riverside for noise and visual reasons;
-- a second mezzanine at four stations because the city asked;
-- larger station footprints;
-- expanded mitigation commitments.
+That mechanism treats the cost as a fixed fact of nature rather than the output of decisions. The memo's own account says the decisions are the problem.
 
-Each item might be defensible. But "we are building a better railroad, and better costs more" confuses better-*specified* with better-*for-riders*. A Holbrook resident gets no faster trip from a second mezzanine. Do the arithmetic the memo waves away:
+Run the memo's numbers:
 
-| | Westline (today's $) | Eastline | Ratio |
-|---|---|---|---|
-| Cost per mile | ~$290M | ~$850M | ~2.9x |
-| Cost per station | ~$230M | ~$710M | ~3.1x |
-| Capital cost per weekday rider | ~$52K | ~$163K | ~3.1x |
+| | Westline | Eastline |
+|---|---|---|
+| Cost (today's $) | ~$3.2B | $7.8B (YOE) |
+| Miles | 11 | 9.2 |
+| Cost per mile | ~$290M | ~$850M |
+| Weekday riders | 61,000 (actual, after 20 years) | 48,000 (modeled, year 10) |
+| Capital cost per weekday rider | ~$52K | ~$160K |
 
-The per-rider comparison is generous to the Eastline. It sets a year-10 *projection* against twenty years of *observed* Westline ridership.
+Some of the gap is real: tunneling, a denser corridor, and the YOE-vs-today's-dollars mismatch. But "we are building a better railroad and better costs more" does not explain why the region should pay roughly 3x per rider. The memo's list of cost drivers deserves a closer look:
 
-**It locks in the delivery model that produced the overrun.** The general engineering consultant (GEC) has been on the project since 2016, which means it presided over the 90 percent growth. The memo presents its tenure as a qualification. The Board should treat it as a question.
+- A tunnel through Riverside's historic district to address noise and visual concerns.
+- A second mezzanine at four stations because the city asked.
+- Enlarged station footprints.
+- Expanded mitigation commitments.
 
-**It asks the people it means to help to pay a regressive tax for 30 years.** Holbrook's car-free households will pay the half-cent sales tax on everything they buy until the mid-2050s. That's fine if the line delivers. It's much worse if the region is paying a 2–3x cost premium.
+Each was locally reasonable. Together they are how American transit projects become unaffordable.
 
-If the Board cares about Holbrook, its own logic should push it to be *harder* on cost per mile, not softer. Every excess dollar here is a bus route, a frequency upgrade, or a future line elsewhere that never gets built.
+Here is the causal chain that undermines the goal. If the region's price for rail is ~$850M/mile, it can build one line per generation. The east side waited 20 years for this one. At this unit cost, the next underserved neighborhood waits another 20. If you care about transit access for carless households as a *region*, a mechanism that locks in the current cost structure is working against you. Some of the money buys Riverside homeowners a quieter historic district and gives the city mezzanines it didn't pay for. All of it is financed partly by a sales tax that Holbrook's lower-income residents pay at a higher share of income. The author's own values should push them toward cost discipline as the *precondition* for full funding, not an afterthought.
 
 ## The Boring Lever
 
-There are two levers, one for riders now and one for cost.
+There are two boring levers, and both beat the ballot measure on value per dollar.
 
-**Riders now: bus priority between Holbrook and Marlow Park.** A 70-minute bus trip on what can't be much more than a single-digit-mile corridor almost certainly means the bus is stuck in traffic, waiting at lights, or routing through a transfer. Bus improvements could deliver within 18–24 months, for tens of millions of dollars:
-- dedicated lanes;
-- transit signal priority;
-- all-door boarding;
-- a direct routing with 6–8 minute frequencies.
+**1. Station scope.** On underground projects, stations, not tunnels, are usually the dominant cost. Mezzanine levels, oversized station boxes and deep excavations drive the price. I'm fairly confident this pattern holds broadly, based on work like NYU's Transit Costs Project, though I'd want the Authority's own cost breakdown to confirm it here. Possible moves:
 
-That probably won't hit 24 minutes. Getting to 40–45 minutes seems plausible, though I'm only moderately confident without seeing the corridor. The rail line opens in, what, 2034 at the earliest? A Holbrook resident gets roughly half the time savings for 8+ years before it opens, for under 1 percent of the capital cost. Nothing in the memo suggests this was considered. It also doesn't compete with rail. Good bus ridership is the best evidence for the rail ridership forecast.
+- Drop the four added mezzanines.
+- Right-size station boxes to the actual code minimums rather than the "enlarged" footprints.
+- Standardize station designs across all eleven.
+- Re-examine whether every station needs to be mined rather than cut-and-cover.
 
-**Cost: a scope-and-standards audit before the ballot, not after.** Commission an independent review of each cost driver the memo lists:
-- Could Riverside use a single-bore or shallower tunnel?
-- Are the four second mezzanines required by code, or by the city's preference?
-- Can station boxes shrink to the minimum the fire-life-safety standards actually require?
-- Can stations be standardized so they aren't each custom-designed?
+My rough guess is that this could take $1B–2B out of the estimate. That is something like a third to two-thirds of the entire funding gap, without a single new tax dollar. The memo never says what a mezzanine costs or what the Riverside tunnel cost versus the surface alternative. That omission is telling. Every scope addition should carry a price tag, and requesters (like the city) should either pay for their adds or accept that they come out.
 
-Comparative research on transit construction costs (the NYU Transit Costs Project is the best-known) consistently finds that US station design and scope are a leading cost driver. I'm fairly confident in that general finding, less so in how it applies to this specific line. Suppose the audit recovers even $1–1.5B. That's a third to half of the entire funding gap. It's also more than the sales tax's $200M reserve could ever absorb.
+**2. Bus priority on the Holbrook–Marlow Park corridor, now.** The rail line opens years from now. Holbrook's carless households have a 70-minute commute *today*. Dedicated bus lanes, signal priority and all-door boarding could plausibly cut that to 45–50 minutes within 18 months for a rounding error of the rail budget. This isn't a substitute for the Eastline. But the memo's framing ("the east side has already waited twenty years") makes the case for helping people during construction, and the memo doesn't mention it at all.
 
 ## Follow the Money
 
-Trace the $7.8B.
+Trace the $7.8B:
 
-**Contingency.** About $1.8B of it is contingency, since the 30 percent is included, implying a base of roughly $6.0B. The memo then asks the region to "commit to funding the Eastline in full at the current estimate," and argues that full funding "gives contractors the certainty they need to bid competitively." Certainty about the *funding* helps attract bidders. Announcing the *number* tells bidders how much money is on the table. In thin markets, and US tunneling has few qualified bidders, bids tend to rise toward the available budget. The contingency stops being a cushion and becomes a target.
+- **~$1.8B is contingency.** That is 30% on a ~$6.0B base, and a contingency that large tends to get spent. Who controls drawdowns?
+- **~$2B+ is scope growth not explained by inflation.** $4.1B in 2016 with ten years of construction inflation (call it 40–50%, though I'd want the regional index) gets you to roughly $5.8B–6.2B. The rest came from design choices. The beneficiaries of that tranche are mostly Riverside property owners, the city, and the consultants and contractors who design and build the added scope. Holbrook riders mostly aren't.
+- **Utility relocation and mitigation.** This money flows partly to private utilities relocating their own infrastructure. That is a common place where agencies overpay because they lack leverage.
 
-**Who the scope choices pay.** The money goes to:
-- contractors and tunneling specialists;
-- the GEC, whose fees typically scale with program size and duration;
-- utilities, whose relocation estimate "grew after more detailed surveys";
-- the city, which got its mezzanines.
+Now the revenue side. The half-cent tax supports $3.4B in bond proceeds against a $3.2B gap, leaving a $200M reserve. That's a 6% cushion on the unfunded portion and about 2.5% of the total project. If bids come in high, which on a project whose estimate grew 90% in a decade is the base case rather than the tail, that cushion is gone at the first contract package.
 
-Every party with a voice in the scope has been rewarded for expanding it. No one in the memo's account is paid to say no.
-
-**Owner capacity.** Growing in-house oversight from 38 to 55 people means 55 public employees overseeing a $7.8B program run largely by consultants. That's about $140M of program per in-house overseer. Thin owner capacity is a recurring explanation for why US agencies pay more. The agency can't challenge consultant designs or contractor change orders because it lacks the in-house expertise to know what things should cost.
-
-**Rough accounting.** Suppose a tunneled line could be built at the Westline's per-mile rate plus a generous 75 percent tunneling premium. That's roughly $4.7B. On that very rough benchmark, something like **$2.5–3B of the $7.8B is scope, process, and procurement premium, not railroad.** That's roughly the size of the funding gap the sales tax is meant to close. In effect, the tax pays for the premium.
+Then the money that isn't in the memo: **operating costs.** Eleven underground stations mean elevators, escalators, ventilation, fire-life-safety systems, staffing and security for decades. The memo says nothing about who pays to run the line. A capital-only sales tax plus an unfunded operating obligation tends to show up later as service cuts on the bus network, which Holbrook residents depend on. This is a significant gap.
 
 ## Factual Foundation
 
-No fact-check report was provided, so these claims are unverified. In order of how much weight they carry:
+No fact-check report was provided, so none of these claims has been verified. The claims that most need checking, because the argument leans on them:
 
-1. **"Federal grant commitments… may not be available in the next [cycle]."** This is the memo's main urgency argument, and it's vague. Is it a signed full funding grant agreement, a project rating, or an appropriations expectation? If it's a federal Capital Investment Grants rating, cost-effectiveness matters, and a 90 percent cost increase could itself threaten the grant. *Doing a lot of work; ~50% confident it's as firm as implied.*
-2. **48,000 weekday riders by year 10.** It needs comparison with the 2016 forecast. Did ridership projections rise as costs did, or stay flat? Forecasts have a known optimism bias. *Plausible but should be checked against the model documentation.*
-3. **$4.1B (2016) vs. $7.8B (year-of-expenditure).** If the 2016 figure was in base-year dollars, part of the "growth" is just accounting for inflation over the build period. That cuts in the memo's favor. *I'd want the 2016 basis stated.*
-4. **Westline at $3.2B in today's dollars.** The method matters: CPI or a construction cost index? *Sounds right directionally.*
-5. **$300M/year escalation.** That's about 3.8 percent a year, plausible for construction inflation. *Probably correct.*
-6. **Half-cent for 30 years supports $3.4B in bonds.** This depends on taxable sales growth and interest rates. *Should be stress-tested against a recession scenario.*
+- **Westline's $3.2B in today's dollars and 61,000 riders.** The whole "it worked before" case rests on these. They sound plausible.
+- **The 48,000-rider projection.** Modeled ridership on US projects has a mixed track record. This number is doing a lot of work, and I'm maybe 50% confident it holds at year 10. Ask for the model's assumptions and a sensitivity range.
+- **Commute times of 70 versus 24 minutes.** This is the headline benefit. Is 70 minutes typical or worst-case?
+- **"$300 million per year" in escalation.** That's about 4% on $7.8B, which is plausible. But note that the 2016–2026 cost growth averaged ~$370M/year and was mostly scope, not escalation.
+- **"Federal grant commitments may not be available in the next cycle."** This is plausible but vague. Is the federal share contingent on a specific local funding date? That is the strongest urgency argument if true.
+- **Whether the tax actually yields $3.4B in bond proceeds.** This depends on sales tax growth assumptions and the interest rates the bonds are issued at.
 
 ## The Scale Test
 
-The relevant scale here is the network, not the number of riders.
+The scale problem here is time and pipeline, not 10 million users.
 
-At ~$850M per mile, a half-cent sales tax for 30 years buys about 4 miles of this railroad. Ask what the region's transit ambitions look like over the next 30 years:
-- other corridors;
-- the neighborhoods that will "wait twenty years" next;
-- bus network investment.
+Look at the region over 20–30 years. A half-cent tax committed for 30 years to one 9.2-mile line consumes the region's fiscal capacity for transit expansion for a generation. If this is the last line the region builds, fine. But if the region wants more transit, and the Westline's success suggests it should, this unit cost is the binding constraint. The precedent matters more than the project. "We accepted 3x per rider because standards are higher" becomes the baseline for every future estimate.
 
-At this cost structure, the region gets one line per generation, each requiring its own tax. The Eastline's cost per mile isn't just this project's problem. It becomes the baseline for every future estimate in the region, because the next GEC will cite it.
-
-The memo's "better costs more" principle doesn't survive scaling. Applied to every future project, it guarantees the network never gets built. A region that could build at Westline-like real costs could build two or three lines for this price.
-
-Scale also breaks the contingency logic. At $7.8B, the 30 percent contingency is $1.8B. A 20 percent overrun beyond it, not unusual for urban tunneling, adds another ~$1.5B. The sales tax reserve is $200M, and the memo is silent on who covers the rest.
+There's also a repeat-ballot problem. Voters will be asked again for the next project. How this one performs against its estimate determines whether they say yes.
 
 ## The Org Chart
 
-Try writing the first three lines of the job description for the person accountable for Eastline costs:
-- Who is the project director, and do they have authority to refuse a city request for a mezzanine?
-- Who negotiates utility relocation agreements, and with what leverage?
-- Who reviews the GEC's designs for unnecessary scope, given the GEC both designs the project and manages the contracts?
+Here's the delivery org chart as described:
 
-The memo's org chart is:
-- the Authority (38 → 55 oversight staff);
-- the GEC (design plus construction management);
-- design-bid-build contractors.
+- **Authority oversight staff,** growing from 38 to 55.
+- **A general engineering consultant (GEC)** that designs the project *and* manages the construction contracts.
+- **Design-bid-build contracting.**
 
-The obvious gap is that **the same consultant produces the designs, manages the contracts, and benefits from both getting bigger.** That isn't an accusation of bad faith. It's an incentive structure with no internal check.
+The problems:
 
-The "same approach that succeeded on the Westline" claim also needs scrutiny. That was 20 years ago. The staff who delivered it have largely retired, and the 2004 regulatory, labor, and contractor environment no longer exists. Saying the model succeeded once is not evidence that the Authority can run it again.
+- **The GEC is grading its own homework.** The same team has been on the project since 2016, the period in which the estimate nearly doubled. "Knows it better than anyone" is true. It also means nobody independent has challenged the cost growth. When the designer manages the contracts, design errors that surface as change orders get adjudicated by the party that made them.
+- **No one is empowered to say no.** Who had the authority to reject the city's mezzanine request, and why didn't they? The memo should name a single accountable project director with explicit authority to refuse unfunded scope.
+- **In-house capacity is thin.** Seventeen added positions to oversee a $7.8B program run mostly by consultants is a staffing model associated with high costs. Agencies with lower costs typically have deeper in-house engineering capacity. I'm moderately confident in that generalization.
+- **"Same approach as the Westline" is weaker than it sounds.** The Westline opened in 2004. The staff, consultants and contracting market that delivered it are largely gone. Institutional track record decays.
+- **Nobody owns the line after opening.** The project has no named owner for long-term operations once the current champions move on. That ties back to the missing operating budget.
 
-A credible org chart would include:
-- an empowered in-house cost-and-scope office, with veto power over design changes above a threshold;
-- independent cost review, separate from the GEC;
-- a named executive accountable for the per-mile number.
+A stronger version would include several things:
+
+- An independent cost peer review before the ballot.
+- A scope-control board where requesters fund their own adds.
+- A plan to build in-house design capacity over the construction period.
 
 ## Adoption Survival
 
-This one has real political stakes. It's a November ballot measure, a 30-year tax, and a construction period that will span several board terms and elections.
+The **adoption** cycle here starts with the November ballot and doesn't end there.
 
-**Passing the ballot.** Transit sales tax measures pass fairly often, so adoption at the ballot is plausible. But look at the coalition. The beneficiaries are concentrated on the east side. The tax is spread across all three counties, including the west side, which already has its line. The "we made a promise" framing helps with east-side voters and does little elsewhere.
+**Who defends it?** East-side residents, construction trades, and Westline-corridor beneficiaries who believe in rail. That's a real coalition.
 
-**Surviving construction.** The bigger risk is the eight-plus years of construction. Disruption is visible, benefits are invisible until opening, and any overrun beyond the $200M reserve becomes a political crisis. Cost scandals mid-construction, rather than the original vote, are what discredit transit agencies and poison the *next* ballot measure. The memo's ask, to commit at the current estimate with no mechanism for an overrun, sets the Board up for exactly that.
+**Who opposes it?** Residents of the counties or areas that pay the tax but see no service. Anti-tax voters. And, most dangerously, everyone who reads the first post-vote headline about a cost overrun. The memo asks voters to commit "in full at the current estimate," but provides no mechanism for what happens if bids exceed it. The project's own history is a 90% estimate increase, so a future overrun story is likely. That story is what sinks the *next* measure and erodes trust in this one mid-construction.
 
-**Phasing.** The memo rejects phasing on the grounds that it "risks leaving the extension permanently unfinished." But asking voters for $7.8B in one measure carries its own risk: if the measure fails, nothing gets built. The memo also picked an odd phase to dismiss. Opening Central-to-Holbrook first doesn't serve the Holbrook-to-Marlow trip that is the memo's central example. The real choice isn't phase or don't phase. It's whether something visible happens for east-side riders before 2034.
+**The popular version** gets most of the benefit at much lower political risk:
 
-**The popular version** keeps the rail commitment and adds three things:
-1. **Year-one bus priority on Holbrook–Marlow**, so voters see results before the next election and the line builds a ridership constituency.
-2. **A published cost-per-mile target with independent oversight**, written into the ballot measure. "The tax funds the line only if costs stay under $X per mile" is far more popular than "trust us at $7.8B."
-3. **A pre-ballot scope audit**, so the number on the ballot is smaller and better defended.
-
-This gets most of the political benefit of "finish the line" while defusing the cost-per-mile attack that opponents will certainly make. The memo already concedes that "some have pointed out" the cost comparison. Those people will be running the opposition campaign.
+1. **A smaller ask.** Value-engineer the stations first and come to voters with a lower number.
+2. **A visible cost cap with accountability.** For example, require an independent oversight committee, published scope costs, and no new scope without a funding source. "We cut $1.5B before asking you for a dime" is a far better ballot message than "better costs more."
+3. **Bus priority now.** This shows east-side residents a benefit within a year of the vote.
+4. **A reconsidered phasing structure.** The memo's rejected phase (Central to Holbrook) is the wrong test case. It doesn't serve the headline Holbrook-to-Marlow Park trip at all. Is there a phase that does, or a segment that's cheaper to build first? The memo should evaluate a phasing option designed to work rather than dismiss the one designed to fail. The "permanently unfinished" risk is real, but voters can be offered a binding commitment for phase two.
 
 ## The Cost Disease Check
 
-Urban rail construction in the US is close to the textbook cost disease sector. Costs per mile have risen far faster than inflation for decades, and many peer countries build comparable tunnels for a fraction of the cost. I'm confident in the direction of that gap and uncertain about its size for this specific alignment.
+Construction is a classic **cost disease** sector, and US urban tunneling is among its worst cases. By US standards, ~$850M/mile underground is not outrageous; some projects have run several times that. By international standards it is high. Comparable underground lines in Europe and East Asia have often come in well under half that, though I'd want specific peer comparisons before leaning hard on a number.
 
-The memo's explanation for its cost growth is a list of standard US cost disease drivers, presented as signs of quality:
-- community-driven alignment changes;
-- oversized stations;
-- stakeholder add-ons;
-- expanded mitigation;
-- utility surprises.
+The memo's posture of "higher standards cost more, accept it" is exactly how cost disease perpetuates itself. Every added standard is individually defensible, and no one prices the total.
 
-The memo needs to explain why the next dollar here buys railroad rather than more of the same. It doesn't.
-
-My rough estimate is that **of the $3.2B the sales tax would fund, perhaps $1–2B goes to new rider value, and the rest covers cost premium.** That premium comes from scope choices, a procurement structure that invites bidding up to the budget, and owner capacity too thin to push back. That's an estimate, not a finding, but the burden of proof belongs to the memo.
+A rough split of the $7.8B: perhaps $4B–5B is the irreducible cost of a 9.2-mile tunnel with eleven stations in this corridor. The remainder, roughly $3B, is a mix of contingency and scope choices plus the US-specific cost premium. A meaningful share of that is recoverable through design and delivery changes rather than new taxes. This is a guess with wide error bars. The point is that the memo should be producing this breakdown, not the critic.
 
 ## Overall Assessment
 
 **What's sound:**
-- The goal is right.
-- The Westline is a real success.
-- The equity case for Holbrook is strong.
-- The escalation argument is legitimate. Delay costs money.
-- The candor about cost growth is better than most agencies manage. Credit where it's due.
+
+- The goal and the ridership case.
+- The candor about cost growth, which is genuinely better than most agency memos.
+- The urgency argument about federal grant timing.
+- The point that full funding reduces contractor risk premiums. That one is real and underappreciated.
 
 **What's wish-fulfillment:**
-- The idea that the scope additions are what "better" means.
-- The idea that the delivery model and consultant team that produced a 90 percent increase will now hold the line.
-- The idea that announcing a fully funded $7.8B budget disciplines bids rather than anchoring them.
-- The absence of any plan for overruns.
-- The absence of any plan for riders before 2034.
 
-**The single most important revision:** before asking voters for a 30-year tax, make cost control part of the proposal. That means:
-- commission an independent scope audit;
-- separate design from construction management, or add an independent cost reviewer;
-- substantially strengthen in-house owner capacity;
-- tie the ballot measure to a cost-per-mile ceiling.
+- Treating $7.8B as a given.
+- Assuming the delivery model that produced the cost growth will now contain it.
+- Ignoring operating costs.
+- Dismissing phasing with a strawman phase.
+- Implying a $200M reserve covers a project with this estimate history.
 
-Then pair the rail line with immediate bus priority on Holbrook–Marlow. The result is a proposal that's cheaper, more defensible on the ballot, more likely to survive construction, and better for the riders it exists to serve.
+**The single most important revision:** before going to the ballot, commission an independent scope and cost review. Publish the cost of each post-2016 scope addition, and come back with a reduced number plus a scope-control structure. That makes the project cheaper, the ballot more winnable, and the next line possible. You get to keep everything that matters about "Finish the Line." Finish it at a price that lets the region keep building.
 
-**Load-bearing objection:** Committing at $7.8B while keeping the delivery model that produced the 90 percent cost growth is the objection to act on first, because fixing it changes the dollar amount on the ballot, the contracting structure, and the political defensibility of everything else. Next in decision impact: (2) the missing near-term bus lever for Holbrook–Marlow, which reshapes both the equity case and adoption survival; (3) no overrun backstop beyond a $200M reserve, a construction-period political time bomb; (4) the vague federal-funding urgency claim, which, if weaker than implied, removes the main reason not to take six months for a scope audit.
+**Load-bearing objection:** The commitment to fund "in full at the current estimate" with an unchanged consultant-led delivery model locks in a ~3x per-rider cost premium with no scope discipline. That matters most because it determines whether the ballot passes, whether overruns sink public trust, and whether the region can ever afford another line. Then, in descending order:
+
+1. The missing operating-cost plan, which could quietly cannibalize the bus network Holbrook relies on.
+2. The GEC managing contracts on its own design, with no one empowered to reject scope.
+3. The strawman phasing analysis, which hides a cheaper path to the headline Holbrook-to-Marlow Park benefit.

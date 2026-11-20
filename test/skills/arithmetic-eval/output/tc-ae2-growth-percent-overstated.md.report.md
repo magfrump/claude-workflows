@@ -1,14 +1,10 @@
-The 42% figure is wrong. Revenue going from $2.4M to $3.1M is about a 29% increase, not 42%.
+I couldn't check the one derived figure in the draft, because permission to run the calculator tool was denied. My instructions say not to replace the tool with mental math, so I haven't confirmed or rejected it.
 
-I couldn't confirm this with a calculator because the command was denied, so these numbers are my own hand arithmetic:
+**The figure:** "a 42% quarter-over-quarter increase" (from $2.4M in Q2 to $3.1M in Q3).
 
-| Figure in draft | Derived from | Correct value | Verdict |
-|---|---|---|---|
-| "a 42% quarter-over-quarter increase" | $2.4M (Q2) → $3.1M (Q3) | (3.1 − 2.4) / 2.4 = 0.7 / 2.4 ≈ **29.2%** | ❌ Wrong |
+- **Status:** Not checked.
+- **How to check it:** growth = (Q3 − Q2) / Q2 × 100 = `(3.1 - 2.4) / 2.4 * 100`. If the result isn't about 42, the percentage in the draft is wrong.
 
-**Other notes:**
-- At 42% growth from $2.4M, Q3 revenue would be about $3.41M. At $3.1M, growth is about 29%. So either the percentage or the Q3 revenue figure is wrong. Check the source data to see which one.
-- No common slip produces 42% from these two numbers, so it may be left over from an earlier draft or come from a different metric, such as enterprise-tier growth alone.
-- $2.4M and $3.1M are inputs, not derived numbers, so I couldn't check them. "Driven mainly by the enterprise tier" isn't a number, and I couldn't check it without a revenue breakdown.
+The other numbers ($2.4M and $3.1M) are reported values, not derived ones, so there's nothing to recalculate for them.
 
-**Suggested fix:** "…from $2.4M in Q2 to $3.1M in Q3, a 29% quarter-over-quarter increase…". Only use this if $3.1M is the correct figure.
+To finish the check, allow the calculator command and run this again, or work out the formula above yourself.

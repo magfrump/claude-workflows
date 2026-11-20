@@ -1,28 +1,29 @@
-## Tech Debt Triage: Hand-ordered discount rule chain in checkout
+## Tech Debt Triage: Hand-ordered discount precedence in `apply_discounts()`
 
-**Location:** `checkout/pricing/discounts.py`, `apply_discounts()` (640 lines, 74 branches); sole caller is the checkout service
-**Nature:** Structural. Promotion precedence and stacking are implicit in `if`/`elif` order and in shared mutable state (`total_off` read by `_gold_bonus`). None of it is declared or documented.
-**Cost of Deferral:** `+1 pricing incident per ~2 months`. Four incidents fell between 2026-03-12 and 2026-09-08, with gaps of 51, 56 and 73 days. Each campaign change is a fresh chance to misplace a branch, and the file changes almost weekly (49 of the last 52 weeks).
-**Failure Cost:** `High × High`. Incidents recur every couple of months. Each one is a silent mispricing on the money path at about 1,900 req/min peak, and it runs until someone notices. Observed losses were $4.1k–$18.4k plus refund labour and a paused campaign. The same failure during holiday peak would cost more.
+**Location:** `checkout/pricing/discounts.py` (`apply_discounts()`, 640 lines, 74 branches)
+**Nature:** Structural. Business rules (precedence and stacking) are encoded only in the order of `if/elif` branches, with no written specification and partial test coverage.
+**Cost of Deferral:** `+1 hand-ordered branch per week`. The file was touched in 49 of the last 52 weeks, and each new branch adds precedence interactions with all existing ones. Incidents are running at about 1 per 7 weeks.
+**Failure Cost:** `High × Med`. There have been four incidents in about six months. That is a realised rate, not speculation. Each one cost money or caused operational disruption: roughly $22.5k over-discounted in total, 6 hours of manual refunds, and a campaign paused for 2 days. A failure during peak traffic (about 1,900 req/min) costs more than the past incidents did.
 
 ### Carrying Cost: High
-Almost every week someone edits the file. They have to reason about the precedence of 74 branches that nobody has written down, and only about 30 of those branches have tests. The cost is already visible: four incidents in six months, each post-incident review naming "hand-ordered branch precedence" as a contributing factor, and failure modes that are exactly what this structure predicts (reordering, guard bypass, order-dependent bonus, stale branches). Every new campaign adds cognitive load and bug risk.
+This is not ergonomic debt. It is actively producing defects, and all four post-incident reviews name the same root cause. Every campaign change requires an engineer to reason correctly about where a branch sits relative to 70+ others. They have to do this without a precedence spec and with tests covering only about 30 of 74 branches. The `total_off` dependency in `_gold_bonus` means order matters even outside the `elif` chain, which is hidden complexity that looks simple. The file changes almost weekly, so the team pays this cost constantly.
 
 ### Fix Cost
-- **Scope:** Localized. One module is replaced by a rule table plus an evaluator. The public signature is kept and there is a single caller.
-- **Effort:** Days. The estimate is 4–5 engineer-days, but I'd add a margin for one part it leaves out (see Risk).
-- **Risk:** Medium. Characterisation tests over real baskets lock in *current* behaviour, and current behaviour includes known-wrong precedence. Someone outside engineering (product or finance) has to decide the intended stacking rules for cases where today's behaviour is accidental, and that decision isn't in the 4–5 day estimate.
-- **Incremental?** Partially. The cutover is one change, but the risk can be staged. Build the rule table, run it in shadow mode alongside the existing function, log any disagreements, and switch only when the diff is clean or every difference is an intended fix. At 1,900 req/min, a few days of shadow traffic covers far more baskets than last quarter's replay.
+- **Scope:** Localized. One module, the public signature is preserved, and the checkout service is the only caller.
+- **Effort:** Days. The 4–5 day estimate is plausible for the mechanical work. Budget extra time to settle intended precedence, because characterisation tests will capture *current* behaviour, including any latent bugs. Someone with product or pricing authority has to rule on the cases where current and intended behaviour differ.
+- **Risk:** Medium. A subtle stacking or precedence change could mis-price live orders. Characterisation tests over real baskets reduce this risk, and so would a shadow run that compares old and new engine outputs on live traffic before cutover.
+- **Incremental?** Partly. The table and characterisation tests can be built and shadow-run alongside the existing function. The final cutover is a single switch, and it can sit behind a flag for instant rollback.
 
 ### Urgency Triggers
-- **Holiday sale branches (due 2026-11-02): this trigger has already passed.** The write-up is dated 2026-10-05 and today is 2026-11-19, so the holiday branches have presumably been added to the existing chain and may be live now. Peak traffic (Black Friday/Cyber Monday, around Nov 27–30) is imminent. That raises the failure cost now, and it also makes a production cutover in the next ~2 weeks risky. If checkout has a holiday change freeze, it applies here.
-- **Ongoing:** every campaign add or retire is a trigger. At almost one per week, the debt is continuously "due".
-- **Knowledge risk:** the precedence lives in people's heads. If whoever understands the current ordering rotates off the team, carrying cost rises sharply.
+- **Holiday sale (branches were due 2026-11-02): already passed.** The write-up is dated 2026-10-05 and today is 2026-11-20. The window to fix this *before* holiday branches went in has closed. Those branches are presumably in the chain now and about to run through peak (Black Friday 2026-11-27 / Cyber Monday 2026-11-30).
+- **Peak-season change freeze.** If the team has one, cutover must wait until it lifts. Even without a freeze, swapping pricing logic during the highest-traffic week is poor timing.
+- **Ongoing campaign cadence.** Every weekly campaign change remains another chance for a precedence error until the fix lands.
+- **Team-context staleness.** "No competing deadline this month" was true in October. Check whether it still holds.
 
 ### Recommendation
 
 **Recommendation:** Fix now
 
-Carrying cost is high, failure cost is severe and has been demonstrated four times, and the fix is localized and cheap (about a week) with no competing deadline. This is the clearest fix-now case the framework allows. One adjustment comes from the date: the planned window before the holiday branches has already closed. Start immediately on the work that carries no production risk: characterisation tests, a written precedence and stacking spec signed off by product or finance, and the rule-table implementation running in shadow mode. Do the actual cutover after the holiday peak (or freeze) ends. For now, review every holiday-sale branch change to this file against the four known failure patterns, especially guard placement and expiry checks.
+Carrying cost is high, failure cost is realised and recurring, and the fix is localized and modest relative to one incident's cost: about 5 days versus about $18k for INC-2231 alone. Starting now means starting the work now, not cutting over during peak. Write the precedence spec and characterisation tests now, including coverage of the newly added holiday branches. Build the rule table and shadow-run it against live traffic through the sale. Cut over after peak, behind a flag. Until then, require a second reviewer on any `discounts.py` change and add tests for each holiday branch.
 
-Because the fix spans more than one file and its precedence semantics are unclear, it should go through the research-plan-implement workflow (`workflows/research-plan-implement.md`), using this triage as the input to the research phase.
+The fix touches more than one file (rules table, engine, tests, shadow harness) and needs a precedence decision, so it is non-trivial. Hand it to the research-plan-implement workflow (`workflows/research-plan-implement.md`) and use this triage as input to the research phase.

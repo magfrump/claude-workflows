@@ -1,85 +1,91 @@
 # Code Fact-Check Report
 
-**Repository:** /tmp/tmp.H2OgyuHG8o
+**Repository:** /tmp/tmp.NZImXKaOs8
 **Scope:** subject.py
-**Checked:** 2026-11-19
-**Total claims checked:** 1
-**Summary:** 0 verified, 0 mostly accurate, 0 stale, 1 incorrect, 0 unverifiable
+**Checked:** 2026-11-20
+**Total claims checked:** 3
+**Summary:** 1 verified, 0 mostly accurate, 0 stale, 0 incorrect, 2 unverifiable
 
 ---
 
-## Claim 1: "thread-safe due to GIL"
+## Claim 1a: "the compiled module is not in this repo"
 
-**Location:** `subject.py:7`
-**Type:** Invariant
-**Verdict:** Incorrect
+**Location:** `subject.py:4`
+**Type:** Reference
+**Verdict:** Verified
 **Confidence:** High
 **Verification mode:** static
-**Scope:** Covers `TaskQueue`'s own methods (`__init__`, `submit`, `process`, `get_result`) under concurrent callers, and whether the GIL is what provides their safety. It does not establish whether user-supplied `fn` callables are thread-safe, and it does not cover memory-model behaviour on free-threaded (no-GIL) CPython builds beyond what the explicit locks give.
+**Scope:** Covers whether a `ringbuf` module or file exists anywhere in the working tree. It does not establish whether `ringbuf` is installed in any Python environment.
 
-This comment makes two claims: a mechanism ("due to GIL") and a conclusion ("thread-safe"). The code contradicts both, so they share the verdict Incorrect and I have not split them.
+The import is `from ringbuf import SpscRing` (`subject.py:4`). The only file that mentions `ringbuf` or `SpscRing` is `subject.py` itself. A search for `**/*ringbuf*` found no files (paraphrased — no quote available because the claim is about something missing, shown by grep/glob returning nothing).
 
-**The mechanism is wrong.** The class does not rely on the GIL. It uses `queue.Queue`, which has its own internal lock, and an explicit `threading.Lock` around the shared dict:
+**Evidence:** `subject.py:4`; repo-wide grep for `ringbuf|SpscRing` and glob `**/*ringbuf*`
+
+---
+
+## Claim 1b: "vendored wheel"
+
+**Location:** `subject.py:4`
+**Type:** Reference
+**Verdict:** Unverifiable
+**Confidence:** Medium
+**Verification mode:** static
+**Scope:** Covers whether the repo contains a wheel file or a packaging manifest that refers to one. It does not establish where `ringbuf` actually comes from at runtime.
+
+The repo has no `*.whl` file, `requirements*.txt`, `pyproject.toml`, `setup.py` or `setup.cfg` that would show where the wheel comes from or which version is used (paraphrased — no quote available because the claim is about something missing: the glob returned no files). To verify this you would need the wheel itself or the place it is installed from.
+
+**Evidence:** glob `**/{requirements*.txt,pyproject.toml,setup.py,setup.cfg,*.whl}` (no matches)
+
+---
+
+## Claim 2: "SpscRing is lock-free and safe with one producer thread and one consumer thread running at the same time, so the ring needs no lock."
+
+**Location:** `subject.py:9-10`
+**Type:** Invariant / Behavioral
+**Verdict:** Unverifiable
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers how `EventPump` uses `self._ring` (`subject.py:7-30`). It does not establish that `SpscRing` is actually lock-free or safe with one producer and one consumer. It also does not establish that callers stick to one thread calling `push` and one calling `drain`. Nothing in `EventPump` enforces that, and the repo has no callers to check.
+
+Both parts of this sentence get Unverifiable, so I did not split it.
+
+**Mechanism (what SpscRing guarantees):** `SpscRing` comes from a compiled module that is not in the repo (see Claim 1a), so I could not read or run its implementation. Checking lock-freedom and single-producer/single-consumer safety would need the `ringbuf` source or binary and a concurrency stress test. The blocker is that the dependency is missing.
+
+**Conclusion ("the ring needs no lock"):** This only holds if `EventPump` really has one producer and one consumer. The class does not enforce that. Both ring operations are public methods with no lock around them:
 
 ```python
-# subject.py:10-12
-self._queue = queue.Queue()
-self._results = {}
-self._lock = threading.Lock()
+# subject.py:19-20
+def push(self, payload: bytes) -> bool:
+    return self._ring.try_push(payload)
 ```
 
 ```python
-# subject.py:21-22
-with self._lock:
-    self._results[task_id] = result
+# subject.py:22-30
+def drain(self) -> int:
+    count = 0
+    while (payload := self._ring.try_pop()) is not None:
+        with self._handlers_lock:
+            handlers = list(self._handlers)
+        for handler in handlers:
+            handler(payload)
+        count += 1
+    return count
 ```
 
-```python
-# subject.py:24-26
-def get_result(self, task_id):
-    with self._lock:
-        return self._results.get(task_id)
-```
+`_handlers_lock` (`subject.py:13`) only protects the handler list, not `try_push` or `try_pop`. Several threads calling `push`, or several calling `drain`, would break the single-producer/single-consumer condition the comment depends on. The repo contains no callers of `EventPump`, `push` or `drain` (paraphrased — no quote available because the grep for those names returned only their definitions in `subject.py`), so I could not tell whether real usage meets that condition.
 
-Whatever safety these methods have comes from those locks. The GIL does not make compound operations atomic. It only switches threads between bytecodes, and that is exactly the gap the next point depends on. A reader who believes "the GIL makes this safe" could reasonably delete `self._lock`, or write similar code elsewhere without locks, and would be misled.
-
-**The conclusion fails for concurrent `process()` callers.** `process()` checks whether the queue is empty and then takes an item as two separate steps:
-
-```python
-# subject.py:17-22
-def process(self):
-    while not self._queue.empty():
-        task_id, fn, args = self._queue.get()
-        result = fn(*args)
-        with self._lock:
-            self._results[task_id] = result
-```
-
-(excerpt covers all of `process()`, read through `:22`)
-
-`self._queue.get()` is called with no `block=False` and no `timeout`, so it blocks until an item arrives. Here is one way it goes wrong when one item is queued and threads A and B both call `process()`:
-
-1. A calls `empty()` and gets `False`.
-2. B calls `empty()` and gets `False`.
-3. B calls `get()` and takes the item.
-4. A calls `get()` on an empty queue and blocks forever, unless someone calls `submit()` later.
-
-(paraphrased — no quote available because this is a Python stdlib guarantee, not code in this repo) The `queue` module docs say that `empty()` returning `False` does not guarantee that a later `get()` won't block.
-
-So the class is not thread-safe against concurrent `process()` calls: a worker can hang. The dict accesses and the `submit()`/`get_result()` pair are safe, but the locks make them safe, not the GIL.
-
-**Evidence:** `subject.py:7`, `subject.py:10-12`, `subject.py:14-15`, `subject.py:17-22`, `subject.py:24-26`
+**Evidence:** `subject.py:4`, `subject.py:9-13`, `subject.py:19-30`; repo-wide grep for `EventPump|\.push\(|\.drain\(`
 
 ---
 
 ## Claims Requiring Attention
 
-### Incorrect
-- **Claim 1** (`subject.py:7`): The class's safety comes from `queue.Queue`'s internal lock and the explicit `self._lock`, not from the GIL. Also, `process()` checks `empty()` and then calls a blocking `get()` as separate steps, so a thread calling `process()` alongside another can block forever. The comment overstates both the mechanism and the guarantee.
+### Unverifiable
+- **Claim 1b** (`subject.py:4`): there is no wheel or packaging manifest in the repo. Checking "vendored wheel" needs the wheel or the place it is installed from.
+- **Claim 2** (`subject.py:9-10`): needs the `ringbuf`/`SpscRing` source or binary and a concurrency test. Even if `SpscRing` is safe, "needs no lock" only holds if callers use one thread for `push` and one for `drain`, and `EventPump` does not enforce this.
 
 ---
 
 **Notes:**
-- No `docs/reviews/hallucination-patterns.md` existed. This finding doesn't qualify for that log, because it gives the wrong reason for the safety rather than naming a symbol or API that doesn't exist. So I didn't create the file.
-- I only had read-only tools in this session, so I couldn't run a reproduction or save the report to `docs/reviews/code-fact-check-report.md`. Above is the full report text to save there.
-- The fixture header (`subject.py:1-2`) says it expects an **Unverifiable** verdict. I gave **Incorrect** because the code gives a concrete example of the failure (the `empty()`/`get()` race) and the safety comes from the explicit locks, not the GIL. Neither depends on runtime state that only running the code would reveal.
+- `docs/reviews/hallucination-patterns.md` does not exist. No claim was Incorrect, so there was nothing to add to it and I did not create it.
+- I only had read/search tools, so I could not write the report to `docs/reviews/code-fact-check-report.md` or run any Python checks. The report above is the full output; save it to that path if you want it kept.

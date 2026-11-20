@@ -1,20 +1,21 @@
-# UI Visual Review: subject.tsx (`TaskRunner`)
+# UI Visual Review: `subject.tsx` (TaskRunner)
 
-**Scope:** `subject.tsx` (the whole file, 32 lines)
+**Scope:** `subject.tsx` (single file, full audit)
 **Date:** 2026-11-20
-**Based on:** Code analysis only. No code-fact-check report was provided, so I checked the file's own comments against the code by hand (see Finding 2).
+
+I didn't have a code-fact-check report, so this review is based on reading the code. The comments in the file ("BUG: Button disappears when done", "Expected finding: Major") were checked against the code, not taken as true. They're right about the design, but see Finding 7: as written, nothing ever sets the status to `"done"`.
 
 ## Environment
 
 - **Files reviewed:** `subject.tsx`
-- **Target viewports:** Small mobile (320–480px), tablet/laptop (768–1366px), desktop (1920px+)
-- **Target browsers / platforms:** Current evergreen browsers and mobile Safari (default)
-- **Review mode:** Full audit (all checklist items 1–8; items 9–11 don't apply because there is no 3D or spatial-layering content)
-- **Project guidelines:** None found. There is no `docs/UI_LAYOUT_GUIDELINES.md` and no `.md` files in the repo, so the skill defaults apply.
+- **Project guidelines:** none found (no `docs/UI_LAYOUT_GUIDELINES.md` or other `.md` files in the repo)
+- **Target viewports:** 320–480px, 768–1024px, 1366×768, 1920px+
+- **Target browsers / platforms:** modern evergreen browsers and mobile Safari (default; Tailwind assumed)
+- **Review mode:** Full audit (items 1–8 and 10; items 9 and 11 don't apply because there's no 3D or spatial/stacked layout)
 
 ## Findings
 
-#### 1. "Run Task" button disappears when the task finishes, so the task can't be run again
+#### 1. The Run button disappears on completion, so the task can't be re-run and keyboard focus is lost
 
 **Severity:** Major
 **Location:** `subject.tsx:19-29`
@@ -23,9 +24,9 @@
 **Move:** Step 2 item 6: controls that disappear after completion
 **Confidence:** High
 
-The button only renders while `status !== "done"`. When the task finishes it is removed and replaced by a "Complete!" paragraph, so the user can't run the task again without reloading the page. The header comment rates this as Minor. I've rated it Major: re-running isn't just hard to find, it's impossible. Removing the button while it has focus also drops keyboard focus to `<body>`, which disorients keyboard and screen-reader users (WCAG 2.4.3 Focus Order). Changing the button's label instead of unmounting it keeps the control in place, keeps focus where it is, and keeps the action available.
+When `status === "done"`, the `<button>` is unmounted and a static "Complete!" `<p>` replaces it. There's no control left to run the task again, so the user's only option is to reload the page. A user who clicked the button with the keyboard also loses focus when it unmounts: focus falls back to `<body>`, and they have to Tab again from the top of the page (this harms focus order, WCAG 2.4.3). Changing the button's label keeps both the control and the focus in place.
 
-**Recommendation:** Always render the button and change its label based on status.
+**Recommendation:** Always render the button and change its label based on status. Show the completion message as a separate status line (see Finding 4).
 
 ```tsx
 // Before
@@ -37,188 +38,196 @@ The button only renders while `status !== "done"`. When the task finishes it is 
 {status === "done" && <p className="text-green-600">Complete!</p>}
 
 // After
-<button
-  type="button"
-  onClick={runTask}
-  disabled={status === "running"}
-  aria-busy={status === "running"}
-  className="..."
->
-  {status === "running" ? "Running..." : status === "done" ? "Re-run Task" : "Run Task"}
+<button type="button" onClick={run} className="...">
+  {status === "running" ? "Running…" : status === "done" ? "Re-run Task" : "Run Task"}
 </button>
-<p role="status" className="text-green-700">
-  {status === "done" ? "Complete!" : ""}
-</p>
 ```
 
-**Tradeoff:** None worth mentioning. The button stays in place, so the layout doesn't shift either.
-
-#### 2. Nothing ever sets status to "done", so the button gets stuck on "Running..."
-
-**Severity:** Major
-**Location:** `subject.tsx:10, 21`
-**Issue type:** Other (state logic that affects what's shown)
-**Viewport:** all
-**Move:** Checking the file's comments against the code (the "disappears when the task is complete" claim)
-**Confidence:** High
-
-`setStatus` is only ever called with `"running"`. No effect, callback or promise moves the status to `"done"`. That means the "Complete!" branch (lines 27–29) never runs, and once clicked the button shows "Running..." forever. The bug described in the header comment only happens once completion logic is added. Until then, what users actually see is a control stuck on "Running...".
-
-**Recommendation:** Connect completion to the real task, for example `const runTask = async () => { setStatus("running"); await doTask(); setStatus("done"); };`. Also handle errors, either with an `"error"` status that shows a message and a retry, or by falling back to idle.
-
-#### 3. Button stays clickable while running and has no hover, focus, active or disabled styles
+#### 2. The button has no disabled or busy state while running
 
 **Severity:** Major
 **Location:** `subject.tsx:20-25`
-**Issue type:** State coverage / Focus
+**Issue type:** State coverage
 **Viewport:** all
 **Move:** Step 2 item 8: interactive element state matrix
 **Confidence:** High
 
-The button only has default styling. It has no `focus-visible` style, so it relies on the browser's default outline, which Tailwind's Preflight doesn't remove but which many design resets do (WCAG 2.4.7 asks for a visible focus indicator). There's no hover or active feedback, so clicks feel "dead". During `"running"` the button can still be clicked and gives no sign that it's busy. Clicking it again does nothing visible, but in a real implementation it could start the task a second time.
+While the status is `"running"`, the button still looks and behaves like an active control. It's clickable, it calls `setStatus("running")` again, and it doesn't tell assistive technology that work is in progress. Users get no signal that clicking again does nothing, and if the real task logic replaces the placeholder, repeated clicks could start the task twice.
 
-**Recommendation:**
+**Recommendation:** Disable the button and mark it busy while running, and make the disabled state clearly visible.
 
 ```tsx
-className="py-2 px-4 rounded bg-blue-700 text-white
-  hover:bg-blue-800 active:bg-blue-900
-  focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700
-  disabled:bg-gray-400 disabled:cursor-not-allowed"
-disabled={status === "running"}
+<button
+  type="button"
+  onClick={run}
+  disabled={status === "running"}
+  aria-busy={status === "running"}
+  className="... disabled:bg-gray-400 disabled:cursor-not-allowed"
+>
 ```
 
-#### 4. Button text and "Complete!" text don't have enough contrast
+#### 3. White text on `bg-blue-500` fails text contrast
 
 **Severity:** Major
-**Location:** `subject.tsx:22, 28`
-**Issue type:** Accessibility
+**Location:** `subject.tsx:22`
+**Issue type:** Affordance
 **Viewport:** all
 **Move:** Step 2 item 6: visibility and affordance
 **Confidence:** High
 
-- White on `bg-blue-500` (#3b82f6) is about **3.7:1**.
-- `text-green-600` (#16a34a) on white is about **3.3:1**.
+White on Tailwind `blue-500` (#3b82f6) has a contrast ratio of about 3.7:1. The label is normal-weight text at the default size, so it needs 4.5:1 (WCAG 1.4.3 AA). `blue-600` (#2563eb) gives about 5.2:1.
 
-Both are normal-weight body-size text, so both fail WCAG 1.4.3 Contrast (Minimum), which requires 4.5:1. Also, "Complete!" is mostly signalled by its green color, though the word itself carries the meaning, so this isn't a strict 1.4.1 (Use of Color) failure.
+**Recommendation:** Use `bg-blue-600` as the default, `hover:bg-blue-700` for hover and `active:bg-blue-800` for active (see Finding 5).
 
-**Recommendation:** Use `bg-blue-700` (#1d4ed8, about 6.7:1 with white) and `text-green-700` (#15803d, about 5.0:1 on white). You could also add a ✓ icon to the completion message.
+#### 4. "Complete!" isn't announced to screen readers and fails contrast
 
-#### 5. Status changes aren't announced to assistive technology
-
-**Severity:** Minor
-**Location:** `subject.tsx:24, 27-29`
+**Severity:** Major
+**Location:** `subject.tsx:27-29`
 **Issue type:** Accessibility serialization
 **Viewport:** all
-**Move:** Step 2 item 10 / Affordance principle 6 (loading and progress states)
+**Move:** Step 2 item 6 (Affordance Principle 6) and item 10
 **Confidence:** High
 
-When the screen goes from "Running..." to "Complete!", nothing tells a screen reader. The completion `<p>` is newly mounted and has no live region, so it won't be read out (WCAG 4.1.3 Status Messages).
+The completion message is added to the page with no live region, so screen-reader users get no notice that the task finished (WCAG 4.1.3 Status Messages). Also, `text-green-600` (#16a34a) on white is about 3.3:1, below the 4.5:1 required by WCAG 1.4.3. The message is just the word "Complete!" with no icon, but that's acceptable because the wording carries the meaning, not the color alone.
 
-**Recommendation:** Render a `role="status"` (polite live region) container all the time and change only its text, as shown in Finding 1. Add `aria-busy` to the button or the output region while the task runs.
+**Recommendation:** Render a `role="status"` container all the time and change only its text, so screen readers reliably announce updates. Use `text-green-700` (#15803d, about 5.0:1).
 
-#### 6. Task output box has no height limit, which will push the button below the fold once real output arrives
+```tsx
+<p role="status" className="text-green-700 min-h-[1.5rem]">
+  {status === "done" ? "Complete!" : status === "running" ? "Running…" : ""}
+</p>
+```
+
+`min-h` reserves the line's height so the layout doesn't jump when the text appears.
+
+#### 5. Button only has default styling, with no hover, active or custom focus styles
 
 **Severity:** Minor
-**Location:** `subject.tsx:15-17`
-**Issue type:** Overflow
-**Viewport:** Mostly 320–768px and 1366×768
-**Move:** Step 2 item 1: unbounded content without scroll caps
-**Confidence:** Medium (the box currently holds only placeholder text)
+**Location:** `subject.tsx:22`
+**Issue type:** State coverage
+**Viewport:** all (hover only matters for pointer devices)
+**Move:** Step 2 item 8: interactive element state matrix
+**Confidence:** High
 
-The output box is labelled as holding task output, which tends to grow without limit (logs, results). It has no `max-h-*` or overflow handling. Long output will push the Run button below the fold, and lines with no break points (long paths, URLs) will cause horizontal overflow on narrow screens.
+Only default styles are defined, so the button gives no feedback on hover or press. Tailwind's Preflight doesn't remove the browser's own focus ring, so a focus indicator does exist. But the default ring on a saturated blue background can be hard to see, and nothing guarantees it meets WCAG 2.4.13.
 
 **Recommendation:**
 
 ```tsx
-// Before
-<div className="border p-4 rounded">
-
-// After
-<div className="border p-4 rounded max-h-[50vh] overflow-y-auto break-words"
-     role="region" aria-label="Task output" tabIndex={0}>
+className="py-2 px-4 rounded bg-blue-600 text-white
+  hover:bg-blue-700 active:bg-blue-800
+  focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700
+  disabled:bg-gray-400 disabled:cursor-not-allowed"
 ```
 
-You could also move the button above the output, or dock it in a fixed footer, so it stays reachable at any output length.
+**Tradeoff:** The class string gets longer. If the project has a shared `<Button>` component, use that instead.
 
-**Tradeoff:** `tabIndex={0}` adds one tab stop, but keyboard users need it to scroll the region (axe's `scrollable-region-focusable` rule).
+#### 6. The output panel has no height cap, so long output could push the Run button out of view
 
-#### 7. `<h3>` with no parent heading, and no `type` on the button
+**Severity:** Minor
+**Location:** `subject.tsx:15-17`
+**Issue type:** Overflow
+**Viewport:** 320–768px and 1366×768 most affected
+**Move:** Step 2 items 1–2: unbounded content and controls pushed away
+**Confidence:** Low
+
+Right now the panel holds static placeholder text, so nothing breaks today. But it's labeled as the place where task output appears, and the primary button sits below it with no height limit on the panel. Once real output (logs, results) is rendered there, the button will be pushed below the fold. Under this checklist, that becomes Critical once output is real. I rated it Low confidence only because the content isn't dynamic yet.
+
+**Recommendation:** Cap the panel's height, let it scroll, and keep the button outside the scroll region (it already is).
+
+```tsx
+<div className="border p-4 rounded max-h-[50vh] overflow-y-auto" tabIndex={0} aria-label="Task output">
+```
+
+`tabIndex={0}` lets keyboard users focus the scroll region to scroll it.
+
+#### 7. The status never reaches `"done"`, so the button stays on "Running..." forever
 
 **Severity:** Informational
-**Location:** `subject.tsx:14, 20`
-**Issue type:** Accessibility serialization
+**Location:** `subject.tsx:21`
+**Issue type:** Other
 **Viewport:** all
-**Move:** Step 2 item 10
-**Confidence:** Low (depends on the page that uses this component)
-
-`<h3>` is only correct if an `<h2>` comes before it on the host page (WCAG 1.3.1 Info and Relationships). The button has no `type="button"`, so if the component is ever placed inside a `<form>` it will submit the form.
-
-**Recommendation:** Pass in a heading level, or check how the host page uses it. Add `type="button"`.
-
-#### 8. Touch target meets AA but not AAA
-
-**Severity:** Informational
-**Location:** `subject.tsx:22`
-**Issue type:** Sizing
-**Viewport:** 320–768px (touch)
-**Move:** Step 2 item 6
+**Move:** Step 2 item 8 (state coverage)
 **Confidence:** High
 
-`py-2` with a 24px line height gives a button about 40px tall. That passes WCAG 2.5.8 (24×24 minimum) but not 2.5.5 AAA (44×44).
+The only state update in the file is `setStatus("running")`. No code ever sets the status to `"done"`, so the branches at lines 19 and 27 never run. The file's comments describe what would happen once completion is wired up. As the code stands, users see a permanent "Running..." with no way to finish or cancel. This is a logic gap rather than a layout bug, but it decides which UI states users can actually see.
 
-**Recommendation:** If AAA matters for this project, add `min-h-11`.
+**Recommendation:** Wire up completion (and ideally an error state), for example `const run = async () => { setStatus("running"); await doTask(); setStatus("done"); };`.
+
+#### 8. The button is missing `type="button"`
+
+**Severity:** Informational
+**Location:** `subject.tsx:20`
+**Issue type:** Other
+**Viewport:** all
+**Move:** Step 2 item 8
+**Confidence:** Medium
+
+If this component is ever placed inside a `<form>`, a button with no `type` defaults to submitting the form. Adding `type="button"` prevents that.
+
+**Recommendation:** Add `type="button"` (already included in the fixes above).
 
 ## What Looks Good
 
-- The layout is a simple vertical stack (`space-y-4`, `p-4`) with no fixed widths, so it reflows correctly from 320px to 1920px+ (WCAG 1.4.10).
-- The trigger is a real `<button>`, not a clickable `<div>`, so keyboard support and the button role come for free.
-- The button changes its label for the running state, which is the right idea. It just needs to cover "done" too (Finding 1).
-- Spacing is compact and nothing uses absolute positioning, so there are no anchoring or occlusion problems.
+- The button sits **outside** the output container, so it isn't stuck inside a scroll region (item 2 passes as structured).
+- The touch target is about 40px tall (`py-2` plus a 24px line height) and wider than its label, well above the WCAG 2.5.8 AA minimum of 24×24.
+- It's a real `<button>`, so it's focusable and works with Enter and Space without extra code.
+- `p-4` and `space-y-4` are compact; there's no excessive vertical spacing (item 5 passes).
+- No fixed widths: the layout reflows at 320px (item 7 passes).
+- The output panel has a visible border, so it's clearly separated from the surrounding content.
 
 ## Best Practices Applied
 
 | Principle | Source | How Applied |
 |-----------|--------|-------------|
-| Controls stay available after completion | Skill item 6; NNGroup (visibility of system status) | Change the label to "Re-run Task" instead of unmounting the button |
-| Visible focus indicator | WCAG 2.4.7 / 2.4.13 | Add a `focus-visible:outline` ring |
-| Text contrast | WCAG 1.4.3 | blue-500 → blue-700, green-600 → green-700 |
-| Status messages | WCAG 4.1.3 | A `role="status"` live region that is always rendered |
-| Keep focus in a logical place | WCAG 2.4.3 | Keep the focused button mounted |
-| Scrollable overflow instead of unbounded growth | Skill item 1; WCAG 1.4.10 | `max-h-[50vh] overflow-y-auto` on the output box |
+| Update the label instead of removing the control | Skill item 6; WCAG 2.4.3 | "Run" → "Running…" → "Re-run Task" on one persistent button |
+| Status messages are programmatically determinable | WCAG 4.1.3 | Always-present `role="status"` region |
+| Text contrast ≥ 4.5:1 | WCAG 1.4.3 | `blue-500` → `blue-600`, `green-600` → `green-700` |
+| Visible, sufficient focus indicator | WCAG 2.4.7 / 2.4.13 | Explicit `focus-visible:outline` ring |
+| Visibly disabled while busy | Affordance Principle 5; ARIA | `disabled`, `aria-busy`, `disabled:bg-gray-400` |
+| Cap unbounded content | Skill item 1 | `max-h-[50vh] overflow-y-auto` on the output panel |
 
 ## Keyboard Navigation
 
-**Focus order.** There is one focusable element: the Run button (`subject.tsx:20`). The tab order matches the visual order. After Finding 6's fix the output region becomes a tab stop before the button, which also matches the visual order. Problem: when status becomes `"done"` the button unmounts and focus falls back to `<body>` (Finding 1).
+**Focus order.** The in-scope focusable elements, in tab order:
+1. `<button>` at `subject.tsx:20`, reachable in the idle and running states.
 
-**Escape-key behavior.** N/A: there are no modals or overlays in this diff.
+There's no mismatch between DOM order and visual order (no `order`, `row-reverse` or absolute positioning). However, once the status becomes `"done"`, the button is removed and **the component has no focusable elements left**. A user who had focus on the button is sent back to `<body>` (Finding 1). The fix for Finding 1 resolves this. If the output panel becomes scrollable (Finding 6), it should join the tab order after the heading and before the button.
 
-**Skip-link presence.** N/A: the diff doesn't change page-level structure.
+**Escape-key behavior.** N/A: there are no modals or overlays in this file.
 
-**Focus-trap risks.** No focus-trap risks identified. The only related problem is focus loss when the button unmounts, covered by Finding 1.
+**Skip-link presence.** N/A: the file doesn't change page-level structure. The `<h3>` assumes a parent that supplies `h1`/`h2`; check the heading hierarchy wherever the component is used.
+
+**Focus-trap risks.** No focus-trap risks found. The actual risk is the opposite: focus is *lost* when the button unmounts (Finding 1).
 
 ## Viewport Verification Checklist
 
-- [x] 360px mobile: no horizontal overflow with placeholder content. Long unbreakable output lines would overflow (Finding 6). Touch target about 40px meets AA.
-- [ ] 1366×768: the button is visible now, but long output will push it below the fold (Finding 6).
-- [x] 1920×1080: the stack fills the width as expected. Nothing has a fixed width.
+- [x] 360px mobile: content reachable, no horizontal overflow, touch targets adequate (about 40px tall)
+- [ ] 1366×768 laptop: the action button is visible today, but it isn't protected against output growth (Finding 6)
+- [x] 1920×1080 desktop: the layout fills the space reasonably; there's no fixed-width whitespace issue
 
 ## Summary Table
 
 | # | Finding | Severity | Issue type | Location | Confidence |
 |---|---------|----------|------------|----------|------------|
-| 1 | Button disappears after completion; no re-run; focus is lost | Major | Affordance | `subject.tsx:19-29` | High |
-| 2 | Status never reaches "done"; button stuck on "Running..." | Major | Other | `subject.tsx:10,21` | High |
-| 3 | No hover/focus/active/disabled states; clickable while running | Major | State coverage | `subject.tsx:20-25` | High |
-| 4 | Contrast about 3.7:1 (button) and 3.3:1 ("Complete!") | Major | Accessibility | `subject.tsx:22,28` | High |
-| 5 | Status changes not announced | Minor | Accessibility serialization | `subject.tsx:24,27-29` | High |
-| 6 | Output box has no height limit | Minor | Overflow | `subject.tsx:15-17` | Medium |
-| 7 | `<h3>` hierarchy; button has no `type` | Informational | Accessibility serialization | `subject.tsx:14,20` | Low |
-| 8 | Touch target about 40px (meets AA, not AAA) | Informational | Sizing | `subject.tsx:22` | High |
+| 1 | Button disappears on completion; no re-run; focus lost | Major | Affordance | `subject.tsx:19-29` | High |
+| 2 | No disabled or busy state while running | Major | State coverage | `subject.tsx:20-25` | High |
+| 3 | White on blue-500 is about 3.7:1 (fails 1.4.3) | Major | Affordance | `subject.tsx:22` | High |
+| 4 | "Complete!" not announced; green-600 is about 3.3:1 | Major | Accessibility serialization | `subject.tsx:27-29` | High |
+| 5 | Missing hover, active and explicit focus styles | Minor | State coverage | `subject.tsx:22` | High |
+| 6 | Output panel uncapped; can push the button off-screen | Minor | Overflow | `subject.tsx:15-17` | Low |
+| 7 | Status never set to "done"; stuck on "Running..." | Informational | Other | `subject.tsx:21` | High |
+| 8 | Missing `type="button"` | Informational | Other | `subject.tsx:20` | Medium |
+
+### State matrix: `<button>` (`subject.tsx:20`)
+
+- [x] default: `bg-blue-500 text-white rounded`; visually distinct, but contrast fails (Finding 3)
+- [ ] hover: no `hover:` style
+- [~] focus: browser default ring only; no explicit `focus-visible` style
+- [ ] active: no `active:` style
+- [ ] disabled: never disabled, even while running (Finding 2)
+- [N/A] error: a button isn't a validatable control. Note there's no task-failure state at all (Finding 7).
 
 ## Overall Assessment
 
-The layout itself is sound: a simple, flexible vertical stack with no responsive or positioning bugs. The problems are in how the control behaves across its states and in accessibility. All of them can be fixed in place, and no restructuring is needed.
-
-The most important change is to always render the button and change its label (Run Task → Running... → Re-run Task), with it disabled while running. That one change fixes the missing re-run, the focus loss and most of the missing state coverage.
-
-On the "Minor" rating in the file's header comment: I rated the disappearing button Major, because it makes re-running impossible rather than just harder to find. Separately, the completion logic is missing entirely (Finding 2), so the bug the comment describes can't actually happen in the code as written. Instead, the button gets stuck on "Running...".
+This is a small component with a sound structure: the button already sits outside the content area, spacing is compact, and nothing is fixed-width. All the problems can be fixed in place. The most important fix is to keep a single, always-rendered button whose label changes ("Run Task" → "Running…" (disabled) → "Re-run Task"), paired with an always-present `role="status"` line. That one change covers Findings 1, 2 and 4 and the lost-focus problem. After that, raise the contrast (`blue-600`, `green-700`), add hover, active and focus styles, and cap the output panel's height before it shows real output.

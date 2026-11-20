@@ -1,202 +1,146 @@
+# What-If Analysis: CR-2291, move `settle-nightly` from 01:00 to 03:00 UTC
+
+**Proposal:** CR-2291, change the `settle-nightly` cron expression from 01:00 to 03:00 UTC to avoid the payments-cluster backup window (00:30-02:30)
+**Date:** 2026-11-20
+**Upstream critiques:** none
+
 > ℹ️ **No upstream critique provided.** This analysis covers the full consequence space
 > independently. For maximum value, run a critique skill first (e.g., `cowen-critique`) and
 > provide its output. This skill is most powerful when focused on the gaps that critics miss.
 
-> **Prior Art Check:** No repository is available, so `docs/decisions/` and `docs/working/` could not be searched. No `[PRIOR CONSIDERATION]` findings are possible. All findings below come from the proposal text alone.
-
-# What-If Analysis: CR-2291, move `settle-nightly` from 01:00 to 03:00 UTC
-
-**Proposal:** CR-2291, change the `settle-nightly` cron from 01:00 UTC to 03:00 UTC to avoid the 00:30–02:30 backup window (Payments Core, Harrowgate Pay)
-**Date:** 2026-11-20
-**Upstream critiques:** none
-
----
-
-## Headline
-
-The CR's own Environment table contains a dependency that its "Why 03:00 is safe" section never mentions. **`warehouse-sync` runs at 02:15 and copies `merchant_settlement` and `payouts`.** After this change, settlement rows will not exist yet when it runs. The finance warehouse would be one settlement day behind every day, for as long as the change is in place. The proposal is labeled "Low (schedule change only)", but the schedule is the interface between three teams. That is the source of the risk.
+**Prior Art Check:** No repository was available, so `docs/decisions/` and `docs/working/` could not be searched. No findings are tagged `[PRIOR CONSIDERATION]`.
 
 ---
 
 ## Assumptions Examined
 
-**A1. Nothing downstream depends on settlement output being written before ~02:15.**
-- **Source:** Implicit. The "Why 03:00 is safe" section checks only the bank cutoff (06:00) and the dashboard (07:00). It skips `warehouse-sync` (02:15), which is listed in the CR's own Environment table.
-- **If wrong:** Redesign. Either `warehouse-sync` moves, or the two jobs need a completion-based dependency. That is a cross-team change, not a cron edit.
-- **Tag:** `[NOVEL]`
+- **Assumption:** No downstream job depends on `settle-nightly` finishing before a fixed clock time, other than the 06:00 bank cutoff and the 07:00 dashboard.
+  - **Source:** implicit. The "Why 03:00 is safe" section checks only the bank cutoff and the dashboard. The CR's own Environment table lists `warehouse-sync` at 02:15, which copies `merchant_settlement` and `payouts`.
+  - **If wrong:** redesign. `warehouse-sync` would run 45 minutes *before* settlement starts every night. It has to be rescheduled or chained to settlement completion.
+  - **Tag:** `[NOVEL]`
 
-**A2. The 85-minute margin is the margin that matters.**
-- **Source:** Explicit ("finishes by 04:35, leaving 85 minutes of margin").
-- **If wrong:** Redesign of the start time or the failure runbook. The 85 minutes is success-path margin. On the failure path (timeout, then manual rerun), the margin is near zero or negative. See Confidence Inversions.
-- **Tag:** `[NOVEL]`
+- **Assumption:** 85 minutes of margin before the 06:00 cutoff is enough, including on nights when the batch fails.
+  - **Source:** explicit ("leaving 85 minutes of margin"). It is computed only for a single successful run.
+  - **If wrong:** redesign. The batch has already timed out twice and needed a manual rerun. The failure path is timeout, then page, then human response, then a 40-55+ minute rerun. That path no longer fits comfortably before 06:00 (see Adversarial Scenarios).
+  - **Tag:** `[NOVEL]`
 
-**A3. The 03:00–06:00 window is uncontended.**
-- **Source:** Implicit. Supported by the staging test, which ran at 03:00 for five nights at 41–52 min.
-- **If wrong:** Redesign. `fraud-model-refresh` starts at 04:00 and would overlap every run that takes more than 60 minutes. If it reads heavily from the payments cluster, the original contention problem moves to a new time.
-- **Tag:** `[NOVEL]`
+- **Assumption:** Which payments fall into a settlement day does not depend on the time the batch runs.
+  - **Source:** explicit ("Card captures after midnight belong to the next settlement day"). It is backed by a byte-identical staging comparison.
+  - **If wrong:** redesign. If the selection query is bounded by `now()`, by a "not yet settled" status, or by commit time rather than an explicit date boundary, then three hours of post-midnight activity (instead of one) changes the result. Late-committed captures and refunds or reversals arriving after midnight would be affected.
+  - **Tag:** `[NOVEL]`
 
-**A4. The backup reliably finishes by 02:30.**
-- **Source:** Implicit (the "after the backup window closes" framing).
-- **If wrong:** Tweak, if the overrun is occasional. Redesign, if full backups grow with data volume and overruns become routine. The cron has no knowledge of backup completion; this is an unenforced temporal coupling.
-- **Tag:** `[NOVEL]`
+- **Assumption:** At 03:00 the cluster is quiet, so production runtime will match the staging runtime of 41-52 minutes.
+  - **Source:** explicit (the Testing section). Staging does not reproduce the 04:00 `fraud-model-refresh` or live capture traffic.
+  - **If wrong:** tweak. The runtime drifts upward but still fits before 06:00 on a single run. It becomes a redesign only when combined with the rerun-margin assumption.
+  - **Tag:** `[NOVEL]`
 
-**A5. The staging test represents production conditions.**
-- **Source:** Explicit (five nights on a "staging copy of production").
-- **If wrong:** Tweak to the evidence, not the design. The CR doesn't say whether staging also ran the backup, `warehouse-sync`, and `fraud-model-refresh`. If it didn't, the test shows the batch runs fast on an idle cluster. It doesn't show it runs fast at 03:00 in production.
-- **Tag:** `[NOVEL]`
+- **Assumption:** The backup reliably finishes by 02:30.
+  - **Source:** implicit (taken from the Environment table).
+  - **If wrong:** tweak. If backup duration grows with the data, settlement collides with it again and the problem returns. The fix is either a later start or a dependency on backup completion.
+  - **Tag:** `[NOVEL]`
 
-**A6. The scheduler interprets the cron expression in UTC.**
-- **Source:** Implicit.
-- **If wrong:** Tweak, but an ugly one. If the scheduler uses a local timezone (for example Europe/London), the job shifts by an hour across DST transitions. Every UTC margin calculation in the CR is then off by an hour for half the year.
-- **Tag:** `[NOVEL]`
-
-**A7. The settlement day boundary is defined by capture timestamp, not by run time.**
-- **Source:** Explicit ("Card captures after midnight belong to the next settlement day").
-- **If wrong:** Redesign. If the batch's query uses anything relative to `now()` or job start, a later start changes what is included. The byte-identical payout-file test over the same data is decent evidence this holds. Low concern.
-- **Tag:** `[NOVEL]`
-
----
+- **Assumption:** The scheduler interprets the cron expression in UTC.
+  - **Source:** implicit.
+  - **If wrong:** tweak. If the scheduler runs in a local timezone, the run moves at DST transitions. This is easy to verify.
+  - **Tag:** `[NOVEL]`
 
 ## Consequence Chains
 
-**Outcome 1: settlement no longer contends with the backup.**
 ```
-→ First-order: runtime returns to ~40–55 min; no more backup-induced timeouts
-  → Second-order: settlement now completes ~03:40–03:55 instead of ~01:40–01:55 (pre-backup) / ~02:10–02:35 (today)
-    → Third-order: warehouse-sync at 02:15 copies the PREVIOUS day's merchant_settlement/payouts every night;
-                   the finance warehouse is permanently one day stale
-      → Fourth-order: morning reconciliation (payout file vs. warehouse) mismatches daily → false alarms, or
-                      finance quietly learns to ignore the mismatch, which masks real discrepancies
-      → Fourth-order: month-end — the last settlement day of the month lands in the warehouse on the 2nd,
-                      after (or during) close; Nov 30 → Dec 1 is ten days away
-    → Third-order: if the merchant dashboard (07:00) reads from the warehouse rather than
-                   merchant_settlement directly, merchants see yesterday's settlement — directly
-                   contradicting the "as today" claim. The CR doesn't say which source the dashboard uses.
-```
+→ First-order: settle-nightly no longer overlaps the backup; runtime returns to ~40-55 min
+  → Second-order: warehouse-sync (02:15) now runs before settlement has written anything for the day
+    → Third-order: if the sync copies full tables, the finance warehouse is permanently one
+      settlement day stale; finance reconciliation and reporting silently lag a day
+    → Third-order: if the sync copies "rows for settlement_date = yesterday", each night it copies
+      an empty set, and the next night it targets a different date, so every day is skipped.
+      The warehouse accumulates a growing gap that nobody alarms on, because the job "succeeds"
+  → Second-order: settlement now finishes ~03:40-03:55, close to fraud-model-refresh at 04:00
+    → Third-order: on slow nights or reruns the two jobs overlap on the cluster, recreating
+      the read-contention problem the CR is meant to fix, just with a different neighbor
 
-**Outcome 2: on-call no longer does manual reruns at night.**
-```
-→ First-order: fewer pages for timeouts
-  → Second-order: when a failure does happen, it happens at ~04:00–04:35 instead of ~02:30, with the bank cutoff 1.5–2 hours away instead of 3.5+
-    → Third-order: the rerun runbook, written for a world with hours of slack, is now executed under time pressure,
-                   at the lowest-alertness hour of the night; a missed cutoff means merchants are paid a day late
-```
+→ First-order: fewer timeouts and manual reruns
+  → Second-order: the timeouts that still happen (lock contention, bad input data, bank-file
+    generation errors) now occur at 04:00-05:00 instead of 02:00-03:00
+    → Third-order: the recovery window before the 06:00 cutoff shrinks from ~5 hours to
+      ~1-2 hours. A missed cutoff means merchants are paid a day late, which is a
+      merchant-facing and possibly contractual incident
 
-**Outcome 3: settlement moves into the 03:00–06:00 window.**
+→ First-order: the payout file is identical to what a 01:00 run would produce (per staging)
+  → Second-order: confidence that day-boundary logic is time-independent is now based on a
+    static data copy, with no live post-midnight writes
+    → Third-order: if the boundary is not strictly date-based, production settlements
+      include extra or different rows on the first night. This surfaces as merchant
+      payout disputes or reconciliation breaks days later, not during "watch the first run"
 ```
-→ First-order: settlement runs alone for its first hour
-  → Second-order: any run longer than 60 min overlaps fraud-model-refresh at 04:00
-    → Third-order: if fraud-model-refresh is read-heavy, the overlap lengthens both jobs; a stale fraud model at
-                   start of business is a Risk-team problem that Payments Core caused
-    → Third-order: runtime growth with merchant/volume growth pushes the overlap from occasional to routine,
-                   recreating the original problem at a different time
-```
-
-**Side observation (already true today):** With current 70–95 min runtimes, settlement finishes 02:10–02:35. That straddles `warehouse-sync` at 02:15. The two timeout-and-rerun nights would certainly have finished after it. The warehouse may already have received partial or missing settlement data on some nights over the past month. This is worth checking independently of the CR. It is also evidence the coupling is real and nobody has noticed it.
-
----
 
 ## Coupling Analysis
 
-| Coupling | Visibility | Notes |
+| Coupling | Visibility | Effect of this CR |
 |---|---|---|
-| `warehouse-sync` (02:15) reads settlement output | **Invisible.** Purely temporal; no dependency edge, only clock times. Listed in the CR's table but not reasoned about. | The most important finding. Breaks silently: the sync "succeeds" with stale data. |
-| Settlement start depends on backup completion | **Invisible.** Temporal; enforced only by a 30-minute gap in two cron schedules owned by different teams. | If the database team shifts or extends the backup, nobody tells Payments Core. |
-| `fraud-model-refresh` (04:00) shares cluster capacity | **Invisible.** Shared resource. | The same class of coupling that caused this CR in the first place. |
-| Merchant dashboard (07:00) data source | **Unknown.** | Visible if it reads `merchant_settlement` directly; inherits the warehouse staleness if it reads the warehouse. |
-| On-call runbook timing assumptions | **Invisible.** Behavioral/process. | "Keep runbook unchanged" assumes the runbook's implied slack still exists. |
-| Scheduler timezone semantics | **Visible** in config, but unexamined. | Determines whether the margin math holds year-round. |
-| Sponsor bank cutoff (06:00) | Visible, explicit. | Correctly handled on the success path. |
-
----
+| `warehouse-sync` (02:15, Data Platform) reads `merchant_settlement` and `payouts` | **Invisible.** It is an implicit temporal contract: "settlement is done by 02:15." It is listed in the CR's own table but not analyzed. | Broken every night. This is the most serious finding. Note that it is *already* fragile today: at 70-95 min, a 01:00 run finishes 02:10-02:35, so the sync has probably been racing settlement since last month's backup change. Check the warehouse for partial or missing days over the past month. |
+| `fraud-model-refresh` (04:00, Risk) uses the payments cluster | Visible in the table. The contention is invisible. | New overlap on slow nights and reruns. |
+| Backup completion (02:30, Database team) | **Invisible.** It is a timing assumption with no enforced dependency. | The CR replaces one wall-clock coupling with another. If the backup grows, the collision returns. |
+| On-call manual-rerun runbook | Invisible. The runbook implicitly assumes hours of slack. | The runbook is "unchanged," but its time budget is not. It probably needs an explicit "if not complete by X, escalate or use partial-file procedure" step. |
+| Merchant dashboard (07:00) | Visible | Fine if it reads `merchant_settlement` directly. If it reads from the finance warehouse, it inherits the `warehouse-sync` staleness. Confirm with Merchant Experience. |
+| Settlement-day selection logic vs. run time | **Invisible.** It is a behavioral property of the query. | Must be verified in code, not inferred from a static-data test. |
 
 ## Confidence Inversions
 
-**"85 minutes of margin."**
-Inversion: a run fails late. The CR says the batch has timed out twice. Assume the timeout fires at roughly the old worst case. Under contention with `fraud-model-refresh`, failure is detected around 04:35. The page goes out, and the engineer wakes, logs in, and diagnoses: realistically 15–30 minutes. Start the rerun at ~05:00. Even an uncontended 40–55 minute rerun ends at 05:40–05:55, and that rerun is contended, because `fraud-model-refresh` is running. Any slip at all misses 06:00. **At 01:00, the same failure left about three hours of slack. The change trades frequent, low-stakes failures for rare, high-stakes ones.** That may still be the right trade, but the CR presents it as pure gain.
-
-**"Risk class: Low (schedule change only)."**
-Inversion: the schedule *is* the integration contract between Payments Core, Data Platform, Risk, Merchant Experience, and the database team. A code change would get a diff review. A schedule change rewires five teams' implicit agreements with no diff for anyone else to see.
-
-**"The staging test shows 41–52 minutes."**
-Inversion: staging at 03:00 had no backup tail, no `fraud-model-refresh`, and no production read traffic. The result then shows only that the batch is fast in isolation, which was already known from pre-backup history. It doesn't validate the 03:00 production slot.
-
----
+- **"Risk class: Low (schedule change only)."** This is the most confident claim, and it is the one most likely to suppress review. Schedule changes in a batch chain are exactly where temporal couplings break. Inverted: a "no code change" CR silently breaks the finance warehouse feed owned by another team, and nobody from Data Platform was asked because the risk class said low.
+- **"85 minutes of margin."** Inverted: suppose the 03:00 run hangs or times out. With the timeout set near the worst-case runtime, that happens around 04:35. Add a page plus 10-20 minutes for response, then a rerun of 50-60 minutes now contending with `fraud-model-refresh`. The file is ready around 05:40-05:55. One more hiccup, such as a slow rerun or file-upload trouble, and the cutoff is missed. Today the same failure is recovered with hours to spare. Two timeouts in a month means this is not a rare path.
+- **"Byte-identical payout file."** Inverted: the test held the data constant, so it proves only that the code has no wall-clock *formatting* dependence. It cannot show that the *row set* is time-independent under live writes. Late-committed 23:5x captures, or refunds and chargebacks booked after midnight, could be picked up differently if the query uses `status`, commit time, or `now()`.
 
 ## Adversarial Scenarios
 
-**1. Peak-volume week. Realistic and imminent.**
-Today is Friday 2026-11-20. "Change the cron on a Tuesday" most plausibly means 2026-11-24. Black Friday is 11-27 and Cyber Monday is 11-30. Assume card volume on those settlement days is 2–3× normal and runtime scales even sub-linearly. Uncontended runtime could reach 70–110 minutes, ending 04:10–04:50, with heavy `fraud-model-refresh` overlap. One timeout on any of those nights almost certainly misses the 06:00 cutoff, for the largest settlement days of the year. The first production runs of a new schedule would also be its hardest. Month-end (11-30 → 12-01) lands in the same week, which amplifies the warehouse-staleness impact on finance close.
-
-**2. Backup overrun.**
-Full backups grow with the data. The database team chose 00:30 because of replica rotation constraints, which suggests the window is already tight. A 30–45 minute overrun puts settlement right back under backup load, the exact condition this CR exists to escape. The bank cutoff now gives far less room to absorb the resulting slowdown. Likelihood: 10–20% of nights at some point in the next year seems plausible if backup volume trends upward. Today nothing would detect it, because the cron doesn't check.
-
-**3. Silent stale warehouse.**
-Assume nobody on Data Platform or Finance reads CR-2291. The sync keeps succeeding and the numbers look plausible: they're real, just a day old. The first person to notice is a finance analyst at month-end, or an auditor. By then, reports, exports, and possibly accruals have been built on day-lagged data. Likelihood: high, unless someone explicitly coordinates. Severity: moderate to high, depending on what finance does with the warehouse.
-
----
+1. **Batch failure on a bad night (realistic, roughly 5-10% of nights given recent history).** The run times out, the on-call engineer is slow to wake at 04:40, and the rerun runs alongside the fraud refresh. The payout file misses 06:00, every merchant settles a day late, and support and possibly bank-penalty consequences follow. Today's 01:00 slot absorbs this; 03:00 does not.
+2. **Backup overrun (realistic within months).** Payments-cluster data grows and the full backup creeps to 03:15 on month-end nights. Settlement is back under backup load on exactly the busiest nights, when runtime is longest. That is the scenario where the shrunken failure margin matters most.
+3. **Downstream discovery lag.** `warehouse-sync` keeps "succeeding," and finance notices stale or missing settlement data only at month-end close, two to four weeks after the change. Backfilling then requires Data Platform work and finance restatement.
 
 ## Reversibility Map
 
-| Timepoint | What reversal requires | Difficulty |
-|---|---|---|
-| **1 week** | Restore the cron expression. The backup contention problem returns. Warehouse rows written during the week were a day stale but are self-healing, since each sync copies the full tables. Any reports generated during the week may need re-running. | Easy |
-| **1 month** | Same cron revert. But by now Data Platform has probably moved `warehouse-sync` later to fix the staleness, maybe also Merchant Experience or others. Reverting settlement alone is safe. Unwinding the downstream moves requires coordination. Finance may have adjusted reconciliation processes around the lag. | Moderate |
-| **6 months** | The overnight schedule has re-settled around settlement-at-03:00. Other jobs may have been placed in the freed 01:00–02:30 slot, possibly by teams who never knew it was freed by this CR. Reverting means renegotiating the night with all of them, and the backup conflict still exists. | Moderate–Hard |
+- **1 week:** Restore the cron expression. Trivial.
+- **1 month:** Still trivial for the change itself. Any warehouse gaps created in the meantime are harm already done (they need a backfill), not a property of reversing the schedule.
+- **6 months:** Still trivial. If downstream teams have rescheduled their jobs to after 03:00 settlement, those later slots still work with a 01:00 settlement, so rollback needs nobody else's work.
 
-**Cliff edge:** The first downstream team that reschedules in response to this change, most likely `warehouse-sync`. From that point the revert is no longer a one-line config change owned by one team. The gradient is otherwise gentle. The cron change itself is trivially reversible. What isn't reversible is everyone else's adaptation to it.
-
-Note also that reverting doesn't restore a good state. 01:00 is still broken by the backup. "Rollback = restore the old cron" is technically true, but it rolls back to a known-bad configuration.
-
----
+**The gradient is flat. There are no reversibility cliffs.** The risk in this CR lies in its consequences while it runs, not in undoing it.
 
 ## Cost of Success
 
-Picture the world where everything works. Settlement runs at 03:00 in ~45 minutes. `warehouse-sync` has been moved to 04:30. Pages are rare. Compared with today:
+Suppose everything works: settlement runs at 03:00, finishes by 04:00, there are no timeouts, and `warehouse-sync` has been rescheduled. The world is worse than today in these ways:
 
-- **Recovery cost.** Failure-path slack before the bank cutoff drops from several hours to under an hour. The system pages less often, but each page is more consequential.
-- **Optionality cost.** The 03:00–06:00 window was the last uncrowded stretch before the bank cutoff. Settlement, `fraud-model-refresh`, and a relocated `warehouse-sync` now share it. Runtime growth from merchant and volume growth comes straight out of the remaining margin. There is no later slot left to move to.
-- **Complexity cost.** The overnight chain still works through clock offsets rather than dependencies, now with tighter gaps: backup end 02:30 → settlement 03:00 → sync later. Each gap is a silent contract between teams.
-- **Opportunity cost.** Taking the cheap cron fix defers the structural fix. Two options remain open: dependency-triggered scheduling (start settlement on backup completion, start sync on settlement completion), or pointing settlement's reads at a replica not involved in the backup.
-
----
+- **Optionality cost:** The overnight window for settlement is now pinned between the backup end (02:30) and the bank cutoff (06:00), with the fraud refresh in the middle. Any future growth in runtime (more merchants, more captures) has much less room. Previously the batch could grow to roughly 4-5 hours; now growth beyond about 2 hours threatens the cutoff on failure nights.
+- **Complexity and maintenance cost:** Three wall-clock couplings (backup end, `warehouse-sync`, fraud refresh) are maintained by four teams with no enforced dependencies. Each future schedule change by any of them must be cross-checked by hand.
+- **Operational cost:** Failures now page on-call deeper in the night, with a hard deadline attached, which raises incident stress.
 
 ## Findings Summary
 
-1. `[HIDDEN COUPLING]` `[NOVEL]` `warehouse-sync` (02:15) copies settlement tables before the 03:00 batch has written them, so the finance warehouse will be one settlement day stale every day. The CR's own Environment table shows this. **Severity: high.**
-2. `[UNEXAMINED ASSUMPTION]` `[NOVEL]` The 85-minute margin is success-path only. Timeout plus manual rerun from a 03:00 start leaves roughly 0–30 minutes before the 06:00 cutoff, versus about three hours today. **Severity: high** (low frequency, high impact: merchants paid late).
-3. `[UNEXAMINED ASSUMPTION]` `[NOVEL]` The rollout week appears to coincide with Black Friday, Cyber Monday, and month-end. That means peak volume on the first production nights of the new schedule. **Severity: high, and fixable just by picking a different week.**
-4. `[HIDDEN COUPLING]` `[NOVEL]` `fraud-model-refresh` (04:00) overlaps any settlement run longer than 60 minutes. That risks recreating the original contention and degrading Risk's job. **Severity: medium**, depending on that job's cluster load.
-5. `[HIDDEN COUPLING]` `[NOVEL]` Settlement start depends on the backup finishing by 02:30. The only guard is a 30-minute gap between two unrelated crons owned by different teams. **Severity: medium.**
-6. `[SECOND-ORDER EFFECT]` `[NOVEL]` If the merchant dashboard reads from the warehouse, merchants see stale settlement despite the "as today" claim. **Severity: unknown until the source is confirmed; high if true.**
-7. `[SECOND-ORDER EFFECT]` `[NOVEL]` The warehouse may already be receiving partial or missing settlement data on nights when the current 70–95 minute runs straddle 02:15, including both rerun nights. This is a pre-existing issue surfaced by this analysis. **Severity: medium; check regardless of the CR.**
-8. `[UNEXAMINED ASSUMPTION]` `[NOVEL]` The staging test probably didn't reproduce production's 03:00–05:00 cluster load, so it doesn't validate the new slot. **Severity: low–medium** (an evidence gap, not a defect).
-9. `[UNEXAMINED ASSUMPTION]` `[NOVEL]` The scheduler's timezone semantics are unverified. If they aren't UTC, the margins shift by an hour across DST. **Severity: low; easy to check.**
-10. `[REVERSIBILITY CLIFF]` `[NOVEL]` The revert stops being single-team once a downstream job reschedules around the new time. Reverting also returns to a known-bad state. **Severity: low–medium.**
-11. `[SUCCESS COST]` `[NOVEL]` The change consumes the last uncrowded pre-cutoff window, tightens failure-path slack, and defers a structural, dependency-based scheduling fix. **Severity: medium over time.**
-12. `[UNEXAMINED ASSUMPTION]` `[NOVEL]` The settlement day boundary is based on capture timestamp, not run time. The byte-identical payout test supports this. **Severity: low.**
+- `[HIDDEN COUPLING]` `[NOVEL]` `warehouse-sync` at 02:15 would run before settlement every night. The finance warehouse becomes stale by a day or silently skips days, depending on how the sync selects rows. It may already be racing settlement since the backup change.
+- `[UNEXAMINED ASSUMPTION]` `[NOVEL]` The 85-minute margin covers a successful run only. The failure-plus-rerun path, which has occurred twice recently, barely fits before 06:00.
+- `[UNEXAMINED ASSUMPTION]` `[NOVEL]` Settlement-day selection was verified only on static data. Time-independence under live post-midnight writes is unproven.
+- `[SECOND-ORDER EFFECT]` `[NOVEL]` Slow runs and reruns now overlap `fraud-model-refresh` at 04:00, recreating cluster contention.
+- `[HIDDEN COUPLING]` `[NOVEL]` The new start time depends on the backup ending by 02:30, with nothing enforcing it. Backup growth brings the original problem back.
+- `[HIDDEN COUPLING]` `[NOVEL]` The 07:00 dashboard may read from the warehouse. If so, it inherits the staleness. This is unverified.
+- `[UNEXAMINED ASSUMPTION]` `[NOVEL]` The scheduler's cron timezone is assumed to be UTC.
+- `[SUCCESS COST]` `[NOVEL]` Headroom for future runtime growth shrinks sharply, and the overnight chain grows more wall-clock couplings across four teams.
+- (Reversibility: flat. No cliffs.)
 
----
+If concrete failure narratives would help, for example to brief Data Platform or the on-call rotation, run `pre-mortem` on this CR using this analysis as input.
 
 ## Recommendations
 
-**Must address before proceeding**
-- **Coordinate with Data Platform on `warehouse-sync` (finding 1).** Either move it to after settlement's worst-case finish, or better, trigger it on settlement completion. Ship both changes together. The CR should not be "Low risk / no other teams" while it silently breaks a consumer listed in its own table.
-- **Do not roll out the week of 2026-11-23 (finding 3).** Wait until after the 11-30/12-01 month-end settlement. Peak-volume nights shouldn't be the new schedule's first production runs.
-- **Write down the failure-path timeline and adjust accordingly (finding 2).** State the batch's timeout value, the expected page-to-rerun time, and the latest safe rerun start. If the result is under ~60 minutes of slack, pick one or more mitigations:
-  - an earlier start such as 02:40, if backup completion is reliable;
-  - a pre-cutoff escalation rule, for example "if not complete by 05:00, escalate to secondary";
-  - an automatic single retry instead of a manual one.
-- **Confirm the merchant dashboard's data source (finding 6).** If it reads the warehouse, the "as today" claim is false until finding 1 is fixed.
+**Must address before proceeding:**
+1. **Coordinate with Data Platform on `warehouse-sync`.** Move it after settlement, or better, trigger it on settlement completion. Do this before the cron change ships, not after. Also audit the warehouse for partial or missing settlement days since last month's backup change, because the race likely already exists.
+2. **Recompute the margin for the failure path.** Write down the latest time a rerun can start and still make 06:00 (roughly 04:45-05:00). Make sure the job timeout and alerting fire early enough for that deadline. Add an explicit escalation step to the runbook (for example, "if no file by 05:15, contact the sponsor bank or use the fallback procedure"). If the math doesn't close, choose an earlier start such as 02:35, or start on backup completion rather than at a fixed time.
+3. **Verify the day-boundary logic in code.** Confirm the selection query uses an explicit settlement-date bound and not `now()`, status, or commit time. Alternatively, run a staging test that replays live post-midnight writes. Then compare the first production run against a shadow computation before sending the file.
 
-**Worth mitigating**
-- **Check `fraud-model-refresh`'s cluster load (finding 4)** with the Risk team. Watch signal: settlement runtime above 60 minutes, and refresh-job duration on overlap nights.
-- **Gate settlement on backup completion rather than wall-clock time (finding 5).** Even a simple "wait for backup-done marker, max until 03:30" check would do. Watch signal: backup end time trending past 02:30.
-- **Audit warehouse settlement data for the past month (finding 7),** especially the two rerun nights, regardless of whether this CR ships.
-- **Verify the scheduler timezone (finding 9).** A five-minute check.
-- **Track the structural fix (finding 11).** Move the overnight chain from clock offsets to completion-based dependencies. Without it, the next team to move a job will cause the same class of incident.
+**Worth mitigating:**
+- **Fraud-refresh overlap:** Track settlement end time versus 04:00 and alert if settlement is still running at 04:00. Tell Risk about the change.
+- **Backup overrun:** Add an alert if the backup is still running at 03:00, or make settlement wait on a backup-complete signal.
+- **Dashboard source:** Confirm with Merchant Experience whether the 07:00 refresh reads the cluster or the warehouse.
+- **Timezone check:** Confirm the scheduler's cron timezone is UTC.
 
-**Acknowledged risks**
-- **Day-boundary semantics (finding 12).** The byte-identical payout-file test over identical data is adequate evidence. Carry it.
-- **Reversibility (finding 10).** The cron itself is trivially reversible. Downstream adaptations are coordination costs, not data-loss risks. This is acceptable as long as the changes to dependent jobs are recorded alongside CR-2291.
-- **Staging representativeness (finding 8).** Acceptable if the first production runs are watched against the runtime and overlap signals above. Re-classify the CR from "Low" to at least "Medium (cross-team schedule dependency)" so those reviews actually happen.
+**Acknowledged risks:**
+- **Later on-call pages.** Failures now page later in the night. This is acceptable if the escalation deadline above is defined.
+- **Reduced headroom for runtime growth.** This is acceptable for now. Revisit when runtime trends past about 70 minutes.
+
+**Reclassify the risk class.** The CR should not stay "Low." The change itself is trivial and fully reversible, but it touches a cross-team batch chain with a hard external deadline.

@@ -1,49 +1,51 @@
 ## Dependency Upgrade Evaluation: formwright 5.2.0 → 6.0.0
 
 ### Summary
-**Recommendation:** Defer. The upgrade is blocked right now. formwright 6 requires React 19, but `datepane`, which `SignupForm` depends on, has no release that supports React 19.
-**Breaking change impact:** None for formwright's own API in this project. **Significant** once you count the React 18 → 19 upgrade that formwright 6 forces.
-**Estimated effort:** Minutes for the formwright code changes (none are needed). Unknown, probably days, for the React 19 upgrade plus resolving `datepane`. That part needs its own evaluation.
-**Risk:** High if done now. You would have to override or ignore `datepane`'s peer constraint, or replace `datepane`.
-**Audit state:** Unverified. No audit was run, since this environment has no shell or network access.
+**Recommendation:** Defer
+**Breaking change impact:** Significant
+**Estimated effort:** days (React 18 → 19 upgrade plus replacing or upgrading `datepane`); the formwright code changes alone take minutes
+**Risk:** High
+**Audit state:** Unverified
 
 ### Motivation
-A developer wants `useFieldArray()`, which is new in 6.0.0, for a repeating-address form planned next quarter. They want to upgrade early so that work can start sooner. There is no security, end-of-life, or transitive pressure. This is a feature-driven upgrade for work that has not started yet.
+The upgrade is for a feature. A developer wants `useFieldArray()`, new in 6.0.0, for a repeating-address form planned for next quarter. They want to upgrade now so that work can start early. No security advisory, CVE, or end-of-life notice was mentioned, so urgency is low.
 
 ### Breaking Changes That Affect This Project
 
 | Change | Affected code | Migration |
 |--------|--------------|-----------|
-| Peer deps `react` / `react-dom` now `^19.0.0`, and formwright 6 "does not run on earlier React versions" | `package.json` pins `react` and `react-dom` at `18.3.1`. This affects the whole app, not only the two form files. | Upgrade React to 19 first. That is a separate major upgrade and needs its own evaluation of every React usage in the app, which this request does not include. |
-| *(Transitive consequence)* React 19 conflicts with `datepane@3.1.0` peer `react: ^18.0.0`. 3.1.0 is the latest release. | `src/forms/SignupForm.jsx` uses `<Field ... as={DatePane} />` | No compatible `datepane` exists. You would need to wait for a React-19-compatible `datepane`, replace it, or remove it from `SignupForm`. |
+| formwright 6.0.0 requires `react` and `react-dom` `^19.0.0` and "does not run on earlier React versions" | `package.json` (`react` and `react-dom` pinned to `18.3.1`); every formwright call site (`src/forms/SignupForm.jsx`, `src/forms/ContactForm.jsx`) | Upgrade React and React DOM to 19. This is a separate major upgrade and needs its own evaluation. |
+| The forced React 19 upgrade conflicts with `datepane@3.1.0`, which declares peer `react: ^18.0.0`. 3.1.0 is datepane's **latest release**, so no datepane version supports React 19. | `package.json` (`datepane ^3.1.0`); `src/forms/SignupForm.jsx` (`import { DatePane } from "datepane"`, `<Field form={form} name="moveIn" as={DatePane} />`) | No upgrade path exists today. Options: (a) wait for a React 19-compatible datepane release, (b) replace datepane with a React 19-compatible date picker, or (c) force-install against an unmet peer range. Option (c) is not recommended because the move-in date field could break at runtime. |
 
-No formwright API change affects the project's own call sites. The blocker comes entirely from the React peer requirement.
+The blocker is in the dependency graph, not the formwright API. formwright 6 needs React 19, the app's only other UI dependency cannot run on React 19, and that dependency has no newer release to move to.
 
 ### Breaking Changes That Don't Affect This Project
-- **`useForm({ validateOnMount })` removed.** Both call sites pass only `initialValues` (`SignupForm.jsx`, `ContactForm.jsx`), so they don't use it. Validation-on-mount was not enabled before and is "always off" now, so behavior does not change.
-- **`Field` and `useForm` are otherwise unchanged** in 6.0.0, according to the release notes. The project's usage (`useForm`, `form.handleSubmit`, `Field` with `form`, `name`, `type`, `required`, and `as`) needs no edits.
-- **5.3.0: `Field` forwards `aria-*` props to the rendered input.** This is additive, and neither call site passes `aria-*` props to `Field`, so there is no impact. Note that 5.3.0 already falls inside the existing `^5.2.0` range. A fresh install without the lockfile could pick it up today.
+- **`useForm({ validateOnMount })` removed (6.0.0).** Neither call site passes `validateOnMount`. Both call `useForm({ initialValues: ... })` only, so no change is needed. Validation on mount was already off by default for this project's usage.
+- **`Field` and `useForm` otherwise unchanged (6.0.0).** The project uses only `useForm`, `form.handleSubmit`, and `Field` with `form`, `name`, `type`, `required`, and `as` (string `"textarea"` and component `DatePane`). None of these are listed as changed.
+- **`Field` forwards `aria-*` props (5.3.0).** This is additive. Neither call site passes `aria-*` props today, so nothing changes.
 
 ### Transitive Effects
-- **Forced React 18.3.1 → 19 upgrade** for `react` and `react-dom`. This affects the entire app, and its scope can't be judged from the information given.
-- **Peer conflict with `datepane@3.1.0`** (`react: ^18.0.0`, latest release). With npm 7+ the install would fail with a peer-dependency resolution error unless you force past it with `--legacy-peer-deps` or `--force`. I have not run this, so it is a prediction. Forcing it would run `datepane` on an unsupported React version, so I don't recommend it.
+- **React 18.3.1 → 19 forced.** `react` and `react-dom` must both move to `^19.0.0`. React 19's own breaking changes are not in the supplied release notes and I could not look them up. They need a separate evaluation covering the whole app, not just the two forms.
+- **Peer conflict with `datepane@3.1.0`.** Its `react: ^18.0.0` peer range cannot be met alongside formwright 6, and no newer datepane release exists. Depending on the package manager and its configuration, installing will either fail with a peer-resolution error or succeed with an unmet-peer warning. I have not run the install to check which.
+- **Minimum runtime/platform requirements:** none stated beyond React 19.
 
 ### Execution Evidence
 
 | Command | Exit | As-of | Evidence |
 |---------|------|-------|----------|
-| `npm install formwright@6.0.0` (peer-resolution check) | — | — | Unverified. Recommended pre-merge check. |
-| `npm audit` | — | — | Unverified. Recommended pre-merge check. |
-| `npm test` | — | — | Unverified. Recommended pre-merge check. |
-| `npm view datepane versions peerDependencies` (confirm no React-19-compatible release) | — | — | Unverified. Recommended pre-merge check. The request says 3.1.0 is latest, but this should be re-checked when revisiting. |
+| `npm ls react react-dom formwright datepane` (confirm installed versions match the lockfile excerpt) | — | — | Unverified — recommended pre-merge check |
+| `npm view datepane versions peerDependencies` (confirm 3.1.0 is still latest and still React-18-only) | — | — | Unverified — recommended pre-merge check |
+| `npm audit` | — | — | Unverified — recommended pre-merge check |
+| `npm install formwright@6.0.0 react@19 react-dom@19` on a scratch branch (observe peer-conflict behavior) | — | — | Unverified — recommended pre-merge check |
+| `npm test` | — | — | Unverified — recommended pre-merge check |
 
-Nothing was executed in this session. Every conclusion above comes from reading the supplied manifest, lockfile excerpt, call sites, and release notes.
+No commands were run because this session had no shell, repository, or network access. Every finding above comes from the manifest, lockfile excerpt, call sites, and release notes supplied in the request. Two of those inputs are time-varying and should be re-checked before acting: the claim that datepane 3.1.0 is its latest release, and the audit state.
 
 ### Risk Factors
-- **Forcing past the peer conflict** would run `datepane` on React 19, which it doesn't declare support for. Any failure would hit the signup flow (`SignupForm`'s `moveIn` field), the entry point for new customers.
-- **The React 19 upgrade is the real cost.** It touches the whole app, and its breaking changes would need evaluating against code not included here.
-- **Upgrading early buys little.** The feature work is next quarter. Taking on React 19 risk now delivers no user value until then.
-- **Detectability:** a peer conflict surfaces immediately at install. Runtime incompatibilities in `datepane` under React 19 might only show up when the date field is used. Tests that render `SignupForm` and interact with `moveIn` would be needed to catch them.
+- **Runtime breakage of the move-in date field.** Forcing past datepane's peer range puts a component built for React 18 under React 19. This may fail at runtime rather than at install or compile time, and only in `SignupForm`, the account-creation path.
+- **App-wide React major upgrade.** A feature that one future form needs would pull in a React major upgrade affecting the whole customer web app. The blast radius is much larger than formwright's own changes suggest.
+- **Detectability.** Test coverage of `SignupForm` and `ContactForm` is unknown. A component test that renders `SignupForm` and submits a `moveIn` date would be the key regression check.
+- **Low risk in formwright itself.** Its API changes don't touch this project's usage.
 
 ### Rollback Plan (precondition — complete before starting Migration Plan)
 
@@ -52,26 +54,32 @@ Nothing was executed in this session. Every conclusion above comes from reading 
 git checkout -- package.json package-lock.json
 rm -rf node_modules
 npm ci
+# if datepane was replaced with another library, also revert the component change:
+git checkout -- src/forms/SignupForm.jsx
 ```
-(No data or config changes are involved in this upgrade.)
 
-**Verification step** (run after rollback; it must pass to confirm the rollback worked):
-`npm ls react react-dom formwright datepane` should show `react@18.3.1`, `react-dom@18.3.1`, `formwright@5.2.0`, and `datepane@3.1.0` with no peer errors. Then run the test suite covering `SignupForm` and `ContactForm`, including a submit through the `DatePane` field.
+**Verification step** (run after rollback; must pass to confirm rollback worked):
+`npm ls react react-dom formwright datepane` must report `react@18.3.1`, `react-dom@18.3.1`, `formwright@5.x`, and `datepane@3.1.0`. After that, run a test that renders `SignupForm`, sets `moveIn` through the `DatePane` field, and submits. That test fails if React 19 or formwright 6 is left in `node_modules`.
 
-**Rehearsal status:** [ ] Not rehearsed. This environment has no shell. Rehearse on a scratch branch (e.g. `scratch/formwright-6-rollback`) before starting the migration, and capture the verification output as evidence.
+**Rehearsal status:** [ ] Not rehearsed. This must be done on a scratch branch, with captured verification output, before any migration starts.
 
 ### Migration Plan
-Not recommended now. When the blockers clear, the steps would be:
-1. Confirm a React-19-compatible `datepane` release exists, or decide on a replacement for the `moveIn` field in `SignupForm.jsx`.
-2. Write a separate dependency-upgrade evaluation for React and react-dom 18.3.1 → 19 across the whole app, and finish that upgrade together with the `datepane` resolution.
-3. Rehearse the rollback above on a scratch branch and record the evidence.
-4. Bump `formwright` to `^6.0.0`. No call-site changes are needed in `SignupForm.jsx` or `ContactForm.jsx`.
-5. Run `npm install` and confirm there are no peer warnings. Run tests, then manually check submitting both forms, including the date field.
-6. Start the repeating-address form with `useFieldArray()`.
+Not recommended now. Use this plan when the trigger below is met.
+1. Resolve the datepane blocker first. Either upgrade to a datepane release whose peer range includes React 19, or replace `DatePane` in `src/forms/SignupForm.jsx` with a React 19-compatible date picker that works with `Field`'s `as` prop.
+2. Evaluate and perform the React 18.3.1 → 19 upgrade (`react`, `react-dom`) as its own change, using its own run of this skill and its own rollback rehearsal.
+3. Rehearse the rollback above on a scratch branch and capture the verification output.
+4. Bump `formwright` to `^6.0.0` in `package.json` and reinstall.
+5. Confirm `validateOnMount` is still unused anywhere. Today it appears in neither call site, so no code changes are expected in `SignupForm.jsx` or `ContactForm.jsx`.
+6. Run tests and manually exercise signup (email plus move-in date) and contact submission.
+7. Build the repeating-address form with `useFieldArray()`.
+
+Keep steps 1–2 and step 4 in separate PRs so that a regression can be traced to React or datepane rather than formwright.
 
 ### If Not Upgrading
 Revisit when **either** of these happens:
-- `datepane` ships a release with a React 19 peer range, **or**
-- the team decides to replace `datepane`, or the repeating-address work is scheduled firmly enough to justify the React 19 migration.
+- datepane publishes a release supporting React 19, or
+- the team decides to replace datepane anyway.
 
-Watch the `datepane` releases now, so this blocker doesn't surprise you at the start of next quarter. If the address-form work must start early, run a timeboxed spike on a scratch branch. It should answer two questions: (a) how large the app-wide React 19 upgrade is, and (b) what the realistic `datepane` options are (wait, replace, or drop). The formwright side of the upgrade needs no code changes, so React 19 and `datepane` are the only real cost.
+Either way, schedule the React 19 + datepane work at the start of next quarter, ahead of the repeating-address form, rather than now.
+
+Staying on 5.x costs little in the meantime. The current `^5.2.0` range already permits 5.3.0, which adds `aria-*` forwarding with no breaking changes and could be taken now if useful. Until the upgrade happens, the address form can be prototyped with a hand-rolled repeating group on `useForm`, or its design can be settled with the `useFieldArray` API shape in mind.

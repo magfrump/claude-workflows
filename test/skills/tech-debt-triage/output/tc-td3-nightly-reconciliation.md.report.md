@@ -1,48 +1,44 @@
 ## Tech Debt Triage: Nightly reconciliation loads every open order into memory
 
 **Location:** `recon/nightly.py` (`run_nightly`)
-**Nature:** Algorithmic / scaling. Memory use grows linearly with the open-order count, against a fixed 16 GB ceiling.
-**Cost of Deferral:** `+0.6 GB peak RSS per month`. This is consistent across June to September, and order growth is steady and expected to continue.
-**Failure Cost:** `High × Med`. On the current trend an OOM kill is close to certain within about a month. The result would be unreconciled invoices, blocked carrier payments in AP, and contractual late-payment penalties from two carriers. That means real money and damage to carrier relationships, but no data loss, and it is recoverable once the job runs.
+**Nature:** Scalability. An algorithm that is unbounded in memory is running against a hard resource limit.
+**Cost of Deferral:** `+0.6 GB peak RSS per month`. Headroom shrinks at the same rate.
+**Failure Cost:** `High × High`. On the current trend the job crosses 16 GB within weeks. Once it does, it fails every night until fixed. Accounts payable can't release carrier payments, and two carrier contracts carry late-payment penalties.
 
-### Carrying Cost: Low
-Day to day, this debt costs almost nothing. The code is short and readable, it changes rarely (6 commits in two years), and it has caused no incidents. It runs in about 40 minutes. A carrying-cost view alone would say "carry intentionally." The risk is the deadline, not friction.
+### Carrying Cost: Medium
+Day to day this code costs almost nothing. It is short, readable, rarely changed (6 commits in two years), and has caused no incidents. What it carries is a known expiry date. The monitoring shows a steady +0.6 GB per month (12.4 → 13.0 → 13.6 → 14.2 GB). Order growth is steady and sales expects it to continue, so the trend line is credible.
 
-### The projection
-
-The September data shows 1.8 GB of headroom. Extending the steady trend:
-
-| Month | Peak RSS (projected) | Headroom |
+| Month | Peak RSS | Headroom vs 16 GB |
 |---|---|---|
-| Oct 2026 | ~14.8 GB | 1.2 GB |
-| **Nov 2026 (now)** | **~15.4 GB** | **~0.6 GB** |
-| **Dec 2026** | **~16.0 GB** | **~0 GB, OOM kill** |
-| Jan 2027 | ~16.6 GB | over limit |
+| Sep (actual) | 14.2 GB | 1.8 GB |
+| Oct (projected) | ~14.8 GB | ~1.2 GB |
+| Nov (projected) | ~15.4 GB | ~0.6 GB |
+| Dec (projected) | ~16.0 GB | ~0 |
 
-Three caveats push the risk earlier, not later:
-- The table records **monthly peak** values. A single unusually large night, such as month-end, a large carrier batch, or a holiday-season volume spike, can cross the line before the average trend does.
-- Freight volume often rises in December. If it does here, the trend line understates the risk.
-- The write-up has no data for October or November. **Pull those numbers today.** If they are on trend, the job is running with roughly 4% headroom right now.
+The write-up is dated 2026-10-05 and today is 2026-11-20. If the trend held, the job is already running within about 0.6 GB of the kill limit. These are monthly peaks, so any single night with an unusual spike could cross the line earlier. Examples are a month-end backlog, a carrier batching invoices late, or holiday-season freight.
 
 ### Fix Cost
-- **Scope:** Localized. The change is to the matching logic in `recon/nightly.py`, plus possibly a query or index for the SQL-join option.
-- **Effort:** About 3 engineer-days, as estimated.
-- **Risk:** Low to medium. Matching semantics could shift slightly in a set-based rewrite: duplicate `order_ref`s, null refs, or how `_amounts_match` translates to SQL. The existing integration tests against a seeded database should catch regressions. Add a test that compares the unmatched set from the old and new implementations on the same fixture.
-- **Incremental?** Yes. Batching keyed by `order_ref` can be swapped in behind the same `write_exceptions` output, and the SQL-join version can come later if wanted.
+- **Scope:** Localized. The change is `run_nightly` plus its integration tests.
+- **Effort:** About 3 engineer-days, per the estimate. That is roughly 1–2% of the team's quarter (3 engineers × ~13 weeks).
+- **Risk:** Low. A SQL join or batched lookup could subtly change match semantics, such as duplicate `order_ref`s or null refs. The existing integration tests against a seeded database should catch this, provided they include unmatched and mismatched-amount cases.
+- **Incremental?** Yes. A partial step is available today: load only the columns `_amounts_match` needs (id, amounts, currency) instead of full ORM objects, and stop materializing the full list before building the dict. This likely cuts peak memory substantially in well under a day. The full fix (SQL join or batching) can follow.
 
 ### Urgency Triggers
-- **16 GB memory limit:** projected to be hit around **December 2026**, possibly sooner on a peak night. This is imminent.
-- **Seasonal volume:** a likely December freight spike would arrive at the same time.
-- **Q4 roadmap pressure:** the billing portal work fills Q4, so the team is busiest exactly when the job is projected to fail. An OOM incident in that period would interrupt feature work anyway, unplanned, and while late-payment penalties accumulate.
+- **The 16 GB kill limit.** Projected for about December 2026 and possibly sooner. This trigger is already imminent.
+- **Deterministic failure mode.** Once memory crosses the limit, this is not a flaky one-off. Every subsequent nightly run is killed, so the backlog of unreconciled invoices grows daily until someone ships a fix under pressure.
+- **Contractual penalties.** Delayed carrier payments trigger late-payment terms with two carriers.
+- **Q4 roadmap pressure.** The billing portal work means an emergency fix in December would displace feature work at the worst moment, rather than a planned 3 days now.
 
 ### Recommendation
 
 **Recommendation:** Fix now
 
-Carrying cost is low, but there is a hard, predictable deadline about a month away. The failure has a direct financial cost (carrier late-payment penalties and blocked AP), and the fix is cheap, localized, and well tested. Three engineer-days taken from the billing portal now cost less than an unplanned incident during the December close.
+An urgency trigger is imminent: the measured growth rate puts the job at the memory limit around December. The failure cost is severe and recurring, since it blocks accounts payable and incurs contractual penalties. The fix is cheap (about 3 days), localized, and covered by integration tests. A planned 3-day fix now is far cheaper than an incident-driven fix in the middle of the Q4 billing-portal push.
 
-**Suggested next steps:**
-1. **Today:** check the October and November peak RSS figures, and add an alert at about 14.5–15 GB so a bad night doesn't arrive without warning.
-2. **Stopgap, if available:** if the worker's 16 GB limit can be raised temporarily, do it. Each extra 2 GB buys roughly three months. Treat it as a bridge, not a fix, because it only delays the same failure.
-3. **This sprint:** implement the batched or streaming match. The change probably spans more than about 50 LOC plus test changes, so handle it as a short research-plan-implement effort with this triage as input. Keep the plan proportionate to a 3-day fix.
-4. **Fix shape:** prefer the SQL join or a batched lookup over only the `order_ref`s present in tonight's invoices. That makes memory scale with invoice volume rather than with the full open-order backlog, which is the quantity that keeps growing.
+**Immediate actions, in order:**
+1. **Pull current peak-RSS numbers for October and November today.** The write-up stops at September. If November is at or above about 15.4 GB, treat the fix as urgent this week.
+2. **Optional stopgap:** if the worker's memory limit can be raised (for example to 24–32 GB), do it now. At +0.6 GB per month that buys months of runway. It is insurance, not a substitute for the fix, because the growth continues.
+3. **Ship the column-projection quick win.** Load only the needed fields and skip the intermediate list. This buys headroom with minimal risk.
+4. **Ship the full fix.** Prefer the SQL join, which pushes the match to the database and removes the memory dependency on order volume. Batching is the fallback if the match logic in `_amounts_match` is hard to express in SQL.
+
+**Routing:** The fix touches `recon/nightly.py` and its tests, and it requires choosing between two approaches (SQL join vs batched streaming). It therefore exceeds the trivial-fix threshold. Hand it to the research-plan-implement workflow with this triage as input, but keep the research phase short. The main open questions are whether `_amounts_match` translates cleanly to SQL and whether the seeded test data covers the edge cases.

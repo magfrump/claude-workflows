@@ -1,254 +1,193 @@
 # What-If Analysis: bcrypt → Argon2id upgrade-on-login for `accounts-api`
 
-**Proposal:** Design doc "Upgrade stored password hashes from bcrypt to Argon2id" (Quillmark `accounts-api`)
+**Proposal:** Design doc "Upgrade stored password hashes from bcrypt to Argon2id" (Quillmark `accounts-api`), supplied inline
 **Date:** 2026-11-20
 **Upstream critiques:** none
 
 > ℹ️ **No upstream critique provided.** This analysis covers the full consequence space
 > independently. For maximum value, run a critique skill first (e.g., `cowen-critique`) and
-> provide its output. This skill is most powerful when focused on the gaps that critics miss.
+> provide its output — this skill is most powerful when focused on the gaps that critics miss.
 
-**Prior Art Check:** No repository was available, so `docs/decisions/` and `docs/working/` could not be searched. No `[PRIOR CONSIDERATION]` findings are possible. All findings are tagged `[NOVEL]`.
+**Prior Art Check:** No repository was available, so `docs/decisions/` and `docs/working/` could not be searched. No `[PRIOR CONSIDERATION]` findings are possible. Everything below is tagged `[NOVEL]` because there is no baseline to compare against.
 
 ---
 
 ## Assumptions Examined
 
-**A1. Rollback is "instant and complete," and the previous release is a safe fallback.**
-- **Source:** Explicit, "Rollback and rollback" section.
-- **If wrong:** Redesign of the rollout.
-- **Analysis:** Each upgrade overwrites the only copy of the bcrypt hash. The previous release "predates this work entirely," so it cannot verify `$argon2id$` hashes. Redeploying it locks out every upgraded account. The flag only stops *new* upgrades. It reverses nothing.
-- **Tag:** `[NOVEL]`
+- **Assumption:** Redeploying the previous `accounts-api` release is a safe rollback.
+  - **Source:** explicit ("Rollout and rollback": "we can then redeploy the previous `accounts-api` release, which predates this work entirely")
+  - **If wrong:** redesign. The previous release only knows bcrypt. Every account already rewritten to `$argon2id$` fails verification under it. The rollback plan has to be rebuilt around a dual-verifier release that becomes the permanent floor.
+  - **Tag:** `[NOVEL]`
 
-**A2. "No data migration is involved at any stage."**
-- **Source:** Explicit, same section.
-- **If wrong:** Redesign.
-- **Analysis:** Upgrade-on-login *is* a data migration. It runs one row at a time, it is destructive, and it cannot be reversed in place. Calling it "no migration" is what lets the doc treat rollback as trivial.
-- **Tag:** `[NOVEL]`
+- **Assumption:** "No data migration is involved at any stage, so there is nothing to roll back in the database."
+  - **Source:** explicit ("Rollout and rollback")
+  - **If wrong:** redesign. Upgrade-on-login is a data migration, done one row at a time. Each upgrade overwrites the bcrypt value in place and does not keep the old one. That overwrite is the irreversible part.
+  - **Tag:** `[NOVEL]`
 
-**A3. An upgrade login costs about 90 ms of CPU, a 20 ms increase.**
-- **Source:** Explicit, "Capacity."
-- **If wrong:** Redesign of the rollout pacing and capacity plan.
-- **Analysis:** An upgrading login does a bcrypt verify (70 ms) and then an Argon2id hash (90 ms), so about 160 ms. Adding a verify-after-write check (recommended below) makes it about 250 ms. The 20 ms figure only holds once an account is already upgraded.
-- **Tag:** `[NOVEL]`
+- **Assumption:** Every stored bcrypt hash starts with `$2b$`.
+  - **Source:** explicit (Approach step 2), with an implicit claim that nothing else exists
+  - **If wrong:** tweak, but a high-severity one. Hashes from 2017-era libraries are often `$2a$` or `$2y$`. Imported or acquired accounts may use other formats. NULLs exist for staff. If the new dispatch only matches `$2b$` and `$argon2id$`, every other row fails login on the day the new release ships, before the flag matters at all.
+  - **Tag:** `[NOVEL]`
 
-**A4. CPU is the only resource that matters.**
-- **Source:** Implicit.
-- **If wrong:** Redesign.
-- **Analysis:** Argon2id at m=64 MiB allocates 64 MiB per in-flight hash. Bcrypt uses about 4 KiB. Memory headroom, container memory limits, and allocator behaviour under concurrency are not discussed.
-- **Tag:** `[NOVEL]`
+- **Assumption:** `accounts-api` is the only code that reads or verifies `password_hash`.
+  - **Source:** implicit ("Other consumers" lists only the mobile app, the web app and staff SSO; "Schema" says one column keeps "every code path that reads a hash" working)
+  - **If wrong:** redesign. Any other reader that calls bcrypt directly will reject upgraded users. Examples: a legacy admin tool, a second service with DB access, a re-auth endpoint in another repo, a basic-auth or API path. Because the column type is unchanged, nothing fails at schema level. It fails at runtime, per user, as an ordinary "wrong password".
+  - **Tag:** `[NOVEL]`
 
-**A5. Every stored hash is either `$2b$` or `$argon2id$`.**
-- **Source:** Implicit, step 2.
-- **If wrong:** Tweak or redesign.
-- **Analysis:** Libraries from 2017 often emitted `$2a$` (older node-bcrypt, many Java libraries) or `$2y$` (PHP). Accounts created before 2017 might carry an even older format. The doc does not define an else branch. This dispatch logic is not behind the flag, so it takes effect the moment the code deploys.
-- **Tag:** `[NOVEL]`
+- **Assumption:** Writing a new value to `password_hash` has no side effects beyond storing it.
+  - **Source:** implicit
+  - **If wrong:** redesign. Many systems treat any change to the password hash as a password change. Possible effects: "your password was changed" security emails, invalidation of all other sessions (for example, a session token or session-auth hash derived from the stored hash), a reset of a `password_changed_at` timestamp, fraud or audit signals, and CDC events. Each successful upgrade would fire all of them.
+  - **Tag:** `[NOVEL]`
 
-**A6. Login is the only code path that writes `password_hash`.**
-- **Source:** Implicit.
-- **If wrong:** Redesign.
-- **Analysis:** Registration, password change, password reset, and admin reset all write the column. The doc does not say whether they write bcrypt or Argon2id. If the reset path still writes bcrypt, the month-12 forced reset regenerates bcrypt hashes.
-- **Tag:** `[NOVEL]`
+- **Assumption:** The upgrade write cannot conflict with other writes to the same row.
+  - **Source:** implicit (step 3 describes an unconditional overwrite)
+  - **If wrong:** redesign of the write. If a login with the old password races a password change or reset, the upgrade can overwrite the new password's hash with an Argon2id hash of the old password.
+  - **Tag:** `[NOVEL]`
 
-**A7. Mobile and web are the only consumers of password hashes.**
-- **Source:** Explicit, "Other consumers."
-- **If wrong:** Tweak or redesign, depending on what turns up.
-- **Analysis:** The list covers clients only. It omits other readers of the column itself: re-auth endpoints, other services or jobs with database access, triggers, CDC pipelines, and session fingerprints. See Coupling Analysis.
-- **Tag:** `[NOVEL]`
+- **Assumption:** Argon2id costs about 20 ms more CPU per login than today.
+  - **Source:** explicit ("Capacity")
+  - **If wrong:** redesign of capacity and success criteria. The 20 ms figure only holds for an account that is already upgraded. An upgrade login runs a bcrypt verify and then an Argon2id hash, about 160 ms in total. Upgrade logins are the majority for the first weeks at 100%. The doc also never prices memory: 64 MiB per concurrent hash.
+  - **Tag:** `[NOVEL]`
 
-**A8. Upgrading the hashes of active users meaningfully reduces exposure to a database leak.**
-- **Source:** Implicit, from the motivation.
-- **If wrong:** Redesign of the strategy.
-- **Analysis:** The threat is offline cracking of a leaked database. Dormant accounts, which are likely the majority of 4.2M, stay on bcrypt for 12 months. Backups keep bcrypt hashes for every account until retention expires.
-- **Tag:** `[NOVEL]`
+- **Assumption:** New passwords (signup, change, reset) are already, or will be, written as Argon2id.
+  - **Source:** implicit. The doc only covers the login path.
+  - **If wrong:** tweak. If set-password still writes bcrypt, the system keeps creating bcrypt rows. The 12-month forced reset then never finishes, and reset accounts land back on bcrypt.
+  - **Tag:** `[NOVEL]`
 
-**A9. "Login failure rate" will reveal a broken upgrade.**
-- **Source:** Explicit, rollback triggers.
-- **If wrong:** Tweak.
-- **Analysis:** A bad Argon2id write succeeds silently. The user is already logged in. It only fails on that user's *next* login, which may be days later, and at 1% it is buried in the aggregate failure rate.
-- **Tag:** `[NOVEL]`
+- **Assumption:** Active users submit their password often enough to be upgraded within 12 months.
+  - **Source:** implicit (the forced reset targets accounts "still on bcrypt", read as dormant ones)
+  - **If wrong:** tweak. Users on long-lived mobile refresh tokens, "remember me" sessions or social login may never type a password. They are active, yet they get force-reset.
+  - **Tag:** `[NOVEL]`
 
----
+- **Assumption:** Upgrading active accounts meaningfully addresses the threat in the motivation (GPU cracking of a stolen database).
+  - **Source:** implicit (motivation versus the success criteria)
+  - **If wrong:** redesign of scope. The success metric is 60% of *monthly active* accounts, not of 4.2M. If MAU is a fraction of the total, most hashes stay bcrypt for 12 months. Every existing backup and replica snapshot keeps bcrypt hashes for all 4.2M for as long as backups are retained.
+  - **Tag:** `[NOVEL]`
 
 ## Consequence Chains
 
-**Outcome 1: active accounts migrate to Argon2id.**
+**Outcome 1: active accounts move to Argon2id**
+
 ```
-→ First-order: Active accounts' bcrypt hashes are overwritten with Argon2id
-  → Second-order: Code versions without Argon2id verify can no longer serve those users
-    → Third-order: The "redeploy previous release" rollback becomes a mass lockout,
-      growing every day the flag is on. Up to ~60% of MAU by day 30.
-    → Third-order: Any stale instance (DR region, canary pool, a straggler during a
-      rolling deploy, a forgotten cron host, staging restored from prod) rejects
-      upgraded users intermittently. This looks like flaky auth, not a clear outage.
-  → Second-order: If the hash change is treated as a "password change" event
-    (DB trigger, CDC consumer, or session-validity fingerprint derived from the hash)
-    → Third-order: Upgraded users get logged out on all other devices, or receive
-      "your password was changed" emails. Expect a support spike, phishing-style
-      confusion, and possibly a security team investigating a "mass password change."
+→ First-order: upgrade logins rewrite password_hash to $argon2id$
+  → Second-order: each rewrite looks like a password change to anything watching the column
+    → Third-order: security-notification pipeline emails "your password was changed" to up to millions of users; support volume spikes; phishing-awareness training now teaches users to ignore real alerts
+    → Third-order: if session validity is tied to the hash, every upgraded user is logged out on all other devices; logins rise, which triggers more upgrades and more CPU, a self-feeding loop during the 100% ramp
+  → Second-order: rows are no longer readable by bcrypt-only code
+    → Third-order: any unmapped bcrypt reader starts failing for exactly the users who logged in recently, the most active and most vocal ones, at a growing rate that looks like "users forgetting passwords"
 ```
 
-**Outcome 2: Argon2id adds about 20 ms per login.**
+**Outcome 2: the rollout ramps with a flag as the safety valve**
+
 ```
-→ First-order: Per-login CPU rises (the doc's figure, true only at steady state)
-  → Second-order: During migration, upgrading logins cost ~160 ms (bcrypt + Argon2id).
-    The share of upgrading logins peaks right after each ramp step, especially 10% → 100%.
-    → Third-order: At 45 logins/s/host, all upgrading, CPU demand is ~7.2 core-s/s
-      vs ~3.15 today (+4 cores). Whether that fits "55% peak" depends on core count,
-      which the doc does not state. On an 8-vCPU host it is ~105%.
-    → Third-order: Near saturation, queueing makes p95 grow non-linearly. The
-      "<40 ms p95 increase" criterion is likely missed in week 4 even if mean CPU fits.
-  → Second-order: Each in-flight Argon2id holds 64 MiB
-    → Third-order: A burst (credential stuffing, a mass session expiry, the 12-month
-      forced-reset wave) at 200 concurrent hashes needs ~12.8 GiB per host. That
-      means container OOM kills, which turn a slowdown into a login outage.
+→ First-order: at 10% (week 2), about 10% of logins take the bcrypt+Argon2id path (~+90 ms CPU)
+  → Second-order: p95 latency rises by ~90 ms, breaching the "<40 ms" success criterion by design
+    → Third-order: on-call follows the doc ("any other problem") and turns the flag off, then redeploys the previous release "if needed"
+      → Third-order: every account upgraded so far gets locked out; login failures spike, and the rollback causes the incident it was meant to end
 ```
 
-**Outcome 3: dormant accounts are forced to reset at month 12.**
-```
-→ First-order: Remaining bcrypt accounts must reset their password
-  → Second-order: Reset emails go to addresses that may now be abandoned or re-registered
-    → Third-order: Account takeover via expired email domains on long-dormant accounts
-  → Second-order: If "force reset" sets a flag but leaves the bcrypt hash in place
-    → Third-order: The bcrypt hashes stay crackable in the DB. The security goal is
-      not met for exactly the population with the oldest, most-reused passwords.
-  → Second-order: If the reset path writes bcrypt (A6), reset accounts land back on
-    bcrypt and the "still on bcrypt" metric never reaches zero.
-```
+**Outcome 3: dormant accounts are force-reset at 12 months**
 
----
+```
+→ First-order: accounts still on bcrypt get a forced reset
+  → Second-order: users with dead email addresses cannot recover; their accounts are effectively lost
+  → Second-order: active token-only users are caught by the reset at the same time
+    → Third-order: a burst of reset emails and resets in a short window (deliverability and spam-reputation risk, support load)
+  → Second-order: if "forced reset" only sets a flag and leaves the bcrypt value in place, the crackable hash stays in the DB and all future backups. The security goal is not met even after year one.
+```
 
 ## Coupling Analysis
 
-| Coupling | Visible / Invisible | Risk |
+| Coupling | Visibility | Why it matters |
 |---|---|---|
-| Deployed code version ↔ hash format in DB. Every running instance must understand every format present. | **Invisible** (temporal) | High. This is what breaks rollback (A1) and any mixed-version fleet. |
-| Hash dispatch logic ↔ actual prefix distribution (`$2a$`, `$2y$`, legacy) | **Invisible** (data convention) | Medium-high. Can lock users out at deploy time, before the flag is touched. |
-| Other `password_hash` writers (register, change, reset, admin tools) | Visible in code, unmentioned in doc | High for forced-reset correctness. |
-| Re-auth / "confirm your password" endpoints (change email, delete account, payment) that may carry their own bcrypt-only verify | **Invisible** (behavioural) | Medium. Upgraded users fail step-up auth. |
-| DB triggers / CDC / audit jobs keyed on `password_hash` updates | **Invisible** | Medium. Spurious "password changed" notifications or session revocation. |
-| Session validity tied to a hash fingerprint (Django-style session auth hash, or a token salt) | **Invisible** | Medium. Silent logout of all other devices on upgrade. |
-| Concurrent password change ↔ upgrade write. Upgrade writes unconditionally. | **Invisible** (temporal race) | Low probability, high severity. Login B verifies the old bcrypt, password change A commits, then B overwrites with Argon2id of the *old* password. The change is silently reverted, which is worst for a user changing their password after a compromise. |
-| Bcrypt 72-byte truncation / any pre-hash or pepper scheme | **Invisible** (library behaviour) | Low. After upgrade, only the exact full password works. Users whose devices differ past byte 72 get locked out. If a pepper or SHA pre-hash exists, the upgrade must reproduce it. |
-| Timing behaviour for nonexistent users (dummy bcrypt hash) vs Argon2id-upgraded users | **Invisible** | Low. The 70 ms vs 90 ms difference gives a username-enumeration and "is this account active" timing oracle. |
-| Backups and DB snapshots | Visible, unmentioned | Medium. Bcrypt hashes for all 4.2M accounts survive for the full retention period regardless of upgrade progress. |
-| Argon2 native library ↔ build images, host architectures, container memory limits | Visible in build config | Low-medium. A new native dependency and a new memory profile. |
-
----
+| Previous `accounts-api` release ↔ hash format | Invisible (deploy pipeline treats the last release as a safe target) | The rollback floor moves the moment the first Argon2id row exists. Automated rollback tooling, canary auto-revert and autoscaling from a stale image could all put bcrypt-only code back into the fleet. |
+| Mixed-version fleet during deploys | Invisible (timing) | During any rolling deploy or partial revert, an upgraded user routed to an old instance fails. The failures look random and are hard to diagnose. |
+| Other readers of `password_hash` (other services, scripts, admin tools, ETL, a password-history table) | Visible in principle (DB grants, `import bcrypt` across repos), unmapped in the doc | Single-column reuse hides them. They break silently instead of failing loudly. |
+| Change triggers on `password_hash` (notifications, session invalidation, `password_changed_at`, audit/fraud, CDC) | Invisible (behavioral contract: "hash changed ⇒ user changed password") | Turns a background migration into a user-visible event for millions. |
+| Password-change and reset flows ↔ upgrade write | Invisible (temporal; nothing orders them) | Lost update: a password change can be reverted to the old password. If the reset was triggered by account compromise, an attacker logging in with the old password at the right moment could undo it. |
+| Set-password path ↔ hash algorithm | Visible in code, not in the doc | Decides whether the bcrypt population shrinks or keeps growing. |
+| bcrypt's 72-byte truncation (and NUL handling in some libraries) ↔ Argon2id hashing full input | Invisible (library behavior) | bcrypt accepted any input whose first 72 bytes matched. Argon2id stores whatever the user typed at upgrade time. Low severity: it only affects passwords over 72 bytes whose submissions vary past byte 72. |
+| Argon2id memory ↔ container or host memory limits and worker pool size | Visible in config | 64 MiB × concurrent hashes. A burst of 50 concurrent verifications needs about 3.2 GiB. If the runtime hashes on a small fixed thread pool, CPU time turns into queueing latency. |
+| Hash verification on non-login hosts (re-auth for sensitive actions, password change, account deletion) | Possibly invisible | The capacity analysis covers "login hosts" only. |
 
 ## Confidence Inversions
 
-**"Rollback is instant and complete."**
-*Scenario:* Week 2, 10%. A CPU regression appears and the team redeploys the previous release, as the doc instructs. Every account upgraded in weeks 1–2, likely tens of thousands, now fails login with a "wrong password" error. Support sees a wave of lockouts, users reset their passwords, and the incident is larger than the regression it was meant to fix. The only clean recovery is to roll forward. Under this design the "safe" lever is the most dangerous action available.
+**"Rollback is instant and complete."** This is the most confident claim in the doc and it is false after the first upgraded row. Concrete scenario: in week 1 an Argon2id library bug causes a small rate of verify errors. The team turns the flag off. That stops new upgrades but does nothing for the accounts already upgraded, because the failure is in the verify path and that path stays on. The team then redeploys the previous release, which locks out all upgraded accounts rather than a few. The real rollback options are a fix-forward, a downgrade-on-login release (new code), or forced resets for the affected accounts. None of these are instant.
 
-**"No schema change… every code path that reads a hash keeps working."**
-*Scenario:* The reasoning is backwards. Keeping one column means every reader *receives* Argon2id strings. Only readers updated to parse them keep working. A forgotten re-auth endpoint or internal tool keeps calling bcrypt `compare`, gets `false`, and users are told their password is wrong when changing their email address.
+**"No data migration is involved."** This is a migration with no snapshot of the prior state. Concrete scenario: in month 2 a compliance or FIPS requirement surfaces that the team's Argon2id build cannot meet, or an interop partner needs bcrypt. The original bcrypt values are gone, so getting back requires each user to log in again (with downgrade code) or reset.
 
-**"Fits within current headroom."**
-*Scenario:* The calculation uses the steady-state cost (90 ms), not the migration-period cost (160 ms), and ignores memory. On the week-4 flip to 100%, a Monday-morning peak combined with a routine credential-stuffing run pushes hosts into CPU saturation and memory pressure. p95 rises by hundreds of milliseconds, retries amplify the load, and the team turns the flag off. That helps CPU, but the "fix" then gets misdiagnosed as "rollback worked," which reinforces the false belief in A1.
+**"Fits within current headroom."** Concrete scenario: the ramp hits 100% during the week's peak. Most logins are upgrade logins at about 160 ms CPU each. At 45 logins/s that is about 7.2 cores of hashing per host, against about 3.15 today, so about 4 more cores. On an 8-core host at 55% (about 4.4 cores busy), that is more than 100% demand. On a 16-core host it is about 80%. The doc gives no core count, so headroom is unproven. Steady state after the ramp (+20 ms/login, about +0.9 cores) is fine. The transition is the risk.
 
-**"Staff are unaffected because they use SSO."**
-*Scenario:* Mostly sound. However, break-glass, service, or legacy staff accounts with a local password are often exactly the ones that predate 2017 and carry an odd hash prefix. This is worth a single query to confirm.
-
----
+**"Staff accounts are unaffected."** This is plausible. It is worth a one-line query to confirm that no staff, service or break-glass account has a non-null `password_hash`.
 
 ## Adversarial Scenarios
 
-**1. Credential stuffing during the migration window (likely; Quillmark-sized services see this routinely).**
-Failed logins against upgraded accounts now cost 90 ms of CPU and 64 MiB of memory each. Without a concurrency limiter on Argon2id, an attacker can drive memory exhaustion at far lower request rates than a bcrypt-only system tolerated. *Realistic worst case:* login hosts are OOM-killed in rotation and logins are degraded for the duration of the attack. This is not caught by the doc's success criteria, which only measure p95 under normal traffic.
+1. **Mass re-login during the ramp (about 10–20% likely over a 4-week rollout).** Causes include a session-store incident, a forced logout after an unrelated security event, a mobile release that drops refresh tokens, or the hash-change session invalidation described above. Login rate jumps several times above the 45/s peak while most logins are still upgrade logins. Realistic worst case: CPU saturation and memory pressure on login hosts, a login brownout, and an on-call reaching for the redeploy rollback.
 
-**2. A latent write-path bug (maybe 10–20% likely for a first implementation).**
-Examples include a wrong encoding, a parameter string mismatch between the write and verify libraries, a collation or charset issue in the column, or a pepper omitted on the new path. Each upgrade then destroys a working credential, and the failure only appears at the user's next login. *Realistic worst case:* a week at 1% produces several thousand broken accounts before anyone notices, because the aggregate failure rate barely moves. Recovery is forced resets for exactly the users the team cannot easily identify, unless the upgrade was logged.
+2. **Credential stuffing against a growing Argon2id population.** Wrong passwords never trigger upgrades. Each failed attempt on an upgraded account still costs 90 ms CPU and 64 MiB. Without a concurrency cap on hashing, an attacker can drive memory use per host, not only CPU. Realistic worst case: OOM kills on login hosts during an attack that would have been absorbed under bcrypt. Severity is moderate, since rate limiting probably exists, but the memory dimension is new.
 
-**3. Mixed-version fleet or regional lag (likely in any rolling or multi-region deploy).**
-The flag is enabled while one region or canary pool is still on the old release, or a DR failover lands on an older image. *Realistic worst case:* intermittent lockouts that depend on which host serves the request. These are very hard to diagnose because the same user succeeds on retry.
-
----
+3. **The database or a backup leaks during the 12-month window.** This is the threat the doc exists to address. Realistic worst case: the leak includes millions of bcrypt cost-10 hashes (dormant accounts plus all historical backups). The upgrade protected the minority of rows that attackers are least likely to profit from, because active users are also the ones who rotate passwords. If dormant accounts reuse passwords elsewhere, the downstream harm is unchanged.
 
 ## Reversibility Map
 
-| Timepoint | What reversal requires | Difficulty |
-|---|---|---|
-| **New code deployed, flag off** | Redeploy the old release. Safe *only if* no Argon2id hashes exist anywhere, including from registration or reset paths if those changed. | Easy. ⚠️ Except for the A5 risk: odd prefixes may already be failing. |
-| **Day 1, flag at 1%** — 🔴 **CLIFF EDGE** | The first upgrade write makes the old release permanently unsafe. Flag off stops growth. Full reversal means forcing resets for every upgraded account. | Already hard. The doc implies this is the easiest point. |
-| **1 week** | Same as day 1, at a larger scale: roughly 1% of logins' accounts. | Hard. Requires forced resets for thousands of accounts. |
-| **1 month (100%)** | ~60% of MAU upgraded. Reverting the code is not viable. Only forward fixes. | Effectively irreversible. |
-| **6 months** | The Argon2 library, dual verify paths, and the memory profile are now permanent infrastructure. | Irreversible. Only further forward migrations are possible. |
+- **Before the first upgrade write:** fully reversible. Turning the flag off or redeploying the old release is safe.
+- **1 week (1% of logins, likely tens of thousands of upgraded accounts):** turning the flag off stops growth. Redeploying the previous release locks out every upgraded account. Returning to a bcrypt-only world needs new downgrade-on-login code or resets for those accounts.
+- **1 month (100% for about a week, heading toward 60% of MAU):** same mechanism at much larger scale. A redeploy of the old release would be a mass lockout of the most active users. The dual-verifier release is now the permanent floor.
+- **6 months:** same, plus whatever has been built on Argon2id-only assumptions (new services, tooling, parameter changes). Undoing it means a migration in the other direction.
 
-The cliff sits at the very first write, not at a late stage. Any genuine rollback window has to be bought deliberately, for example by retaining the old hash for a bounded period (see Recommendations).
+**Cliff edge:** the first Argon2id write, in week 1 at 1%. After it, undoing the change needs new code or user action. After that point the gradient grows in magnitude but does not change in kind. The doc places the cliff nowhere and describes the opposite.
 
----
+The 12-month forced reset is also one-way: dead-email accounts are lost. The proposal schedules it as its own later step, so it is not tagged as a cliff here. It is still listed as a consequence in Outcome 3 and in Recommendations.
 
 ## Cost of Success
 
-*World after full success:* Active users are on Argon2id, login is about 20 ms slower, and a year from now dormant accounts are forced through a reset.
+Suppose everything works. By month 2, 60%+ of MAU are on Argon2id, latency settled at +20 ms, and no failures occurred. By month 12, dormant accounts are reset. What is worse than today:
 
-What's worse than today:
-- **Complexity:** Two verification algorithms coexist for at least 12 months, and longer if reset or registration paths lag behind. Hash format becomes a variable that every auth bug investigation must account for.
-- **Maintenance / operational:** A per-request 64 MiB allocation is now a permanent capacity and DoS concern. Login capacity planning becomes memory-bound, not just CPU-bound. Every future traffic spike or attack is more expensive to absorb.
-- **Optionality:** The dispatch keys on *prefix*, not *parameters*. When the guild revises its guidance again (they did between 2017 and now), there is no mechanism to re-hash Argon2id hashes with outdated parameters. The next upgrade needs another design doc. A `needs_rehash(params)` check costs almost nothing now.
-- **Opportunity:** An alternative closes the dormant-account gap on day 1: wrap existing hashes offline, as `Argon2id(bcrypt_hash)`, then unwrap on login. The upgrade-on-login-only approach rules this out unless chosen now. Success as defined leaves the largest exposure (dormant accounts plus backups) in place for a year.
-- **User trust:** Users with dormant accounts get a forced-reset email out of the blue at month 12, a pattern that phishing campaigns imitate.
-
----
+- **Complexity:** `accounts-api` carries two verifiers, format dispatch and an upgrade write path for at least 12 months. Realistically it carries them longer, because the reset will not reach every row. Every auth change during that time has to be tested against both formats.
+- **Maintenance:** bcrypt remains a security-critical dependency alongside Argon2id. Hashing is now memory-heavy, so login hosts need memory planning and a concurrency limiter that did not matter before.
+- **Permanent per-login cost:** about +29% CPU per verification forever, plus 64 MiB per concurrent hash. The cost of absorbing a stuffing attack also rises.
+- **Optionality:** the upgrade logic is keyed on the `$2b$` prefix. The next parameter bump (Argon2id m=64 MiB → higher) would need the same machinery rebuilt unless it is generalized now to "rehash if the stored parameters are below the current policy".
+- **User cost:** dormant users with dead emails permanently lose their accounts at month 12.
+- **Opportunity:** a year of identity-team attention goes into a hash migration rather than, for example, passkeys. Passkeys would remove the stored-hash threat for the users who adopt them.
 
 ## Findings Summary
 
-1. `[REVERSIBILITY CLIFF]` `[NOVEL]` Redeploying the previous release locks out all upgraded accounts. The cliff is at the first write, so "instant and complete" rollback is false.
-2. `[UNEXAMINED ASSUMPTION]` `[NOVEL]` Upgrade-on-login is a destructive, row-by-row data migration. The bcrypt value is unrecoverable once overwritten.
-3. `[UNEXAMINED ASSUMPTION]` `[NOVEL]` Capacity math omits the double-hash cost of upgrading logins (~160 ms) and assumes a core count it never states. Week-4 p95 likely exceeds the 40 ms criterion.
-4. `[UNEXAMINED ASSUMPTION]` `[NOVEL]` 64 MiB per hash makes memory a new bottleneck and a DoS amplification vector. There is no concurrency limiter.
-5. `[HIDDEN COUPLING]` `[NOVEL]` Prefix dispatch assumes only `$2b$`, while `$2a$`/`$2y$`/legacy hashes may exist. This dispatch is unflagged.
-6. `[HIDDEN COUPLING]` `[NOVEL]` Other writers (register, change, reset, admin) are unspecified. A bcrypt-writing reset path undermines the month-12 cleanup.
-7. `[HIDDEN COUPLING]` `[NOVEL]` Other readers (re-auth endpoints, internal tools, triggers, CDC, session fingerprints) are not inventoried.
-8. `[HIDDEN COUPLING]` `[NOVEL]` An unconditional upgrade write can race with a password change and revert it.
-9. `[SECOND-ORDER EFFECT]` `[NOVEL]` Write-path bugs are silent until the next login. Aggregate failure rate is too blunt a rollback signal.
-10. `[SECOND-ORDER EFFECT]` `[NOVEL]` Dormant accounts and backups keep bcrypt exposure for 12+ months. A forced reset that doesn't null the hash leaves it crackable.
-11. `[SECOND-ORDER EFFECT]` `[NOVEL]` Forced resets to stale emails create account-takeover risk and resemble phishing.
-12. `[HIDDEN COUPLING]` `[NOVEL]` Timing difference between the dummy-hash path and Argon2id leaks account existence and activity. Low severity.
-13. `[HIDDEN COUPLING]` `[NOVEL]` Bcrypt 72-byte truncation or any pre-hash/pepper must be handled consistently. Low severity.
-14. `[SUCCESS COST]` `[NOVEL]` There is no parameter-based rehash, so future guidance changes require another migration design.
-15. `[SUCCESS COST]` `[NOVEL]` A permanent dual-algorithm path and memory-bound login capacity.
-
----
+1. `[REVERSIBILITY CLIFF]` The first Argon2id write makes "redeploy the previous release" a lockout event. The doc's "instant and complete" rollback claim is false from week 1. `[NOVEL]`
+2. `[UNEXAMINED ASSUMPTION]` "No data migration" is wrong. In-place overwrites without keeping the old value are an irreversible per-row migration. `[NOVEL]`
+3. `[HIDDEN COUPLING]` Mixed-version fleets (rolling deploys, auto-revert, stale images) produce intermittent failures for upgraded users. `[NOVEL]`
+4. `[HIDDEN COUPLING]` Possible side effects of any `password_hash` change: security emails, session invalidation, `password_changed_at` resets, audit/fraud/CDC events. `[NOVEL]`
+5. `[HIDDEN COUPLING]` Lost-update race. An unconditional upgrade write can revert a concurrent password change or compromise-driven reset to the old password. `[NOVEL]`
+6. `[UNEXAMINED ASSUMPTION]` `$2b$`-only prefix matching. `$2a$`, `$2y$`, NULL or legacy formats would fail login at deploy, independent of the flag. `[NOVEL]`
+7. `[HIDDEN COUPLING]` Unmapped readers of `password_hash` outside `accounts-api` break silently for upgraded users. `[NOVEL]`
+8. `[UNEXAMINED ASSUMPTION]` The capacity math covers steady state only. Upgrade logins cost about 160 ms CPU, and the ramp may exceed host CPU. Memory (64 MiB per hash) is unaddressed. `[NOVEL]`
+9. `[SECOND-ORDER EFFECT]` The p95 <40 ms success criterion is breached by design at 10% (+~90 ms on upgrade logins). Combined with the rollback instructions, a predictable latency breach leads to a lockout. `[NOVEL]`
+10. `[UNEXAMINED ASSUMPTION]` The set-password, signup and reset paths may still write bcrypt, so the bcrypt population would never converge. `[NOVEL]`
+11. `[SECOND-ORDER EFFECT]` Active users who never type a password (token, remember-me or social login) get force-reset at month 12. `[NOVEL]`
+12. `[UNEXAMINED ASSUMPTION]` The MAU-based metric hides that most of the 4.2M hashes, and all backups, stay bcrypt through year one. The motivating threat is largely unaddressed during that period. `[NOVEL]`
+13. `[SECOND-ORDER EFFECT]` If the forced reset does not overwrite or null the bcrypt value, crackable hashes persist indefinitely. `[NOVEL]`
+14. `[HIDDEN COUPLING]` bcrypt's 72-byte truncation versus Argon2id's full-input hashing. Low severity. `[NOVEL]`
+15. `[SECOND-ORDER EFFECT]` Memory-hard verification raises the per-attempt cost of credential stuffing, and that cost now includes memory as well as CPU. `[NOVEL]`
+16. `[SUCCESS COST]` A dual-verifier path that lasts more than 12 months, a permanent +20 ms and memory overhead, a prefix-specific upgrade that will need rebuilding for the next parameter bump, and lost dormant accounts. `[NOVEL]`
 
 ## Recommendations
 
 **Must address before proceeding**
 
-1. **Rewrite the rollback plan (findings 1, 2).**
-   - Split into two releases. First ship an Argon2id-capable *verify* path and let it bake everywhere: all regions, DR, canaries, and any service that verifies passwords. Only then enable writes.
-   - Once the first write happens, mark pre-Argon2 releases as non-deployable in the deploy tooling.
-   - If a real rollback window is wanted, keep the old bcrypt hash in a side column (or an audit table) for a fixed 2–4 weeks, then delete it. Accept that this briefly retains the weak hash.
-   - Remove the "instant and complete" language.
-
-2. **Make the write safe (findings 8, 9).**
-   - Verify the submitted password against the freshly computed Argon2id hash before writing it.
-   - Write with compare-and-swap: `UPDATE … SET password_hash = :new WHERE id = :id AND password_hash = :old_bcrypt`.
-   - Log each upgrade (account id, timestamp) so damage can be scoped if a bug is found.
-
-3. **Redo capacity with real numbers (findings 3, 4).**
-   - Model upgrade logins at 160–250 ms and state core counts.
-   - Load-test memory at burst concurrency.
-   - Add a bounded semaphore for Argon2id hashing so excess requests queue or fail fast instead of causing OOM.
-   - Add intermediate ramp steps (for example 10% → 25% → 50% → 100%) so the share of upgrading logins never spikes at once.
-
-4. **Audit the data and the code paths (findings 5, 6, 7).**
-   - Run `SELECT LEFT(password_hash, 4), COUNT(*) … GROUP BY 1` before shipping, and define behaviour for every prefix found.
-   - Inventory every reader and writer of `password_hash`: grep across all services, triggers, CDC consumers, and session code.
-   - Make register, change, and reset write Argon2id before or alongside the flag.
+- **Rewrite the rollback plan (findings 1–3, 9).** Ship in two phases. Phase 1 releases dual verification with the upgrade write off. Let it bake and declare it the minimum allowed release: pin it in the deploy tooling, rebuild base images, and disable auto-revert below it. Phase 2 turns the write on. State explicitly that turning the flag off is the only rollback, and that the response to Argon2id verify problems is fix-forward or targeted resets. If a way back to bcrypt is needed, build a downgrade-on-login path before phase 2, or keep the bcrypt value in a side column for N weeks.
+- **Make the upgrade write conditional (finding 5).** `UPDATE ... SET password_hash = :argon WHERE id = :id AND password_hash = :bcrypt_value_just_verified`. If zero rows are updated, the write was a lost race; do nothing.
+- **Inventory the hash formats (finding 6).** Run `SELECT LEFT(password_hash, 4), COUNT(*) ... GROUP BY 1`, including NULLs, before the dual verifier ships. Handle every prefix found, or route unknown prefixes to the current code path, not to "fail".
+- **Map every reader and every side effect of `password_hash` (findings 4, 7).** Check DB grants on the column, triggers and CDC subscribers, grep all repos for bcrypt usage, and check how sessions are validated. Exempt upgrade writes from "password changed" handling. One way is a separate `password_changed_at` that the upgrade path does not touch, and session keys that do not derive from the hash.
+- **Redo the capacity analysis for the transition (findings 8, 9, 15).** Measure CPU per upgrade login (bcrypt + Argon2id) against real core counts at peak, add a concurrency limiter sized to the memory budget, and load-test a 3–5× login burst. Rewrite the latency criterion with separate targets for upgrade logins and steady-state logins, so the ramp does not trip its own rollback trigger.
 
 **Worth mitigating**
 
-- **Metrics (finding 9):** Segment login failures by stored hash type and by "upgraded in the last N days." That segment is the real canary.
-- **Dormant accounts (finding 10):** Consider wrapping all bcrypt hashes offline as `Argon2id(bcrypt)` so dormant accounts are protected immediately.
-  - Otherwise, the month-12 forced reset must replace the hash with an unusable value, not just set a flag.
-  - Track backup retention as the true end date of the exposure.
-- **Parameter rehash (finding 14):** Base the rehash decision on parameters (`needs_rehash`), not prefix, so future guidance changes are a config bump.
-- **Forced-reset hygiene (finding 11):** Send reset emails only to verified, recently deliverable addresses, and coordinate the messaging with support.
+- **Confirm the set-password, signup and reset paths write Argon2id (finding 10).** Watch signal: a daily count of new bcrypt rows should be zero.
+- **Close the dormant-account gap (findings 12, 13).** Consider wrapping existing hashes so all 4.2M rows are protected now rather than in 12 months: store `argon2id(bcrypt_hash)` under a distinct prefix and verify it by computing bcrypt, then Argon2id. This is one batch job and costs extra login CPU for wrapped rows. Make the forced reset overwrite the bcrypt value, not just set a flag. Track progress against all 4.2M accounts, not only MAU. Set a backup-retention date after which old bcrypt-bearing backups are destroyed.
+- **Before month 12, find active accounts that never submitted a password (finding 11).** Prompt them in-app for re-authentication instead of force-resetting them by email.
+- **Generalize the upgrade trigger (finding 16).** Use "rehash if the stored algorithm or parameters are below policy" instead of "if prefix is `$2b$`".
 
 **Acknowledged risks**
 
-- **Timing oracle (finding 12):** Low impact. Fix cheaply by making the dummy hash Argon2id once rollout completes.
-- **72-byte truncation (finding 13):** It affects very few users and they can reset. Confirm there is no pepper or pre-hash; if there is, it becomes a must-address item.
-- **Temporary dual-algorithm complexity (finding 15):** This is the inherent price of upgrade-on-login. It is acceptable if a removal date is committed to.
+- **Permanent +20 ms per login and higher per-host memory.** This is the intended security tradeoff and steady state fits the stated CPU headroom.
+- **bcrypt 72-byte truncation (finding 14).** It affects a negligible number of users, and they can recover through a password reset.
+- **Running two verifiers for about a year.** This is inherent to any upgrade-on-login scheme. It is acceptable once the dual-verifier release is pinned as the floor.

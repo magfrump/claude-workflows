@@ -4,97 +4,109 @@
 
 ## The Goal vs. the Mechanism
 
-The **goal** is good and I take it at face value: the roughly 45,000 seniors a year who don't go to college should have a credible route into stable, well-paid work. The pilot also deserves credit. Getting 74 employers, including hospitals and a utility, to commit and then come back (92% say they'd host again) is hard, and most youth workforce programs never manage it.
+The **goal** is good, and I take it at face value. Tens of thousands of non-college-bound graduates each year drift into low-wage churn. A structured on-ramp into skilled work could change their trajectories, and Keystone has plausibly built something that helps.
 
-The **mechanism** is a universal *guarantee* built on a program whose results came from *selection*. Those two don't fit together.
+The **mechanism** is a statewide *guarantee* of a Keystone-model apprenticeship to every eligible senior who wants one, delivered through regional workforce boards under a Keystone license. That mechanism works against the goal in two ways.
 
-Keystone admitted about one in three applicants after an essay, two interviews and a teacher reference. That screen picks the most motivated, organized and adult-endorsed third of an already self-selected applicant pool. The 88% completion and 71% hire rates describe that group. The draft compares them to "a comparison group of local graduates," which doesn't control for any of the traits the screen selected on. So the $8.30/hour wage gap is some unknown mix of program effect and selection effect. My guess is that selection accounts for a large share, though I can't say how much and neither can the draft.
+**First, the guarantee promises something the state can't produce.** Students don't create apprenticeship slots. Employers do. Keystone's 74 employers hosted 320 apprentices over five years, which is about 64 a year, or less than one apprentice per employer per year. The state can guarantee funding for a slot. It cannot guarantee that a machine shop in a rural county wants a 17-year-old trainee next June. If the guarantee outruns employer demand, two things happen:
 
-A guarantee removes the screen by design. The draft says the guarantee helps "students who might otherwise disengage." Those students are close to the two-thirds Keystone turned away. So the guarantee aims the program at exactly the population it has never served, then projects the screened population's results onto them. If the author's goal is helping the kids most at risk of drifting, their own logic should make them suspicious of the evidence they're citing. They should want to learn what the program does for the students it rejected.
+- The state quietly breaks its promise.
+- Regional boards, under pressure to hit the guarantee, place kids in thin, low-quality "apprenticeships" that are really subsidized entry-level jobs.
+
+The second outcome is worse. It dilutes the very thing that made the pilot work: real employers with real skilled jobs and a real intention to hire.
+
+**Second, the pilot's results come from a program that is the opposite of a guarantee.** Keystone admitted about one in three applicants after an essay, two interviews, and a teacher reference. The draft says this with pride, and the program may deserve it. But it means the 320 participants are the most motivated, organized, and adult-endorsed third of a group that had already self-selected by applying. A guarantee removes all of that screening. If you care about the *drifting* graduates described in the problem section, the uncomfortable fact is that the pilot mostly didn't serve them. It served the applicants most likely to succeed anyway. The author's own goal argues for testing the model on the students it hasn't yet reached before promising it to all of them.
 
 ## The Boring Lever
 
-The binding constraint on apprenticeships is usually employer slots, and those are throttled by rules nobody puts in a press release:
+The most important **lever** is probably not a new program at all. It's employer-side capacity rules that cap how many apprentices a business can take on:
 
-- **Apprentice-to-journeyworker ratio caps.** Many states limit how many apprentices a licensed electrician or plumber may supervise, often at 1:1. That limit alone can cap trade placements regardless of funding. Loosening ratios, even modestly or for first-year pre-apprentices, would probably create more trade slots than the state could buy with $140M in subsidies.
-- **Registering the model as a Registered Apprenticeship or pre-apprenticeship program.** That would unlock federal funds, union and community-college partnerships, and portable credentials. The draft never says whether Keystone placements are registered. If they aren't, completers' hours may not count toward a journeyworker license, which caps their upside.
-- **Counting CTE and dual-enrollment hours toward apprenticeship requirements.** This would let high schools start the pipeline in 11th grade at near-zero marginal cost.
-- **Routing existing WIOA Youth dollars.** The state already receives federal youth workforce money. Directing it to this model is a reallocation, not a new $279M line item.
+- **Apprentice-to-journeyworker ratios.** Many states require something like one licensed electrician or plumber per apprentice on a job site. A small electrical contractor with two licensed staff may be legally limited to one or two apprentices no matter how much the state subsidizes. I'm fairly confident these ratios exist and bind in the licensed trades. I'm less sure of this state's specific numbers, so check them.
+- **Age-related restrictions on 17-year-olds.** Rules on hazardous-occupation work, insurance riders, and hospital credentialing make some employers reluctant to host seniors regardless of subsidy.
+- **Paperwork.** The friction of registering with the state's existing Registered Apprenticeship system pushes small firms to opt out.
 
-I'm fairly confident (~70%) that fixing ratio caps and registration would expand real placement capacity more than the guarantee would, at a small fraction of the cost. Without the slots, the guarantee money has nowhere to go.
+Loosening ratios where safety allows, creating a clean safe-harbor for supervised work by 17-year-olds, and making Keystone-style placements count as registered pre-apprenticeships would expand the actual slot supply. A $279 million guarantee does not do that, because money attached to students doesn't create slots that the rules forbid.
+
+I'd guess that fixing the slot-supply constraints, plus funding the coaching component through existing Perkins CTE or WIOA youth dollars, gets you more durable placements per dollar than the guarantee. I'd also guess it does so at a small fraction of the cost. That is a guess, not an estimate. But the draft never asks what currently stops employers from hosting more apprentices, and that question is where the lever is.
 
 ## Follow the Money
 
-Per participant, the $6,200 splits into wage subsidy, coaching, and administration. The flows look like this:
+Trace a single $6,200 per participant. The draft says it covers three months of wage subsidy, a year of coaching, and administration. At statewide scale, here is where the money goes:
 
-- **Wage subsidy → employers.** Hospital systems, utilities and logistics firms already hire entry-level workers. Paying them three months of wages to take someone they might have hired anyway is a transfer to the employer, not a gain for the student. In the pilot this deadweight was probably small because Keystone recruited employers who wouldn't otherwise hire 18-year-olds. At 22,500+ placements a year, the program will reach employers whose normal hiring it simply subsidizes. I'd guess a meaningful fraction, possibly a quarter or more, of the subsidy at scale buys hiring that would have happened anyway.
-- **Licensing → Keystone.** The draft makes Keystone the "statewide intermediary, licensing our model." That means the evaluator of the evidence, the author of the proposal, and the recipient of the money are the same organization. That's not disqualifying, but the Board should note it and require independent evaluation.
-- **Administration → regional workforce boards.** Twenty-odd regional boards, each hiring coaches and recruiting employers, add a layer of overhead that the pilot's single-city cost of $6,200 didn't carry.
+1. **Wage subsidies to employers.** In Dunmore Falls, the 74 employers were recruited one at a time and mostly host because they need workers. At scale, a large share of subsidized placements will go to employers who would have hired an 18-year-old anyway, especially in tight labor markets for logistics and hospital support roles. That portion of the money is a transfer to employers, not new opportunity for students. I can't size it from the draft, but in wage-subsidy programs generally, deadweight is substantial.
+2. **Coaching.** This is the part that probably does the most good, and it is the part least likely to stay at pilot cost. A dedicated coach for a full year implies a caseload. If it's around 1:25, then 22,500 participants need roughly 900 coaches, and 45,000 need roughly 1,800. Regional boards would be hiring at once into a labor market for youth-development professionals that is already thin. Expect either higher salaries or lower-quality hires, and probably both.
+3. **Keystone's licensing role.** The draft makes Keystone the statewide intermediary, licensing its model, curriculum, and coaching framework. That makes Keystone a vendor with a recurring revenue stream from the program it is also championing and presumably reporting on. The draft never says what the license costs or who evaluates fidelity. A board should insist on separating "the organization that designed the model" from "the organization that certifies the model is working."
+4. **The pilot's true cost.** A five-year, 320-person program led by its founders is almost always cheaper than its replicas. It relies on founder sweat equity, hand-picked employers, and possibly philanthropic or in-kind support absorbed outside the $6,200. The draft should state whether $6,200 includes all of that.
 
-The ROI math also needs checking. $8.30 × 2,080 hours ≈ $17,000 is right arithmetically. But it applies only to the 71% hired, it uses a selection-inflated wage gap, and it assumes the same gap holds at scale. If the true causal effect is half the measured gap, and only about 60% of a less-selected population is hired, the per-participant return falls by roughly 60%. The "pays for itself in four years" claim then becomes "maybe pays for itself in a decade." That's still possibly worth it, but it's a different pitch.
+My rough guess is that of each dollar at scale, a meaningful minority reaches students as genuinely new, high-quality placements. The rest goes to subsidizing hires that would have happened anyway, to coach-cost inflation, and to the intermediary layer. That is not fatal, but it is far from the "proven" 1:1 translation the draft implies.
 
 ## Factual Foundation
 
-No fact-check was provided, so these claims are unverified. Ranked by how much the argument depends on them:
+No fact-check report was provided, so I have not independently verified these claims. The ones that would most benefit from checking, roughly in order of how much the argument depends on them:
 
-1. **The $13.10 comparison group.** How was it constructed? Matched on what? This number carries the entire ROI case. If it's "average local graduate wage," it's close to meaningless as a counterfactual.
-2. **"28,000 additional young people … every year."** This is 45,000 × 0.88 × 0.71 ≈ 28,100. It assumes 100% take-up, while the draft's own budget scenario assumes 50%. At 50% take-up and pilot rates, the figure is about 14,000. At realistic unscreened rates it's lower still. This is an internal inconsistency, not a judgment call.
-3. **45,000 non-college-bound seniors.** This sounds plausible for a mid-sized state, but check whether it counts fall enrollment only (many enroll later) and whether it includes students entering the military or already-arranged jobs.
-4. **The consultant's four-year payback.** No methodology is given. The Board should see the assumptions.
-5. **$6,200 fully loaded.** This includes a full year of dedicated coaching plus three months of wage subsidy. It's plausible but lean. Check the coach caseload and whether in-kind costs (donated space, founder time) were excluded.
+- **The $21.40 vs. $13.10 wage comparison.** This is doing enormous work. It compares *hired* apprentices only, the 71% who succeeded, against an unmatched group of "local graduates." That bakes in both the admission screen and survivorship. My confidence that the true causal effect is smaller than $8.30/hour is high. The size of the gap is unknown. For calibration, rigorous evaluations of selective sector-based training (I'm thinking of the Year Up and Project QUEST RCTs, from memory, so verify) found real, meaningful earnings gains, but with randomized controls and generally more modest numbers. That suggests the model can work, but not at the face value claimed.
+- **"28,000 additional young people every year."** This is 45,000 × 88% × 71% ≈ 28,100. It assumes full take-up, even though two paragraphs earlier the draft considers 50%. It also assumes the pilot's completion and hire rates hold for an unscreened population. And it counts every hire as "additional," with no counterfactual. I'd treat it as an upper bound that the draft's own numbers don't support.
+- **The 45,000 figure**, and whether it counts students who enroll in college later, enter the military, or already have jobs lined up.
+- **The consultant's "pays for itself within four years" estimate.** It is presumably built on the inflated wage gap. The report and its method should be attached.
+- **Whether the 71% hire rate is of all enrollees or of completers.** The draft is ambiguous, and it matters.
 
 ## The Scale Test
 
-The pilot placed about 64 students a year. Half take-up of the guarantee is about 22,500 a year, which is roughly **350× scale**. Full take-up is about 700×. Several things break at that scale:
+The pilot serves about 64 students a year. The guarantee aims at 22,500 to 45,000 a year. That is a 350× to 700× scale-up, starting in two years.
 
-- **Employer supply.** The pilot works out to roughly one apprentice per employer per year or less. A guarantee needs on the order of 15,000–25,000 host employers statewide, every year, in every county, including rural ones with few machine shops or hospitals. The 92% "would host again" figure comes from employers who self-selected in. It says nothing about the next 20,000.
-- **Coaches.** At an assumed caseload of around 30, full scale needs 750–1,500 skilled youth coaches. They would be hired out of the same labor pool that schools and social services are already short on.
-- **Labor-market absorption.** Placing 14,000–28,000 additional young workers a year into the same trades and technical fields will push down the starting-wage premium and may displace other entry-level hires. A wage premium that partly reflects scarcity can't survive a policy designed to end that scarcity.
-- **Geography.** Dunmore Falls's employer base isn't the state's. A guarantee is only as good as its weakest region.
+**Employer slots break first.** At the pilot's rate of about 0.86 apprentices per employer per year, 22,500 placements implies something like 26,000 host-employer relationships recruited and maintained every year, built from scratch, starting in two years. Even if each employer hosts three or four apprentices, you need thousands of employers statewide, including in regions without a hospital system, a utility, or a cluster of machine shops. Dunmore Falls apparently had a diverse employer base. Many counties won't.
+
+**Coaches break second**, for the hiring reasons above.
+
+**Labor market absorption is a quieter third.** At 64 a year, Keystone's apprentices fill openings that exist. At 28,000 a year, the program's graduates are a significant share of the state's entry-level skilled-trade pipeline. Some of the wage premium will compress, and some placements will displace other young workers who would have gotten those jobs, rather than adding new ones.
+
+The 92% employer-satisfaction figure also comes from employers who opted in, survived five years of relationship-building, and stayed. It tells you little about the 20,000th employer recruited under deadline pressure.
 
 ## The Org Chart
 
-The draft's org chart is: Keystone licenses, regional workforce boards execute. Try writing the job description for the regional coordinator in a rural county with one hospital and no machine shops. Who recruits 400 employers? What authority do they have? What happens when a board falls short of its slot target and a student who was promised an apprenticeship in ninth grade doesn't get one?
+The draft's **org chart** is: State Workforce Development Board → Keystone Pathways (statewide intermediary, licensor) → regional workforce boards (recruit employers, hire coaches). Here's what that leaves open:
 
-Questions the org chart doesn't answer:
+- **Who is accountable when a region misses its slot targets?** The guarantee is statewide, but the capacity is regional. If a rural board can't find employers, who owes the student an apprenticeship?
+- **What's the regional boards' track record?** Most are WIOA-structured boards. Their record is mixed: some are excellent, many are compliance-oriented pass-throughs to providers. Asking them to rapidly recruit thousands of employers and hire hundreds of coaches is a capability most have never shown. The board should ask which regions have done anything comparable.
+- **Who evaluates?** If Keystone licenses the model and reports outcomes, no one independent is checking whether replicas work.
+- **Who runs it in year six?** A 140-page operations manual is good. But the pilot's success almost certainly rests partly on specific people and specific employer relationships that a manual can't transmit. The draft should name what happens when Keystone's founders move on.
 
-- Which state agency holds the guarantee and is accountable when it fails? Keystone can't be, because it's a nonprofit licensor.
-- Regional workforce boards vary enormously in capacity. Many are optimized for WIOA compliance paperwork, not employer sales. Their track record of executing a 140-page manual faithfully is unknown.
-- Who maintains the model once Keystone's founders move on? Fidelity at one site under founders is the easiest possible case.
+Try writing the first three lines of the job description for the statewide director. The draft can't yet supply the answers: which agency, what authority over regional boards, what budget for enforcement and evaluation. That's the sign this part is still at the wish stage.
 
 ## Adoption Survival
 
-The guarantee does create a constituency: families, counselors, and subsidized employers would all defend it. That's a real strength.
+Consider how the guarantee fares through legislative **adoption** and beyond.
 
-But the promise itself is the risk. "Every graduate" is a commitment the state can't control, because it depends on private employers volunteering slots. The first year that 3,000 students are promised apprenticeships and don't get them, the story becomes a broken promise. That's the kind of visible failure that gets a program cut in the next budget. A $279M line item with headline-able shortfalls is fragile.
+**Who defends it?** Completers and their families, host employers getting subsidized labor, Keystone, and coaching staff. That is a real constituency, though modest and fairly diffuse.
 
-**The popular version that gets most of the benefit:** a funded expansion to a few thousand slots a year across several regions. Admit by **lottery among qualified applicants** and lower the screening bar in some sites. Pair it with the ratio-cap and registration fixes. Commit to a guarantee only once employer slots demonstrably exist in a region. This version:
+**Who attacks it?** The guarantee creates a highly visible failure mode: students who were promised an apprenticeship from ninth grade, as the draft itself envisions, and then don't get one. Every unplaced student and every thin, make-work "apprenticeship" is a local news story. A guarantee that works 60% of the time reads as a broken promise, not a 60% success. That's how good programs get zeroed out in the next budget cycle. Running $140–279 million through a single nonprofit vendor is also a large, obvious target for a skeptical legislator.
 
-- costs perhaps $20–40M instead of $140–279M;
-- produces the causal evidence the program currently lacks, since the lottery is a natural randomized trial;
-- tests whether the model works for less-screened students;
-- never makes a promise the state can't keep.
+**The popular version** achieves most of the benefit with far less risk: **fund every slot employers create, rather than guaranteeing every student a slot.** Specifically:
 
-I'd guess this captures most of the real near-term impact, because employer supply would cap the guarantee at something like that level for the first several years anyway.
+- Expand to three to five additional regions with different labor markets (one rural, one with no anchor hospital or utility).
+- Admit by lottery among eligible applicants once demand exceeds slots. This is fair, popular, and gives you a randomized evaluation for free.
+- Cap the per-slot subsidy and pay employers on retention, not placement.
+- Commission an independent evaluation, and scale on its results.
+
+That version is easy to vote for. It's framed around employers and skilled jobs, it can't "break its promise," and it generates the evidence the guarantee claims to already have. I'd guess it captures most of the real near-term benefit, because the binding constraint is slot supply anyway, and the guarantee doesn't create slots.
 
 ## The Cost Disease Check
 
-Coaching is one-on-one human service work, which is the classic cost-disease profile. Its cost tracks local wages for college-educated workers, and productivity doesn't rise with scale. Expect per-participant coaching costs to climb as the state competes for coaches. Expect pressure to raise caseloads, which erodes the dedicated-coach feature the draft credits for the results. The wage-subsidy component is less exposed but will rise with the minimum wage. Rather than staying at $6,200, I'd budget closer to $7,500–9,000 per participant within a few years at scale, and the draft should show why it won't.
+This is partially in a **cost disease** sector. Coaching is labor-intensive personal service with little room for productivity gains, which is classic Baumol territory. As the program scales and competes for coaches with schools, nonprofits, and counseling services, per-participant coaching costs will rise faster than inflation while the service stays the same. Wage subsidies are less exposed, but they are vulnerable to the deadweight problem above.
+
+The draft's $279 million figure holds the pilot's $6,200 constant indefinitely. More realistically, a statewide program reaches $8,000–$10,000 per participant within a few years once coaching salaries and administrative layers adjust. That's a guess, but in the right direction. Without a design feature that controls coaching costs, such as caseload standards, shared coaching across regions, or outcome-based contracts, a meaningful share of growth in the budget line will buy the same coaching at higher prices.
 
 ## Overall Assessment
 
-**Sound:**
-- the goal;
-- the employer relationships;
-- the idea that a paid, coached, employer-embedded year beats drift;
-- the operational documentation, which is unusual and genuinely useful.
+**What's sound:** The core model is plausible and possibly very good: paid work with a real employer, a year-long coach, and a path to hire. The pilot's completion and employer-retention numbers are encouraging. The 140-page manual shows the team takes replication seriously. And targeting non-college-bound graduates addresses a real policy blind spot.
 
-**Wish-fulfillment:**
-- treating screened-cohort results as a "proven track record" for an unscreened guarantee;
-- assuming employer slots scale 350×;
-- the 28,000 figure, which contradicts the draft's own take-up assumption;
-- a four-year payback built on an unmatched comparison group.
+**What's wish-fulfillment:**
 
-**Single most important revision:** replace the guarantee with a staged, lottery-admitted expansion that measures the causal effect on the students Keystone currently rejects. Pair it with a regulatory ask on apprentice ratios and registration. Pitch the guarantee as phase two, conditional on evidence and on slots existing. That's a proposal the Board can say yes to and defend for years. The current version invites a yes followed by a visible failure.
+- That a selective pilot's raw outcomes are a "proven track record" for an unselected statewide population.
+- That student demand, rather than employer supply, is what needs guaranteeing.
+- That $6,200 holds at 700× scale.
+- That one organization can be designer, licensor, and evaluator at once.
 
-**Load-bearing objection:** The guarantee eliminates the one-in-three competitive screen that plausibly produced much of the measured results. This ranks first because it undercuts the evidence base itself, not just the scale or cost. It is followed by (2) employer slot supply cannot grow ~350× on the guarantee's timeline, (3) the 28,000 and ROI figures are internally inconsistent and inflated by an unmatched comparison group, and (4) Keystone's role as both evaluator and paid licensor requires independent evaluation.
+**The single most important revision:** Replace the student guarantee with an **employer-slot-funded, lottery-admitted expansion into a few diverse regions, with independent evaluation.** Pair it with a push to remove regulatory caps on how many apprentices employers can host. That protects the goal, gives the Board evidence it can defend to the legislature, and positions Keystone to scale on proof rather than promise. If the results hold up, the guarantee becomes a winnable argument in three years instead of a fragile one now.
+
+**Load-bearing objection:** Employer slot supply is the top objection, because the guarantee is the proposal's defining feature and is structurally impossible to honor if employers don't create ~20,000+ quality slots a year, which would force a redesign from student-guarantee to employer-funded slots. Next, in descending order: (2) selection bias in the pilot, which shrinks the real effect size and the ROI case without killing the model; (3) Keystone's combined vendor/licensor/evaluator role, fixable with governance changes; (4) coaching cost disease, which raises the price tag but doesn't change the design.

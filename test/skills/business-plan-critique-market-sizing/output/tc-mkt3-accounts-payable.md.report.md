@@ -1,142 +1,110 @@
-> ⚠️ **No fact-check report provided.** This critique does not include independent factual verification. Checkable claims in the draft (quoted TAM/SAM figures, market-growth rates, research firm reports, comparable-company revenue or share figures) have not been assessed. For full verification, run the `fact-check` skill first or use the `draft-review` orchestrator.
+⚠️ **No fact-check report provided.** This critique does not include independent factual verification. Checkable claims in the draft (quoted TAM/SAM figures, market-growth rates, research firm reports, comparable-company revenue or share figures) have not been assessed. For full verification, run the `fact-check` skill first or use the `draft-review` orchestrator.
 
 # Market-Sizing Critique: Tallyroom Investor Memo
 
 ## TAM Definition Assessment
 
-**Verdict:** Plausible
+**Verdict:** Inflated
 **Confidence:** Medium
 
-The memo does several things right. It discloses its method, presents both a bottom-up and a top-down build, and checks that Halvorsen's category fits the product. Halvorsen's category includes capture, matching and scheduling, and excludes expense management and cards. The arithmetic also holds: 64,000 × $38,000 = $2.432B.
+The memo does several things right. It discloses its method, builds both top-down and bottom-up, keeps scope to the US 100–999-employee band, and checks that the Halvorsen category matches the product (capture, matching and payment scheduling, but not expense or cards). The arithmetic is correct: 64,000 × $38,000 = $2.43B.
 
-The problem is that **the reconciliation compares two different quantities, so the "within 10%" agreement is not corroboration.**
+The problem is that the two estimates agree for the wrong reason. They measure different things.
 
-- **The bottom-up figure is a potential-spend number.** It is what the band would spend if every one of the 64,000 companies bought at $38K.
-- **The Halvorsen figure is a current-spend number.** It is what companies in the band *already spend* on AP automation in 2025.
+- **The bottom-up figure is a ceiling.** It assumes every one of the 64,000 companies buys at $38K. That is total potential spend at full penetration.
+- **The Halvorsen figure is actual 2025 spending.** It is what companies in the band already pay for AP automation.
+- **If both numbers are right, the market is already fully penetrated at your price point.** That contradicts the SAM section, which says most on-ERP companies still match by hand or on legacy tools. It also contradicts the revenue section's claim that most buyers are "replacing a spreadsheet and a shared inbox."
+- **One of three things must be true.** Halvorsen measures something broader than you think. Current adopters pay well above $38K. Or the bottom-up figure is overstated. The "within 10%" agreement is a reason to re-examine both numbers, not a confirmation of either.
 
-By the memo's own SAM section, a large share of the band still matches invoices by hand and spends roughly nothing on the category. If current spend already equals the theoretical 100%-penetration total, one of three things is true:
+There are three reasons to think the bottom-up is overstated.
 
-1. Current buyers pay far more than $38K on average. That would be good news on pricing headroom, but it means the $38K ACV understates TAM.
-2. The 64,000 count or the $38K ACV is wrong.
-3. Halvorsen defines "spend" more broadly than the memo assumes.
+1. **Not every company in the band fits the profile.** The claim that companies in this band run a dedicated AP function and process 800–6,000 invoices a month is asserted for the whole band. A 120-person software or services firm may process a few hundred supplier invoices a month and have no dedicated AP staff. Headcount does not predict invoice volume.
+2. **Not every company uses POs and goods receipts.** Tallyroom's core value is matching invoices against purchase orders and goods receipts. Many mid-market companies, especially in services, don't use either for most of their spend. That is exactly the failure mode the memo attributes to Capturely. No filter in the TAM removes these firms.
+3. **$38K may not apply to the low-volume end.** The memo's own numbers hint at this. If the $2.10 median cost per invoice includes the Tallyroom fee, then a $38K ACV implies the median customer processes at least about 1,500 invoices a month ($38,000 ÷ $2.10 ÷ 12). Your current 38 customers may sit in the upper half of the 800–6,000 range. Applying their ACV to 800-invoice firms would overstate TAM. The memo should say whether $2.10 includes the subscription and what ACV looks like by volume tier.
 
-Each possibility changes the story. The agreement should be replaced with an explanation. A clean version would say: "Halvorsen's current spend of $2.1–2.6B comes from roughly N companies already automated, implying $X per buyer. Our bottom-up potential is $Y."
-
-**Second issue: is the ACV representative of the band?** The $38K ACV is averaged over 38 customers. It is then applied uniformly across 64,000 companies with 100–999 employees.
-
-- US firm counts in that band are heavily skewed toward the low end. Most firms in it have 100–250 employees.
-- There is an internal check available. A $38K annual fee is about $3,170 a month. If the $2.10 median cost per invoice is all-in, including Tallyroom's fee, the fee alone fits under $2.10 only above roughly 1,500 invoices a month. That suggests current customers sit in the upper half of the stated 800–6,000 volume range. This is an inference, and it depends on whether $2.10 includes the subscription.
-- If pricing scales with volume, a band-weighted ACV could be materially below $38K. I would guess $25–30K, which would pull TAM toward $1.6–1.9B.
-
-**Third, the descriptive claim that every company in the band "runs a dedicated AP function and processes 800–6,000 invoices a month" is asserted for all 64,000.** It is plausible for manufacturers and distributors. It is much less plausible for 120-person professional-services firms, which may process a few hundred supplier invoices a month.
-
-**Headline gap:** the $2.43B figure is a reasonable upper bound. A band-weighted bottom-up figure could plausibly be 20–35% lower. The top-down cross-check, as currently framed, cannot tell us which.
+**Revision:** Rebuild the bottom-up by invoice-volume tier, with ACV by tier, and filter for PO-based purchasing. Then reconcile against Halvorsen by splitting it into current spend versus remaining unpenetrated spend. You don't yet have a gap figure. The headline $2.43B could be too high or even too low, but the current reconciliation does not support it.
 
 ## SAM Realism Assessment
 
 **Verdict:** Plausible
 **Confidence:** Medium
 
-The segmentation is better than most plans. The second filter, "still match by hand or on a legacy capture tool," is behavioral, not descriptive, which is exactly the right kind of filter. The arithmetic is 0.60 × ~0.58 ≈ 0.35, giving 22,400 companies and $851M.
+This section is better than most plans. It uses a real behavioral filter (current matching method) alongside a technical one (ERP fit), not just headcount bands. The math checks: 64,000 × 35% = 22,400, and 22,400 × $38K = $851M.
 
-One small note: 0.35 ÷ 0.60 = 0.583, which is "a bit under 60%" rather than "a little under two thirds." Two thirds would give about 0.40, or roughly 25,600 companies. That is worth tightening so a diligent reader doesn't trip on it.
+Points to pressure:
 
-Issues that matter more:
+- **The arithmetic and the wording don't match.** 35% ÷ 60% means the second filter is about 58%. That is "under three fifths," not "a little under two thirds." This is small, but a reader who notices will start checking every other number.
+- **The pipeline survey is a biased sample.** Companies already in your pipeline are not a random draw from the market. They have self-selected for interest in replacing their current process. The Halvorsen panel helps, but the memo should say how much weight each source carries and whether they agree.
+- **"Match by hand" includes companies that don't match at all.** Companies without PO discipline aren't doing three-way matching, by hand or otherwise. The SAM needs the same PO filter the TAM is missing. Given the Capturely lesson, this is the filter most likely to shrink SAM materially.
+- **Multi-entity customers aren't serviceable yet.** Part of the $12M funds multi-entity support. Companies that need it, which are common near the top of the band, should be excluded from current SAM. Report them as SAM unlocked after the build ships.
+- **The Corvane cohort may not be in the SAM.** The memo doesn't say whether the 9,000 finance teams on Corvane's bundled AP module are among the 22,400. If a bundled module counts as "a legacy capture tool," they are. If not, the why-now cohort sits outside the serviceable market. Say which.
+- **Payments may add a gate.** Scheduling and executing supplier payments may carry security-review or payments-partner requirements, such as SOC 2 or a money-movement partner. The memo is silent on this. If any segment is gated, carve it out.
 
-- **A product-fit filter is missing: purchase-order discipline.** Tallyroom's core function is matching invoice lines against the PO and the goods receipt. A company that doesn't issue POs for most spend, which is common in services-heavy firms, can't use three-way matching. The memo's own negative comp, Capturely, failed because its product "worked only for companies with standardised purchase orders." The SAM should state what fraction of the 22,400 runs PO-backed purchasing at sufficient coverage. Otherwise the most relevant lesson from the comp set is missing from the segment definition. This is the filter most likely to shrink SAM materially.
-- **The behavioral-filter source is selection-biased.** "Surveys of our pipeline" sample companies that are already shopping. Half of them are Corvane customers being forced to move. That population over-represents companies in a manual or legacy state. Halvorsen's buyer panel may also skew toward buyers. The ~58% figure should be described as an upper estimate unless it comes from a random sample of the band.
-- **Hand-matchers and legacy-tool users should be split.** The two groups behave differently. A hand-matcher is a greenfield sale. A legacy-tool user is a displacement sale with switching cost and an incumbent that will fight. The revenue plan argues that most customers are "replacing a spreadsheet and a shared inbox." The SAM doesn't show that split, so the claim is unsupported.
-- **The Corvane cohort may be excluded by the memo's own filter.** The roughly 9,000 Corvane teams on the bundled AP module are using an ERP-native automation module today. Strictly, they are neither "matching by hand" nor on a "legacy capture tool." Either they fall outside the SAM, which would mean the memo's best opportunity isn't counted in it, or the filter is looser than written. The memo should say which, and show how the 9,000 overlap with the 22,400.
-- **ACV-segment match.** The ACV concern from the TAM section carries through. $851M assumes the $38K ACV holds across the filtered set.
-
-**Estimated contraction:** with a PO-discipline filter and a debiased behavioral rate, a realistic SAM could land at 40–70% of the stated $851M, or about $350–600M. That is a wide range, and it reflects the fact that the memo gives no data on PO coverage.
+A PO-discipline filter and a multi-entity carve-out could plausibly cut SAM by another third or more. That is my estimate, not a measured figure. The structure here is sound, and the inputs are what need tightening.
 
 ## SOM Achievability Assessment
 
 **Verdict:** Inflated
-**Confidence:** Medium
+**Confidence:** High
 
-**The implied trajectory, from the memo's own numbers:**
+This is the weakest part of the market story. Framing the plan as share of SAM hides what the share targets mean in customer counts.
 
-| | Customers (at $38K) | ARR | YoY growth |
-|---|---|---|---|
-| Today | 38 | ~$1.4M | — |
-| Year 1 (1%) | ~224 | $8.5M | ~490% |
-| Year 2 (2%) | ~448 | $17.0M | 100% |
-| Year 3 (3%) | ~672 | $25.5M | 50% |
-| Year 4 (4%) | ~896 | $34.0M | 33% |
-| Year 5 (5%) | ~1,120 | $42.6M | 25% |
+**Year one.** 1% of 22,400 is 224 customers at $38K, or $8.5M ARR. Today you have 38 customers, roughly $1.4M ARR. So "a conservative 1%" in year one means adding about 186 customers and growing ARR about 6× in twelve months. That may be achievable with the Corvane tailwind. It is not conservative, and calling it conservative will cost credibility with any investor who does the division.
 
-What the table shows:
+**Year five.** 5% is 1,120 customers and $42.6M ARR, so adding about 224 net customers a year with no churn. A 5% share in five years sits at the upper edge of what B2B SaaS typically reaches. The fragmentation argument (no vendor above 12%) helps, but that figure is unverified.
 
-- **"1% is conservative" is the wrong frame for year one.** Year one is the most aggressive year in the plan. It requires about 186 net new customers in twelve months, against 38 acquired to date. Product superiority on cost per invoice is a reason customers choose Tallyroom once they evaluate it. It does not determine how many evaluations happen. Year-one share is set by distribution capacity, not product quality.
-- **The curve is the wrong shape.** Adding one point of share a year produces a near-sextupling followed by steadily decelerating growth (100% → 25%). Real category capture usually accelerates through the middle of an S-curve before flattening. A huge year one could be justified by the Corvane deadline, but only if the memo says that explicitly. As written, the year-one jump is presented as the conservative baseline rather than as a catalyst-driven spike.
-- **There is no sales-capacity plan.** About 186 new customers in year one, and about 224 a year after that, implies roughly 6–9 fully ramped AEs. That assumes about 25–30 mid-market deals per rep per year with ERP integration and implementation work; this is my rough assumption, not a figure from the memo. It also implies an implementation and onboarding team scaled to match. The use of funds lists multi-entity product work, a second integration engineering team, and "marketing." It names no sales or implementation hires, and no channel. Paylode, the best comp, grew through ERP resellers. If Tallyroom plans a reseller channel, the SOM needs to say so. If it plans direct sales, the hiring plan is missing. Either way, the funding ask doesn't visibly support the capture rate.
-- **The 30-month runway ends partway through year three.** That is roughly $21M ARR on the plan's curve. The memo should say whether the plan assumes a further raise, because the year-four and year-five shares depend on it.
-- **The fragmentation argument is partly undercut by the memo's own SAM.** "No vendor holds more than 12%" supports the claim that no single incumbent blocks entry. But the SAM includes legacy-tool users, who are displacement sales. The Corvane cohort will run competitive bake-offs among every certified partner. A 12% leader is also not small: against Halvorsen's $2.1–2.6B, it implies something on the order of $250–300M in mid-market AP revenue, depending on how share is measured. That is a well-funded competitor in exactly the Corvane bake-offs.
-- **The beachhead is implied but not named.** The memo has a natural wedge in Corvane switchers, but the revenue plan is expressed as a percentage of the whole SAM. A stronger build would read: "We win X% of the 9,000 Corvane switchers by year one (pipeline win rate Y%), then expand into the other two ERPs."
+**The share curve has the wrong shape.** Adding one point of share a year is a straight line. Your own why-now is a one-time event with a deadline, which should produce a front-loaded spike in Corvane migrations followed by a slower, ordinary acquisition rate. The plan doesn't model the demand that the plan itself describes.
 
-**Most constraining bottleneck:** sales capacity and channel in year one. Year five's $42.6M is ambitious but not absurd against the comps (see below). The year-one step from $1.4M to $8.5M has no stated mechanism beyond the Corvane deadline.
+**The beachhead is named but not used.** The obvious beachhead is Corvane customers forced to switch. Half the pipeline already comes from there. The memo could project a share of those 9,000 (say, 5–10% of migrating teams) and then a separate expansion rate into the other two ERPs. Instead it projects a flat share of the whole SAM.
+
+**The funding doesn't include a sales team.** Use of funds names product work, engineering and marketing, but no sales hiring. Closing about 186 mid-market deals in year one, each with an ERP integration and finance-team approval, would likely need on the order of 6–12 ramped account executives. That assumes roughly 15–30 closes per AE per year, which is a rough benchmark, not data from the memo. This could be a gap in the use-of-funds writeup rather than in the plan itself. Either way, it is the most constraining bottleneck as presented. Paylode, your best comp, grew through ERP resellers, and the memo describes no reseller channel either.
+
+**Revision:** Build the revenue plan from customer counts by source: Corvane migrations, other-ERP new logos, and channel. Tie it to a sales and channel capacity plan that the $12M actually funds. Report the implied share as an output, not an input.
 
 ## Market Timing Assessment
 
 **Verdict:** Plausible
 **Confidence:** Medium
 
-This is the memo's strongest section. It names a specific, dated trigger with revealed-preference force: Corvane retires its bundled AP module at end-2026. Roughly 9,000 teams must spend money on a replacement by a fixed deadline. The Corvane partner certification in August 2025 and the 50% pipeline concentration are concrete evidence that Tallyroom is positioned for it. This is a "why now," not a "why ever."
+This is the strongest "why now" a mid-market SaaS plan can offer. It is a specific, recent, dated trigger: Corvane retiring its bundled AP module at the end of 2026, with no preferred partner named. It forces a decision among a defined group of about 9,000 teams. You've already acted on it, with partner certification in August 2025, and pipeline evidence (half from Corvane) suggests it's real. It is also revealed-preference demand, since these teams already use and pay for AP tooling. It isn't category creation.
 
-The pressure points:
+What needs pressure:
 
-- **The window may already be mostly spent.** It is now November 2026, and the deadline is about six weeks away. The memo doesn't say when it was written. If it is current, most of the 9,000 teams have either already chosen a vendor or will choose in the next few weeks. In that case, the catalyst largely concludes before or at the start of "year one." The memo needs to say how many Corvane teams remain undecided, how many Tallyroom has won, and its win rate in Corvane deals. If the memo dates from 2025, it should be re-dated and updated before circulating.
-- **A forced switch is a one-time land grab, and it cuts both ways.** Teams that pick a competitor during the window are then locked in, and become displacement sales for years. The SOM should treat the Corvane window as a fixed-size cohort with a closing date, not as a contributor to a steady 1%-a-year share line.
-- **The trigger is reversible or dilutable in several ways:**
-  - Corvane could extend the deadline. That slows the cohort.
-  - Corvane could name a preferred partner, which the memo notes it has not done. If it picks someone else, Tallyroom's channel into that cohort weakens sharply. This is the Invoxa failure mode the memo itself cites, in a different form.
-  - Certification may not be scarce. If many AP vendors are Corvane-certified, the trigger creates demand but not a Tallyroom advantage.
-- **Placement on the adoption curve.** The SAM filter implies that most of the band is still manual or legacy, so this is early majority, not innovator stage. That fits a $38K mid-market sales motion. Pricing and timing look well matched.
-- **Beyond Corvane, the timing case is thin.** Apart from the Corvane cohort, the memo gives no reason the other two ERPs' manual-matching customers will buy now rather than five years ago. A second trigger, such as e-invoicing mandates, payment-fraud pressure, or LLM-based extraction accuracy, would make the thesis less dependent on a single catalyst.
+- **The deadline may be nearly here.** The memo doesn't give its date. If it's being circulated now, the end-of-2026 deadline is weeks away, and most of those 9,000 teams have likely already chosen, or are extending on the old module. The memo should state how much of the migration window remains and what share of Corvane switchers Tallyroom has won so far. A five-year plan resting on a trigger that has largely expired needs a second leg.
+- **The trigger could reverse or soften.** It rests on one catalyst controlled by one vendor. Corvane could extend the deadline, which ERP vendors often do under customer pressure. It could also name a preferred partner, which would concentrate the migration on someone else. Your strategy and your own Invoxa lesson both say ERP dependence cuts both ways. The timing thesis should acknowledge this risk directly.
+- **There is no second trigger.** Nothing in the memo makes the other two ERPs' customers newly ready to buy. After the Corvane wave, timing falls back to a general modernization trend.
+- **Adoption stage needs one sentence.** Per the SAM, about 58% of on-ERP firms are still manual or on legacy tools. That suggests modern AP tools are in the early majority. That fits a $38K mid-market sales motion. Saying so explicitly would help.
 
 ## Comparable Benchmarks Assessment
 
 **Verdict:** Plausible
-**Confidence:** Low
+**Confidence:** Medium
 
-Credit where due: this is an unusually honest comp set. It names one success (Paylode, $60M in seven years), one stall-and-sale (Invoxa, $18M, sold at about 2× revenue), and one failure (Capturely, under $6M, shut down). It also draws a lesson from them. That is the opposite of cherry-picking.
+Credit where due: this comp set includes one success, one stall and one failure, and it draws a lesson from them. That is rarer than it should be and makes the section more credible than most.
 
-What's missing:
+The gaps:
 
-- **Stage-matched figures.** The memo projects $42.6M at year five but gives Paylode's revenue only at year seven. What was Paylode at year five? If it was around $30M, Tallyroom's plan requires beating the best comp. If it was around $45M, the plan simply matches it. The memo also gives no founding dates for the comps. A company that grew from 2012 to 2019 faced different ERP and capture-technology conditions.
-- **The median outcome and how it compares.** Of the three, the median is Invoxa at $18M, which was ultimately a weak exit. The plan's $42.6M is about 2.4× the median and about 70% of the top outcome, reached two years faster. The memo should name what makes Tallyroom the Paylode case rather than the Invoxa case. Candidates include the Corvane catalyst, the cost-per-invoice advantage, and three-ERP coverage.
-- **Segment and go-to-market matching.** Paylode's success ran through ERP resellers. Tallyroom's channel is unstated, so the memo doesn't establish that it is following the same playbook.
-- **The lesson is applied only halfway.** "Integrate with three ERPs, not one" addresses Invoxa's failure mode. It doesn't address Capturely's: needing standardized POs. As noted under SAM, that is the comp lesson most relevant to Tallyroom's product.
-- **The largest incumbent is missing.** The vendor holding about 12% of the mid-market is the most informative comp. Its revenue, age, channel, and Corvane positioning all bear on the plan, and it isn't named.
-- **The base rate is still missing.** Three comps is a small sample. Most mid-market AP startups presumably didn't reach $6M. A sentence acknowledging that, and naming one or two more, would make the comp set stronger.
+- **The plan sits near the top of the range.** The median of the three comps is Invoxa at $18M, then stalled. Paylode, the only clear success, reached $60M in seven years. Tallyroom projects $42.6M in five, which is roughly on Paylode's pace and about 2.4× the median. The memo needs to state why Tallyroom tracks the best outcome rather than the middle one.
+- **The best comp grew through a different channel.** Paylode grew through ERP resellers. Tallyroom describes no reseller motion. If Paylode's trajectory depended on that channel, it isn't a like-for-like benchmark until you name your equivalent.
+- **The Capturely lesson is drawn selectively.** The memo takes the ERP-dependence lesson from Invoxa. It doesn't address the Capturely lesson: a product that worked only for companies with standardized POs. Tallyroom's core value is three-way PO matching, so this is the most relevant failure mode in the set. The memo should state what share of SAM has the PO discipline the product needs, and what Tallyroom does for the rest.
+- **Multi-ERP may not prevent the Invoxa outcome.** Integrating with three ERPs spreads the risk. It doesn't remove the risk that one of the other two launches or bundles an AP module. Ironically, Corvane is doing the opposite right now.
+- **Stage and era are missing.** Founding dates and the market conditions behind Paylode's seven-year run aren't given. Without them, it's hard to tell whether those comps faced the same buyer and price environment.
+- **The incumbents are missing.** The comps are all startups. The vendors holding up to 12% of the mid-market, and the AP spend Halvorsen counts, are the competitive set the plan will actually meet. Naming them would test the fragmentation claim.
 
 ## Factual Foundation
 
-No fact-check report was provided. These claims carry the most weight and would benefit most from verification:
+No fact-check report was provided. These are the claims that most need verification, in order of load-bearing weight.
 
-1. **The Halvorsen Group estimate ($2.1–2.6B US AP-automation spend, 100–999 employee band, 2025) and its definition.** In particular, check whether it measures current spend or potential spend, and whether it includes legacy capture tools. This decides whether the TAM reconciliation means anything.
-2. **The Corvane facts and their current status.** Check the retirement date and whether it has been extended, the ~9,000 affected teams, whether a preferred partner has since been named, and how many vendors hold the same certification. The whole timing thesis, and much of year-one SOM, rests on this as of today rather than as of mid-2025.
-3. **The comp revenue figures and timelines.** These are Paylode ($60M ARR at year seven, and its year-five figure), Invoxa ($18M, sale at about 2×), and Capturely ($40M raised, under $6M ARR). Also verify the 64,000-firm count and the "no vendor above 12%" claim.
+1. **Halvorsen Group's $2.1–2.6B figure and its definition.** Is it current spend or addressable spend? Does it cover the same 100–999 band? Does it include legacy capture tools? Is it a real, citable report? The entire TAM reconciliation depends on this.
+2. **The Corvane facts.** Check the retirement announcement, the end-2026 date, the count of about 9,000 affected finance teams, and whether Corvane has since extended the deadline or named a preferred partner. The why-now and the beachhead both rest on these.
+3. **The market-structure inputs.** Check the 64,000-company count, the 800–6,000 invoices-per-month range, the 60% share held by the three ERPs, and the 12% maximum vendor share. Add the Paylode, Invoxa and Capturely revenue figures behind the comp-set argument.
 
 ## Overall Assessment
 
-**Strongest signal: market timing.** The Corvane retirement is a real, specific, revealed-preference trigger. The certification and pipeline data show Tallyroom is positioned for it. The comp set is also notably honest.
+**Strongest lenses: Market Timing, then Comparable Benchmarks.** The Corvane retirement is a real, specific, dated trigger with pipeline evidence behind it. The comp set includes negative outcomes and draws a lesson from them. The SAM section is also more disciplined than most, because it uses a real behavioral filter.
 
-**Weakest signal: SOM achievability.** The revenue plan is written top-down as "1% a year" instead of being built from the things that actually determine capture:
+**Weakest lens: SOM Achievability.** The share-of-SAM framing makes "1% in year one" sound conservative, when it means about 6× ARR growth and roughly 186 new customers. The straight-line share curve ignores the event-driven shape of your own trigger. And the stated use of funds doesn't include the sales capacity those customer counts need.
 
-- the size and closing date of the Corvane cohort,
-- Tallyroom's win rate in that cohort,
-- the sales or channel capacity the round funds.
+There is also a quieter issue in the TAM. The "within 10%" reconciliation compares a full-penetration ceiling with current spend. If both are right, the unpenetrated market the plan depends on doesn't exist.
 
-Year one requires roughly six times today's customer count with no named sales plan. The TAM reconciliation also needs repair. The two numbers agree because they measure different things, not because they confirm each other.
-
-**The single most important revision:** rebuild the revenue plan bottom-up around the Corvane window. That means stating:
-
-- how many of the ~9,000 Corvane teams remain undecided as of today,
-- Tallyroom's current win rate in Corvane deals,
-- the sales and implementation capacity the $12M buys,
-- the resulting year-one customer count.
-
-Then show expansion into the other two ERPs as a separate, slower line. This turns the strongest part of the memo, the timing trigger, into the engine of the revenue plan rather than a side argument. It also replaces "1% is conservative" with a number an investor can check. While making this revision, add a PO-discipline filter to the SAM and give Paylode's year-five figure. Those two changes would close the remaining gaps that diligence is most likely to probe.
+**The single most important revision:** replace the share-of-SAM revenue plan with a customer-count build anchored on the Corvane beachhead. Show how many of the 9,000 migrating teams you've won or expect to win, and by when relative to the deadline. Add the separate acquisition rate into the other two ERPs. Tie it to a sales and channel plan the $12M visibly funds. That turns the strongest part of the memo, the Corvane trigger, into the backbone of the revenue case instead of a separate section.

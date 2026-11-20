@@ -1,143 +1,108 @@
-# Test Strategy: `parse_duration` (Tollgate duration parser)
+# Test Strategy: `subject.py` (Tollgate duration parser)
 
-**Scope:** `subject.py`, the whole module (lines 1–54) and its existing tests (lines 57–101, which live at `tests/test_duration.py` in the real project)
+**Scope:** `subject.py`, the whole file: `DurationError`, `Duration`, `parse_duration` (lines 1–62), plus the existing tests at lines 65–140 (`tests/test_duration.py` in the real project)
 **Reviewed:** 2026-11-20
 
 ## Test Conventions
 
-- **Framework:** pytest. Tests are table-driven with `@pytest.mark.parametrize`: one table for valid inputs (`text, seconds`) and one for invalid inputs (`text, message`).
-- **Error assertions:** `pytest.raises(DurationError, match=<substring>)`. They only match a short prefix such as `"unexpected text"` or `"exceeds"`, so the position and snippet in the message are never checked.
-- **File:** `tests/test_duration.py`. There are no fixtures, mocks or helpers, and none are needed because the code is pure.
-- **Recommendation:** add rows to the two existing tables wherever possible. Write a new test function only when the assertion has a different shape, such as a different exception type or an exact message.
-
-The existing tests are good. Every `raise` on lines 31–53 is reached at least once, and both edges of the `MAX_SECONDS` limit are tested (`30d` passes, `30d1s` and `31d` fail). The gaps below are about inputs that get through, or fail with the wrong exception, more than about lines that never run.
+- **Framework:** pytest. Tests are plain functions named `test_*` with no classes.
+- **Style:** table-driven with `@pytest.mark.parametrize`. Valid inputs are `(text, seconds)` pairs that assert on `.seconds`. Invalid inputs are `(text, message)` pairs that use `pytest.raises(DurationError, match=re.escape(message))`, so the message is matched as a literal substring.
+- **Location:** `tests/test_duration.py`. There are no fixtures, conftest, mocks or property-testing library. The module is pure and has no I/O, so none are needed.
+- **Existing coverage is strong.** Every branch in `parse_duration` (lines 31–61) is reached by at least one case. The tests also check the order of errors (for example, "too long" is raised before "unknown unit", "unknown unit" before a gap, and a trailing-text error before "positive" or "exceeds"). They cover the `MAX_SECONDS` boundary on both sides, leading-zero stripping, case folding, non-ASCII digits and the 5,000-digit input. The remaining gaps are in the `Duration`/`DurationError` types and a few partly asserted details, not in the parsing branches.
 
 ## Untested Paths Touched by the Change
 
-- **G1**: `subject.py:39`. `int(match.group(1))` with a digit run longer than Python's int-parsing limit (4300 digits by default on 3.11+). This raises a plain `ValueError`, not `DurationError`, so callers that catch `DurationError` miss it. Not covered.
-- **G2**: `subject.py:29`. Input that isn't a `str`. If YAML or TOML gives an `int` (e.g. `timeout: 30`) or `None`, `.strip()` raises `AttributeError` and never reaches the `DurationError` contract. Not covered. **Ambiguity:** should a bare int count as seconds, or should it be rejected with `DurationError`?
-- **G3**: `subject.py:8,39`. `\d` on a `str` pattern matches all Unicode decimal digits, and `int()` accepts them too, so `"１h"` (full-width) and `"١٢m"` (Arabic-Indic) are silently accepted. Not covered. **Ambiguity:** this is probably unintended for config files, and the fix would be `[0-9]` or `re.ASCII`.
-- **G4**: `subject.py:37-38`. Text before the first token, e.g. a leading sign (`"-5m"`, `"+5m"`) or a letter (`"x1h"`). This raises at line 38 with `pos=0`. Not covered: the only existing line-38 case is `"1h 30m"`, which has junk in the middle. The `-5m` case matters because it is how a negative duration would get in.
-- **G5**: `subject.py:48-49`. Trailing junk *after a valid token* (`"1h30"`, `"1h30m5"`), where `pos > 0`. Partly covered: `"10"` and `"h10"` reach line 49, but only with `pos == 0` and no match at all. The common user mistake `"1h30"` (meaning 1h30m) is not tested.
-- **G6**: `subject.py:42-45`. A zero component inside a positive total (`"0h30m"` → 1800) and leading zeros (`"01h"` → 3600). Both are accepted because there is no per-token zero check. Not covered: the tests only check zero *totals*.
-- **G7**: `subject.py:36-46`. Units in a non-canonical order (`"30m1h"`, `"4s3m2h1d"`). These are accepted, since nothing checks order. Not covered. **Ambiguity:** confirm that any order is intended.
-- **G8**: `subject.py:42-43`. A duplicate unit that isn't adjacent (`"1h30m1h"`) or differs only by case (`"1H1h"`, which matches only after `.lower()`). Partly covered: only the adjacent `"1h1h"` is tested.
-- **G9**: `subject.py:38,41,49`. The content of error messages (the position index and the `repr` snippet). Not covered, because the `match=` checks only the prefix. One quirk: positions refer to the stripped, lowercased string, not to what the user typed.
-- **G10**: `subject.py:24-25`. `Duration.__repr__` output. Not covered.
+- **G1** — `subject.py:14-15` — `DurationError` subclasses `ValueError`, so callers (such as config loaders) can catch it with a plain `except ValueError`. No test checks this. Every test catches `DurationError` itself, so changing the base class would break no test. — not covered
+- **G2** — `subject.py:26-27` — `Duration.__repr__` returns `"Duration(<n>s)"`. This is the format that shows up in logs and assertion diffs. — not covered
+- **G3** — `subject.py:18-20` — `@dataclass(frozen=True)` behaviour: assigning to `.seconds` raises `FrozenInstanceError`, two equal durations compare equal, and equal durations hash the same (needed if they're used as dict keys or set members). — not covered
+- **G4** — `subject.py:18-20` vs `58-61` — `Duration(0)`, `Duration(-5)` and `Duration(MAX_SECONDS + 1)` can be built directly. The parser's invariant (`0 < seconds <= MAX_SECONDS`) is only enforced inside `parse_duration`. — not covered; **this is an ambiguity**: decide whether it's intended before writing a test (see Summary)
+- **G5** — `subject.py:33` — `strip()` with whitespace other than the space character (`"\t1h\n"`, `"\u00a0"`-padded input, or input that is only `"\n"`). — partially covered: only ASCII spaces are tested (`"  90M  "`, `"   "`)
+- **G6** — `subject.py:46` — the "too long" message gives the first 12 *significant* digits followed by `...`. — partially covered: tests only match `"amount too long"`, so nothing checks the truncation or that the shown digits start after the leading zeros
+- **G7** — `subject.py:32` — the non-string message includes `type(text).__name__`. — partially covered: tests only match `"must be a string"`, so the type name (`int`, `NoneType`, `bytes`) isn't checked
+- **G8** — `subject.py:56-57` — the trailing-text branch when no token matched at all (`"10"`, `"h10"`) should report position 0 and the whole string. — partially covered: those cases match `"unexpected text"` without the position or the quoted text, unlike `"1h30"`
 
 ## Recommended Tests
 
-#### Huge digit runs raise `DurationError`, not a bare `ValueError`
+#### `DurationError` can be caught as `ValueError`
 
 **Closes gaps:** G1
 **Type:** unit
 **Priority:** high
 **File:** `tests/test_duration.py`
-**What it verifies:** every rejection keeps to the `DurationError` contract, including input that hits the interpreter's int-conversion limit.
+**What it verifies:** callers that catch `ValueError` still catch parse failures.
 **Key cases:**
-- `parse_duration("9" * 5000 + "s")` → `pytest.raises(DurationError)`. This **fails today** with a plain `ValueError`. The fix is to catch `ValueError` around `int()` on line 39, or to reject digit runs above a sane length.
-- `parse_duration("99999999999999999999s")` (20 digits) → `DurationError, match="exceeds"`. This should already pass; it confirms the code handles big ints that are still under the limit.
+- `with pytest.raises(ValueError): parse_duration("10x")`
+- `assert issubclass(DurationError, ValueError)`
 
-**Setup needed:** none. Use `pytest.raises(DurationError)` without a `match`, because the point is the exception type.
+**Setup needed:** none
 
-#### Non-string input has a defined behaviour
+#### `Duration` value semantics and repr
 
-**Closes gaps:** G2
+**Closes gaps:** G2, G3
 **Type:** unit
-**Priority:** high (config loaders really do produce ints)
+**Priority:** medium
 **File:** `tests/test_duration.py`
-**What it verifies:** `parse_duration(30)` and `parse_duration(None)` fail with `DurationError`, or `30` means 30 seconds, whichever the owners decide.
+**What it verifies:** `Duration` is an immutable, hashable value with a stable repr.
 **Key cases:**
-- `parse_duration(30)` → `DurationError` (or `Duration(30)` if bare ints should be allowed). It currently raises `AttributeError`.
-- `parse_duration(None)` → `DurationError`. It currently raises `AttributeError`.
+- `repr(parse_duration("1h30m")) == "Duration(5400s)"`
+- `parse_duration("90m") == parse_duration("1h30m")`, and both hash the same (`len({...}) == 1`)
+- `d = parse_duration("1h"); d.seconds = 5` raises `dataclasses.FrozenInstanceError`
 
-**Setup needed:** the owners need to settle the ambiguity before this test can be written. If the type hint is the contract and callers should be fixed instead, move this to "What NOT to Test" and add a test where the config is loaded.
+**Setup needed:** `import dataclasses`
 
-#### Only ASCII digits are accepted
+#### Non-space whitespace is stripped
 
-**Closes gaps:** G3
+**Closes gaps:** G5
 **Type:** unit
-**Priority:** medium. A silently wrong answer is unlikely, but the cost is three table rows.
-**File:** `tests/test_duration.py`, as rows in `test_rejects_invalid_durations`
-**What it verifies:** amounts must be ASCII `0-9`.
+**Priority:** medium. Config files edited by hand often contain tabs, CRLF line endings or a non-breaking space pasted from docs.
+**File:** `tests/test_duration.py`. Add rows to the existing parametrize tables.
+**What it verifies:** the documented "ignores surrounding whitespace" covers all of `str.strip()`'s whitespace, and error positions are counted from the stripped text.
 **Key cases:**
-- `("１h", "unexpected text")`: full-width 1. This **fails today**, because the input parses as 3600.
-- `("١٢m", "unexpected text")`: Arabic-Indic 12. Also **fails today**.
+- valid: `("\t1h\r\n", 3_600)`, `("\u00a01h30m\u00a0", 5_400)`
+- invalid: `("\n\t", "empty")`, `("\t1h30", "unexpected text at 2: '30'")`
 
-**Setup needed:** change `_TOKEN` to `re.compile(r"([0-9]+)([a-z]+)")` or add `re.ASCII`. If Unicode digits are meant to be accepted, add these to the valid table instead, so the behaviour is written down.
+**Setup needed:** none
 
-#### Rejecting leading signs and junk, and trailing digits after a token
+#### Error messages carry the right details
 
-**Closes gaps:** G4, G5
+**Closes gaps:** G6, G7, G8
 **Type:** unit
-**Priority:** high. `"-5m"` and `"1h30"` are realistic config typos, and a negative duration getting through would have a large impact.
-**File:** `tests/test_duration.py`, as rows in `test_rejects_invalid_durations`
+**Priority:** low. These are messages that users read, not behaviour other code depends on. Add them as rows in the existing tables, where they cost almost nothing.
+**File:** `tests/test_duration.py`
+**What it verifies:** each message names the offending value or position precisely.
 **Key cases:**
-- `("-5m", "unexpected text")`
-- `("+5m", "unexpected text")`
-- `("x1h", "unexpected text")`
-- `("1h30", "unexpected text")`
-- `("1h30m5", "unexpected text")`
+- `("000" + "1234567890123" + "s", "amount too long: 123456789012...")`: leading zeros are excluded and the digits are truncated at 12
+- `("10", "unexpected text at 0: '10'")` and `("h10", "unexpected text at 0: 'h10'")`: replace the looser existing rows
+- non-string: `parse_duration(30)` matches `"got int"`, `None` matches `"got NoneType"`, `b"1h"` matches `"got bytes"`. Change `test_rejects_non_string_input` to parametrize `(value, type_name)`.
 
-**Setup needed:** none.
+**Setup needed:** none
 
-#### Accepted-but-unusual forms are pinned down
+#### (Conditional) Invalid `Duration` construction is rejected
 
-**Closes gaps:** G6, G7
+**Closes gaps:** G4
 **Type:** unit
-**Priority:** medium. These rows document current behaviour so a later "tightening" change breaks them on purpose, not by accident.
-**File:** `tests/test_duration.py`, as rows in `test_parses_valid_durations`
+**Priority:** medium, **if** the team decides `Duration` should enforce the invariant. In that case it's a code change (a `__post_init__` check) with tests attached, not just a test.
+**File:** `tests/test_duration.py`
+**What it verifies:** a `Duration` can never hold a value the parser would reject.
 **Key cases:**
-- `("0h30m", 1_800)`
-- `("01h", 3_600)`
-- `("30m1h", 5_400)`
-- `("4s3m2h1d", 93_784)`. This has the same total as the existing `"1d2h3m4s"` row, which makes it clear that order doesn't matter.
+- `Duration(0)`, `Duration(-1)` and `Duration(MAX_SECONDS + 1)` raise `DurationError`
+- `Duration(1)` and `Duration(MAX_SECONDS)` succeed
 
-**Setup needed:** confirm G7 with the owners first. If canonical order should be enforced, move the order rows to the invalid table.
-
-#### Duplicate detection: non-adjacent and case-folded
-
-**Closes gaps:** G8
-**Type:** unit
-**Priority:** low to medium (two cheap rows)
-**File:** `tests/test_duration.py`, as rows in `test_rejects_invalid_durations`
-**Key cases:**
-- `("1h30m1h", "given twice")`
-- `("1H1h", "given twice")`
-
-#### Exact error messages for the position-reporting errors
-
-**Closes gaps:** G9
-**Type:** unit
-**Priority:** low to medium. Users read these messages when fixing config files.
-**File:** `tests/test_duration.py`, as a new parametrized test that passes `re.escape`'d full messages to `match=`
-**Key cases:**
-- `"1h 30m"` → `"unexpected text at 2: ' '"`
-- `"1h30"` → `"unexpected text at 2: '30'"`
-- `"  10X "` → `"unknown unit 'x'"`. The unit is shown lowercased, which pins down that messages describe the normalised string.
-
-**Setup needed:** none. Keep this to these three cases so changes to message wording break only a small, clearly named test.
+**Setup needed:** none. If the answer is "`Duration` is a plain value type", move G4 to What NOT to Test.
 
 ## What NOT to Test
 
-- **`Duration.__repr__` (G10):** a one-line f-string with no logic. If it breaks, the only effect is uglier log output. Skip it, unless something downstream parses the repr.
-- **`Duration` being frozen and its equality/hashing:** these come from `@dataclass(frozen=True)`, so a test would be testing the standard library.
-- **`minutes` beyond the existing case:** a single division, and `90s → 1.5` already covers it.
-- **More `MAX_SECONDS` boundary variants** (`"720h"`, `"2592001s"`): the boundary is checked on the total, after summing, so unit choice doesn't matter, and `30d` / `30d1s` already cover both edges.
-- **Property-based testing (Hypothesis):** the main invariant ("the sum of distinct unit tokens equals `.seconds`") is real, but the project has no Hypothesis dependency and the explicit table already covers the grammar well. It isn't worth adding a dependency for.
-- **Whitespace variants** (tabs, newlines, Unicode spaces around the value): `str.strip()` handles them, and `"  90M  "` already covers the strip path.
+- **More `MAX_SECONDS` boundaries in other units** (`"720h"`, `"43200m"`, `"999999999999d"`): every unit goes through the same `total += amount * _UNITS[unit]` line, and the boundary is already pinned with `30d`, `2592000s` and `2592001s`. Python integers can't overflow.
+- **Every ordering of units:** `"30m1h"` and `"1d2h3m4s"` already show that order doesn't matter. All the permutations would add rows without testing any new path.
+- **Unicode characters whose `lower()` turns into an ASCII unit letter:** none of `d`, `h`, `m` or `s` can be produced that way with `str.lower()` (the long s `ſ` only becomes `s` under `casefold()`). Non-ASCII digits are already rejected (`"１h"`).
+- **`minutes` beyond the existing `90s → 1.5` case:** it's a single division.
+- **Property-based roundtrip tests (Hypothesis):** a generated "format a random subset of units in random order, then parse" check would be thorough. But the project has no Hypothesis dependency, and the parametrized tables already cover each branch and the ordering rules. Revisit this if the grammar grows (for example, fractional amounts or `ms`).
+- **Performance on very long input:** the 5,000-digit case already covers the realistic risk. The regex has no nested quantifiers, so catastrophic backtracking isn't possible.
 
 ## Coverage Gaps Beyond Current Scope
 
-**1.** The code that loads config and calls `parse_duration` is not in this repository. Whether it passes raw YAML/TOML values, which can be ints or `None` (G2), and whether it catches `DurationError` or `ValueError` (G1), should be checked with an integration test at that call site.
-
-**2.** Nothing here says how the Tollgate scheduler uses `Duration.seconds` (as a timeout, an interval or a deadline), or whether the 30-day cap matches what the scheduler can actually handle. A contract test between the parser's `MAX_SECONDS` and the scheduler's limits would catch drift.
+**1.** The scheduler code that reads Tollgate config files and calls `parse_duration` isn't in this repository. Check that it either catches `DurationError`/`ValueError` and reports the config key and file, or lets the error fail startup on purpose. A contract or integration test at that layer is worth more than any test left to add here.
 
 ## Summary
 
-The existing tests reach every `raise` in `parse_duration` and cover the `MAX_SECONDS` boundary. The remaining risk is in inputs that get through or fail the wrong way. The highest-value test is the oversized-digit-run case (G1). It fails today, because `int()` raises a bare `ValueError` that callers catching `DurationError` won't handle, and it costs one line. Close behind it are rows for leading signs and trailing digits (`"-5m"`, `"1h30"`; G4/G5) and the Unicode-digit check (G3), which is also a current bug if ASCII-only input is intended. Three questions came out of the gap list and should be answered before the related tests are written:
-- Should non-`str` input (G2) be coerced or rejected?
-- Should units be allowed in any order (G7)?
-- Should Unicode digits be accepted (G3)?
-
-Once the plan is done, the main remaining risk is outside this module: how the config loader calls the parser and handles its errors.
+The existing suite already covers every branch of `parse_duration`, including the order in which errors are raised and both sides of the `MAX_SECONDS` limit. What's left is mostly about the types around the parser. The most valuable addition is the cheap check that `DurationError` can be caught as a `ValueError` (G1): it's a public contract that no current test protects. After that come `Duration`'s repr, equality and immutability (G2, G3) and stripping of whitespace other than spaces (G5), which is a realistic input from hand-edited config files. The main remaining risk is G4: `Duration` can be constructed directly with zero, negative or over-limit seconds, which bypasses the parser's checks. Someone needs to decide whether that's intended before writing any test for it. Everything else is a low-priority tightening of error messages, done as extra rows in the existing tables.

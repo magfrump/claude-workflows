@@ -1,225 +1,185 @@
-# What-If Analysis: Swap `quote-service` outbound HTTP client behind `quote_http_pooled`
+# What-If Analysis: Swap the outbound HTTP client in `quote-service` behind a flag
 
-**Proposal:** Replace `pyrequest-classic` with `pyrequest-pooled` in `quote_service/providers/http.py`, selected per request by the `quote_http_pooled` flag, rolled out 5% → 50% → 100%
+**Proposal:** Replace `pyrequest-classic` with `pyrequest-pooled` in `quote_service/providers/http.py`, selected per request by the `quote_http_pooled` flag (Pricing team, Corvel Freight)
 **Date:** 2026-11-20
 **Upstream critiques:** none
 
 > ℹ️ **No upstream critique provided.** This analysis covers the full consequence space
 > independently. For maximum value, run a critique skill first (e.g., `cowen-critique`) and
-> provide its output. This skill is most powerful when focused on the gaps that critics miss.
+> provide its output — this skill is most powerful when focused on the gaps that critics miss.
 
-**Prior Art Check:** No repository is available, so `docs/decisions/` and `docs/working/` could not be searched. No `[PRIOR CONSIDERATION]` findings are possible. Keywords that would have been searched: `pyrequest`, `connection pool`, `keep-alive`, `load balancer`, `TLS handshake`, `quote_http_pooled`, `retry`, `rate provider`, `preload`/`fork`.
+**Prior Art Check:** No repository was available, so `docs/decisions/` and `docs/working/` could not be searched. No `[PRIOR CONSIDERATION]` findings are possible. The proposal's own "Risks we considered" section is treated as the baseline of examined territory.
 
-**Overall calibration:** This is a well-scoped proposal. The rollback claim is mostly true, and the rehearsal is better than most teams do. The real risks are not in the rollout mechanics. They are in three places: (a) what "same request/response API" leaves out, mainly exceptions, hooks, and pool behaviour; (b) whether the dashboards can see a 5% cohort at all; and (c) what long-lived connections do to load distribution and correctness on the provider side. Most findings below are moderate. Two are cheap checks that should happen before step 2.
+**Overall read:** This is a well-scoped, well-rehearsed change, and its rollback story holds up. The real risks are not about undoing the change. They are about whether the rollout signals can detect the failure modes that long-lived connections introduce. Those modes are slow, rare, and triggered by events (provider deploys, DNS changes, LB idle expiry, traffic peaks) that a 1% synthetic rehearsal and a three-day step will not reliably hit.
 
 ---
 
 ## Assumptions Examined
 
-1. **Assumption:** "Same request/response API" means the same *behaviour* at the call site. That includes the exception classes raised on timeout, connection reset, and DNS failure, which the existing retry logic catches.
-   - **Source:** Explicit claim ("same request/response API"). That retries are unaffected is implicit in "No change to … retries".
-   - **If wrong:** Redesign of the error-mapping layer. Retries could stop firing, or fire on the wrong errors, with no code diff in the retry module.
-   - **Tag:** `[NOVEL]`
+- **Assumption:** `pyrequest-pooled` has "the same request/response API", so retries, timeouts and error handling behave identically.
+  - **Source:** explicit ("What and why"; "No change to … timeouts, retries")
+  - **If wrong:** redesign. If the clients raise different exception classes for connection resets, or apply timeouts differently (per-attempt vs per-request, connect timeout skipped on a reused connection), the unchanged retry logic silently changes behaviour. Calls that used to retry may fail, and calls that used to fail fast may retry.
+  - **Tag:** `[NOVEL]`
 
-2. **Assumption:** The flag selects between two **long-lived, process-wide** client instances. The alternative is building a client per call.
-   - **Source:** Implicit. "picks the client at call time" and "the module … builds the client" are ambiguous on this.
-   - **If wrong:** Full retreat for the benefit, possibly worse. A per-request pooled client has no pool to reuse, so the handshake share stays near 8% or rises. Un-closed pools can also leak sockets and file descriptors.
-   - **Tag:** `[NOVEL]`
+- **Assumption:** Reusing connections across the internal LB's keep-alive boundary is safe. That is, the pooled client will not send requests on a connection the LB has already closed.
+  - **Source:** implicit (the whole benefit comes from crossing the boundary `pyrequest-classic` refuses to cross)
+  - **If wrong:** redesign. Stale-connection reuse yields `ECONNRESET` or empty-response errors on the first request after an idle period. If provider calls are POSTs, the client may correctly refuse to auto-retry them, which surfaces errors as failed quotes.
+  - **Tag:** `[NOVEL]`
 
-3. **Assumption:** The rollout dashboards (latency, error rate, TLS handshakes) can tell the pooled arm apart from the classic arm.
-   - **Source:** Implicit in Rollout step 3.
-   - **If wrong:** Redesign of the rollout gating. At 5%, a doubled error rate in the pooled arm moves the aggregate by about 5% relative. The handshake improvement moves the aggregate from 8% to about 7.6%. Neither is visible against normal noise, so the 5% stage proves nothing either way.
-   - **Tag:** `[NOVEL]`
+- **Assumption:** A year of production use by Billing and Routing transfers to `quote-service`.
+  - **Source:** explicit ("What and why")
+  - **If wrong:** tweak to redesign. It transfers only if traffic shape (bursty vs steady), LB path, idle timeouts, concurrency model (threads, async, pre-fork workers) and provider endpoints are similar. The proposal does not say they are.
+  - **Tag:** `[NOVEL]`
 
-4. **Assumption:** The TLS-handshake metric does not depend on the client library that emits it.
-   - **Source:** Implicit.
-   - **If wrong:** Tweak, but a dangerous one. If the count comes from `pyrequest-classic` hooks or instrumentation, the pooled arm emits zero. The dashboard then shows a "success" that is really missing data.
-   - **Tag:** `[NOVEL]`
+- **Assumption:** The TLS handshake count dashboard measures the same thing under both clients.
+  - **Source:** implicit (Rollout step 3 relies on it as the success signal)
+  - **If wrong:** redesign of the rollout. If the metric comes from a hook or instrumentation in `pyrequest-classic` and the new client doesn't emit it, the pooled share reads as zero handshakes. That looks like success and is actually blindness.
+  - **Tag:** `[NOVEL]`
 
-5. **Assumption:** Reusing connections across the internal load balancer is harmless to the providers. The provider teams checked connection *count* only.
-   - **Source:** Explicit (Risks: connection count); load distribution is implicit.
-   - **If wrong:** Redesign, such as a max-connection-lifetime setting or an LB change. See Consequence Chains.
-   - **Tag:** `[NOVEL]`
+- **Assumption:** Provider connection limits at "10x our peak" give ample headroom for long-lived pooled connections.
+  - **Source:** explicit ("Risks we considered")
+  - **If wrong:** tweak. Pool size caps fix it. The danger is that "peak" was measured as concurrent active connections under the classic client. Pooled connection count scales with *worker processes × pool size × provider hosts*, held idle, and both pools coexist during the 5% and 50% stages.
+  - **Tag:** `[NOVEL]`
 
-6. **Assumption:** Billing's and Routing's year in production transfers to quote-service. That means the same library version, same configuration, same process model (threads/async/fork), and a similar request shape.
-   - **Source:** Explicit ("run in production for over a year").
-   - **If wrong:** Tweak to redesign, depending on which variable differs.
-   - **Tag:** `[NOVEL]`
+- **Assumption:** The client "holds no state beyond its connection pool".
+  - **Source:** explicit ("Rollback")
+  - **If wrong:** tweak. The pool itself carries state that matters: resolved IPs (DNS), which LB backend each connection is pinned to, TLS session and certificate. That doesn't affect rollback. It affects correctness during normal operation (see couplings).
+  - **Tag:** `[NOVEL]`
 
-7. **Assumption:** Any bug in the new client shows up as latency or errors, so the dashboards and rollback cover it.
-   - **Source:** Implicit. The only stated risk mitigation for library bugs is "staged rollout and rehearsed flag-off."
-   - **If wrong:** Redesign. A silent correctness bug in a *pricing* service produces wrong quotes, not errors.
-   - **Tag:** `[NOVEL]`
+- **Assumption:** The client in `http.py` is constructed in a way that is safe for the service's process and concurrency model.
+  - **Source:** implicit
+  - **If wrong:** redesign. If the client is built at import time and the server pre-forks workers (e.g., gunicorn with `preload_app`), forked workers can share pooled TLS sockets and corrupt each other's streams. Per-host pooling in the classic client may have hidden this. A long-lived cross-boundary pool makes it more likely to bite.
+  - **Tag:** `[NOVEL]`
 
-8. **Assumption:** Three days per stage covers the traffic patterns that matter.
-   - **Source:** Explicit (Rollout step 2).
-   - **If wrong:** Tweak. Extend or time the stages.
-   - **Tag:** `[NOVEL]`
-
----
+- **Assumption:** Three-day stages at 5% and 50% are long enough to exercise the risky conditions.
+  - **Source:** explicit ("Rollout")
+  - **If wrong:** tweak. Lengthen the stages, or deliberately trigger provider deploys or LB events while at 50%.
+  - **Tag:** `[NOVEL]`
 
 ## Consequence Chains
 
-**Outcome A: connections are reused across the LB keep-alive boundary**
+**Outcome 1: Fresh-handshake share falls from ~8% to <1%.**
 ```
-→ First-order: ~8% → <1% of calls pay a fresh TLS handshake
-  → Second-order: quote-service's connections to each provider become long-lived and pinned to
-    whichever backend instance the internal LB picked at connect time (true if the LB balances
-    per-connection, i.e. L4 or HTTP keep-alive without per-request rebalancing)
-    → Third-order: when a provider scales out, new instances get almost no quote-service traffic
-      until pooled connections recycle; the hot instances stay hot. Autoscaling looks broken to
-      the provider team, and nothing in their dashboards points to quote-service.
-    → Third-order: during a provider deploy, a draining instance holds quote-service connections
-      until it closes them; if it closes abruptly, every in-flight request on those connections
-      fails at once. The error spike is correlated across pods, not spread out like today.
-  → Second-order: today's 8% churn was silently doing the rebalancing. Removing it is a behaviour
-    change that "nothing downstream can tell which client made a call" does not cover. The
-    providers can't tell from headers, but they can tell from connection lifetimes and load skew.
+→ First-order: far fewer TLS handshakes; connections live much longer
+  → Second-order: connections stay pinned to whichever LB backend / provider instance they first reached
+    → Third-order: when a rate provider scales out, new instances receive little traffic until old
+      connections churn; hot instances stay hot, so provider-side latency or errors rise during load
+      spikes, which is exactly when autoscaling was supposed to help
+    → Third-order: when a provider deploys or drains an instance, the in-flight requests on its
+      pooled connections see resets in a burst rather than a trickle
+  → Second-order: connections outlive DNS records and certificates
+    → Third-order: a provider failover or IP migration via DNS is invisible to quote-service until
+      connections break; certificate rotation or revocation takes effect only on reconnect
 ```
 
-**Outcome B: idle connections now survive long enough to go stale**
+**Outcome 2: p95 quote latency drops ~20 ms.**
 ```
-→ First-order: pool holds connections between requests
-  → Second-order: in low-traffic windows (nights, weekends), connections sit idle past the LB's or
-    provider's idle timeout. The first request on a stale socket gets a reset or
-    "remote end closed connection."
-    → Third-order (client retries internally): if the pooled client transparently retries on a
-      stale connection, and a provider call is a POST with side effects (rate lock, quote hold,
-      metering), providers see duplicate requests. This is a new retry layer under "no change
-      to retries."
-    → Third-order (client does not retry): a small error spike that only appears off-peak. Daytime
-      dashboard watching misses it, and it bites the first customer of the morning.
+→ First-order: quotes are faster
+  → Second-order: the handshake share stops being a meaningful tail signal; dashboards and alerts
+    tuned to the old latency profile lose sensitivity
+  → Second-order: if quote callers fan out or retry on latency, slightly faster quotes slightly
+    raise throughput to providers (minor; not a real concern at 20 ms)
 ```
+Calibration: the 20 ms figure is plausible. With three provider calls per quote, roughly 22% of quotes include at least one handshake, so handshakes do sit in the p95 band. If the calls are parallel and handshakes are not the slowest leg, the gain will be smaller. This affects whether the project is worth it, not safety.
 
-**Outcome C: p95 quote latency drops ~20 ms**
+**Outcome 3: Two clients coexist, chosen per request.**
 ```
-→ First-order: faster quotes
-  → Second-order: within a quarter, someone tightens the quote SLO, an upstream timeout, or a
-    caller's budget to match the new p95
-    → Third-order: rollback is no longer free. Flipping the flag off now breaches an SLO or trips
-      an upstream timeout that didn't exist when the rollback was rehearsed. (See Reversibility Map.)
+→ First-order: each worker holds two live pools (classic and pooled) during 5% and 50% stages
+  → Second-order: at 5%, the pooled pool is sparsely used, so its connections idle longest, which
+    maximises stale-connection reuse against the LB idle timeout
+    → Third-order: the 5% stage may show *more* errors per pooled request than 100% would, or, if
+      the client validates idle connections, show *less* benefit than 100%. The 5% signal is noisy
+      in both directions and may cause a spurious rollback or false confidence
+  → Second-order: provider-side connection count is the sum of both pools, peaking at the 50% stage
 ```
-
----
 
 ## Coupling Analysis
 
 | Coupling | Visible / invisible | Notes |
 |---|---|---|
-| Retry/timeout logic ↔ client exception types | **Invisible** (behavioural contract) | Retry code very likely catches `pyrequest_classic.*` exception classes or inspects their attributes. If the new client raises different types, retries silently change. The proposal says retries don't change, but retries depend on the client's errors. |
-| Timeout semantics ↔ pool acquisition | **Invisible** | Pooled clients usually add a new wait: "acquire a connection from the pool." Under burst load with a small per-host pool cap, requests queue *before* the configured timeout starts, or a separate pool timeout fires with a new exception type. Same timeout values, different behaviour. |
-| Observability hooks (handshake count, tracing spans, trace-header injection, request logging) ↔ client | **Invisible** unless wired generically | If any of these attach through `pyrequest-classic` event hooks or adapters, the pooled arm loses them. The proposal's own success metric may be one of them. |
-| Process model (pre-fork / `--preload`, gevent, threads) ↔ module-level pool | **Invisible** | A pool created at import time in a pre-forking server is shared by every worker. Interleaved responses on shared sockets are a classic outcome. Classic's per-host pooling may have hidden this because its connections rarely lived long. Billing/Routing's clean record says nothing about it if their server model differs. |
-| Provider LB balancing ↔ connection lifetime | **Invisible** (cross-team) | See Chain A. The provider teams approved connection *count*, not connection *lifetime* or skew. |
-| Provider connection limits ↔ *all* callers | Partly visible | "10x our peak" counts our connections. Are Billing/Routing also pooled callers of the same providers? Limits are shared. Pod count × pool max × 3 providers during an autoscale event is the number to check, not average peak. |
-| Two pools resident during mixed stages | Visible on reflection | At 5%/50%, every pod holds a classic pool *and* a pooled pool. The connection count is briefly higher than either alone. Fine given 10x headroom, but worth stating. |
-| Test suite ↔ mocks of `pyrequest-classic` | **Invisible** | If unit/integration tests patch classic, the pooled path may have near-zero test coverage while CI stays green. |
-
----
+| Pool idle timeout vs internal LB idle/keep-alive timeout | **Invisible** (timing) | The client's idle timeout must be shorter than the LB's, or stale reuse occurs. This is the most important coupling, and it is exactly the boundary the proposal is crossing. |
+| Retry logic ↔ exception classes / idempotency of provider calls | **Invisible** (behavioural contract) | "Same API" covers the happy path. Retry code typically matches on exception types and status codes that may differ between libraries. |
+| TLS handshake dashboard ↔ client instrumentation | **Invisible** (convention) | The success metric may be client-specific. |
+| Provider load balancing / autoscaling ↔ connection churn | **Invisible** (behavioural) | Provider teams implicitly rely on quote-service's current reconnect rate to spread load. They confirmed connection *limits*, not load distribution. |
+| DNS-based failover / cert rotation ↔ connection lifetime | **Invisible** (temporal) | Infra changes that assume clients reconnect regularly. |
+| Client construction ↔ worker fork model | **Invisible** (process model) | Is the client created before or after fork? |
+| Flag service ↔ every provider call | **Visible** (config), partly invisible | A per-request read puts the flag SDK on the hot path. The default value when the flag service is unreachable decides which client runs during a flag outage. Confirm it defaults to classic. |
+| Shared dependencies between the two libraries | **Visible** (dependency manifest) | Both installed for a quarter or more. Pins on shared transitive deps (TLS, certifi, urllib-style core) can conflict on upgrade. |
 
 ## Confidence Inversions
 
-**"It has the same request/response API; the change is in connection handling only."**
-Scenario: on read timeout, classic raises `ReadTimeout(ConnectionError)` and pooled raises `PoolTimeout` or `ReadTimeout(TimeoutError)`. The retry wrapper's `except ConnectionError` no longer matches. In the pooled arm, a transient provider timeout now fails the quote instead of retrying. The error rate rises only in the pooled arm, and at 5% it is invisible in aggregate (Assumption 3). The bug is found at 50% or 100%, as "quote failures up, unclear why." Rollback fixes it, so severity is moderate. But it is exactly the bug class that the staged rollout is supposed to catch and won't at 5%.
+- **"Nothing downstream can tell which client made a call."** True for headers and body. False for connection behaviour, which is the whole point of the change. Providers see far fewer, much longer-lived connections. Scenario: a provider's LB uses least-connections balancing. Quote-service now holds a handful of persistent connections, which land unevenly and starve new instances during a scale-out. The provider team sees "quote-service" as a hot spot they cannot explain, because nobody told them its connection pattern changed.
 
-**"Nothing downstream of `quote-service` can tell which client made a call."**
-True at the HTTP message level, false at the connection level (Chain A). Scenario: a provider team spends a week debugging uneven backend CPU after the 100% flip and never connects it to this change. That is their incident, so they find out first.
+- **"The client holds no state beyond its connection pool… nothing to drain."** True for rollback, and rollback is genuinely clean. But the pool *is* state, carrying stale DNS, LB pinning, and certificates. Scenario: a rate provider migrates hosts behind a DNS change during the 100% stage. Classic-client traffic would have followed within minutes. Pooled traffic keeps hitting the old IPs until they are torn down, then fails in a burst.
 
-**"Rollback does not get harder over time."**
-Mostly true mechanically. Inverted scenario: three things make it harder.
-1. A rollback at 100% means every pod opens fresh classic connections to three providers within the same ~10 s window. That is a synchronized handshake burst the 1% rehearsal never exercised.
-2. SLOs or timeouts get tuned to the new latency (Chain C).
-3. If the reason for rolling back is a correctness bug, the wrong quotes already issued are not rolled back by the flag.
+- **"We rehearsed this… no failed quotes."** The rehearsal proved *flipping* is safe. It did not prove *running* is safe. Synthetic load at 1% is steady, so connections never idle past the LB timeout, no provider deploys, and no DNS changes. Scenario: the failure mode is "first request after 60+ s of idle on a given connection fails". It appears at night and on low-traffic provider endpoints, and never under synthetic load.
 
-**"Billing and Routing have run it in production for over a year."**
-Scenario: they run an async server with a version pinned 18 months ago. Quote-service runs pre-fork gunicorn with a newer version that changed default pool size or stale-connection retry behaviour. Their year of production says nothing about the configuration that actually ships here.
-
-**Silent correctness (Assumption 7).**
-Scenario: a response body is not fully consumed. For example, the parser reads a size-limited prefix, or an error path returns early without draining. Under classic this was harmless, because those connections were rarely reused. Under pooled, the leftover bytes stay on the socket and the next request reads them. Most mature pooled clients guard against this, but in a pricing service the failure mode is "customer receives another lane's rate," not a 500. No dashboard in the rollout plan would show it. Probability is low and severity is high, because quotes may be honoured or contractual.
-
----
+- **"Billing and Routing have run it for over a year."** Scenario: both teams call services that bypass the internal LB, or use idempotent GETs where auto-retry hides stale-connection errors. Their year of clean running then says nothing about POSTs through the LB.
 
 ## Adversarial Scenarios
 
-1. **Peak freight volume lands inside a stage (realistic: month-end/quarter-end, or a carrier disruption).**
-   Load is several times the normal day during the 50% or 100% stage. The per-host pool cap becomes the bottleneck, and requests queue for connections. p95 *rises* in the pooled arm under peak even though it fell at normal load. With 3-day stages that don't span a peak, the team ships to 100% believing the latency win holds everywhere. Worst realistic case: a degraded month-end quote window, recoverable by flag-off, but during the worst possible week to also be absorbing the rollback handshake burst.
+1. **Rollout lands on peak freight season.** The proposal is "Ready to start" on 2026-11-20 (Friday). Starting Monday 11-23 puts 50% on 11-26 (Thanksgiving) and 100% around Black Friday/Cyber Monday, during peak-season shipping volume. Realistic worst case (~10–20%): a load-dependent pool bug or provider hot-spotting surfaces at the 50% step during a traffic peak. The flag-off still works, but the incident happens when on-call is thin and the business cost of failed quotes is highest. Mitigation is calendar-level: pause at 5% through the holiday, or wait for any change freeze to lift.
 
-2. **A provider deploys or scales during the 100% stage.**
-   Pinned connections go to draining instances, and errors arrive in correlated bursts across all quote-service pods (Chain A). Hot backends on the provider side push provider latency up, which cancels the 20 ms gain. Worst realistic case: a provider-side incident that is hard to attribute because it presents as provider instability.
+2. **Provider deploy or scale event during 50–100%.** Realistic worst case: a rate provider does a rolling deploy. Pooled connections to draining instances reset together, retry behaviour differs from the classic client, and a burst of failed quotes lasts tens of seconds. Error rate spikes briefly, which may not trip a rollback threshold but does fail real customer quotes. It recurs on every provider deploy.
 
-3. **The 5% stage returns a clean result that means nothing.**
-   No per-arm metrics exist, or the handshake metric is library-specific. The team advances to 50% on a non-signal. This is the most likely "hostile" scenario: about 20–40% likely in my estimate, since per-flag-arm metric tagging is often missing in practice. It turns the staged rollout into a two-stage rollout (50%, 100%) without anyone deciding that.
-
----
+3. **Load at 2–3x projection (peak season, autoscaled quote-service).** Realistic worst case: quote-service autoscales out, and each new worker opens its own pools across three providers for both clients. Idle-held connections approach provider limits faster than "10x peak" suggests, because that figure was likely measured in active connections under the classic client.
 
 ## Reversibility Map
 
-| Timepoint | What reversal requires | Difficulty |
-|---|---|---|
-| **1 week** (5% or 50% stage) | Flag off; classic pool is still warm because it carries most traffic. Exactly the rehearsed case. | Trivial |
-| **1 month** (100% for weeks) | Flag off. The classic pool is cold on every pod, so a synchronized handshake burst hits three provider LBs within ~10 s. This was never rehearsed above 1%. Also: does anything still exercise the classic path (tests, a staging canary)? If not, it has rotted silently, e.g. a dependency bump broke it. | Easy, with one unrehearsed cliff (the burst) |
-| **6 months** (past "at least one quarter") | If the cleanup change has landed, reversal is a re-implementation plus re-rollout. Even if it hasn't, SLOs or upstream timeouts may now assume the new p95, and provider teams may have resized capacity around fewer, longer connections. | Moderate. Organisational rather than technical. |
-| **Any time, if the reason is a correctness bug** | The flag stops new wrong quotes. Quotes already issued, stored, and possibly accepted are not reversed. | **Irreversible for the affected quotes** |
+| Timepoint | What reversal requires |
+|---|---|
+| 1 week | Flip the flag off. Effective in ≤10 s, rehearsed in production. |
+| 1 month | Same. The old client is still installed and its code path still exercised by the flag. |
+| 6 months | Same, *provided* the flag and old client are still in place. The proposal says they stay at least a quarter, and their removal is its own reviewed change, which by definition is not a cliff of this change. |
 
-**Cliff edges:**
-- **The cleanup PR.** Expected and acknowledged by the proposal, which is fine.
-- **Full-traffic rollback burst.** Unrehearsed, though probably survivable given 10x headroom.
-- **Issued quotes under a silent correctness bug.** The one genuinely irreversible path.
+**The gradient is flat.** No data is written in a new format, no other team is asked to change, and the old path stays live. Things that are *not* cliffs and are noted only for completeness: the one-off handshake spike when flipping back (a rollback cost that returns to today's load), and any quotes that failed while the flag was on (a consequence, not a reversal obstacle).
 
-The proposal's claim of a flat gradient is right for *data and code*. It is incomplete for *commitments made through the system*.
-
----
+One watch item, not tagged as a cliff because the proposal does not cause it: if provider teams later rightsize TLS termination capacity because quote-service's handshake load dropped, flipping back would quietly need their capacity back. Telling them the old pattern may return before the flag is removed keeps the gradient flat.
 
 ## Cost of Success
 
-The world after success: quote-service runs on `pyrequest-pooled` at 100%, the handshake share is under 1%, and p95 is about 20 ms better. Compared with today, it is worse in these ways:
+Picture the world after full success: handshakes under 1%, p95 down ~20 ms, the flag at 100%, both clients in the module for a quarter or more. What's worse than today:
 
-- **Complexity cost:** Connection-level state now persists. Future intermittent failures (stale sockets, pinned backends, pool exhaustion) are stateful and time-dependent, which makes them harder to reproduce than today's mostly stateless behaviour. For a quarter or more there are two code paths, two dependency trees, and in principle a doubled test matrix.
-- **Maintenance cost:** `pyrequest-classic` stays installed and must keep receiving security bumps for a path that serves 0% of traffic. Pool sizing per host becomes a tuning knob someone must own as traffic grows.
-- **Optionality cost:** Small. A future move to an async client or a service mesh would replace this anyway. Long-lived connections slightly reduce the provider teams' freedom to rely on per-connection balancing.
-- **Opportunity cost:** Low, because the change is small. Note that 20 ms on p95 is a modest win. If any "must address" item below grows into real work, the effort-to-benefit ratio changes, and it is worth re-asking whether the cost is still justified.
+- **Complexity:** two client libraries and two code paths in the module every provider call goes through. Anyone debugging a provider error must first ask which client handled it. Logs and errors need to record that, or incidents get slower to diagnose.
+- **Maintenance:** two libraries to patch for CVEs and keep compatible with shared transitive dependencies, for at least a quarter.
+- **Optionality:** "temporary" flags at 100% have a way of becoming permanent. Removal is promised as its own change; without a date or owner it may never happen. The old path then rots untested while still nominally being the rollback.
+- **Observability:** the handshake dashboard stops being informative, and connection-level problems (staleness, pinning) need new signals that do not exist today.
+- **Opportunity:** small. This is a small change; the opportunity cost is real but modest.
 
-None of these is large. This is a cheap change if it works.
-
----
+None of these is severe. Together they are the price of a ~20 ms win, and they are worth naming so the cleanup actually gets scheduled.
 
 ## Findings Summary
 
-- `[UNEXAMINED ASSUMPTION]` `[HIDDEN COUPLING]` Retry and timeout handling likely depend on `pyrequest-classic` exception classes; "same API" may not include the same exceptions. `[NOVEL]`
-- `[UNEXAMINED ASSUMPTION]` The flag may select a per-request client instance rather than a long-lived one, which would defeat pooling and risk socket leaks. `[NOVEL]`
-- `[UNEXAMINED ASSUMPTION]` Rollout metrics may not be split by flag arm; at 5% neither the win nor a regression is visible in aggregate. `[NOVEL]`
-- `[HIDDEN COUPLING]` The TLS-handshake count, tracing, and request logging may be emitted via classic-specific hooks; the pooled arm could under-report. `[NOVEL]`
-- `[HIDDEN COUPLING]` A module-level pool combined with a pre-forking server can share sockets across workers. Billing/Routing's record doesn't cover it if their process model differs. `[NOVEL]`
-- `[HIDDEN COUPLING]` Pool-acquisition wait is a new latency and timeout mode under burst, not covered by "timeouts unchanged." `[NOVEL]`
-- `[SECOND-ORDER EFFECT]` Long-lived connections pin to provider backends, which skews load and blunts provider autoscaling. Today's 8% churn was doing the rebalancing. `[NOVEL]`
-- `[SECOND-ORDER EFFECT]` Stale idle connections cause off-peak errors, or internal client retries that duplicate non-idempotent provider calls. `[NOVEL]`
-- `[SECOND-ORDER EFFECT]` Correlated error bursts across pods during provider deploys. `[NOVEL]`
-- `[UNEXAMINED ASSUMPTION]` Silent correctness failures (response desync) would produce mispriced quotes that no rollout dashboard detects. `[NOVEL]`
-- `[UNEXAMINED ASSUMPTION]` Three-day stages may not include peak freight load, where pool caps matter most. `[NOVEL]`
-- `[UNEXAMINED ASSUMPTION]` Provider headroom of "10x our peak" may not account for autoscaled pod count × pool max, or for other teams' pooled connections to the same providers. `[NOVEL]`
-- `[REVERSIBILITY CLIFF]` Rollback from 100% causes a synchronized fresh-handshake burst from every pod; rehearsed only at 1%. `[NOVEL]`
-- `[REVERSIBILITY CLIFF]` SLOs or timeouts tightened to the new p95 make rollback an SLO breach. `[NOVEL]`
-- `[REVERSIBILITY CLIFF]` Quotes issued under a correctness bug are not reversed by the flag. `[NOVEL]`
-- `[SUCCESS COST]` Stateful connection failures are harder to debug; a dead dependency path needs security upkeep for a quarter; pool sizing becomes an owned knob. `[NOVEL]`
-
----
+- `[UNEXAMINED ASSUMPTION]` `[NOVEL]` The rollout's success signal (TLS handshake dashboard) may be instrumented only in `pyrequest-classic`, which would make pooled traffic read as zero handshakes.
+- `[UNEXAMINED ASSUMPTION]` `[NOVEL]` The pool idle timeout vs the internal LB idle timeout is unverified. Stale-connection reuse is the defining risk of crossing the keep-alive boundary.
+- `[UNEXAMINED ASSUMPTION]` `[NOVEL]` "Same API" may not mean the same exception classes and timeout semantics, so unchanged retry logic could behave differently, especially for non-idempotent provider calls.
+- `[UNEXAMINED ASSUMPTION]` `[NOVEL]` Billing/Routing experience may not transfer (different LB path, methods, traffic shape, concurrency model).
+- `[HIDDEN COUPLING]` `[NOVEL]` Client construction vs the worker fork model risks shared pooled sockets across processes.
+- `[HIDDEN COUPLING]` `[NOVEL]` Provider load balancing and autoscaling depend on today's connection churn. Long-lived connections pin to instances.
+- `[HIDDEN COUPLING]` `[NOVEL]` DNS failover and certificate rotation assume clients reconnect regularly.
+- `[HIDDEN COUPLING]` `[NOVEL]` A per-request flag read puts the flag service on the hot path. Its outage default decides which client runs.
+- `[SECOND-ORDER EFFECT]` `[NOVEL]` At 5%, pooled connections idle longest, so the first stage's signal is noisy and may mislead in either direction.
+- `[SECOND-ORDER EFFECT]` `[NOVEL]` Both pools coexist during staged rollout; provider connection count peaks at the 50% stage and scales with autoscaling.
+- `[SECOND-ORDER EFFECT]` `[NOVEL]` Provider deploys produce burst resets rather than trickles.
+- `[UNEXAMINED ASSUMPTION]` `[NOVEL]` Rollout timing likely overlaps Thanksgiving and peak freight season.
+- `[SUCCESS COST]` `[NOVEL]` Two clients and two paths for a quarter or more; the flag removal has no date or owner; the handshake dashboard loses meaning; diagnosis needs a "which client" field.
+- No `[REVERSIBILITY CLIFF]`: the gradient is flat.
 
 ## Recommendations
 
-**Must address before proceeding (before step 2, the 5% stage):**
-1. **Tag provider-call latency, error rate, and handshake count by flag arm**, and gate each stage on pooled-vs-classic comparison, not the aggregate. Confirm the handshake metric is emitted independently of the client library, for example from the LB or socket level, or verify that both clients emit it. Without this, the 5% stage is not a test. *Cost: hours.*
-2. **Audit the exception path.** List every exception the retry and timeout code catches, and confirm `pyrequest-pooled` raises compatible types for connect timeout, read timeout, connection reset, pool timeout, and DNS failure. Add a test that runs the retry wrapper against both clients with injected faults. *Cost: an hour or two.*
-3. **Confirm the pool is long-lived and fork-safe.** It should be a single client instance per process, created after fork (or lazily on first use), not per request and not at import under `--preload`. *Cost: a code read.*
+**Must address before proceeding** (all cheap; none challenges the plan's shape):
+1. **Verify the success and failure signals work for both clients.** Confirm the handshake metric, latency, and error rate are emitted equivalently by `pyrequest-pooled`, and tag every provider-call metric and log line with which client served it. Without this, the staged rollout cannot see what it is staging.
+2. **Pin the pooled client's idle timeout below the internal LB's idle timeout**, and confirm how it handles a reset on a reused connection for the provider calls' HTTP methods. If those calls are POSTs, test the stale-connection path explicitly: idle a connection past the LB timeout, then send.
+3. **Confirm the client is constructed per worker, after fork**, not at import in a pre-forking server.
+4. **Check the calendar.** Don't advance beyond 5% across Thanksgiving and Black Friday/Cyber Monday, or respect any existing peak-season change freeze.
 
 **Worth mitigating:**
-- **Max connection lifetime and idle eviction.** Set the pooled client's idle timeout below the LB/provider idle timeout, and set a max lifetime of minutes so connections recycle and rebalance across provider backends. Tell the provider teams the change is to connection *lifetime*, not just count. Watch signal: per-backend request skew on provider dashboards.
-- **Stale-connection retries.** Check whether the pooled client retries automatically on stale connections, and whether provider calls are idempotent. If they are not, disable automatic retry for non-idempotent methods.
-- **Correctness spot-check.** If providers echo a request ID or the request parameters, assert the echo matches in the pooled arm and alert on mismatch. If they don't, sample-compare pooled-arm quotes against a classic re-request during the 5% stage. Low probability, but in a pricing service it is the only failure the flag can't undo.
-- **Stage timing.** Make sure the 50% or 100% stage spans at least one peak window, and that stages include a full night or weekend to catch idle-staleness errors. Check that the per-host pool cap sits above per-pod peak concurrency per provider.
-- **Rollback burst.** Either rehearse a flag-off at 50% under real traffic, or confirm with the providers that a simultaneous reconnect from all pods is within LB handshake capacity.
-- **Keep the classic path alive.** Keep it exercised in CI and in a staging canary during the quarter so the rollback target doesn't rot. Note in the SLO change log that the latency win depends on this flag until cleanup lands.
+- Set a maximum connection lifetime (e.g., minutes, not hours) if `pyrequest-pooled` supports it. This bounds DNS staleness, LB pinning, and cert-rotation lag at a negligible cost to the handshake gain. Ask Billing/Routing what they use.
+- Cap pool size per host. Add a dashboard of open connections per provider, summing both pools, and check it against provider limits at the 50% stage.
+- Hold the 50% stage across at least one provider deploy, or coordinate one deliberately, and watch for burst resets. Extend stages to cover a weekly peak rather than a fixed three days.
+- Confirm the flag's default when the flag service is unreachable is `off` (classic).
+- Tell provider teams the connection *pattern* is changing (fewer, longer-lived), not just the count. Ask them to check least-connections balancing and autoscaling behaviour.
 
 **Acknowledged risks:**
-- Two pools resident during mixed stages briefly raise connection count. Acceptable given the confirmed 10x headroom.
-- Carrying `pyrequest-classic` for a quarter costs a little maintenance. Acceptable, and it is the price of a real rollback path.
-- Losing the rollback path when the cleanup change lands. Acceptable, since the proposal already gives cleanup its own review.
+- Carrying two client libraries for a quarter is an acceptable price for a rehearsed, instant rollback. Give the removal change an owner and a target date now so the flag does not become permanent.
+- The 20 ms p95 estimate may come in lower if provider calls are parallel. This affects the value of the change, not its safety, and the rollout measures it directly.

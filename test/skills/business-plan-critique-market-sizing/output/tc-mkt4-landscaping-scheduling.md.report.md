@@ -4,132 +4,137 @@
 
 ## TAM Definition Assessment
 
-**Verdict:** Not Claimed
-**Confidence:** High
+**Verdict:** Plausible
+**Confidence:** Medium
 
-The plan deliberately skips a top-down TAM. It argues that the broader field-service software category is dominated by one-off-repair trades like HVAC and plumbing. This is the right call. Most pitches fail this lens by claiming a slice of a category report that doesn't match the product, and Plotwise avoids that trap explicitly.
+This TAM section is more disciplined than most. The plan deliberately declines to borrow a top-down figure from the broader field-service software category. Its reason is correct: HVAC and plumbing are one-off repair work, while landscaping is recurring route work. That category-report misfit is the most common way TAM gets inflated, and the plan avoids it. There is no adjacency creep, and the methodology is disclosed. The arithmetic checks out: 96,000 × 45% = 43,200, and 43,200 × 40% = 17,280.
 
-The cost of that restraint is that the plan never states its own ceiling, and an investor will compute it anyway. The plan's inputs imply a three-tier funnel:
+The plan never states a TAM in dollars, so here is the implied figure:
 
-| Layer | Count | × $3,600/yr |
-|---|---|---|
-| All US employer landscaping firms | 96,000 | $345.6M |
-| Two-plus-crew firms (45%) | 43,200 | $155.5M |
-| Serviceable: already pays for software (40%) | 17,280 | $62.2M |
+- **Implied bottom-up TAM:** 43,200 two-plus-crew firms × $3,600 = **~$156M** a year.
+- **With all 96,000 employer firms:** ~$346M, but the plan correctly excludes owner-plus-truck operators.
 
-At current pricing, the whole addressable universe is about $155M, and the serviceable layer is $62M. Those figures assume 100% share. That is the market story's central fact, and the plan should own it rather than leave the reader to work it out. A $62M ceiling is not disqualifying. But it shapes which investors this plan fits and what expansion story it needs (see Overall Assessment).
+Two issues:
 
-Two smaller points:
-- **Pricing.** The $300 flat price is applied uniformly to firms ranging from two crews to, presumably, twenty. If pricing scales with crews or visits, the ACV side of the build is understated. That is the cleanest legitimate lever on the ceiling, and it is not adjacency creep.
-- **Employee data used as crew data.** The 45% "two-plus-crew" figure is derived from payroll data, which counts employees, not crews. The employees-per-crew conversion is unstated. It also sits awkwardly beside "most are very small: an owner and a truck." 45% is close enough to half that the two claims deserve reconciling.
+1. **The 45% figure is a proxy-mapping assumption, not a measurement.** "Industry payroll data" counts employees, not crews. Getting from employee-count bands to "two or more crews" requires an assumed crew size. Crew sizes vary by season and service mix, and many firms add seasonal labor. This mapping is load-bearing because every downstream number scales linearly with it. The plan should state the employee threshold it used (for example, "≥6 employees ≈ 2 crews") and why.
+2. **The flat $3,600 ACV understates the top of the market and overstates the bottom.** A 2-crew firm and a 25-crew firm pay the same price. That makes the dollar TAM a count-of-firms figure in disguise. It also means the plan has no lever to grow the ceiling except firm count.
+
+The real headline is not inflation but **size**. A realistic TAM near $150M and a SAM near $60M (see below) is a ceiling the plan should confront openly in a venture raise. That is a market-sizing finding in its own right.
 
 ## SAM Realism Assessment
 
 **Verdict:** Plausible
 **Confidence:** Medium
 
-This is the strongest section of the plan. It uses a **behavioral** filter (already paying for scheduling or invoicing software) on top of a descriptive one (two-plus crews), and grounds that filter in observed conversion behavior. Few pre-seed plans do this. The ACV-segment match is also coherent: a single price point sized against a single segment.
+Using a behavioral filter ("already paying for scheduling or invoicing software") rather than size alone is exactly right, and grounding it in 400 sales conversations is better than most pre-seed plans manage. Three problems sit inside that filter, however.
 
-Three issues likely mean $62.2M is an upper bound rather than a central estimate.
+1. **The filter measured is broader than the buying signal described.** The plan says buyers are firms using "a generic calendar plus a separate invoicing tool, and complaining about the gap." The 40% figure, though, counts firms paying for "scheduling *or* invoicing software." That wider set includes firms already on a purpose-built landscaping or field-service tool. Those firms have no gap to complain about; they are competitive displacement targets, a much harder sale.
+   - I believe several such tools exist (Jobber, LMN, Aspire, Service Autopilot, WorkWave/Real Green), but I have not verified their landscaping penetration.
+   - If even a third of the "already paying" group sits on vertical tools, true SAM falls from ~17,300 to ~11,500 firms.
+   - **Action:** split the 400-conversation data into "generic stack," "vertical tool," and "paper." The plan already has this data.
+2. **The 40% ratio comes from a biased sample.** The conversations are Texas-only, arrive partly through an association partnership, and involve prospects who agreed to a sales call. Firms that take a software sales call are more software-forward than the population. Applying that ratio nationally likely overstates the behavioral share, especially in regions with different adoption patterns.
+3. **The national SAM contradicts the plan's own strategy.** The plan expands only into the Sun Belt "where the season is long enough that companies run crews year-round." It cites Snowline's failure from short seasons as the cautionary tale. Yet SAM and year-5 share are measured against all 17,280 firms nationwide. Northern, seasonal firms are by the plan's own reasoning a churn risk, not a serviceable market. **The relevant SAM is a Sun Belt SAM, which the plan never computes.**
 
-1. **The 40% ratio comes from a biased sample.** Companies that took a sales call are not a random draw of two-plus-crew firms. They skew toward association members, inbound leads, and owners already thinking about software. The share of the general population paying for software is probably lower than 40%, possibly much lower. The 400 conversations may also include one-crew firms, which would change the base. The plan should say how the 400 were sourced.
+The Texas figure is internally consistent: 1,500 is ~8.7% of 17,280, which is broadly in line with Texas's share of US population. The plan should still confirm that the 1,500 uses the same three filters.
 
-2. **The behavioral filter is looser than the buyer description.** The plan says buyers are firms paying for software *and complaining about the gap* between calendar and invoicing. The 40% captures only the first condition. Some of those firms already use an integrated or vertical tool and feel no gap. These are displacement prospects, not easy wins.
+The plan also has the data to show behavioral conversion directly: 58 closes from 400 conversations is 14.5%. If most closes came from the ~160 software-paying prospects, that segment converts at ~35%. Stating this would make the SAM argument much stronger.
 
-3. **The SAM contradicts the plan's own seasonality lesson.** The expansion plan targets the Sun Belt "where the season is long enough that companies run crews year-round." The Snowline comp failed because "the season was too short to keep customers paying year-round." Yet the $62.2M SAM is national and includes every northern firm that mows seven months a year. If seasonality matters enough to drive the expansion map, it belongs in the SAM.
-   - I can't verify the Sun Belt share of the 17,280 firms. If it's roughly 40–50%, the near-term SAM is about 7,000–8,500 firms, or $25–31M.
-   - The national figure can stay as a long-run number, provided the plan shows how northern firms get retained through winter.
-
-**Estimated contraction:** If the 40% ratio is a moderate overstatement and the SAM is limited to year-round regions, the realistic serviceable market is plausibly 2–3× smaller than the headline, roughly $20–30M. This is not fatal for a beachhead business, but it matters for the ceiling question.
+**Realistic SAM:** with the vertical-tool exclusion and a Sun Belt restriction, it is plausibly a few thousand to ~8,000 firms, or roughly **$15–30M** in revenue at $3,600. Treat that range as an illustration, not an estimate. The plan needs to compute it.
 
 ## SOM Achievability Assessment
 
-**Verdict:** Inflated (near-term); year-5 target Plausible
+**Verdict:** Plausible
 **Confidence:** Medium
 
-**Implied share.**
-- **Year 2:** 400 Texas firms out of 1,500 is a 26.7% share. A 20–40% share of a beachhead is achievable in principle, and the association partnership is a real reason Texas could run hot. Note that "1,500 qualifying companies" must be the *serviceable* count, after the software filter, for the "quarter" math to work. If it's actually the two-plus-crew count, serviceable Texas is about 600 firms and the target is 67% share. The plan should state which.
-- **Year 5:** 900 firms is 5.2% of national serviceable, as the plan says. But the plan won't be selling nationally by year 5; it will be selling in Texas plus the Sun Belt. Against a Sun Belt-only SAM, year-5 share is probably 10–13%. That is high for five years but plausible given the low absolute numbers. The 900 / $3.24M ARR target is modest, and the modesty is a credibility asset.
+The share arithmetic is internally correct:
 
-**Sales capacity is the binding constraint, and the plan's numbers don't reconcile.**
+| Milestone | Customers | Share | Check |
+|---|---|---|---|
+| Year 2, Texas | 400 | 400 / 1,500 = 26.7% | Matches "a little over a quarter" |
+| Year 5, national | 900 | 900 / 17,280 = 5.2% | ARR = 900 × $3,600 = $3.24M ✓ |
 
-| | Figure |
-|---|---|
-| Demonstrated productivity | 58 customers ÷ 2 reps ÷ 9 months ≈ **3.2 closes/rep/month** |
-| Assumed productivity at full ramp | **15 closes/rep/month**, about 4.7× demonstrated |
-| Required pace to hit 400 in the 18-month runway | 342 net adds ≈ **19/month**, about 3× the current 6.4/month |
+The beachhead logic is the healthy kind: a named state, an association channel, and a 20–40% wedge share. The problem is the sales-capacity model, which does not match either the plan's history or its own targets.
 
-With two new reps ramping, the 18-month target needs roughly 1.5–1.7× demonstrated productivity across the team, and that is before any churn. This is a stretch but reachable, and it is the real milestone the raise is buying.
+1. **Observed productivity is far below the assumed rate.**
+   - Today: 2 reps, 58 closes in 9 months, so **~3.2 closes per rep per month**, from ~22 conversations per rep per month.
+   - Plan: **15 per rep per month**, about 4.7× observed.
+   - At the current ~35% close rate within the qualified segment, 15 closes would need ~43 qualified conversations per rep per month. That is roughly double each rep's *total* current conversation volume.
+2. **The 15/month figure contradicts the year-5 target.**
+   - Four reps × 15 × 12 = **720 new customers a year**. Two full years at that rate alone exceeds the year-5 total of 900.
+   - Either churn is very high (unstated), the 15/month figure is not the real assumption, or the real constraint is something other than reps, such as Sun Belt market depth or competition.
+   - The plan should say which. As written, the capacity model and the share plan describe two different companies.
+3. **The year-2 Texas target is aggressive but reachable.**
+   - It needs 342 net new customers in 18 months, about 19 a month.
+   - With 4 reps, two of them ramping, that requires ~5–6 per rep per month, roughly 1.5–2× today's rate.
+   - That is a credible stretch with the association channel, not a fantasy. It is still 27% of a state's qualified firms, taken from roughly 4% today.
+4. **The rest of the Sun Belt is the unexamined piece.** Only 500 customers come from outside Texas over three years. Without a Sun Belt SAM, there is no way to tell whether that is 5% or 15% of the reachable market. There is also no stated association partnership outside Texas to replicate the beachhead channel.
+5. **The 900 figure ignores churn.** Whether 900 is gross or net matters for share. The churn rate itself belongs to unit economics.
 
-The 15/rep/month figure also conflicts with the plan's own long-range target. Four reps at 15/month would close 720 firms a year, so years 3–5 alone would add about 2,000 firms, far past the 900 target. Either rep productivity is overstated, or the plan expects heavy churn it hasn't disclosed. One of the two numbers is wrong, and the plan should pick.
-
-A related ambiguity: "end of year two" versus "18 months of runway to 400." Is year two measured from founding (nine months already elapsed) or from the raise? This changes the required monthly pace by about 30%.
-
-**Most constraining bottleneck:** rep productivity outside the association channel. Texas closes may be partly the partnership's effect, and that won't carry into states without one.
+The most constraining bottleneck is the **expansion path**, not rep count. The plan has a credible Texas wedge and an under-specified second market.
 
 ## Market Timing Assessment
 
 **Verdict:** Speculative
 **Confidence:** High
 
-All three "why now" arguments are persistent trends, not triggers:
+All three "why now" claims are persistent trends, not triggers:
 
-| Claim | Problem |
-|---|---|
-| Smartphones in crew leads' pockets | True for roughly a decade |
-| SMBs moving operations to the cloud | A 2010s story |
-| A new generation of owners taking over | Ongoing and gradual; no dated inflection |
+- **Smartphones in every crew lead's pocket:** effectively true for roughly a decade.
+- **SMB cloud adoption and comfort with monthly software:** true since the early 2010s.
+- **Generational handover of family businesses:** real, but gradual and continuous, with no inflection point.
 
-None answers the core question: **what changed in the last 24 months that makes this viable now and not in 2018?** As written, the section is "why ever," not "why now."
+None names a change in the last 1–3 years that made this product viable when it was not before. By the framing test (name the specific change in the last 24 months), this is a trend thesis.
 
-The plan's best timing evidence is actually in the SAM section. Forty percent of target firms already pay for scheduling or invoicing software and complain about the gap. That is revealed preference: the market is already spending money on a workaround. It rules out the "too early" failure mode and should be the lead of this section.
+The plan's own evidence also points toward "late" rather than "now":
 
-The plan doesn't address the symmetric "too late" risk. If target firms already buy software, some vertical tools probably exist. From general knowledge, I believe products such as Jobber, LMN, Aspire, and Service Autopilot serve landscapers, though I haven't verified their positioning or share. Either the market is earlier than those products suggest, or Plotwise is a late entrant positioning against them. The plan should say which. Possible specific triggers worth investigating, if any are true:
-- A labor-cost or crew-shortage shift that makes route efficiency newly valuable
-- A pricing change by an incumbent that pushed small firms out
-- A recent change in how commercial grounds contracts require proof-of-service (photos, logs)
+- If 40% of qualifying firms *already pay* for scheduling or invoicing software, the market is in the early majority, not at the innovator stage.
+- That is good news for revealed preference: firms are spending on substitutes today, so this is not category creation.
+- But it undercuts "ready for modern software in a way it has not been before." The market adopted modern software years ago. What it may lack is the *right* software for recurring-route work.
+
+**Suggested reframe:** drop the "why now" framing, or replace it with a "why this segment is underserved" argument. For example: horizontal field-service tools are built around one-off jobs, and recurring-route landscaping firms are stitching tools together, as the gap-complaint evidence shows. That argument rests on observed behavior and does not need a timing catalyst.
+
+If a genuine recent trigger exists, name it with dates. Candidates the author could investigate include labor-market shifts affecting crew sizes, recent changes to equipment or fuel costs, or a competitor's pricing change or acquisition that pushed customers off a tool.
 
 ## Comparable Benchmarks Assessment
 
 **Verdict:** Plausible
 **Confidence:** Medium
 
-Credit first: the plan names two negative comps alongside its positive one, which most pitches don't. The Snowline lesson (seasonality kills retention) is genuinely informative.
+The comp set has real strengths. It names one success, one failure-by-absorption, and one outright failure, which is better outcome-conditioning than most plans. Snowline is a genuinely useful negative comp because its failure mode (seasonality) maps directly onto a strategic choice the plan makes (Sun Belt only). The year-5 projection is also *conservative* against the anchor comp:
 
-Problems:
+- Poolroute: 3,000 customers in 8 years, about 375 a year.
+- Plotwise: 900 in 5 years, about 180 a year.
 
-- **Yardly is not a comp.** It is a consumer marketplace, with a different buyer, motion, and economics. Including it pads the negative set with a failure Plotwise trivially avoids, which makes the comp set look more balanced than it is. Drop it or replace it with a vertical B2B failure.
-- **Poolroute lacks a denominator.** 3,000 customers in eight years means little without the number of serviceable pool-service firms. If pool-service firms are far fewer than landscapers, Poolroute's share was high and the benchmark is aggressive. If they're comparable, it's ordinary. On trajectory alone, 900 firms at year 5 sits at or below a Poolroute-like path, so this comp supports the plan's numbers rather than stretching them.
-- **Snowline signals the outcome ceiling as well as the seasonality risk.** A single-trade route tool that peaked at 600 customers and was folded into a broader suite suggests what exit looks like for this category. The plan should engage with that, since it bears on what the market can support.
-- **The most relevant comps are missing.** There are no landscaping-specific software companies, successful or failed, in the set. Analogs in adjacent trades are fine as supplements, but the core comparison should be companies already selling into this exact buyer. Their absence will read to an investor as unresearched or avoided.
+Four problems:
+
+1. **The direct comps are missing.** The claim that "three companies have tried to build route-based scheduling for a single outdoor trade" is, I believe, too narrow (unverified). Landscaping-specific and field-service tools that serve landscapers appear to exist and compete for the same "already paying" segment. These are the comps that bound Plotwise's share and pricing, and they are also competitors. The plan should name them, along with their approximate customer counts and price points. The competitive-response dimension belongs to the moat critique.
+2. **Yardly is not a comparable.** It was a consumer marketplace with a different buyer, motion, and revenue model. Its failure teaches nothing about B2B scheduling software, and it pads the negative-comp list without informing the projection.
+3. **Poolroute's market depth is unstated.** 3,000 customers means something very different if pool service has 20,000 qualifying firms versus 5,000. Without Poolroute's denominator, the comp shows a customer count but not a share benchmark. State Poolroute's implied share and compare it to the 5.2% (or recomputed Sun Belt) share.
+4. **Poolroute is cited for pace, not for scale.** The comp's best outcome, about 3,000 customers and profitable, at Plotwise's price would be roughly $11M ARR. Even top-comp performance therefore lands Plotwise as a solid, profitable small software company. That may be the right company to build, but the plan should state it plainly to pre-seed investors rather than let them infer it.
 
 ## Factual Foundation
 
-No fact-check report was provided. The claims that would most benefit from verification:
+No fact-check report was provided. These claims would most benefit from verification, in priority order:
 
-1. **96,000 employer firms and the 45% two-plus-crew share.** This is the base of the entire funnel. Check the source (likely Census County Business Patterns or similar) and the employees-per-crew mapping behind "two-plus crews."
-2. **The 40% software-adoption ratio.** This is internal data, not external, but it is the single most load-bearing input in the plan. Document the sampling: how the 400 conversations were sourced and how many were two-plus-crew firms.
-3. **Comp figures and the competitive landscape.** Verify Poolroute's customer count and the size of its addressable market, Snowline's outcome, and the existence and scale of landscaping-specific competitors not named in the plan.
+1. **The 96,000 firms and the 45% two-plus-crew share.** Check the source (likely Census County Business Patterns or BLS data for landscaping services) and the employee-to-crew mapping. Every downstream number scales with these.
+2. **The "only three single-trade route schedulers" claim, and the Poolroute and Snowline figures.** Verify the comps' customer counts and outcomes. Separately check whether landscaping-specific competitors exist and at what scale. If they do, the comp set and the SAM filter both need revision.
+3. **The 1,500 qualifying Texas companies.** Confirm it was derived with the same size and behavioral filters as the national figure.
+
+The 40% behavioral ratio is internal data, so it cannot be externally fact-checked. Its sampling method (who got a sales call, and how) should be disclosed.
 
 ## Overall Assessment
 
-**Strongest lens: SAM.** The behavioral filter is grounded in sales data, and the plan declines to inflate the market with a mismatched category report. This is a more honest market build than most pre-seed plans offer.
+**Strongest lens: TAM and SAM methodology.** The plan refuses an ill-fitting top-down category figure, builds bottom-up, and applies a behavioral filter grounded in its own sales data. It also names a negative comp whose lesson it actually applies. This is a more honest market story than most pre-seed plans.
 
-**Weakest lens: Market Timing.** All three timing arguments are decade-old trends. A close second is the sales-capacity assumption inside SOM, where 15 closes/rep/month is about 4.7× demonstrated and doesn't reconcile with the plan's own year-5 target.
+**Weakest lenses: timing and the capacity model.**
 
-**The single most important revision: state the ceiling and show the path past it.**
+- The "why now" is three decade-long trends.
+- The 15-closes-per-rep assumption is about 4.7× observed productivity and contradicts the plan's own year-5 target.
 
-1. **State the ceiling explicitly.** The honest build implies $62M ARR at 100% serviceable share, and a smaller near-term figure once seasonality is applied. Year 5 is $3.2M.
-2. **Address the ceiling with a sized, separately presented expansion case.** Candidates include:
-   - Per-crew or per-visit pricing to lift ACV for larger firms
-   - Payments or invoicing-processing revenue
-   - Adjacent recurring-route trades (pest control, commercial cleaning), each with its own bottom-up build
-3. **Or position deliberately.** If the expansion case doesn't hold up, pitch Plotwise as a capital-efficient vertical business to investors who fund that profile.
+**Unstated headline: the ceiling.** A national SAM near $62M, and probably $15–30M after a Sun Belt restriction and a vertical-tool exclusion, is not a problem the plan needs to hide. But it should be addressed directly. Name the path beyond it (crew-based pricing, adjacent recurring outdoor trades, payments or invoicing revenue) or position the company as capital-efficient rather than venture-scale.
 
-Either answer is defensible. Leaving the question unanswered is not, because every investor will run the 17,280 × $3,600 math in the first meeting.
+**Most important revision:** rebuild SAM as a **Sun Belt SAM** using the buying signal you actually observe, meaning firms on a generic calendar-plus-invoicing stack and excluding firms already on vertical tools. Then restate year-5 share against that denominator. Everything downstream depends on getting this denominator right: share, ceiling, comp benchmarking, and the size of the opportunity you're asking investors to fund.
 
-Second priority: replace the 15/rep/month assumption with demonstrated productivity plus an explicit ramp, and rebuild the 18-month milestone from that.
+**Second revision:** replace the 15/month rep assumption with a model built from your observed ~3.2 closes per rep per month and ~35% close rate within the qualified segment.
 
-**Out of scope, noted for sibling critiques:**
-- Seasonal churn and winter retention in northern markets affect LTV (unit-economics critique).
-- Displacement of existing vertical tools and the durability of the Texas association partnership as a distribution advantage are moat/distribution questions.
+You already have the data for both, and using it would turn a credible market story into a defensible one.

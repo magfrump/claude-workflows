@@ -1,131 +1,136 @@
-Here's the report. I printed it here as you asked and didn't save it to `docs/reviews/`.
+# Security Review: subject.go (`RequireToken` middleware)
 
----
-
-Commit: c18a9350d9bfd69f227b6d52f68e089fcccb5b92
-
-**User goal:** Security review of `subject.go` (the `RequireToken` bearer-token middleware), printed to stdout.
+**Scope:** `subject.go` (single file, scope given by the user)
+**Date:** 2026-11-20
+Commit: c13fa1bae85005a982881720a8cfde7d7cf9a1bd
+**User goal:** Security review of `subject.go`, with the report printed to stdout instead of saved to `docs/reviews/`.
 
 > ⚠️ **No code fact-check report provided.** Claims about security properties in comments and documentation have not been independently verified. For full verification, run the `code-fact-check` skill first or use the code-review orchestrator.
 
-# Security Review: subject.go (RequireToken middleware)
-
-**Scope:** `subject.go` (whole file; the repo has only this file and no callers, `Introspector` implementation or downstream handlers)
-**Date:** 2026-11-19
-
-**HALT not emitted:** Finding 1 is a fail-open authentication bypass. I've rated it Critical, but the HALT condition ("privileged endpoints reachable without authentication") depends on what `next` wraps and how it handles a missing principal. That code is outside the scope. If any wrapped route is privileged and doesn't check for the principal itself, treat Finding 1 as a HALT.
+> 🚨 **HALT: ESCALATE TO HUMAN**
+>
+> **Pattern:** Missing authentication on privileged endpoints (the auth middleware lets requests through when it fails)
+> **Location:** `subject.go:36-40`
+> **Detail:** When `Introspect` returns an error, `RequireToken` logs it and calls `next.ServeHTTP` anyway. That includes timeouts (the 800 ms deadline), network failures, and any introspector that reports an invalid token as an error. So any request with a non-empty `Authorization` header can reach the protected handler without authenticating, and an attacker can make this happen on purpose by overloading or slowing the introspection service.
+>
+> This finding requires immediate human attention before the remaining review is actionable.
+> Do not merge or deploy until this is resolved.
 
 ## Trust Boundary Map
 
 ```
-B1: [HTTP Authorization header]        → [TrimPrefix "Bearer " / empty check] → [Introspector.Introspect]
-B2: [Introspector response (p, err)]   → [err / nil branch in RequireToken]   → [next handler + principalKey in ctx]
-B3: [Introspector error / ctx cancel]  → [err != nil branch (fail-open)]      → [next handler, NO principal]
+B1: [HTTP Authorization header (client)] → [TrimPrefix "Bearer " + empty check] → [Introspector.Introspect (outbound)]
+B2: [Introspector result / error]        → [err / nil-principal branch]         → [next handler (authenticated zone)]
+B3: [Introspector error text]            → [log.Printf]                         → [application logs]
 ```
 
+**Input sources:**
+
 ```
-S1: Authorization header       — request-time      — UNTRUSTED (all sinks)
-S2: Introspector (p, err)      — request-time (ext)— trusted for identity when p != nil && err == nil;
-                                                     err is attacker-INFLUENCEABLE (timeouts, malformed
-                                                     tokens, load), so it is untrusted as an auth decision input
-S3: r.Context() cancellation   — request-time      — UNTRUSTED (client controls it by closing the connection)
-S4: 800ms timeout constant     — code-constant     — trusted
+S1: Authorization request header — request-time — UNTRUSTED (all sinks; sent outbound to the introspector)
+S2: Introspect() (*Principal, error) — request-time, external service — trusted for the principal's content
+                                        when err==nil && p!=nil; its *availability* is attacker-influenceable
+                                        (load, slow responses), so availability is UNTRUSTED for the auth decision
+S3: 800ms timeout constant           — code-constant — trusted
 ```
 
-Untrusted header data goes to an external introspection service, and the result decides whether a request reaches `next`. The code assumes that an introspection *error* is a harmless outage and not a decision input. But errors can be caused from outside (S1 contents, S3 cancellation, load against S4's 800ms budget), and on every error path the request goes through unauthenticated.
+The client-controlled header (S1) is the only input. The security decision is made at B2, and it depends on the introspector being reachable. Because the error branch lets the request through, an attacker who can influence S2's availability decides whether authentication happens at all.
 
 ## Findings
 
-#### 1. Authentication fails open on any introspection error
+#### 1. Introspection errors let the request through without authentication
 
 **Severity:** Critical
 **Location:** `subject.go:35-40`
-**Boundary:** B3 (and B2)
-**Move:** #3 (error path), #5 (invert access control), #11 (bypasses)
-**Confidence:** High that the mechanism exists; Medium on impact, which depends on how downstream handlers treat a missing principal
+**Boundary:** B2
+**Move:** #3 (error path), #5 (invert access control)
+**Confidence:** High that the mechanism exists. Medium on impact, which depends on downstream handlers.
 
-When `Introspect` returns a non-nil `err`, the middleware logs it and calls `next.ServeHTTP(w, r)` with the original request. No principal is attached, but the request is still served. An attacker doesn't need a valid token, just an error. Three ways to get one:
-(a) **Load-induced timeout.** Flood requests with random tokens so introspection takes longer than 800ms (each request makes one uncached upstream call; see Finding 3). Every request then passes, including legitimate-looking attack requests.
-(b) **Client cancellation.** Send the request and close the connection while introspection is running. `r.Context()` is cancelled, `Introspect` returns `context.Canceled`, and `next` runs anyway. Any side effects that don't depend on the context still happen.
-(c) **Contract ambiguity.** The interface doesn't say whether an inactive or invalid token gives `(nil, nil)` or `(nil, err)`. Many introspection clients return an error for inactive or malformed tokens. With such a client, *any garbage token* bypasses auth on every request.
-Impact ranges from full authentication bypass, if handlers treat "no principal" as anonymous-allowed or don't check, to a panic per request, if they do an unchecked `ctx.Value(principalKey).(*Principal)` type assertion.
+Any error from `Introspect` sends the request on to `next` without a principal. Attack paths:
 
-**Recommendation:** Fail closed. On `err != nil`, return `503 Service Unavailable`, or `401` for token-shaped errors, and never call `next`. If you really need degraded availability, make it an explicit per-route opt-in that runs downstream with an explicit "unauthenticated" marker. Document in the `Introspector` contract that invalid tokens return `(nil, nil)`, and treat any other result as a denial.
+- **(a)** Send any non-empty token while the introspector is slow or down.
+- **(b)** Flood requests until introspection goes over the 800 ms deadline. Each request also starts its own outbound call, so the attacker's traffic drives the outage (see Finding 3).
+- **(c)** Send a bad token, if the `Introspector` implementation returns `error` for invalid or inactive tokens rather than `(nil, nil)`. Many do, for example on HTTP 401 or 400 from the server. Then every garbage token bypasses the check with no outage needed.
 
-#### 2. Authorization scheme not validated; non-Bearer credentials forwarded as tokens
+If downstream handlers use `RequireToken` as their only gate, this is a complete auth bypass. They are safe only if each one separately rejects a missing principal, and nothing in this file guarantees that.
+
+**Recommendation:** Deny when introspection fails: return 503 (or 401) on any error and never call `next`. If you need resilience, add a short-lived cache of tokens that were already validated, not a bypass.
+
+#### 2. Non-Bearer credentials are forwarded to the introspection service
 
 **Severity:** Medium
 **Location:** `subject.go:26`
 **Boundary:** B1
-**Move:** #2 (implicit sanitization), #6 (follow the secrets), #11
+**Move:** #2 (implicit sanitization), #6 (follow the secrets)
 **Confidence:** Medium
 
-`strings.TrimPrefix` leaves the header unchanged when the prefix is missing. So `Authorization: Basic dXNlcjpwYXNz`, `bearer abc` (lowercase scheme, which RFC 6750/7235 says is case-insensitive) and `Bearer` (no trailing space) are all sent to the introspection service as the "token", and `"Bearer  "` (two spaces) is sent as `" "`. This forwards other credentials (Basic passwords, API keys) to a third-party introspection endpoint, and possibly into its logs and into the error string logged at line 37. It also gives an attacker a cheap way to send odd inputs that may trigger the error path in Finding 1(c).
+`strings.TrimPrefix` leaves the header unchanged when the `Bearer ` prefix is missing. So `Authorization: Basic dXNlcjpwYXNz`, `bearer xyz` (lowercase), or any other scheme is sent to the introspector verbatim as a "token". That has two effects:
 
-**Recommendation:** Parse the scheme properly: split on the first space, compare the scheme case-insensitively with `bearer`, require a non-empty token after trimming, and return 401 for anything else without calling the introspector.
+- Unrelated credentials, such as Basic username/password, leak to the introspection endpoint. They may also land in logs through Finding 4.
+- Malformed values reach the introspector's error path, which in turn triggers Finding 1(c).
 
-#### 3. Unauthenticated amplification to the introspection service
+A header of `Bearer ` followed by whitespace also produces a non-empty token.
+
+**Recommendation:** Parse the scheme explicitly. Require a case-insensitive `Bearer` followed by a non-empty token with no whitespace, and return 401 for anything else before making any outbound call.
+
+#### 3. One outbound introspection call per request, with no cache or rate limit
 
 **Severity:** Medium
 **Location:** `subject.go:32-35`
 **Boundary:** B1, B2
 **Move:** #8 (a million of these)
-**Confidence:** Medium (rate limiting or caching might exist outside this file)
+**Confidence:** High
 
-Any client with any non-empty header causes one outbound introspection call, with no caching, rate limit or token-format pre-check. On its own this is a DoS on the auth provider. Combined with Finding 1(a), it is the trigger that turns the outage into an auth bypass.
+Every request with a non-empty header triggers a synchronous introspection call lasting up to 800 ms. Valid tokens are not cached, and there is no per-client limit before the call. An unauthenticated attacker can multiply their traffic onto the introspection service. Because of Finding 1, overloading that service doesn't just cause an outage: it turns off authentication.
 
-**Recommendation:** Reject obviously malformed tokens before the network call, cache positive and negative introspection results for a short TTL keyed by token hash, and rate-limit per client IP. Fixing Finding 1 removes the bypass part of this chain.
+**Recommendation:** Fix Finding 1 first. Then add a bounded TTL cache keyed by a hash of the token, plus rate limiting ahead of introspection.
 
-#### 4. Introspection errors logged verbatim
+#### 4. Introspector error text logged without redaction
 
 **Severity:** Low
 **Location:** `subject.go:37`
 **Boundary:** B3
-**Move:** #6
-**Confidence:** Low (depends on what the `Introspector` implementation puts in its errors)
+**Move:** #6 (follow the secrets)
+**Confidence:** Low. It depends on the `Introspector` implementation, which is not in scope.
 
-`log.Printf("%v", err)` writes whatever the introspector returns. Errors that wrap HTTP request details or echo the submitted token would put bearer tokens, or the forwarded Basic credentials from Finding 2, into application logs. The message "continuing" also records the fail-open behaviour as intended.
+`%v` writes out the full error. Many HTTP client and introspection errors include the request URL, the response body, or the submitted token. Combined with Finding 2, that could put bearer tokens or Basic credentials into application logs.
 
-**Recommendation:** Log a classified error (timeout, upstream status, or decode failure) without the token value, and make sure `Introspector` implementations never include the token in their errors.
+**Recommendation:** Log a fixed message plus an error category, never the raw error, and never the token itself.
 
 ## Untested bypass candidates
 
-| Input | Why untested |
-|---|---|
-| Invalid or garbage token: does it give `(nil, err)` or `(nil, nil)`? | No `Introspector` implementation in scope; decides whether Finding 1(c) is trivially exploitable |
-| Valid token whose principal has no or empty `Scopes` | Scope checks happen downstream (not in scope); this middleware attaches any non-nil principal |
-| Revoked-but-cached token | Depends on whether the introspector caches; not visible |
+The guardrail here is the token check at lines 26-44. These candidates were traced through this file, but their outcomes depend on code outside the scope:
 
-Traced (tested by reading the code): a missing or empty header gives 401 (lines 27-29). Introspection timeout or cancel calls `next` with no principal (lines 36-39). `(nil, nil)` gives 401 (lines 41-43). A non-Bearer scheme is forwarded raw (line 26).
+- **`(nil, nil)` versus `(nil, err)` for a revoked or expired token:** depends on the `Introspector` implementation, which was not provided. This decides whether Finding 1(c) is reachable with no outage at all.
+- **A principal returned with empty `Subject` or `Scopes`:** the middleware accepts any non-nil `*Principal`. Whether downstream handlers check scopes is not visible here.
+- **Downstream handlers' behavior when `principalKey` is absent from the context:** no handlers were provided. This determines the real impact of Finding 1.
 
 ## Endorsement Claims
 
-- **Claim:** A request with no `Authorization` header, or exactly `"Bearer "`, gets 401 and doesn't reach `next`.
+- **Claim:** Requests with an empty `Authorization` header, or one that is exactly `Bearer `, get a 401 before any outbound call is made.
   **Location:** `subject.go:26-30`
   **Evidence:** read-static
-  **Verified:** `TrimPrefix` of `""` or `"Bearer "` gives `""`, which leads to `http.Error` + `return`.
-  **Not verified:** how whitespace-only tokens such as `"Bearer  "` are handled by the introspector.
-- **Claim:** The principal is stored under an unexported typed key (`contextKey`), so other packages can't set or overwrite it via `context.WithValue` with a string key.
-  **Location:** `subject.go:11-13, 46`
+  **Verified:** I read the `TrimPrefix` and empty-string check.
+  **Not verified:** `Bearer ` followed by more whitespace (produces a non-empty token, see Finding 2).
+- **Claim:** When `Introspect` returns `(nil, nil)`, the request gets a 401 and `next` is not called.
+  **Location:** `subject.go:41-44`
   **Evidence:** read-static
-  **Verified:** the key type is unexported and package-local.
-  **Not verified:** the accessor (if any) that downstream handlers use to read `principalKey`, and whether it handles absence.
-
-No guardrail is endorsed. `RequireToken` has untested bypass candidates and an open Critical finding.
+  **Verified:** I read the nil-principal branch.
+  **Not verified:** whether the actual `Introspector` implementation ever returns `(nil, nil)` rather than an error.
 
 ## Primitive sweep
 
-Primitive sweep: no dangerous primitives in scope (no exec, SQL, deserialization, HTML interpolation, path construction or `eval`-family calls. The only outbound call is the abstract `Introspect` interface method).
+No dangerous primitives in scope. The only outbound call is `in.Introspect` through an interface, and its implementation is not in scope. Nothing in this file does exec, deserialization, SQL, HTML interpolation, or path construction.
 
 ## Summary Table
 
 | # | Finding | Severity | Boundary | Location | Confidence |
 |---|---------|----------|----------|----------|------------|
-| 1 | Auth fails open on introspection error | Critical | B3, B2 | `subject.go:35-40` | High (mechanism) / Medium (impact) |
-| 2 | Scheme not validated; non-Bearer creds forwarded | Medium | B1 | `subject.go:26` | Medium |
-| 3 | Unauthenticated amplification to introspector | Medium | B1, B2 | `subject.go:32-35` | Medium |
-| 4 | Introspection errors logged verbatim | Low | B3 | `subject.go:37` | Low |
+| 1 | Introspection errors let requests through unauthenticated | Critical | B2 | `subject.go:35-40` | High (mechanism) / Medium (impact) |
+| 2 | Non-Bearer credentials forwarded to introspector | Medium | B1 | `subject.go:26` | Medium |
+| 3 | Per-request introspection, no cache or rate limit | Medium | B1, B2 | `subject.go:32-35` | High |
+| 4 | Raw introspector error logged | Low | B3 | `subject.go:37` | Low |
 
 ## Overall Assessment
 
-This middleware should not be merged as written. The core problem is a design decision: an introspection error is treated as permission to continue. Anyone who can make introspection fail can get past the auth gate, by timing it out under load, by cancelling their own request mid-flight, or (depending on the client) by sending a malformed token. Everything is fixable in place. The most important change is to return 503 or 401 on `err != nil` and never call `next`. After that, parse the `Authorization` scheme strictly and add caching and rate limiting in front of introspection. Within the code paths read, the missing-header and nil-principal denials work as written. The endorsement claims are pending execution verification, and the real impact of Finding 1 depends on downstream handlers that weren't available for review.
+The most serious problem is a design flaw that is easy to fix in place: `RequireToken` lets requests through when introspection fails, so attackers who can degrade the introspection service, or send tokens the introspector rejects with an error, can skip authentication entirely. The volume and parsing issues (Findings 2 and 3) make it easier to exploit. The most important fix is to return 503 or 401 on any `Introspect` error and never call `next` in that branch. After that, tighten the parsing of the `Bearer` scheme and add caching and rate limiting. The project is **not safe to merge** as written. There are no other findings within the code paths I read. The endorsement claims have not been verified by running the code.

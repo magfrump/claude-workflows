@@ -1,26 +1,18 @@
-# AI Personas Critique
-
-**User goal:** Stress-test this proposal from several independent angles before it goes to the people who will decide on it.
-**Proposal:** Faster Account Recovery for Tallyfin Wallet. Replace SMS + email + ID/selfie recovery with SMS only, add agent-assisted phone-number changes, and keep full account access immediately after recovery.
-**Domains:** finance (primary), technology/security (primary), product (secondary)
-**Personas selected:**
-- **Security Analyst (7):** account recovery is the main account-takeover path, so this is the central risk lens. *External.*
-- **Implementation Engineer (11):** tests whether the rollout can detect the failures that matter. *Evidence, present, builder.*
-- **Regulatory Mind (9):** this is a stored-value wallet with P2P transfers, so liability rules decide who pays for takeovers. *Present, external.*
-- **Contrarian (15, wild card):** inverts the premise that recovery friction is the problem. *Internal, critic.*
-
-**Personas in parallel:** none
-
 > **No fact-check report provided.** Checkable claims have not been independently verified.
 > For full verification, run the `fact-check` skill first or use the `draft-review` orchestrator.
-> (One internal check: 55,000 × $1.10 × 12 = $726,000/yr, so the stated savings arithmetic is consistent.)
 
-**Selection notes:**
-- **Candidate pool:** finance (6, 7, 9, 12), technology (7, 8, 11, 17) and product (1, 5, 8, 11, 12, 13).
-- **Initial pick:** 7, 11, 9 and the Empiricist (1).
-- **Wild-card check:** counting a dimension as covered only when both of its poles are represented, that set balanced just internal vs. external. That triggered the wild-card rule.
-- **Swap:** the Contrarian replaced the Empiricist. It keeps the internal pole and adds the critic pole. The Empiricist's core point, that the test measured completion and not fraud, is carried by the Implementation Engineer and the Contrarian.
-- **Gaps:** values and future remain uncovered. They are addressed under Blind Spots.
+# AI Personas Critique
+
+**User goal:** stress-test this proposal from several independent angles before it goes to the people who will decide on it.
+**Proposal:** Faster Account Recovery for Tallyfin Wallet. Replace SMS + email + ID/selfie recovery with SMS-only self-service, a knowledge-question support path for lost numbers, and immediate full access after recovery.
+**Domains:** finance (primary), technology, product
+**Personas selected:**
+- **Security Analyst (7):** Recovery is the standard account-takeover entry point, so this is the most decision-relevant lens. Covers *external*.
+- **Empiricist (1):** The case rests on a 4,000-customer test and a savings calculation. Covers *evidence* and *internal logic*.
+- **Ethicist (2):** Fraud losses fall on some customers while the savings go to the company. Covers *values* and *critic*.
+- **Implementation Engineer (11):** Covers the rollout gates and the week-5 vendor retirement. Covers *present feasibility* and *builder*.
+
+**Personas in parallel:** none
 
 ---
 
@@ -28,164 +20,155 @@
 
 ### Security Analyst: How would an adversary exploit this?
 
-User goal: Stress-test this proposal from several independent angles before it goes to the people who will decide on it.
-Current task: Apply the Security Analyst lens — how would an adversary exploit this? — to this proposal.
+User goal: stress-test this proposal from several independent angles before it goes to the people who will decide on it.
+Current task: Apply the Security Analyst lens — How would an adversary exploit this? — to this proposal.
 Success criterion: A 100-200 word critique grounded in proposal specifics, with severity and a test/mitigation.
 
-The proposal reduces recovery to one factor an attacker can obtain without the customer. "SMS is already our second factor" cuts the wrong way. Today SMS is paired with a password. After this change, an SIM swap or port-out yields the whole account.
+"SMS is already our second factor" misses a change in role. Today SMS is one factor alongside the password. Under this proposal, SMS alone replaces the password. Anyone who controls the phone number (SIM swap, port-out fraud, carrier-store social engineering) owns the account.
 
-Assisted recovery is weaker still. Name, date of birth and the last four card digits leak in breaches, appear on receipts, and are known to partners and family. Passing those checks lets the caller *replace the phone number* and then self-serve. That is a full takeover via one phone call, and the proposal states no notification to the old number or email.
+The assisted path is worse. Name, date of birth and last-four of a card are all routinely exposed through breach dumps, receipts and social media. That path lets a caller *change the phone number*, then receive the code themselves. Together these form a complete, repeatable takeover script.
 
-Session continuity then gives the attacker saved payees and the full balance at once. The roughly 6% of accounts above $2,000 become concentrated targets. The five-attempt limit applies per code. Nothing caps code requests or assisted attempts per account.
+Session continuity then hands the attacker the balance, saved cards and P2P transfers to friends immediately. Those transfers are fast and hard to reverse. The roughly 114,000 accounts above $2,000 become priority targets.
 
-**Severity:** Fatal flaw (as written)
+**Severity:** Fatal flaw
 **Test/mitigation:**
-- Require an independent second factor for phone-number changes.
-- Notify the old phone and email with a one-tap "this wasn't me" lock.
-- Cap or delay transfers to *new* payees after recovery. Allow limited merchant payments so the checkout case still works.
-- Risk-score recoveries using carrier SIM-change signals, device and location, and step up high-risk cases to ID verification.
+- Resolve the checkout concern without full exposure: allow merchant payments up to a cap after recovery, and delay P2P transfers to new payees and large amounts for 24–72 hours.
+- Keep ID verification on the assisted path.
+- Notify the old email and phone on any recovery.
+- Add risk-based step-up checks for high-balance accounts.
+- Run a red-team exercise against the support script before sign-off.
 
 #### Goal-Alignment Note
 - Success criterion (restated verbatim): A 100-200 word critique grounded in proposal specifics, with severity and a test/mitigation.
 - Answered: yes
-- Out of scope: specific SIM-swap prevalence data (no fact-check available)
-- Escalate: assisted recovery as a one-call takeover path. Support Ops should not sign off on that script as written.
-- Decisions I made: rated "fatal" for the combination of SMS-only recovery, agent phone change and no hold, not for any one element alone.
+- Out of scope: carrier-side SIM-swap controls (outside Tallyfin's design)
+- Escalate: Risk sign-off should be conditioned on the assisted-path redesign
+- Decisions I made: Rated "fatal" for the proposal as written, not for SMS recovery in principle. A capped, delayed variant may be acceptable.
+
+### Empiricist: What evidence actually supports this claim?
+
+User goal: stress-test this proposal from several independent angles before it goes to the people who will decide on it.
+Current task: Apply the Empiricist lens — What evidence actually supports this claim? — to this proposal.
+Success criterion: A 100-200 word critique grounded in proposal specifics, with severity and a test/mitigation.
+
+The 93% vs. 62% result measures friction for legitimate users. It says nothing about fraud. The 4,000-person test presumably contained no adversaries, so the metric that decides Risk's sign-off was never measured. A one-step flow beating a three-step flow on completion is close to guaranteed.
+
+The savings arithmetic is internally correct (55,000 × $1.10 ≈ $60,500/month, about $726,000/year). The premise looks shaky, though. Vendor checks happen only for attempts that reach step 3. With 38% abandonment, mostly at the earlier email step, actual check volume is plausibly well below 55,000, unless "recoveries" means something else. The proposal also does not say whether the test was randomized or how test customers were chosen.
+
+The "two-thirds fewer contacts / nine agents" figure ignores two new sources of calls: number-change calls through the assisted path, and fraud-dispute contacts.
+
+**Severity:** Significant weakness
+**Test/mitigation:**
+- Restate the savings using actual vendor invoices.
+- Model the expected account-takeover rate and loss per incident from industry SIM-swap data.
+- Present net savings after fraud losses and dispute handling.
+
+#### Goal-Alignment Note
+- Success criterion (restated verbatim): A 100-200 word critique grounded in proposal specifics, with severity and a test/mitigation.
+- Answered: yes
+- Out of scope: verifying the figures themselves (no fact-check available)
+- Escalate: Request vendor invoices and test methodology before sign-off
+- Questions I would have asked: Is 55,000/month recovery *attempts*, *completions* or *ID checks billed*?
+
+### Ethicist: Who is harmed, and is that harm justified?
+
+User goal: stress-test this proposal from several independent angles before it goes to the people who will decide on it.
+Current task: Apply the Ethicist lens — Who is harmed, and is that harm justified? — to this proposal.
+Success criterion: A 100-200 word critique grounded in proposal specifics, with severity and a test/mitigation.
+
+Credit where due: the status quo causes real harm. Being "locked out of my own money" for a person with a $140 balance and no ID on hand is a genuine injury, and the proposal takes it seriously.
+
+The distribution of the change is lopsided, however. The benefits (faster access, $726,000 in vendor savings, nine agent positions) are spread widely or captured by Tallyfin. The costs fall heavily on a small group of takeover victims. Social engineering disproportionately targets older and less technical customers. High-balance accounts lose the most, because their balance is drained by irreversible P2P transfers. Customers also never agreed to weaker protection. Their account security drops silently.
+
+The proposal frames the choice as "convenience vs. friction." The real choice is "convenience for many vs. catastrophic loss for a few." Decision-makers should see it in those terms.
+
+**Severity:** Significant weakness
+**Test/mitigation:**
+- Tier recovery strength by balance and recent activity.
+- Offer an opt-in "locked-down recovery" setting.
+- Notify customers of the change.
+- Commit in writing to reimbursing takeover victims.
+
+#### Goal-Alignment Note
+- Success criterion (restated verbatim): A 100-200 word critique grounded in proposal specifics, with severity and a test/mitigation.
+- Answered: yes
+- Out of scope: the legal reimbursement obligation (a Regulatory Mind question; see Blind Spots)
+- Escalate: Whether Tallyfin will publicly commit to reimbursing victims
+- Decisions I made: Credited the status-quo harm as a strength rather than treating the proposal as purely harmful.
 
 ### Implementation Engineer: What's the actual build plan, and where does it break?
 
-User goal: Stress-test this proposal from several independent angles before it goes to the people who will decide on it.
-Current task: Apply the Implementation Engineer lens — what's the actual build plan, and where does it break? — to this proposal.
+User goal: stress-test this proposal from several independent angles before it goes to the people who will decide on it.
+Current task: Apply the Implementation Engineer lens — What's the actual build plan, and where does it break? — to this proposal.
 Success criterion: A 100-200 word critique grounded in proposal specifics, with severity and a test/mitigation.
 
-The rollout monitors completion and contact rate only. It has no fraud metric and no kill criteria, and fraud is the failure mode that matters. Account-takeover signals lag: victims often notice days or weeks later, and disputes arrive after that.
+The rollout gates watch only completion rate and contact rate. Both will look great by design. Fraud is not instrumented, and it shows up late: victims notice, disputes get filed, and investigations conclude weeks after the takeover. A 5-week rollout reaches 100% before the 10% cohort's fraud signal has matured.
 
-At about 55,000 recoveries a month, the 10% phase sees roughly 2,500 recoveries in two weeks. Fraud at a low rate is statistically invisible at that sample size and timescale. Week 5 then retires the ID-verification integration, removing the fallback before any fraud data has matured.
+Week 5 also retires the ID-verification integration. That removes the obvious fallback just when the bad news would arrive. Restoring it means re-contracting and re-integrating under pressure.
 
-The 4,000-customer test has the same blind spot. A benign test population contains no adversaries, so a 93% completion rate says nothing about safety.
-
-The hardest 20% of this work is not the simplified UI. It is fraud detection, notification, and agent tooling. "Agents cannot skip any of the three checks" needs to be enforced by the support tool, not just by training.
+"Agents cannot skip any of the three checks" is a script property, not an enforced system control. The proposal does not say whether the tooling blocks a phone-number change until all three checks are logged, or how attempted number changes are audited.
 
 **Severity:** Significant weakness
 **Test/mitigation:**
-- Add takeover-report rate and dispute rate as gating metrics, with thresholds.
-- Lengthen each phase to cover dispute latency, likely 30–60 days.
-- Keep the ID vendor contract as a step-up for risky recoveries.
-- Enforce the check sequence in tooling.
+- Add takeover and dispute rates (per 10,000 recoveries) as explicit rollback criteria.
+- Hold each stage at least 30–60 days.
+- Keep the vendor integration live, behind a flag, for at least two quarters.
+- Enforce the assisted-path checks in tooling.
+- Alert on repeated number-change attempts per account.
 
 #### Goal-Alignment Note
 - Success criterion (restated verbatim): A 100-200 word critique grounded in proposal specifics, with severity and a test/mitigation.
 - Answered: yes
-- Out of scope: engineering effort estimates (not provided in proposal)
-- Escalate: retiring the ID integration in week 5 should be decoupled from the rollout and decided on fraud data.
-- Decisions I made: assumed the 4,000-customer test involved real, non-adversarial users; the proposal does not say how they were selected.
-
-### Regulatory Mind: What legal or compliance barriers exist?
-
-User goal: Stress-test this proposal from several independent angles before it goes to the people who will decide on it.
-Current task: Apply the Regulatory Mind lens — what legal or compliance barriers exist? — to this proposal.
-Success criterion: A 100-200 word critique grounded in proposal specifics, with severity and a test/mitigation.
-
-Assuming US operation, a stored-value wallet with P2P and merchant payments likely falls under Regulation E, including its prepaid-account provisions. Counsel should confirm this. Under those rules, consumer liability for unauthorized transfers is limited, which means Tallyfin, not the customer, likely absorbs takeover losses. The $726,000 annual saving should therefore be netted against the expected increase in reimbursed fraud. The proposal does not model that.
-
-Federal banking authentication guidance has long been skeptical of knowledge-based questions and single-factor controls for high-risk actions. NIST's digital identity guidelines treat SMS as a restricted authenticator. That the card issuer uses the same knowledge questions does not establish that regulators, or the issuer's own contract with Tallyfin, accept them as sufficient for changing account control.
-
-Removing the ID step may also touch documented controls in the KYC/AML program and in bank-partner or money-transmitter obligations. The Asks list requests sign-off from Risk, but not from Legal or Compliance.
-
-**Severity:** Significant weakness
-**Test/mitigation:**
-- Add Legal/Compliance and the bank partner to the sign-offs.
-- Produce a loss model of expected takeover reimbursements under Reg E against the savings.
-- Document a risk assessment for the control change.
-
-#### Goal-Alignment Note
-- Success criterion (restated verbatim): A 100-200 word critique grounded in proposal specifics, with severity and a test/mitigation.
-- Answered: partial (jurisdiction not stated; regulatory specifics unverified without fact-check)
-- Out of scope: non-US regimes (e.g., PSD2 strong customer authentication) in case Tallyfin operates in the EU/UK
-- Escalate: missing Legal/Compliance sign-off in the Asks
-- Questions I would have asked: Which jurisdictions does Tallyfin operate in, and under which license or bank partner?
-- Decisions I made: assumed US operation; hedged all regulatory claims as needing counsel confirmation.
-
-### Contrarian: What if the opposite of the core premise is true?
-
-User goal: Stress-test this proposal from several independent angles before it goes to the people who will decide on it.
-Current task: Apply the Contrarian lens — what if the opposite of the core premise is true? — to this proposal.
-Success criterion: A 100-200 word critique grounded in proposal specifics, with severity and a test/mitigation.
-
-The premise is that friction is the problem. Consider the opposite: the friction is doing work. The 38% abandonment is counted entirely as failure, but some share of those attempts are impostors who stopped at email or ID. The current flow's abandonment includes prevented fraud, and the proposal does not try to measure it.
-
-Likewise, 93% completion is exactly the number you would see if the flow let attackers through. Completion rate cannot tell a customer from an impostor, so the headline success metric is blind to the headline risk.
-
-The email-step failures point to stale contact data, not a useless check. The better fix may be to refresh factors proactively: prompt for a current email or backup factor at routine sign-in.
-
-The proposal is right that the pain is real. The checkout scenario is credible, and "locked out of my own money" reviews are a genuine cost. But "my money was stolen" reviews are worse. A bounded post-recovery spending allowance serves the checkout case without exposing the full balance.
-
-**Severity:** Significant weakness
-**Test/mitigation:**
-- Estimate the fraud share of today's abandonment, using risk signals on abandoned attempts and later compromise reports on those accounts.
-- Pair the change with factor-hygiene prompts.
-- Tier recovery requirements by balance and risk.
-
-#### Goal-Alignment Note
-- Success criterion (restated verbatim): A 100-200 word critique grounded in proposal specifics, with severity and a test/mitigation.
-- Answered: yes
-- Out of scope: none
-- Escalate: the decision-makers need a fraud-share estimate for current abandonment before judging the trade-off.
-- Decisions I made: argued "friction is protective" sincerely, while crediting the real user pain as a strength of the proposal.
+- Out of scope: build effort estimates (not provided in proposal)
+- Escalate: Rollback criteria and vendor-retirement timing need explicit sign-off
+- Decisions I made: Treated fraud-signal lag as an implementation concern rather than leaving it only to Security.
 
 ---
 
 ## Synthesis
 
 **Goal-alignment scan:**
-- Regulatory Mind answered *partial* because jurisdiction is unstated and its claims are unverified.
-- Escalations:
-  - Assisted-recovery script (Security)
-  - Decoupling the ID-vendor retirement (Implementation)
-  - Missing Legal/Compliance sign-off (Regulatory)
-  - Fraud-share estimate (Contrarian)
-- **Questions to clarify:** Which jurisdictions and license or bank-partner structure does Tallyfin operate under? (Regulatory Mind)
+- All four personas answered `yes`.
+- Escalations: Risk sign-off conditioned on the assisted-path redesign; vendor invoices and test methodology; a victim-reimbursement commitment; rollback criteria and vendor-retirement timing.
+- Questions to clarify:
+  - (Empiricist) Is 55,000/month recovery attempts, completions or billed ID checks?
 
 ### Convergent Findings
-1. **The proposal measures only the benefit, never the risk.** Three personas flagged this independently:
-   - The Implementation Engineer: no fraud metric in the rollout.
-   - The Contrarian: completion rate cannot detect impostors, and abandonment includes prevented fraud.
-   - The Regulatory Mind: the savings are not netted against fraud losses Tallyfin likely bears.
-2. **Immediate full access after recovery amplifies every weakness.** The Security Analyst sees an instant drain path. The Regulatory Mind sees Tallyfin carrying the liability. The Contrarian proposes a bounded allowance that still satisfies the checkout case.
-3. **Agent-assisted phone change is a one-call takeover.** The Security Analyst flags weak, widely known knowledge factors. The Implementation Engineer notes the checks are enforced only by training, not by tooling.
+- **Fraud is absent from the evidence, the metrics and the rollout.** All four personas found this independently.
+  - Security names the attack.
+  - Empiricist notes the test could not measure it.
+  - Ethicist notes who pays for it.
+  - Implementation Engineer notes the gates cannot detect it in time.
+- **The assisted path is the weakest point.** Security and Implementation Engineer agree it is a number-change capability guarded by commonly leaked data and an unenforced script.
+- **Immediate full access after recovery magnifies every failure.** Security and Ethicist agree on this.
 
 ### Tensions
-- **Checkout urgency vs. holding period.** The proposal treats this as binary. Both the Security Analyst and the Contrarian point to a middle path: allow merchant payments up to a cap immediately, and delay transfers to new payees and large P2P transfers.
-- **Rollout speed vs. fraud latency.** The Implementation Engineer would normally accept a phased rollout as the risk control. Here, a five-week schedule outruns the time it takes takeover signals to surface, so phasing gives false comfort.
-- **Vendor savings vs. liability.** The $726k/yr saving is certain and visible. The offsetting fraud cost is uncertain and lagged, which biases the decision toward the visible number.
+- **Legitimate-user harm vs. takeover harm.** The Ethicist acknowledges that today's 38% abandonment is a real injury, while Security rates the replacement as fatal. Both are right. The proposal is solving a real problem with too blunt a tool.
+- **The checkout use case vs. a holding period.** The proposal treats this as either/or. A capped allowance for merchant payments plus delays on P2P transfers to new payees addresses both.
+- **Speed of savings vs. speed of fraud signal.** A 5-week rollout with vendor retirement captures savings quickly. The Implementation Engineer's 30–60-day stages delay them. That delay is the price of learning the fraud rate before the change becomes irreversible.
 
 ### Ranked Concerns
 | # | Concern | Raised by | Severity | Convergence |
 |---|---------|-----------|----------|-------------|
-| 1 | No fraud/takeover measurement; success metric is blind to the main risk | Implementation, Contrarian, Regulatory | Significant | 3 |
-| 2 | Immediate access to balance and payees after recovery, with no hold or cap | Security, Regulatory, Contrarian | Fatal (with #3) | 3 |
-| 3 | Assisted recovery lets knowledge-only callers change the phone number | Security, Implementation | Fatal | 2 |
-| 4 | SMS-only recovery is exposed to SIM swap and port-out fraud | Security | Fatal (in combination) | 1 |
-| 5 | Savings not netted against likely Reg E reimbursement losses; Legal/Compliance absent from Asks | Regulatory | Significant | 1 |
-| 6 | ID integration retired in week 5, before fraud data matures | Implementation | Significant | 1 |
-
-**Bottom line for decision-makers:** the user problem is real and the self-service SMS path may be defensible on its own terms. The combination of agent phone changes on knowledge factors, no post-recovery limits, and a rollout with no fraud gate is not.
-
-A revised version would:
-- Add notifications with a one-tap lock.
-- Cap or delay new-payee transfers.
-- Require step-up verification for phone changes and high-balance or high-risk accounts.
-- Gate the rollout on fraud metrics.
-- Defer retiring the ID vendor until fraud data has matured.
+| 1 | No fraud/ATO measurement in the test, gates or rollback criteria | Security, Empiricist, Ethicist, Implementation | Fatal flaw | 4 |
+| 2 | Assisted path lets leaked personal data (name, DOB, card last-four) change the phone number | Security, Implementation | Fatal flaw | 2 |
+| 3 | Immediate full access after recovery, with no transfer limits | Security, Ethicist | Significant weakness | 2 |
+| 4 | Retiring the ID vendor in week 5 removes the fallback before fraud data matures | Implementation, Security | Significant weakness | 2 |
+| 5 | Savings and staffing figures likely overstated (check volume; new call types) | Empiricist | Significant weakness | 1 |
+| 6 | Costs concentrated on vulnerable and high-balance customers; no consent or notification | Ethicist | Significant weakness | 1 |
 
 ### Blind Spots
-- **Values (uncovered).** An Ethicist would ask who bears the harm. Knowledge-based assisted recovery is especially exploitable by people close to the victim, such as abusive partners or family members, who know a person's date of birth and card digits. Customers who lose phones are also more likely to be the users least able to absorb a loss.
-- **Future (uncovered).** A Long-termist would note that retiring the ID integration is easy to do and costly to reverse. It would also flag that the design deepens dependence on phone numbers, a factor whose security is set by carriers outside Tallyfin's control, and that a frictionless recovery flow sets customer expectations that are hard to walk back after a fraud spike.
-- **Empirical detail (dropped in wild-card swap).** An Empiricist would ask:
-  - How were the 4,000 test users selected?
-  - Is the "two thirds fewer contacts" projection consistent with routing every lost-phone customer to support?
-  - What is the current takeover base rate?
-- **Out-of-scope items carried forward:**
-  - SIM-swap prevalence data (unverified)
-  - Engineering effort estimates (not provided)
-  - Non-US regulatory regimes, if applicable
+- **Regulatory (Regulatory Mind, 9; deliberately not selected).** In the US, Regulation E generally makes the provider liable for unauthorized electronic transfers, so takeover losses may land on Tallyfin's books. Other relevant frameworks:
+  - NIST SP 800-63B classifies SMS as a "restricted" authenticator.
+  - Money-transmitter examiners and, if it applies, EU/UK Strong Customer Authentication may object to SMS-only recovery.
+
+  Risk should get a compliance read before signing.
+- **Long-term consequences (Systems Thinker, 3; Long-termist, 17).** Fraud rings learn and share working scripts. Once Tallyfin is known as easy to recover, attack volume can rise sharply. Retiring the vendor and removing email binding are hard-to-reverse decisions. Reinstating friction later costs more than keeping it, both in customer goodwill and in re-integration work.
+- **Agent behavior (Cognitive Scientist, 13).** Agents measured on handle time, facing distressed callers "locked out of their money," are a classic social-engineering target. Script compliance tends to erode under that pressure.
+- **Alternatives (Opportunity Cost Accountant, 12).** Lower-risk fixes were not compared, such as:
+  - Fixing selfie-match lighting failures.
+  - Letting customers update email in advance.
+  - Device-bound passkeys.
+  - Using ID verification only on the assisted path.
+
+  These could recover much of the 31-point completion gain at far less risk.

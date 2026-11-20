@@ -1,89 +1,82 @@
-# UI Visual Review: `subject.tsx` (`ItemList`)
+# UI Visual Review: `subject.tsx` (ItemList)
 
 **Scope:** `subject.tsx` (whole file, 31 lines)
 **Date:** 2026-11-20
-**Based on:** Code analysis only. No code-fact-check report was provided, and no project-local UI guidelines were found (no `docs/**/*.md`).
+**Based on:** Code analysis only. No code-fact-check report was provided, and no project UI guidelines exist (`docs/` has no `.md` files).
 
 ## Environment
 
 - **Files reviewed:** `subject.tsx`
-- **Target viewports:** small mobile (320–480px), tablet/small laptop (768–1024px; 1366×768 checked), large desktop (1920px+)
-- **Target browsers / platforms:** modern evergreen browsers + mobile Safari (default)
-- **Review mode:** Full audit (items 1–8, plus item 10 because the file has a focusable element and list semantics; items 9 and 11 don't apply: no 3D or stacked/spatial layout)
+- **Target viewports:** 320–480px (small mobile), 768–1024px (tablet/laptop), 1366×768, 1920px+
+- **Target browsers / platforms:** Modern evergreen browsers and mobile Safari (default)
+- **Review mode:** Full audit (items 1–8 and 10; items 9 and 11 don't apply because there is no 3D or spatial layering content)
+
+> Note: The file's header comment (lines 1–5) says what the expected finding is. I treated it as an unverified claim and checked the code myself. It turns out to be accurate.
 
 ## Findings
 
-#### 1. The item list has no height limit, so a long list pushes the "Add Item" button below the fold
+#### 1. List grows without limit and pushes the "Add Item" button off-screen
 
-**Severity:** Major
+**Severity:** Critical
 **Location:** `subject.tsx:16-28`
 **Issue type:** Overflow
-**Viewport:** All. It shows up first on short screens: about 7 items at 360×640, about 9 items at 1366×768.
-**Move:** Step 2 item 1 (unbounded content), together with item 5 (vertical spacing)
+**Viewport:** All. It shows up soonest at 320–768px and at 1366×768.
+**Move:** Step 2 item 1 (unbounded content) and item 2 (primary control placed after growing content)
 **Confidence:** High
 
-The `flex flex-col gap-4` list (line 19) grows with `items.length` and has no `max-h-*` or `overflow-y-auto`. The primary action (line 26) comes after the list in normal flow, so every new item pushes it further down. Each row takes about 74px (16px + 24px line height + 16px padding, a 2px border, and a 16px gap). Adding the outer `p-6` and the heading, the button leaves a 768px-tall viewport after about 9 items. On a 640px phone it leaves after about 7. To add another item, the user has to scroll past the whole list. That gets worse as the list grows, and it's the action this component exists for.
+The list container on line 19 (`flex flex-col gap-4`) has no `max-h-*` and no `overflow-*`. The root on line 16 has no height limit either. Each item is about 58px tall (`p-4` plus a 24px line) with a 16px gap, so it costs about 74px. On a 768px-tall laptop, about 8 items push "Add Item" below the fold. On a 568px phone, about 5 items do. The page can still scroll, but the primary action disappears as the list grows, so users can't see how to add an item. The skill rates this Critical even though scrolling would reach it. Under the docked-footer pattern, the content area should scroll while the controls stay pinned.
 
-**Severity note:** The file's own header comment says this should be **Critical**. I rated it **Major** based on the code. Nothing in this file clips content: there is no `overflow-hidden` and no fixed height. So unless a parent you haven't shown sets `overflow-hidden` or a fixed height, the page still scrolls and the button stays reachable, just hard to find. That fits "Major: accessible but hard to discover or use". If the parent *does* clip (for example an `h-screen overflow-hidden` app shell), the button becomes unreachable and this should be **Critical**.
-
-**Recommendation:** Put the list in its own capped scroll region and keep the button outside it, pinned below. The button already sits outside the list, so item 2 (controls trapped inside scroll containers) is satisfied as long as the fix keeps it there. Also tighten the spacing (item 5).
+**Recommendation:** Give the component a height limit, make the list the only scrolling region, and pin the header and button with `shrink-0`.
 
 ```tsx
-// BEFORE
+// Before
 <div className="flex flex-col p-6">
   <h2 className="text-lg font-bold shrink-0">Items</h2>
   <div className="flex flex-col gap-4">
-    {items.map((item) => (
-      <div key={item.id} className="border p-4 rounded">{item.name}</div>
-    ))}
+    {items.map(...)}
   </div>
-  <button className="mt-4 py-2 px-4 bg-blue-500 text-white rounded">Add Item</button>
+  <button className="mt-4 py-2 px-4 ...">Add Item</button>
 </div>
 
-// AFTER
-<section className="flex flex-col min-h-0 p-4" aria-labelledby="items-heading">
-  <h2 id="items-heading" className="text-lg font-bold shrink-0">Items</h2>
-  <ul
-    className="flex flex-col gap-3 max-h-[60vh] min-h-0 overflow-y-auto [scrollbar-gutter:stable]
-               focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-    tabIndex={0}
-    aria-label="Items"
-  >
+// After
+<div className="flex max-h-[85vh] min-h-0 flex-col p-4">
+  <h2 className="shrink-0 text-lg font-bold">Items</h2>
+  <ul className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto [scrollbar-gutter:stable]">
     {items.map((item) => (
-      <li key={item.id} className="border p-3 rounded break-words">{item.name}</li>
+      <li key={item.id} className="rounded border p-3 break-words">{item.name}</li>
     ))}
   </ul>
-  <button type="button" className="shrink-0 mt-3 ...">Add Item</button>
-</section>
+  <div className="shrink-0 border-t pt-3 mt-3">
+    <button type="button" className="...">Add Item</button>
+  </div>
+</div>
 ```
 
-If a parent gives this component a fixed height (for example a sidebar panel), use `flex-1 min-h-0` on the `<ul>` instead of `max-h-[60vh]`.
+If the parent already gives this component a fixed height (for example a full-height panel), use `h-full` instead of `max-h-[85vh]`.
 
-**Tradeoffs:**
-- An always-visible scrollbar gutter takes about 15px of width on desktop browsers. `scrollbar-gutter` is supported in Chrome/Edge 94+ and Firefox 97+, and in Safari only from 18.2. Older Safari ignores it, which is harmless.
-- `tabIndex={0}` on the scroller adds one tab stop. Chrome 130+ and Firefox already make scrollable regions keyboard-focusable on their own. Safari does not, so the explicit `tabIndex` is needed there (WCAG 2.1.1).
+**Tradeoff:** A visible scrollbar takes about 15px of width on desktop. `scrollbar-gutter: stable` reserves that space so the layout doesn't jump when the scrollbar appears. It works in Chromium and Firefox, and in Safari 17+ (older Safari ignores it harmlessly).
 
-#### 2. White text on `bg-blue-500` fails minimum text contrast
+#### 2. Button text contrast fails WCAG AA (white on `bg-blue-500`)
 
 **Severity:** Major
 **Location:** `subject.tsx:26`
 **Issue type:** Affordance
 **Viewport:** All
-**Move:** Step 2 item 6 (visibility and affordance)
-**Confidence:** High (the exact ratio depends on the Tailwind version)
+**Move:** Step 2 item 6 (visibility and affordance) and item 8 (default state)
+**Confidence:** High
 
-The button label is normal weight, 16px, white on Tailwind `blue-500`. That's about 3.7:1 with v3's `#3b82f6`, and only slightly better with v4's oklch value. Both are below the **4.5:1** that WCAG 1.4.3 (Contrast, Minimum, AA) requires for normal-size text. This is the only action in the component, so low-vision users are most affected.
+White text on Tailwind `blue-500` has a contrast ratio of about 3.7:1 (v3 `#3b82f6`). The v4 oklch value is about 3.9:1. The button label is normal-weight body text, which needs 4.5:1 under WCAG 1.4.3 (Contrast, Minimum).
 
-**Recommendation:**
+**Recommendation:** Use `bg-blue-600` (about 5.2:1) or `bg-blue-700`.
 
 ```tsx
-// BEFORE
+// Before
 className="mt-4 py-2 px-4 bg-blue-500 text-white rounded"
-// AFTER
-className="mt-4 py-2 px-4 bg-blue-600 text-white rounded"   // ~5.2:1 (v3 #2563eb)
+// After
+className="py-2 px-4 bg-blue-600 text-white rounded"
 ```
 
-#### 3. The "Add Item" button only styles its default state
+#### 3. "Add Item" button styles only the default state
 
 **Severity:** Major
 **Location:** `subject.tsx:26-28`
@@ -92,57 +85,49 @@ className="mt-4 py-2 px-4 bg-blue-600 text-white rounded"   // ~5.2:1 (v3 #2563e
 **Move:** Step 2 item 8 (interactive element state matrix)
 **Confidence:** High
 
-Only the default appearance is defined. There's no hover feedback and no pressed feedback, so clicks feel "dead". There's no disabled style, which will matter if adding is ever blocked (for example while saving). Focus relies on the browser's default ring. Tailwind's preflight does *not* remove button outlines, so a ring does appear, but it isn't controlled, and Chrome's blue ring on a blue button has weak contrast.
-
-- [ ] `<button>Add Item` (`subject.tsx:26`)
-  - [x] default: `bg-blue-500 text-white rounded`. It's visually distinct from the bordered list rows (but see finding 2 for contrast).
-  - [ ] hover: none
-  - [~] focus: browser default only. There's no `focus-visible` ring, and the contrast against `blue-500` isn't guaranteed (WCAG 2.4.7 is met, 2.4.13 is not).
-  - [ ] active: none
-  - [ ] disabled: no `disabled:` styles
-  - [N/A] error: a button is not a validatable control
+Only the default state has styling. There's no hover or active feedback, so clicks feel "dead." There's no explicit focus indicator, so the button relies on the browser's default outline. That outline may not reach 3:1 against the blue (WCAG 2.4.7 and 2.4.13), and any CSS reset that strips it would leave no focus indicator at all. There's also no disabled styling, which matters if adding is ever blocked (for example, while a save is in progress).
 
 **Recommendation:**
 
 ```tsx
 <button
   type="button"
-  className="shrink-0 mt-3 py-2 px-4 rounded bg-blue-600 text-white
+  className="py-2 px-4 rounded bg-blue-600 text-white
              hover:bg-blue-700 active:bg-blue-800
-             focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-800
-             disabled:bg-gray-400 disabled:cursor-not-allowed"
+             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2
+             disabled:opacity-50 disabled:cursor-not-allowed"
 >
   Add Item
 </button>
 ```
 
-#### 4. The "Add Item" button does nothing when clicked
-
-**Severity:** Minor
-**Location:** `subject.tsx:26`
-**Issue type:** Other
-**Viewport:** All
-**Move:** Step 2 item 6 (affordance: a control that looks interactive but isn't)
-**Confidence:** Medium (the handler may simply not be written yet in this fixture)
-
-The button has no `onClick`, the component takes no `onAdd` prop, and the button isn't inside a `<form>`. It looks like a primary action, gets focus, and does nothing when pressed. Also, with no `type`, a button defaults to `type="submit"`, so if `ItemList` is ever placed inside a form it would submit that form by accident.
-
-**Recommendation:** Add an `onAdd: () => void` prop, wire it to `onClick`, and set `type="button"`.
-
-#### 5. Long item names without spaces overflow sideways on narrow screens
+#### 4. Long item names can overflow sideways on narrow screens
 
 **Severity:** Minor
 **Location:** `subject.tsx:21-23`
 **Issue type:** Responsive
 **Viewport:** 320–480px
-**Move:** Step 2 item 7 (responsive and cross-browser concerns)
+**Move:** Step 2 item 7 (text reflow)
 **Confidence:** Medium
 
-`item.name` is rendered without `break-words` / `overflow-wrap`. A long name with no spaces (a URL, a filename, an ID) will push past the bordered card and cause horizontal page scroll at 320px. At that width only about 240px is left for text after the `p-6` + `p-4` padding. This fails WCAG 1.4.10 (Reflow).
+`item.name` comes from data. A long unbroken string (URL, file name, ID) won't wrap. It will spill out of the bordered card and cause horizontal scrolling, which breaks WCAG 1.4.10 (Reflow) at 320px.
 
-**Recommendation:** Add `break-words` (and `min-w-0` if the row ever becomes a flex child) to the item element, as in the AFTER block in finding 1.
+**Recommendation:** Add `break-words` (`overflow-wrap: break-word`) to the item element, as in the fix for Finding 1. If one line per item is preferred, use `min-w-0 truncate` together with a `title={item.name}`.
 
-#### 6. The list is built from `<div>`s, so screen readers don't announce it as a list
+#### 5. Too much vertical spacing
+
+**Severity:** Minor
+**Location:** `subject.tsx:16, 19, 21, 26`
+**Issue type:** Sizing
+**Viewport:** 320–768px tall, 1366×768
+**Move:** Step 2 item 5 (excessive vertical spacing)
+**Confidence:** High
+
+`p-6` on the root, `gap-4` between items and `p-4` inside each item add up to about 74px per row. That shrinks how many items fit before the fold and makes Finding 1 show up sooner.
+
+**Recommendation:** Use `p-4` on the root, `gap-3` on the list and `p-3` on items. That brings rows to about 60px (shown in the fix for Finding 1).
+
+#### 6. The list isn't marked up as a list
 
 **Severity:** Minor
 **Location:** `subject.tsx:19-25`
@@ -151,87 +136,92 @@ The button has no `onClick`, the component takes no `onAdd` prop, and the button
 **Move:** Step 2 item 10 (accessibility serialization)
 **Confidence:** High
 
-Visually this is a list of items, but it's made of `<div>`s. Screen readers therefore don't announce "list, N items" and don't offer list navigation (WCAG 1.3.1 Info and Relationships). The heading is also not linked to its region.
+The items are plain nested `<div>`s. Screen readers won't announce "list, N items," and users can't jump between items with list navigation. The visual structure (a list of cards) doesn't match what assistive technology is told.
 
-**Recommendation:** Use `<ul>`/`<li>` and wrap the component in a `<section aria-labelledby>`, as in finding 1.
+**Recommendation:** Use `<ul>` and `<li>`, as in the fix for Finding 1. Tailwind's base styles already remove the bullets.
 
-#### 7. An empty list shows nothing
+#### 7. Button has no `onClick` and no `type`; empty list shows nothing
 
 **Severity:** Informational
-**Location:** `subject.tsx:20`
-**Issue type:** Affordance
+**Location:** `subject.tsx:26`, `subject.tsx:20`
+**Issue type:** Other
 **Viewport:** All
-**Move:** Step 2 item 6
-**Confidence:** Medium
+**Move:** Step 2 items 6 and 8
+**Confidence:** High
 
-When `items` is empty, the user sees the "Items" heading directly above the button with no explanation. A short message like "No items yet" tells users the list loaded correctly and is simply empty.
+- The button has no click handler, so it does nothing. That may be intentional because this is a fixture.
+- It has no `type="button"`. If it's ever placed inside a `<form>`, it will submit the form.
+- When `items` is empty, the list area renders nothing. Users get no "No items yet" message to explain the blank space.
 
-#### 8. The button is shorter than the AAA touch-target size
+**Recommendation:** Add an `onAdd` prop wired to `onClick`, add `type="button"`, and render an empty-state message when `items.length === 0`.
+
+#### 8. Touch target meets AA but not AAA
 
 **Severity:** Informational
 **Location:** `subject.tsx:26`
 **Issue type:** Affordance
 **Viewport:** 320–768px (touch)
-**Move:** Step 2 item 6
-**Confidence:** High
+**Move:** Step 2 item 6 (touch targets)
+**Confidence:** Medium
 
-The button is about 40px tall: `py-2` plus a 24px line height. It also stretches to full width, because the flex column's default `align-items: stretch` widens it. That passes WCAG 2.5.8 (24×24, AA) but not 2.5.5 (44×44, AAA). If you want to meet AAA, use `py-2.5` or `min-h-11`.
+`py-2` plus a 24px line height makes the button about 40px tall. That passes WCAG 2.5.8 (24×24px) but falls short of 2.5.5's 44px.
+
+**Recommendation:** Use `py-2.5` or `min-h-11` if AAA or Apple's 44pt guidance is a goal.
 
 ## What Looks Good
 
-- **The button is outside the list.** The primary action is a sibling of the list, not a child, so capping the list won't trap the button inside the scroll area. It's the correct base for the docked-footer pattern.
-- **The heading uses `shrink-0`.** It does nothing today because nothing limits the height, but it's the correct size rule once the list becomes the flexible, scrolling part.
-- **List rows have borders.** `border rounded` gives each row a clear edge, and they're easy to tell apart from the filled primary button.
-- **Keys are stable.** `key={item.id}` rather than the index avoids rendering glitches when items are inserted.
-- **The heading is a real `<h2>`.** Screen-reader users can navigate to it.
+- The heading correctly uses `shrink-0`, so it sizes to its content. It just needs to work together with a `flex-1 min-h-0` scroll region.
+- Each item uses `item.id` as its key, which is stable, not the array index.
+- Items have visible borders and rounded corners, so the cards are clearly separate.
+- The button has a solid background, so it's clearly a button and not plain text.
+- The button is always shown and doesn't disappear based on state.
 
 ## Best Practices Applied
 
 | Principle | Source | How Applied |
-|-----------|--------|-------------|
-| Visible, capped scroll regions for unbounded content | NNGroup (visible scroll affordances); WCAG 1.4.10 | `max-h-[60vh] overflow-y-auto` + `scrollbar-gutter: stable` on the list |
-| Keep primary actions visible | Skill item 2 (docked footer); NNGroup | Button stays outside the scroll region with `shrink-0` |
-| Scrollable regions must be keyboard-operable | WCAG 2.1.1 | `tabIndex={0}` + `aria-label` + focus ring on the scroller |
-| Text contrast of at least 4.5:1 | WCAG 1.4.3 | `bg-blue-500` → `bg-blue-600` |
-| Visible, controlled focus indicator | WCAG 2.4.7, 2.4.13 | `focus-visible:outline-2 outline-offset-2` |
-| Full state coverage | Skill item 8 | Added hover / active / disabled |
-| Content reflows at narrow widths | WCAG 1.4.10 | `break-words` on item rows |
-| Semantic structure | WCAG 1.3.1 | `<ul>/<li>`, `<section aria-labelledby>` |
+|---|---|---|
+| Keep primary actions visible; only the content scrolls | Skill item 2; NNGroup (visible scroll affordances) | Button moved to a `shrink-0` footer; list gets `flex-1 min-h-0 overflow-y-auto` |
+| Stable scrollbar space | MDN `scrollbar-gutter` | `[scrollbar-gutter:stable]` on the list |
+| Text contrast of 4.5:1 | WCAG 1.4.3 | `bg-blue-500` → `bg-blue-600` |
+| Visible focus indicator | WCAG 2.4.7 / 2.4.13 | `focus-visible:ring-2 ring-offset-2` |
+| Content reflows at 320px | WCAG 1.4.10 | `break-words` on items |
+| Structure exposed to screen readers | WCAG 1.3.1 | `<ul>` / `<li>` |
+| Target size | WCAG 2.5.8 / 2.5.5 | Checked against AA; noted AAA option |
 
 ## Keyboard Navigation
 
-**Focus order.**
-1. `<button>Add Item` (`subject.tsx:26`): this is currently the only focusable element. It's reachable, but only after scrolling past the full list (finding 1).
+**Focus order.** There is one focusable element: `<button>` at `subject.tsx:26`. The heading and items aren't focusable. Tab order follows the DOM, which matches the visual order, and there's no `order`, `row-reverse` or absolute positioning. One caveat: until Finding 1 is fixed, the button can scroll out of view. Tabbing will scroll it back into view, so WCAG 2.4.11 isn't violated, but mouse and touch users lose sight of it. After the fix, the scrollable `<ul>` may need `tabIndex={0}` so keyboard users can scroll it. Chromium 130+ makes scroll containers focusable on its own, but Safari doesn't.
 
-After the recommended fix, the order becomes: list scroll region (`<ul tabIndex={0}>`) → "Add Item" button. That matches the top-to-bottom visual order. Nothing reorders things visually (`order`, `row-reverse`, absolute positioning), so there's no WCAG 2.4.3 mismatch.
+**Escape-key behavior.** N/A. There are no modals or overlays in this diff.
 
-**Escape-key behavior.** N/A: no modals or overlays in this diff.
+**Skip-link presence.** N/A. The diff doesn't change page-level structure.
 
-**Skip-link presence.** N/A: the file doesn't change page-level structure. It's a component, not a page shell.
-
-**Focus-trap risks.** No focus-trap risks identified. Two related notes:
-- Today a keyboard user can always Tab to the button. The cost is the long scroll, not a trap.
-- After the fix, the scroll region needs to be focusable so keyboard users can scroll it in Safari. The `tabIndex={0}` covers this.
+**Focus-trap risks.** None identified.
 
 ## Viewport Verification Checklist
 
-- [ ] **360px mobile:** fails today. The button leaves the screen after about 7 items, and long names can overflow sideways. Touch target height is 40px, which passes AA. Fixed by findings 1 and 5.
-- [ ] **1366×768 (common laptop):** fails today. The button leaves the screen after about 9 items. Fixed by finding 1.
-- [x] **1920×1080 (standard desktop):** acceptable for short lists. The full-width button may look stretched in a wide container, which is cosmetic.
+- [ ] 360px mobile: **Fails** with about 5+ items (button pushed off-screen, Finding 1), and long names overflow sideways (Finding 4). Touch target is AA-adequate.
+- [ ] 1366×768 (common laptop): **Fails** with about 8+ items (Finding 1).
+- [x] 1920×1080 (standard desktop): Works for short lists, but has the same unbounded-growth problem at about 12+ items.
 
 ## Summary Table
 
 | # | Finding | Severity | Issue type | Location | Confidence |
-|---|---------|----------|------------|----------|------------|
-| 1 | List has no height limit; pushes "Add Item" below the fold | Major (Critical if parent clips) | Overflow | `subject.tsx:16-28` | High |
+|---|---|---|---|---|---|
+| 1 | List grows without limit and pushes "Add Item" off-screen | Critical | Overflow | `subject.tsx:16-28` | High |
 | 2 | White on `blue-500` fails 4.5:1 contrast | Major | Affordance | `subject.tsx:26` | High |
-| 3 | Button only styles its default state | Major | State coverage | `subject.tsx:26-28` | High |
-| 4 | Button has no click handler and defaults to `type="submit"` | Minor | Other | `subject.tsx:26` | Medium |
-| 5 | Long names without spaces overflow on narrow screens | Minor | Responsive | `subject.tsx:21-23` | Medium |
-| 6 | `<div>`s instead of `<ul>/<li>` | Minor | Accessibility serialization | `subject.tsx:19-25` | High |
-| 7 | No empty-list message | Informational | Affordance | `subject.tsx:20` | Medium |
-| 8 | Button height 40px (below 44px AAA) | Informational | Affordance | `subject.tsx:26` | High |
+| 3 | Button has no hover, active, focus or disabled styles | Major | State coverage | `subject.tsx:26-28` | High |
+| 4 | Long names overflow sideways at 320px | Minor | Responsive | `subject.tsx:21-23` | Medium |
+| 5 | Too much vertical spacing | Minor | Sizing | `subject.tsx:16,19,21,26` | High |
+| 6 | List built from `<div>`s instead of `<ul>`/`<li>` | Minor | Accessibility serialization | `subject.tsx:19-25` | High |
+| 7 | No `onClick`, no `type="button"`, no empty state | Informational | Other | `subject.tsx:20,26` | High |
+| 8 | Touch target about 40px (AA pass, AAA miss) | Informational | Affordance | `subject.tsx:26` | Medium |
 
 ## Overall Assessment
 
-The problems are small and can be fixed in place; the overall structure is fine. The component already has the right shape: heading, list, and an action that sits outside the list. It's missing a height limit on the list and has only default styling on the button. The most important fix is finding 1. Give the list `max-h-*`/`flex-1 min-h-0` with `overflow-y-auto` and keep the button pinned below it, so "Add Item" stays visible however many items there are. I rated this Major rather than the Critical the fixture's comment expects, because nothing in this file clips content. Raise it to Critical if the parent layout sets `overflow-hidden` or a fixed height. After that, fix the button's contrast and add its hover, active and disabled styles in one change to `subject.tsx:26`.
+The component is small and its problems can be fixed in place. Nothing here needs a redesign. The main defect is structural but simple: the list grows without limit and sits in the same flow as the only action, so the more items users add, the harder it gets to find "Add Item." The most important fix is the docked-footer layout from Finding 1:
+- a height-limited root,
+- a `flex-1 min-h-0 overflow-y-auto` list,
+- a `shrink-0` footer holding the button.
+
+That fix also resolves Findings 5 and 6. The contrast and state-coverage fixes (Findings 2 and 3) are a one-line class change on the button.

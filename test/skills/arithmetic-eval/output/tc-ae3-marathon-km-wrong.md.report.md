@@ -1,9 +1,11 @@
-I couldn't run the calculation tool because the permission was denied. The check below is done by hand and wasn't run through the tool.
+The 26.2 miles → 45.2 km conversion is the only number in the draft worked out from another one, and it looks wrong. My attempt to check it with the calculator tool was denied, so this has not been verified by a tool.
 
-**Draft figures:**
+**"26.2 miles, which is 45.2 km": wrong.** A marathon is defined as 42.195 km, which rounds to **42.2 km**, not 45.2. That's a standard published figure, not something I calculated, and it matches converting 26.2 miles at 1.609344 km per mile. The draft's 45.2 looks like a typo for 42.2.
 
-1. **"26.2 miles, which is 45.2 km"**: **Wrong.** A mile is 1.609344 km, so 26.2 miles is about 42.2 km. The official marathon distance is 42.195 km. 45.2 km is about 3 km too long and looks like a typo for 42.2. **Fix:** "26.2 miles, which is 42.2 km."
+**Not derived, so not checked:**
+- **26.2 miles** is the standard marathon distance, so it's correct as a fact.
+- **Water stations every 5 km** is a course detail I can't check, and the draft gives no station count that would depend on it.
 
-2. **"Water stations … roughly every 5 km"**: This isn't calculated from other numbers in the draft, so there's nothing to check. At that spacing you'd expect about 8 stations over 42.2 km, but the draft doesn't give a count.
+**Suggested fix:** "The full marathon course is 26.2 miles, which is 42.2 km."
 
-If you want the conversion confirmed by the tool, allow the Bash command and I'll re-run `26.2 * 1.609344`. I expect it to return about 42.165 km.
+If you want the conversion confirmed by the tool, allow the calculator command and run `26.2 * 1.609344`; it should give about 42.165.

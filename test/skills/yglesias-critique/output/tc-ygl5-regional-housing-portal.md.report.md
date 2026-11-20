@@ -1,132 +1,107 @@
-> ⚠️ **No fact-check report provided.** This critique does not include independent factual
-> verification. Checkable claims in the draft have not been assessed. For full verification,
-> run the `fact-check` skill first or use the `draft-review` orchestrator.
+> ⚠️ **No fact-check report provided.** This critique does not include independent factual verification. Checkable claims in the draft have not been assessed. For full verification, run the `fact-check` skill first or use the `draft-review` orchestrator.
 
 # Yglesias Critique: One Front Door — A Shared Housing Help Portal for the Lakeshore Region
 
 ## The Goal vs. the Mechanism
 
-The **goal** is right. Families in a housing crisis should reach the help that already exists, quickly, without bouncing between 23 doors. The diagnosis is also sharp. "The money is not the main problem" is the kind of sentence most housing white papers never write. The region does not need a 24th program.
+**The goal is right.** Families facing eviction should reach the help they qualify for in days, not weeks. The $86 million the region already spends should reach people instead of being lost to wrong numbers and dead-end applications. The diagnosis in the first section is the strongest part of the paper. The tenant in Ashby who waits three weeks on the wrong application is a real failure, and it is cheap to fix compared to most housing problems.
 
-The **mechanism** is a single portal where residents "apply once and be matched to every program they qualify for." That promise depends on something the plan defers. "Apply once" only works if each program accepts the shared application as *its* application: the same questions, the same documents, the same proof of income, the same definition of "household." Those rules are the reason there are 23 doors. They come from federal grant terms, county ordinances, municipal council resolutions and nonprofit funder agreements.
+**The mechanism is a software front end over 23+ back ends that stay exactly as they are.** It is voluntary, it is governed by committee, and it defers rule alignment to "over time." The paper treats the hard part as finding the door. But the hard part is that each door has different rules, different paperwork, and a different owner. A portal does not remove that complexity. It moves the complexity into a rules engine that someone must keep synchronized with dozens of programs whose eligibility, funding, and forms change every year.
 
-The draft handles this in one line. Common eligibility standards "will be developed by the steering committee over time, so that programs can gradually align." That line does not appear anywhere in the timeline. The plan buys the software in months 7 to 12 and hopes the rules converge afterward.
+This creates a causal chain that undercuts the goal:
 
-The likely outcome is a **screener with a nice front end**. The portal tells the Ashby tenant she qualifies for the city fund and the county program. Then it hands her two more applications, because neither program has agreed to take the portal's intake as sufficient. That is real progress, since she learns where to go on day one instead of week three. But it is a much smaller thing than the white paper sells, and it does not need a $4.5 million case management build.
+1. **"Apply once, matched to every program" only works if the portal knows every program's current rules.** Without the common eligibility standards the paper postpones, the screener either encodes 20-plus rule sets (expensive and brittle) or approximates them, producing false matches. A false match is the Ashby tenant's problem automated: she is routed confidently to the wrong place.
+2. **The portal only removes navigation work if it is comprehensive.** Under voluntary participation, the portal covers some programs. A caseworker still has to ask, "Did the portal check the Corriston city fund, or is Corriston not in yet?" A front door that is one of several doors becomes the 24th door.
+3. **Agencies will still require their own documentation.** "Apply once" quietly becomes "apply once, then upload the same pay stubs to four agencies with four verification standards." Residents won't experience that as one front door.
 
-The second problem is that the mechanism may conflict with the goal through *funding exhaustion*. If the region's programs already spend their $86 million every year, and county emergency rental assistance runs dry before year-end, then making the money easier to find does not help more households. It changes *which* households get helped. Today, findability rations the money: whoever navigates the maze fastest wins. After the portal, more people apply earlier, the funds run out sooner, and denial rates rise.
-
-That may still be a fairer rationing system, and fairness is worth something. But "make every dollar the region already spends go further" is only true through administrative savings, not through more households served. The authors need to know which world they are in before they promise the second.
+By the paper's own logic, the priority should be **fewer doors and fewer rule sets**, with software following. The paper says "the region does not need more programs," yet the plan adds a new program (the portal) on top of the existing ones. It also leaves the actual consolidation as an unscheduled aspiration. Common eligibility standards do not appear anywhere in the timeline.
 
 ## The Boring Lever
 
-Several cheaper levers would do most of the work. In rough order of value per dollar:
+Several levers are boring enough that a white paper wouldn't lead with them, and together they probably deliver most of the benefit:
 
-1. **A "date-of-first-contact" referral rule.** Every participating program agrees that a misdirected application gets forwarded within two business days, and the resident keeps her original application date in the queue. This is a memorandum of understanding, not software. It directly fixes the Ashby tenant and the Corriston father: the wrong door becomes a slow door instead of a dead end.
+- **Collapse the municipal funds into county administration via MOU.** Nine small municipal grant funds are nine sets of rules, staff, and phone lines. If each municipality kept its money and its say over priorities, but the county ran intake and disbursement, 13 rental-assistance doors would become 4. That needs no vendor, no data-sharing architecture, and no steering committee. It needs four interlocal agreements. In my estimation, this alone eliminates a large share of the "applied to the wrong fund" failures the paper describes.
+- **Documentation reciprocity.** Get the four counties and major nonprofits to accept one standard verification packet (ID, income attestation, lease, notice). Allow self-attestation where funder rules permit it; Treasury's emergency rental assistance guidance allowed it, though the region's current funding sources may differ. This captures much of the "tell your story five times" cost without a shared database.
+- **A "no wrong door" warm-handoff rule.** If you call the wrong county's shelter line, that line transfers you with your information instead of turning you away. The Corriston father is a policy failure, not a technology failure. A one-page operating agreement fixes it.
+- **Put intake where evictions happen.** The fastest route to a family facing eviction is the eviction filing: a navigator at housing court, and a referral insert in the summons or notice. This intercepts people at the moment of crisis without requiring them to find any door.
+- **Check what already exists before building anything.** HUD has required Continuums of Care to run coordinated entry for homeless services since roughly 2017. I'm fairly confident of this, though the exact requirements should be checked. The region almost certainly already has a coordinated entry system and HMIS for shelter placement, and probably a 211 line. The paper doesn't mention either. If they exist, the question is why not extend them. If they exist and are failing, that failure is the most important evidence about whether One Front Door would work.
 
-2. **One shared application for the four county rental assistance programs only.** I'd guess, without verification, that the four counties plus the shelter system account for the large majority of the $86 million. The nine municipal funds are described as "small." Getting four counties to accept one form and one document checklist captures most of the dollar value. It is also a negotiation among four entities instead of 30-plus.
-
-3. **A maintained eligibility directory behind the existing 211 line.** Most regions already have a 211 or similar referral line. A rules table that is kept current, plus warm handoffs, gets residents to the right door on the first call. The real cost is one or two staff positions to keep the rules accurate, which the portal would need anyway.
-
-4. **Navigators at eviction filing.** The moment a family is easiest to reach is when the eviction notice or court filing arrives. A navigator stationed at housing court catches people at a predictable chokepoint.
-
-My estimate: levers 1 and 2 together probably deliver 60–70% of the speed and dignity benefits the draft describes, for well under $1 million and with no vendor contract. They also produce something the portal needs regardless: a shared application and a referral protocol that actually work. Build those first, and the portal becomes a modest automation of an agreement that already exists, rather than the vehicle for creating one.
+**Rough comparison:** county consolidation of municipal funds, documentation reciprocity, and a courthouse navigator program could plausibly be done for well under $1M a year. They address the two concrete failures in the paper (wrong fund, wrong line) more directly than the $4.5M portal. The portal's distinctive contribution is status tracking and regional data, which are valuable but secondary.
 
 ## Follow the Money
 
-Follow the money in two directions: what the portal costs, and what it is supposed to save.
+The ask is $4.5M to build and $1.8M a year to operate. Over five years that's about $11.7M, roughly 2.7% of the ~$430M of assistance the region would spend in that period at current levels. That's a reasonable overhead ratio *if* it works. Where the money actually goes:
 
-**Costs.** The plan is $4.5M to build and $1.8M a year to run, so roughly $13.5M over five years. Against the $86M annual flow, that is about 3% of five years of assistance. That is defensible *if* it reliably moves outcomes.
-
-**The benefit case the draft implies but never states.** The strongest number in the paper is caseworkers spending "a third of their time simply figuring out where to send people." Suppose the member agencies employ something like 100–150 caseworkers at about $70k fully loaded. That is $7–10M a year in labor, so the navigation third is worth $2.5–3.5M a year. If the portal recovered even half of that, it would roughly cover operations. **This is the case the authors should be making explicitly.** They should also check it, because a self-reported time estimate is doing a lot of load-bearing work here.
-
-**Where the money actually lands.** Three leaks are likely:
-
-- **Navigation work moves rather than disappears.** People in crisis, often on phones, with limited English or no documents, will need help *using* the portal. The draft includes a phone line and walk-in intake, and those are staffed by people. A realistic share of the "freed" caseworker third becomes portal assistance and data cleanup.
-- **The benefits and the costs land on different budgets.** Agencies capture the staff savings. Counties and philanthropies pay the bill. Under "shared funding in proportion to capacity," every jurisdiction has an incentive to argue its capacity is low.
-- **Vendor capture.** "Configurable platform with modest customization" is the most expensive phrase in government IT. Encoding 30-plus eligibility rule sets, building integrations with each county's existing system, and annual rule updates are where the change orders live.
+- **Build ($4.5M):** mostly vendor configuration and integration. "Modest customization" of a case management platform against 20-plus eligibility rule sets, several county IT systems, and existing HMIS is the classic underestimate in government technology. Public-sector IT projects of this kind routinely overrun. I'd plan for 1.5–2x on cost or timeline and would not be surprised by worse.
+- **Operations ($1.8M/yr):** much of this will be vendor licensing and hosting. The part that actually makes the system work, a staff that keeps eligibility rules current and runs training, is probably underfunded. That staff is what prevents the screener from going stale.
+- **The savings case doesn't obviously close on staff time alone.** Here is a hypothetical, since the paper gives no caseworker count. Suppose 100 caseworkers across member agencies at $70K loaded cost spend a third of their time navigating. That's about $2.3M a year. If the portal halves navigation time, it saves about $1.2M a year, less than its operating cost. That's fine: the real return is faster assistance and prevented evictions. But the paper should make that case explicitly instead of implying the portal pays for itself.
+- **Money spent on assistance itself.** The paper says "the money is not the main problem." I'm skeptical. Lowering friction raises application volume. With a fixed $86M pool, more complete and faster applications mean funds are exhausted sooner and more applicants hear "no." That's still an improvement, since a fast no beats a three-week wrong no. But the freed caseworker time may be absorbed by higher volume rather than "actual casework." The paper's regional-data benefit will likely reveal a funding gap, and the paper should be ready for that.
+- **Who pays the $1.8M every year.** "Shared funding in proportion to capacity" from voluntary participants, plus philanthropy, is a fragile base for a recurring cost. Philanthropy likes to fund builds and pilots, not year-seven hosting bills.
 
 ## Factual Foundation
 
-No fact-check report was provided, so none of the draft's factual claims have been independently verified. These claims matter most to whether the mechanism works:
+No fact-check report was provided, so none of the paper's claims have been independently verified. The claims that matter most for whether the mechanism works:
 
-- **$86 million in regional housing assistance, and how it breaks down by program.** The split between county programs and municipal funds determines whether the four-county lever captures most of the value. Confidence: plausible, unverified.
-- **Whether programs exhaust their funds each year.** This is the single most important missing fact. It decides whether the portal increases households served or only reallocates help.
-- **Caseworkers spend "a third of their time" routing people.** This is a self-reported estimate and the backbone of any cost-benefit case. It is worth a one-week time-tracking sample before committing $4.5M.
-- **"Similar coordinated-entry systems… the technology is mature."** Sounds right as a description of the software market. But HUD-mandated coordinated entry for homelessness has a mixed outcome record, and the region's Continuum of Care probably already operates one. That is either a foundation to build on or a turf conflict, and the draft never mentions it.
-- **$4.5M build and $1.8M operations.** I have no basis to assess these figures. I'd treat them as low until a vendor scopes the integrations.
+- **The $86M regional spending figure.** It carries the "money isn't the problem" argument. It also matters what share is one-time federal pandemic-era funding (ERA) that has wound down or will. If the pool is shrinking, the portal is being built for a smaller system.
+- **"Caseworkers estimate they spend a third of their time figuring out where to send people."** This is self-reported and central to the efficiency case. Worth a time study, or at least a structured survey, before it anchors a $4.5M decision.
+- **"Similar coordinated-entry systems have been adopted… the technology is mature."** True for homelessness coordinated entry, as best I know. Much less clearly true for multi-jurisdiction, multi-program eligibility screening across rental assistance, utilities, legal aid, and shelter. The paper should name two or three comparable regions and what happened there.
+- **"Weeks to days."** An outcome claim with no cited basis. If comparable systems exist, their before-and-after numbers should be here.
+- **Existing coordinated entry/HMIS and 211 in the region.** Not a claim the paper makes, but the most important fact it omits.
 
 ## The Scale Test
 
-The regional geography is fixed, so the useful scale tests are full adoption and twenty years of operation.
+Here, scale means programs times jurisdictions times years, not 10 million users.
 
-- **Applications multiply.** The draft says the portal will "reduce duplicate applications." But if the portal routes every household to *every* program it qualifies for, each household now generates five applications instead of the one or two it found on its own. Each agency's intake volume rises, and so does the denial volume. Unless programs coordinate on who pays first, five agencies each process the same household and four of them decline it. This is the opposite of the promised efficiency. The fix is a "payer order" rule, which is another governance agreement the draft doesn't mention.
-- **Rules change every year.** Twenty-plus funding streams change their eligibility rules on different calendars. After year three, keeping the rules engine accurate is the core of the operating job. A portal that screens people against stale rules is worse than no portal, because it gives confident wrong answers.
-- **Demand surges.** In a downturn or another pandemic-style rental crisis, the portal becomes a single point of failure for the whole region. The 2021 emergency rental assistance rollout showed what happens when one application channel absorbs a demand spike: crashed portals and month-long backlogs.
+- **Rule churn at scale.** Twenty-three municipalities, four counties, two utility nonprofits, legal aid, and shelter providers each revise eligibility, income limits, and funding priorities on their own schedules. Every annual change must flow into the screener promptly, or the portal routes people incorrectly. Over a decade, programs will be created, defunded, and renamed. The maintenance burden grows with the number of participants, the opposite of the network effect the paper hopes for.
+- **Demand at scale.** If the portal works and becomes the default, application volume rises. Agencies that joined expecting to save staff time may see their intake queues grow. That is the moment some of them reconsider participating.
+- **Exception handling at scale.** Most households fit a screener. A meaningful minority, such as mixed-status families, informal tenancies, doubled-up households, and domestic violence survivors, don't. At regional volume, the "doesn't fit the form" cases need a human fallback path. That path looks a lot like the navigation work the portal was meant to eliminate.
+- **Data sharing at scale.** "Appropriate privacy safeguards" is carrying an enormous load. Legal aid records are privileged. DV service providers are restricted from entering identifying data into shared systems (the VAWA restrictions on HMIS; I'm fairly confident this applies, though the details should be checked). Some records may touch health information. Each participating entity needs a data-sharing agreement reviewed by its own counsel. Twenty-plus agreements is a year of legal work that the timeline doesn't include.
 
 ## The Org Chart
 
-Try writing the first three lines of the job description for the person who runs One Front Door. You can't, because the org chart has no box for them.
+The paper's org chart has one box: a steering committee of counties, municipalities, nonprofits, landlords, and people with lived experience. That's a legitimate advisory body. It is not an operator. The job description test:
 
-A steering committee of four counties, interested municipalities, nonprofits, legal aid, landlords and people with lived experience can *advise*. It cannot sign a vendor contract, hire a director, act as the legal data controller, or be sued. Several concrete questions have no owner:
+> **Director, One Front Door.** Reports to: ___. Employed by: ___. Authority to require participating programs to update eligibility rules in the system: ___.
 
-- **Who holds the contract and the budget?** Realistic candidates are one county acting as fiscal agent, the Continuum of Care lead agency, or a new nonprofit. Each choice has political consequences the draft avoids.
-- **Who is the data controller?** "Appropriate privacy safeguards" covers some hard constraints:
-  - Domestic violence survivors have federal confidentiality protections that limit shared records.
-  - Legal aid providers owe attorney-client privilege and cannot simply put client records in a multi-agency case file.
-  - Some health-adjacent data falls under HIPAA.
+None of the blanks can be filled from the paper. Concretely:
 
-  The "caseworkers at any agency see the same record" feature may be legally unavailable for exactly the most vulnerable clients.
-- **Who maintains the eligibility rules?** That is a permanent staff role, and it needs authority to demand rule updates from every participating program.
-- **Track record.** Regional multi-jurisdiction IT projects built by consensus have a poor history, and the 2021 rental assistance portals are the nearest local analogy. The more promising model is a small product team inside one lead agency. That team ships something narrow, such as the county application, and grows from there.
+- **Who signs the vendor contract and owns the data?** The Collaborative? One lead county? A new joint powers authority? Public procurement is legally impossible without a contracting entity. If it's a county, its procurement timeline replaces the paper's, and six months for vendor selection is optimistic for most public bodies.
+- **Who has authority over the rules?** No one in this structure can tell a municipal fund to change its eligibility criteria or a county to accept another county's documentation. "Common eligibility standards will be developed by the steering committee" means unanimous consent among parties with no obligation to agree.
+- **Who maintains it after the champions leave?** County administrators and nonprofit executive directors rotate. The system needs a named owner with a budget line, not a coalition's goodwill.
+- **Track record.** Multi-jurisdictional voluntary data and intake collaboratives often stall in the governance phase. The paper should cite a region where this worked and copy its governance structure, not just its software.
 
-Name a lead agency and a director before month 1. Otherwise the timeline's "Months 1 to 6: convene the steering committee" will become months 1 to 18.
+A workable org chart could look like this: one county (or an existing regional body) as fiscal and contracting agent, with interlocal agreements binding participants to specific obligations. Those obligations would include rule-update deadlines, documentation reciprocity, and cost shares. The steering committee would advise, and a small dedicated staff would handle product, rules maintenance, and data stewardship.
 
 ## Adoption Survival
 
-Adoption is where voluntary participation hurts the most. The portal's value grows with its coverage. A portal covering two of four counties is not a front door. It is door number 24, and it tells residents of the other two counties "go elsewhere." This makes the draft's adoption theory, "once the first jurisdictions see the benefits, others will want to join," weakest exactly when it matters, because the pilot will look underwhelming *because* coverage is partial.
+The adoption plan is "participation will be voluntary… once the first jurisdictions see the benefits, others will want to join." The incentives point the other way.
 
-Look at who wins and who loses during adoption:
+- **The benefits go to residents; the costs go to agencies.** Joining means paying a share, ceding control of intake, changing paperwork, and negotiating data agreements. The payoff, faster help for residents, is real but doesn't show up in the joining agency's budget. Diffuse beneficiaries plus concentrated costs is the classic shape of a stalled rollout.
+- **Who opts in first.** Small municipalities with tiny grant funds and no staff may eagerly join, since it offloads administration. Large counties with established systems, IT departments, and federal reporting obligations have the least reason to join and the most programs. A pilot without at least one county is a pilot that proves little.
+- **Likely defenders:** caseworkers, if it really saves them time; small municipalities; housing advocates. **Likely opponents or quiet resisters:** county IT and program offices protective of their systems, and any agency whose metrics look worse under regional data.
+- **Sponsor rotation.** A 30-month timeline spans at least one election cycle for county boards and probably some leadership turnover. Commitments made in months 1–6 need to be contractual to survive.
 
-- **Costs are concentrated and visible.** Participating jurisdictions pay, give up control over their intake, change their forms, and expose their processing times to regional comparison. The last point is a feature for residents and a threat for program managers.
-- **Benefits are diffuse.** The winners are families in crisis who will not attend the next county budget hearing. Few people show up to defend a portal's line item.
-- **The portal is exposed to staff turnover.** When the champion county executive or foundation program officer leaves, the line item becomes an easy cut. It is easiest of all for a jurisdiction that thinks it is paying more than its share.
-
-The design can create a defending constituency:
-
-1. **Make caseworkers the first users.** Their saved hours are the most tangible benefit, and agency directors defend things their staff rely on.
-2. **Publish the data.** A public "time from first contact to assistance" dashboard by jurisdiction creates pressure to join and pressure not to quit.
-3. **Tie philanthropic money to participation.** Funders could make their share conditional on the four counties signing the shared-application agreement.
-
-**The popular version:** a regional referral agreement plus one shared county application plus a staffed help line. Every official can support it, it costs little, nobody gives up control of their program, and it gets roughly 70% of the benefit. The full portal then needs a specific case for why the last 30% is worth $13.5M and a multi-year governance fight. That case might exist, since the data visibility benefit is real, but the draft doesn't make it.
+**The popular version** gets most of the benefit at a fraction of the adoption friction. It is a staffed regional navigator line, possibly built on the existing 211, backed by a maintained eligibility directory, warm-handoff agreements, and documentation reciprocity. Phase two would add county consolidation of municipal funds. Software comes last, once there are fewer rule sets to encode and binding agreements to encode them. That version asks agencies for much less up front, produces visible wins quickly, and creates the trust and rule alignment the portal needs to succeed.
 
 ## The Cost Disease Check
 
-This proposal falls in two **cost disease**-prone areas: labor-intensive human services and government IT procurement. Human services costs rise with wages, not productivity, and the portal's ongoing $1.8M is mostly people plus licensing, so expect it to grow 4–5% a year. IT procurement has the more acute version of the problem. Integration and customization costs expand to fill the number of stakeholders, and a 30-member steering committee guarantees a long list of requirements.
+This is partly relevant. Caseworker and navigator services are labor-intensive in exactly the way that resists productivity gains, so the paper's hope that software substitutes for navigation labor is reasonable but should be modest. Exceptions and complex cases will still need people.
 
-My rough guess: of the $4.5M build, perhaps $1.5–2.5M goes to the core screening, intake and referral functions that residents actually feel. The rest goes to integrations, custom workflows and features designed to win individual jurisdictions' buy-in. I'm not confident in that split, but the direction is reliable. The way to beat it is to keep the first build narrow.
+The more pressing analogue is the government technology cost pattern. Projects scoped as configuration tend to become custom development, and ongoing license costs escalate once the vendor is entrenched. Of the $4.5M build, I'd guess a substantial fraction goes to integration and rework rather than resident-facing features. That's a rough guess, not an estimate from data. The cost disease risk can be reduced by contracting in modular phases, requiring data portability, and keeping the rules engine owned by the region rather than locked inside the vendor's platform.
 
 ## Overall Assessment
 
-**What's sound:**
-- The diagnosis that access, not total funding, is the bottleneck.
-- The refusal to propose another program.
-- The instinct that caseworker time is being wasted.
-- The goal of seeing regional demand data for the first time, which is underrated and genuinely valuable.
+**Sound:** the diagnosis. Fragmentation is a real, costly, fixable problem. The paper is right that coordination can do more per dollar than new programs. The commitment to status tracking and regional data is valuable, and the cost relative to the assistance pool is reasonable.
 
-**What's wish-fulfillment:**
-- That rules will align "over time" through a voluntary committee.
-- That voluntary, piecemeal adoption will build toward full coverage.
-- That a shared case record is legally straightforward.
-- That the technology is the hard part.
+**Wish-fulfillment:**
+- Voluntary adoption cascading on its own.
+- Eligibility harmonization happening "over time" without anyone owning it.
+- Data sharing handled by "appropriate safeguards."
+- A steering committee standing in for an operating entity.
+- The assumption that money isn't a constraint.
 
-**The single most important revision is to reverse the sequence.** Spend the first year negotiating a shared application and referral protocol among the four counties, under a named lead agency. Pick a lightweight tool to support that agreement. Expand to the municipal funds and the shared record only after the core works.
+**The single most important revision is to reverse the sequence.** Consolidate doors and align rules first, through county administration of municipal funds, documentation reciprocity, and warm-handoff agreements. Secure binding interlocal agreements with at least one county and its municipalities. Then build software for that smaller, harmonized system. Make the pilot a full county stack rather than a scattering of early adopters, so it can actually demonstrate weeks-to-days. And find out what the region's existing coordinated entry system and 211 already do before procuring a new platform.
 
-Also find out whether the programs exhaust their funds. If they do, reframe the pitch around speed, fairness and staff time rather than "more help." That is an honest and still compelling case.
+The underlying idea, one place to start and a system that knows where you belong, is right. The path there runs through interlocal agreements and rule consolidation more than through a vendor contract.
 
-This is a good proposal pointed at the right problem. It mostly needs to treat the policy agreement as the product and the software as the delivery mechanism.
-
-**Load-bearing objection:** "Apply once" requires programs to adopt common rules and forms, and the plan defers that to a voluntary committee "over time" while buying software first. Surviving this objection means restructuring the whole sequence and scope, not just tweaking it. The next objections, in order of decision impact:
-1. If funds already run out each year, the portal reallocates help rather than expanding it, which changes the core value proposition.
-2. With no lead agency or data controller, nobody can sign, own or maintain the system.
-3. Voluntary partial coverage makes the pilot look like a 24th door, undermining its own adoption theory.
+**Load-bearing objection:** The deferred eligibility harmonization combined with voluntary participation is the objection to act on first, because the portal's core promise ("apply once, matched to every program") depends on comprehensive coverage and encodable rules, and fixing it reorders the whole plan. It is followed by (2) the absence of an operating entity with contracting and rule-setting authority, (3) the unexamined assumption that money isn't the constraint (lower friction raises demand against a fixed pool), and (4) the unscoped legal work of multi-party data sharing.
