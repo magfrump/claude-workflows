@@ -406,6 +406,37 @@ run_si() {
   [ ! -e "$WD/si-run-id.txt" ]
 }
 
+@test "the TMPDIR fallback refuses an ignore file that hides si-tmp-* names but not si-tmp/" {
+  mkdir -p "$REPO/.worktrees"
+  printf '.gitignore\nsi-wt-*\nsi-tmp-*\n' > "$REPO/.worktrees/.gitignore"
+  unset TMPDIR
+  run_si
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"git does not ignore everything in $REPO/.worktrees"*"export TMPDIR"* ]]
+  [ ! -e "$STUB_DIR/claude.tmpdir" ]
+}
+
+@test "the TMPDIR fallback refuses a .worktrees/si-tmp that is a symbolic link" {
+  mkdir -p "$REPO/.worktrees" "$BATS_TEST_TMPDIR/elsewhere"
+  ln -s "$BATS_TEST_TMPDIR/elsewhere" "$REPO/.worktrees/si-tmp"
+  unset TMPDIR
+  run_si
+  [ "$status" -ne 0 ]
+  # git's check-ignore refuses a path beyond a symbolic link, so the ignore
+  # read is what stops it; the [ -L ] test after it is the backstop.
+  [[ "$output" == *"git could not say whether it ignores $REPO/.worktrees"*"export TMPDIR"* ]]
+  [ ! -e "$STUB_DIR/claude.tmpdir" ]
+  [ -z "$(ls -A "$BATS_TEST_TMPDIR/elsewhere")" ]
+}
+
+@test "a TMPDIR that is a writable file, not a directory, falls back to .worktrees/si-tmp" {
+  : > "$BATS_TEST_TMPDIR/afile"
+  export TMPDIR="$BATS_TEST_TMPDIR/afile" STUB_RESOLVER_RC=1
+  run_si
+  [ "$status" -eq 0 ]
+  [ "$(cat "$STUB_DIR/claude.tmpdir")" = "$REPO/.worktrees/si-tmp" ]
+}
+
 @test "an explicit WORKTREE_BASE is used as given, with no .worktrees made" {
   mkdir -p "$BATS_TEST_TMPDIR/own"
   export WORKTREE_BASE="$BATS_TEST_TMPDIR/own/x" STUB_RESOLVER_RC=1

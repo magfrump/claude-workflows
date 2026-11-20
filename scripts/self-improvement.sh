@@ -216,7 +216,7 @@ ensure_worktree_dir() {
     out=$(git -C "$repo" status --porcelain --untracked-files=normal -- .worktrees 2>/dev/null) || rc=128
     [ "$rc" -ne 0 ] || GIT_LITERAL_PATHSPECS=0 git -C "$repo" check-ignore -q -- ".worktrees/$prefix-x" 2>/dev/null || rc=$?
     if [ "$rc" -gt 1 ]; then
-        echo "Error: git could not say whether it ignores $b (git status or check-ignore failed)" >&2
+        echo "Error: git could not say whether it ignores $b (git status or check-ignore failed); $fix" >&2
         return 1
     fi
     if [ "$rc" -eq 1 ] || [ -n "$out" ]; then
@@ -496,7 +496,7 @@ REPO_DIR="$(cd "$REPO_DIR" && pwd)"
 # ask the owner. ensure_worktree_dir (main block) makes the directory and its
 # .gitignore of "*" and refuses if git would see a worktree there. A
 # WORKTREE_BASE other than the default is used as given, with no such setup
-# or check.
+# or check (the TMPDIR fallback below still sets up .worktrees/ for itself).
 SI_DEFAULT_WORKTREE_BASE="$REPO_DIR/.worktrees/si-wt"
 WORKTREE_BASE="${WORKTREE_BASE:-$SI_DEFAULT_WORKTREE_BASE}"
 MAX_ROUNDS=3
@@ -526,10 +526,15 @@ fi
 # sandbox denies); otherwise the first mktemp aborts the whole run under set -e.
 # The fallback, .worktrees/si-tmp, is set up and checked as the worktrees are
 # (it was .claude/tmp, where Claude Code asks before every write).
-if [ -z "${TMPDIR:-}" ] || [ ! -w "${TMPDIR}" ]; then
-    ensure_worktree_dir "$REPO_DIR" si-tmp "or export TMPDIR as a writable directory of your own" || exit 1
+# The ignore check probes a name inside si-tmp/, where mktemp's files land.
+if [ -z "${TMPDIR:-}" ] || [ ! -d "${TMPDIR}" ] || [ ! -w "${TMPDIR}" ]; then
+    SI_TMP_FIX="or export TMPDIR as a writable directory of your own"
+    ensure_worktree_dir "$REPO_DIR" si-tmp/tmp "$SI_TMP_FIX" || exit 1
     export TMPDIR="$REPO_DIR/.worktrees/si-tmp"
-    mkdir -p -- "$TMPDIR"
+    if [ -L "$TMPDIR" ] || ! mkdir -p -- "$TMPDIR" 2>/dev/null; then
+        echo "Error: $TMPDIR is a symbolic link or could not be made; remove it, $SI_TMP_FIX" >&2
+        exit 1
+    fi
 fi
 
 mkdir -p "$WORKING_DIR"
@@ -1275,7 +1280,7 @@ line and a 'Notes:' line recording any judgement calls made without human input.
         DESC=$(jq -r --arg id "$TASK_ID" '.[] | select(.id==$id) | .description' "$TASKS_FILE") || DESC=""
         SI_COMMIT_RC=0
         # Its `git add` uses ":(exclude)" magic, which an inherited
-        # GIT_LITERAL_PATHSPECS=1 (the dev-cycle reader's) breaks: off here, as in wt_base.
+        # GIT_LITERAL_PATHSPECS=1 (the dev-cycle reader's) breaks: off here, as in ensure_worktree_dir.
         SI_COMMIT_ERR=$(GIT_LITERAL_PATHSPECS=0 si_commit_child_work "$WT_DIR" "$DESC" "$REPO_DIR" 2>&1) || SI_COMMIT_RC=$?
         COMMIT_COUNT=$(git rev-list --count "main..$BRANCH" 2>/dev/null || echo 0)
         if [ "$SI_COMMIT_RC" -ne 0 ] && [ "$SI_COMMIT_RC" -ne 3 ]; then

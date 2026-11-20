@@ -49,3 +49,8 @@ Path A: the first dominates (S3 reuse, H2 fails closed through `ensure_worktree_
 
 - S8: `self-improvement.sh` (2,000+ lines) grows by 8 net lines, mostly the required comments; trimmed to the minimum.
 - H3: all tests are hermetic (stubbed `claude`, fixture repo under `BATS_TEST_TMPDIR`).
+
+## Review
+
+- Health check (`scripts/health-check.sh`) on 6b1ddd23: all checks passed.
+- Round 1 (fresh reviewer on 6b1ddd23): nothing at medium. Fixed: (low) the fallback's ignore check probed `si-tmp-x`, a name the run never uses, so an ignore file of `si-tmp-*` passed while `si-tmp/` showed in status; it now probes `si-tmp/tmp-x`, inside the directory, with a case. (low) `.worktrees/si-tmp` as a symbolic link: git's check-ignore refuses a path beyond a link, and a `[ -L ]` test backs it up, with a case; the "git could not say" error now names the way forward too. (low) the `WORKTREE_BASE` comment now says the fallback still sets up `.worktrees/`. (nit) a writable regular file as `TMPDIR` falls back instead of aborting at the first mktemp, with a case. (nit) the call-site comment points at the local `ensure_worktree_dir`. The new cases fail on 6b1ddd23 and pass now; the suite passes with `GIT_LITERAL_PATHSPECS=1` exported and unset.
