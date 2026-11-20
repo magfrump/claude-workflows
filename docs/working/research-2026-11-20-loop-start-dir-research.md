@@ -88,8 +88,9 @@ this command was not run. Shell cwd recovered to "/workspace"". Main had just mo
 1e88e0d9, the orchestrator's land, and WT was gone from `git worktree list`.
 
 Four facts follow:
-1. **A subagent's Bash call runs in the main session's cwd at the moment of the call.** It is
-   not fixed at dispatch. The two traces above show a running loop following the orchestrator
+1. **A subagent's Bash call runs in the main session's current cwd.** That cwd is not fixed at
+   dispatch, though it can lag the main session's by a call: after the 01:28:32Z removal the orchestrator's
+   next call ran from `/workspace`, yet loop a08c3a90 was refused at 01:29:24Z. The two traces above show a running loop following the orchestrator
    into each new iteration's WT and back out. A subagent's own `cd` lasts one call.
 2. **Why that cwd is WT, despite D13.** The Bash tool's own description for a main session
    says: "`cd` carries to the next call only in the main session, if the command succeeds and
@@ -102,7 +103,8 @@ Four facts follow:
 3. **The loss happens when WT is removed while the main shell still sits in it.** Step 0.3's
    removal (`git -C MAIN_WT worktree remove WT`) names its target with `-C`. If it runs while
    the shell is in WT, the shell is left in a removed directory. Then every subagent's next call
-   is refused once, and so is the orchestrator's. The harness moves the shell to `/workspace`,
+   is refused once, and often the orchestrator's next call is too (01:10:41Z and 03:09:43Z, but
+   not 01:28:40Z). The harness moves the shell to `/workspace`,
    and later calls run. The refused call is whichever comes first after the removal: here the
    third, in the triage the sixth, in herald the first.
 4. **No wording in the prompt can prevent it.** The refusal is Claude Code's check, made
@@ -114,10 +116,21 @@ entered in the same script, aborting on failure and cleaned with `rmdir`. A subs
 directory entry in '..'"), `ls .` lists nothing, and `cd` to an existing absolute path works.
 So a removed cwd stops nothing in bash: the lost call comes from the harness's check.
 
-Why the three parked loops were never refused: an inference, not checked against the
-orchestrator transcript. Their orchestrator's later commands must have left its shell outside WT
-when WT was removed. A park only at dispatch would not ensure that, because the land after
-dispatch runs `cd WT && …` again (fact 1).
+**Why the three parked loops were never refused (checked in the orchestrator transcript,
+session 42e4626f).** In iterations 2316, 2338 and 2351, WT was removed as its own command:
+`cd /workspace && git -C /workspace worktree remove /workspace/.worktrees/wt-dev-cycle-… && echo removed`
+(23:29:50Z, 23:43:48Z, 00:04:40Z). No loop was refused around those removals. Iteration 0110
+was not checked. The refused cases came from removals of two other kinds.
+- **Inside a land chain** that starts `cd WT && …`, which leaves the shell in WT. This happened
+  at 01:28:32Z (wt-0121) and 03:37:56Z (wt-0331), and the loop refusals followed at 01:29:24Z
+  and 03:38:14Z.
+- **Inside a chain that failed after the removal.** At 01:10:35Z,
+  `cd /workspace && git -C /workspace worktree remove …-0056 && bash …d6.sh build-loop.sh --state && …`
+  removed WT, but a later step failed. The Bash tool keeps a `cd` only when the whole command
+  succeeds, so the shell stayed in the removed WT, and the next call (01:10:41Z) was refused.
+
+A park only at dispatch does not help, because the land after dispatch runs `cd WT && …` again
+(fact 1).
 
 ## Divergent design (acceptance 4)
 
@@ -127,7 +140,7 @@ sits at dispatch. So one option is added: R, remove from a parked shell.
 
 | Option | What it changes | Paths | Owner reading | Removes the loss? |
 |---|---|---|---|---|
-| **R. Remove from a park** | each WT/HC/GT removal runs `cd WTB && git -C MAIN_WT worktree remove …` | `skills/dev-cycle/SKILL.md` | one merge entry | yes, for every loop |
+| **R. Remove from a park** | each removal is its own command, `cd WTB && git -C MAIN_WT worktree remove X`, nothing after it | `skills/dev-cycle/SKILL.md` | one merge entry | yes, for every loop |
 | **1/1b. Park at dispatch** | one `cd MAIN_WT` (or `cd WTB`) call before the Agent calls | same | one merge entry | no: the land's `cd WT` undoes it |
 | **2. Defer WT removal** | step 0.3 removes the previous WT next iteration | same | one merge entry | mostly; leaves a WT at session end |
 | **3. Warn in the prompt** | `--prompt` says a call may be refused | `scripts/build-loop.sh` | one merge entry | no |
@@ -142,12 +155,23 @@ that D13 holds. It means growing `cc-isolated.sh`, which is over 500 lines (S8),
 
 Notes per option:
 - **R.** WTB, the `.worktrees` directory, exists for the whole session: step 0.3's
-  `--worktree-base` makes it, and nothing removes it. A `cd WTB && …` removal leaves the main
-  shell in WTB, which outlives every WT. No loop or orchestrator call then starts in a removed
-  directory. There are three removal sites: SKILL.md line 338 (step 0.3; step 10's "Then remove
-  WT" at line 1065 points there), the stop path's `worktree remove --force` (line 76), and HC
-  and GT (lines 401 and 749, "removed as step 0.3 removes WT"). If line 338 names the form, the
-  others follow it. The D13 bullet is corrected to say what the shell does. The prompt line
+  `--worktree-base` makes it, and nothing removes it. A command `cd WTB && git -C MAIN_WT
+  worktree remove X` leaves the main shell in WTB, which outlives every worktree. The command
+  must succeed as a whole, since the Bash tool keeps a `cd` only then. So the removal goes in a
+  command of its own, last in that command, never inside a land chain and never followed by a
+  step that can fail. The orchestrator transcript shows both ways it breaks (above), and shows
+  this form working by hand with `/workspace` in place of WTB. The removal commands are:
+  - WT, normally: SKILL.md line 338, which step 10's "Then remove WT" (line 1065) points to.
+  - WT on a stop, with `--force`: line 76.
+  - HC, normally: lines 398-399.
+  - HC on a stop, with `--force`: line 401.
+  - An HC left by an earlier iteration: lines 402-403.
+  - GT: line 749, "removed as step 0.3 removes WT".
+
+  If line 338 names the form, and says what the shell does, the others that point to it follow.
+  `--free-worktrees` (lines 426-428) frees loops' worktrees from `cd WT && …`. Run on its own it
+  leaves the shell in WT, which is safe. A chained step that fails after it could strand the
+  shell in a freed worktree, so the same rule applies to it: nothing that can fail after it. The D13 bullet is corrected to say what the shell does. The prompt line
   becomes "Your shell runs where the orchestrator's does, a checkout that is not yours: start
   every command with cd DIR &&".
   Exposure is unchanged in kind. A loop command that forgets its `cd` runs in the orchestrator's
@@ -173,8 +197,8 @@ Notes per option:
 
 **Pick (Path A): R, remove every worktree from a shell parked in WTB, and correct the D13
 bullet and the prompt line.** It dominates 1/1b, 2 and 3. It beats 4 because, for one review, it
-removes a loss seen in about 45% of WT-started loops and in the orchestrator's own next call,
-and it corrects a stated safety property that does not hold. Its cost is one review merge.
+removes a loss seen in about 45% of WT-started loops, and often in the orchestrator's own next
+call. It also corrects a stated safety property that does not hold. Its cost is one review merge.
 
 Other choices, one line each:
 - A live Agent-tool probe from this loop: not run. It is not hermetic, a subagent cannot set up
@@ -185,10 +209,12 @@ Other choices, one line each:
 ## For the dev cycle
 
 Suggested brief: **Remove the cycle's worktrees from a parked shell (herald F-008).**
-- Goal: step 0.3's removal runs as `cd WTB && git -C MAIN_WT worktree remove WT`, so the main
-  shell (which every subagent call runs in) is never left in a removed directory. Step 10's
-  "Then remove WT", the stop path's `--force` removal, and HC and GT "as step 0.3 removes WT"
-  inherit the form. The Rules' D13 bullet says what the shell does: it ends in the checkout its
+- Goal: every worktree removal is a command of its own, `cd WTB && git -C MAIN_WT worktree
+  remove X` (with `--force` where the step says so), with nothing after it in that command and
+  never inside a land chain. Then the main shell, which every subagent call runs in, is never
+  left in a removed directory. Step 0.3 (line 338) states the form and why: a `cd` holds only
+  when the whole command succeeds. Step 10's "Then remove WT", the stop path's removals, HC, GT
+  and `--free-worktrees` follow it. The Rules' D13 bullet says what the shell does: it ends in the checkout its
   last `cd` named, and subagents run there. The build-loop prompt's "Your shell starts outside
   any checkout" becomes "Your shell runs where the orchestrator's does, a checkout that is not
   yours".
@@ -196,6 +222,7 @@ Suggested brief: **Remove the cycle's worktrees from a parked shell (herald F-00
   (pins).
 - Policy: review (gate code).
 - Tests: bats pins on the removal form, the D13 wording and the prompt line, and the existing
-  `--prompt` tests updated. Observable (S6): over the next iterations' build-loop transcripts,
+  `--prompt` tests updated. A pin should also refuse a removal line that chains a later step.
+  Observable (S6): over the next iterations' build-loop transcripts,
   no "no longer exists, so this command was not run" refusal in a loop that spans a WT removal.
   It is negative if any appears with the orchestrator in WTB.
