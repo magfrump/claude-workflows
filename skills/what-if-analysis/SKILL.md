@@ -180,6 +180,15 @@ List every load-bearing assumption (move #1). For each, use these fields:
 - **If wrong:** tweak / redesign / full retreat
 - **Tag:** `[NOVEL]` if not surfaced by any upstream critique, otherwise omit
 
+Each assumption opens with its `**Assumption:**` field line, not a heading or a bold title, and `**If wrong:**` starts with one of the three words:
+
+```
+- **Assumption:** every consumer is idempotent
+  - **Source:** explicit ("Delivery semantics")
+  - **If wrong:** redesign. Replays double-apply side effects.
+  - **Tag:** `[NOVEL]`
+```
+
 ### Consequence Chains
 
 Trace first → second → third-order effects (move #2) for the proposal's 2-3 most significant intended outcomes. Use an indented chain format:
