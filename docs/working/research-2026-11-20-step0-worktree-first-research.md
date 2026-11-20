@@ -28,7 +28,7 @@ directory.
   "A stop below ends the iteration with no record." At 0.3 the text names only two
   outcomes: a name already taken (try the next minute) and a merge conflict (a stop). It
   does not name a failed `worktree add` as a stop.
-- **Skill, Rules on stops** (`SKILL.md:69-79`). "Each stop ends the iteration there … and
+- **Skill, Rules on stops** (`SKILL.md:70-80`). "Each stop ends the iteration there … and
   is filed once: in the `you: judgment` entry the step names, if it names one (step 0's
   `--state` refusals and its lost `Main at:` line), else … one agent work item …; either
   way also in the final message." Both the entry and the agent item are written in WT. So
@@ -96,8 +96,8 @@ out bringing it back without a revisit. The motive for *saying what a pre-WT sto
 latent, not observed. The skill names homes (a judgment entry, an agent item) that cannot
 be written before WT. But the Rules already send every stop to the final message, which
 is where F-018's stop went, and that ambiguity has cost nothing on record. The skill
-already uses a "once WT exists" pattern for step 0.1's non-stop entries (`SKILL.md:250`,
-`:290`). A stop never gets there, because it ends the iteration (`SKILL.md:231`).
+already uses a "once WT exists" pattern for step 0.1's non-stop entries (`SKILL.md:290`;
+`:250` similarly reads "WT's questions files"). A stop never gets there, because it ends the iteration (`SKILL.md:231`).
 
 ## Divergent design (criterion 3)
 
@@ -125,8 +125,9 @@ How each one fares:
 - **B, `--worktree-base` tests it.** This reuses the mechanism that already runs at 0.3
   and whose refuse line is already a stop (S3), and it fails loudly, naming the read-only
   directory (H2). Its only gain over C is avoiding the half-made branch. That branch sits
-  at MAIN, so step 1's cleanup deletes it as merged, and the next iteration takes a new
-  minute's name anyway. The cost: gate code in a 2661-line script, a new bats case (H2,
+  at MAIN, so step 1's cleanup deletes it as merged in the first later iteration that has
+  a WT (under F-018's mounts, `-d` itself hit the config lock), and the next iteration
+  takes a new minute's name anyway. The cost: gate code in a 2661-line script, a new bats case (H2,
   H3), a review merge and an image release, all to guard a cause that row 88 removed. A
   write test is also a guess at git's own failure modes. `git worktree add` is the real
   test, and it already fails loudly. B could still earn its place if the read-only mount
@@ -142,7 +143,7 @@ How each one fares:
      (it is merged), or left for step 1's cleanup when git refuses. Under F-018's mounts,
      `-d` also printed "could not lock config file" (`philosophy-research.md:151`).
   4. The `--state`/`Main at:` judgment-entry clause either becomes "once a WT exists",
-     reusing the pattern at `SKILL.md:250` and `:290`, or is dropped for stops before 0.3.
+     reusing the pattern at `SKILL.md:290`, or is dropped for stops before 0.3.
   No code, no new dispatch (S2). But it is a review merge of gate code, and so a release
   entry for the owner (S10). The text it fixes has never misled a run.
 - **D, no change.** Free. The Rules already put every stop in the final message, so
@@ -152,7 +153,7 @@ How each one fares:
   for a pre-WT stop, and neither can be written there. A reader who meets that case falls
   back on "either way also in the final message", which is what C would say.
 
-**Pick: D, no change; the roadmap item closes (Path A, one option dominates).** The first
+**Pick: D, no change; the roadmap item closes (Path A: D wins on the S5 and S10 weighting; C keeps a small latent benefit, not strict dominance).** The first
 draft picked C on the strength of 0237. Review showed 0237 was an orchestrator slip
 against existing rules, so C's observed benefit is gone. Its remaining value is clearing up
 a latent ambiguity, at the price of a gate-code review merge and an image-release entry
