@@ -10,7 +10,7 @@ Commit: 2dc403e
 **Commit:** 2dc403e
 **Replication:** k=3
 
-Merged by the orchestrator from `code-fact-check-report-r1.md` (33 claims), `-r2.md` (35) and `-r3.md` (22), all `Commit: 2dc403e`, most-severe-wins, delivery mode inline-diff-only. Replicates split some claims finer than this merge does (per-file rows of Claim 1, per-field rows of Claim 3); this merge keeps one row per assertion, so its count is lower than the largest replicate's. Five single-replicate Verified assertions have no row here (r1 Claims 14, 22, 23; r2 Claims 21, 23); every non-Verified verdict has one. Evidence is carried by reference to the replicate reports.
+Merged by the orchestrator from `code-fact-check-report-r1.md` (33 claims), `-r2.md` (35) and `-r3.md` (22), all `Commit: 2dc403e`, most-severe-wins, delivery mode inline-diff-only. Replicates split some claims finer than this merge does (per-file rows of Claim 1, per-field rows of Claim 3); this merge keeps one row per assertion except five single-replicate Verified ones, so its count is lower than the largest replicate's. The five without a row (r1 Claims 14, 22, 23; r2 Claims 21, 23); every non-Verified verdict has one. Evidence is carried by reference to the replicate reports.
 
 ## Claim 1: The OPFS adapter is held to the same shared contract suite as the fake (out-of-CI Playwright); substitutability is verified, not assumed
 
@@ -679,6 +679,26 @@ Provenance: command `timeout 120 node --experimental-strip-types --no-warnings p
 ---
 
 (Appended by the orchestrator from `code-fact-check-submitted-claims.md`, Stage 2.5, k=1.)
+
+## Claims Requiring Attention
+
+- Claim 1 (Incorrect): The OPFS adapter is held to the same shared contract suite as the fake (out-of-CI Playwright); substitutability is verif — app/lib/corpus/__tests__/corpusFs.contract.test.ts:1-3; corpusFsContract.ts:4-7; inMemoryCorpusFs.ts
+- Claim 2 (Incorrect): "DEFAULT OFF and DEV-ONLY" — app/lib/corpus/flag.ts:4
+- Claim 3 (Incorrect): Manifest codec is FAIL-LOUD: a malformed or absent manifest never becomes a silent default-empty manifest — app/lib/corpus/manifest.ts:10-14
+- Claim 4 (Incorrect): Errors are of kind "io" or "browser-storage-cleared" — app/lib/corpus/manifest.ts:10-13
+- Claim 5 (Incorrect): "Pass a fresh ArrayBuffer view" — app/lib/corpus/opfsAdapter.ts:115
+- Claim 6 (Incorrect): paths.ts is the only source of corpus paths; callers never hand-concatenate; workspaceSlug is the single choke point — app/lib/corpus/paths.ts:16-19; ec7bbbc body
+- Claim 7 (Stale): Reference to the legacy localStorage swallow at workspaceStore.ts:44-46 — app/lib/corpus/opfsAdapter.ts:14
+- Claim 8 (Stale): Reference to "layout.ts/manifest.ts" — app/lib/corpus/storeAdapter.ts:11
+- Claim 9 (Mostly Accurate): The characterization test pins the flag-off behaviour — app/lib/stores/__tests__/workspaceStore-characterization.test.ts:1-9; storeAdapter.ts:22
+- Claim 10 (Mostly Accurate): "Debounced localStorage moved here verbatim" — app/lib/corpus/storeAdapter.ts:21; 00ba8c3 body
+- Claim 11 (Mostly Accurate): The store's injection seam is typed as CorpusFS, so the S3 worker proxy drops in without store changes — app/lib/corpus/storeAdapter.ts:5-8; app/lib/stores/workspaceStore.ts:496-498
+- Claim 12 (Mostly Accurate): Enabling the flag "starts from an EMPTY corpus" — app/lib/corpus/flag.ts:4-6
+- Claim 13 (Mostly Accurate): workspaceSlug "strips ... unicode" — app/lib/corpus/paths.ts:32
+- Claim 14 (Mostly Accurate): S1 is "a pure substrate swap" — app/lib/corpus/storeAdapter.ts:5-8,12
+- Claim 27 (Mostly accurate, Stage 2.5): "`toWorkerError` and `new CorpusError(detail, message)` round-trip a CorpusError losslessly." — `app/lib/corpus/types.ts:41-75`
+- Claim 28 (Mostly accurate, Stage 2.5): "The in-memory fake and the OPFS adapter expose identical method signatures, with a uniform not-found contract — `app/lib/corpus/types.ts:112-125`, `app/lib/corpus/opfsAdapter.ts:85-176`, `app/
+- Claim 29 (Mostly accurate, Stage 2.5): "Store consumers see no API change: `useWorkspaceStore`'s exported surface is untouched, and only the `storage — `app/lib/stores/workspaceStore.ts:25`, `app/lib/stores/workspaceStore.ts:495-499
 
 ## Escalations
 

@@ -39,12 +39,13 @@ fact-check brief is the first pass's, verbatim.
 | All agents | 898,733 | 852,285 | +46,448 |
 
 - Prompt size. Each self-read agent's first call wrote 31.2k-32.6k tokens to cache, against
-  32.8k-33.8k inline: the diff and the two files (4,179 bytes in Stage 1, 3,535 in Stage 2,
-  about 1.0k and 0.9k tokens) left the prompt, as designed; the preamble, intent and Stage-2
-  fact-check summary stay inline in both arms. Every agent
+  32.8k-33.8k inline. The diff and the two files (about 5.0k bytes) left the prompt, replaced by
+  an 837-byte read instruction, so the shared block shrank by 4,179 bytes in Stage 1 and 3,535 in
+  Stage 2 (about 1.0k and 0.9k tokens; Stage 2 less, because this pass's fact-check summary is
+  645 bytes longer). The preamble, intent and Stage-2 summary stay inline in both arms. Every agent
   in both arms read 18,900 cached tokens on its first call (system prompt and tools only).
 - Where it went back. Self-read agents spend tool calls fetching the diff and the two files,
-  so the same bytes reach their context as tool results. The core came out 3.8% **higher**
+  so the same content reaches their context as tool results. The core came out 3.8% **higher**
   self-read. That is inside the noise of one draw: the first pass's three identical fact-check
   replicates alone spanned 90k-121k, and today's 104k-122k.
 - Labels hit (canon `docs/working/canon-issue-ledger.md:92-97`, 2 red, 4 amber): **6/6**, the
@@ -147,9 +148,9 @@ diff-only inlining on a large cell costs anything net, as csp says it does not o
   about a minute later. Self-read agents share no prompt cache, so the stagger cannot move
   their figures.
 - The merged fact-check reports are cluster-level. Replicates split claims more finely (corpus:
-  33, 35 and 22 claims), and the merge keeps one row per assertion (csp 24, corpus 25, plus
-  Stage 2.5's 8 and 7 entries). On corpus, five single-replicate Verified assertions have no row
-  (r1 Claims 14, 22, 23; r2 Claims 21, 23); every non-Verified verdict has one. Per-replicate reports are beside them.
+  33, 35 and 22 claims), and the merge keeps a row for every assertion on csp (24, plus
+  Stage 2.5's 8 entries) and for all but five on corpus (25, plus Stage 2.5's 7). The five single-replicate Verified assertions without a row are
+  r1 Claims 14, 22, 23 and r2 Claims 21, 23; every non-Verified verdict has one. Per-replicate reports are beside them.
 - Stage 2.5 refuted one endorsement on csp: the performance critic's "constant work per
   request" (Claim 27b, executed: cost grows with request header count). It went in as 🟢 C6.
 - No agent process was left running; the two scratch worktrees of the benchmark repo are removed

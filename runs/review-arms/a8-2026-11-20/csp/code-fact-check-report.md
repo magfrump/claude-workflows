@@ -623,6 +623,24 @@ which the d90d6bb commit message itself lists ("add explicit return type"). A pr
 
 (Appended by the orchestrator from `code-fact-check-submitted-claims.md`, Stage 2.5, k=1.)
 
+## Claims Requiring Attention
+
+- Claim 2 (Incorrect): "so proxy.ts runs on every request and can attach a fresh per-request CSP nonce" — `app/layout.tsx:27-28`
+- Claim 3 (Incorrect): "Next.js automatically tags its own bootstrap <script> elements with the nonce from the response's CSP header" — `app/layout.tsx:28-30`
+- Claim 4 (Incorrect): "so we don't need to read x-nonce here ourselves" — `app/layout.tsx:30`
+- Claim 6 (Incorrect): "only scripts that Next.js has explicitly tagged with the nonce can run, and any scripts they load inherit trust" — `proxy.ts:7-10`
+- Claim 7 (Incorrect): "Tailwind v4 emits inline styles" (why style-src needs 'unsafe-inline') — `proxy.ts:12-14`
+- Claim 9 (Mostly Accurate): "OpenAlex ... calls are server-to-server" — `proxy.ts:16`
+- Claim 10 (Incorrect): "connect-src 'self' is sufficient" (and 9b4e453 body) — `proxy.ts:16,26`
+- Claim 11 (Incorrect): "the Edge runtime that Next proxy runs in" — `proxy.ts:35-36`
+- Claim 13 (Mostly Accurate): x-nonce is forwarded "so layouts can read it via headers() and pass it to <Script> tags" — `proxy.ts:39-42`
+- Claim 14 (Mostly Accurate): matcher skips API routes, static assets and prefetches (comment and 9b4e453 body) — `proxy.ts:52-62`
+- Claim 18 (Incorrect): 9b4e453 body repeats the Tailwind and connect-src reasons — 9b4e453 body
+- Claim 19 (Incorrect): "Verified prod build emits the CSP header and Next applies the nonce to every <script> tag it generates" — 9b4e453 body
+- Claim 20 (Incorrect): "headers() is called to opt out of static rendering so the proxy can attach per-request CSP" — d90d6bb body
+- Claim 27b (Incorrect, Stage 2.5): "The proxy does a constant amount of work per request … its per-request cost is dominated by `crypto.randomUUI — `proxy.ts:34-49`
+- Claim 31 (Mostly accurate, Stage 2.5): "The d90d6bb refactor kept the directive list byte-for-byte identical (`git diff 9b4e453 d90d6bb -- proxy.ts`  — `proxy.ts:19-48`
+
 ## Escalations
 
 - E1 `proxy.ts:41-48` — CSP is set only on the response; Next reads the nonce from the request. It works on self-hosted `next start` only through the router copying response headers onto the request (`resolve-routes.js:442-443`, r2); r1+r3 read it as no nonce at all, every script blocked. Fix: also set CSP on `requestHeaders`. Raised by r1, r2, r3. Addressee: security-reviewer, architecture-review.
