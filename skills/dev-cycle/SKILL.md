@@ -985,7 +985,9 @@ Then land WT's branch (D13; not through `pr-prep`: rows 747-759, 781), all from 
    a `--migrated` ID not in the registry, not on the questions file or roadmap, not pending
    on BASE or left unfinished; a questions change while main's questions files changed since BASE; the
    idea log other than appended to, or either file deleted; the roadmap moves step 6
-   names; a watch's heading gone from `watching.md`, or the file deleted; a side that is not a regular 100644 file, or a listing that fails (`refuse
+   names; a watch's heading gone from `watching.md`, or the file deleted; a cycle record
+   whose text before its last `## Iteration` block changed, whose last block changed but for
+   its `9.` and `10.` lines, or that is deleted; a side that is not a regular 100644 file, or a listing that fails (`refuse
    index`); any path but the
    cycle's own files, a `.md` under `docs/` or `README.md`; the gate's own code; a truth
    file (instruction and prompt files, dot paths, `docs/dev-cycle.md`,
