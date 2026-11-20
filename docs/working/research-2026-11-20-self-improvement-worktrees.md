@@ -27,6 +27,7 @@ Branch: `fix/self-improvement-worktrees`. Policy: self-merge. Paths: `scripts/se
 
 - `scripts/self-improvement.sh`: header `WORKTREE_BASE` entry and the config comment say what is true now and why the default moved; `SI_DEFAULT_WORKTREE_BASE="$REPO_DIR/.worktrees/si-wt"`; new `ensure_worktree_dir`, called right after `require_clean_main` when the default is in use.
 - `test/scripts/self-improvement-clean-state.bats` (real main loop, stubbed `claude`): A2/Q146 pin the new paths; new cases: default worktrees land under `.worktrees/si-wt-*`, are ignored and leave status clean with no `.claude/` made; an existing ignoring `.gitignore` is kept; a non-ignoring `.gitignore`, a `.worktrees` symlink and a `.gitignore` symlink each refuse with a named message and no worktree; an explicit `WORKTREE_BASE` is used and makes no `.worktrees`.
+- Review rounds 1-3 added the inherited-`GIT_LITERAL_PATHSPECS=1` case and two refusal cases, one per ignore read (see below).
 
 ## Docs naming `.claude/wt` (acceptance 5)
 
@@ -37,8 +38,9 @@ Branch: `fix/self-improvement-worktrees`. Policy: self-merge. Paths: `scripts/se
 ## Review rounds
 
 - Round 1 (dispatch 1): check-ignore refused under an inherited `GIT_LITERAL_PATHSPECS=1` (the dev-cycle reader exports it); fixed as `wt_base` does, with a test.
-- Round 2 (dispatch 2, after merging main): no high. Medium: either ignore read could be deleted with every test still passing; added two refusal cases each caught by only one read (a `.gitignore` of `.gitignore` and `wt-*`, and one of `si-wt-*`), confirmed by mutation (each mutant fails exactly its case). Low: check-ignore tests one representative name, so a partial existing ignore (`si-wt-?`) passes; named as a known gap in the comment (`wt_base` shares it; a fresh `*` file has none). Nits: "same directory" corrected (build-loop roots `.worktrees` at git's main worktree, this at `REPO_DIR`); "explicit WORKTREE_BASE" reworded to "other than the default".
-- Round 3: see the final commit.
+- Round 2 (dispatch 2, after merging main): no high. Medium: either ignore read could be deleted with every test still passing; added two refusal cases each caught by only one read (a `.gitignore` of `.gitignore` and `wt-*`, and one of `si-wt-*`), confirmed by mutation (each mutant fails exactly its case). Low: check-ignore tests one representative name, so an existing ignore of itself plus only some names (`.gitignore` and `si-wt-?`) passes; named as a known gap in the comment (`wt_base` shares it; a fresh `*` file has none). Nits: "same directory" corrected (build-loop roots `.worktrees` at git's main worktree, this at `REPO_DIR`); "explicit WORKTREE_BASE" reworded to "other than the default".
+- Round 3: nothing at medium. Low: the gap example above was wrong (a lone `si-wt-?` refuses, as the `.gitignore` shows in status); corrected in the comment and here. Nit: the suite's bare `git check-ignore` assertions fail under an inherited `GIT_LITERAL_PATHSPECS=1`; `setup()` now unsets it (the one test that needs it sets it again). Round 4: see the final commit.
+- For the cycle (pre-existing, also fails at 90f7632f): with `GIT_LITERAL_PATHSPECS=1` exported, 8 other clean-state cases (A1, A3, A5, five Q146) fail, so some other git call in the script's main loop breaks under literal pathspecs; untraced, a candidate item (the suite's new unset hides them, but a real run with the variable exported would still hit it).
 - For the cycle, outside Paths: `hooks/guard-trusted-writes.py` exempts the old self-improvement worktree names under `.claude/`; nothing in `scripts/` makes them now, so its "(this harness's)" comment is stale (gate code, not edited here). The TMPDIR fallback above stays a candidate item.
 
 ## Verification

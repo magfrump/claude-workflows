@@ -25,6 +25,10 @@
 SI="$BATS_TEST_DIRNAME/../../scripts/self-improvement.sh"
 
 setup() {
+  # An inherited GIT_LITERAL_PATHSPECS=1 (the dev-cycle reader exports it)
+  # breaks this file's bare `git check-ignore` assertions; the one case that
+  # tests it sets it again.
+  unset GIT_LITERAL_PATHSPECS
   # Stub claude (hermeticity convention: test/fixture-hermeticity.bats).
   BIN="$BATS_TEST_TMPDIR/bin"
   mkdir -p "$BIN"

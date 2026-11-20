@@ -179,8 +179,9 @@ create_task_worktree() {
 # setup that would leave a task worktree visible to `git status` — a visible
 # checkout is one `git add -A` away from being committed to main.
 # Known gap, shared with wt_base: check-ignore tests one representative name
-# ($2-x), so an existing .gitignore that ignores only some $2-* names (say
-# "si-wt-?") passes; a fresh "*" file has no such gap.
+# ($2-x), so an existing .gitignore that ignores itself and only some $2-*
+# names (say ".gitignore" and "si-wt-?") passes; a fresh "*" file has no such
+# gap.
 # Args: $1 = repo dir (absolute), $2 = worktree name prefix (e.g. si-wt).
 ensure_worktree_dir() {
     local repo=$1 prefix=$2 b g out rc=0
