@@ -468,10 +468,10 @@ Items finished since the last cycle, with the merge.
 
 - **Fix the single-skill findings F4, F6 and F7** (Q-328 [3]): arithmetic-eval's program drift,
   what-if-analysis's missing Assumption entries, pattern misses in three skills. Done cef30487
-  (merge 3ae728e1, approved Q-329 [1]), brief `docs/working/briefs/closed/2026-11-20-skill-format-single-skill.md`.
+  (approved merge, Q-329 [1]), brief `docs/working/briefs/closed/2026-11-20-skill-format-single-skill.md`.
 
 - **Resolve the verdict drift F5** (Q-328 [3]): ten cases rerun, each fixed on the side that was
-  wrong (FP-186). Done ead9191a (merge 4b813fe6, approved Q-330 [1]), brief
+  wrong (FP-186). Done ead9191a (approved merge, Q-330 [1]), brief
   `docs/working/briefs/closed/2026-11-20-skill-verdict-drift.md`. Follow-ons named in its research
   doc: test-strategy's intermittent missing "What it verifies" field, and the fixture headers that
   name the expected verdict.
