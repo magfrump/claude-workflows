@@ -2,7 +2,16 @@
 
 Watches the agents own and close: conditions and events being waited on, moved
 out of `questions.md` (decision 040). Same entry grammar; a closed watch gets
-Status ANSWERED and moves under `## Closed`.
+Status ANSWERED and moves under `### Q-322 · quarterly-threat-model-walkthrough-due
+**Needs:** deferred · **Opened:** 2026-11-19 · **Status:** OPEN
+
+Bring the owner's quarterly threat-model walk-through of Q-103's accepted residual risks (area B's idea B8) back as a question when it first falls due, in 2027-01, unless trial T12's verdict covers it first.
+
+- **Read:** `docs/working/research-2026-11-19-area-b-ask-habituation.md` §6 (set aside: about 20 owner minutes a quarter; T12, `docs/working/trials/2026-11-06-attention-and-trust.md`, tests a cheaper answer to the same need) · the idea-log line "Quarterly threat-model walk-through of Q-103's residuals".
+- **Condition:** the first cycle iteration on or after 2027-01-01, or the owner's T12 verdict, whichever comes first.
+- **Interim:** nothing is scheduled; T12 runs.
+
+## Closed`.
 
 | Route | Meaning |
 |---|---|
