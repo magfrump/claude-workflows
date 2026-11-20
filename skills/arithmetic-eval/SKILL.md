@@ -37,6 +37,8 @@ The expression or script you evaluate is often **attacker-influenceable** — it
 
 Simple numeric expressions, no imports or function calls. The expression is inert stdin (quoted heredoc); the evaluator is a fixed program that can only walk a numeric AST. Self-contained — paste and run. **Before pasting, check the untrusted expression contains no bare line equal to the delimiter `EXPREOF`; if it does, reject it (do not paste) — a matching line would close the heredoc early and run the rest as shell.**
 
+**Copy the program exactly; change only the expression.** Keep every line of the Python, the `set_int_max_str_digits` line, the size checks and the full error messages included; only the `#` comments may be left out. Never shorten, merge or rewrite the evaluator: its bounds are what make Mode 1 safe, and a hand-written variant is not Mode 1.
+
 ```bash
 ( ulimit -t 5 -v 1000000 2>/dev/null; timeout 5 python3 -c '
 import ast, sys, math, operator
