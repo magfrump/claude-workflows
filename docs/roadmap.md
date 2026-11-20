@@ -96,6 +96,19 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   text as a prefix (append-only, as it already holds the idea log), with a bats case for this
   shape; gate code.
 
+- **Agent: A reproducible ask counter (`questions.sh counts`) for the weekly digest** (filed 2026-11-19,
+  step 7; area B's B2). Motive: the owner-load numbers in area B's research were counted by hand; the
+  weekly digest's ask counter needs them reproducible, per class (merge, re-dispatch, real choice),
+  with first-option share and waits. First step: the review brief that research drafts
+  (`docs/working/research-2026-11-19-area-b-ask-habituation.md`, "For the dev cycle"); gate code.
+  Area A's research (e9fb762c) drafted no counter, so this one stands; brief it when a slot frees.
+
+- **Agent: Gate-only changes approved by the release paste (area A's [5n])** (filed 2026-11-19, step 7).
+  Motive: 25 merge entries in two weeks, 24 answered [1]; the pick would remove about a quarter.
+  First step: the review brief drafted in section 8 of
+  `docs/working/research-2026-11-19-area-a-merge-friction.md`, after the auto send-back build merges.
+  Held: Q-323 asks whether to build it at all.
+
 ## In flight
 
 - **Agent: Send a gate-refused ready branch back to its loop, with no owner entry** (filed 2026-11-19,
@@ -107,28 +120,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   (`skills/dev-cycle/SKILL.md`, gate code). Was held on Q-312, area A's ground; Q-312 answered [2]
   (build now) on 2026-11-19, so it is ready.
   2026-11-19: briefed (iteration 0316 UTC), review: `docs/working/briefs/2026-11-19-auto-send-back.md`.
-
-- **Agent: Cut merge and release friction (owner brainstorm 2026-10-29, area A).** Signal: 19 of 19
-  merge entries approved; merged gate fixes wait on a host release; five terminal pastes open.
-  Ten ideas in `docs/working/brainstorm-2026-10-29-friction-and-engagement.md`. A1/A2/A3/A10
-  (how gate merges and releases are bundled) go to `divergent-design` first; A4, A6, A7, A8 are
-  independent of that choice.
-  2026-11-19: asked in Q-312 (build now, or wait for the trial's end).
-  2026-11-19: Q-312 answered [2] (build now), moved to Now. First step: one research and divergent-design
-  pass over area A, starting from what changed since 2026-10-29 (A1, A3 and A10 were answered "no
-  change" on 2026-11-06, watch Q-262 holds their revisit; tonight's merges and releases are new
-  evidence), and the independent A4, A6, A7 and A8.
-  2026-11-19: briefed (iteration 0316 UTC) as research: `docs/working/briefs/2026-11-19-area-a-merge-friction.md`.
-
-- **Agent: Keep the owner from habituating to asks (owner brainstorm 2026-10-29, area B).** Signal:
-  always-[1] merge entries and month-old open entries train skimming. Eight ideas in the same
-  doc; the security-channel form (B1) goes to `divergent-design`; B2's metric is the check that
-  area A actually lowers owner load.
-  2026-11-19: asked in Q-312 (build now, or wait for the trial's end).
-  2026-11-19: Q-312 answered [2] (build now), moved to Now. First step: one research and divergent-design
-  pass over area B (B1 the security-channel form first; B2 as the measure of whether area A lowers
-  owner load), drawing on the trial records in `docs/working/trials/`.
-  2026-11-19: briefed (iteration 0316 UTC) as research: `docs/working/briefs/2026-11-19-area-b-ask-habituation.md`.
 
 ## Next
 
@@ -454,6 +445,19 @@ Unranked. Each names the signal that motivates it.
 ## Done
 
 Items finished since the last cycle, with the merge.
+
+- **Area A: cut merge and release friction, researched.** Done e9fb762c (self-merge), brief
+  `docs/working/briefs/closed/2026-11-19-area-a-merge-friction.md`, research
+  `docs/working/research-2026-11-19-area-a-merge-friction.md`: A1, A2, A3 still fail their own tests;
+  tentative pick [5n] (the release paste approves gate-only changes), asked in Q-323; A4 already built
+  (3dbf43cb); A6, A7, A8 set aside. Watch Q-262 now lists the record's five reopen conditions.
+
+- **Area B: keep the owner from habituating to asks, researched.** Done f0547bc9 (self-merge), brief
+  `docs/working/briefs/closed/2026-11-19-area-b-ask-habituation.md`, research
+  `docs/working/research-2026-11-19-area-b-ask-habituation.md`: 58 of 66 judgment answers since
+  2026-10-30 took the first option, but the habit is in merge and re-dispatch entries (52 of 53);
+  real choices went another way 7 times in 13. B1 (security channel) and B3-B7: no change, the kept
+  trials cover them; B2: one counter, filed in Now; B4 waits on T11, B8 on watch Q-322.
 
 - **A8 settling runs: csp self-read and corpus inline.** Done eddcaf16 (approved merge, Q-320 [1];
   ran on Q-308 [1]), brief `docs/working/briefs/closed/2026-11-19-a8-settling-runs.md`, results
