@@ -196,7 +196,9 @@ Then produce the synthesis:
 
 ## Output Format
 
-Structure the output as a Markdown document:
+Structure the output as a Markdown document. Only the no-fact-check warning may come before
+the title; the goal capture, domain analysis and persona selection are working steps, shown in
+chat or in the header fields, never as text ahead of the title.
 
 ```
 # AI Personas Critique
