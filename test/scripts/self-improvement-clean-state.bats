@@ -298,6 +298,28 @@ run_si() {
   [ "$(cat "$REPO/.worktrees/.gitignore")" = other ]
 }
 
+# Each of the next two is caught by only one of the two ignore reads, so
+# deleting either read fails a test.
+@test "a .worktrees/.gitignore for build-loop names only (status clean) refuses the run" {
+  mkdir -p "$REPO/.worktrees"
+  printf '.gitignore\nwt-*\n' > "$REPO/.worktrees/.gitignore"
+  [ -z "$(git -C "$REPO" status --porcelain --untracked-files=normal -- .worktrees)" ]
+  run_si
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"git does not ignore everything in $REPO/.worktrees"* ]]
+  [ ! -e "$STUB_DIR/impl.cwd" ]
+}
+
+@test "a .worktrees/.gitignore that ignores the worktrees but not itself refuses the run" {
+  mkdir -p "$REPO/.worktrees"
+  printf 'si-wt-*\n' > "$REPO/.worktrees/.gitignore"
+  git -C "$REPO" check-ignore -q -- .worktrees/si-wt-x
+  run_si
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"git does not ignore everything in $REPO/.worktrees"* ]]
+  [ ! -e "$STUB_DIR/impl.cwd" ]
+}
+
 @test "a .worktrees that is a symbolic link refuses the run" {
   mkdir -p "$BATS_TEST_TMPDIR/elsewhere"
   ln -s "$BATS_TEST_TMPDIR/elsewhere" "$REPO/.worktrees"

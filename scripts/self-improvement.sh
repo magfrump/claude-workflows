@@ -169,14 +169,18 @@ create_task_worktree() {
 }
 
 # Make the default worktree directory, $1/.worktrees, the way
-# `scripts/build-loop.sh --worktree-base` makes it (same directory, same
-# .gitignore of "*" when none is there, an existing one left as it is), and
+# `scripts/build-loop.sh --worktree-base` makes it (same layout and the same
+# .gitignore of "*" when none is there, an existing one left as it is; that
+# script roots it at git's main worktree, this one at $1), and
 # check that git ignores what will be put there. It does not call that script:
 # build-loop.sh is gate code and refuses outside its own caller checks.
 # Refuses (returns 1, naming the gap and a way forward) on a symbolic link or
 # non-directory, a .gitignore that is a link or not a plain file, or an ignore
 # setup that would leave a task worktree visible to `git status` — a visible
 # checkout is one `git add -A` away from being committed to main.
+# Known gap, shared with wt_base: check-ignore tests one representative name
+# ($2-x), so an existing .gitignore that ignores only some $2-* names (say
+# "si-wt-?") passes; a fresh "*" file has no such gap.
 # Args: $1 = repo dir (absolute), $2 = worktree name prefix (e.g. si-wt).
 ensure_worktree_dir() {
     local repo=$1 prefix=$2 b g out rc=0
@@ -486,8 +490,9 @@ REPO_DIR="$(cd "$REPO_DIR" && pwd)"
 # Code asks before a write under .claude/ other than its own .claude/worktrees/,
 # and an allow rule does not stop it, so every write in such a worktree could
 # ask the owner. ensure_worktree_dir (main block) makes the directory and its
-# .gitignore of "*" and refuses if git would see a worktree there. An explicit
-# WORKTREE_BASE is used as given, with no such setup or check.
+# .gitignore of "*" and refuses if git would see a worktree there. A
+# WORKTREE_BASE other than the default is used as given, with no such setup
+# or check.
 SI_DEFAULT_WORKTREE_BASE="$REPO_DIR/.worktrees/si-wt"
 WORKTREE_BASE="${WORKTREE_BASE:-$SI_DEFAULT_WORKTREE_BASE}"
 MAX_ROUNDS=3

@@ -34,12 +34,20 @@ Branch: `fix/self-improvement-worktrees`. Policy: self-merge. Paths: `scripts/se
 - `docs/roadmap.md:361` may want its `.claude/wt-*` wording refreshed once this lands.
 - Outside the brief: `scripts/self-improvement.sh` still falls back to `TMPDIR=$REPO_DIR/.claude/tmp` when `$TMPDIR` is unset or unwritable (the same Claude Code ask-on-write applies); a candidate follow-up item.
 
+## Review rounds
+
+- Round 1 (dispatch 1): check-ignore refused under an inherited `GIT_LITERAL_PATHSPECS=1` (the dev-cycle reader exports it); fixed as `wt_base` does, with a test.
+- Round 2 (dispatch 2, after merging main): no high. Medium: either ignore read could be deleted with every test still passing; added two refusal cases each caught by only one read (a `.gitignore` of `.gitignore` and `wt-*`, and one of `si-wt-*`), confirmed by mutation (each mutant fails exactly its case). Low: check-ignore tests one representative name, so a partial existing ignore (`si-wt-?`) passes; named as a known gap in the comment (`wt_base` shares it; a fresh `*` file has none). Nits: "same directory" corrected (build-loop roots `.worktrees` at git's main worktree, this at `REPO_DIR`); "explicit WORKTREE_BASE" reworded to "other than the default".
+- Round 3: see the final commit.
+- For the cycle, outside Paths: `hooks/guard-trusted-writes.py` exempts the old self-improvement worktree names under `.claude/`; nothing in `scripts/` makes them now, so its "(this harness's)" comment is stale (gate code, not edited here). The TMPDIR fallback above stays a candidate item.
+
 ## Verification
 
-- `bats test/scripts/self-improvement-clean-state.bats`: 18/18 pass.
+- `bats test/scripts/self-improvement-clean-state.bats`: 21/21 pass after round 2.
+- After merging main, before the round-2 edits: the ten suites that source or run the script (adding `test/si-clean-state.bats` and `test/cc-isolated-functions.bats` to the list below): 325/325 pass.
 - `bats` over the suites that source the script (smoke, worktree-cleanup-functions, function-inventory, round-log-functions, claude-headless-flags, validate-task-json, convergence-detection): 79/79 pass.
 - `scripts/hermeticity-lint --root .`: passes. `shellcheck`: info-level only, same classes as before.
 - `scripts/health-check.sh`: see the final commit.
 
 Failure-pattern grep: FP-062, FP-185
-Failure-pattern skip: the fix(...) commit moves a default path following b3e25cf1's already-recorded cause (FP-185, worktrees under .claude/ asking on writes), so it adds no new cause-and-fix shape
+Failure-pattern skip: both fix(...) commits port existing fixes: the path move follows b3e25cf1 (FP-185, worktrees under .claude/ asking on writes), and the GIT_LITERAL_PATHSPECS=0 guard copies build-loop.sh wt_base, a review-caught port slip with no new cause
