@@ -33,7 +33,7 @@ lock() { git worktree unlock "$1" 2>/dev/null; git worktree lock --reason "$2" "
         "Merge policy: review" "applies the floor" "is advisory" "> H1: keep it small" "> success: under 400 lines" "no plan-approval gate" \
         "pr-prep's failure-pattern advisory (its Step 0) and its review-fix loop" "\"Failure-pattern grep: VALUE\"" "\"Failure-pattern skip: REASON\"" "sends the branch to the owner's review" "new FP-NNN entry to docs/failure-patterns.md" "(docs/failure-patterns.md is on the floor)" \
         "\"Gloss every reference\" rule" "git add -f docs/working/research-2026-10-01-x.md" "\"handoff: blocked\"" "under 2026-10-01-x/ in your scratchpad directory" \
-        "Never start build loops, background agents or schedules; never send your branch to a remote" "Never write the questions files"; do
+        "Never start build loops, schedules or agents that outlive your run; never send your branch to a remote" "Never write the questions files"; do
         [[ "$p" == *"$w"* ]] || { echo "missing: $w"; show; return 1; }
     done
     dsp --start "$B"; refused "its branch feat/x exists; --prompt re-dispatches it"
@@ -59,6 +59,30 @@ lock() { git worktree unlock "$1" 2>/dev/null; git worktree lock --reason "$2" "
     # The rule that keeps the dispatch commit an ancestor still stands: a merge only adds a commit.
     [[ "$p" == *"Only add commits: never reset, rebase or otherwise move your branch below $(git rev-parse feat/x), the commit you were dispatched at."* ]] || { show; return 1; }
     done
+}
+
+@test "the prompt has a loop wait inside its turn, bounded, and its subagents return reports as text (brief 2026-11-19-loop-wait-rule)" {
+    ready
+    dsp --start "$B"
+    [ "$status" -eq 0 ] || { show; return 1; }
+    p="$(printf '%s\n' "${lines[@]:2}")"
+    l="$(grep -F 'Start subagents only for research and review' <<<"$p")"
+    for w in "under 2026-10-01-x/ in your scratchpad directory for its working files; each returns its report in its final message, not as a file (Claude Code refuses a subagent's report file), and you save what you need." \
+        "Never start build loops, schedules or agents that outlive your run;"; do
+        [[ "$l" == *"$w"* ]] || { echo "missing: $w"; show; return 1; }
+    done
+    # The old wording, which read as forbidding the background reviewers the line allows, is gone.
+    [[ "$p" != *"background agents"* ]] || { show; return 1; }
+    w="$(grep -F 'wait inside your turn' <<<"$p")"
+    [ "$(grep -cF 'wait inside your turn' <<<"$p")" -eq 1 ] || { show; return 1; }
+    for x in "When pr-prep or code-review has you wait for a subagent or job you started, wait inside your turn: ending your turn can end your run with no marker." \
+        "by making short reads (git log, git status) until it arrives;" \
+        "one Bash call, its timeout at 600000 ms, running timeout 540 sh -c 'until test -e \"\$1\"; do sleep 15; done' _ ./FILE, not run_in_background or the Monitor tool." \
+        "Wait 30 minutes at most in all; then end with \"handoff: stopped: REASON\", naming what did not finish."; do
+        [[ "$w" == *"$x"* ]] || { echo "missing: $x"; show; return 1; }
+    done
+    # The heredoc is unquoted: the escaped \$1 prints as a literal $1, never the brief's path.
+    [[ "$w" == *'test -e "$1"'* && "$w" != *"$B"* ]] || { show; return 1; }
 }
 
 @test "--start takes an absolute new --dir and refuses anything else (T19, U3d)" {
