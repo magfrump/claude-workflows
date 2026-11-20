@@ -89,6 +89,29 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   rerun it under load to reproduce, then find the order or timing the selector depends on (both fixtures share a
   date and commit; the selector may read file times).
 
+- **Agent: fix report findings F8 to F12 so five held-back skills' reports can land** (filed 2026-11-20,
+  step 7; from the regeneration's research doc, "Dispatch 2" section). Motive: 14 cases fail on fresh reports in
+  fact-check (9), yglesias-critique (2), business-plan-critique-moat, tech-debt-triage and test-strategy (1 each),
+  so those five skills' suites stay NOT RUN. F8 (moat tc-moat4: right judgment, wording misses the pattern), F9
+  (test-strategy tc-ts6: open whether skill or check changes), F10 (yglesias: `dimensions.bats` requires a
+  section the skill adds only "if relevant"), F11 (tech-debt tc-td2: the fixture depends on the run date), F12
+  (fact-check: no "Total claims checked" line on declined input; claim-count drift in tc-7.2 and tc-3.3). The
+  reports are in history (b4f458c9, 0d51e240, 956bb566). First step: a review brief (skills are prompt files)
+  deciding each case skill-side or test-side, as the F5 work did, then restore and land those reports.
+
+- **Agent: the cross-project board shows which projects have new harness feedback to copy here** (owner
+  request, 2026-11-20, in session: "I would like the cross-project board to also surface projects that have new
+  harness feedback to copy to this repo"). Motive: each project records harness friction in its own
+  `docs/harness-feedback.md`, and it reaches this repo only when the owner copies it and
+  `scripts/harness-feedback.py ingest` files it under `docs/working/feedback/PROJECT.md`; nothing says when a
+  project has entries this repo has not ingested, so feedback waits until the owner happens to look. The board
+  (`scripts/board.sh`, host only; guide `guides/cross-project-board.md`) already reads every registered repo's
+  default branch. First step: a research pass on how the board can tell "new" without reading this repo's
+  working tree (for example, comparing each project's highest F-NNN on its main with the highest in this repo's
+  `docs/working/feedback/PROJECT.md` on main), and what one listing line per project says (its count and the
+  ingest command); then a review brief (`scripts/board.sh` is host code under H1's trust rules). Related owner
+  feedback, not yet recorded: the weekly digest surfaced in the same board (answers file 7df4654d, on Q-327's T11).
+
 - **Agent: Gate-only changes approved by the release paste (area A's [5n])** (filed 2026-11-19, step 7).
   Motive: 25 merge entries in two weeks, 24 answered [1]; the pick would remove about a quarter.
   First step: the review brief drafted in section 8 of
@@ -127,18 +150,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   The orchestrator applies R2 by hand from iteration 2133 on.
   2026-11-20: ready at 415006de (step 0.3 states the form; D13 and the prompt line corrected; no
   code-review rubric committed): merge asked in Q-337; its observable is watch Q-338.
-
-- **Regenerate the skill eval reports** (Q-321 [2], owner in session 2026-11-19: "yes"). Motive: 51
-  test files marked `@needs-reports` print NOT RUN; the regeneration waited on the A8 measurement
-  (watch Q-067, closed), which merged at eddcaf16. Briefed (iteration 0712 UTC), self-merge, code-review
-  first to prove the pipeline: `docs/working/briefs/2026-11-19-regenerate-skill-reports.md`.
-  2026-11-20: the run finished ready (0cb729ed: 156 reports for 22 skills; 43 cases in 16 skills fail on them);
-  held from self-merge because it would turn every health check red: asked in Q-328.
-  2026-11-20: Q-328 answered [3], fix first: the branch waits while findings F2 to F7 are fixed
-  (the three briefs below). Once they merge, re-dispatch this brief to merge main in, regenerate
-  the skills those fixes changed, and land green.
-  2026-11-20: all three merged (cef30487, ead9191a, 01eff59e); the re-dispatch waits for a free loop
-  slot (iteration 2206: all three slots busy).
 
 
 ## Next
@@ -468,6 +479,12 @@ Unranked. Each names the signal that motivates it.
 ## Done
 
 Items finished since the last cycle, with the merge.
+
+- **Regenerate the skill eval reports** (Q-321 [2]; Q-328 [3], fix first): 18 skills' report suites now
+  pass whole, up from 6; 274 reports landed. Done 4f1e4150 (self-merge, two dispatches, 272 model runs),
+  brief `docs/working/briefs/closed/2026-11-19-regenerate-skill-reports.md`, research
+  `docs/working/research-2026-11-19-regenerate-skill-reports.md`. Five skills' reports were held back (their
+  14 failing cases, findings F8 to F12, are a Now item), so their suites stay NOT RUN.
 
 - **`self-improvement.sh` under an exported `GIT_LITERAL_PATHSPECS=1`, and its `TMPDIR` fallback**: the commit
   step's call site runs with literal pathspecs off; the fallback moved to `.worktrees/si-tmp`. Done 5eab5704
