@@ -18,7 +18,7 @@ A changed cycle record (BASE side present, not deleted):
 2. BASE's last block (from that line to EOF) and the listing's side from the same byte up to its next `## Iteration` line must match line for line, leaving out lines starting `9. land:` or `10. dispatch:` and trailing blank lines (the blank line an append puts before its new heading), except that the side may add lines inside the block's `### Paths landed` section (between that heading and the next `### ` line): skill step 9.1 says "step 10's land lists its own", and step 10 lands "as step 9 does (1 to 4)". Every base line must still appear, in order. What follows the next heading is appended and free.
 3. Deleted: `refuse PATH: it is deleted` (same branch as the roadmap, idea log and watching file). New (no BASE): not judged.
 
-Refusals: `refuse PATH: the base's text before its last ## Iteration block changed (an earlier block dropped or edited); an iteration only appends its own block` and `refuse PATH: the base's last block (## Iteration HHMM) changed other than its 9. land: and 10. dispatch: lines; an iteration only appends its own block`. A failed read prints `refuse PATH: it could not be compared` (H2); a side not a regular 100644 file refuses as for the other cycle files.
+Refusals: `refuse PATH: the base's text before its last ## Iteration block changed (an earlier block dropped or edited); an iteration only appends its own block` and `refuse PATH: the base's last block (## Iteration HHMM) changed other than its 9. land: and 10. dispatch: lines and lines added under its ### Paths landed; an iteration only appends its own block`. A failed read prints `refuse PATH: it could not be compared` (H2); a side not a regular 100644 file refuses as for the other cycle files.
 
 ## Design choices (none with 3+ viable options; one-line notes)
 
@@ -37,7 +37,7 @@ Replaying the rule over every cycle-record land on main (279 judgements, each me
 
 Residuals, all failing closed or accepted under S1 (honest slips by a same-uid loop):
 - A fix to an already-landed block, or a restore of dropped blocks (b991011f's shape), cannot go through `--land-cycle`: it lands by hand (header says so).
-- A `## Iteration` line inserted inside the last block ends the block there for the comparison, so the lines after it, and the `9.`/`10.` lines, are unchecked (they may also be dropped or moved). Losing them takes nothing step 0.2 reads (the last `Main at:` stays in the block's checked head).
+- A `## Iteration` line inserted inside the last block ends the side's block there. Base lines after it then go unmatched and refuse (fails closed), except its `9.`/`10.` lines and trailing blank lines, which may be dropped (or moved within the block). Losing them takes nothing step 0.2 reads (the last `Main at:` stays in the block's checked head).
 - Another session landing a block between this iteration's step 9 and step 10 makes step 10's rewrite fall in the base's prefix: refused (fails closed); `--state`'s one-cycle-at-a-time lock should rule it out.
 
 ## Doc changes (acceptance criterion 4)
@@ -47,7 +47,7 @@ Residuals, all failing closed or accepted under S1 (honest slips by a same-uid l
 
 ## Tests
 
-`test/scripts/build-loop-orchestrator.bats`, one case: appended block (ok); step 10's rewrite of the last block's `9.` line and an added `10.` line, alone and with a block appended (ok); the 0121 shape (refused); an earlier block's `Main at:` or its `9.` line edited (refused); the last block's `Main at:` edited, alone and with a block appended, or it cut short (refused); a line added under the last block's `### Paths landed`, alone and with a block appended (ok); a Paths landed line dropped, or a line added elsewhere in the last block (refused); a line added to an earlier block (refused); deletion (refused); a new record (ok); `--land-cycle` refusing the 0121 shape on the merge and landing an append.
+`test/scripts/build-loop-orchestrator.bats`, one case: appended block (ok); step 10's rewrite of the last block's `9.` line and an added `10.` line, alone and with a block appended (ok); the 0121 shape (refused); an earlier block's `Main at:` or its `9.` line edited (refused); the last block's `Main at:` edited, alone and with a block appended, or it cut short (refused); a line added under the last block's `### Paths landed`, alone and with a block appended (ok); a line inserted mid-section, before the next `### Roadmap diff` heading (ok); a Paths landed line dropped, or a line added elsewhere in the last block, under `### Steps` or after `### Roadmap diff` (refused); a line added to an earlier block (refused); deletion (refused); a new record (ok); `--land-cycle` refusing the 0121 shape on the merge and landing an append.
 
 Failure-pattern grep: `grep -inE 'cycle-diff|cycle.record|truncat|append-only|appending|land-cycle|idea-log' docs/failure-patterns.md` → 3 lines: line 3 (the file's own preamble), FP-124 and FP-170 (truncation of a background-wait cell and of a multibyte char; unrelated). No prior failure in this area.
 

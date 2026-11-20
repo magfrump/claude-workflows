@@ -2303,8 +2303,9 @@ END {
 }'
 # record_kept PATH OLD NEW: a changed cycle record keeps the base's text up to
 # its last "## Iteration" line byte for byte (all of it when it has none), and
-# that last block but its 9. and 10. lines (RECORD_AWK): an iteration appends
-# its own block, and step 10's land rewrites only those two lines (brief
+# that last block but its 9. and 10. lines and lines added under its ### Paths
+# landed (RECORD_AWK): an iteration appends its own block, and step 10's land
+# rewrites those two lines and lists its own paths (brief
 # 2026-11-20-cycle-diff-record-prefix: iteration 0121 landed a record holding
 # only its own block). Prints a refuse line and fails otherwise.
 record_kept() {

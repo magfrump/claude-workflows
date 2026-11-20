@@ -855,9 +855,9 @@ refuse docs/working/watching.md: Q-011's heading changed or is gone; a watch clo
 }
 
 # blk HHMM MAIN [9-LINE [10-LINE]]: one iteration block of a cycle record for 2026-10-11.
-blk() { printf '%s\n' "## Iteration 2026-10-11-$1" "Branch: chore/dev-cycle-2026-10-11-$1" "Main at: $2" '### Steps' '8. briefs: none' "${3-9. land: this commit.}" ${4+"$4"} '### Paths landed' '- M docs/roadmap.md'; }
+blk() { printf '%s\n' "## Iteration 2026-10-11-$1" "Branch: chore/dev-cycle-2026-10-11-$1" "Main at: $2" '### Steps' '8. briefs: none' "${3-9. land: this commit.}" ${4+"$4"} '### Paths landed' '- M docs/roadmap.md' '### Roadmap diff' '- none'; }
 
-@test "--cycle-diff and --land-cycle keep a cycle record's earlier blocks and its last block but for its 9. and 10. lines; a new record is not judged (brief 2026-11-20-cycle-diff-record-prefix)" {
+@test "--cycle-diff and --land-cycle keep a cycle record's earlier blocks and its last block but for its 9. and 10. lines and lines added under its ### Paths landed; a new record is not judged (brief 2026-11-20-cycle-diff-record-prefix)" {
     R=docs/working/cycles/cycle-2026-10-11.md; B=chore/dev-cycle-2026-10-12
     qa; git checkout -q main; mkdir -p docs/working/cycles
     { echo '# Cycle 2026-10-11'; echo; blk 0100 a '9. land: 1111111 (landed)' '10. dispatch: none'; echo; blk 0200 b; } > "$R"; commit_all record
@@ -876,11 +876,16 @@ blk() { printf '%s\n' "## Iteration 2026-10-11-$1" "Branch: chore/dev-cycle-2026
     sed -i 's/^9\. land: 1111111 (landed)$/9. land: 9999999/' "$R"; git add -A; cd_is "$E"; git reset -q --hard
     # The last block's other lines edited, a line added to it, or the block cut short: refused, an appended block or not.
     sed -i 's/^Main at: b$/Main at: z/' "$R"; git add -A; cd_is "$L"; { echo; blk 0300 c; } >> "$R"; git add -A; cd_is "$L"; git reset -q --hard
-    # Step 10's land adds its own paths under the last block's ### Paths landed: taken; dropping one, or a line added elsewhere in the block, refuses.
-    echo '- M docs/working/questions.md' >> "$R"; git add -A; cd_is ok; { echo; blk 0300 c; } >> "$R"; git add -A; cd_is ok; git reset -q --hard
-    head -n -1 "$R" > "$R.x"; mv "$R.x" "$R"; git add -A; cd_is "$L"; git reset -q --hard
-    sed -i 's/^### Steps$/&\nadded/' "$R"; git add -A; cd_is "$E"; git reset -q --hard
-    awk '{ print } /^Main at: b$/ { print "added" }' "$R" > "$R.x"; mv "$R.x" "$R"; git add -A; cd_is "$L"; git reset -q --hard
+    # Step 10's land adds its own paths under the last block's ### Paths landed (here, or mid-section before ### Roadmap diff): taken, a block appended or not.
+    P='- M docs/working/questions.md'; pl() { awk -v p="$P" -v w="$1" '{ print } $0 == w { n++ } $0 == w && n == 2 { print p }' "$R" > "$R.x" && mv "$R.x" "$R"; }
+    pl '- M docs/roadmap.md'; git add -A; cd_is ok; { echo; blk 0300 c; } >> "$R"; git add -A; cd_is ok; git reset -q --hard
+    pl '### Paths landed'; git add -A; cd_is ok; git reset -q --hard
+    # A Paths landed line dropped, or a line added elsewhere in the last block (under ### Steps, after ### Roadmap diff's line), refuses.
+    awk '$0 == "- M docs/roadmap.md" && ++n == 2 { next } { print }' "$R" > "$R.x"; mv "$R.x" "$R"; git add -A; cd_is "$L"; git reset -q --hard
+    pl '### Steps'; git add -A; cd_is "$L"; git reset -q --hard
+    echo '- moved' >> "$R"; git add -A; cd_is "$L"; git reset -q --hard
+    # A line added to an earlier block refuses as an earlier block edited.
+    awk '{ print } $0 == "### Steps" && ++n == 1 { print "added" }' "$R" > "$R.x"; mv "$R.x" "$R"; git add -A; cd_is "$E"; git reset -q --hard
     head -n -2 "$R" > "$R.x"; mv "$R.x" "$R"; git add -A; cd_is "$L"; git reset -q --hard
     # Deleting a record refuses; a new record is not judged.
     git rm -q "$R"; cd_is "refuse $R: it is deleted"; git reset -q --hard
