@@ -18,7 +18,7 @@ confined to cwd", are the nearest, as the herald triage found; neither bears on 
   quo), unpicked; first step a probe of whether a main-session `cd` moves a subagent's start dir.
 - `skills/dev-cycle/SKILL.md`: step 0.3 (lines 330-339) removes WT "once step 10's land is
   verified"; step 10 (line 1012 on) starts loops as background subagents with no isolation, then
-  lands again from WT and removes it (line 1065). The Rules' D13 bullet (lines 28-32) says
+  lands again from WT and removes it (line 1065). The Rules' D13 bullet (lines 28-35) says
   the orchestrator's shell "stays in `dev-cycle-orchestrator/` under the session's temp
   directory ... not a git checkout", and every command names its checkout (`cd WT && …`).
 - `scripts/build-loop.sh` line 2006, the prompt `--start`/`--prompt` print: "Your shell starts
@@ -39,11 +39,29 @@ Known losses, all with the line present:
 - 1 in the herald triage's own dispatch (2026-11-19, its sixth call, per its research doc).
 - 1 in this dispatch, observed directly (below).
 
-The cycle records (`docs/working/cycles/`, about 118 "dispatched N" mentions) and the other
-feedback files (`philosophy-research.md`) log no lost call either way: loops do not record a
-refused call, so the records cannot give a rate. The mechanism below says it happens to every
-loop that is still running when WT is removed, which is most of them, since a loop runs far
-longer than the land after dispatch.
+The cycle records (`docs/working/cycles/`) and the other feedback file
+(`philosophy-research.md`) do not record a refused call, so the records alone give no rate.
+They do record option 1 being tried twice by hand. `cycle-2026-11-19.md` line 751
+(iteration 2026-11-19-2338) says "the orchestrator's shell was moved to `/workspace` before
+the Agent calls, an informal check on herald F-008". Line 983 (iteration 2026-11-20-0110)
+says "the shell was moved to `/workspace` first". Neither records an outcome.
+
+**The session transcripts give the rate and the outcome.** These are the build-loop subagent
+transcripts under the home `.claude/projects/-workspace/` (2026-10-26 to 2026-11-20, 110 loops).
+Each loop's first recorded `cwd` was read, and the refusal text "no longer exists, so this
+command was not run" was counted:
+
+| Loop started in | Loops | With the refusal text | Without |
+|---|---|---|---|
+| the orchestrator's WT | 69 | 31 | 38 |
+| `/workspace` (MAIN_WT) | 41 | 2 | 39 |
+
+The two `/workspace` hits are not tool errors (no `is_error` result carries them). They are
+most likely the text being quoted, for example from F-008. The two hand-tried loops
+(loops-wait-foreground, subagent-report-files-listing) and steal-wait-research all started
+in `/workspace` with no refusal. The herald triage loop, dispatched without the move, started
+in WT and was refused once. So about 45% of WT-started loops lose a call, and parking first
+removes the loss. Option 1's premise has been watched, not only predicted.
 
 Cost per loss: one Bash call that is not run and is sent again. The harness then moves the
 loop's shell to `/workspace` (MAIN_WT), and later calls run. No loss of correctness was
@@ -76,8 +94,9 @@ Four facts follow:
    succeeds and ends inside the working directories. Outside them the shell returns to the
    start folder". So a shell cannot "stay" in a temp directory outside the working
    directories, and every `cd WT && …` the D13 rule asks for leaves the orchestrator's shell
-   in WT. Step 10's own `cd WT && bash /opt/claude-workflows/scripts/d6.sh build-loop.sh
-   --start …` runs just before the Agent calls, so every loop starts in WT. The D13 bullet's
+   in WT. Step 10's `--start BRIEF` (line 1034), run in the D6 form the Rules give
+   (`cd WT && bash /opt/claude-workflows/scripts/d6.sh …`, lines 52-55), comes just before
+   each Agent call, so every loop starts in WT. The D13 bullet's
    premise ("not a git checkout", "fails with 'not a git repository'") does not hold as
    written, and neither does the prompt's "Your shell starts outside any checkout".
 3. **The check runs before any call while the directory is gone, not only the first.** A
@@ -94,10 +113,10 @@ then runs commands. Builtin `pwd` prints the stale path, `/bin/pwd` fails ("coul
 directory entry in '..'"), `ls .` lists nothing, and `cd` to an existing absolute path works.
 So a removed cwd stops nothing in bash: the lost call is the harness's check.
 
-What stays unverified: that a main session's `cd MAIN_WT` (or `cd WTB`) call made just before
-the Agent calls gives the loops that start directory. Facts 1 and 2 predict it, since that is
-how WT came to be the start directory, but no one has watched it. The suggested brief makes
-that its observable.
+What the transcripts verified: a main-session `cd /workspace` before the Agent calls gives the
+loops that start directory, with no refusal. Not yet watched: `cd WTB` (option 1b). Facts 1
+and 2 predict the same result for WTB, since it is inside the working directories just as
+`/workspace` is. The suggested brief makes that its observable.
 
 ## Divergent design (acceptance 4)
 
@@ -106,7 +125,7 @@ variant (1b) the probe turned up, plus one dropped:
 
 | Option | What it changes | Paths, gate code? | Owner reading | Removes the loss? |
 |---|---|---|---|---|
-| **1. Park in MAIN_WT** | step 10: one `cd MAIN_WT` call before the Agent calls | `skills/dev-cycle/SKILL.md`, gate code: review merge | one merge entry | yes, predicted |
+| **1. Park in MAIN_WT** | step 10: one `cd MAIN_WT` call before the Agent calls | `skills/dev-cycle/SKILL.md`, gate code: review merge | one merge entry | yes, observed (41 loops) |
 | **1b. Park in WTB** | the same, with `cd WTB` (`.worktrees`, git-ignored, in MAIN_WT) | same as 1 | one merge entry | yes, predicted |
 | **2. Defer WT removal** | step 0.3 removes the previous WT next iteration | `skills/dev-cycle/SKILL.md`, gate code | one merge entry | no, it moves |
 | **3. Warn in the prompt** | `--prompt` says the first call may be refused | `scripts/build-loop.sh`, gate code | one merge entry | no |
@@ -114,18 +133,27 @@ variant (1b) the probe turned up, plus one dropped:
 | dropped: add the temp dir as a working dir | make D13 true at session launch (`--add-dir`) | `cc-isolated.sh`, over 500 lines | host step | yes |
 
 Notes per option:
-- **1 / 1b.** One sentence, plus two corrections the same review would carry: the D13 bullet
-  says what the shell really does (it ends in the checkout its last `cd` named, so park it
-  before dispatch), and the prompt's "Your shell starts outside any checkout" becomes "in the
-  main checkout, which you never write". Nothing new is at risk. Today a loop that forgets its
+- **1 / 1b.** One sentence, plus two corrections the same review would carry. The D13
+  bullet says what the shell really does: it ends in the checkout its last `cd` named, so
+  park it before dispatch. The prompt's "Your shell starts outside any checkout" names the
+  parking place (for 1b, the wording under "For the dev cycle"). With several free slots,
+  step 10 today runs `--start`, then the Agent call, then the next `--start` (`cd WT && …`
+  again). So the order must change: every `--start`/`--prompt` first, then the park in its
+  own response, then all the Agent calls together. Otherwise only the first loop is covered.
+  Exposure for loops: nothing new. Today a loop that forgets its
   `cd` writes into WT before the removal and into `/workspace` after it. Under 1 it writes into
   `/workspace` from the start. Under 1b a stray relative write lands in the ignored
   `.worktrees/` and not in main's tracked tree, while git commands behave the same as under 1
-  (both resolve to MAIN_WT's repository). The orchestrator's own commands are unchanged: each
-  one already starts `cd WT && …`, so parking does not move where the land runs. H3: a bats pin
+  (both resolve to MAIN_WT's repository). Exposure for the orchestrator: small but new. From
+  the park until its next `cd WT && …`, a git command that forgets its `cd` would run against
+  MAIN_WT, the checkout the cycle "reads but never commits in" (SKILL.md lines 234-235). Today
+  that same slip hits WT's chore branch. Every orchestrator command already names its checkout,
+  and the window is only the Agent calls. WTB exists at dispatch time: step 0.3's
+  `--worktree-base` makes it, and nothing removes it. H3: a bats pin
   on the step-10 sentence and on the prompt's new wording, as other skill lines are pinned. The
-  start directory itself cannot be tested hermetically; S6's observable is in the next loops'
-  environment, which could come out negative.
+  start directory itself cannot be tested hermetically. S6's observable is in the next loops'
+  environment, and it could come out negative. For option 1 it has already come out positive:
+  41 loops started in `/workspace` with no refusal.
 - **2.** Loops still running when the next iteration removes the old WT lose a call then. The
   cost moves rather than goes, and a session that ends leaves a WT behind (S10: nothing left to
   clean up). Until then, a stray write lands in a stale chore checkout, which is worse than 1.
@@ -139,23 +167,26 @@ Notes per option:
   to keep a property that 1b gives at no host cost.
 
 **Pick (Path A): option 1b, park in WTB before dispatch, carrying the two corrections.** It
-dominates 2 and 3 on every axis. It beats 4 because, at the same review cost, it removes the
-loss and corrects a stated safety property that does not hold. 1b beats 1 on stray writes
-and is otherwise the same. Its one cost is a review merge, the owner reading one merge entry,
+dominates 2 and 3 on every axis. It beats 4 because, for one review, it removes a loss seen in
+about 45% of WT-started loops and corrects a stated safety property that does not hold. 1b
+beats 1 on stray writes and is otherwise the same. Option 1 is the observed fallback: if WTB
+does not take as the start directory, use `/workspace`. Its one cost is a review merge, the owner reading one merge entry,
 because `skills/dev-cycle/` and `scripts/build-loop.sh` are GATE_CODE
 (`scripts/lib/dev-cycle-read.sh` line 1037). Neither is an enforcement file.
 
 Other choices, one line each:
-- Whether to run a live Agent-tool probe from this loop: no. It is not hermetic, and a
-  subagent cannot set up a persisted main-session cwd.
+- Whether to run a live Agent-tool probe from this loop: no. It is not hermetic, a subagent
+  cannot set up a persisted main-session cwd, and the transcripts already answer it for
+  option 1.
 - Whether to also fix decision log row 72 or plan D13's wording: no. They are records on the
   self-merge floor; the brief below changes the live sentences only.
 
 ## For the dev cycle
 
 Suggested brief: **Park the orchestrator's shell in WTB before step 10's Agent calls.**
-- Goal: step 10 sends one `cd WTB` Bash call in the response before the loops' Agent calls,
-  with no `cd WT && …` call between, so loops start in a directory that outlives WT. The
+- Goal: step 10 runs every `--start`/`--prompt` first, then sends one `cd WTB` Bash call in
+  its own response, then all the loops' Agent calls in the next response, with no `cd WT && …`
+  call between. That way every loop starts in a directory that outlives WT. The
   Rules' D13 bullet says what the shell does: it ends in the checkout its last `cd` named. The
   build-loop prompt's "Your shell starts outside any checkout" becomes "Your shell starts in
   the main checkout's `.worktrees` directory, not in your worktree".
@@ -165,5 +196,5 @@ Suggested brief: **Park the orchestrator's shell in WTB before step 10's Agent c
 - Tests: bats pins on the new step-10 sentence, the D13 wording and the prompt line; the
   existing `--prompt` tests updated. Observable (S6): the next dispatch's loop environment
   names WTB as its working directory, and no loop reports "no longer exists" after the land.
-  If a loop still starts in WT, the premise is refuted: revert, and close the item as status
-  quo.
+  If a loop still starts in WT, WTB did not take: switch the park to `/workspace`, option 1,
+  which the transcripts show working.
