@@ -117,16 +117,17 @@ So a removed cwd stops nothing in bash: the lost call comes from the harness's c
 
 **Which removal forms were followed by a refusal.** The orchestrator transcript (session
 42e4626f, 2026-11-19 23:00Z to 2026-11-20 19:20Z) has 37 commands that remove a `wt-dev-cycle-`
-worktree. Its loops' transcripts hold 18 refusals, and 17 of them follow one of these removals
-by seconds to minutes. Three cases settle the form:
+worktree. Its loops' transcripts hold 18 refusal records: 17 distinct refusals plus one
+undated duplicate. Every one follows one of these removals by seconds to minutes. Three cases settle the form:
 - **Its own command, ending in `/workspace`, still refused.** At 23:29:50Z,
   `cd /workspace && git -C /workspace worktree remove …/wt-dev-cycle-2026-11-19-2316 && echo removed`
   succeeded. The command started in WT, since the previous command had `cd`'d there. Two loops
   (agent-aefda26c at 23:29:52Z and agent-a644aeb8, the herald triage loop, at 23:29:54Z)
   were refused for that WT. The same form at 23:43:48Z (2338) and 00:04:40Z (2351) was
   followed by no refusal, but few loop calls may have fallen in those windows.
-- **Inside a land chain** that starts `cd WT && …`: 01:28:32Z (wt-0121, 3 refusals), 03:37:55Z
-  (wt-0331) and 05:42:55Z (wt-0532, 4 refusals across 4 loops).
+- **Inside a land chain** that starts `cd WT && …`, the dominant form: 15 of the 17 refusals
+  follow one. Examples: 01:28:32Z (wt-0121, 3 refusals), 05:42:55Z (wt-0532, 4 loops),
+  17:52:44Z (wt-1748, 3 loops), and 0128, 0331, 0720, 1904 and 1917.
 - **Inside a chain that failed after the removal.** At 01:10:35Z,
   `cd /workspace && git -C /workspace worktree remove …-0056 && bash …d6.sh build-loop.sh --state && …`
   removed WT, but a later step failed. The Bash tool keeps a `cd` only when the whole command
@@ -197,25 +198,17 @@ Every live option corrects the D13 bullet (what the shell does: it ends in the c
 last successful `cd` named, and subagents run there) and the prompt line ("Your shell runs where
 the orchestrator's does, a checkout that is not yours: start every command with cd DIR &&").
 
-**Path C: no clear winner between R2 and 2. Tentative pick: R2, with 2 as the fallback.**
-- R2 is smaller: a form for six removal commands, and no new state across iterations.
-- 2 is the only option whose effect does not rest on the cwd lag being at most one command,
-  but it adds a leftover rule and still needs R2 for GT and HC.
-- **Tiebreaker:** R2 can be checked in the next iterations' transcripts at no cost. If it
-  fails, 2 replaces it.
-
-Question for the cycle to file (`you: judgment`, since it picks how much harness complexity
-buys the fix):
-
-Should the dev cycle fix the lost build-loop call by parking the shell in its own call before
-each worktree removal (R2), or by deferring each iteration's worktree removal to the next
-iteration (2)?
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] R2: park, then remove** (tentative pick) | a `cd WTB` call before each removal | one merge review | loops still lose a call; switch to [2] |
-| **[2] Defer removal** | next iteration removes the old WT | one merge review, larger diff | one WT on disk between iterations |
-| **[3] Status quo** | no change but the two sentence fixes | one merge review | about 45% of loops keep losing a call |
+**Pick (Path A): R2, park in its own call and then remove, with option 2 as the recorded
+fallback.**
+- R2 dominates R1, 1/1b, 3 and 4. R1 is refuted, 1/1b is undone by the land, and 3 and 4
+  remove nothing.
+- Against 2, R2 is smaller: a form for six removal commands, and no new state across
+  iterations. 2 would still need R2's form for GT and HC.
+- What remains between them is a fact, not a preference: whether the lag is ever longer than one
+  command. The next iterations' transcripts settle that at no cost (the observable below).
+  If they show R2 failing, option 2 replaces it. So no owner call is needed. Routing this as
+  `you: judgment` would spend the owner's attention (S10) on a question the records will
+  answer.
 
 Other choices, one line each:
 - A live Agent-tool probe from this loop: not run. It is not hermetic, and a subagent cannot set
@@ -225,7 +218,7 @@ Other choices, one line each:
 
 ## For the dev cycle
 
-Suggested brief (on the tentative pick R2): **Remove the cycle's worktrees from a shell parked
+Suggested brief: **Remove the cycle's worktrees from a shell parked
 in its own call (herald F-008).**
 - Goal: before each worktree removal (WT, HC, GT, the stop paths' `--force` removals and the
   leftover HC), the orchestrator sends a bare `cd WTB` call, then the removal in a later call
