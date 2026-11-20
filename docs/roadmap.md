@@ -69,6 +69,11 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   (`docs/working/research-2026-11-19-area-b-ask-habituation.md`, "For the dev cycle"); gate code.
   Area A's research (e9fb762c) drafted no counter, so this one stands; brief it when a slot frees.
 
+- **Agent: the write guard's `.claude/wt-*` exemption is stale** (filed 2026-11-20, step 7; same research
+  doc). Motive: `hooks/guard-trusted-writes.py` exempts the old `.claude/wt-*` self-improvement worktrees,
+  which nothing creates once the worktree fix lands; its "(this harness's)" comment misleads. First step:
+  a review brief (gate code, `Live-verified:` trailer) to drop the exemption or correct the comment.
+
 - **Agent: Gate-only changes approved by the release paste (area A's [5n])** (filed 2026-11-19, step 7).
   Motive: 25 merge entries in two weeks, 24 answered [1]; the pick would remove about a quarter.
   First step: the review brief drafted in section 8 of
@@ -76,6 +81,14 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   Held: Q-323 asks whether to build it at all.
 
 ## In flight
+
+- **Agent: `self-improvement.sh` fails under an exported `GIT_LITERAL_PATHSPECS=1`, and its `TMPDIR`
+  fallback still sits under `.claude/`** (both filed 2026-11-20, step 7, from the self-improvement worktrees
+  loop, `docs/working/research-2026-11-20-self-improvement-worktrees.md`). Motive: with
+  `GIT_LITERAL_PATHSPECS=1` exported (the dev-cycle reader does), a git call in the main loop fails, hidden
+  in tests by the suite's new `unset`; the fallback `TMPDIR=$REPO_DIR/.claude/tmp` asks the owner on each
+  write. One unit (same script). 2026-11-20: briefed (iteration 2217), self-merge (`scripts/self-improvement.sh`,
+  `test/`): `docs/working/briefs/2026-11-20-self-improvement-env-followups.md`.
 
 - **Agent: `--cycle-diff` lets a cycle record lose its earlier blocks** (filed 2026-11-19, step 6).
   Motive: iteration 2026-11-20-0121 landed `docs/working/cycles/cycle-2026-11-19.md` holding only its
@@ -88,6 +101,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   shape; gate code.
   2026-11-20: briefed (iteration 2148), review; the rule also takes step 10's rewrite of the last
   block's `9.`/`10.` lines: `docs/working/briefs/2026-11-20-cycle-diff-record-prefix.md`.
+  2026-11-20: ready at f2d9abc5 (rubric clean; deletion now refused too; replay over 279 lands
+  refuses 10): merge asked in Q-339.
 
 - **Agent: Build loops start in the orchestrator's removed worktree** (filed 2026-11-19, step 7; herald F-008). Motive: every loop
   dispatched before the cycle's land loses its first Bash call, because the cycle removes its
@@ -103,13 +118,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   in WT. Pick R2 (Path A): park the shell with a bare `cd WTB` call, remove in a later call. Built
   as a review brief (iteration 2133): `docs/working/briefs/2026-11-20-remove-worktrees-parked-shell.md`.
   The orchestrator applies R2 by hand from iteration 2133 on.
-
-- **Agent: `scripts/self-improvement.sh` still puts its worktrees under `.claude/`** (filed 2026-11-20,
-  step 7; split from the write-guard item). Motive: Claude Code asks before writes under `.claude/`
-  outside its own `.claude/worktrees/`, so self-improvement runs keep asking; b3e25cf1 moved build
-  loops to `.worktrees/`. First step: a small brief to move its default to `.worktrees/`, as b3e25cf1 did.
-  2026-11-20: briefed (iteration 1917), self-merge (`scripts/self-improvement.sh`, `test/`):
-  `docs/working/briefs/2026-11-20-self-improvement-worktrees.md`.
+  2026-11-20: ready at 415006de (step 0.3 states the form; D13 and the prompt line corrected; no
+  code-review rubric committed): merge asked in Q-337; its observable is watch Q-338.
 
 - **Regenerate the skill eval reports** (Q-321 [2], owner in session 2026-11-19: "yes"). Motive: 51
   test files marked `@needs-reports` print NOT RUN; the regeneration waited on the A8 measurement
@@ -451,6 +461,11 @@ Unranked. Each names the signal that motivates it.
 ## Done
 
 Items finished since the last cycle, with the merge.
+
+- **`scripts/self-improvement.sh` still puts its worktrees under `.claude/`**: its default is now
+  `.worktrees/si-wt-<task>`, set up as build loops' `.worktrees/` is. Done 7b46a90e (self-merge, two
+  dispatches), brief `docs/working/briefs/closed/2026-11-20-self-improvement-worktrees.md`. Its three
+  follow-ups are Now items (the `GIT_LITERAL_PATHSPECS` failure, the `TMPDIR` fallback, the guard comment).
 
 - **A per-repo health-checkout preparation line** (philosophy-research F-016): `Health checkout copies:`
   in `docs/dev-cycle.md` and `build-loop.sh --health-prep HC`. Done f6d555d8 (approved merge, Q-333 [1]),
