@@ -53,6 +53,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   2026-11-14: Q-286 answered in session: extend a week, all five running to about 2026-11-20,
   because T11 and T12 live in the weekly digest and have had one edition. Ask again after the
   2026-11-20 weekly digest.
+  2026-11-20: the digest ran (`docs/working/weekly/2026-11-20.md`); the trial-end question is Q-327.
 
 - **Review-gap audit in Behemoth Arsenal** (owner feedback 2026-10-29, point 3). Motive: the
   gap that prompted the audit came up in Behemoth Arsenal; the run here (84f8532e,

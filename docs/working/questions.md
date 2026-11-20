@@ -28,6 +28,7 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-323](#q-323--gate-only-changes-approved-by-release) | you: judgment | Should a build loop's change that touches only the gate's own code (`scripts/build-loop.sh`, `d6.sh`, `dev-... | 2026-11-19 |
 | [Q-326](#q-326--merge-2026-11-19-guard-worktree-taint-218f899afd20) | you: judgment | Merge the write-guard fix: in a web-tainted session, an ordinary edit inside a git worktree under `.claude/... | 2026-11-19 |
+| [Q-327](#q-327--trial-set-2-ends-again) | you: judgment | The second trial set (T8–T12), extended a week under Q-286, has now had its second weekly digest (`docs/w... | 2026-11-20 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the ho... | 2026-11-05 |
 | [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there. | 2026-11-18 |
 | [Q-316](#q-316--blessed-config-line) | you: terminal | Paste one line: what `cc-isolated --list` says about the blessed config after today's re-bless. | 2026-11-19 |
@@ -225,3 +226,26 @@ Branch tip 218f899afd20c759a7e22b72e51e52f29c222aca. `--check`'s lines, as print
 | **[3] changes needed** | Write what to change; the note goes back to the loop | Writing the note | A further round |
 
 - **Interim:** nothing merges.
+
+### Q-327 · trial-set-2-ends-again
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
+
+The second trial set (T8–T12), extended a week under Q-286, has now had its second weekly digest (`docs/working/weekly/2026-11-20.md`). Which of the five should stay?
+
+**If you say no:** all five keep running as they are, and the cycle asks again at the next weekly digest (2026-11-27).
+
+- **Read:** the trial doc `docs/working/trials/2026-11-06-attention-and-trust.md` (each trial, and what feedback it asks for) · this week's digest, the "What the checks caught" (T12) and "Sample" (T11) sections.
+
+In short: T8, each final message opens with what needs you, split "needs you now" and "can wait"; T9, final messages end with at most two links worth opening; T10, while a release is pending, one line naming the change most worth your look; T11, one deliberate read a week in the weekly digest (none of the three offered so far was taken); T12, the weekly digest lists what the gates and reviews actually stopped.
+
+To be honest about how they ran: on 2026-11-19 and 20 the cycle's final messages mostly did not keep T8's split, T9's links or T10's release line, though the trial doc says every iteration follows it. So T8–T10 have had little real use this week; T11 and T12 ran as written in both digests.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Keep all five** | The cycle writes them into the dev-cycle skill, as T1–T7 were (one merge-gate entry later) | One line now; one merge entry later | A practice that does not help keeps costing lines in every message |
+| **[2] Keep some** | Answer `Q-327: [2] T11 T12` (the ones to keep); the rest stop now | One line | A dropped one might have helped with a fairer run |
+| **[3] Run T8–T10 one more week, kept to properly** | T11 and T12 go into the skill now; T8–T10 run as written to about 2026-11-27, then the cycle asks again | One line now, one later | Another week of longer final messages |
+| **[4] Drop all** | Final messages and the digest go back to the T1–T7 shape | One line | None known; nothing relies on them |
+
+- **Interim:** all five keep running, and the cycle keeps T8–T10 in its final messages from now on.
+- **If the answer differs:** dropped trials stop at the next iteration; kept ones go into one skill change.
