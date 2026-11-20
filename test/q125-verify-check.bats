@@ -35,7 +35,7 @@ EOF
 #!/usr/bin/env python3
 # Fake Claude Code -p. Strict on argv and env; one side call without tools, then the
 # tool loop over SSE. A tool call runs only if its command is exactly a Bash(...) rule.
-import json, os, subprocess, sys, urllib.request
+import json, os, subprocess, sys, time, urllib.request
 a = sys.argv[1:]
 def die(m): print("fake claude: " + m, file=sys.stderr); sys.exit(2)
 if a[:2] != ["-p", "Run the Q-125 live checks."]: die("argv must start -p PROMPT: %r" % a)
@@ -77,7 +77,16 @@ while turns < 6:
         argv = cmd.split()
         if len(argv) == 4:   # x.sh SIG SECONDS: act out its go/stop signal
             if mode == "eat": os.remove(os.path.expanduser("~/.claude/.credentials.json"))
-            open(argv[2] + "/go", "w").close(); subprocess.run(["sleep", "1.5"]); open(argv[2] + "/stop", "w").close()
+            open(argv[2] + "/go", "w").close()
+            # Stop once the renamer has renamed twice (what X4-renamer-ran needs), not after a
+            # fixed sleep a loaded machine can outrun; at 30 s give up, so a dead renamer fails.
+            ren = os.path.join(os.path.dirname(argv[1]), "renames")
+            for _ in range(300):
+                try:
+                    if int(open(ren).read()) >= 2: break
+                except (OSError, ValueError): pass   # not written yet, or caught mid-write
+                time.sleep(0.1)
+            open(argv[2] + "/stop", "w").close()
         out, err = open(os.path.join(fake, str(n))).read(), False
         if mode == "leak" and n == 0: out += open(os.path.expanduser("~/.claude/.credentials.json")).read()
     msgs += [{"role": "assistant", "content": [{"type": "tool_use", "id": b["id"], "name": "Bash", "input": {"command": cmd}}]},
@@ -173,7 +182,11 @@ assert_clean() {   # nothing planted is left behind
 }
 
 @test "unsandboxed, the X checks catch the readable credential and the rename" {
-  FAKE_MODE="exec" run_file
+  # x.sh's read window is fixed (its own clock, no signal to wait on) and lasts more
+  # than Q125_X4_SECONDS-1 s. X4-renamer-ran needs two renames, up to 1 s idle (a 0.5 s
+  # poll for go, then 0.5 s between renames); 2 left a window as short as 1.2 s and
+  # flaked under load. 8 leaves at least 7 s, seven times the idle need.
+  FAKE_MODE="exec" Q125_X4_SECONDS=8 run_file
   [ "$status" -eq 1 ]
   for id in X1-cat-credential X1-git-diff-credential X1-man-l-credential X1-date-f-credential X2-diff-external \
     X2-textconv-log-p X2-textconv-show X2-fsmonitor-diff X4-cred-across-rename; do
