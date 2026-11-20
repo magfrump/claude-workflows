@@ -28,7 +28,7 @@ Verdict codes: **V** = Verified, **MA** = Mostly accurate, **S** = Stale,
 | C2.2 | `tc-c2.2-mostly-accurate.js` | MA | Sort makes it O(n log n), not O(n); directionally right but missing log factor |
 | C2.3 | `tc-c2.3-stale.js` | S | Comment says 5 retries but code now does 3 |
 | C2.4 | `tc-c2.4-incorrect.js` | I | Code throws on missing directory; does not create it as docstring claims |
-| C2.5 | `tc-c2.5-unverifiable.py` | UV | Thread-safety claim cannot be confirmed from static analysis of complex concurrency |
+| C2.5 | `tc-c2.5-unverifiable.py` | UV | Concurrency claim rests on a compiled dependency (`ringbuf.SpscRing`) whose source is not in the repo; no static reading or sandboxed run can confirm it |
 
 ## Category 3: Scoping
 
