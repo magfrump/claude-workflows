@@ -32,3 +32,5 @@ Paths: test/
 - Regenerating any report, and the branch `measure/regenerate-skill-reports`.
 - `scripts/build-loop.sh`, the dev-cycle skill and any other gate code; `scripts/self-improvement.sh`.
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`.
+
+Dispatched: 1
