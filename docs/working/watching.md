@@ -28,6 +28,7 @@ Maintained by `~/.claude/scripts/questions.sh` (`check` · `index` · `migrate`)
 | [Q-301](#q-301--test-confinement-fallback-reachable) | trigger | Bring the test-confinement script's run-or-refuse question (`scripts/confine-tests.sh`: run under `unshare`... | 2026-11-18 |
 | [Q-313](#q-313--live-verify-merge-of-main-stop) | trigger | Reopen the dropped roadmap Idea "The live-verify hook reads a merge commit's staged diff against HEAD only"... | 2026-11-19 |
 | [Q-331](#q-331--write-guard-claude-worktree-live-check) | trigger | Record the live check of the write-guard fix in 61122f34 (Q-326 [1]: `hooks/guard-trusted-writes.py` judges... | 2026-11-20 |
+| [Q-334](#q-334--constraint-cited-routing-revisit) | trigger | Reopen "a judgment entry's 'Why it's yours' quotes the constraint it relies on" if a second case appears of... | 2026-11-20 |
 <!-- index:end -->
 
 ## Open
@@ -124,6 +125,16 @@ Bring the owner's quarterly threat-model walk-through of Q-103's accepted residu
 - **Read:** `docs/working/research-2026-11-19-area-b-ask-habituation.md` §6 (set aside: about 20 owner minutes a quarter; T12, `docs/working/trials/2026-11-06-attention-and-trust.md`, tests a cheaper answer to the same need) · the idea-log line "Quarterly threat-model walk-through of Q-103's residuals".
 - **Condition:** the first cycle iteration on or after 2027-01-01, or the owner's T12 verdict, whichever comes first.
 - **Interim:** nothing is scheduled; T12 runs.
+
+### Q-334 · constraint-cited-routing-revisit
+**Needs:** trigger · **Opened:** 2026-11-20 · **Status:** OPEN
+
+Reopen "a judgment entry's 'Why it's yours' quotes the constraint it relies on" if a second case appears of an owner entry sent to the owner on a constraint that does not cover it.
+
+- **Read:** `docs/working/research-2026-11-20-why-its-yours-constraint-research.md` (merged 6a07b026: in this repo 0 of 153 "Why it's yours" lines cite a constraint by number, and the two entries routed by one, Q-272 and Q-278 on H2, cover their case; the one reported miss is philosophy-research's F-007, Q-133 there, written before the gloss rule of decision-log row 84) · F-007 in `docs/working/feedback/philosophy-research.md`.
+- **Condition** (either): a harness-feedback entry from any repo, after F-007, reports a judgment entry routed by a constraint that does not cover the case; or a session in philosophy-research runs the research doc's count there and finds a second such entry.
+- **When it fires:** brief the doc's runner-up as a review brief: one clause added to the global instructions' "Gloss every reference" rule (`global-instructions/CLAUDE.md`), so an entry that relies on a constraint quotes its line. Then close this watch.
+- **Interim:** no rule; entries follow the existing gloss rule. Held here, not as a decision-log row, because `docs/decisions/` is the owner's file and the cycle does not write it.
 
 ## Closed
 
