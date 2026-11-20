@@ -1,0 +1,24 @@
+2026-11-20T01:42:11Z
+cwd: /tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25; server: next dev --webpack -p 3917 in /tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy (d90d6bb tree via git archive, node_modules symlinked)
+cmd note: s4 curl exit codes were not captured (PIPESTATUS inside a function after grep); each probe received an HTTP status line, recorded below
+=== A: plain navigation
+HTTP/1.1 500 Internal Server Error
+content-security-policy: default-src 'self'; script-src 'self' 'nonce-NjJmNWMyZTgtOWQwYy00YzE4LTkyNzEtNDMxYjZiNWE3OGVl' 'strict-dynamic'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'
+curl exit: 
+=== B: next-router-prefetch: 1 + rsc: 1
+HTTP/1.1 500 Internal Server Error
+curl exit: 
+=== C: purpose: prefetch
+HTTP/1.1 500 Internal Server Error
+curl exit: 
+=== D: rsc: 1 only (client nav, not prefetch)
+HTTP/1.1 500 Internal Server Error
+content-security-policy: default-src 'self'; script-src 'self' 'nonce-NmQyYzU2ZTgtOWZkMi00ZDY4LThmN2YtYzY0NjVlOTg2OGYx' 'strict-dynamic'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'
+curl exit: 
+=== E: purpose: other (value mismatch)
+HTTP/1.1 500 Internal Server Error
+content-security-policy: default-src 'self'; script-src 'self' 'nonce-MjNhMTczZDYtMDUwZS00YTY0LWI4NzEtZTY0MjcwZWUwMmU3' 'strict-dynamic'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'
+curl exit: 
+=== F: next-router-prefetch: 2
+HTTP/1.1 500 Internal Server Error
+curl exit: 

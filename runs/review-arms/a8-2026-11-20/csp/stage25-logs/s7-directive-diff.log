@@ -1,0 +1,37 @@
+2026-11-20T01:43:37Z
+cwd: /tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/wt-csp
+cmd1: git diff 9b4e453 d90d6bb -- proxy.ts
+diff --git a/proxy.ts b/proxy.ts
+index ee1f3be..7846572 100644
+--- a/proxy.ts
++++ b/proxy.ts
+@@ -31,11 +31,10 @@ function buildCsp(nonce: string): string {
+   return directives.join("; ");
+ }
+ 
+-export function proxy(request: NextRequest) {
+-  // Generate a fresh nonce per request. crypto.randomUUID is available in the
+-  // Edge runtime that Next proxy runs in.
++export function proxy(request: NextRequest): NextResponse {
++  // Generate a fresh nonce per request. crypto.randomUUID and Buffer are both
++  // available in the Edge runtime that Next proxy runs in.
+   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+-  const csp = buildCsp(nonce);
+ 
+   // Forward the nonce to server components via a request header so layouts
+   // can read it via `headers()` and pass it to <Script> tags they render.
+@@ -45,7 +44,7 @@ export function proxy(request: NextRequest) {
+   const response = NextResponse.next({
+     request: { headers: requestHeaders },
+   });
+-  response.headers.set("Content-Security-Policy", csp);
++  response.headers.set("Content-Security-Policy", buildCsp(nonce));
+   return response;
+ }
+ 
+exit1: 0
+cmd2: diff <(git show 9b4e453:proxy.ts | sed -n '/const directives = \[/,/\];/p') <(git show d90d6bb:proxy.ts | sed -n '/const directives = \[/,/\];/p')
+exit2: 0
+cmd3: sha256 of directive blocks
+3d40b9c5937c8b14c5a2a08733610f0f8603fbbd51e1ff0c05fdeac95732ac46  -
+3d40b9c5937c8b14c5a2a08733610f0f8603fbbd51e1ff0c05fdeac95732ac46  -

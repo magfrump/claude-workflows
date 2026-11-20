@@ -1,0 +1,38 @@
+2026-11-20T02:03:38Z
+cmd: timeout 120 node --experimental-strip-types --no-warnings probe-s2-s5-s7.mjs ; cwd: /workspace/.worktrees/wt-2026-11-19-a8-settling-runs/runs/review-arms/a8-2026-11-20/corpus/stage25-logs
+S2 all 18 kind/message cases equal on name+message+detail+instanceof (no MISMATCH lines above)
+S2 stack preserved? false ; detail aliased in-realm (same object)? true ; own keys orig: [ 'detail', 'name' ] back: [ 'detail', 'name' ]
+S2 cause carried by toWorkerError? false
+S5 fuzz inputs: 200019 x2 fns; violations: 0 ; empty-result throws: 374372
+S5 ".." -> THROW | THROW
+S5 "../etc/passwd" -> etc-passwd | etc-passwd
+S5 "a/b" -> a-b | a-b
+S5 "a\\b" -> a-b | a-b
+S5 "\u0000" -> THROW | THROW
+S5 "a\u0000b" -> a-b | a-b
+S5 "．．" -> THROW | THROW
+S5 "／" -> THROW | THROW
+S5 "＼" -> THROW | THROW
+S5 "‥" -> THROW | THROW
+S5 "․․" -> THROW | THROW
+S5 "..." -> THROW | THROW
+S5 ". ." -> THROW | THROW
+S5 "ＡＢ" -> ab | AB
+S5 "İ" -> i | I
+S5 "ß" -> THROW | THROW
+S5 "K" -> k | K
+S5 "Ⅻ" -> xii | XII
+S5 "½" -> 1-2 | 1-2
+S5 throws for "" Error workspace title produced an empty slug: ""
+S5 throws for "-" Error workspace title produced an empty slug: "-"
+S5 throws for "---" Error workspace title produced an empty slug: "---"
+S5 throws for "\u0000" Error workspace title produced an empty slug: "\u0000"
+S5 built paths: workspaces/x workspaces/x/sources/y.z workspaces/s/custom-types/q.json workspaces/s/artifacts/t/v0001.md
+S5 ext '.' -> workspaces/s/sources/id.bin
+S7 navigator.storage undefined -> readFile:unavailable writeFile:unavailable readdir:unavailable rm:unavailable stat:unavailable
+S7 storage present, no getDirectory -> readFile:unavailable writeFile:unavailable readdir:unavailable rm:unavailable stat:unavailable
+S7 getDirectory not a function -> readFile:unavailable writeFile:unavailable readdir:unavailable rm:unavailable stat:unavailable
+S7 no navigator global -> readFile:unavailable writeFile:unavailable readdir:unavailable rm:unavailable stat:unavailable
+S7 getDirectory throws TypeError -> readFile:io writeFile:io readdir:io rm:io stat:io
+S7 getDirectory throws SecurityError -> readFile:io writeFile:io readdir:io rm:io stat:io
+exit: 0

@@ -1,0 +1,9 @@
+2026-11-20T01:43:11Z
+cwd: /tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy
+cmd: timeout 120 node /tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/probe/s3.cjs
+request header count: 21
+nonce: Buffer.from(randomUUID()).toString(b64)   505 ns/op
+new Headers(request.headers) + set               2161 ns/op
+NextResponse.next({request:{headers}})           15251 ns/op
+response.headers.set(CSP)                        792 ns/op
+exit: 0
