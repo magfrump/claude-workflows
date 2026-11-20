@@ -31,12 +31,21 @@ setup() {
   echo "$REPORT_CONTENT" | grep -qiE '\*\*Recommendation:\*\*.*\b(Upgrade now|Upgrade soon|Defer|Don.t upgrade)\b'
 }
 
+# SKILL.md: the Recommendation line holds one of its four values alone (a
+# closing full stop allowed); the reasoning goes below the Summary.
+@test "Recommendation holds its value alone" {
+  local lines
+  lines=$(grep -E '^\*\*Recommendation:\*\*' <<< "$REPORT_CONTENT" || true)
+  [ -n "$lines" ] || { echo "no **Recommendation:** line"; return 1; }
+  ! grep -viqE '^\*\*Recommendation:\*\* (Upgrade now|Upgrade soon|Defer|Don.t upgrade)\.?$' <<< "$lines"
+}
+
 @test "summary has Breaking change impact field" {
   echo "$REPORT_CONTENT" | grep -qiE '\*\*Breaking change impact:\*\*.*\b(None|Mechanical|Moderate|Significant)\b'
 }
 
 @test "summary has Estimated effort field" {
-  echo "$REPORT_CONTENT" | grep -qiE '\*\*Estimated effort:\*\*.*\b(minutes|hours|days)\b'
+  echo "$REPORT_CONTENT" | grep -qiE '\*\*Estimated effort:\*\*.*\b(minutes?|hours?|days?)\b'
 }
 
 @test "summary has Risk field" {

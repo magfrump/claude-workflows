@@ -37,8 +37,8 @@ requires:
 >
 > 1. **Capture the user's goal in 1-2 sentences.** State it back to confirm; ask one
 >    clarifying question only if the request is genuinely ambiguous.
-> 2. **Record it verbatim at the top of the report** as a `**User goal:**` line, alongside
->    the `Commit: <hash>` metadata line at the top of the saved artifact. The User-goal
+> 2. **Record it verbatim below the report's title and header fields** as a `**User goal:**` line,
+>    alongside the `Commit: <hash>` metadata line of the saved artifact. The User-goal
 >    anchor must persist in the saved file so downstream readers and tools see what frame
 >    the review was produced under.
 >
@@ -96,7 +96,7 @@ Instead of re-verifying behavior:
   thread safety might be fine for correctness but critical for security.
 - **Prioritize your cognitive moves**, which are what this skill uniquely provides.
 
-If no fact-check report is provided, **emit the following warning at the top of your output:**
+If no fact-check report is provided, **emit the following warning directly below the title and header fields:**
 
 > ⚠️ **No code fact-check report provided.** Claims about security properties in comments and
 > documentation have not been independently verified. For full verification, run the
@@ -294,8 +294,8 @@ Each candidate must then be dispatched one of two ways:
 
 - **Tested** — traced through the actual code, or exercised via a fixture/execution, with
   the outcome recorded.
-- **Listed** — placed under an explicit **"Untested bypass candidates"** heading in the
-  report, naming the input and the reason it wasn't tested.
+- **Listed** — placed under an explicit `## Untested bypass candidates` section of the
+  report (level 2, after Findings, never inside it), naming the input and the reason it wasn't tested.
 
 A guardrail with untested bypass candidates may not appear in Endorsement Claims. Enumerating
 what would break a guard and then declining to check is the honest state to report — it is
@@ -346,7 +346,7 @@ with near-certain exploitability and high blast radius belong here.
 
 ### Escalation output format
 
-When a pattern matches, emit this block **at the top of your critique output**, before the
+When a pattern matches, emit this block **below the title and header fields**, before the
 Trust Boundary Map:
 
 ```
@@ -383,6 +383,10 @@ discoverable. Follow with these header fields so readers know what was reviewed 
 
 If given a fact-check report or other upstream artifact, add a `**Based on:**`
 line naming it. Keep the header to 3–5 lines; the substance belongs in the sections below.
+
+The title is the first line of the output, printed or saved: no sentence before it. Everything
+this skill places "at the top" (the `**User goal:**` and `Commit:` lines, the fact-check warning,
+any HALT block) goes below the title and header fields, before the Trust Boundary Map.
 
 ### Trust Boundary Map
 
