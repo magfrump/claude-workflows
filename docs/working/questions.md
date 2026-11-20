@@ -26,6 +26,7 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
+| [Q-321](#q-321--regenerate-skill-eval-reports-after-a8) | you: judgment | Regenerate the skill eval reports now that the A8 measurement has run, so the 51 test files marked `@needs-... | 2026-11-19 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the ho... | 2026-11-05 |
 | [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there. | 2026-11-18 |
 | [Q-316](#q-316--blessed-config-line) | you: terminal | Paste one line: what `cc-isolated --list` says about the blessed config after today's re-bless. | 2026-11-19 |
@@ -155,3 +156,21 @@ sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git r
 
 - **Interim:** the image's gate (0feaf080) runs; nothing breaks.
 
+
+### Q-321 · regenerate-skill-eval-reports-after-a8
+**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** OPEN
+
+Regenerate the skill eval reports now that the A8 measurement has run, so the 51 test files marked `@needs-reports` check the current skill text instead of printing NOT RUN?
+
+**If you say no:** those suites keep printing NOT RUN and the health check keeps warning with the count, as it has since 2026-09-26; a skill-prompt regression stays uncaught by them. Nothing breaks.
+
+- **Why it's yours:** each regeneration is one headless model run per fixture, about 180 across 23 skills, which spends your quota; it was held until the A8 measurement (watch Q-067, `docs/working/watching.md`, now closed), which merged as eddcaf16 under Q-320.
+- **Read:** `docs/working/audit-test-constraint-2026-09-26.md` batch G; `test/skills/generate-reports.bash`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] One skill now** | Regenerate one high-value skill (code-review, whose text changed tonight) to prove the loop end to end | About 12 model runs | A little quota for one skill's coverage |
+| **[2] All now** | Regenerate every skill's reports | About 180 model runs | Quota spent; reports go stale at each skill edit |
+| **[3] Not now** | Keep the suites NOT RUN | None | Prompt regressions stay uncaught |
+
+- **Interim:** [3]; nothing runs.
