@@ -27,12 +27,11 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-312](#q-312--friction-ideas-owner-brainstorm-areas) | you: judgment | Two roadmap Ideas from your 2026-10-29 brainstorm carry your own friction report. Build them now, or keep t... | 2026-11-19 |
-| [Q-318](#q-318--merge-2026-11-19-lever3-followons-65dd7d2b0927) | you: judgment | Q-318: [1] | 2026-11-19 |
-| [Q-319](#q-319--merge-gate-2026-11-19-steal-ended-2e687f12a30b) | you: judgment | Q-319: [1] | 2026-11-19 |
+| [Q-320](#q-320--merge-2026-11-19-a8-settling-runs-fd8d009f846d) | you: judgment | Merge the A8 settling runs' results (the two measurement passes you asked for in Q-308), accepting the loop... | 2026-11-19 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the ho... | 2026-11-05 |
 | [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there. | 2026-11-18 |
 | [Q-316](#q-316--blessed-config-line) | you: terminal | Paste one line: what `cc-isolated --list` says about the blessed config after today's re-bless. | 2026-11-19 |
-| [Q-317](#q-317--image-lag) | you: terminal | Install the release that carries the build-loop prompt's new wait rule (Q-314) and the code-review skill's ... | 2026-11-19 |
+| [Q-317](#q-317--image-lag) | you: terminal | Install the release that carries tonight's four approved merges (the loop wait rule, the code-review cache ... | 2026-11-19 |
 <!-- index:end -->
 
 ## Open
@@ -150,121 +149,142 @@ cc-isolated --list 2>&1 | grep -i 'blessed config'
 ### Q-317 · image-lag
 **Needs:** you: terminal · **Opened:** 2026-11-19 · **Status:** OPEN
 
-Install the release that carries the build-loop prompt's new wait rule (Q-314) and the code-review skill's corrected cache text (Q-315): run the one paste below on the host.
+Install the release that carries tonight's four approved merges (the loop wait rule, the code-review cache correction and its follow-ons, and `--steal --ended`): run the one paste below on the host.
 
-**If you say no:** sessions keep running the image built from 0feaf080, so build loops keep the old prompt (they may hand back early while a reviewer runs, and their reviewers keep trying to save report files that get refused), and review passes keep the old code-review skill text. Nothing breaks.
+**If you say no:** sessions keep running the image built from 0feaf080: build loops keep the old prompt (they may hand back early while a reviewer runs, and their reviewers keep trying to save report files that get refused), review skills keep their old briefing text, and a dead loop's worktree still waits two hours before the cycle can re-dispatch it. Nothing breaks.
 
-- **C (the image's commit):** 0feaf08085b524c0c4345c52f8e285d842558f23 · **M (main's commit):** d9f475df43a1370199c09d108973fb9a707dd7fe
-- **Merged without your review** (all six change only research docs under `docs/`, which the image does not carry):
+- **C (the image's commit):** 0feaf08085b524c0c4345c52f8e285d842558f23 · **M (main's commit):** 8ec5a9008dda788850b44766a35e036eee10f1a1
+- **Merged without your review** (all seven change only research docs under `docs/`, which the image does not carry):
   - 74b9181f Merge branch 'docs/live-verify-merge-head-count' (build-loop self-merge)
   - 8ffddfaf Merge branch 'docs/herald-friction-triage' (build-loop self-merge)
   - d6c987f3 Merge branch 'docs/loops-wait-foreground' (build-loop self-merge)
   - a8a0a496 Merge branch 'docs/subagent-report-files-listing' (build-loop self-merge)
   - 7c137d5d Merge branch 'docs/generated-file-conflicts' (build-loop self-merge)
   - d9f475df Merge branch 'docs/harness-feedback-file-in-cycle' (build-loop self-merge)
+  - 012b20f9 Merge branch 'docs/steal-wait-research' (build-loop self-merge)
 - **What changes for you:**
   - acbff6c6 (you approved it, Q-314 [1]): the build-loop dispatch prompt tells a loop to wait inside its turn for reviewers and files (at most 30 minutes per wait, then a `stopped` marker), and has its subagents return reports as text.
-  - d383a484 (you approved it, Q-315 [1]): the code-review skill drops its prompt-cache saving claims and the rules that existed only for them; critics read their skill file by path; decision 032 is amended.
-  - The routine rest: 13 dev-cycle lands.
-- **Full list:** `git -c log.showSignature=false log --first-parent --format='%h %s' 0feaf08085b524c0c4345c52f8e285d842558f23..d9f475df43a1370199c09d108973fb9a707dd7fe`
-- **Paths changed outside `docs/` (25 under `docs/` too, which the image does not carry):** `scripts/build-loop.sh`, `skills/code-review/SKILL.md`, `test/scripts/build-loop-dispatch.bats`, `test/skills/code-review-context-delivery.bats`
+  - d383a484 (Q-315 [1]): the code-review skill drops its prompt-cache saving claims and the rules that existed only for them; critics read their skill file by path; decision 032 is amended.
+  - 2a71904f (Q-318 [1]): the same two claims removed from draft-review, matrix-analysis, divergent design and two guides, with a guard test.
+  - 8ec5a900 (Q-319 [1]): `build-loop.sh --prompt --steal --ended` lets the cycle re-dispatch its own dead loop at once; `--start` and `--prompt` print a `lock UTC` line; the dev-cycle skill's steps 7 and 10 use them.
+  - The routine rest: 18 dev-cycle lands.
+- **Full list:** `git -c log.showSignature=false log --first-parent --format='%h %s' 0feaf08085b524c0c4345c52f8e285d842558f23..8ec5a9008dda788850b44766a35e036eee10f1a1`
+- **Paths changed outside `docs/` (34 under `docs/` too, which the image does not carry):** `guides/sub-agent-briefing.md`, `patterns/orchestrated-review.md`, `scripts/build-loop.sh`, `scripts/lib/migrations.sh`, `skills/code-review/SKILL.md`, `skills/dev-cycle/SKILL.md`, `skills/draft-review/SKILL.md`, `skills/matrix-analysis/SKILL.md`, `test/scripts/build-loop-dispatch.bats`, `test/skills/code-review-context-delivery.bats`, `test/skills/subagent-context-delivery.bats`, `workflows/divergent-design.md`
 
 Run this on the host, in your claude-workflows checkout at main's tip, then start a new sandbox session:
 
 ```
-sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "d9f475df43a1370199c09d108973fb9a707dd7fe:$p")"; then n=$((n+1)); else echo "release refused: $p changed after d9f475df43a1370199c09d108973fb9a707dd7fe: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
+sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "8ec5a9008dda788850b44766a35e036eee10f1a1:$p")"; then n=$((n+1)); else echo "release refused: $p changed after 8ec5a9008dda788850b44766a35e036eee10f1a1: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
 ```
 
 **Pass:** the installer finishes without a `release refused` line. **Send back:** `Q-317: done`. If it re-blesses, you can add `| tee "$TMPDIR/install.log"` to the end of the paste and send back `grep -E 'Verified live:|^Next:' "$TMPDIR/install.log"` (two lines) for watch Q-167; optional.
 
 - **Interim:** the image's gate (0feaf080) runs; nothing breaks.
 
-### Q-318 · merge-2026-11-19-lever3-followons-65dd7d2b0927
-**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** ANSWERED
-Q-318: [1]
+### Q-320 · merge-2026-11-19-a8-settling-runs-fd8d009f846d
+**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** OPEN
 
-Merge the follow-on to Q-315: the same two false claims ("sub-agents cannot read your files", so paste their skill text; and "a shared prompt prefix is cached across agents") removed from draft-review, matrix-analysis, divergent design and two review guides?
+Merge the A8 settling runs' results (the two measurement passes you asked for in Q-308), accepting the loop's call on a check in my brief that could not pass as written?
 
-**If you say no:** those docs keep telling an orchestrator to paste whole skill files into each sub-agent's prompt, for a reason the A8 measurement (358c2332) and its cache probe (9e89a31e) showed is false; the code-review skill, already corrected under Q-315, then disagrees with them.
+**If you say no:** rubric row A8 (does pasting the shared review context into every review agent's prompt pay for itself) stays at "fails on its benefit, net cost unmeasured", and the 2.17M tokens these runs spent stay on an unmerged branch.
 
-- **Why it's yours:** it edits `workflows/divergent-design.md` (a never glob in `docs/dev-cycle.md`), two skills, a decision-log row and an old rubric, none of which the cycle self-merges.
-- **Read:** the brief `docs/working/briefs/2026-11-19-lever3-followons.md`; on the branch, `docs/working/research-2026-11-19-lever3-followons.md` (each line changed and each kept, with reasons). Show the diff: `git diff main...65dd7d2b0927eba08612d52d7eaace918116e247`.
+- **Why it's yours:** you asked for these runs (Q-308 [1]), and the branch adds review records under `docs/reviews/` and run artifacts under `runs/`, which the cycle does not self-merge; it changes no code, skill or workflow.
+- **Read:** the brief `docs/working/briefs/2026-11-19-a8-settling-runs.md`; on the branch, `runs/review-arms/a8-2026-11-20/results.md` and `docs/working/research-2026-11-19-a8-settling-runs.md`. Show it: `git diff --stat main...fd8d009f846dc8ee424a6518d78f0427c939c7c0`.
 
-What it changes:
-- `skills/draft-review/SKILL.md`: fact-check and critic agents get their skill file's absolute path and read the whole file with the Read tool; ai-personas-critique reads `personas.md` beside its skill. Draft and intent text are still pasted, since they exist only in the conversation.
-- `skills/matrix-analysis/SKILL.md`: code and docs go by path; conversation-only context stays in the prompt.
-- `workflows/divergent-design.md`: item context still goes in the prompt, now for its real reason (a curated prompt keeps each scoring agent on its axis); the false reason is removed.
-- `patterns/orchestrated-review.md`, `guides/sub-agent-briefing.md`: code-review's inlining is described as giving every agent the same material, not a cacheable prefix.
-- Rubric row A7 (`docs/reviews/code-review-rubric-2026-08-07-main.md`) gets a dated note that its premise does not hold on the Agent-tool path; its status is unchanged. Decision-log row 35 now reads "13 tests as of 2026-11-19; 10 when this row was written".
-- New guard test `test/skills/subagent-context-delivery.bats` (4 cases): it fails on the old text of every file. 77 of 77 related bats cases pass; the hermeticity lint is clean.
-- Review: two reviewer rounds with no must-fix (three should-fixes, all fixed); the third round closed on a mutation run and the final tests rather than a third reviewer, so the rubric shows one clean pass after the last fix, not two in a row.
+What the runs found (the marker below has the numbers): self-read on csp cost 3.8% more than inline, inside one run's noise, with the same 6 of 6 known defects found; corpus overflowed the 25k shared-block budget, so the skill inlined the diff only, and found the cell's known red and 3 of 4 known ambers. Verdict: inlining holds as a cost-neutral default, not as a saving; whether 25k is the right budget is still open, and a self-read run on corpus is the cheapest next evidence (not asked for here).
 
-Branch tip 65dd7d2b0927eba08612d52d7eaace918116e247. `--check`'s lines, as printed:
+The loop's question is about my brief, not its work. The brief told it to stop unless `git log -1 -- skills/code-review/SKILL.md` printed the lever #3 merge (d383a484, which you approved in Q-315); git's default history never prints a merge whose tree equals its second parent, so the check could not pass as written. The skill it measured is the merged one, which was the check's purpose. So **[1] merge** below also accepts the loop's pick [1] (the runs stand); **[3] changes needed** with "[2]" would discard them and re-run at about 2.2M tokens.
 
-> ok docs/working/briefs/2026-11-19-lever3-followons.md 65dd7d2b0927eba08612d52d7eaace918116e247 e5efb21e1a04e308373f057169396027147ee11a
-> path docs/working/briefs/2026-11-19-lever3-followons.md M docs/decisions/log.md
-> path docs/working/briefs/2026-11-19-lever3-followons.md M docs/reviews/code-review-rubric-2026-08-07-main.md
-> path docs/working/briefs/2026-11-19-lever3-followons.md A docs/reviews/code-review-rubric-2026-11-19-lever3-followons.md
-> path docs/working/briefs/2026-11-19-lever3-followons.md M docs/working/briefs/2026-11-19-lever3-followons.md
-> path docs/working/briefs/2026-11-19-lever3-followons.md A docs/working/research-2026-11-19-lever3-followons.md
-> path docs/working/briefs/2026-11-19-lever3-followons.md M guides/sub-agent-briefing.md
-> path docs/working/briefs/2026-11-19-lever3-followons.md M patterns/orchestrated-review.md
-> path docs/working/briefs/2026-11-19-lever3-followons.md M skills/draft-review/SKILL.md
-> path docs/working/briefs/2026-11-19-lever3-followons.md M skills/matrix-analysis/SKILL.md
-> path docs/working/briefs/2026-11-19-lever3-followons.md A test/skills/subagent-context-delivery.bats
-> path docs/working/briefs/2026-11-19-lever3-followons.md M workflows/divergent-design.md
-> rubric docs/working/briefs/2026-11-19-lever3-followons.md: clean docs/reviews/code-review-rubric-2026-08-07-main.md: 1 red and 12 amber rows, none open
-> rubric docs/working/briefs/2026-11-19-lever3-followons.md: clean docs/reviews/code-review-rubric-2026-11-19-lever3-followons.md: 0 red and 3 amber rows, none open
+Branch tip fd8d009f846dc8ee424a6518d78f0427c939c7c0. `--check`'s lines, as printed (44 of the 53 are new files under `runs/review-arms/a8-2026-11-20/`):
 
-No path is gate code, an instruction file or a dot path. The first rubric line is the old 2026-08-07 rubric, touched only by the A7 note; its red row was closed long ago.
+> ok docs/working/briefs/2026-11-19-a8-settling-runs.md fd8d009f846dc8ee424a6518d78f0427c939c7c0 2a7eb490a5e1484b9aa75538a29bf14e3f2a4a47
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A docs/reviews/code-fact-check-report-2026-11-19-a8-settling-pass2.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A docs/reviews/code-fact-check-report-2026-11-19-a8-settling-r1.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A docs/reviews/code-fact-check-report-2026-11-19-a8-settling-r2.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A docs/reviews/code-fact-check-report-2026-11-19-a8-settling-r3.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A docs/reviews/code-review-rubric-2026-11-19-measure-a8-settling-runs.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md M docs/working/briefs/2026-11-19-a8-settling-runs.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A docs/working/research-2026-11-19-a8-settling-runs.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/api-consistency-review-2026-11-19.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/architecture-review-2026-11-19.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/code-fact-check-report-r1.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/code-fact-check-report-r2.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/code-fact-check-report-r3.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/code-fact-check-report.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/code-fact-check-submitted-claims.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/code-review-rubric-2026-11-19-corpus.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/part6.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/performance-review-2026-11-19.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/security-review-2026-11-19.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/shared-block-stage2.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/shared-block.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/stage25-logs/probe-s1-s6-zustand.mjs
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/stage25-logs/probe-s2-s5-s7.mjs
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/stage25-logs/probe-s3-notfound.mjs
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/stage25-logs/s1-s6.log
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/stage25-logs/s2-s5-s7.log
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/stage25-logs/s3.log
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/tech-debt-triage-review-2026-11-19.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/test-strategy-review-2026-11-19.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/api-consistency-review-2026-11-19.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/architecture-review-2026-11-19.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/code-fact-check-report-r1.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/code-fact-check-report-r2.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/code-fact-check-report-r3.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/code-fact-check-report.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/code-fact-check-submitted-claims.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/code-review-rubric-2026-11-19-csp.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/performance-review-2026-11-19.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/r2-logs/csp-r2-eslint.log
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/r2-logs/csp-r2-vitest.log
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/security-review-2026-11-19.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/shared-block-stage2.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/shared-block.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/stage25-logs/s1-nonce-probe.log
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/stage25-logs/s3-cost-bench.log
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/stage25-logs/s4-next-dev-server.log
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/stage25-logs/s4-prefetch-curl.log
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/stage25-logs/s7-directive-diff.log
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/test-strategy-review-2026-11-19.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/manifest.json
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/results.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/token-ledger.md
+> rubric docs/working/briefs/2026-11-19-a8-settling-runs.md: clean docs/reviews/code-review-rubric-2026-11-19-measure-a8-settling-runs.md: 0 red and 17 amber rows, none open
+
+The loop's marker body, as printed (the loop's text):
+
+> > Both A8 settling runs are done. A8 is row A8 of docs/reviews/code-review-rubric-2026-08-07-main.md,
+> > which asks whether pasting the shared review context into every review agent's prompt is worth it.
+> > Total 2,171,680 tokens over 19 agents, under the brief's 2.5M stop line.
+> > Results: runs/review-arms/a8-2026-11-20/results.md.
+> >
+> > - csp (self-read control): core 771,748 tokens against 743,755 inline, +3.8%, inside one-run noise.
+> >   Known defects found: 6 of 6 both ways (labels from docs/working/canon-issue-ledger.md), including
+> >   the hardest one, a CSP rule that breaks PNG export from another file.
+> > - corpus (inline as the skill says): the diff plus touched files came to about 30.9k tokens,
+> >   over the skill's 25k budget, so the skill fell back to inlining the diff only (about 15k per agent).
+> >   Core 1,133,767 against the August baseline's 615,566. It found the cell's known red (a data-loss seam) and 3 of 4 known ambers.
+> > - Verdict: inlining holds as a cost-neutral default. It fails as the skill first justified it
+> >   (no cache saving), and whether the 25k budget is set right still cannot be told.
+> >
+> > One call for you, a tentative pick I made in place of stopping:
+> > The brief said to end blocked unless `git log -1 -- skills/code-review/SKILL.md` on the base
+> > printed the lever #3 correction's merge (d383a484, merged under Q-315, your answer to merge that fix).
+> > It prints ca328816, the last commit on the merged branch. Git's default history view never prints
+> > a merge whose tree matches its second parent, so this check could not pass as written.
+> > The skill at base is the merged version, so I proceeded. Tiebreaker: the check's purpose was met.
+> >
+> > | Option | What it means | Cost to you | If it's wrong |
+> > |---|---|---|---|
+> > | [1] Accept (pick) | Runs stand as measured | None | None: the skill measured is the merged one |
+> > | [2] Re-run blocked | Discard; re-dispatch after rewording the check | ~2.2M tokens | Same numbers again |
+
+No path is gate code, an instruction file or a dot path. The rubric's 17 ambers are review findings on the results doc's prose and counts (a k=3 fact-check, then a k=1 pass over the fixes); none is open.
 
 | Option | What it means | Cost to you | If it's wrong |
 |---|---|---|---|
-| **[1] merge** | The cycle merges 65dd7d2b next iteration | Reading the diff | An agent reads only part of its skill file; one `git revert` |
-| **[2] drop** | The brief closes; the docs keep the old claims | None | Skills disagree with code-review on how to brief agents |
-| **[3] changes needed** | Write what to change; the note goes back to the loop | Writing the note | A further round |
+| **[1] merge** | The cycle merges fd8d009f next iteration; the runs stand as measured | Reading the results | A number in the results is off; it is a record, fixed by a later commit |
+| **[2] drop** | The brief closes; A8 stays unsettled | None | The 2.17M tokens are lost |
+| **[3] changes needed** | Write what to change (or "[2]" to re-run); the note goes back to the loop | Writing the note, and about 2.2M tokens for a re-run | A further round |
 
-- **Interim:** nothing merges.
-
-### Q-319 · merge-gate-2026-11-19-steal-ended-2e687f12a30b
-**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** ANSWERED
-Q-319: [1]
-
-Merge the change that lets the dev cycle re-dispatch its own dead build loop at once, instead of waiting two hours (your request of 2026-11-19)?
-
-**If you say no:** a loop that ends with work committed and no marker keeps its worktree locked for two hours before the cycle can send it back, as three did recently (one held up the release); another session's locks are unaffected either way.
-
-- **Why it's yours:** it changes `scripts/build-loop.sh`, `scripts/lib/migrations.sh` and `skills/dev-cycle/SKILL.md`, the gate's own code, which the cycle never self-merges; it reaches sessions at the next release.
-- **Read:** the brief `docs/working/briefs/2026-11-19-steal-ended.md`; the design, merged 012b20f9, `docs/working/research-2026-11-19-steal-wait-research.md`; on the branch, `docs/working/research-2026-11-19-steal-ended.md` (the build and its six-item pre-mortem). Show the diff: `git diff main...2e687f12a30b5d4af6c327f351ac3972b5e17a94`.
-
-What it changes:
-- `--start` and `--prompt` print one more line, `lock UTC TIME`, the time of the lock they wrote.
-- New `--prompt BRIEF --steal --ended LOCKTIME ENDTIME`: takes the locked worktree at any age only when its lock is this brief's dispatch lock, its time equals LOCKTIME, and the branch's last commit is older than ENDTIME (when this session saw its loop end). Otherwise the two-hour rule decides as now; malformed or out-of-order `--ended` values are refused, naming the problem.
-- The skill: step 7 records the loop's task ID and the time its end was seen; step 10 records "dispatched N, task ID, lock UTC TIME" and passes `--ended` only with the lock time from that same task's line. It names the honest slip to avoid: taking another session's lock time from the record.
-- `scripts/lib/migrations.sh`: a registry line for the record template's changed `7.` and `10.` lines (no file needs rewriting).
-- Accepted risk, from the design: if the cycle pairs a notification with the wrong task, it could take a live loop of its own, but only one that has not committed since. The success measure: one case of a live loop taken means revert.
-- Tests: one new hermetic case in `test/scripts/build-loop-dispatch.bats` (12/12 pass), the migrations file (15/15), the health check, and the hermeticity lint. The loop's full-suite run before its last fix passed 2790 of 2794; three of the failures were its own shellcheck slip, fixed, and the fourth, in `test/q125-verify-check.bats`, passed on rerun. The whole suite was not run again after the fix.
-
-Branch tip 2e687f12a30b5d4af6c327f351ac3972b5e17a94. `--check`'s lines, as printed:
-
-> ok docs/working/briefs/2026-11-19-steal-ended.md 2e687f12a30b5d4af6c327f351ac3972b5e17a94 f98fa188e12d6dc563cd167856126faf38cb5287
-> path docs/working/briefs/2026-11-19-steal-ended.md A docs/reviews/steal-ended-code-review-rubric-2026-11-19.md
-> path docs/working/briefs/2026-11-19-steal-ended.md M docs/working/briefs/2026-11-19-steal-ended.md
-> path docs/working/briefs/2026-11-19-steal-ended.md A docs/working/research-2026-11-19-steal-ended.md
-> path docs/working/briefs/2026-11-19-steal-ended.md M scripts/build-loop.sh
-> path docs/working/briefs/2026-11-19-steal-ended.md M scripts/lib/migrations.sh
-> path docs/working/briefs/2026-11-19-steal-ended.md M skills/dev-cycle/SKILL.md
-> path docs/working/briefs/2026-11-19-steal-ended.md M test/scripts/build-loop-dispatch.bats
-> rubric docs/working/briefs/2026-11-19-steal-ended.md: clean docs/reviews/steal-ended-code-review-rubric-2026-11-19.md: 0 red and 3 amber rows, none open
-
-`scripts/build-loop.sh`, `scripts/lib/migrations.sh` and `skills/dev-cycle/SKILL.md` are gate code (self-merge's floor would have refused them). The rubric's three ambers (a dispatch printed but never started had no record line; a header read opposite to the spec; no test of a commit made after the lock) were fixed on the branch, and a second review round confirmed them closed. One oddity in the loop's report: its reviewer said it also sent its round-2 report to an agent the loop did not recognise; nothing acted on it, and the branch's content is what this entry asks about.
-
-**What an attacker would want here:** the lock is what keeps one loop's worktree from being taken while it works; an outside party who could put text into a brief or the cycle record (the inputs here) would want `--ended` to accept a lock time it did not take. It accepts only an exact match to the lock now on the worktree, which another session's dispatch rewrites, plus a tip older than the stated end, and the record is written only by the cycle.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] merge** | The cycle merges 2e687f12 next iteration; it ships at the next release | Reading the diff | The cycle takes a live loop of its own; one `git revert` |
-| **[2] drop** | The brief closes; the two-hour wait stays | None | Dead loops keep holding their worktrees for two hours |
-| **[3] changes needed** | Write what to change; the note goes back to the loop | Writing the note | A further round |
-
-- **Interim:** nothing merges.
+- **Interim:** nothing merges; A8 stays as it was.
