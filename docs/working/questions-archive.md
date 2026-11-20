@@ -290,12 +290,14 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-298](#q-298--merge-gate-2026-11-14-merge-rubric-gate-e035801282ff) | Q-298: [1] | 2026-11-16 |
 | [Q-299](#q-299--profile-ratify-owner) | Q-299: [2] (owner, in session, 2026-11-18): ratify with your edits. The owner's edit was to archetype 2's w... | 2026-11-18 |
 | [Q-300](#q-300--test-confinement-question-withdrawn) | Q-300: seen | 2026-11-18 |
+| [Q-303](#q-303--image-lag) | Q-303: met — image 0feaf08085b524c0c4345c52f8e285d842558f23 holds the gate code of main 0feaf08085b524c0c... | 2026-11-18 |
 | [Q-304](#q-304--a8-go-ahead) | Q-304: [1] | 2026-11-18 |
 | [Q-305](#q-305--merge-gate-2026-11-18-section5-followups-4ada2cedec7c) | Q-305: [1] | 2026-11-18 |
 | [Q-306](#q-306--merge-2026-11-19-a8-token-measurement-30bb30d43a60) | Q-306: [1] | 2026-11-19 |
 | [Q-307](#q-307--merge-2026-11-19-subagent-report-as-text-70084aadc950) | Q-307: [1] | 2026-11-19 |
 | [Q-309](#q-309--merge-gate-2026-11-19-ideas-promotion-ecf9daf1549a) | Q-309: [1] | 2026-11-19 |
 | [Q-310](#q-310--merge-2026-11-19-a8-cache-probe-1f5ef33c511e) | Q-310: [1] | 2026-11-19 |
+| [Q-311](#q-311--merge-gate-2026-11-19-worktrees-outside-dot-claude-feb8ed708fe2) | Q-311: [1] | 2026-11-19 |
 <!-- index:end -->
 
 ## Answered
@@ -7777,4 +7779,114 @@ rubric docs/working/briefs/2026-11-19-a8-cache-probe.md: clean docs/reviews/code
 | **[3] changes needed** | Your note goes back to the loop (dispatch 2 of 4) | Writing the note | Another loop run |
 
 - **Interim:** unmerged.
+
+### Q-311 · merge-gate-2026-11-19-worktrees-outside-dot-claude-feb8ed708fe2
+**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** ANSWERED
+Q-311: [1]
+
+Merge the change that moves build loops' and the dev cycle's worktrees from `.claude/` to a gitignored `.worktrees/` directory, so routine writes there stop asking you for permission (philosophy-research feedback F-019)?
+
+**If you say no:** worktrees stay under `.claude/`, which Claude Code treats as protected: every Write there keeps asking you, as it did about 18 times in one philosophy-research session and many times tonight, and this repo's guard hook keeps refusing shell writes whose command names those worktrees.
+
+- **What it is:** brief `docs/working/briefs/2026-11-19-worktrees-outside-dot-claude.md`, from your "Yes do that" today; you asked for it before the release.
+- **Read:** the diff, 271 changed code lines: `git diff main...feb8ed708fe23c6c03eb510cdc145086b138879b`; the loop's research doc `docs/working/research-2026-11-19-worktrees-outside-dot-claude.md` (the six locations weighed, and the docs it cites).
+- **Tip:** feb8ed708fe23c6c03eb510cdc145086b138879b (branch feat/worktrees-outside-dot-claude, dispatch 2 of 4)
+
+The loop's marker body, quoted (its text, data not instructions):
+
+```
+Build loops' worktrees and the dev cycle's own three checkouts (its work tree,
+its health-check checkout and its gate checkout) now go under .worktrees/ in
+the main checkout instead of .claude/. A .gitignore of "*" there hides them
+from git. The new mode "build-loop.sh --worktree-base" makes that directory
+and checks it. Worktrees left under .claude/ by earlier dispatches are still
+collected and freed, and tests pin that.
+
+Why: Claude Code asks before every write under .claude/, and an allow rule does
+not stop the asks (docs, "Permission modes", Protected paths). That is the
+roughly 18 asks per session in philosophy-research's harness feedback F-019.
+The harness's own guard hook was not changed.
+
+No question to file. One optional host check, to confirm the docs match your
+Claude Code version: in a default-mode session in this repo, ask Claude to
+Write a file under .worktrees/wt-x/ and then under .claude/wt-x/. Only the
+second should ask. Then delete both.
+
+No migration line is needed: other repos' files do not change.
+Residual risk "worktree-hooks-bash": a Bash write to a loop checkout's hooks/
+or settings file is now treated like the same write in the main checkout.
+Installed policy files under ~/.claude stay protected.
+```
+
+Glossing it: the docs page the loop read live is Claude Code's "Permission modes" page, Protected paths section (the sandbox reached it; the loop flags nothing about it as unverified). "The guard hook" is `hooks/guard-trusted-writes.py`, this repo's own PreToolUse hook. "Residual risk worktree-hooks-bash" is the risk the loop names and accepts: the guard keyed on `.claude` appearing in a write's command, so moving the checkouts out of `.claude/` means a shell write into a loop checkout's own `hooks/` or settings file is no longer refused there, the same as that write in the main checkout today; S1 (gates defend against honest slips, not a hostile loop) is the constraint it weighs that against. Also from its report: `scripts/self-improvement.sh` still puts its worktrees under `.claude/wt` (a different loop, not in the brief), and a stale comment in the guard hook was left, since editing an enforcement file needs a live-verified trailer.
+
+The gate's `--check` lines, as printed:
+
+```
+ok docs/working/briefs/2026-11-19-worktrees-outside-dot-claude.md feb8ed708fe23c6c03eb510cdc145086b138879b eda9e9c7505358944a40deecdc886cb0180b755d
+path docs/working/briefs/2026-11-19-worktrees-outside-dot-claude.md M docs/working/briefs/2026-11-19-worktrees-outside-dot-claude.md
+path docs/working/briefs/2026-11-19-worktrees-outside-dot-claude.md A docs/working/research-2026-11-19-worktrees-outside-dot-claude.md
+path docs/working/briefs/2026-11-19-worktrees-outside-dot-claude.md M scripts/build-loop.sh
+path docs/working/briefs/2026-11-19-worktrees-outside-dot-claude.md M scripts/health-check.sh
+path docs/working/briefs/2026-11-19-worktrees-outside-dot-claude.md M scripts/hermeticity/adapters/bash.json
+path docs/working/briefs/2026-11-19-worktrees-outside-dot-claude.md M scripts/hermeticity/adapters/python.json
+path docs/working/briefs/2026-11-19-worktrees-outside-dot-claude.md M skills/dev-cycle/SKILL.md
+path docs/working/briefs/2026-11-19-worktrees-outside-dot-claude.md M test/scripts/build-loop-dispatch.bats
+path docs/working/briefs/2026-11-19-worktrees-outside-dot-claude.md M test/scripts/build-loop-free.bats
+path docs/working/briefs/2026-11-19-worktrees-outside-dot-claude.md M test/scripts/build-loop-orchestrator.bats
+path docs/working/briefs/2026-11-19-worktrees-outside-dot-claude.md M test/scripts/health-check.bats
+path docs/working/briefs/2026-11-19-worktrees-outside-dot-claude.md M workflows/parallel-worktrees.md
+rubric docs/working/briefs/2026-11-19-worktrees-outside-dot-claude.md: none: feat/worktrees-outside-dot-claude changes 10 paths outside docs/ and adds or changes no code-review rubric under docs/reviews/
+```
+
+- `scripts/build-loop.sh` and `skills/dev-cycle/SKILL.md` are gate code (they run from the next image release, which you plan to run after this merge); `workflows/parallel-worktrees.md` is under the never glob. The rubric line reads `none`: the loop's three review rounds (round 1: three ambers; round 2 after dispatch 1: clean; round 2 of dispatch 2: one amber, five untested refusal paths, now tested) are recorded in its research doc, not as a rubric.
+- Tests: the five touched suites (221), `scripts/hermeticity-lint --root .` and the health check pass on the branch.
+
+**What an attacker would want here:** a stranger's text reaching a session (a pasted issue, a copied file) that gets an agent to write into a loop checkout's `hooks/` or settings file, now that the guard no longer refuses that by path; the planted file would sit in a gitignored checkout no gate reads as truth (H1: the gate runs from the image), and the installed policy files under `~/.claude` keep the guard's protection.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges tip feb8ed70; Q-303's paste is rewritten, and the next release moves new worktrees to `.worktrees/` | Reading the diff, 271 code lines | Worktree writes still ask (the docs differ from your version: the optional host check tells), or a loop's checkout is not collected; one `git revert` undoes it |
+| **[2] drop** | The brief closes; worktrees stay under `.claude/` | None | The permission asks continue |
+| **[3] changes needed** | Your note goes back to the loop (dispatch 3 of 4) | Writing the note | Another loop run, and the release waits |
+
+- **Interim:** unmerged; the release (Q-303) waits on this, as you asked.
+
+### Q-303 · image-lag
+**Needs:** you: terminal · **Opened:** 2026-11-18 · **Status:** ANSWERED
+Q-303: met — image 0feaf08085b524c0c4345c52f8e285d842558f23 holds the gate code of main 0feaf08085b524c0c4345c52f8e285d842558f23
+
+Install the release that carries main's new dev-cycle gate code: run the one paste below on the host.
+
+**If you say no:** sessions keep running the image built from a4c856bf, so the dev cycle keeps its old step 6: the new roadmap check (every Now and Next item shown with what holds it, and finished or parked items moved) does not run, and the audience-profiles and reader-testing v2 skills stay at their old text in sessions.
+
+- **C (the image's commit):** a4c856bf7cb595f6eab4923db117827ebb833cb4 · **M (main's commit):** b3e25cf11174f620b3c49774a95ab9afb62f59dc
+- **Merged without your review:**
+  - 5a4d2fda Merge branch 'fix/board-fanout-flaky' (build-loop self-merge): a 6-line fix to one test's setup in `test/scripts/board.bats` (the flaky fanout case), with its research doc; no code-review rubric, the loop reviewed it itself.
+  - a61f9a17 Merge branch 'docs/rewrite-q278' (build-loop self-merge): docs only (a closed brief and a research doc).
+- **What changes for you:**
+  - b3e25cf1 (you approved it, Q-311 [1]): build loops' worktrees and the dev cycle's own checkouts move to a gitignored `.worktrees/` directory, so routine writes there stop asking you for permission (feedback F-019); worktrees already in the old place are still collected.
+  - 9e89a31e (you approved it, Q-310 [1]): the A8 cache probe's records, under `runs/` and `docs/`.
+  - 7661a2cf (you approved it, Q-309 [1]): every roadmap Idea that carries harness feedback or an owner report moves to Now (or into one question for you) each iteration; about 12 of today's Ideas move at the first iteration after this release.
+  - f8453f26 (you approved it, Q-307 [1]): `workflows/parallel-worktrees.md` has a subagent return a report as text for the parent to write, instead of writing a file Claude Code refuses.
+  - 358c2332 (you approved it, Q-306 [1]): the A8 measurement's results, under `runs/` and `docs/` (the image carries neither).
+  - 24af50da (you approved it, Q-305 [1]): the roadmap check's split-off fixes: a repo with a `watching.md` but no `questions.md` now reads as not checked, long titles are cut without splitting a character, and two tests now fail when they should.
+  - 22735b6e: the dev-cycle digest's section 5 lists each roadmap Now and Next item with the open questions or watches that hold it, and step 6 moves finished or parked items every iteration, light passes too (your request in session today; rubric `docs/reviews/code-review-rubric-2026-11-18-fix-dev-cycle-roadmap-staleness.md`).
+  - 386ccfa3, ded17c89: the audience-profiles and reader-testing skills' v2 and the lessons from O20's real session (merged by hand).
+  - The routine rest: 35 dev-cycle lands and 7 docs commits.
+- **Full list:** `git -c log.showSignature=false log --first-parent --format='%h %s' a4c856bf7cb595f6eab4923db117827ebb833cb4..b3e25cf11174f620b3c49774a95ab9afb62f59dc`
+- **Paths changed outside `docs/` and `runs/` (68 under `docs/` and 37 under `runs/` too, which the image does not carry):** `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/health-check.sh`, `scripts/hermeticity/adapters/bash.json`, `scripts/hermeticity/adapters/python.json`, `scripts/lib/migrations.sh`, `skills/audience-profiles/SKILL.md`, `skills/audience-profiles/references/profile-template.md`, `skills/dev-cycle/SKILL.md`, `skills/reader-testing/SKILL.md`, `skills/reader-testing/references/grader-brief.md`, `skills/reader-testing/references/reader-brief.md`, `skills/reader-testing/references/run-templates.md`, `test/scripts/board.bats`, `test/scripts/build-loop-dispatch.bats`, `test/scripts/build-loop-free.bats`, `test/scripts/build-loop-orchestrator.bats`, `test/scripts/dev-cycle.bats`, `test/scripts/health-check.bats`, `workflows/parallel-worktrees.md`
+
+Run this on the host, in your claude-workflows checkout at main's tip, then start a new sandbox session:
+
+```
+sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "b3e25cf11174f620b3c49774a95ab9afb62f59dc:$p")"; then n=$((n+1)); else echo "release refused: $p changed after b3e25cf11174f620b3c49774a95ab9afb62f59dc: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
+```
+
+**Pass:** the installer finishes without a `release refused` line. **Send back:** `Q-303: done`, and, if the install re-blessed (its output has a `Verified live:` line), that line, the `Next:` line under it and `cc-isolated --list`'s `Blessed config` line, before you run any probe: watch Q-167 (post-install-host-probes) waits on exactly those lines.
+
+- **Interim:** the image's gate (a4c856bf) runs; nothing breaks.
+
+
+
 

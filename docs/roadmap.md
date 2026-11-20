@@ -61,6 +61,56 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   is the owner's: Q-302. First step after the answer: compare its gaps and causes with this
   repo's, and file any cause the fixes here do not cover.
 
+- **Agent: code-review lever #3 follow-ons in other files** (filed 2026-11-19, from the lever
+  #3 loop's report; not built on its branch, by its brief). Motive: the same two claims the
+  lever #3 correction removes from `skills/code-review/SKILL.md` also live elsewhere: the
+  "paste each sub-agent's skill text, it cannot read your files" rule in
+  `skills/draft-review/SKILL.md` (:172, :231-233, :560), `skills/matrix-analysis/SKILL.md`
+  (:116, :422) and `workflows/divergent-design.md` (:213); the "cacheable prefix" claim in
+  `patterns/orchestrated-review.md` (:151) and `guides/sub-agent-briefing.md` (:78). Also:
+  rubric row A7 in `docs/reviews/code-review-rubric-2026-08-07-main.md` reads Fixed for a
+  cross-pass cache warmth that does not exist on this path, and decision-log row 35 counts
+  10 contract tests where there are now 13. First step: once the lever #3 correction merges
+  (its wording is the model), one review brief over these files; `workflows/` is a never
+  glob, so review.
+
+- **Agent: Step 0 tests worktree creation first, and names where a stop goes with no worktree** (filed 2026-11-19, step 6; moved from Ideas: it carries reported friction).
+  (brainstorm 2026-11-16). Signal: philosophy-research F-018, a read-only `.git/worktrees`
+  stopped an iteration with nowhere to file the stop; decision-log row 88 keeps worktrees
+  as how agents work.
+  2026-11-19: moved to Now by step 6 (iteration 2316). First step: the one the signal names; if none, a research or divergent-design pass on it.
+
+- **Agent: A per-repo health-checkout preparation line** (filed 2026-11-19, step 6; moved from Ideas: it carries reported friction). (brainstorm 2026-11-16). Signal:
+  philosophy-research F-016: a fresh health checkout has no Lean build cache (1.9 GB), so
+  the iteration linked and copied it in by hand. First step: a `docs/dev-cycle.md` line
+  naming paths to link or copy from the main checkout, read through `--settings`.
+  2026-11-19: moved to Now by step 6 (iteration 2316). First step: the one the signal names; if none, a research or divergent-design pass on it.
+
+- **Agent: A judgment entry's "Why it's yours" quotes the constraint it relies on** (filed 2026-11-19, step 6; moved from Ideas: it carries reported friction). (brainstorm
+  2026-11-16). Signal: philosophy-research F-007, an entry that cited H1 for a change H1
+  does not cover, so the whole entry should not have reached the owner.
+  2026-11-19: moved to Now by step 6 (iteration 2316). First step: the one the signal names; if none, a research or divergent-design pass on it.
+
+- **Agent: cc-isolated's manual worktree fallback as the default** (filed 2026-11-19, step 6; moved from Ideas: it carries reported friction). (brainstorm 2026-11-12).
+  Signal: herald F-009 and 7caea26d both saw Agent `isolation: "worktree"` refused in the
+  container. It would change `workflows/parallel-worktrees.md` to start with the
+  by-hand `git worktree add` there, once the research says whether the refusal is the
+  sandbox's or the container's.
+  2026-11-19: moved to Now by step 6 (iteration 2316). First step: the one the signal names; if none, a research or divergent-design pass on it.
+
+- **Agent: The cycle cannot create a project's harness-feedback file** (filed 2026-11-19, step 6; moved from Ideas: it carries reported friction). Signal: philosophy-research
+  F-002: `--check-fix` refuses every new file, so the owner made it by hand. Allow
+  `harness-feedback.py init` and appends in-cycle outside claude-workflows.
+  2026-11-19: moved to Now by step 6 (iteration 2316). First step: the one the signal names; if none, a research or divergent-design pass on it.
+
+- **Agent: Build loops start in the orchestrator's removed worktree** (filed 2026-11-19, step 7; herald F-008). Motive: every loop
+  dispatched before the cycle's land loses its first Bash call, because the cycle removes its
+  worktree after the land while the loop's shell starts there; it reproduced in the 2026-11-19
+  herald triage dispatch. First step: the hermetic probe in group F of
+  `docs/working/research-2026-11-19-herald-friction-triage.md` (does a main-session `cd` before
+  an Agent call move the subagent's start directory?), then divergent design over its four
+  approaches. Gate code, so a review merge.
+
 ## In flight
 
 - **Agent: code-review: correct the lever #3 cache-saving text, and the choices built on it**
@@ -88,14 +138,22 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   updated; (c) and (d) wait on Q-308 (after the release, the owner's call). Briefed 2026-11-19 on the owner's
   go-ahead in session: `docs/working/briefs/2026-11-19-code-review-lever3-correction.md`.
 
-- **Worktrees and caches out of the protected config directory** (brainstorm 2026-11-16;
-  moved from Ideas 2026-11-19 on the owner's request). Signal: philosophy-research F-019,
-  about 18 permission asks in one session from writes into the cycle's and loops'
-  worktrees, two loops' writes refused, one iteration half-landed; the owner still sees the
-  asks (the A8 loop, the cycle's own brief writes). Briefed:
-  `docs/working/briefs/2026-11-19-worktrees-outside-dot-claude.md` (divergent design over
-  where they live, then build; the brief also says a brief write and its dependent
-  commands go in separate responses).
+- **Agent: Tell build loops to wait inside their turn** (filed 2026-11-19, step 6; philosophy-research
+  F-012 and two early hand-backs here on 2026-11-19). Motive: every recorded early hand-back came
+  while a loop waited for a reviewer, and each then waited the full two-hour rule. The research
+  (d6c987f3, `docs/working/research-2026-11-19-loops-wait-foreground.md`) picked one wait rule in
+  the dispatch prompt. Briefed 2026-11-19 (iteration 2351), review (gate code):
+  `docs/working/briefs/2026-11-19-loop-wait-rule.md`. The same brief carries the report-file
+  fix (herald F-010 remainder: loops' subagents return reports as text), which edits the same line.
+
+- **Agent: Re-dispatch a conflict that touches only generated files, with no owner entry** (filed 2026-11-19, step 6; moved from Ideas: it carries reported friction).
+  (brainstorm 2026-11-16). Signal: philosophy-research F-010 (a generated catalog README
+  made approved branches go stale within minutes) and F-006 (a newer gate rule refusing an
+  approved merge), each costing the owner a re-dispatch answer and a second merge answer.
+  Three or more shapes (a repo setting listing generated paths, regenerating at merge time,
+  no change), so a divergent-design pass first. Builds on the in-flight F-009 brief.
+  2026-11-19: moved to Now by step 6 (iteration 2316). First step: the one the signal names; if none, a research or divergent-design pass on it.
+  2026-11-19: briefed (iteration 2351): `docs/working/briefs/2026-11-19-generated-file-conflicts.md`.
 
 ## Next
 
@@ -126,6 +184,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
    subagent ending, a heartbeat, a shorter age for this session's own loops) and weigh
    each against D1's case (a live loop in another session, S1's honest-slip threat model),
    then pick the threshold or mechanism; gate code, so a review merge.
+   2026-11-19, later: two loops in one evening (F-019's at 20:01 UTC, the lever #3
+   correction's at 21:47 UTC) were told to hand back before their confirming review
+   reported, with work committed and no marker; each then waits the full two hours.
 
 ## Ideas
 
@@ -138,34 +199,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   when it returns with data). The plan's full text is in this file's history before
   2026-11-18 (`git log -S'Measure before designing' -- docs/roadmap.md`).
 
-- **The live-verify hook reads a merge commit's staged diff against HEAD only.** Signal:
-  the F-009 loop's pre-mortem item 5 (`docs/working/research-2026-11-16-loop-may-merge-default-in.md`
-  on `fix/loop-may-merge-default-in`): `hooks/live-verify-gate.sh` ignores MERGE_HEAD, so a
-  loop hand-resolving a merge of the default branch whose main side changed an enforcement
-  file is asked for a `Live-verified:` trailer it cannot honestly give, and stops. First
-  step: count how often main's side of such a merge touches an enforcement file; an
-  enforcement-file change, so review and a live-verify trailer.
-- **Re-dispatch a conflict that touches only generated files, with no owner entry**
-  (brainstorm 2026-11-16). Signal: philosophy-research F-010 (a generated catalog README
-  made approved branches go stale within minutes) and F-006 (a newer gate rule refusing an
-  approved merge), each costing the owner a re-dispatch answer and a second merge answer.
-  Three or more shapes (a repo setting listing generated paths, regenerating at merge time,
-  no change), so a divergent-design pass first. Builds on the in-flight F-009 brief.
-- **Step 0 tests worktree creation first, and names where a stop goes with no worktree**
-  (brainstorm 2026-11-16). Signal: philosophy-research F-018, a read-only `.git/worktrees`
-  stopped an iteration with nowhere to file the stop; decision-log row 88 keeps worktrees
-  as how agents work.
-- **A per-repo health-checkout preparation line** (brainstorm 2026-11-16). Signal:
-  philosophy-research F-016: a fresh health checkout has no Lean build cache (1.9 GB), so
-  the iteration linked and copied it in by hand. First step: a `docs/dev-cycle.md` line
-  naming paths to link or copy from the main checkout, read through `--settings`.
-- **A judgment entry's "Why it's yours" quotes the constraint it relies on** (brainstorm
-  2026-11-16). Signal: philosophy-research F-007, an entry that cited H1 for a change H1
-  does not cover, so the whole entry should not have reached the owner.
-- **Loops wait on a file or job in the foreground** (brainstorm 2026-11-16). Signal:
-  philosophy-research F-012 (loops idle two hours on Monitor while listed as running;
-  told to wait in the foreground, they finished in 30 to 60 minutes). F-013's hung tool
-  calls have no known cause and are not covered by this.
 - **The next deep audit's sample.** Signal: step 4b fired 2026-11-13 (iteration 2250) on
   `skills/dev-cycle/SKILL.md` as f1238bdb (Q-289) changed it, after the constraint-drift item
   closed; with a1121ac5's Path A record (Done item above), it is what the next deep audit
@@ -183,6 +216,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   2026-11-19 (iteration 2026-11-19-2008): step 4b fired on `skills/dev-cycle/SKILL.md` as
   7661a2cf changed it (step 6 moves Ideas that carry reported friction); the same sample
   takes it.
+  2026-11-19 (iteration 2026-11-19-2316): step 4b fired on `skills/dev-cycle/SKILL.md` and
+  `workflows/parallel-worktrees.md` as b3e25cf1 changed them (worktrees under `.worktrees/`);
+  the same sample takes them.
 - **Record out-of-cycle session answers through `--answered`.** Signal: 4306aa88 (the owner's
   Q-281..284 answers, recorded on a hand branch) read as `other` in `--main-log`, making
   iteration 2026-11-13-2237 a full cycle with a health run.
@@ -200,15 +236,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   sandbox's live check passed every line but three, yet the sandbox broke worktree creation,
   which no line tested (7caea26d). It would add a sandboxed `git worktree add` and
   remove to `docs/working/q125-verify-check.sh`; the research brief proposes the lines.
-- **cc-isolated's manual worktree fallback as the default** (brainstorm 2026-11-12).
-  Signal: herald F-009 and 7caea26d both saw Agent `isolation: "worktree"` refused in the
-  container. It would change `workflows/parallel-worktrees.md` to start with the
-  by-hand `git worktree add` there, once the research says whether the refusal is the
-  sandbox's or the container's.
-- **Triage the herald friction list as one unit** (brainstorm 2026-11-12). Signal: 12
-  seeds from one ingest (F-001 to F-012, `docs/working/feedback/belegarth-herald.md`),
-  several about hooks and permission prompts this repo ships. It would group them by
-  cause and file the few with a fix in this repo; do nothing until a slot is free.
 - **Brief the sandbox gaps' research now.** Signal: three build-loop slots idle for three
   iterations (2026-11-12) while both sandbox-gap Now items start with a research and
   divergent-design pass that either answer to Q-277 (install the sandbox with its two gaps
@@ -275,17 +302,12 @@ Unranked. Each names the signal that motivates it.
   Ten ideas in `docs/working/brainstorm-2026-10-29-friction-and-engagement.md`. A1/A2/A3/A10
   (how gate merges and releases are bundled) go to `divergent-design` first; A4, A6, A7, A8 are
   independent of that choice.
+  2026-11-19: asked in Q-312 (build now, or wait for the trial's end).
 - **Keep the owner from habituating to asks (owner brainstorm 2026-10-29, area B).** Signal:
   always-[1] merge entries and month-old open entries train skimming. Eight ideas in the same
   doc; the security-channel form (B1) goes to `divergent-design`; B2's metric is the check that
   area A actually lowers owner load.
-
-- **The cycle cannot create a project's harness-feedback file.** Signal: philosophy-research
-  F-002: `--check-fix` refuses every new file, so the owner made it by hand. Allow
-  `harness-feedback.py init` and appends in-cycle outside claude-workflows.
-- **Release soon after Q-235.** Signal: philosophy-research F-001: a repo that ran
-  `questions.sh migrate` has a digest that shows "None open" for its watches until the image
-  carries unit 3.
+  2026-11-19: asked in Q-312 (build now, or wait for the trial's end).
 
 - **Name the 2026-10-30 cutoff before it bites.** Signal: `questions.sh`'s
   `LEGACY_BEFORE='2026-10-30'` refuses `agent`/`trigger`/`deferred` entries opened from
@@ -481,6 +503,41 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- **Report-file lines: listed, mostly closed.** Done a8a0a496 (self-merge), brief
+  `docs/working/briefs/closed/2026-11-19-subagent-report-files-listing.md`, research
+  `docs/working/research-2026-11-19-subagent-report-files-listing.md`: 13 of 13 refused writes
+  were a subagent's scratch `report.md`; 95 of 95 writes to `docs/reviews/` were accepted, so the
+  skills' save lines stay. The one fix (the build-loop prompt's scratch-directory line) rides in
+  `docs/working/briefs/2026-11-19-loop-wait-rule.md`. Revisit if a refusal is recorded on a
+  `docs/reviews/` path or a name other than `report.md`. The evidence came from this machine's
+  Claude Code transcripts, which the loop read with `rg`.
+
+- **Where loops wait, and why they hand back early: researched.** Done d6c987f3 (self-merge), brief
+  `docs/working/briefs/closed/2026-11-19-loops-wait-foreground.md`, research
+  `docs/working/research-2026-11-19-loops-wait-foreground.md`: 15 wait points; one prompt rule
+  recommended, now In flight as its own review brief.
+
+- **The live-verify hook and merges of main: measured, dropped.** Done 74b9181f (self-merge),
+  brief `docs/working/briefs/closed/2026-11-19-live-verify-merge-head-count.md`, research
+  `docs/working/research-2026-11-19-live-verify-merge-head-count.md`: of 108 merges of main into
+  a branch, 4 were the case, all interactive sessions with an honest `Live-verified: no` the hook
+  accepts; no stop on record. The Idea is dropped; watch Q-313 reopens it if a loop stops on the
+  hook during a merge of main.
+
+- **Herald friction list triaged.** Done 8ffddfaf (self-merge), brief
+  `docs/working/briefs/closed/2026-11-19-herald-friction-triage.md`, research
+  `docs/working/research-2026-11-19-herald-friction-triage.md`: F-001, F-002, F-003, F-007 and
+  F-012 already fixed and live; F-004, F-005, F-006, F-009 and F-011 out of scope or herald's own
+  setup; F-008 and the rest of F-010 filed in Now.
+
+- **Release soon after Q-235.** Done 2026-11-19: the release ran; the image is built from 0feaf080, which carries unit 3 and everything since (image check, iteration 2316).
+
+- **Worktrees and caches out of the protected config directory** (F-019). Done b3e25cf1
+  (approved merge, Q-311 [1]), brief `docs/working/briefs/closed/2026-11-19-worktrees-outside-dot-claude.md`,
+  research `docs/working/research-2026-11-19-worktrees-outside-dot-claude.md`: loops' worktrees and
+  the cycle's three checkouts go under a gitignored `.worktrees/` (`build-loop.sh --worktree-base`);
+  old worktrees are still collected. Live with the next release (Q-303). Residual risk
+  "worktree-hooks-bash" accepted; `scripts/self-improvement.sh`'s own worktrees not moved.
 - **Agent: A8 follow-ups: the cache probe and closing rubric row A8** (filed 2026-11-19). Done
   9e89a31e (approved merge, Q-310 [1]), brief `docs/working/briefs/closed/2026-11-19-a8-cache-probe.md`,
   record `runs/review-arms/a8-2026-11-19/cache-probe.md`: two agents with a byte-identical shared

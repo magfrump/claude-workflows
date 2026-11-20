@@ -531,8 +531,8 @@
 #             gate, with --settings' constraints line ok and --status reading
 #             the brief open, dispatched under 4 times and its branch absent,
 #             it creates the branch at the default branch's commit and adds
-#             a worktree for it at DIR (absolute; default .claude/wt-STEM in
-#             the main worktree), locked with the reason "build-loop dispatch
+#             a worktree for it at DIR (absolute; default WTB/wt-STEM, WTB
+#             being --worktree-base's directory, which it makes), locked with the reason "build-loop dispatch
 #             of STEM at TIP, UTC TIME" (TIP: the tip the loop starts from).
 #             Prints
 #             ok BRIEF BRANCH DIR
@@ -542,7 +542,8 @@
 #             or skip BRIEF: WHY as --status skips it, or refuse BRIEF: WHY (a
 #             rule above; a worktree already has the branch checked out,
 #             unborn; DIR exists, or the default is not a path --dir
-#             takes; constraints.md, the worktrees or the branch could not be
+#             takes, or --worktree-base refuses it (a --dir is never
+#             checked that way, even under WTB); constraints.md, the worktrees or the branch could not be
 #             read, listed or created; or the worktree could not be added),
 #             leaving no branch or worktree it made (unless removing the
 #             branch fails; the refusal then says so).
@@ -607,6 +608,31 @@
 #             could not be listed; or, as for --state, a refuse state line
 #             from the state gate, default_gate or a GIT_DIR-style variable set
 #             in the caller's environment.
+#   --worktree-base  prints
+#             ok WTB
+#             WTB being .worktrees in the main worktree, where --start's default
+#             worktrees and the dev cycle's WT, HC and GT go (brief
+#             2026-11-19-worktrees-outside-dot-claude). It makes it when absent,
+#             then prints it. Claude Code protects .claude/, apart from a few
+#             exceptions of its own: each Write there asks, and an allow rule
+#             does not stop that. guard-trusted-writes.py also denies a Bash
+#             write whose text names .claude together with hooks or a settings
+#             file. It makes WTB and, when absent, a .gitignore of "*" in it.
+#             That ignores everything inside, the .gitignore too, so the main
+#             worktree's git status and add -A never see a checkout, and the
+#             repo's own .gitignore needs no edit. An existing .gitignore is
+#             left as it is. Or one refuse worktree-base: WHY, when:
+#             - there is no main worktree, or the worktrees could not be listed;
+#             - WTB is not a path --dir takes;
+#             - WTB or its .gitignore is a symbolic link or of another kind;
+#             - a mkdir or write failed, or git status or check-ignore failed;
+#             - git sees anything in WTB, or does not ignore a new wt- name there;
+#             - or, as for --state, a refuse state line comes from the state
+#               gate, default_gate or a GIT_DIR-style variable set in the
+#               caller's environment.
+#             A worktree made under .claude/ before this is still found by its
+#             branch and lock in git worktree list, so --prompt, --free-worktrees
+#             and the gate read it as before.
 #
 # Acts on $PWD's git repo, like dev-cycle.sh, and needs its default branch
 # found by name (origin/HEAD, main or master), but for --check-constraints,
@@ -614,7 +640,7 @@
 # and --main-log's merge objects (merge-tree writes the merged trees and blobs into the object
 # store), --merge's commit, the branch it moves and that branch's reflog
 # (and in W: its files, index, HEAD reflog and ORIG_HEAD), --start's branch
-# and its reflog, the worktrees and locks --start and --prompt make or
+# and its reflog, WTB and its .gitignore (--worktree-base, --start), the worktrees and locks --start and --prompt make or
 # replace, the worktrees --free-worktrees removes and the locks it takes off
 # and puts back, the dispatch lock file, and its own
 # temporary directory, removed at exit.
@@ -623,15 +649,15 @@
 # Exit: 0 every line printed (or help; a --marker skip is a line; for
 # --check-constraints, only an ok line), for
 # --state ok, for --main-log no other line, for --cycle-diff ok, for --check every verdict line ok,
-# for --merge merged, for --start and --prompt ok, for --free-worktrees any
+# for --merge merged, for --start, --prompt and --worktree-base ok, for --free-worktrees any
 # line but refuse; 2 any other --check,
-# --merge, --start or --prompt verdict line, --free-worktrees' refuse line, --main-log's other or refuse
+# --merge, --start, --prompt or --worktree-base verdict line, --free-worktrees' refuse line, --main-log's other or refuse
 # line, a --cycle-diff refuse line, a --check-constraints line other than ok, or the state gate (--state's included) not ok. A --check,
 # --merge or --free-worktrees can also stop part way, after the lines before, with 1
 # (need_root) or a failed command's own status: a caller reads any exit but 0
 # as nothing decided. 1 bad usage, a GIT_CONFIG_COUNT that is not plain
 # decimal, not a git repo, no perl, lib/dev-cycle-read.sh or lib/rubric-check.sh, a failed mktemp
-# (--state, --main-log, --cycle-diff, --check, --merge, --start, --prompt, --free-worktrees; no line printed),
+# (--state, --main-log, --cycle-diff, --check, --merge, --start, --prompt, --free-worktrees, --worktree-base; no line printed),
 # or no default branch found by name.
 
 set -euo pipefail
@@ -694,7 +720,7 @@ constraints_line() {
     *) echo "constraints unreadable: line $c looks like a constraint but is not exactly \"H<n>: text\" or \"S<n>: text\" (optionally after \"- \", n without a leading 0)" ;;
   esac
 }
-usage() { echo "$1 (usage: build-loop.sh --settings | --check-constraints FILE | --status BRIEF... | --marker BRIEF | --state | --main-log SINCE | --cycle-diff [--answered Q-NNN]... [--migrated ID]... | --land-cycle --main SHA [--answered Q-NNN]... [--migrated ID]... | --check BRIEF... [--expect SHA] | --merge BRIEF --expect SHA [--approved Q-NNN] | --start BRIEF [--dir DIR] | --prompt BRIEF [--dir DIR] [--steal] | --free-worktrees)" >&2; exit 1; }
+usage() { echo "$1 (usage: build-loop.sh --settings | --check-constraints FILE | --status BRIEF... | --marker BRIEF | --state | --main-log SINCE | --cycle-diff [--answered Q-NNN]... [--migrated ID]... | --land-cycle --main SHA [--answered Q-NNN]... [--migrated ID]... | --check BRIEF... [--expect SHA] | --merge BRIEF --expect SHA [--approved Q-NNN] | --start BRIEF [--dir DIR] | --prompt BRIEF [--dir DIR] [--steal] | --free-worktrees | --worktree-base)" >&2; exit 1; }
 MODE=""; ARGS=(); EXPECT=""; APPROVED=""; DIR=""; STEAL=""; ANSWERED=(); MIGRATED=(); LAND_MAIN=""
 case "${1:-}" in
   --settings) MODE=settings; [[ $# -eq 1 ]] || usage "--settings takes no arguments" ;;
@@ -749,6 +775,7 @@ case "${1:-}" in
     done
     [[ ${#ARGS[@]} -eq 1 ]] || usage "--$MODE takes one brief path" ;;
   --free-worktrees) MODE=free-worktrees; [[ $# -eq 1 ]] || usage "--free-worktrees takes no arguments" ;;
+  --worktree-base) MODE=worktree-base; [[ $# -eq 1 ]] || usage "--worktree-base takes no arguments" ;;
   # The header: from line 2 to the first non-empty line not starting with # (no fixed range to go stale).
   -h|--help) sed -n '2,/^[^#]/{/^#/p}' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
   '') usage "no mode given" ;;
@@ -878,8 +905,8 @@ ROOT_REAL="$(pwd -P)"
 GATED=""; [[ "$MODE" =~ ^(settings|status|marker)$ ]] || GATED=1  # not the gate repository's GATE_*
 # The caller's environment first: it can point the state gate's own reads at another repository.
 # --free-worktrees too: it removes what it reads, so it does not lean on an
-# earlier --state.
-if [[ "$MODE" == state || "$MODE" == free-worktrees ]]; then caller_gate || exit 2; fi
+# earlier --state; and --worktree-base, which writes in the main worktree.
+if [[ "$MODE" == state || "$MODE" == free-worktrees || "$MODE" == worktree-base ]]; then caller_gate || exit 2; fi
 if [[ -n "$GATED" ]]; then state_gate || exit 2; fi
 resolve_main || true
 main_by_name || { echo "build-loop.sh needs a default branch found by name (origin/HEAD, main or master); found none" >&2; exit 1; }
@@ -1817,8 +1844,10 @@ dispatch() {
     elif ! { [[ -z "$WT_LOCK" ]] || git worktree unlock "$WT"; } || ! git worktree lock --reason "$reason" "$WT"; then x="its worktree $WT could not be locked (it may be left unlocked)"
     else DIR="$WT"; fi
   else
-    [[ -n "$DIR" || -z "$MAINWT" ]] || DIR="$MAINWT/.claude/wt-$stem"
-    if ! readerform "$DIR"; then x="the default worktree directory (.claude/wt-$stem in the main worktree) is not an absolute path of letters, digits and . _ - /; give --dir"
+    [[ -n "$DIR" || -z "$MAINWT" ]] || DIR="$MAINWT/$WT_BASE_NAME/wt-$stem"
+    if ! readerform "$DIR"; then x="the default worktree directory ($WT_BASE_NAME/wt-$stem in the main worktree) is not an absolute path of letters, digits and . _ - /; give --dir"
+    # The base before the branch, so a refused base leaves no branch (FP-011).
+    elif [[ "$DIR" == "$MAINWT/$WT_BASE_NAME/wt-$stem" ]] && ! wt_base; then x="$WT_BASE_WHY; give --dir"
     elif [[ -e "$DIR" || -L "$DIR" ]]; then x="$DIR already exists"
     # The branch is made here (the empty old value: it must not exist), so a failed add removes only it.
     elif [[ "$MODE" == start ]] && ! git update-ref "refs/heads/$br" "$MAIN_SHA" "" 2>/dev/null; then x="its branch $br could not be created"
@@ -1830,6 +1859,40 @@ dispatch() {
   [[ -z "$x" ]] || { echo "refuse $a: $x"; return 1; }
   printf 'ok %s %s %s\ndispatched %s\n' "$a" "$br" "$DIR" "$n"
   loop_prompt "$a" "$stem" "$ct" "$n" "$tip"
+}
+# WT_BASE_NAME: --worktree-base's directory in the main worktree (the header
+# says why it is not under .claude/). wt_base makes it, and its .gitignore of
+# "*" when absent, and checks that git ignores what is in it (H2: an existing
+# .gitignore that leaves anything there visible to git status refuses, rather
+# than leave a checkout for add -A to pick up). Sets WT_BASE, or WT_BASE_WHY
+# and returns 1. MAINWT comes from wt_of, git's absolute path (never $PWD:
+# FP-062).
+WT_BASE_NAME=.worktrees
+wt_base() {
+  local b g rc=0 out
+  WT_BASE=""; WT_BASE_WHY=""
+  [[ -n "$MAINWT" ]] || { WT_BASE_WHY="the repository has no main worktree (bare)"; return 1; }
+  b="$MAINWT/$WT_BASE_NAME"; g="$b/.gitignore"
+  if ! readerform "$b"; then WT_BASE_WHY="the worktree base $b is not an absolute path of letters, digits and . _ - /"
+  elif [[ -L "$b" || ( -e "$b" && ! -d "$b" ) ]]; then WT_BASE_WHY="$b is a symbolic link or not a directory"
+  elif ! mkdir -p -- "$b" 2>/dev/null; then WT_BASE_WHY="$b could not be made"
+  elif [[ -L "$g" || ( -e "$g" && ! -f "$g" ) ]]; then WT_BASE_WHY="$g is a symbolic link or not a plain file"
+  # set -C: no write through a link planted after the test to an absent or
+  # regular file. A run that loses a race to write it reads the winner's file
+  # (one that reads it before the winner's * lands refuses, as not ignored).
+  elif [[ ! -e "$g" ]] && ! ( set -C; printf '*\n' > "$g" ) 2>/dev/null && [[ ! -f "$g" || -L "$g" ]]; then WT_BASE_WHY="$g could not be written"
+  else
+    # Two reads: status shows nothing in the base (no checkout and no
+    # .gitignore git could stage), and a new wt- name there is ignored too.
+    # check-ignore takes no pathspec magic, so git_harden's literal pathspecs
+    # are off for its one fixed name.
+    out="$(git -C "$MAINWT" status --porcelain --untracked-files=normal -- "$WT_BASE_NAME" 2>/dev/null)" || rc=128
+    [[ "$rc" -ne 0 ]] || GIT_LITERAL_PATHSPECS=0 git -C "$MAINWT" check-ignore -q -- "$WT_BASE_NAME/wt-x" 2>/dev/null || rc=$?
+    if [[ "$rc" -gt 1 ]]; then WT_BASE_WHY="git could not say whether it ignores $b (git status or check-ignore failed)"
+    elif [[ "$rc" -eq 1 || -n "$out" ]]; then WT_BASE_WHY="git does not ignore everything in $b in the main worktree (its .gitignore, or a negation in another one); make it ignore the directory's contents, as a .gitignore of * does"
+    else WT_BASE="$b"; return 0; fi
+  fi
+  return 1
 }
 # free_one DIR BRANCH LOCK: --free-worktrees' line for one worktree (BRANCH
 # empty when it is on none, LOCK as wt_of's WT_LOCK), and the removal. Each
@@ -2543,5 +2606,11 @@ case "$MODE" in
     gate_start
     dispatch_lock worktrees
     free_worktrees 9>&-
+    ;;
+  worktree-base)
+    state_start
+    wt_of "" || { echo "refuse worktree-base: the worktrees could not be listed"; exit 2; }
+    wt_base || { echo "refuse worktree-base: $WT_BASE_WHY"; exit 2; }
+    echo "ok $WT_BASE"
     ;;
 esac
