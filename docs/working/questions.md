@@ -26,14 +26,11 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
-| [Q-308](#q-308--a8-settling-runs) | you: judgment | Q-308: [1] | 2026-11-19 |
 | [Q-312](#q-312--friction-ideas-owner-brainstorm-areas) | you: judgment | Two roadmap Ideas from your 2026-10-29 brainstorm carry your own friction report. Build them now, or keep t... | 2026-11-19 |
-| [Q-314](#q-314--merge-gate-2026-11-19-loop-wait-rule-6505ccec60db) | you: judgment | Q-314: [1] | 2026-11-19 |
-| [Q-315](#q-315--merge-2026-11-19-code-review-lever3-correction-e100fc0dd7c4) | you: judgment | Q-315: [1] | 2026-11-19 |
-| [Q-084](#q-084--q076-live-checks) | you: terminal | Q-084: done — note: exit scan: only linked worktrees in git's standard layout changed (added: probe). The... | 2026-09-27 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the ho... | 2026-11-05 |
 | [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there. | 2026-11-18 |
 | [Q-316](#q-316--blessed-config-line) | you: terminal | Paste one line: what `cc-isolated --list` says about the blessed config after today's re-bless. | 2026-11-19 |
+| [Q-317](#q-317--image-lag) | you: terminal | Install the release that carries the build-loop prompt's new wait rule (Q-314) and the code-review skill's ... | 2026-11-19 |
 <!-- index:end -->
 
 ## Open
@@ -71,33 +68,6 @@ If check 1 counts 0 and the build finishes, retire the "dl.google.com refused TL
 - **Interim:** the name stays on the allowlist and `android.txt` still says NOT YET PROBED. Editing that comment changes the blessed hash and forces a re-bless, so it waits for this result and goes out with the next release.
 - **If the answer differs:** a `FAIL sni=dl.google.com` for an address that is not pinned is decision 039's revisit trigger; a failed build gets a follow-up fix.
 
-### Q-084 · q076-live-checks
-**Needs:** you: terminal · **Opened:** 2026-09-27 · **Status:** ANSWERED
-Q-084: done — note: exit scan: only linked worktrees in git's standard layout changed (added: probe). They take config and hooks from the checkout's own .git, so this is not a finding. / cc-isolated exit=0 (no WARNING)
-
-One check is left: does a cc-isolated session that leaves a git worktree behind exit cleanly, with one `note:` line and no WARNING?
-
-**If you say no:** the exit scan's worktree rule (Q-094 [1]) stays tested only by bats, and its commits keep `Live-verified: no`. Nothing breaks: if the rule is wrong, a session that leaves a worktree behind prints the WARNING it printed before the rule.
-
-- **Done so far:** every other step passed between 2026-09-28 and 2026-09-30 (host git version, clean exit, refusal while a session runs, push, `parallel` in the image). Full record: `docs/working/history-terminal-entries-2026-11-18.md`.
-
-**1. On the host, outside any container.** Makes a throwaway repo, opens a session in it, and deletes the repo when the session ends:
-
-```
-T="$(mktemp -d)" && git init -q "$T/proj" && cd "$T/proj" && git -c user.name=p -c user.email=p@p commit -q --allow-empty -m init && cc-isolated "$T/proj"; echo "cc-isolated exit=$?   (expect 0)"; cd "$HOME" && rm -rf "$T"
-```
-
-**2. Inside that session**, at Claude's prompt, type this line, then exit the session with `/exit`:
-
-```
-! git worktree add -q .claude/worktrees/probe
-```
-
-**Pass:** after the session closes, the host prints a line starting `note: exit scan: only linked worktrees in git's standard layout changed`, then `cc-isolated exit=0`, and no WARNING. **Send back:** `Q-084:` and the lines from `note:` (or `WARNING`) to `cc-isolated exit=`.
-
-- **Interim:** the Q-094 commits keep `Live-verified: no`; the rule rests on bats.
-- **If the answer differs:** a WARNING or `exit=3` means the rule misses a layout git really writes, and the WARNING's lines become a fix.
-
 ### Q-302 · review-gap-audit-behemoth-paste
 **Needs:** you: terminal · **Opened:** 2026-11-18 · **Status:** OPEN
 
@@ -134,29 +104,6 @@ Output, in chat (write no files):
 - **Interim:** nothing is built from the audit for other repos; the fixes merged here cover this repo's causes only.
 - **If the answer differs:** a cause the fixes here don't cover becomes a roadmap item here (the gate and rules are shared), and anything specific to Behemoth Arsenal is for a session in that repo.
 
-### Q-308 · a8-settling-runs
-**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** ANSWERED
-Q-308: [1]
-
-Run the two larger measurements that would settle the A8 question (the code-review skill's "inlining the shared context is free" claim): a self-read control pass on the csp cell and a pass on the larger corpus cell?
-
-**If you say no:** A8's verdict stays "fails on its benefit, net cost unmeasured", as the merged results (`runs/review-arms/a8-2026-11-19/results.md`) say; the cheap cache probe (a roadmap agent item, no ask) still runs.
-
-- **Why it's yours:** each is a full review pass of new compute, and your go-ahead (Q-304 [1]) covered one cell only.
-- **Read:** the results doc's last section ("Three things would tell"); the pass just run cost 852,285 tokens on csp, and corpus cost about 616k at k=1 in the 2026-08-06 baseline.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Run both now** | Two loops: csp with agents reading the files themselves, and corpus inline as today | Quota for two full passes, roughly 2M tokens | Measures a cache layout the probe may show is about to change |
-| **[2] After the release** | Run them once the release (Q-303) is installed, as you said you plan to; the cycle asks again then. (Reworded 2026-11-19: it first said "after the cache fix", and the cache probe found no prompt-order fix exists.) | None now | A8 stays unsettled a while longer |
-| **[3] Don't run them** | Close A8 on today's verdict | None | The inline cost and recall effect stay unknown |
-
-- **Interim:** [2]; nothing runs. The owner, in session 2026-11-19: delaying this until after the release (Q-303), so no iteration asks it again before then.
-- **Blocks:** the A8 follow-up item on the roadmap (Next).
-- **2026-11-19, iteration 2316:** the release (Q-303) has run: sessions now run the image built from main 0feaf080. Option [2]'s "after the release" has arrived, so this is the cycle asking again: [1] or [3] now settles it.
-
-
-
 ### Q-312 · friction-ideas-owner-brainstorm-areas
 **Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** OPEN
 
@@ -181,82 +128,6 @@ The two Ideas:
 - **2026-11-19, iteration 0014 UTC:** one more item now rides with this answer, since it is area A's ground (fewer merge and re-dispatch answers for you): the research merged 7c137d5d (`docs/working/research-2026-11-19-generated-file-conflicts.md`) proposes that step 7 send a ready branch the gate refuses for a conflict with main, or a gap the loop can fix, straight back to its loop with no owner entry, once per tip and only under a dispatch count of 3. It is a review merge (dev-cycle skill). [2] builds it with area A; [1] holds it until the trial ends, like the rest.
 - **If the answer differs:** nothing to redo; the cycle moves them to Now next iteration.
 
-### Q-314 · merge-gate-2026-11-19-loop-wait-rule-6505ccec60db
-**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** ANSWERED
-Q-314: [1]
-
-Merge the build-loop prompt change that tells loops to wait inside their turn, and to have their reviewers return reports as text?
-
-**If you say no:** loops keep the old prompt: a loop waiting on a reviewer may hand back early with no marker (three times on record, two of them tonight), and then waits out the two-hour re-dispatch rule; and loops' reviewers keep trying to save scratch `report.md` files, which Claude Code refused 13 times out of 13.
-
-- **Why it's yours:** the change is to `scripts/build-loop.sh`, the gate's own code, which the cycle never self-merges; it reaches sessions at the next release.
-- **Read:** the brief `docs/working/briefs/2026-11-19-loop-wait-rule.md`; on the branch, `docs/working/research-2026-11-19-loop-wait-rule.md` (the live checks) and the rubric `docs/reviews/code-review-rubric-2026-11-20-fix-loop-wait-rule.md`. Show the diff: `git diff main...6505ccec60db9a64ab4dfdb9061c0d014c021636 -- scripts/build-loop.sh`.
-
-What it changes, in the prompt every build loop gets (two lines and a comment, plus tests):
-- A loop's research and review subagents use their scratch directory for working files and return their report in their final message; "background agents" becomes "agents that outlive your run", since the Agent tool runs every subagent in the background.
-- A new line: wait inside your turn, by short reads for a reviewer's report or one bounded `timeout 540 … until test -e` call for a file; no `run_in_background` or Monitor; at most 30 minutes for any one wait, then end `handoff: stopped`, naming what did not finish.
-- The loop checked both in its own run: reviewers' reports (21 s and 167 s) arrived between its tool calls, and the bounded wait command ran and returned 0 and 124 as expected. The 30-minute bound is a guess for a full code-review round, which has not been timed.
-- Success measure, in the research doc: early hand-backs over the next 20 dispatches; 3 or more means one `git revert`.
-
-Branch tip 6505ccec60db9a64ab4dfdb9061c0d014c021636. `--check`'s lines, as printed:
-
-> ok docs/working/briefs/2026-11-19-loop-wait-rule.md 6505ccec60db9a64ab4dfdb9061c0d014c021636 5337d3de5ee9d3f8d407fa6adbcc9ec72ff55771
-> path docs/working/briefs/2026-11-19-loop-wait-rule.md A docs/reviews/code-review-rubric-2026-11-20-fix-loop-wait-rule.md
-> path docs/working/briefs/2026-11-19-loop-wait-rule.md M docs/working/briefs/2026-11-19-loop-wait-rule.md
-> path docs/working/briefs/2026-11-19-loop-wait-rule.md A docs/working/research-2026-11-19-loop-wait-rule.md
-> path docs/working/briefs/2026-11-19-loop-wait-rule.md M scripts/build-loop.sh
-> path docs/working/briefs/2026-11-19-loop-wait-rule.md M test/scripts/build-loop-dispatch.bats
-> rubric docs/working/briefs/2026-11-19-loop-wait-rule.md: clean docs/reviews/code-review-rubric-2026-11-20-fix-loop-wait-rule.md: 0 red and 2 amber rows, none open
-
-`scripts/build-loop.sh` is gate code (self-merge's floor would have refused it). The rubric's two ambers ("30 minutes at most in all" was ambiguous; the success thresholds had been loosened) were fixed on the branch.
-
-**What an attacker would want here:** the dispatch prompt is text every loop obeys; an outside party who could get words into it (a brief's text reaches only the loop's reading, not this prompt) could steer loops. This change adds fixed text only, with no new input from a brief or repo file, and the one `$1` is escaped so it prints literally.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] merge** | The cycle merges 6505ccec next iteration; it ships at the next release | Reading the diff above | Loops end `stopped` on a slow review round; one `git revert` |
-| **[2] drop** | The brief closes; loops keep the old prompt | None | Early hand-backs and refused report files go on |
-| **[3] changes needed** | Write what to change; the note goes back to the loop | Writing the note | A further round before it lands |
-
-- **Interim:** nothing merges; loops run the old prompt.
-
-### Q-315 · merge-2026-11-19-code-review-lever3-correction-e100fc0dd7c4
-**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** ANSWERED
-Q-315: [1]
-
-Merge the code-review skill's correction of its prompt-cache claims (decision 032's "lever #3"), with the decision record's amendment?
-
-**If you say no:** the code-review skill keeps saying that inlining the shared review context makes the prompt cache serve it to every critic, which the A8 measurement and its cache probe (merged 358c2332 and 9e89a31e) showed saves nothing on the Agent-tool path, and it keeps telling the orchestrator to paste each critic's skill text into its prompt.
-
-- **Why it's yours:** you asked in session for this review of decision 032 and what rests on it, and the branch amends a decision record (`docs/decisions/032-review-loop-token-reduction-levers.md`), which the cycle never self-merges.
-- **Read:** the brief `docs/working/briefs/2026-11-19-code-review-lever3-correction.md`; on the branch, `docs/working/research-2026-11-19-code-review-lever3-correction.md`. Show the diff: `git diff main...e100fc0dd7c4d73d30fe680df956680795e5f188`.
-
-What it changes:
-- `skills/code-review/SKILL.md`: the cache-saving and cross-pass "warm cache" claims are rewritten to what A8 found. The "only the tail varies" rule and the stable-first part order go, since they existed only for the cache. Kept, with their own reasons: one shared block included verbatim (every critic reviews the same material, so Stage 3 can compare findings), fact-check replicates that differ only in output path (decision 031's disagreement measure), inlining the diff and enclosing files (decision 021's enclosing-file context), and the 25k budget (context window).
-- Critics get their skill file's path and read it themselves instead of having it pasted in (all 9 A8 agents did this); pasting stays as a fallback.
-- Decision 032 gets an amendment; `test/skills/code-review-context-delivery.bats` gains 3 cases, which fail on the old skill.
-- Not done here, filed for later (roadmap Now 4): the same two claims in `skills/draft-review/`, `skills/matrix-analysis/`, `workflows/divergent-design.md`, `patterns/orchestrated-review.md` and `guides/sub-agent-briefing.md`.
-
-Branch tip e100fc0dd7c4d73d30fe680df956680795e5f188. `--check`'s lines, as printed:
-
-> ok docs/working/briefs/2026-11-19-code-review-lever3-correction.md e100fc0dd7c4d73d30fe680df956680795e5f188 72998e6f2120e660bc44a363cfc6fb3872e92322
-> path docs/working/briefs/2026-11-19-code-review-lever3-correction.md M docs/decisions/032-review-loop-token-reduction-levers.md
-> path docs/working/briefs/2026-11-19-code-review-lever3-correction.md M docs/working/briefs/2026-11-19-code-review-lever3-correction.md
-> path docs/working/briefs/2026-11-19-code-review-lever3-correction.md A docs/working/research-2026-11-19-code-review-lever3-correction.md
-> path docs/working/briefs/2026-11-19-code-review-lever3-correction.md M skills/code-review/SKILL.md
-> path docs/working/briefs/2026-11-19-code-review-lever3-correction.md M test/skills/code-review-context-delivery.bats
-> rubric docs/working/briefs/2026-11-19-code-review-lever3-correction.md: none: fix/code-review-lever3-correction changes 2 paths outside docs/ and adds or changes no code-review rubric under docs/reviews/
-
-Two things the lines above do not show. First, the branch has no committed code-review rubric: its loop ran three fresh-reviewer rounds (the last clean) recorded in its research doc, not a code-review pass. Second, the full health check passed on a tree partway through round 2's edits, and its rerun on the final tree was stopped by the system for low memory; the 13-case contract test and the 11 code-review bats files passed on the final edits (34/34 and 204/204). No path is gate code, an instruction file or a dot path.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] merge** | The cycle merges e100fc0d next iteration, after its health check runs | Reading the diff | A review pass reads its skill text by path and an agent misses part of it; one `git revert` |
-| **[2] drop** | The brief closes; the skill keeps its old claims | None | The skill keeps a measured-false rationale |
-| **[3] changes needed** | Write what to change; the note goes back to the loop | Writing the note | A further round |
-
-- **Interim:** nothing merges.
-
 ### Q-316 · blessed-config-line
 **Needs:** you: terminal · **Opened:** 2026-11-19 · **Status:** OPEN
 
@@ -273,3 +144,34 @@ cc-isolated --list 2>&1 | grep -i 'blessed config'
 **Pass:** a line `Blessed config HASH — verified live: NO (run: cc-isolated --probe-only <repo>)` (or `verified live: yes` if you have since run a probe). **Send back:** `Q-316:` and that line.
 
 - **Interim:** Q-167 waits; the `Verified live:` and `Next:` lines the bless printed are not asked for again (the watch says how the next release entry captures them).
+
+### Q-317 · image-lag
+**Needs:** you: terminal · **Opened:** 2026-11-19 · **Status:** OPEN
+
+Install the release that carries the build-loop prompt's new wait rule (Q-314) and the code-review skill's corrected cache text (Q-315): run the one paste below on the host.
+
+**If you say no:** sessions keep running the image built from 0feaf080, so build loops keep the old prompt (they may hand back early while a reviewer runs, and their reviewers keep trying to save report files that get refused), and review passes keep the old code-review skill text. Nothing breaks.
+
+- **C (the image's commit):** 0feaf08085b524c0c4345c52f8e285d842558f23 · **M (main's commit):** d383a48423772b52000eb4878d7e54dd0fc79756
+- **Merged without your review** (all five change only research docs under `docs/`, which the image does not carry):
+  - 74b9181f Merge branch 'docs/live-verify-merge-head-count' (build-loop self-merge)
+  - 8ffddfaf Merge branch 'docs/herald-friction-triage' (build-loop self-merge)
+  - d6c987f3 Merge branch 'docs/loops-wait-foreground' (build-loop self-merge)
+  - a8a0a496 Merge branch 'docs/subagent-report-files-listing' (build-loop self-merge)
+  - 7c137d5d Merge branch 'docs/generated-file-conflicts' (build-loop self-merge)
+- **What changes for you:**
+  - acbff6c6 (you approved it, Q-314 [1]): the build-loop dispatch prompt tells a loop to wait inside its turn for reviewers and files (at most 30 minutes per wait, then a `stopped` marker), and has its subagents return reports as text.
+  - d383a484 (you approved it, Q-315 [1]): the code-review skill drops its prompt-cache saving claims and the rules that existed only for them; critics read their skill file by path; decision 032 is amended.
+  - The routine rest: 11 dev-cycle lands.
+- **Full list:** `git -c log.showSignature=false log --first-parent --format='%h %s' 0feaf08085b524c0c4345c52f8e285d842558f23..d383a48423772b52000eb4878d7e54dd0fc79756`
+- **Paths changed outside `docs/` (23 under `docs/` too, which the image does not carry):** `scripts/build-loop.sh`, `skills/code-review/SKILL.md`, `test/scripts/build-loop-dispatch.bats`, `test/skills/code-review-context-delivery.bats`
+
+Run this on the host, in your claude-workflows checkout at main's tip, then start a new sandbox session:
+
+```
+sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "d383a48423772b52000eb4878d7e54dd0fc79756:$p")"; then n=$((n+1)); else echo "release refused: $p changed after d383a48423772b52000eb4878d7e54dd0fc79756: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
+```
+
+**Pass:** the installer finishes without a `release refused` line. **Send back:** `Q-317: done`. If it re-blesses, you can add `| tee "$TMPDIR/install.log"` to the end of the paste and send back `grep -E 'Verified live:|^Next:' "$TMPDIR/install.log"` (two lines) for watch Q-167; optional.
+
+- **Interim:** the image's gate (0feaf080) runs; nothing breaks.

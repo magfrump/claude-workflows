@@ -61,19 +61,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   is the owner's: Q-302. First step after the answer: compare its gaps and causes with this
   repo's, and file any cause the fixes here do not cover.
 
-- **Agent: code-review lever #3 follow-ons in other files** (filed 2026-11-19, from the lever
-  #3 loop's report; not built on its branch, by its brief). Motive: the same two claims the
-  lever #3 correction removes from `skills/code-review/SKILL.md` also live elsewhere: the
-  "paste each sub-agent's skill text, it cannot read your files" rule in
-  `skills/draft-review/SKILL.md` (:172, :231-233, :560), `skills/matrix-analysis/SKILL.md`
-  (:116, :422) and `workflows/divergent-design.md` (:213); the "cacheable prefix" claim in
-  `patterns/orchestrated-review.md` (:151) and `guides/sub-agent-briefing.md` (:78). Also:
-  rubric row A7 in `docs/reviews/code-review-rubric-2026-08-07-main.md` reads Fixed for a
-  cross-pass cache warmth that does not exist on this path, and decision-log row 35 counts
-  10 contract tests where there are now 13. First step: once the lever #3 correction merges
-  (its wording is the model), one review brief over these files; `workflows/` is a never
-  glob, so review.
-
 - **Agent: Step 0 tests worktree creation first, and names where a stop goes with no worktree** (filed 2026-11-19, step 6; moved from Ideas: it carries reported friction).
   (brainstorm 2026-11-16). Signal: philosophy-research F-018, a read-only `.git/worktrees`
   stopped an iteration with nowhere to file the stop; decision-log row 88 keeps worktrees
@@ -109,39 +96,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
-- **Agent: code-review: correct the lever #3 cache-saving text, and the choices built on it**
-  (filed 2026-11-19, from the cache probe, 9e89a31e; the owner asked in session to review the
-  decision and what else rests on it). Motive: decision 032 adopted lever #3 ("inline the
-  shared review context so the prompt cache serves it to every agent") on a 20-40% estimate
-  taken from the cross-model harness, which calls the API directly and sets its own cache
-  breakpoints; the production loop runs through Claude Code's Agent tool, which sets them
-  itself, and that transport was never probed before 2f5ad0b restructured the skill around
-  it. The probe shows the saving is zero on this path. What rests on the assumption, in
-  `skills/code-review/SKILL.md` "Inline shared-context prefix" and log rows 33-35:
-  (a) the cache-saving claims (:274-277, :307-310, :322-323, :352-354) and the cross-pass
-  warmth claim (:347-351, rubric row A7): wrong, rewrite; (b) the byte-identical, stable-first
-  part order and "only the tail varies" rule: a constraint with no benefit now, relax or keep
-  only where it costs nothing; (c) inlining the diff and enclosing files itself: it still has
-  a recall rationale of its own (decision 021's Stage-1 enclosing-file context, which caught
-  csp's gold R1 in the 2026-08-06 baseline), so it stays unless Q-308's self-read arm shows
-  it costs more than it finds; (d) the 25k budget: keep, re-justified on context-window
-  grounds alone (log row 35). Also found: the skill says to paste each sub-agent's skill text
-  into its prompt because "sub-agents cannot read your files" (:461, :879, :1293), which
-  `guides/sub-agent-briefing.md` contradicts ("pass the path, not the contents") and both A8
-  loops disproved by having agents read the file; pasting was the other half of why prompts
-  were identical. First step: one review brief over (a), (b) and the pasting rule, with an
-  amendment to decision 032 (a `docs/decisions/` change, so review) and `test/skills/code-review-context-delivery.bats`
-  updated; (c) and (d) wait on Q-308 (after the release, the owner's call). Briefed 2026-11-19 on the owner's
-  go-ahead in session: `docs/working/briefs/2026-11-19-code-review-lever3-correction.md`.
-
-- **Agent: Tell build loops to wait inside their turn** (filed 2026-11-19, step 6; philosophy-research
-  F-012 and two early hand-backs here on 2026-11-19). Motive: every recorded early hand-back came
-  while a loop waited for a reviewer, and each then waited the full two-hour rule. The research
-  (d6c987f3, `docs/working/research-2026-11-19-loops-wait-foreground.md`) picked one wait rule in
-  the dispatch prompt. Briefed 2026-11-19 (iteration 2351), review (gate code):
-  `docs/working/briefs/2026-11-19-loop-wait-rule.md`. The same brief carries the report-file
-  fix (herald F-010 remainder: loops' subagents return reports as text), which edits the same line.
-
 - **Agent: The cycle cannot create a project's harness-feedback file** (filed 2026-11-19, step 6; moved from Ideas: it carries reported friction). Signal: philosophy-research
   F-002: `--check-fix` refuses every new file, so the owner made it by hand. Allow
   `harness-feedback.py init` and appends in-cycle outside claude-workflows.
@@ -151,8 +105,23 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 - **A8 settling runs: csp self-read and corpus inline** (Q-308 [1], owner in session 2026-11-19).
   Motive: the first A8 pass found inlining saves nothing on the Agent-tool path, leaving its net
   cost and recall effect unmeasured; these two passes measure both. Briefed (iteration 0056 UTC):
-  `docs/working/briefs/2026-11-19-a8-settling-runs.md`; dispatched once the lever #3 correction
-  (Q-315 [1]) merges, so both passes run the corrected skill.
+  `docs/working/briefs/2026-11-19-a8-settling-runs.md`; dispatched 2026-11-19 (iteration 0110
+  UTC), after the lever #3 correction merged (d383a484), so both passes run the corrected skill.
+
+- **Agent: code-review lever #3 follow-ons in other files** (filed 2026-11-19, from the lever
+  #3 loop's report; not built on its branch, by its brief). Motive: the same two claims the
+  lever #3 correction removes from `skills/code-review/SKILL.md` also live elsewhere: the
+  "paste each sub-agent's skill text, it cannot read your files" rule in
+  `skills/draft-review/SKILL.md` (:172, :231-233, :560), `skills/matrix-analysis/SKILL.md`
+  (:116, :422) and `workflows/divergent-design.md` (:213); the "cacheable prefix" claim in
+  `patterns/orchestrated-review.md` (:151) and `guides/sub-agent-briefing.md` (:78). Also:
+  rubric row A7 in `docs/reviews/code-review-rubric-2026-08-07-main.md` reads Fixed for a
+  cross-pass cache warmth that does not exist on this path, and decision-log row 35 counts
+  10 contract tests where there are now 13. First step: once the lever #3 correction merges
+  (its wording is the model), one review brief over these files; `workflows/` is a never
+  glob, so review.
+  2026-11-19: briefed (iteration 0110 UTC), the correction having merged (d383a484):
+  `docs/working/briefs/2026-11-19-lever3-followons.md`.
 
 ## Next
 
@@ -501,6 +470,18 @@ Unranked. Each names the signal that motivates it.
 ## Done
 
 Items finished since the last cycle, with the merge.
+
+- **Build loops wait inside their turn; their subagents return reports as text.** Done acbff6c6
+  (approved merge, Q-314 [1]), brief `docs/working/briefs/closed/2026-11-19-loop-wait-rule.md`,
+  research `docs/working/research-2026-11-19-loop-wait-rule.md`. Gate code: live at the next
+  release (Q-317). Success measure: early hand-backs over the next 20 dispatches; 3 or more
+  means revert.
+
+- **Code-review: the lever #3 cache claims corrected.** Done d383a484 (approved merge, Q-315 [1]),
+  brief `docs/working/briefs/closed/2026-11-19-code-review-lever3-correction.md`, research
+  `docs/working/research-2026-11-19-code-review-lever3-correction.md`; decision 032 amended. The
+  same claims elsewhere are the Now item "code-review lever #3 follow-ons in other files", now
+  unblocked.
 
 - **Generated-file conflicts: researched.** Done 7c137d5d (self-merge), brief
   `docs/working/briefs/closed/2026-11-19-generated-file-conflicts.md`, research
