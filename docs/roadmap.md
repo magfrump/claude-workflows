@@ -95,7 +95,12 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   an Agent call move the subagent's start directory?), then divergent design over its four
   approaches. Gate code, so a review merge.
   2026-11-20: probe and pick briefed (iteration 2107) as research only, self-merge:
-  `docs/working/briefs/2026-11-20-loop-start-dir-research.md`.
+  `docs/working/briefs/closed/2026-11-20-loop-start-dir-research.md`, done 319559d9
+  (`docs/working/research-2026-11-20-loop-start-dir-research.md`): about 45% of loops (31 of 69) were
+  refused at least once; subagents run in the main shell's cwd, which the land's `cd WT && …` leaves
+  in WT. Pick R2 (Path A): park the shell with a bare `cd WTB` call, remove in a later call. Built
+  as a review brief (iteration 2133): `docs/working/briefs/2026-11-20-remove-worktrees-parked-shell.md`.
+  The orchestrator applies R2 by hand from iteration 2133 on.
 
 - **Agent: A per-repo health-checkout preparation line** (filed 2026-11-19, step 6; moved from Ideas: it carries reported friction). (brainstorm 2026-11-16). Signal:
   philosophy-research F-016: a fresh health checkout has no Lean build cache (1.9 GB), so
