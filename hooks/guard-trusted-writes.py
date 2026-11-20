@@ -39,6 +39,18 @@ Two tiers of policy path:
           Legitimately edited. Gated to "ask" only when the session is web-tainted.
           The ask lists the session's last few fetches from the marker's log
           (fetch_summary(); web-taint-mark.py writes it) and names the marker path.
+          Worktrees (file tools only): a path inside a linked git worktree under a
+          `.claude/` dir (`.claude/wt-*/`, `.claude/worktrees/<name>/`) is judged by
+          its path RELATIVE to the worktree root, so an ordinary file there gets no
+          opinion, as in the main checkout. The worktree's own policy files stay SOFT:
+          its `.claude/`, skills, agents, commands, memories, CLAUDE.md, AGENTS.md,
+          `hooks/`, `settings*.json` and `.git`. The root counts only when verified
+          from git's own files (a regular `.git` file whose `gitdir:` sits in a
+          `worktrees/` dir and points back), the root is not a symlink, and it is
+          not in, at or around the config dir or at or around home. Every
+          candidate (as given, `..`-folded, resolved) is judged, and the path must
+          resolve inside the same worktree. Anything unverifiable or erroring keeps
+          the blanket `.claude` SOFT (fail closed). HARD is checked first, unchanged.
 
 Bash is classified by command TEXT, so it can't resolve a path, and the shell can spell
 one many ways. The global tier is therefore decided by CO-OCCURRENCE in the text:
@@ -48,7 +60,8 @@ one many ways. The global tier is therefore decided by CO-OCCURRENCE in the text
           `global-instructions`, `CLAUDE_CONFIG_DIR`, the literal config dir); OR a
           settings*.json / hooks mention together with `.claude` / the config dir.
           Conservative: a heredoc that names ~/.claude/CLAUDE.md in prose is denied.
-          No worktree exemption: Q-048 [2]'s exemption for agent worktrees
+          No worktree exemption for Bash (the file tools have one, above, because
+          their path can be resolved): Q-048 [2]'s exemption for agent worktrees
           (`.claude/wt-*`, `.claude/worktrees/*`) was tried and withdrawn after
           three review passes each found bypasses (quote-split `..`, `cd ..`/`../`,
           same-command swaps, `-t..`, brace expansion, `env -C`, link-creating
@@ -70,7 +83,7 @@ documented, version-independent defer (avoids the headless tool_deferred semanti
 permissionDecision:"defer").
 """
 from __future__ import annotations
-import sys, os, re, json, unicodedata
+import sys, os, re, json, stat, unicodedata
 from pathlib import Path
 
 TAINT_DIR = Path(os.environ.get("CC_WEB_TAINT_DIR", "/tmp/cc-web-taint"))
@@ -221,6 +234,106 @@ def _is_hard(cand: Path, dirs) -> bool:
         return True
     return False
 
+# ── linked worktrees under a `.claude/` dir (file tools only) ───────────────
+# `.claude/worktrees/<name>/` (Claude Code's own) and `.claude/wt-*/` (this
+# harness's) hold whole checkouts. Without this, the blanket `.claude` SOFT rule
+# makes every edit there ask once a session is web-tainted. A path inside one is
+# classified by its path RELATIVE to the worktree root, but only when the root is
+# a verified linked worktree; anything unverifiable keeps today's SOFT (H2).
+_SOFT_SEGS = {"skills", "memories", "commands", "agents"}
+
+def _is_soft_parts(parts) -> bool:
+    """The SOFT name rules, applied to a sequence of path segments."""
+    if not parts:
+        return False
+    low = [seg.lower() for seg in parts]
+    name = low[-1]
+    suffix = Path(name).suffix
+    if set(low) & _SOFT_SEGS and suffix in (".md", ".txt", ""):
+        return True
+    if name in ("claude.md", "agents.md", "claude.local.md", "managed-settings.json") \
+            or suffix == ".mdc":
+        return True
+    return ".claude" in low
+
+def _worktree_root(cand: Path):
+    """The innermost `.claude/wt-*` or `.claude/worktrees/<name>` prefix of `cand`
+    (exact case: a case variant is not a worktree root and stays SOFT), or None."""
+    parts = cand.parts
+    for i in range(len(parts) - 2, -1, -1):
+        if parts[i] != ".claude":
+            continue
+        nxt = parts[i + 1]
+        if nxt.startswith("wt-") and len(parts) > i + 2:
+            return Path(*parts[:i + 2])
+        if nxt == "worktrees" and len(parts) > i + 3:
+            return Path(*parts[:i + 3])
+    return None
+
+def _is_linked_worktree(root: Path):
+    """The real path of `root` when it is a linked git worktree outside the config
+    dir and home, else None. Checked from the files git itself writes: `root/.git`
+    is a regular file `gitdir: <G>`, G sits in a `worktrees/` dir, and G/gitdir
+    points back at `root/.git`. Any error is None (not verified: stays SOFT)."""
+    try:
+        if not root.is_absolute():        # no cwd to anchor a relative path to
+            return None
+        if os.path.islink(root):          # a symlinked root may lead anywhere
+            return None
+        real = Path(os.path.realpath(root))
+        dotgit = real / ".git"
+        st = os.lstat(dotgit)
+        if not stat.S_ISREG(st.st_mode) or st.st_size > 4096:
+            return None
+        with open(dotgit, encoding="utf-8") as f:
+            line = f.readline().strip()
+        if not line.startswith("gitdir: "):
+            return None
+        g = Path(line[len("gitdir: "):].strip())
+        g = Path(os.path.realpath(g if g.is_absolute() else real / g))
+        if g.parent.name != "worktrees" or not g.is_dir():
+            return None
+        with open(g / "gitdir", encoding="utf-8") as f:
+            back = f.readline().strip()
+        if not back:
+            return None
+        b = Path(back)        # a relative back-pointer is relative to G (worktree.useRelativePaths)
+        if Path(os.path.realpath(b if b.is_absolute() else g / b)) != dotgit:
+            return None
+        # Never inside the config dir or home's top level, and never a root that
+        # holds them: their SOFT-only files (memories, skills) keep the ask.
+        for d in GLOBAL_DIRS:             # in, at, or holding the config dir
+            if real == d or d in real.parents or real in d.parents:
+                return None
+        for h in (HOME, _safe_resolve(HOME)):   # at or holding home (~/CLAUDE.md)
+            if real == h or real in h.parents:
+                return None
+        return real
+    except Exception:
+        return None
+
+def _soft_in_worktree(cand: Path) -> bool:
+    """SOFT for `cand`, judged relative to its worktree root when it has a verified
+    one. The worktree's own policy files stay SOFT: its `.claude/`, skills, agents,
+    commands, memories, CLAUDE.md/AGENTS.md, plus `hooks/`, `settings*.json` and
+    `.git` (in this repo a checkout's hooks and settings are the harness's own)."""
+    root = _worktree_root(cand)
+    real = _is_linked_worktree(root) if root is not None else None
+    if real is None:
+        return _is_soft_parts(cand.parts)
+    try:
+        rel = Path(os.path.realpath(cand)).relative_to(real)
+    except ValueError:
+        return True                       # resolves out of its worktree: SOFT
+    if not rel.parts:
+        return True
+    low = [seg.lower() for seg in rel.parts]
+    if "hooks" in low or low[0] == ".git":
+        return True
+    if low[-1].startswith("settings") and low[-1].endswith(".json"):
+        return True
+    return _is_soft_parts(rel.parts)
+
 def classify_path(fp: str) -> str:
     """"hard" (a deny rule names this string: defer), "hard-resolved" (HARD only
     after resolve(), no deny rule names it: deny), "soft", or "none"."""
@@ -246,15 +359,10 @@ def classify_path(fp: str) -> str:
     # SOFT. A project's own .claude/ (settings, hooks) lands here (Q-026), and so does
     # managed-settings.json: no deny rule names it, so deferring would leave it ungated.
     # Case-folded on purpose: SOFT only ever asks, so over-matching is safe.
+    # A candidate inside a verified linked worktree under `.claude/` is judged by its
+    # path relative to that worktree (_soft_in_worktree); any candidate SOFT is SOFT.
     for cand in cands:
-        low = {seg.lower() for seg in cand.parts}
-        name = cand.name.lower()
-        if low & {"skills", "memories", "commands", "agents"} and cand.suffix.lower() in (".md", ".txt", ""):
-            return "soft"
-        if name in ("claude.md", "agents.md", "claude.local.md", "managed-settings.json") \
-                or cand.suffix.lower() == ".mdc":
-            return "soft"
-        if ".claude" in low:
+        if _soft_in_worktree(cand):
             return "soft"
     return "none"
 
