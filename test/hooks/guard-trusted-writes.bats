@@ -825,6 +825,47 @@ assert_file_decisions() {  # $1 = expected (ask|defer|deny), $2 = session, rest 
   done
 }
 
+@test "worktree taint: a symlinked policy name inside a worktree keeps its ask (review R1)" {
+  worktree_layout
+  local w="$REPO/.claude/wt-foo"
+  mkdir -p "$w/docs/hk" "$w/realskills" "$w/shared-claude/rules" "$w/sub"
+  echo x > "$w/docs/x.md"
+  ln -s docs/x.md "$w/CLAUDE.md"
+  ln -s docs/x.md "$w/AGENTS.md"
+  ln -s ../docs/x.md "$w/sub/CLAUDE.local.md"
+  ln -s docs/x.md "$w/settings.json"
+  ln -s docs/hk "$w/hooks"
+  ln -s realskills "$w/skills"
+  ln -s shared-claude "$w/.claude"
+  taint sess1
+  assert_file_decisions ask sess1 \
+    "$w/CLAUDE.md" "$w/AGENTS.md" "$w/sub/CLAUDE.local.md" "$w/settings.json" \
+    "$w/hooks/x.sh" "$w/skills/x.md" "$w/.claude/rules/r.md"
+  # An ordinary name pointing at an ordinary file still has no opinion.
+  ln -s docs/x.md "$w/notes.md"
+  assert_file_decisions defer sess1 "$w/notes.md"
+}
+
+@test "worktree taint: hooks/ and settings*.json ask only at the worktree root (review A1)" {
+  worktree_layout
+  taint sess1
+  local w="$REPO/.claude/wt-foo"
+  assert_file_decisions ask sess1 "$w/hooks/x.sh" "$w/settings.json" "$w/.git"
+  assert_file_decisions defer sess1 "$w/src/hooks/useX.ts" "$w/.vscode/settings.json" \
+    "$w/config/settings.json"
+}
+
+@test "worktree taint: a symlink loop too deep to resolve fails closed (review C1)" {
+  worktree_layout
+  taint sess1
+  local c="$REPO/.claude/wt-foo/c" i
+  mkdir -p "$c"
+  echo x > "$c/l0"
+  for i in $(seq 1 1500); do ln -s "l$((i - 1))" "$c/l$i"; done
+  guard "$(file_payload Edit "$c/l1500" sess1)"
+  assert_decision ask
+}
+
 @test "worktree taint: HARD paths are unchanged (defer as given, deny when reached through a worktree link)" {
   worktree_layout
   mkdir -p "$HOME/.claude/hooks"

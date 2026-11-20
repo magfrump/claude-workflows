@@ -43,14 +43,17 @@ Two tiers of policy path:
           `.claude/` dir (`.claude/wt-*/`, `.claude/worktrees/<name>/`) is judged by
           its path RELATIVE to the worktree root, so an ordinary file there gets no
           opinion, as in the main checkout. The worktree's own policy files stay SOFT:
-          its `.claude/`, skills, agents, commands, memories, CLAUDE.md, AGENTS.md,
-          `hooks/`, `settings*.json` and `.git`. The root counts only when verified
-          from git's own files (a regular `.git` file whose `gitdir:` sits in a
-          `worktrees/` dir and points back), the root is not a symlink, and it is
-          not in, at or around the config dir or at or around home. Every
-          candidate (as given, `..`-folded, resolved) is judged, and the path must
-          resolve inside the same worktree. Anything unverifiable or erroring keeps
-          the blanket `.claude` SOFT (fail closed). HARD is checked first, unchanged.
+          its `.claude/`, skills, agents, commands, memories, CLAUDE.md, AGENTS.md
+          anywhere in it, and its root `hooks/`, root `settings*.json` and `.git`.
+          The root counts only when verified from git's own files (a regular `.git`
+          file whose `gitdir:` sits in a `worktrees/` dir and points back), the root
+          is not a symlink, and it is not in, at or holding the config dir, nor at or
+          holding home. Every candidate (as given, `..`-folded, resolved) is judged,
+          each relative to the root both as written and resolved, so a symlinked
+          CLAUDE.md keeps its ask and a link out of the worktree does too. Anything
+          unverifiable or erroring keeps the blanket `.claude` SOFT (fail closed).
+          HARD is checked first, unchanged. Unlike the main checkout, a `hooks/` or
+          `settings*.json` at a worktree's root still asks.
 
 Bash is classified by command TEXT, so it can't resolve a path, and the shell can spell
 one many ways. The global tier is therefore decided by CO-OCCURRENCE in the text:
@@ -270,14 +273,14 @@ def _worktree_root(cand: Path):
             return Path(*parts[:i + 3])
     return None
 
-def _is_linked_worktree(root: Path):
-    """The real path of `root` when it is a linked git worktree outside the config
-    dir and home, else None. Checked from the files git itself writes: `root/.git`
+def _verified_worktree(root: Path):
+    """The real path of `root` when it is a linked git worktree that is not in, at
+    or holding the config dir, nor at or holding home; else None. Checked from the files git itself writes: `root/.git`
     is a regular file `gitdir: <G>`, G sits in a `worktrees/` dir, and G/gitdir
     points back at `root/.git`. Any error is None (not verified: stays SOFT)."""
     try:
-        if not root.is_absolute():        # no cwd to anchor a relative path to
-            return None
+        if not root.is_absolute():        # a relative candidate as written; its
+            return None                   # resolved form is anchored at the hook's cwd
         if os.path.islink(root):          # a symlinked root may lead anywhere
             return None
         real = Path(os.path.realpath(root))
@@ -293,6 +296,9 @@ def _is_linked_worktree(root: Path):
         g = Path(os.path.realpath(g if g.is_absolute() else real / g))
         if g.parent.name != "worktrees" or not g.is_dir():
             return None
+        gst = os.lstat(g / "gitdir")      # a FIFO here would block the hook
+        if not stat.S_ISREG(gst.st_mode) or gst.st_size > 4096:
+            return None
         with open(g / "gitdir", encoding="utf-8") as f:
             back = f.readline().strip()
         if not back:
@@ -300,8 +306,8 @@ def _is_linked_worktree(root: Path):
         b = Path(back)        # a relative back-pointer is relative to G (worktree.useRelativePaths)
         if Path(os.path.realpath(b if b.is_absolute() else g / b)) != dotgit:
             return None
-        # Never inside the config dir or home's top level, and never a root that
-        # holds them: their SOFT-only files (memories, skills) keep the ask.
+        # Never in, at or holding the config dir, nor at or holding home: their
+        # SOFT-only files (memories, skills) keep the ask.
         for d in GLOBAL_DIRS:             # in, at, or holding the config dir
             if real == d or d in real.parents or real in d.parents:
                 return None
@@ -312,27 +318,37 @@ def _is_linked_worktree(root: Path):
     except Exception:
         return None
 
-def _soft_in_worktree(cand: Path) -> bool:
-    """SOFT for `cand`, judged relative to its worktree root when it has a verified
-    one. The worktree's own policy files stay SOFT: its `.claude/`, skills, agents,
-    commands, memories, CLAUDE.md/AGENTS.md, plus `hooks/`, `settings*.json` and
-    `.git` (in this repo a checkout's hooks and settings are the harness's own)."""
-    root = _worktree_root(cand)
-    real = _is_linked_worktree(root) if root is not None else None
-    if real is None:
-        return _is_soft_parts(cand.parts)
-    try:
-        rel = Path(os.path.realpath(cand)).relative_to(real)
-    except ValueError:
-        return True                       # resolves out of its worktree: SOFT
-    if not rel.parts:
-        return True
+def _is_soft_rel(rel: Path) -> bool:
+    """SOFT for a path relative to a worktree root: the SOFT name rules, plus the
+    root's own `hooks/`, `settings*.json` and `.git` (in this repo a checkout's
+    root hooks and settings are the harness's own; `.git` redirects git's hooks)."""
+    if not rel.parts or rel.parts[0] == "..":
+        return True                       # the root itself, or above it
     low = [seg.lower() for seg in rel.parts]
-    if "hooks" in low or low[0] == ".git":
+    if low[0] in ("hooks", ".git"):
         return True
-    if low[-1].startswith("settings") and low[-1].endswith(".json"):
+    if len(low) == 1 and low[0].startswith("settings") and low[0].endswith(".json"):
         return True
     return _is_soft_parts(rel.parts)
+
+def _is_soft_path(cand: Path) -> bool:
+    """SOFT for `cand`. Inside a verified linked worktree under `.claude/`, judged
+    relative to the root both AS WRITTEN (a symlinked CLAUDE.md or hooks/ keeps its
+    policy name) and RESOLVED (a link out of the worktree keeps the ask); SOFT if
+    either is. Anything that errors is SOFT (H2)."""
+    try:
+        root = _worktree_root(cand)
+        real = _verified_worktree(root) if root is not None else None
+        if real is None:
+            return _is_soft_parts(cand.parts)
+        try:
+            lexical = Path(os.path.normpath(cand)).relative_to(os.path.normpath(root))
+            resolved = Path(os.path.realpath(cand)).relative_to(real)
+        except ValueError:
+            return True                   # leaves its worktree: SOFT
+        return _is_soft_rel(lexical) or _is_soft_rel(resolved)
+    except Exception:
+        return True
 
 def classify_path(fp: str) -> str:
     """"hard" (a deny rule names this string: defer), "hard-resolved" (HARD only
@@ -360,9 +376,9 @@ def classify_path(fp: str) -> str:
     # managed-settings.json: no deny rule names it, so deferring would leave it ungated.
     # Case-folded on purpose: SOFT only ever asks, so over-matching is safe.
     # A candidate inside a verified linked worktree under `.claude/` is judged by its
-    # path relative to that worktree (_soft_in_worktree); any candidate SOFT is SOFT.
+    # path relative to that worktree (_is_soft_path); any candidate SOFT is SOFT.
     for cand in cands:
-        if _soft_in_worktree(cand):
+        if _is_soft_path(cand):
             return "soft"
     return "none"
 
