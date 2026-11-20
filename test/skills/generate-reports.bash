@@ -151,8 +151,9 @@ TOOLS_ARG="$FIXTURE_TOOLS"
 [ "$FIXTURE_TOOLS" = "none" ] && TOOLS_ARG=""
 
 # The runner's web tools, granted as well as offered. Headless claude -p denies
-# WebSearch and WebFetch without a grant (Read, Grep, Glob and Agent need none),
-# and --restricted ignores the settings files that could allow them, so every
+# WebSearch and WebFetch without a grant (Read, Grep, Glob and Agent runners
+# generate without one), and --restricted ignores the settings files that
+# could allow them, so every
 # fact-check report came out all Unverified (finding F1 of the 2026-11-19
 # regeneration). Probed 2026-11-20 on CLI 2.1.329: --tools WebSearch,WebFetch
 # alone left WebFetch in permission_denials; adding --allowedTools with those
@@ -233,7 +234,8 @@ generate_one() {
   # An empty --tools value is its own argv element; the CLI reads it as "no
   # tools" and does not consume the flag after it.
   claude_args+=(--tools "$TOOLS_ARG")
-  # The CLI's --allowedTools is variadic; only flags (and their values) follow.
+  # The CLI's --allowedTools is variadic: only generator-built flags follow, and
+  # CLAUDE_FLAGS must start with a flag or its first word becomes a tool name.
   if [ -n "$WEB_GRANT" ]; then
     claude_args+=(--allowedTools "$WEB_GRANT")
   fi

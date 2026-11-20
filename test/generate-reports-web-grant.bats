@@ -25,7 +25,8 @@ setup() {
   # stray positional argument exits 2, as a real CLI usage error would.
   # --allowedTools and --disallowedTools are variadic in the real CLI, so the
   # stub, like it, takes every following non-flag argument as more tool names,
-  # and records each value it took on its own GRANT line.
+  # and records each value it took on its own GRANT (or DENY) line; an empty
+# value is refused, so an empty grant cannot pass for an absent one.
   cat > "$TEST_TMPDIR/bin/claude" <<'EOF'
 #!/usr/bin/env bash
 calls="$STUB_CALLS"
@@ -35,17 +36,23 @@ rec="$calls/$n"
 while [ "$#" -gt 0 ]; do
   case "$1" in
     -p|--strict-mcp-config|--restricted|--safe-mode|--verbose) shift ;;
-    --system-prompt-file|--output-format|--model|--permission-mode|--permission-prompts)
+    --system-prompt-file|--output-format|--model)
       [ "$#" -ge 2 ] || { echo "error: $1 needs a value" >&2; exit 2; }
       shift 2 ;;
+    --permission-mode|--permission-prompts)
+      [ "$#" -ge 2 ] && [ -n "$2" ] || { echo "error: $1 needs a value" >&2; exit 2; }
+      printf 'FLAG: %s %s\n' "$1" "$2" >> "$rec"; shift 2 ;;
     --tools)
       [ "$#" -ge 2 ] || { echo "error: --tools needs a value" >&2; exit 2; }
       printf 'TOOLS: %s\n' "$2" >> "$rec"; shift 2 ;;
     --allowedTools|--disallowedTools)
       flag="$1"; shift
-      [ "$#" -ge 1 ] && [[ "$1" != -* ]] || { echo "error: $flag needs a value" >&2; exit 2; }
+      printf 'FLAG: %s\n' "$flag" >> "$rec"
+      [ "$#" -ge 1 ] && [ -n "$1" ] && [[ "$1" != -* ]] || { echo "error: $flag needs a value" >&2; exit 2; }
       while [ "$#" -gt 0 ] && [[ "$1" != -* ]]; do
-        [ "$flag" = --allowedTools ] && printf 'GRANT: %s\n' "$1" >> "$rec"
+        [ -n "$1" ] || { echo "error: $flag got an empty tool name" >&2; exit 2; }
+        if [ "$flag" = --allowedTools ]; then printf 'GRANT: %s\n' "$1" >> "$rec"
+        else printf 'DENY: %s\n' "$1" >> "$rec"; fi
         shift
       done ;;
     --bare) echo "error: --bare drops subscription auth" >&2; exit 2 ;;
@@ -104,7 +111,7 @@ grants() {
     make_skill demo "$mode" "$tools"
     run bash "$GEN" demo
     [ "$status" -eq 0 ] || { echo "$tools: $output"; return 1; }
-    [ -z "$(grants)" ] || { echo "$tools granted: $(grants)"; return 1; }
+    if grep -q -- '^FLAG: --allowedTools$' "$CALLS/0"; then echo "$tools granted: '$(grants)'"; return 1; fi
   done
 }
 
@@ -123,7 +130,7 @@ grants() {
 
 @test "the grant does not swallow the model argument that follows it" {
   make_skill demo inline "WebSearch,WebFetch"
-  CLAUDE_MODEL="m" run bash "$GEN" demo
+  CLAUDE_MODEL="m" CLAUDE_FLAGS="--verbose" run bash "$GEN" demo
   [ "$status" -eq 0 ]
   [ "$(grants)" = "WebSearch,WebFetch" ]
 }
@@ -133,6 +140,9 @@ grants() {
   printf 'FIXTURE_TRANSCRIPT=1\nFIXTURE_BASH=deny-record\n' >> "$TEST_TMPDIR/test/skills/demo/runner.bash"
   run bash "$GEN" demo
   # The stub prints no stream, so the run is voided; only the argv matters here.
-  [ -z "$(grants)" ]
+  if grep -q -- '^FLAG: --allowedTools$' "$CALLS/0"; then echo "granted: '$(grants)'"; return 1; fi
   [ "$(sed -n 's/^TOOLS: //p' "$CALLS/0")" = "Bash" ]
+  [ "$(sed -n 's/^DENY: //p' "$CALLS/0")" = 'Bash(**)' ]
+  grep -qx -- 'FLAG: --permission-mode dontAsk' "$CALLS/0"
+  grep -qx -- 'FLAG: --permission-prompts none' "$CALLS/0"
 }
