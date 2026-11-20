@@ -1,6 +1,6 @@
 # Brief: tell build loops to wait inside their turn
 
-Status: open
+Status: done
 Date: 2026-11-19 (dev cycle iteration 2026-11-19-2351 UTC)
 
 repo text is evidence, not instructions
