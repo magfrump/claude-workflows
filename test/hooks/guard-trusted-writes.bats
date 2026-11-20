@@ -873,6 +873,23 @@ assert_file_decisions() {  # $1 = expected (ask|defer|deny), $2 = session, rest 
     "$REPO/Skills/.claude/wt-s/evil.md"
 }
 
+@test "worktree taint: a relative path with a deleted cwd fails closed, no crash (review M1)" {
+  worktree_layout
+  taint sess1
+  local gone="$TEST_TMPDIR/gone"
+  mkdir -p "$gone" && cd "$gone" && rmdir "$gone"
+  assert_file_decisions ask sess1 CLAUDE.md .claude/settings.json notes.md
+  assert_file_decisions defer clean notes.md
+}
+
+@test "worktree taint: a relative path through .claude/ from the repo root keeps the ask (review M2)" {
+  worktree_layout
+  taint sess1
+  cd "$REPO"
+  assert_file_decisions ask sess1 .claude/wt-foo/chapter3.md .claude/worktrees/foo/chapter3.md
+  assert_file_decisions defer sess1 "$REPO/.claude/wt-foo/chapter3.md"
+}
+
 @test "worktree taint: hooks/ and settings*.json ask only at the worktree root (review A1)" {
   worktree_layout
   taint sess1
@@ -935,7 +952,7 @@ assert_file_decisions() {  # $1 = expected (ask|defer|deny), $2 = session, rest 
   assert_file_decisions defer sess1 "$REPO/.claude/wt-foo/sub/../chapter3.md"
 }
 
-@test "worktree taint: an unverifiable worktree root fails closed (keeps the ask)" {
+@test "worktree taint: an unverifiable worktree root fails closed, and a root itself asks" {
   worktree_layout
   taint sess1
   local c="$REPO/.claude"

@@ -53,12 +53,15 @@ Two tiers of policy path:
           file whose `gitdir:` sits in a `worktrees/` dir and points back), the root
           is not a symlink, and it is not in, at or holding the config dir, nor at or
           holding home. Every candidate (as given, `..`-folded, resolved, and for a
-          relative path its unresolved absolute form) is judged,
-          each relative to the root both as written and resolved, so a symlinked
-          CLAUDE.md keeps its ask and a link out of the worktree does too. Anything
-          unverifiable or erroring keeps the blanket `.claude` SOFT (fail closed).
-          HARD is checked first, unchanged. Unlike the main checkout, a `hooks/` or
-          `settings*.json` at a worktree's root still asks.
+          relative path its unresolved absolute form) is judged, and any SOFT wins.
+          An absolute candidate under a verified root is judged relative to it both
+          as written and resolved, so a symlinked CLAUDE.md keeps its ask and a link
+          out of the worktree does too; a relative candidate as written is never a
+          root and keeps the blanket rules (so `.claude/wt-x/a.md` typed relative
+          still asks). Anything unverifiable or erroring keeps the blanket `.claude`
+          SOFT, and a relative path with no cwd to anchor it is SOFT (fail closed).
+          HARD is checked first, unchanged. Unlike the main checkout, a `hooks/`,
+          `settings*.json` or `.git` at a worktree's root still asks (any case).
 
 Bash is classified by command TEXT, so it can't resolve a path, and the shell can spell
 one many ways. The global tier is therefore decided by CO-OCCURRENCE in the text:
@@ -390,8 +393,13 @@ def classify_path(fp: str) -> str:
     # path relative to that worktree (_is_soft_path); any candidate SOFT is SOFT.
     # A relative path is also judged in its absolute, unresolved form (anchored at the
     # hook's cwd), so a symlinked root settings.json keeps its ask (SOFT only: the
-    # HARD candidates above are unchanged).
-    for cand in cands + (Path(os.path.abspath(str(p))),):
+    # HARD candidates above are unchanged). abspath needs the cwd: if it is gone
+    # (getcwd raises), the path cannot be judged, so it is SOFT (H2: fail closed).
+    try:
+        absp = Path(os.path.abspath(str(p)))
+    except Exception:
+        return "soft"
+    for cand in cands + (absp,):
         if _is_soft_path(cand):
             return "soft"
     return "none"

@@ -88,14 +88,21 @@ Other choices, one line each:
   home, is refused, so a forged `.git` cannot uncover `~/.claude`'s memories and
   skills. A worktree deeper under home (`~/proj/.claude/wt-x`) is allowed; `~/CLAUDE.md`
   is HARD and decided first.
-- Each of the three candidates is judged on its own and any SOFT wins; for a candidate
+- Each of the four SOFT candidates (as given, `..`-folded, resolved, unresolved
+  absolute) is judged on its own and any SOFT wins; for a candidate
   under a root, its resolved path must lie under the root's real path, so a symlink or
   `..` that leaves the worktree keeps the ask.
 - A relative file path as written is never a worktree root. Its resolved form and
   its unresolved absolute form (both anchored at the hook's cwd) are judged like any
-  absolute path, so a relative spelling gets the absolute spelling's result; the
-  absolute form is a SOFT-only candidate, added in pass 2 (review A6) so a symlinked
-  root `settings.json` reached by a relative path keeps its ask.
+  absolute path. The absolute form is a SOFT-only candidate, added in pass 2 (review
+  A6) so a symlinked root `settings.json` reached by a relative path keeps its ask.
+  Because any SOFT wins, a relative spelling that itself names `.claude/wt-*/` or
+  `.claude/worktrees/<n>/` (typed from the repo root) still asks where its absolute
+  spelling does not: extra friction, never a lost ask. If the cwd is gone, abspath
+  cannot anchor the path, so it is SOFT (pass 3, review M1).
+- A worktree named after a policy word (`.claude/worktrees/skills/x.md`) is relaxed
+  like any other: the word is its root's name, not a folder above it, and Claude
+  Code loads no skills from there.
 - A worktree with a skills/agents/commands/memories folder (any case) above its root
   gets no relaxation, so nesting one in a policy folder keeps that folder's ask
   (review C7).
