@@ -29,6 +29,7 @@ The index below is generated — edit entries, not the table.
 | [Q-323](#q-323--gate-only-changes-approved-by-release) | you: judgment | Should a build loop's change that touches only the gate's own code (`scripts/build-loop.sh`, `d6.sh`, `dev-... | 2026-11-19 |
 | [Q-327](#q-327--trial-set-2-ends-again) | you: judgment | The second trial set (T8–T12), extended a week under Q-286, has now had its second weekly digest (`docs/w... | 2026-11-20 |
 | [Q-329](#q-329--merge-2026-11-20-skill-format-single-skill-a1b5bfc38718) | you: judgment | Merge the fixes for three of the regenerated-report findings (F4 arithmetic-eval, F6 what-if-analysis, F7 p... | 2026-11-20 |
+| [Q-330](#q-330--merge-2026-11-20-skill-verdict-drift-e13ee2e22313) | you: judgment | Merge the fix for finding F5: ten eval cases where six skills' verdicts differed from what the tests expect... | 2026-11-20 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the ho... | 2026-11-05 |
 | [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there. | 2026-11-18 |
 | [Q-316](#q-316--blessed-config-line) | you: terminal | Paste one line: what `cc-isolated --list` says about the blessed config after today's re-bless. | 2026-11-19 |
@@ -275,5 +276,62 @@ The four `skills/*/SKILL.md` paths are prompt files, which the self-merge floor 
 | **[1] merge** | The cycle merges a1b5bfc3 next iteration, keeping the body-keyword rule (the loop's pick) | Reading the diff | A skill rule reads worse than before; one `git revert` |
 | **[2] drop** | The brief closes; F4, F6 and F7 stay red | None | The regenerated reports stay held |
 | **[3] changes needed** | Write what to change (for example the loop's option [2] or [3] on the keyword rule); the note goes back to the loop | Writing the note | A further round |
+
+- **Interim:** nothing merges; the regenerated reports stay held.
+
+### Q-330 · merge-2026-11-20-skill-verdict-drift-e13ee2e22313
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
+
+Merge the fix for finding F5: ten eval cases where six skills' verdicts differed from what the tests expected, each rerun and then fixed on the side that was wrong (four fixtures, two skill texts, the rest tests)?
+
+**If you say no:** the skills, fixtures and tests stay as they are, and these ten cases stay red when the regenerated reports land (Q-328 [3] holds the reports until F2 to F7 are fixed).
+
+- **Why it's yours:** the branch edits two skill files (`skills/ui-visual-review/SKILL.md`, `skills/what-if-analysis/SKILL.md`), which are prompt files, and adds failure-pattern entry FP-186 to `docs/failure-patterns.md`, which only you review.
+- **Read:** the brief `docs/working/briefs/2026-11-20-skill-verdict-drift.md`; on the branch, `docs/working/research-2026-11-20-skill-verdict-drift.md` (every case, its reruns and the call made) and the rubric `docs/reviews/code-review-rubric-2026-11-20-skill-verdict-drift.md`. Show the diff: `git diff main...e13ee2e22313ab534a805a8cc28a173eeaafbd61 -- skills/ test/` (23 files, 409 lines added, 75 removed).
+
+What it changes (from the loop's report, checked against the diff):
+- Every case was rerun; all ten failed again, so none was noise. 37 model runs, under the brief's stop line of about 40.
+- **The fixture was wrong, the model right** (3): code-fact-check tc-c2.5 (the claim really was Incorrect; the fixture is rewritten so it is truly unverifiable), architecture-review tc-arch6 (the "clean" fixture had real defects), test-strategy tc-ts6 (the "well-tested" parser had untested holes; three repair rounds). FP-186 records this pattern: a planted-clean fixture with real defects reads as the skill drifting.
+- **The test or expectation was wrong, the skill right** (3): ui-visual-review tc-uv6 and tc-uv7 now expect Major, the skill's own tier; architecture-review tc-arch7's skip report is recognised; divergent-design tc-dd1 accepts "PG". A Recommendation-line check now runs per finding, with Informational findings exempt, through a new helper with its own hermetic test.
+- **The skill text was wrong** (2): ui-visual-review's Critical tier now covers a primary action pushed out of view by growing content (as its Step 2 already said), and its template says Recommendation is required except on Informational findings; what-if-analysis says what is not a reversibility cliff. Fresh runs after each change passed.
+- Left open, named in the research doc: a test-strategy format slip (a recommended test drops its "What it verifies" field in 2 of 9 runs); most fixtures still carry a header naming the expected verdict (a separate sweep); tc-wi4 and tc-wi6 stay red on F6 alone, which Q-329's branch fixes.
+- Review: two passes by fresh reviewers, 3 should-fix items fixed; the rubric has 0 red and 3 amber rows, none open. Health check passed on the branch. No reports committed.
+- Both this branch and Q-329's edit `skills/what-if-analysis/SKILL.md`, in different sections; whichever merges second merges main in first, and the gate refuses a conflict.
+
+Branch tip e13ee2e22313ab534a805a8cc28a173eeaafbd61. The marker has no body (no question). `--check`'s lines, as printed:
+
+> ok docs/working/briefs/2026-11-20-skill-verdict-drift.md e13ee2e22313ab534a805a8cc28a173eeaafbd61 68fbc89d08bcd9825436ce9fe2d8043d5008e267
+> path docs/working/briefs/2026-11-20-skill-verdict-drift.md M docs/failure-patterns.md
+> path docs/working/briefs/2026-11-20-skill-verdict-drift.md A docs/reviews/code-review-rubric-2026-11-20-skill-verdict-drift.md
+> path docs/working/briefs/2026-11-20-skill-verdict-drift.md M docs/working/briefs/2026-11-20-skill-verdict-drift.md
+> path docs/working/briefs/2026-11-20-skill-verdict-drift.md A docs/working/research-2026-11-20-skill-verdict-drift.md
+> path docs/working/briefs/2026-11-20-skill-verdict-drift.md M skills/ui-visual-review/SKILL.md
+> path docs/working/briefs/2026-11-20-skill-verdict-drift.md M skills/what-if-analysis/SKILL.md
+> path docs/working/briefs/2026-11-20-skill-verdict-drift.md M test/skills/architecture-review-format.bats
+> path docs/working/briefs/2026-11-20-skill-verdict-drift.md M test/skills/architecture-review/eval-criteria.md
+> path docs/working/briefs/2026-11-20-skill-verdict-drift.md M test/skills/architecture-review/fixtures/tc-arch6-clean-ports-adapters.py
+> path docs/working/briefs/2026-11-20-skill-verdict-drift.md M test/skills/code-fact-check/eval-criteria.md
+> path docs/working/briefs/2026-11-20-skill-verdict-drift.md M test/skills/code-fact-check/expected-verdicts.bash
+> path docs/working/briefs/2026-11-20-skill-verdict-drift.md M test/skills/code-fact-check/fixtures/tc-c2.5-unverifiable.py
+> path docs/working/briefs/2026-11-20-skill-verdict-drift.md M test/skills/divergent-design/expected-verdicts.bash
+> path docs/working/briefs/2026-11-20-skill-verdict-drift.md A test/skills/helpers-recommendation.bats
+> path docs/working/briefs/2026-11-20-skill-verdict-drift.md M test/skills/helpers.bash
+> path docs/working/briefs/2026-11-20-skill-verdict-drift.md M test/skills/test-strategy/eval-criteria.md
+> path docs/working/briefs/2026-11-20-skill-verdict-drift.md M test/skills/test-strategy/fixtures/tc-ts6-duration-parser.py
+> path docs/working/briefs/2026-11-20-skill-verdict-drift.md M test/skills/ui-visual-review-eval.bats
+> path docs/working/briefs/2026-11-20-skill-verdict-drift.md M test/skills/ui-visual-review-format.bats
+> path docs/working/briefs/2026-11-20-skill-verdict-drift.md M test/skills/ui-visual-review/eval-criteria.md
+> path docs/working/briefs/2026-11-20-skill-verdict-drift.md M test/skills/ui-visual-review/expected-verdicts.bash
+> path docs/working/briefs/2026-11-20-skill-verdict-drift.md M test/skills/ui-visual-review/fixtures/tc-uv6-disappearing-controls.tsx
+> path docs/working/briefs/2026-11-20-skill-verdict-drift.md M test/skills/ui-visual-review/fixtures/tc-uv7-weak-affordance.tsx
+> rubric docs/working/briefs/2026-11-20-skill-verdict-drift.md: clean docs/reviews/code-review-rubric-2026-11-20-skill-verdict-drift.md: 0 red and 3 amber rows, none open
+
+`docs/failure-patterns.md` and the two `skills/*/SKILL.md` paths are on the self-merge floor. No path is gate code, a dot path or a link.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The cycle merges e13ee2e2 next iteration | Reading the diff | A rewritten fixture or a widened check hides a real skill miss; one `git revert` |
+| **[2] drop** | The brief closes; the ten cases stay red | None | The regenerated reports stay held |
+| **[3] changes needed** | Write what to change; the note goes back to the loop | Writing the note | A further round |
 
 - **Interim:** nothing merges; the regenerated reports stay held.

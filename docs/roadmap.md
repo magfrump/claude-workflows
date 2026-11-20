@@ -62,12 +62,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   is the owner's: Q-302. First step after the answer: compare its gaps and causes with this
   repo's, and file any cause the fixes here do not cover.
 
-- **Agent: Step 0 tests worktree creation first, and names where a stop goes with no worktree** (filed 2026-11-19, step 6; moved from Ideas: it carries reported friction).
-  (brainstorm 2026-11-16). Signal: philosophy-research F-018, a read-only `.git/worktrees`
-  stopped an iteration with nowhere to file the stop; decision-log row 88 keeps worktrees
-  as how agents work.
-  2026-11-19: moved to Now by step 6 (iteration 2316). First step: the one the signal names; if none, a research or divergent-design pass on it.
-
 - **Agent: A per-repo health-checkout preparation line** (filed 2026-11-19, step 6; moved from Ideas: it carries reported friction). (brainstorm 2026-11-16). Signal:
   philosophy-research F-016: a fresh health checkout has no Lean build cache (1.9 GB), so
   the iteration linked and copied it in by hand. First step: a `docs/dev-cycle.md` line
@@ -125,6 +119,14 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
+- **Agent: Step 0 tests worktree creation first, and names where a stop goes with no worktree** (filed 2026-11-19, step 6; moved from Ideas: it carries reported friction).
+  (brainstorm 2026-11-16). Signal: philosophy-research F-018, a read-only `.git/worktrees`
+  stopped an iteration with nowhere to file the stop; decision-log row 88 keeps worktrees
+  as how agents work.
+  2026-11-19: moved to Now by step 6 (iteration 2316). First step: the one the signal names; if none, a research or divergent-design pass on it.
+  2026-11-20: briefed (iteration 1904), research first, self-merge (docs only):
+  `docs/working/briefs/2026-11-20-step0-worktree-first-research.md`.
+
 - **Regenerate the skill eval reports** (Q-321 [2], owner in session 2026-11-19: "yes"). Motive: 51
   test files marked `@needs-reports` print NOT RUN; the regeneration waited on the A8 measurement
   (watch Q-067, closed), which merged at eddcaf16. Briefed (iteration 0712 UTC), self-merge, code-review
@@ -148,6 +150,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 - **Resolve the verdict drift F5** (Q-328 [3]; filed and briefed 2026-11-20, step 6): six skills'
   judgments differ from the expected verdicts; rerun first to separate noise, then fix the skill or
   the expectation. Review: `docs/working/briefs/2026-11-20-skill-verdict-drift.md`.
+  2026-11-20: ready at e13ee2e2 (all ten cases repeated; four fixtures, two skills, tests fixed; FP-186):
+  merge asked in Q-330. Follow-ons named in its research doc: test-strategy's intermittent missing
+  "What it verifies" field, and the fixture headers that name the expected verdict.
 
 ## Next
 
