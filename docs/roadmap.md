@@ -62,12 +62,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   is the owner's: Q-302. First step after the answer: compare its gaps and causes with this
   repo's, and file any cause the fixes here do not cover.
 
-- **Agent: A per-repo health-checkout preparation line** (filed 2026-11-19, step 6; moved from Ideas: it carries reported friction). (brainstorm 2026-11-16). Signal:
-  philosophy-research F-016: a fresh health checkout has no Lean build cache (1.9 GB), so
-  the iteration linked and copied it in by hand. First step: a `docs/dev-cycle.md` line
-  naming paths to link or copy from the main checkout, read through `--settings`.
-  2026-11-19: moved to Now by step 6 (iteration 2316). First step: the one the signal names; if none, a research or divergent-design pass on it.
-
 - **Agent: A judgment entry's "Why it's yours" quotes the constraint it relies on** (filed 2026-11-19, step 6; moved from Ideas: it carries reported friction). (brainstorm
   2026-11-16). Signal: philosophy-research F-007, an entry that cited H1 for a change H1
   does not cover, so the whole entry should not have reached the owner.
@@ -106,15 +100,13 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
-- **Agent: Headless eval runs are denied WebSearch and WebFetch, so fact-check reports are all Unverified**
-  (filed 2026-11-20, step 7; finding F1 of the regeneration run). Motive: `test/skills/generate-reports.bash`
-  offers the web tools with `--tools` but never grants them, so the 23 fact-check reports came out
-  Unverified and were held back (session scratch only), and fact-check's 3 suites stay NOT RUN. First step:
-  a small brief to add the grant (an allow rule passed to the headless run, or the runner's own flag),
-  then regenerate fact-check alone; the sandbox has no web egress (`WebFetch` fails here), so the run may
-  need a host step: say so in the brief.
-  2026-11-20: briefed (iteration 1949), self-merge (`test/`), the regeneration left as a host step:
-  `docs/working/briefs/2026-11-20-eval-web-tools-grant.md`.
+- **Agent: A per-repo health-checkout preparation line** (filed 2026-11-19, step 6; moved from Ideas: it carries reported friction). (brainstorm 2026-11-16). Signal:
+  philosophy-research F-016: a fresh health checkout has no Lean build cache (1.9 GB), so
+  the iteration linked and copied it in by hand. First step: a `docs/dev-cycle.md` line
+  naming paths to link or copy from the main checkout, read through `--settings`.
+  2026-11-19: moved to Now by step 6 (iteration 2316). First step: the one the signal names; if none, a research or divergent-design pass on it.
+  2026-11-20: briefed (iteration 2017), review (gate code), motive first:
+  `docs/working/briefs/2026-11-20-health-checkout-prep.md`.
 
 - **Agent: `scripts/self-improvement.sh` still puts its worktrees under `.claude/`** (filed 2026-11-20,
   step 7; split from the write-guard item). Motive: Claude Code asks before writes under `.claude/`
@@ -465,6 +457,11 @@ Unranked. Each names the signal that motivates it.
 ## Done
 
 Items finished since the last cycle, with the merge.
+
+- **Headless eval runs are denied WebSearch and WebFetch** (finding F1 of the regeneration run): the
+  report generator now grants the web tools a fixture lists. Done 6c0563b5 (self-merge), brief
+  `docs/working/briefs/closed/2026-11-20-eval-web-tools-grant.md`. The fact-check regeneration itself
+  is a host step: Q-332.
 
 - **Fix the single-skill findings F4, F6 and F7** (Q-328 [3]): arithmetic-eval's program drift,
   what-if-analysis's missing Assumption entries, pattern misses in three skills. Done cef30487
