@@ -18,6 +18,8 @@
 #   CONVERGENCE_THRESHOLD  Percent overlap (0-100) of diagnosed problems
 #                          with prior rounds that triggers early stop
 #                          (default: 80)
+#   TMPDIR                 Temp dir for mktemp; used if writable, else the run
+#                          uses <repo>/.worktrees/si-tmp (set up as below).
 #
 # Configuration (near top of main block):
 #   MAX_ROUNDS=3           Maximum number of improvement rounds (hardcoded)
@@ -182,11 +184,12 @@ create_task_worktree() {
 # ($2-x), so an existing .gitignore that ignores itself and only some $2-*
 # names (say ".gitignore" and "si-wt-?") passes; a fresh "*" file has no such
 # gap.
-# Args: $1 = repo dir (absolute), $2 = worktree name prefix (e.g. si-wt).
+# Args: $1 = repo dir (absolute), $2 = worktree name prefix (e.g. si-wt),
+#       $3 = the way forward the errors name (default: set WORKTREE_BASE).
 ensure_worktree_dir() {
     local repo=$1 prefix=$2 b g out rc=0
     b="$repo/.worktrees"; g="$b/.gitignore"
-    local fix="or set WORKTREE_BASE to a directory prefix of your own"
+    local fix="${3:-or set WORKTREE_BASE to a directory prefix of your own}"
     if [ -L "$b" ] || { [ -e "$b" ] && [ ! -d "$b" ]; }; then
         echo "Error: $b is a symbolic link or not a directory; remove it, $fix" >&2
         return 1
@@ -516,6 +519,19 @@ if [ "$WORKTREE_BASE" = "$SI_DEFAULT_WORKTREE_BASE" ]; then
     ensure_worktree_dir "$REPO_DIR" "${SI_DEFAULT_WORKTREE_BASE##*/}" || exit 1
 fi
 
+# The sandbox write-allowlist covers the project and scratchpad, not bare /tmp.
+# mktemp honours $TMPDIR but falls back to /tmp when it is unset, which may be
+# unwritable under the hardened sandbox. Fire the fallback when $TMPDIR is unset
+# OR points at a non-writable dir (a parent may export TMPDIR=/tmp, which the
+# sandbox denies); otherwise the first mktemp aborts the whole run under set -e.
+# The fallback, .worktrees/si-tmp, is set up and checked as the worktrees are
+# (it was .claude/tmp, where Claude Code asks before every write).
+if [ -z "${TMPDIR:-}" ] || [ ! -w "${TMPDIR}" ]; then
+    ensure_worktree_dir "$REPO_DIR" si-tmp "or export TMPDIR as a writable directory of your own" || exit 1
+    export TMPDIR="$REPO_DIR/.worktrees/si-tmp"
+    mkdir -p -- "$TMPDIR"
+fi
+
 mkdir -p "$WORKING_DIR"
 touch "$WORKING_DIR/completed-tasks.md"
 
@@ -533,17 +549,6 @@ if [[ ! "$SI_RUN_ID" =~ ^[A-Za-z0-9._-]+$ ]]; then
     exit 1
 fi
 printf '%s\n' "$SI_RUN_ID" > "$WORKING_DIR/si-run-id.txt"
-
-# The sandbox write-allowlist covers the project and scratchpad, not bare /tmp.
-# mktemp honours $TMPDIR but falls back to /tmp when it is unset, which may be
-# unwritable under the hardened sandbox. Fire the fallback when $TMPDIR is unset
-# OR points at a non-writable dir (a parent may export TMPDIR=/tmp, which the
-# sandbox denies); otherwise the first mktemp aborts the whole run under set -e.
-# Point it at a gitignored, project-local dir so every mktemp lands writable.
-if [ -z "${TMPDIR:-}" ] || [ ! -w "${TMPDIR}" ]; then
-    export TMPDIR="$REPO_DIR/.claude/tmp"
-    mkdir -p "$TMPDIR"
-fi
 
 # Initialize round-history.json if it doesn't exist
 if [ ! -f "$ROUND_HISTORY" ]; then
@@ -1269,7 +1274,9 @@ line and a 'Notes:' line recording any judgement calls made without human input.
         # commits each one's work first (Q-146 [1]; scripts/lib/si-commit.sh).
         DESC=$(jq -r --arg id "$TASK_ID" '.[] | select(.id==$id) | .description' "$TASKS_FILE") || DESC=""
         SI_COMMIT_RC=0
-        SI_COMMIT_ERR=$(si_commit_child_work "$WT_DIR" "$DESC" "$REPO_DIR" 2>&1) || SI_COMMIT_RC=$?
+        # Its `git add` uses ":(exclude)" magic, which an inherited
+        # GIT_LITERAL_PATHSPECS=1 (the dev-cycle reader's) breaks: off here, as in wt_base.
+        SI_COMMIT_ERR=$(GIT_LITERAL_PATHSPECS=0 si_commit_child_work "$WT_DIR" "$DESC" "$REPO_DIR" 2>&1) || SI_COMMIT_RC=$?
         COMMIT_COUNT=$(git rev-list --count "main..$BRANCH" 2>/dev/null || echo 0)
         if [ "$SI_COMMIT_RC" -ne 0 ] && [ "$SI_COMMIT_RC" -ne 3 ]; then
             REJECT_REASON="implementer commit failed: $SI_COMMIT_ERR"
