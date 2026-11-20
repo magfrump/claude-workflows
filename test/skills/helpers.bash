@@ -221,12 +221,21 @@ assert_field_values() {
   fi
   values=$(echo "$body" | sed -n "s/^\\*\\*${field}:\\*\\* //p")
   [ -n "$values" ] || skip "no ${field} values found"
-  # The enum value must lead the field; a trailing annotation is allowed — reports
-  # legitimately qualify, e.g. "High (executed)", "Minor *(carried)*", "High for
-  # the mechanism, Low for reachability". The base value must still be from the
-  # enum, and nothing may precede it.
-  bad=$(echo "$values" | grep -viE "^(${allowed})([ ,(*].*)?$" || true)
+  bad=$(echo "$values" | field_values_off_vocab "$allowed")
   [ -z "$bad" ]
+}
+
+# field_values_off_vocab <allowed>: print the field values on stdin (one per
+# line, label already stripped) whose leading word is not from the
+# case-insensitive ERE <allowed>. The one annotation rule for vocabulary fields:
+# the enum value must lead the field, and a trailing annotation is allowed after
+# a space, comma, parenthesis, emphasis marker or full stop. Reports
+# legitimately qualify, e.g. "High (executed)", "Minor *(carried)*", "High for
+# the mechanism, Low for reachability", "Medium. It is recoverable". Nothing may
+# precede the value, and a value glued to more letters or a hyphen
+# ("Medium-High", "Lowish") is not from the enum.
+field_values_off_vocab() {
+  grep -viE "^(${1})([ ,(*.].*)?$" || true
 }
 
 # Load the code-review skill's full CONTENT SURFACE: SKILL.md plus its references/

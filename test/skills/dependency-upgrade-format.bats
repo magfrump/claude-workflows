@@ -36,7 +36,7 @@ setup() {
 }
 
 @test "summary has Estimated effort field" {
-  echo "$REPORT_CONTENT" | grep -qiE '\*\*Estimated effort:\*\*.*\b(minutes|hours|days)\b'
+  echo "$REPORT_CONTENT" | grep -qiE '\*\*Estimated effort:\*\*.*\b(minutes?|hours?|days?)\b'
 }
 
 @test "summary has Risk field" {
