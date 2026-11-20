@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+# shellcheck disable=SC2034  # FINDINGS_BODY, CLAIMS_BODY and REPORT_CONTENT are read by the loaded helpers
 # @category fast
 # The shared rules for reading a report's vocabulary fields and titles, tested
 # on small inline reports so they hold without generated reports:
@@ -56,6 +57,12 @@ teardown() {
   run field_values_off_vocab 'Low|Medium|High' <<< 'Probably High'
   [ "$status" -eq 0 ]
   [ "$output" = 'Probably High' ]
+}
+
+@test "an underscore-wrapped value reads like a bold one" {
+  run field_values_off_vocab 'Low|Medium|High' <<< 'High_'
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
 }
 
 @test "a value glued to more letters is off the vocabulary" {

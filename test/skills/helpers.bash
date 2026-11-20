@@ -254,7 +254,7 @@ assert_field_values() {
 # High") still passes: its leading word is a value. Callers strip a leading
 # emphasis marker first, as eval-helpers.bash's field_values does.
 field_values_off_vocab() {
-  grep -viE "^(${1})([ ,(*.].*)?$" || true
+  grep -viE "^(${1})([ ,(*_.].*)?$" || true
 }
 
 # Load the code-review skill's full CONTENT SURFACE: SKILL.md plus its references/

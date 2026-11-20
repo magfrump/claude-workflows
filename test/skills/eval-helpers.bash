@@ -379,7 +379,9 @@ assert_no_verdict() {
 # field-reading check: Verdict, Severity, and field_match's arbitrary fields
 # (tech-debt-triage's **Recommendation:**, test-strategy's **Priority:**).
 # Leading emphasis markers are dropped, so a bold- or italic-wrapped value
-# ("**Upgrade now.** Ship it today") reads as the word it wraps.
+# ("**Upgrade now.** Ship it today") reads as the word it wraps for the
+# prefix checks (field_match, no_field); exact-match checks such as
+# assert_verdict still see the trailing marker.
 # Args: $1 = field name, e.g. "Recommendation"
 field_values() {
   local field="$1"

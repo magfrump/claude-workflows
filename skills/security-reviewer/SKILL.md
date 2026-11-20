@@ -96,7 +96,7 @@ Instead of re-verifying behavior:
   thread safety might be fine for correctness but critical for security.
 - **Prioritize your cognitive moves**, which are what this skill uniquely provides.
 
-If no fact-check report is provided, **emit the following warning at the top of your output:**
+If no fact-check report is provided, **emit the following warning directly below the title and header fields:**
 
 > ⚠️ **No code fact-check report provided.** Claims about security properties in comments and
 > documentation have not been independently verified. For full verification, run the
@@ -346,7 +346,7 @@ with near-certain exploitability and high blast radius belong here.
 
 ### Escalation output format
 
-When a pattern matches, emit this block **at the top of your critique output**, before the
+When a pattern matches, emit this block **below the title and header fields**, before the
 Trust Boundary Map:
 
 ```
