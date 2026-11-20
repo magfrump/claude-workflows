@@ -53,6 +53,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   2026-11-14: Q-286 answered in session: extend a week, all five running to about 2026-11-20,
   because T11 and T12 live in the weekly digest and have had one edition. Ask again after the
   2026-11-20 weekly digest.
+  2026-11-20: the digest ran (`docs/working/weekly/2026-11-20.md`); the trial-end question is Q-327.
 
 - **Review-gap audit in Behemoth Arsenal** (owner feedback 2026-10-29, point 3). Motive: the
   gap that prompted the audit came up in Behemoth Arsenal; the run here (84f8532e,
@@ -61,30 +62,33 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   is the owner's: Q-302. First step after the answer: compare its gaps and causes with this
   repo's, and file any cause the fixes here do not cover.
 
-- **Agent: Step 0 tests worktree creation first, and names where a stop goes with no worktree** (filed 2026-11-19, step 6; moved from Ideas: it carries reported friction).
-  (brainstorm 2026-11-16). Signal: philosophy-research F-018, a read-only `.git/worktrees`
-  stopped an iteration with nowhere to file the stop; decision-log row 88 keeps worktrees
-  as how agents work.
-  2026-11-19: moved to Now by step 6 (iteration 2316). First step: the one the signal names; if none, a research or divergent-design pass on it.
+- **Agent: A reproducible ask counter (`questions.sh counts`) for the weekly digest** (filed 2026-11-19,
+  step 7; area B's B2). Motive: the owner-load numbers in area B's research were counted by hand; the
+  weekly digest's ask counter needs them reproducible, per class (merge, re-dispatch, real choice),
+  with first-option share and waits. First step: the review brief that research drafts
+  (`docs/working/research-2026-11-19-area-b-ask-habituation.md`, "For the dev cycle"); gate code.
+  Area A's research (e9fb762c) drafted no counter, so this one stands; brief it when a slot frees.
 
-- **Agent: A per-repo health-checkout preparation line** (filed 2026-11-19, step 6; moved from Ideas: it carries reported friction). (brainstorm 2026-11-16). Signal:
-  philosophy-research F-016: a fresh health checkout has no Lean build cache (1.9 GB), so
-  the iteration linked and copied it in by hand. First step: a `docs/dev-cycle.md` line
-  naming paths to link or copy from the main checkout, read through `--settings`.
-  2026-11-19: moved to Now by step 6 (iteration 2316). First step: the one the signal names; if none, a research or divergent-design pass on it.
+- **Agent: the write guard's `.claude/wt-*` exemption is stale** (filed 2026-11-20, step 7; same research
+  doc). Motive: `hooks/guard-trusted-writes.py` exempts the old `.claude/wt-*` self-improvement worktrees,
+  which nothing creates once the worktree fix lands; its "(this harness's)" comment misleads. First step:
+  a review brief (gate code, `Live-verified:` trailer) to drop the exemption or correct the comment.
 
-- **Agent: A judgment entry's "Why it's yours" quotes the constraint it relies on** (filed 2026-11-19, step 6; moved from Ideas: it carries reported friction). (brainstorm
-  2026-11-16). Signal: philosophy-research F-007, an entry that cited H1 for a change H1
-  does not cover, so the whole entry should not have reached the owner.
-  2026-11-19: moved to Now by step 6 (iteration 2316). First step: the one the signal names; if none, a research or divergent-design pass on it.
+- **Agent: Gate-only changes approved by the release paste (area A's [5n])** (filed 2026-11-19, step 7).
+  Motive: 25 merge entries in two weeks, 24 answered [1]; the pick would remove about a quarter.
+  First step: the review brief drafted in section 8 of
+  `docs/working/research-2026-11-19-area-a-merge-friction.md`, after the auto send-back build merges.
+  Held: Q-323 asks whether to build it at all.
 
-- **Agent: Build loops start in the orchestrator's removed worktree** (filed 2026-11-19, step 7; herald F-008). Motive: every loop
-  dispatched before the cycle's land loses its first Bash call, because the cycle removes its
-  worktree after the land while the loop's shell starts there; it reproduced in the 2026-11-19
-  herald triage dispatch. First step: the hermetic probe in group F of
-  `docs/working/research-2026-11-19-herald-friction-triage.md` (does a main-session `cd` before
-  an Agent call move the subagent's start directory?), then divergent design over its four
-  approaches. Gate code, so a review merge.
+## In flight
+
+- **Agent: `self-improvement.sh` fails under an exported `GIT_LITERAL_PATHSPECS=1`, and its `TMPDIR`
+  fallback still sits under `.claude/`** (both filed 2026-11-20, step 7, from the self-improvement worktrees
+  loop, `docs/working/research-2026-11-20-self-improvement-worktrees.md`). Motive: with
+  `GIT_LITERAL_PATHSPECS=1` exported (the dev-cycle reader does), a git call in the main loop fails, hidden
+  in tests by the suite's new `unset`; the fallback `TMPDIR=$REPO_DIR/.claude/tmp` asks the owner on each
+  write. One unit (same script). 2026-11-20: briefed (iteration 2217), self-merge (`scripts/self-improvement.sh`,
+  `test/`): `docs/working/briefs/2026-11-20-self-improvement-env-followups.md`.
 
 - **Agent: `--cycle-diff` lets a cycle record lose its earlier blocks** (filed 2026-11-19, step 6).
   Motive: iteration 2026-11-20-0121 landed `docs/working/cycles/cycle-2026-11-19.md` holding only its
@@ -95,51 +99,40 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   step: a review brief adding to `--cycle-diff` the rule that a changed record keeps the base's
   text as a prefix (append-only, as it already holds the idea log), with a bats case for this
   shape; gate code.
+  2026-11-20: briefed (iteration 2148), review; the rule also takes step 10's rewrite of the last
+  block's `9.`/`10.` lines: `docs/working/briefs/2026-11-20-cycle-diff-record-prefix.md`.
+  2026-11-20: ready at f2d9abc5 (rubric clean; deletion now refused too; replay over 279 lands
+  refuses 10): merge asked in Q-339.
 
-- **Agent: A reproducible ask counter (`questions.sh counts`) for the weekly digest** (filed 2026-11-19,
-  step 7; area B's B2). Motive: the owner-load numbers in area B's research were counted by hand; the
-  weekly digest's ask counter needs them reproducible, per class (merge, re-dispatch, real choice),
-  with first-option share and waits. First step: the review brief that research drafts
-  (`docs/working/research-2026-11-19-area-b-ask-habituation.md`, "For the dev cycle"); gate code.
-  Area A's research (e9fb762c) drafted no counter, so this one stands; brief it when a slot frees.
-
-- **Agent: Gate-only changes approved by the release paste (area A's [5n])** (filed 2026-11-19, step 7).
-  Motive: 25 merge entries in two weeks, 24 answered [1]; the pick would remove about a quarter.
-  First step: the review brief drafted in section 8 of
-  `docs/working/research-2026-11-19-area-a-merge-friction.md`, after the auto send-back build merges.
-  Held: Q-323 asks whether to build it at all.
-
-## In flight
-
-- **Agent: The write guard asks on every edit in a `.claude/` worktree once a session is web-tainted**
-  (filed 2026-11-19, owner report: a math-research repo's rewrite workflow asked for approval on
-  each of hundreds of file edits; the owner confirmed in session that the asks were this guard's
-  web-taint ask). Motive: `hooks/guard-trusted-writes.py` puts any Edit/Write path with a `.claude`
-  segment in its SOFT tier (`classify_path`, the `".claude" in low` test), and SOFT asks whenever
-  the session's taint marker exists (one web fetch taints the whole session). So every edit in a
-  worktree under `.claude/` asks, Claude Code's own exempt `.claude/worktrees/` included, though
-  Claude Code itself would not ask there. Reproduced hermetically on 2026-11-19 (a fake path and a
-  test taint marker): ask for `.claude/worktrees/agent-x/chapter3.md` and `.claude/wt-item-1/chapter3.md`
-  when tainted, no opinion when clean; no opinion either way for `.worktrees/wt-x/` and the main
-  checkout. First step: one review brief (the hook is an enforcement file: a pre-mortem listing the
-  bypass families, and a `Live-verified:` trailer). Shape to weigh in its divergent design: for the
-  file tools only, a path inside a linked worktree under `.claude/worktrees/*/` or `.claude/wt-*/`
-  is classified by its path relative to that worktree's root, so a chapter file is no opinion and
-  the worktree's own skills, agents, commands, CLAUDE.md, settings and hooks stay SOFT; Bash
-  classification stays as it is, since Q-048's worktree exemption for Bash was withdrawn after three
-  review passes found bypasses. Tests: the probe's table as bats cases in
-  `test/hooks/guard-trusted-writes.bats`, plus a worktree's own `.claude/settings.json` and
-  `skills/x.md` still asking when tainted. Related, smaller: `scripts/self-improvement.sh` still
-  defaults its worktrees to `.claude/wt-*` (move it to `.worktrees/`, as b3e25cf1 did for build loops).
-  Interim relief, until this lands: work in worktrees under `.worktrees/` (sessions started after
-  the 0feaf080 install do so by default), where the guard has no opinion.
-  2026-11-19: briefed on the owner's word in session ("Brief that now"), review (enforcement file):
-  `docs/working/briefs/2026-11-19-guard-worktree-taint.md`.
+- **Agent: Build loops start in the orchestrator's removed worktree** (filed 2026-11-19, step 7; herald F-008). Motive: every loop
+  dispatched before the cycle's land loses its first Bash call, because the cycle removes its
+  worktree after the land while the loop's shell starts there; it reproduced in the 2026-11-19
+  herald triage dispatch. First step: the hermetic probe in group F of
+  `docs/working/research-2026-11-19-herald-friction-triage.md` (does a main-session `cd` before
+  an Agent call move the subagent's start directory?), then divergent design over its four
+  approaches. Gate code, so a review merge.
+  2026-11-20: probe and pick briefed (iteration 2107) as research only, self-merge:
+  `docs/working/briefs/closed/2026-11-20-loop-start-dir-research.md`, done 319559d9
+  (`docs/working/research-2026-11-20-loop-start-dir-research.md`): about 45% of loops (31 of 69) were
+  refused at least once; subagents run in the main shell's cwd, which the land's `cd WT && …` leaves
+  in WT. Pick R2 (Path A): park the shell with a bare `cd WTB` call, remove in a later call. Built
+  as a review brief (iteration 2133): `docs/working/briefs/2026-11-20-remove-worktrees-parked-shell.md`.
+  The orchestrator applies R2 by hand from iteration 2133 on.
+  2026-11-20: ready at 415006de (step 0.3 states the form; D13 and the prompt line corrected; no
+  code-review rubric committed): merge asked in Q-337; its observable is watch Q-338.
 
 - **Regenerate the skill eval reports** (Q-321 [2], owner in session 2026-11-19: "yes"). Motive: 51
   test files marked `@needs-reports` print NOT RUN; the regeneration waited on the A8 measurement
   (watch Q-067, closed), which merged at eddcaf16. Briefed (iteration 0712 UTC), self-merge, code-review
   first to prove the pipeline: `docs/working/briefs/2026-11-19-regenerate-skill-reports.md`.
+  2026-11-20: the run finished ready (0cb729ed: 156 reports for 22 skills; 43 cases in 16 skills fail on them);
+  held from self-merge because it would turn every health check red: asked in Q-328.
+  2026-11-20: Q-328 answered [3], fix first: the branch waits while findings F2 to F7 are fixed
+  (the three briefs below). Once they merge, re-dispatch this brief to merge main in, regenerate
+  the skills those fixes changed, and land green.
+  2026-11-20: all three merged (cef30487, ead9191a, 01eff59e); the re-dispatch waits for a free loop
+  slot (iteration 2206: all three slots busy).
+
 
 ## Next
 
@@ -468,6 +461,54 @@ Unranked. Each names the signal that motivates it.
 ## Done
 
 Items finished since the last cycle, with the merge.
+
+- **`scripts/self-improvement.sh` still puts its worktrees under `.claude/`**: its default is now
+  `.worktrees/si-wt-<task>`, set up as build loops' `.worktrees/` is. Done 7b46a90e (self-merge, two
+  dispatches), brief `docs/working/briefs/closed/2026-11-20-self-improvement-worktrees.md`. Its three
+  follow-ups are Now items (the `GIT_LITERAL_PATHSPECS` failure, the `TMPDIR` fallback, the guard comment).
+
+- **A per-repo health-checkout preparation line** (philosophy-research F-016): `Health checkout copies:`
+  in `docs/dev-cycle.md` and `build-loop.sh --health-prep HC`. Done f6d555d8 (approved merge, Q-333 [1]),
+  brief `docs/working/briefs/closed/2026-11-20-health-checkout-prep.md`. Live at the release Q-336.
+
+- **Fix the skill-report format findings F2 and F3** (Q-328 [3]): seven skills' report formats. Done
+  01eff59e (approved merge, Q-335 [1]), brief `docs/working/briefs/closed/2026-11-20-skill-format-fields-preambles.md`.
+
+- **A judgment entry's "Why it's yours" quotes the constraint it relies on: no change, closed.**
+  Done 6a07b026 (self-merge, research only), brief
+  `docs/working/briefs/closed/2026-11-20-why-its-yours-constraint-research.md`: 0 of 153 "Why it's
+  yours" lines here cite a constraint by number, and the two entries routed by one cover their case.
+  Revisit trigger held in watch Q-334 (`docs/working/watching.md`).
+
+- **Headless eval runs are denied WebSearch and WebFetch** (finding F1 of the regeneration run): the
+  report generator now grants the web tools a fixture lists. Done 6c0563b5 (self-merge), brief
+  `docs/working/briefs/closed/2026-11-20-eval-web-tools-grant.md`. The fact-check regeneration itself
+  is a host step: Q-332.
+
+- **Fix the single-skill findings F4, F6 and F7** (Q-328 [3]): arithmetic-eval's program drift,
+  what-if-analysis's missing Assumption entries, pattern misses in three skills. Done cef30487
+  (approved merge, Q-329 [1]), brief `docs/working/briefs/closed/2026-11-20-skill-format-single-skill.md`.
+
+- **Resolve the verdict drift F5** (Q-328 [3]): ten cases rerun, each fixed on the side that was
+  wrong (FP-186). Done ead9191a (approved merge, Q-330 [1]), brief
+  `docs/working/briefs/closed/2026-11-20-skill-verdict-drift.md`. Follow-ons named in its research
+  doc: test-strategy's intermittent missing "What it verifies" field, and the fixture headers that
+  name the expected verdict.
+
+- **Step 0 and a missing worktree: no change, closed.** Done d6480ebc (self-merge), brief
+  `docs/working/briefs/closed/2026-11-20-step0-worktree-first-research.md`, research
+  `docs/working/research-2026-11-20-step0-worktree-first-research.md`: the one stop on record
+  (philosophy-research F-018, a read-only `.git/worktrees`) came from the Bash sandbox rolled back
+  at 7caea26d, and the Rules already send every stop to the final message. Reopen if decision-log
+  row 88's revisit trigger fires or a second stop before WT is recorded (its "For the dev cycle").
+
+- **The write guard stops asking on ordinary files in `.claude/` worktrees when web-tainted.** Done
+  61122f34 (approved merge, Q-326 [1]), brief `docs/working/briefs/closed/2026-11-19-guard-worktree-taint.md`,
+  research `docs/working/research-2026-11-19-guard-worktree-taint.md`: a file-tool path inside a verified
+  linked worktree under `.claude/` is judged by its path within that worktree, so the worktree's own
+  CLAUDE.md, settings, skills and hooks still ask; Bash classification unchanged. `Live-verified: no`:
+  the live check rides the release entry Q-317. Not done here: `scripts/self-improvement.sh` still
+  defaults its worktrees under `.claude/` (filed in Now, 2026-11-20).
 
 - **`test/q125-verify-check.bats`'s rename case no longer flaky under load.** Done 70e7a28d (self-merge),
   brief `docs/working/briefs/closed/2026-11-19-q125-rename-flake.md`, research

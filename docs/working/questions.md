@@ -26,13 +26,14 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
-| [Q-321](#q-321--regenerate-skill-eval-reports-after-a8) | you: judgment | Q-321: [2] | 2026-11-19 |
 | [Q-323](#q-323--gate-only-changes-approved-by-release) | you: judgment | Should a build loop's change that touches only the gate's own code (`scripts/build-loop.sh`, `d6.sh`, `dev-... | 2026-11-19 |
-| [Q-325](#q-325--stopped-2026-11-19-guard-worktree-taint-1) | you: judgment | Q-325: [1] | 2026-11-19 |
+| [Q-327](#q-327--trial-set-2-ends-again) | you: judgment | The second trial set (T8–T12), extended a week under Q-286, has now had its second weekly digest (`docs/w... | 2026-11-20 |
+| [Q-337](#q-337--merge-gate-2026-11-20-remove-worktrees-parked-shell-415006dec476) | you: judgment | Merge R2: the dev cycle removes each of its worktrees in a separate call made after a bare `cd` into `.work... | 2026-11-20 |
+| [Q-339](#q-339--merge-gate-2026-11-20-cycle-diff-record-prefix-f2d9abc53623) | you: judgment | Merge the gate rule that refuses a cycle-record change which drops or rewrites the record's earlier iterati... | 2026-11-20 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the ho... | 2026-11-05 |
 | [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there. | 2026-11-18 |
-| [Q-316](#q-316--blessed-config-line) | you: terminal | Paste one line: what `cc-isolated --list` says about the blessed config after today's re-bless. | 2026-11-19 |
-| [Q-317](#q-317--image-lag) | you: terminal | Install the release that carries tonight's six approved code merges (the loop wait rule, the code-review ca... | 2026-11-19 |
+| [Q-332](#q-332--regenerate-fact-check-reports-host) | you: terminal | Regenerate the fact-check skill's eval reports on the host, where the web works, and commit them. | 2026-11-20 |
+| [Q-336](#q-336--image-lag) | you: terminal | Install the release that carries the health-checkout preparation step you approved in Q-333: run the one pa... | 2026-11-20 |
 <!-- index:end -->
 
 ## Open
@@ -106,81 +107,6 @@ Output, in chat (write no files):
 - **Interim:** nothing is built from the audit for other repos; the fixes merged here cover this repo's causes only.
 - **If the answer differs:** a cause the fixes here don't cover becomes a roadmap item here (the gate and rules are shared), and anything specific to Behemoth Arsenal is for a session in that repo.
 
-### Q-316 · blessed-config-line
-**Needs:** you: terminal · **Opened:** 2026-11-19 · **Status:** OPEN
-
-Paste one line: what `cc-isolated --list` says about the blessed config after today's re-bless.
-
-**If you say no:** watch Q-167 (post-install-host-probes, `docs/working/watching.md`) stays open until the next re-bless, and the rebuild-hint commits keep `Live-verified: no`; nothing breaks.
-
-Run on the host:
-
-```
-cc-isolated --list 2>&1 | grep -i 'blessed config'
-```
-
-**Pass:** a line `Blessed config HASH — verified live: NO (run: cc-isolated --probe-only <repo>)` (or `verified live: yes` if you have since run a probe). **Send back:** `Q-316:` and that line.
-
-- **Interim:** Q-167 waits; the `Verified live:` and `Next:` lines the bless printed are not asked for again (the watch says how the next release entry captures them).
-
-### Q-317 · image-lag
-**Needs:** you: terminal · **Opened:** 2026-11-19 · **Status:** OPEN
-
-Install the release that carries tonight's six approved code merges (the loop wait rule, the code-review cache correction and its follow-ons, `--steal --ended`, the A8 records and the auto send-back): run the one paste below on the host.
-
-**If you say no:** sessions keep running the image built from 0feaf080: build loops keep the old prompt (they may hand back early while a reviewer runs, and their reviewers keep trying to save report files that get refused), review skills keep their old briefing text, a dead loop's worktree still waits two hours before re-dispatch, and every gate-refused ready branch still comes to you as a `stopped` entry. Nothing breaks.
-
-- **C (the image's commit):** 0feaf08085b524c0c4345c52f8e285d842558f23 · **M (main's commit):** 723fae679439b3fcb1f082e664152a8010b0ceba
-- **Merged without your review** (all nine change only research docs under `docs/`, which the image does not carry):
-  - 74b9181f Merge branch 'docs/live-verify-merge-head-count' (build-loop self-merge)
-  - 8ffddfaf Merge branch 'docs/herald-friction-triage' (build-loop self-merge)
-  - d6c987f3 Merge branch 'docs/loops-wait-foreground' (build-loop self-merge)
-  - a8a0a496 Merge branch 'docs/subagent-report-files-listing' (build-loop self-merge)
-  - 7c137d5d Merge branch 'docs/generated-file-conflicts' (build-loop self-merge)
-  - d9f475df Merge branch 'docs/harness-feedback-file-in-cycle' (build-loop self-merge)
-  - 012b20f9 Merge branch 'docs/steal-wait-research' (build-loop self-merge)
-  - f0547bc9 Merge branch 'docs/area-b-ask-habituation' (build-loop self-merge)
-  - e9fb762c Merge branch 'docs/area-a-merge-friction' (build-loop self-merge)
-- **What changes for you:**
-  - acbff6c6 (you approved it, Q-314 [1]): the build-loop dispatch prompt tells a loop to wait inside its turn for reviewers and files (at most 30 minutes per wait, then a `stopped` marker), and has its subagents return reports as text.
-  - d383a484 (Q-315 [1]): the code-review skill drops its prompt-cache saving claims and the rules that existed only for them; critics read their skill file by path; decision 032 is amended.
-  - 2a71904f (Q-318 [1]): the same two claims removed from draft-review, matrix-analysis, divergent design and two guides, with a guard test.
-  - 8ec5a900 (Q-319 [1]): `build-loop.sh --prompt --steal --ended` lets the cycle re-dispatch its own dead loop at once; `--start` and `--prompt` print a `lock UTC` line.
-  - eddcaf16 (Q-320 [1]): the A8 settling runs' records, under `runs/` and `docs/` (the image carries neither).
-  - 723fae67 (Q-324 [1]): the dev cycle sends a gate-refused ready branch (a conflict with main, or a failure-pattern gap the loop can fix) back to its loop with no entry for you, once per tip and under a dispatch count of 3.
-  - The routine rest: 27 dev-cycle lands.
-- **Full list:** `git -c log.showSignature=false log --first-parent --format='%h %s' 0feaf08085b524c0c4345c52f8e285d842558f23..723fae679439b3fcb1f082e664152a8010b0ceba`
-- **Paths changed outside `docs/` and `runs/` (48 under `docs/` and 44 under `runs/` too, which the image does not carry):** `guides/sub-agent-briefing.md`, `patterns/orchestrated-review.md`, `scripts/build-loop.sh`, `scripts/lib/migrations.sh`, `skills/code-review/SKILL.md`, `skills/dev-cycle/SKILL.md`, `skills/draft-review/SKILL.md`, `skills/matrix-analysis/SKILL.md`, `test/scripts/build-loop-dispatch.bats`, `test/scripts/build-loop-orchestrator.bats`, `test/skills/code-review-context-delivery.bats`, `test/skills/subagent-context-delivery.bats`, `workflows/divergent-design.md`
-
-Run this on the host, in your claude-workflows checkout at main's tip, then start a new sandbox session:
-
-```
-sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "723fae679439b3fcb1f082e664152a8010b0ceba:$p")"; then n=$((n+1)); else echo "release refused: $p changed after 723fae679439b3fcb1f082e664152a8010b0ceba: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
-```
-
-**Pass:** the installer finishes without a `release refused` line. **Send back:** `Q-317: done`. If it re-blesses, you can add `| tee "$TMPDIR/install.log"` to the end of the paste and send back `grep -E 'Verified live:|^Next:' "$TMPDIR/install.log"` (two lines) for watch Q-167; optional.
-
-- **Interim:** the image's gate (0feaf080) runs; nothing breaks. The write guard fix (in flight) is not in this release; the next one carries it.
-
-### Q-321 · regenerate-skill-eval-reports-after-a8
-**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** ANSWERED
-Q-321: [2]
-
-Regenerate the skill eval reports now that the A8 measurement has run, so the 51 test files marked `@needs-reports` check the current skill text instead of printing NOT RUN?
-
-**If you say no:** those suites keep printing NOT RUN and the health check keeps warning with the count, as it has since 2026-09-26; a skill-prompt regression stays uncaught by them. Nothing breaks.
-
-- **Why it's yours:** each regeneration is one headless model run per fixture, about 180 across 23 skills, which spends your quota; it was held until the A8 measurement (watch Q-067, `docs/working/watching.md`, now closed), which merged as eddcaf16 under Q-320.
-- **Read:** `docs/working/audit-test-constraint-2026-09-26.md` batch G; `test/skills/generate-reports.bash`.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] One skill now** | Regenerate one high-value skill (code-review, whose text changed tonight) to prove the loop end to end | About 12 model runs | A little quota for one skill's coverage |
-| **[2] All now** | Regenerate every skill's reports | About 180 model runs | Quota spent; reports go stale at each skill edit |
-| **[3] Not now** | Keep the suites NOT RUN | None | Prompt regressions stay uncaught |
-
-- **Interim:** [3]; nothing runs.
-
 ### Q-323 · gate-only-changes-approved-by-release
 **Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** OPEN
 
@@ -203,26 +129,157 @@ One thing the research's summary does not say, which the cycle adds: a self-land
 - **Interim:** [2]; nothing is briefed. The drafted brief waits on [1], and after the auto send-back build (in flight) merges.
 - **Also found:** watch Q-262 (`docs/working/watching.md`) listed three of the 2026-11-06 record's five reopen conditions; one of the two it left out, "an approved merge is reverted", fired on 2026-11-12 (the sandbox merge 3cd6d9bb, reverted by 7caea26d). The watch now lists all five; this entry is that reopening.
 
-### Q-325 · stopped-2026-11-19-guard-worktree-taint-1
-**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** ANSWERED
-Q-325: [1]
+### Q-327 · trial-set-2-ends-again
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
 
-Brief 2026-11-19-guard-worktree-taint's build loop stopped; re-dispatch or drop?
+The second trial set (T8–T12), extended a week under Q-286, has now had its second weekly digest (`docs/working/weekly/2026-11-20.md`). Which of the five should stay?
 
-**If you say no:** the write-guard fix (in a web-tainted session, ordinary edits inside a worktree under `.claude/` stop asking) stays on its unmerged branch, and every such edit keeps asking.
+**If you say no:** all five keep running as they are, and the cycle asks again at the next weekly digest (2026-11-27).
 
-> Reason: pass-3 confirmation review still running at handback; passes 1-2 fixed
+- **Read:** the trial doc `docs/working/trials/2026-11-06-attention-and-trust.md` (each trial, and what feedback it asks for) · this week's digest, the "What the checks caught" (T12) and "Sample" (T11) sections.
 
-The loop's marker line, as printed (the loop's text):
+In short: T8, each final message opens with what needs you, split "needs you now" and "can wait"; T9, final messages end with at most two links worth opening; T10, while a release is pending, one line naming the change most worth your look; T11, one deliberate read a week in the weekly digest (none of the three offered so far was taken); T12, the weekly digest lists what the gates and reviews actually stopped.
 
-> ok docs/working/briefs/2026-11-19-guard-worktree-taint.md 3cf3551c83a6a3c16abdf39be4f0b012c2f78fcb
-
-What the loop reports (from its hand-back, not yet checked by the cycle): the fix is built on `fix/guard-worktree-taint` (three commits on f5fbc9be); `test/hooks/guard-trusted-writes.bats` passes 105/105, with tonight's reproduction as a case that fails on the old hook; two review passes found and fixed one must-fix (a symlinked CLAUDE.md inside a worktree lost its ask) and the rest. The third, confirming pass was still running when the loop handed back early, which is the failure the wait rule merged under Q-314 prevents once it is released (Q-317). The branch also adds a failure-pattern entry, FP-185, which is on the self-merge floor, so the merge was always going to come to you. The next loop would finish that review, commit its rubric, set the brief to done and mark the branch ready; the merge then comes to you as its own entry.
+To be honest about how they ran: on 2026-11-19 and 20 the cycle's final messages mostly did not keep T8's split, T9's links or T10's release line, though the trial doc says every iteration follows it. So T8–T10 have had little real use this week; T11 and T12 ran as written in both digests.
 
 | Option | What it means | Cost to you | If it's wrong |
 |---|---|---|---|
-| **[1] re-dispatch** | The cycle starts the loop again; it finishes the confirming review and hands back ready | None now; one merge entry later | Another round if the review finds something |
-| **[2] drop** | The brief closes; the branch stays unmerged | None | The per-edit asks in `.claude/` worktrees go on |
+| **[1] Keep all five** | The cycle writes them into the dev-cycle skill, as T1–T7 were (one merge-gate entry later) | One line now; one merge entry later | A practice that does not help keeps costing lines in every message |
+| **[2] Keep some** | Answer `Q-327: [2] T11 T12` (the ones to keep); the rest stop now | One line | A dropped one might have helped with a fairer run |
+| **[3] Run T8–T10 one more week, kept to properly** | T11 and T12 go into the skill now; T8–T10 run as written to about 2026-11-27, then the cycle asks again | One line now, one later | Another week of longer final messages |
+| **[4] Drop all** | Final messages and the digest go back to the T1–T7 shape | One line | None known; nothing relies on them |
 
-- **Interim:** nothing runs; the branch waits.
-- **2026-11-19, iteration 0552 UTC: the third review has since reported, and it does not pass.** Its rubric is at `/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-guard-worktree-taint/review3/rubric.md` (first line `Commit: 3cf3551c`; a session scratch file, so a re-dispatch should read it soon or re-run the review). One red, introduced by 076ba817: `hooks/guard-trusted-writes.py:394` builds `os.path.abspath` of a relative path outside any `try`, so with a deleted working directory the hook crashes (exit 1, no decision) and the edit goes ahead with no ask, for CLAUDE.md, AGENTS.md and skills files too; the reviewer's repro and a one-line fix (wrap it, fall back to no extra candidate) are in the rubric. Three ambers: A12, folders above the project named like `agents/` or `Skills/` make ordinary worktree files ask again (over-asks only); A13 and A14, two places in the header and research doc that describe the rule wrongly. The reviewer confirmed that no HARD (real config) decision changed across 26,164 inputs. So [1] re-dispatch now means: fix the red and the ambers, re-run the confirming review, then hand back ready.
+- **Interim:** all five keep running, and the cycle keeps T8–T10 in its final messages from now on.
+- **If the answer differs:** dropped trials stop at the next iteration; kept ones go into one skill change.
+
+### Q-332 · regenerate-fact-check-reports-host
+**Needs:** you: terminal · **Opened:** 2026-11-20 · **Status:** OPEN
+
+Regenerate the fact-check skill's eval reports on the host, where the web works, and commit them.
+
+**If you say no:** fact-check's 3 report-dependent test suites stay NOT RUN in every health check (they need generated reports to test against), and the skill's web-search behaviour goes untested; nothing else waits on it.
+
+- **Why it's yours:** the reports need live WebSearch and WebFetch calls, and this sandbox has no web egress; only the host has it.
+- **Read:** `docs/working/research-2026-11-20-eval-web-tools-grant.md` (the fix that merged at 6c0563b5: the report generator, `test/skills/generate-reports.bash`, now grants the web tools a fixture lists; before it, all 23 fact-check reports came out Unverified because every web call was denied) · the closed brief `docs/working/briefs/closed/2026-11-20-eval-web-tools-grant.md`.
+
+**Where:** your claude-workflows checkout on the host, at main's tip (6c0563b5 or later), signed in to Claude Code. It runs the skill on each fixture with headless `claude` (subscription usage), then the three suites:
+
+```
+bash test/skills/generate-reports.bash fact-check && bats test/skills/fact-check-eval.bats test/skills/fact-check-edge-cases.bats test/skills/fact-check-format.bats
+```
+
+**Pass:** the bats run ends with no `not ok`; then commit `test/skills/fact-check/output/`. **Send back:** `Q-332: done`, or the first `not ok` lines if any fail (a failure is a skill finding for the cycle to file, not something to fix by hand).
+
+- **Interim:** the suites stay NOT RUN; the regeneration of the other skills' reports (brief `docs/working/briefs/2026-11-19-regenerate-skill-reports.md`, held by Q-328 [3] until the F2 and F3 format fixes merge) excludes fact-check.
+
+### Q-336 · image-lag
+**Needs:** you: terminal · **Opened:** 2026-11-20 · **Status:** OPEN
+
+Install the release that carries the health-checkout preparation step you approved in Q-333: run the one paste below on the host.
+
+**If you say no:** sessions keep running the image built from main 665dbf95: the dev cycle's gate has no `--health-prep` mode and `--settings` prints no `copies` line, so a `Health checkout copies:` line in a repo's `docs/dev-cycle.md` does nothing and philosophy-research keeps copying its Lean cache by hand. Nothing breaks. (The skill and test changes below are in the image too, but sessions read skills from it only after an install.)
+
+- **C (the image's commit):** 665dbf9521413cf4291b4acebd866826b0ae2f52 · **M (main's commit):** 7b46a90e51e7ba9e085bef2d3b1e6a2bc114b713
+- **Merged without your review** (the gate merged these on their own; the image carries none of `docs/`):
+  - 319559d9 Merge branch 'docs/loop-start-dir-research' (build-loop self-merge): a research doc only
+  - 6a07b026 Merge branch 'docs/why-its-yours-constraint-research' (build-loop self-merge): a research doc only
+  - 6c0563b5 Merge branch 'fix/eval-web-tools-grant' (build-loop self-merge): `test/skills/generate-reports.bash` grants headless report runs the web tools a fixture lists, plus a new test file
+  - 7b46a90e Merge branch 'fix/self-improvement-worktrees' (build-loop self-merge): `scripts/self-improvement.sh` puts its worktrees under `.worktrees/` instead of `.claude/`, with its test
+- **What changes for you:**
+  - f6d555d8 (you approved it, Q-333 [1]): `build-loop.sh --health-prep HC` and a sixth `--settings` line, `copies`, read from a `Health checkout copies: PATH ...` line in `docs/dev-cycle.md`; the dev-cycle skill's step 1 copies those gitignored paths into its health checkout, refusing symlinks, unignored paths and anything outside it. To use it in philosophy-research, add `Health checkout copies: verifier/lean-project/.lake` to that repo's `docs/dev-cycle.md`.
+  - 01eff59e (Q-335 [1]): findings F2 and F3, seven skills' report formats (title first; a field's value word first), with test-helper changes.
+  - cef30487 (Q-329 [1]) and ead9191a (Q-330 [1]): findings F4 to F7 and the F5 verdict drift, in six skills and their tests.
+  - 21e925d3: your own commit recording the Q-316 and Q-317 answers.
+  - The routine rest: 16 dev-cycle lands.
+- **Full list:** `git -c log.showSignature=false log --first-parent --format='%h %s' 665dbf9521413cf4291b4acebd866826b0ae2f52..7b46a90e51e7ba9e085bef2d3b1e6a2bc114b713`
+- **Paths changed outside `docs/` (26 under `docs/` too, which the image does not carry):** `scripts/build-loop.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/self-improvement.sh`, `skills/ai-personas-critique/SKILL.md`, `skills/arithmetic-eval/SKILL.md`, `skills/business-plan-critique-market-sizing/SKILL.md`, `skills/business-plan-critique-moat/SKILL.md`, `skills/dependency-upgrade/SKILL.md`, `skills/dev-cycle/SKILL.md`, `skills/security-reviewer/SKILL.md`, `skills/tech-debt-triage/SKILL.md`, `skills/ui-visual-review/SKILL.md`, `skills/what-if-analysis/SKILL.md`, `skills/yglesias-critique/SKILL.md`, `test/generate-reports-web-grant.bats`, `test/scripts/build-loop-health-prep.bats`, `test/scripts/build-loop-read.bats`, `test/scripts/self-improvement-clean-state.bats`, `test/skills/architecture-review-format.bats`, `test/skills/architecture-review/eval-criteria.md`, `test/skills/architecture-review/fixtures/tc-arch6-clean-ports-adapters.py`, `test/skills/business-plan-critique-moat/expected-verdicts.bash`, `test/skills/code-fact-check/eval-criteria.md`, `test/skills/code-fact-check/expected-verdicts.bash`, `test/skills/code-fact-check/fixtures/tc-c2.5-unverifiable.py`, `test/skills/dependency-upgrade-format.bats`, `test/skills/divergent-design/expected-verdicts.bash`, `test/skills/eval-helpers.bash`, `test/skills/field-value-rules.bats`, `test/skills/generate-reports.bash`, `test/skills/helpers-recommendation.bats`, `test/skills/helpers.bash`, `test/skills/matrix-analysis-format.bats`, `test/skills/pre-mortem-format.bats`, `test/skills/tech-debt-triage/expected-verdicts.bash`, `test/skills/test-strategy/eval-criteria.md`, `test/skills/test-strategy/fixtures/tc-ts6-duration-parser.py`, `test/skills/ui-visual-review-eval.bats`, `test/skills/ui-visual-review-format.bats`, `test/skills/ui-visual-review/eval-criteria.md`, `test/skills/ui-visual-review/expected-verdicts.bash`, `test/skills/ui-visual-review/fixtures/tc-uv6-disappearing-controls.tsx`, `test/skills/ui-visual-review/fixtures/tc-uv7-weak-affordance.tsx`, `test/skills/what-if-analysis-format.bats`
+
+Run this on the host, in your claude-workflows checkout at main's tip, then start a new sandbox session:
+
+```
+sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "7b46a90e51e7ba9e085bef2d3b1e6a2bc114b713:$p")"; then n=$((n+1)); else echo "release refused: $p changed after 7b46a90e51e7ba9e085bef2d3b1e6a2bc114b713: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
+```
+
+**Pass:** the installer finishes without a `release refused` line. **Send back:** `Q-336: done`.
+
+Optional, for watch Q-167 (post-install-host-probes: the hint a fresh bless prints before any probe has never been seen): if the install re-blesses, add `| tee "$TMPDIR/install.log"` to the end of the paste, and right after it, before any probe, send back the output of `grep -E 'Verified live:|^Next:' "$TMPDIR/install.log"` and `cc-isolated --list 2>&1 | grep -i 'blessed config'` (three lines).
+
+Optional, for watch Q-331 (the write-guard fix 61122f34 has no live check): in a session that has done a web search, an edit to an ordinary file inside a `.claude/worktrees/` worktree applies with no ask, while an edit to that worktree's CLAUDE.md still asks. Add `guard: fine`, or what asked.
+
+- **Interim:** the image's gate (665dbf95) runs; nothing breaks.
+
+### Q-337 · merge-gate-2026-11-20-remove-worktrees-parked-shell-415006dec476
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
+
+Merge R2: the dev cycle removes each of its worktrees in a separate call made after a bare `cd` into `.worktrees`, so a build loop running in the background no longer has its commands refused when the orchestrator's directory disappears?
+
+**If you say no:** the skill keeps its current removal steps and the build-loop prompt keeps saying "Your shell starts outside any checkout", which is false; the orchestrator keeps applying R2 by hand (it has since iteration 2133), but nothing written makes the next session do so, and about 45% of loops (31 of 69 that started in the orchestrator's worktree) lose a command at least once.
+
+- **Why it's yours:** it changes gate code, the dev-cycle skill (`skills/dev-cycle/SKILL.md`) and one prompt line in `scripts/build-loop.sh`, which never self-merge; it goes live at your next release paste.
+- **Read:** the brief `docs/working/briefs/2026-11-20-remove-worktrees-parked-shell.md`; the research behind it, `docs/working/research-2026-11-20-loop-start-dir-research.md` (merged 319559d9: the mechanism and the 37 removals paired with 17 refusals); on the branch, `docs/working/research-2026-11-20-remove-worktrees-parked-shell.md`.
+- **What an attacker would want here:** nothing new: the change is wording in the skill and one prompt sentence; no input is read and no path is computed from repo text.
+
+What it changes (from the loop's report, checked against the diff: 6 files, 136 lines added, 20 removed):
+- Step 0.3 states the two-call removal form once, with why; the stop path's forced removal, every health-checkout removal (including after a failed `--health-prep`), the gate checkout, step 10's "Then remove WT" and an old `.claude/` leftover all point to it. `--free-worktrees` is named as exempt (it runs from WT and removes only finished loops' worktrees).
+- The Rules' D13 bullet now says the shell sits where its last successful `cd` left it, and loops' Bash calls run there too. The prompt line becomes "Your shell runs where the orchestrator's does, a checkout that is not yours: start every command with "cd $DIR &&"." Nothing else in the script changes.
+- Tests: the two prompt pins updated, plus a check that "outside any checkout" does not come back; a new orchestrator test pins the form (stated once), each pointer, no command chained after a removal, and the D13 wording. A reviewer ran them against the old files: they fail there.
+- Review: round 1, four ambers fixed (wording that contradicted `--free-worktrees`, the 31-of-69 figure's base); round 2 clean; a third pass after merging main in (one conflict in step 1, both sides kept) clean. **No code-review rubric was committed.** Health check passed twice on the branch.
+- Decision-log row 72 and the plan's D13 text (your records) are not edited; the research doc gives the wording they would need.
+- Its observable (a removal made after a bare `cd` that still precedes a loop refusal) is held as a watch, filed with this entry.
+
+Branch tip 415006dec4760a6791f8b52926cbd8690ae02ff1. The marker has no body (no question). `--check`'s lines, as printed:
+
+> ok docs/working/briefs/2026-11-20-remove-worktrees-parked-shell.md 415006dec4760a6791f8b52926cbd8690ae02ff1 6372f5ba033d57e0d288be642c5cfcff03587dfe
+> path docs/working/briefs/2026-11-20-remove-worktrees-parked-shell.md M docs/working/briefs/2026-11-20-remove-worktrees-parked-shell.md
+> path docs/working/briefs/2026-11-20-remove-worktrees-parked-shell.md A docs/working/research-2026-11-20-remove-worktrees-parked-shell.md
+> path docs/working/briefs/2026-11-20-remove-worktrees-parked-shell.md M scripts/build-loop.sh
+> path docs/working/briefs/2026-11-20-remove-worktrees-parked-shell.md M skills/dev-cycle/SKILL.md
+> path docs/working/briefs/2026-11-20-remove-worktrees-parked-shell.md M test/scripts/build-loop-dispatch.bats
+> path docs/working/briefs/2026-11-20-remove-worktrees-parked-shell.md M test/scripts/build-loop-orchestrator.bats
+> rubric docs/working/briefs/2026-11-20-remove-worktrees-parked-shell.md: none: fix/remove-worktrees-from-parked-shell changes 4 paths outside docs/ and adds or changes no code-review rubric under docs/reviews/
+
+Notes: `scripts/build-loop.sh` and `skills/dev-cycle/SKILL.md` are gate code, and the skill is a prompt file; self-merge's floor would have refused both.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges tip 415006de next iteration; the release entry Q-336 is rewritten to carry it, so one paste installs both | Nothing now | A loop is still refused after a parked removal: the watch catches it and option 2 (removals moved to the next iteration) replaces this; one `git revert` undoes it |
+| **[2] drop** | The brief closes; the orchestrator keeps R2 by hand this session only | None | New sessions lose loop commands as before |
+| **[3] changes needed** | Your note goes back to the loop | One line of note | A re-dispatch and another merge entry |
+
+### Q-339 · merge-gate-2026-11-20-cycle-diff-record-prefix-f2d9abc53623
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
+
+Merge the gate rule that refuses a cycle-record change which drops or rewrites the record's earlier iteration blocks, while still taking an appended block and step 10's own updates to the last block?
+
+**If you say no:** the gate keeps taking any change to a cycle record (`docs/working/cycles/cycle-YYYY-MM-DD.md`), as when iteration 2026-11-20-0121 landed `cycle-2026-11-19.md` holding only its own block (18a43829) and the gate printed `ok`; the next iteration's window then starts from whatever `Main at:` line survives.
+
+- **Why it's yours:** it changes gate code (`scripts/build-loop.sh`'s `--cycle-diff` and `--land-cycle`, and the dev-cycle skill), which never self-merges; it goes live at your next release paste.
+- **Read:** the brief `docs/working/briefs/2026-11-20-cycle-diff-record-prefix.md`; on the branch, `docs/working/research-2026-11-20-cycle-diff-record-prefix.md` (the rule, the replay, the residuals) and the rubric `docs/reviews/code-review-rubric-2026-11-20-cycle-diff-record-prefix.md`.
+- **What an attacker would want here:** an outside text that reaches a session and gets it to rewrite an earlier record block, say to move the next window's start past a commit; this rule is what now refuses that, within S1's honest-slip scope (`docs/constraints.md`: gates defend against slips, not a hostile same-uid loop).
+
+What it changes (from the loop's report, checked against the diff: 6 files, 198 lines added, 4 removed):
+- A changed record must keep the base's bytes before its last `## Iteration` line exactly, and keep that last block line for line except its `9. land:` and `10. dispatch:` lines, trailing blank lines, and lines added under its `### Paths landed`. An appended block passes; a new record is not judged; **a deleted record now refuses** (the brief assumed it already did; records skipped every rule before).
+- One departure from the brief: it also allows additions under the last block's `### Paths landed`, because the skill's step 10 land adds its own paths there (17 lands on main did, 2026-11-13 to 11-18).
+- Replayed over every cycle-record land on main (279): it refuses 10, all before 2026-11-19 except 18a43829 (the 0121 truncation), b991011f (0128's restore of it) and ceab0beb (a later fix to a landed block). So a restore like b991011f, or a correction to a block already on main, lands by hand from now on; the header says so.
+- Residuals (named in the research doc): a `## Iteration` line inserted inside the last block lets that block's `9.`/`10.` lines drop (step 0.2 does not read them); another session landing a block between this iteration's two lands makes the second refuse (fails closed).
+- Tests: one bats case with every shape above, failing on the old code (the 0121 shape got `ok`); mutation-checked. Two fresh review passes; rubric clean (0 red, 1 amber fixed). Health check passed on the branch (2143 ok).
+
+Branch tip f2d9abc536233d1cad1f9ac66ce7f8c3a82897aa. The marker has no body (no question). `--check`'s lines, as printed:
+
+> ok docs/working/briefs/2026-11-20-cycle-diff-record-prefix.md f2d9abc536233d1cad1f9ac66ce7f8c3a82897aa f9ae83e521d78357ec3d4c509c447ca481f6e27a
+> path docs/working/briefs/2026-11-20-cycle-diff-record-prefix.md A docs/reviews/code-review-rubric-2026-11-20-cycle-diff-record-prefix.md
+> path docs/working/briefs/2026-11-20-cycle-diff-record-prefix.md M docs/working/briefs/2026-11-20-cycle-diff-record-prefix.md
+> path docs/working/briefs/2026-11-20-cycle-diff-record-prefix.md A docs/working/research-2026-11-20-cycle-diff-record-prefix.md
+> path docs/working/briefs/2026-11-20-cycle-diff-record-prefix.md M scripts/build-loop.sh
+> path docs/working/briefs/2026-11-20-cycle-diff-record-prefix.md M skills/dev-cycle/SKILL.md
+> path docs/working/briefs/2026-11-20-cycle-diff-record-prefix.md M test/scripts/build-loop-orchestrator.bats
+> rubric docs/working/briefs/2026-11-20-cycle-diff-record-prefix.md: clean docs/reviews/code-review-rubric-2026-11-20-cycle-diff-record-prefix.md: 0 red and 1 amber rows, none open
+
+Notes: `scripts/build-loop.sh` and `skills/dev-cycle/SKILL.md` are gate code, and the skill is a prompt file; self-merge's floor would have refused both. Q-337 (R2) also edits the skill; whichever merges second merges main in first, and the gate refuses a conflict.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges tip f2d9abc5 next iteration; the release entry Q-336 is rewritten to carry it | Nothing now | A legitimate record fix is refused and must land by hand; one `git revert` undoes the rule |
+| **[2] drop** | The brief closes; the roadmap item goes to Ideas | None | A truncated record lands silently again |
+| **[3] changes needed** | Your note goes back to the loop | One line of note | A re-dispatch and another merge entry |
+

@@ -15,8 +15,16 @@ setup() {
 
 # --- Header section ---
 
+# The suite grades Deliverable 2, the matrix document. Saved, it opens with its
+# title; printed to stdout (the fixture runner asks for the chat synthesis, then
+# the document), the chat synthesis and SKILL.md's between-stage banner come
+# first. So the check is that some "# ...Matrix Analysis" title line has the
+# document's **Items:** header line within the next four lines.
 @test "report has a title header" {
-  assert_title_matches '^# .*Matrix.*Analysis'
+  awk '/^# .*[Mm]atrix.*[Aa]nalysis/ { t = NR }
+       t && NR <= t + 4 && /\*\*Items:\*\*/ { ok = 1 }
+       END { exit !ok }' <<< "$REPORT_CONTENT" \
+    || { echo "no '# Matrix Analysis' title followed by an **Items:** line"; return 1; }
 }
 
 @test "report has an Items field" {

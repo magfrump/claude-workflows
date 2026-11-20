@@ -167,6 +167,23 @@ assert_field_per_finding() {
   [ "$FINDING_COUNT" -eq "$field_count" ]
 }
 
+# Assert every finding in FINDINGS_BODY (set by count_findings) whose Severity
+# is not Informational carries its own "**Recommendation:**" line. Checked per
+# finding (each ###/#### heading to the next), so an Informational finding's
+# Recommendation cannot stand in for a tiered finding's missing one. Prints
+# the headings of the findings that lack it.
+assert_recommendation_per_tiered_finding() {
+  local missing
+  missing=$(echo "$FINDINGS_BODY" | awk '
+    function flush() { if (head != "" && tiered && !rec) print head }
+    # ###/#### headings, written without {m,n}: mawk has no interval expressions.
+    /^####? / { flush(); head = $0; tiered = 0; rec = 0; next }
+    /^\*\*Severity:\*\*/ { tiered = ($0 !~ /^\*\*Severity:\*\*[ \t]*Informational/) }
+    /^\*\*Recommendation(:\*\*|\*\*:)/ { rec = 1 }
+    END { flush() }')
+  [ -z "$missing" ] || { echo "findings without a Recommendation line: $missing"; return 1; }
+}
+
 # Assert a section (## heading) exists in the report.
 assert_section_exists() {
   local heading="$1"
@@ -219,14 +236,25 @@ assert_field_values() {
   else
     body="$REPORT_CONTENT"
   fi
-  values=$(echo "$body" | sed -n "s/^\\*\\*${field}:\\*\\* //p")
+  values=$(echo "$body" | sed -n "s/^\\*\\*${field}:\\*\\* //p" | sed -E 's/^[*_]+//')
   [ -n "$values" ] || skip "no ${field} values found"
-  # The enum value must lead the field; a trailing annotation is allowed — reports
-  # legitimately qualify, e.g. "High (executed)", "Minor *(carried)*", "High for
-  # the mechanism, Low for reachability". The base value must still be from the
-  # enum, and nothing may precede it.
-  bad=$(echo "$values" | grep -viE "^(${allowed})([ ,(*].*)?$" || true)
+  bad=$(echo "$values" | field_values_off_vocab "$allowed")
   [ -z "$bad" ]
+}
+
+# field_values_off_vocab <allowed>: print the field values on stdin (one per
+# line, label already stripped) whose leading word is not from the
+# case-insensitive ERE <allowed>. The one annotation rule for vocabulary fields:
+# the enum value must lead the field, and a trailing annotation is allowed after
+# a space, comma, parenthesis, emphasis marker or full stop. Reports
+# legitimately qualify, e.g. "High (executed)", "Minor *(carried)*", "High for
+# the mechanism, Low for reachability", "Medium. It is recoverable". Nothing may
+# precede the value, and a value glued to more letters or a hyphen
+# ("Medium-High", "Lowish") is not from the enum. A spaced hedge ("Medium to
+# High") still passes: its leading word is a value. Callers strip a leading
+# emphasis marker first, as eval-helpers.bash's field_values does.
+field_values_off_vocab() {
+  grep -viE "^(${1})([ ,(*_.].*)?$" || true
 }
 
 # Load the code-review skill's full CONTENT SURFACE: SKILL.md plus its references/

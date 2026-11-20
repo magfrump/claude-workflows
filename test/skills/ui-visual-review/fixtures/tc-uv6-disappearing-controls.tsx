@@ -2,7 +2,7 @@
 // A button is conditionally rendered based on status — it disappears
 // when the task is complete, leaving no way to re-run.
 //
-// Expected finding: Minor — button should update label instead of disappearing
+// Expected finding: Major — button should update label instead of disappearing
 
 import React, { useState } from "react";
 

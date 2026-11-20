@@ -65,7 +65,7 @@ CLAIM_ACCURACY["tc-c2.4-incorrect.js"]="inaccurate"  # Docstring says creates di
 KEY_CHECK["tc-c2.4-incorrect.js"]="verdict_match;;cites_pattern:throw|creat"
 
 EXPECTED_VERDICT["tc-c2.5-unverifiable.py"]="Unverifiable"
-CLAIM_ACCURACY["tc-c2.5-unverifiable.py"]="unknown"  # Thread-safety claim in complex concurrency code
+CLAIM_ACCURACY["tc-c2.5-unverifiable.py"]="unknown"  # Lock-free claim rests on a compiled dependency whose source is not in the repo
 KEY_CHECK["tc-c2.5-unverifiable.py"]="verdict_match"
 
 # --- Category 4: Non-Checkable Content ---

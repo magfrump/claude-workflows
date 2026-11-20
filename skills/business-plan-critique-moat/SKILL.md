@@ -212,7 +212,10 @@ Each of the five lens-assessment sections MUST include a `**Verdict:**` line val
 Network Effect lens when no network effect is claimed). Each lens-assessment section MUST also
 include a `**Confidence:**` line valued `High`, `Medium`, or `Low`, reflecting how confidently
 you can land the verdict given the evidence in the draft (and fact-check report, if provided).
-Place both fields at the top of the section, before prose.
+Place both fields at the top of the section, before prose. Each field line holds
+its single value and nothing else: no hedge between two values (`Medium-High`), no
+parenthetical, no qualifier. When the answer differs by segment or scope, pick the value that
+governs the plan's claim and explain the split in the prose below.
 
 Headings shown as `###` here only for readability. **In your output document, render each as `## ` (level-2).**
 

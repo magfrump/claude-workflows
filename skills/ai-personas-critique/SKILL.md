@@ -27,7 +27,7 @@ requires:
 >
 > 1. **Capture the user's goal in 1-2 sentences.** State it back to confirm; ask one
 >    clarifying question only if genuinely ambiguous.
-> 2. **Record it verbatim at the top of the report** as a `**User goal:**` line, alongside
+> 2. **Record it verbatim below the report's title** as a `**User goal:**` line, alongside
 >    the other header fields (Proposal, Domains, Personas selected, Personas in
 >    parallel). The User-goal anchor must persist in the saved artifact so downstream
 >    readers and tools see what frame the critique was produced under.
@@ -196,7 +196,9 @@ Then produce the synthesis:
 
 ## Output Format
 
-Structure the output as a Markdown document:
+Structure the output as a Markdown document. Only the no-fact-check warning may come before
+the title; the goal capture, domain analysis and persona selection are working steps, recorded
+in the header fields (User goal, Domains, Personas selected), never as text ahead of the title.
 
 ```
 # AI Personas Critique
@@ -251,6 +253,10 @@ Success criterion: A 100-200 word critique grounded in proposal specifics, with 
 [Uncovered dimensions and what they might reveal, including non-trivial out-of-scope items
 collected from each persona's Goal-Alignment Note]
 ```
+
+Each `**Severity:**` line holds exactly one of the three values and nothing else. When the
+severity depends on a condition or differs by scope, pick the one that governs the decision
+and explain the condition in the critique text or the `**Test/mitigation:**` line.
 
 ## Output Location
 

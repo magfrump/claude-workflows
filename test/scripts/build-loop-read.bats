@@ -251,10 +251,10 @@ setup() { bl_setup; }
     [ ! -e "$d/gitcalls" ] || { echo "git was called:"; cat "$d/gitcalls"; return 1; }
 }
 
-@test "--settings prints its five lines in order and exits 0; usage errors and a missing default branch exit 1" {
+@test "--settings prints its six lines in order and exits 0; usage errors and a missing default branch exit 1" {
     run --separate-stderr bash "$BL" --settings
-    [ "$status" -eq 0 ] && [ "${#lines[@]}" -eq 5 ] || { echo "$output"; return 1; }
-    [[ "${lines[0]}" == policy\ * && "${lines[1]}" == slots\ * && "${lines[2]}" == never\ * && "${lines[3]}" == constraints\ * && "${lines[4]}" == readers\ * ]] \
+    [ "$status" -eq 0 ] && [ "${#lines[@]}" -eq 6 ] || { echo "$output"; return 1; }
+    [[ "${lines[0]}" == policy\ * && "${lines[1]}" == slots\ * && "${lines[2]}" == never\ * && "${lines[3]}" == constraints\ * && "${lines[4]}" == readers\ * && "${lines[5]}" == copies\ * ]] \
         || { echo "$output"; return 1; }
     for args in "" "--bogus" "--settings extra" "--status"; do
         # shellcheck disable=SC2086  # split the argument list on purpose

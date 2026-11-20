@@ -27,6 +27,9 @@ Maintained by `~/.claude/scripts/questions.sh` (`check` · `index` · `migrate`)
 | [Q-275](#q-275--self-answer-plan-after-q272) | trigger | Q-275: met — the owner answered Q-272 on 2026-11-11 with [1] "to start" (run and warn). The exception is ... | 2026-11-11 |
 | [Q-301](#q-301--test-confinement-fallback-reachable) | trigger | Bring the test-confinement script's run-or-refuse question (`scripts/confine-tests.sh`: run under `unshare`... | 2026-11-18 |
 | [Q-313](#q-313--live-verify-merge-of-main-stop) | trigger | Reopen the dropped roadmap Idea "The live-verify hook reads a merge commit's staged diff against HEAD only"... | 2026-11-19 |
+| [Q-331](#q-331--write-guard-claude-worktree-live-check) | trigger | Record the live check of the write-guard fix in 61122f34 (Q-326 [1]: `hooks/guard-trusted-writes.py` judges... | 2026-11-20 |
+| [Q-334](#q-334--constraint-cited-routing-revisit) | trigger | Reopen "a judgment entry's 'Why it's yours' quotes the constraint it relies on" if a second case appears of... | 2026-11-20 |
+| [Q-338](#q-338--parked-shell-removal-observable) | trigger | Replace R2 (worktrees removed in a separate call after a bare `cd` into `.worktrees`) with option 2 (each r... | 2026-11-20 |
 <!-- index:end -->
 
 ## Open
@@ -93,6 +96,18 @@ At the next release whose install re-blesses, ask the owner for the hint text th
 - **Interim:** the rebuild-hint commits keep `Live-verified: no`; that output rests on bats. The second half (a probe marks the bless verified) is live-verified on bless 3c5dd7853cf7a3f9.
 - **Closes:** when those pasted lines are on record here.
 - **2026-11-19, iteration 0056 UTC:** the owner reports the 0feaf080 install did re-bless, but its output was too large to find the lines in, and the Q-303 entry's ask was hard to spot. The `--list` line is asked for alone in Q-316 (one grep). The bless's own `Verified live:` and `Next:` lines are gone with that output; at the next re-bless, the image-lag entry's paste ends with `| tee "$TMPDIR/install.log"` and asks for `grep -E 'Verified live:|^Next:' "$TMPDIR/install.log"`, a two-line answer.
+- **2026-11-20:** the owner pasted Q-316's `--list` output: `Blessed config c9e7e4e468927b93 — verified live: yes`. A probe had already run since the bless, so the pre-probe `verified live: NO (run: cc-isolated --probe-only <repo>)` hint was not seen. Q-317's install (main 61122f34) came back `done` with no install log. All three lines are still unobserved, so this stays open. At the next image-lag entry, ask for the `tee`/`grep` two lines **and** `cc-isolated --list 2>&1 | grep -i 'blessed config'`, all run right after the install and before any probe.
+
+### Q-331 · write-guard-claude-worktree-live-check
+**Needs:** trigger · **Opened:** 2026-11-20 · **Status:** OPEN
+
+Record the live check of the write-guard fix in 61122f34 (Q-326 [1]: `hooks/guard-trusted-writes.py` judges an edit inside a `.claude/` linked worktree by its path within that worktree). Its commit says `Live-verified: no`.
+
+- **Read:** Q-317 (image-lag) in `docs/working/questions-archive.md`, the release that installed it, answered `done` with no `guard:` line · Q-326 in the same archive.
+- **Condition:** the owner, or a session record, reports what happened in a web-tainted session (one that has run a web search) on the installed image: an ordinary file edit inside a `.claude/worktrees/` worktree, and an edit to that worktree's CLAUDE.md.
+- **Pass:** the ordinary edit applies with no ask, and the CLAUDE.md edit still asks. Anything else becomes a fix.
+- **Interim:** the fix rests on bats (`test/hooks/guard-trusted-writes.bats`). Worktrees under `.worktrees/` never asked, so the cycle's own work does not depend on it. Not routed to the owner as a terminal entry: the owner's normal math-research work produces the observation, so it needs no extra session.
+- **Closes:** when that report is recorded here.
 
 ### Q-313 · live-verify-merge-of-main-stop
 **Needs:** trigger · **Opened:** 2026-11-19 · **Status:** OPEN
@@ -111,6 +126,27 @@ Bring the owner's quarterly threat-model walk-through of Q-103's accepted residu
 - **Read:** `docs/working/research-2026-11-19-area-b-ask-habituation.md` §6 (set aside: about 20 owner minutes a quarter; T12, `docs/working/trials/2026-11-06-attention-and-trust.md`, tests a cheaper answer to the same need) · the idea-log line "Quarterly threat-model walk-through of Q-103's residuals".
 - **Condition:** the first cycle iteration on or after 2027-01-01, or the owner's T12 verdict, whichever comes first.
 - **Interim:** nothing is scheduled; T12 runs.
+
+### Q-334 · constraint-cited-routing-revisit
+**Needs:** trigger · **Opened:** 2026-11-20 · **Status:** OPEN
+
+Reopen "a judgment entry's 'Why it's yours' quotes the constraint it relies on" if a second case appears of an owner entry sent to the owner on a constraint that does not cover it.
+
+- **Read:** `docs/working/research-2026-11-20-why-its-yours-constraint-research.md` (merged 6a07b026: in this repo 0 of 153 "Why it's yours" lines cite a constraint by number, and the two entries routed by one, Q-272 and Q-278 on H2, cover their case; the one reported miss is philosophy-research's F-007, Q-133 there, written before the gloss rule of decision-log row 84) · F-007 in `docs/working/feedback/philosophy-research.md`.
+- **Condition** (either): a harness-feedback entry from any repo, after F-007, reports a judgment entry routed by a constraint that does not cover the case; or a session in philosophy-research runs the research doc's count there and finds a second such entry.
+- **When it fires:** brief the doc's runner-up as a review brief: one clause added to the global instructions' "Gloss every reference" rule (`global-instructions/CLAUDE.md`), so an entry that relies on a constraint quotes its line. Then close this watch.
+- **Interim:** no rule; entries follow the existing gloss rule. Held here, not as a decision-log row, because `docs/decisions/` is the owner's file and the cycle does not write it.
+
+### Q-338 · parked-shell-removal-observable
+**Needs:** trigger · **Opened:** 2026-11-20 · **Status:** OPEN
+
+Replace R2 (worktrees removed in a separate call after a bare `cd` into `.worktrees`) with option 2 (each removal moved to the next iteration) if a build loop is still refused after a parked removal.
+
+- **Read:** `docs/working/research-2026-11-20-loop-start-dir-research.md` (merged 319559d9: the mechanism, 31 of 69 loops refused, and the pairing method) · merge entry Q-337 and the brief `docs/working/briefs/2026-11-20-remove-worktrees-parked-shell.md`.
+- **Condition:** a build loop's report, marker or transcript shows a Bash call refused with "no longer exists, so this command was not run" within minutes of an orchestrator worktree removal made after a bare `cd` into `.worktrees` (applied by hand since iteration 2026-11-20-2133). Each iteration that dispatched or collected loops checks the loops' hand-back reports for that line.
+- **When it fires:** file a review brief for option 2, citing the refusal, and close this watch.
+- **Closes:** also when ten parked removals in a row show no such refusal, recorded here with the iterations.
+- **Interim:** R2 by hand (and in the skill once Q-337 merges and installs). Since 2133: the R2, self-improvement and `--cycle-diff` loops started from a parked shell; none of the two that handed back reports a refusal.
 
 ## Closed
 
