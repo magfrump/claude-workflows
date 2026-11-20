@@ -109,6 +109,15 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   `docs/working/research-2026-11-19-area-a-merge-friction.md`, after the auto send-back build merges.
   Held: Q-323 asks whether to build it at all.
 
+- **Agent: `test/q125-verify-check.bats`'s rename case is flaky under load** (filed 2026-11-19, step 1).
+  Motive: "unsandboxed, the X checks catch the readable credential and the rename" (line 184, the
+  `X4-renamer-ran` pass assertion) failed in two full runs tonight while a build loop ran alongside
+  (the `--ended` loop's suite run, and iteration 0455's health check, which then stopped short at 1742
+  `ok` lines), and passed 3 of 3 runs alone. A red health check that is only load means a real
+  failure can be waved through as "flaky". First step: read how the test's renamer is timed against
+  the check it races, and make the test wait on an observable (a file the renamer writes) instead of
+  time; one small self-merge brief (a test file only).
+
 ## In flight
 
 - **Agent: The write guard asks on every edit in a `.claude/` worktree once a session is web-tainted**
@@ -189,6 +198,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   032's amendment (d383a484, Q-315: the lever #3 cache claims withdrawn); the same sample takes
   them, with one question: do other review-cost decisions (log rows 33-35) rest on the same
   untested transport assumption?
+  2026-11-19 (iteration 0455 UTC): step 4b fired on `skills/dev-cycle/SKILL.md` as 8ec5a900
+  (`--steal --ended`) and 723fae67 (the auto send-back) changed steps 7 and 10; the same sample
+  takes them.
 - **Record out-of-cycle session answers through `--answered`.** Signal: 4306aa88 (the owner's
   Q-281..284 answers, recorded on a hand branch) read as `other` in `--main-log`, making
   iteration 2026-11-13-2237 a full cycle with a health run.
