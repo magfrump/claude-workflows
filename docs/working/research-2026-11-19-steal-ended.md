@@ -42,7 +42,7 @@ The research doc whole (its pick B, the accepted residual, the weak-spot note on
 
 - `bats test/scripts/build-loop-dispatch.bats`: 12/12, including the new case (the printed lock time matches the porcelain lock reason; a fresh own lock taken with an ENDTIME after the tip; refusals naming the gap for another lock time, a non-dispatch or other-brief lock, a tip committed at and after ENDTIME; every usage error; a failed `--ended` still lets an old lock go by the two-hour rule) and the updated `${lines[...]}` readers.
 - The orchestrator pin (`test/scripts/build-loop-orchestrator.bats` :700-703) passes: its "under 2 hours old" wording did not move, so that file is unchanged.
-- `bats test/scripts/convention-migrations.bats` passes with the registry line; `scripts/hermeticity-lint --root .` passes; the full suite result is in the review section.
+- `bats test/scripts/convention-migrations.bats` passes with the registry line; `scripts/hermeticity-lint --root .` passes. Full `bats -r test` at f0df51ba: 2790 of 2794; the four failures were shellcheck SC2178/SC2128 on the new test (an array `a` reused as a string, fixed by renaming it `av`), the health-check cases that report it, and `test/q125-verify-check.bats` "the X checks catch", which passes on a rerun and touches nothing here (load flake). After the fix `scripts/health-check.sh` prints "All checks passed." and the dispatch file passes 12/12.
 
 ## S6 observable (from the research doc)
 

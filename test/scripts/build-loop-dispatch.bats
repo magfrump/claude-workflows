@@ -189,8 +189,8 @@ lock() { git worktree unlock "$1" 2>/dev/null; git worktree lock --reason "$2" "
         "--steal --ended $e $o::--ended's ENDTIME is before its LOCKTIME: a loop cannot end before its dispatch" \
         "--steal --ended $o $e --ended $o $e::--ended goes with --prompt, given once" \
         "--ended $o $e::--ended goes with --steal"; do
-        m="${c#*::}"; read -ra a <<<"${c%%::*}"
-        dsp --prompt "$B" "${a[@]}"; [ "$status" -eq 1 ] && [[ "$stderr" == "$m (usage: "* ]] || { echo "want: $m"; show; return 1; }
+        m="${c#*::}"; read -ra av <<<"${c%%::*}"
+        dsp --prompt "$B" "${av[@]}"; [ "$status" -eq 1 ] && [[ "$stderr" == "$m (usage: "* ]] || { echo "want: $m"; show; return 1; }
     done
     dsp --start "$B" --ended "$o" "$e"; [ "$status" -eq 1 ] && [[ "$stderr" == "--ended goes with --prompt, given once (usage: "* ]] || { show; return 1; }
     bash "$BL" --start "$B" > /dev/null
