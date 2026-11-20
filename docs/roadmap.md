@@ -112,42 +112,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   `docs/working/briefs/2026-11-19-a8-settling-runs.md`; dispatched 2026-11-19 (iteration 0110
   UTC), after the lever #3 correction merged (d383a484), so both passes run the corrected skill.
 
-- **Agent: code-review lever #3 follow-ons in other files** (filed 2026-11-19, from the lever
-  #3 loop's report; not built on its branch, by its brief). Motive: the same two claims the
-  lever #3 correction removes from `skills/code-review/SKILL.md` also live elsewhere: the
-  "paste each sub-agent's skill text, it cannot read your files" rule in
-  `skills/draft-review/SKILL.md` (:172, :231-233, :560), `skills/matrix-analysis/SKILL.md`
-  (:116, :422) and `workflows/divergent-design.md` (:213); the "cacheable prefix" claim in
-  `patterns/orchestrated-review.md` (:151) and `guides/sub-agent-briefing.md` (:78). Also:
-  rubric row A7 in `docs/reviews/code-review-rubric-2026-08-07-main.md` reads Fixed for a
-  cross-pass cache warmth that does not exist on this path, and decision-log row 35 counts
-  10 contract tests where there are now 13. First step: once the lever #3 correction merges
-  (its wording is the model), one review brief over these files; `workflows/` is a never
-  glob, so review.
-  2026-11-19: briefed (iteration 0110 UTC), the correction having merged (d383a484):
-  `docs/working/briefs/2026-11-19-lever3-followons.md`.
-
-- **Revisit the 2-hour wait before re-dispatching an unfinished loop** (owner request,
-  2026-11-19: "seems excessive"; not for this release). Motive: `build-loop.sh --prompt
-  --steal` takes a loop's locked worktree only when the loop left a marker, or when both
-  lock and tip are over `STEAL_AGE` (7200 s, decision D1 in
-  `docs/working/plan-build-loop-handoff.md`), because the gate cannot tell a dead loop
-  from a live one, perhaps another session's, from git state alone. On 2026-11-19 the
-  F-019 loop ended without a marker 7 minutes after its last commit, this session's task
-  notification said so, and the re-dispatch still waited two hours. First step: list what
-  a lock holder could prove it is gone (the dispatching session's own record of its
-  subagent ending, a heartbeat, a shorter age for this session's own loops) and weigh
-  each against D1's case (a live loop in another session, S1's honest-slip threat model),
-  then pick the threshold or mechanism; gate code, so a review merge.
-  2026-11-19, later: two loops in one evening (F-019's at 20:01 UTC, the lever #3
-  correction's at 21:47 UTC) were told to hand back before their confirming review
-  reported, with work committed and no marker; each then waits the full two hours.
-  2026-11-19: the release ran and the wait rule merged (acbff6c6), so it is no longer "not for this release";
-  briefed (iteration 0121 UTC) as research: `docs/working/briefs/closed/2026-11-19-steal-wait-research.md`,
-  merged 012b20f9 (self-merge): the dispatching session states its own loop ended (`--steal --ended
-  LOCKTIME ENDTIME`), so its own dead loops are taken at once and any other lock still waits two
-  hours. Build briefed (iteration 0146 UTC), review (gate code): `docs/working/briefs/2026-11-19-steal-ended.md`.
-
 ## Next
 
 1. **Agent first-pass playtest before each `you: walkthrough`** (owner request, 2026-11-12;
@@ -484,6 +448,17 @@ Unranked. Each names the signal that motivates it.
 ## Done
 
 Items finished since the last cycle, with the merge.
+
+- **Re-dispatch the cycle's own dead loop at once (`--steal --ended`).** Done 8ec5a900 (approved merge,
+  Q-319 [1]), the owner's 2026-11-19 request; brief `docs/working/briefs/closed/2026-11-19-steal-ended.md`,
+  research `docs/working/research-2026-11-19-steal-wait-research.md` and
+  `docs/working/research-2026-11-19-steal-ended.md`. Gate code: live at the next release (Q-317).
+  Success measure: one live loop taken means revert.
+
+- **Code-review lever #3 follow-ons in other files.** Done 2a71904f (approved merge, Q-318 [1]),
+  brief `docs/working/briefs/closed/2026-11-19-lever3-followons.md`, research
+  `docs/working/research-2026-11-19-lever3-followons.md`: the "cannot read your files" and
+  "cacheable prefix" claims gone from draft-review, matrix-analysis, divergent design and two guides.
 
 - **The cycle and a project's harness-feedback file: closed, no change.** Done d9f475df (self-merge),
   brief `docs/working/briefs/closed/2026-11-19-harness-feedback-file-in-cycle.md`, research
