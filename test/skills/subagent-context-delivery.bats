@@ -47,14 +47,14 @@ FILES=(
 
 @test "draft-review gives fact-check and critic agents their skill file by path" {
   local f="$ROOT/skills/draft-review/SKILL.md" start
-  # Each range ends at its step 4; assert that line exists so a reword cannot let the
-  # range run silently to end of file and match text from another section.
+  # Each range ends at its own step 4, before the next heading; assert that line exists so a
+  # reword cannot let the range run on and match text from another section.
   for start in 'For each fact-check agent, you MUST:' 'For each critic agent instance, you MUST:'; do
-    awk -v s="$start" 'index($0, s) == 1 { on = 1; next } on && /^4\. Include the full draft text/ { found = 1; exit } END { exit !found }' "$f" \
+    awk -v s="$start" 'index($0, s) == 1 { on = 1; next } on && /^#/ { exit } on && /^4\. Include the full draft text/ { found = 1; exit } END { exit !found }' "$f" \
       || { echo "no step 4 after: $start"; return 1; }
-    awk -v s="$start" 'index($0, s) == 1 { on = 1 } on && /^4\./ { exit } on' "$f" | grep -q 'read that whole file with the Read tool' \
+    awk -v s="$start" 'index($0, s) == 1 { on = 1 } on && (/^#/ || /^4\./) { exit } on' "$f" | grep -q 'read that whole file with the Read tool' \
       || { echo "no by-path read under: $start"; return 1; }
-    awk -v s="$start" 'index($0, s) == 1 { on = 1 } on && /^4\./ { exit } on' "$f" | grep -q 'only when the agent cannot reach the path' \
+    awk -v s="$start" 'index($0, s) == 1 { on = 1 } on && (/^#/ || /^4\./) { exit } on' "$f" | grep -q 'only when the agent cannot reach the path' \
       || { echo "no paste-only-when rule under: $start"; return 1; }
   done
 }

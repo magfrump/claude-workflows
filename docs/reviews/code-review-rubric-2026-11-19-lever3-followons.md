@@ -41,3 +41,20 @@ and has no skip.
 ## Must-Fix
 
 None.
+
+---
+
+# Round 2 (14d450d9..9c2a07a4)
+
+**Verdict: approve. No Must-Fix, one Should-Fix (amber).** Both round-1 Should-Fix items
+resolved; no new factual or consistency error; no refuted claim left in the five target files.
+
+| # | Sev | File:line | Finding | Status |
+|---|---|---|---|---|
+| R2-1 | 🟡 Should-fix | `test/skills/subagent-context-delivery.bats:53` | The step-4 end-of-range guard was not bound to its own section: with fact-check's step 4 removed, it found the critic's step 4 and the range leaked into the critic section. | Fixed in round 3: guard and both extraction awks stop at the next heading (`/^#/`). Mutant (fact-check step 4 removed and its Read-tool clause reworded) now fails test 4 with "no step 4 after: For each fact-check agent, you MUST:". |
+| R2-2 | 🟢 | `skills/draft-review/SKILL.md:171-175`, `:235-238` | Round-1 SF1 resolved: "Read tool, not `cat`" matches code-review `SKILL.md:468-469`. | — |
+| R2-3 | 🟢 | `docs/reviews/code-review-rubric-2026-08-07-main.md` A7 | Round-1 SF2 resolved: d383a484 only retitled test 10; assertions unchanged. | — |
+| R2-4 | 🟢 | `test/skills/subagent-context-delivery.bats` | Passes, hermetic, no skip; both ranges get the paste-rule check; `sub-?agents?` spelling. | — |
+
+Round 3 is a test-only change verified by the mutation above; final gate: 77/77 across the
+eight bats files named in the research doc, hermeticity-lint clean.

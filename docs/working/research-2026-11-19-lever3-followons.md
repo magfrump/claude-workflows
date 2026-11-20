@@ -83,4 +83,13 @@ workflow-routers: all pass (77 cases). `scripts/hermeticity-lint --root .`: pass
 
 ## Review
 
-See `docs/reviews/` rubric for this branch (added by the review-fix loop).
+Rubric: `docs/reviews/code-review-rubric-2026-11-19-lever3-followons.md`.
+
+- Round 1: no Must-Fix; two Should-Fix (draft-review lacked code-review's "Read tool, not
+  `cat`" clause; the A7 note said test 10 was "replaced" when d383a484 only retitled it) and
+  three nits. Fixed both Should-Fix and nit 3 (paste-rule check on both ranges, end-of-range
+  guard) and nit 4's "subagents" spelling; left nit 4's "can't read" (the guide's kept exception
+  uses it truthfully) and nit 5 (the guide's kept first exception, outside the brief).
+- Round 2: no Must-Fix; one Should-Fix: the end-of-range guard was not bound to its section.
+- Round 3: guard and extraction awks stop at the next heading; a mutant that drops fact-check's
+  step 4 now fails test 4. Final gate 77/77, hermeticity-lint clean.
