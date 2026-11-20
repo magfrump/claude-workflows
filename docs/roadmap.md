@@ -92,7 +92,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   `docs/working/research-2026-11-19-generated-file-conflicts.md`) picked: step 7 sends a branch the
   gate refuses for a conflict with main, or a gap the loop can fix, back once per tip while
   `Dispatched:` is under 3. First step: the review brief its "For the dev cycle" section drafts
-  (`skills/dev-cycle/SKILL.md`, gate code). Held: it is area A's ground, asked in Q-312.
+  (`skills/dev-cycle/SKILL.md`, gate code). Was held on Q-312, area A's ground; Q-312 answered [2]
+  (build now) on 2026-11-19, so it is ready.
 
 - **Agent: `--cycle-diff` lets a cycle record lose its earlier blocks** (filed 2026-11-19, step 6).
   Motive: iteration 2026-11-20-0121 landed `docs/working/cycles/cycle-2026-11-19.md` holding only its
@@ -103,6 +104,26 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   step: a review brief adding to `--cycle-diff` the rule that a changed record keeps the base's
   text as a prefix (append-only, as it already holds the idea log), with a bats case for this
   shape; gate code.
+
+- **Agent: Cut merge and release friction (owner brainstorm 2026-10-29, area A).** Signal: 19 of 19
+  merge entries approved; merged gate fixes wait on a host release; five terminal pastes open.
+  Ten ideas in `docs/working/brainstorm-2026-10-29-friction-and-engagement.md`. A1/A2/A3/A10
+  (how gate merges and releases are bundled) go to `divergent-design` first; A4, A6, A7, A8 are
+  independent of that choice.
+  2026-11-19: asked in Q-312 (build now, or wait for the trial's end).
+  2026-11-19: Q-312 answered [2] (build now), moved to Now. First step: one research and divergent-design
+  pass over area A, starting from what changed since 2026-10-29 (A1, A3 and A10 were answered "no
+  change" on 2026-11-06, watch Q-262 holds their revisit; tonight's merges and releases are new
+  evidence), and the independent A4, A6, A7 and A8.
+
+- **Agent: Keep the owner from habituating to asks (owner brainstorm 2026-10-29, area B).** Signal:
+  always-[1] merge entries and month-old open entries train skimming. Eight ideas in the same
+  doc; the security-channel form (B1) goes to `divergent-design`; B2's metric is the check that
+  area A actually lowers owner load.
+  2026-11-19: asked in Q-312 (build now, or wait for the trial's end).
+  2026-11-19: Q-312 answered [2] (build now), moved to Now. First step: one research and divergent-design
+  pass over area B (B1 the security-channel form first; B2 as the measure of whether area A lowers
+  owner load), drawing on the trial records in `docs/working/trials/`.
 
 ## In flight
 
@@ -242,18 +263,6 @@ Unranked. Each names the signal that motivates it.
 - **Dropped 2026-10-30: Q-168's remote-name parsing branch** (`fix/q096b-exit-scan-remote-names`,
   75d08a94). Reason: Q-238 [1]. Every route it closes needs launch-time state, outside Q-172
   [2]'s boundary; the guide lists them as known routes. The branch stays unmerged as reference.
-
-- **Cut merge and release friction (owner brainstorm 2026-10-29, area A).** Signal: 19 of 19
-  merge entries approved; merged gate fixes wait on a host release; five terminal pastes open.
-  Ten ideas in `docs/working/brainstorm-2026-10-29-friction-and-engagement.md`. A1/A2/A3/A10
-  (how gate merges and releases are bundled) go to `divergent-design` first; A4, A6, A7, A8 are
-  independent of that choice.
-  2026-11-19: asked in Q-312 (build now, or wait for the trial's end).
-- **Keep the owner from habituating to asks (owner brainstorm 2026-10-29, area B).** Signal:
-  always-[1] merge entries and month-old open entries train skimming. Eight ideas in the same
-  doc; the security-channel form (B1) goes to `divergent-design`; B2's metric is the check that
-  area A actually lowers owner load.
-  2026-11-19: asked in Q-312 (build now, or wait for the trial's end).
 
 - **Name the 2026-10-30 cutoff before it bites.** Signal: `questions.sh`'s
   `LEGACY_BEFORE='2026-10-30'` refuses `agent`/`trigger`/`deferred` entries opened from
