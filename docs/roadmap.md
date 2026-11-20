@@ -136,17 +136,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   2026-11-19: briefed on the owner's word in session ("Brief that now"), review (enforcement file):
   `docs/working/briefs/2026-11-19-guard-worktree-taint.md`.
 
-- **Agent: `test/q125-verify-check.bats`'s rename case is flaky under load** (filed 2026-11-19, step 1).
-  Motive: "unsandboxed, the X checks catch the readable credential and the rename" (line 184, the
-  `X4-renamer-ran` pass assertion) failed in two full runs tonight while a build loop ran alongside
-  (the `--ended` loop's suite run, and iteration 0455's health check, which then stopped short at 1742
-  `ok` lines), and passed 3 of 3 runs alone. A red health check that is only load means a real
-  failure can be waved through as "flaky". First step: read how the test's renamer is timed against
-  the check it races, and make the test wait on an observable (a file the renamer writes) instead of
-  time; one small self-merge brief (a test file only).
-  2026-11-19: briefed (iteration 0532 UTC), self-merge (the test file only):
-  `docs/working/briefs/2026-11-19-q125-rename-flake.md`.
-
 ## Next
 
 1. **Agent first-pass playtest before each `you: walkthrough`** (owner request, 2026-11-12;
@@ -474,6 +463,12 @@ Unranked. Each names the signal that motivates it.
 ## Done
 
 Items finished since the last cycle, with the merge.
+
+- **`test/q125-verify-check.bats`'s rename case no longer flaky under load.** Done 70e7a28d (self-merge),
+  brief `docs/working/briefs/closed/2026-11-19-q125-rename-flake.md`, research
+  `docs/working/research-2026-11-19-q125-rename-flake.md`: the renamer case runs with an 8-second
+  window, and the canned cases wait on the renamer's own count file (giving up at 30 s); a disabled,
+  single-rename or slowed renamer still fails it.
 
 - **Send a gate-refused ready branch back to its loop, with no owner entry.** Done 723fae67 (approved
   merge, Q-324 [1]), brief `docs/working/briefs/closed/2026-11-19-auto-send-back.md`, research
