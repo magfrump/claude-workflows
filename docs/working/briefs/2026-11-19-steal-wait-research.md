@@ -32,3 +32,5 @@ Paths: none
 - Changing `STEAL_AGE`, the lock or the dispatch cap.
 - F-013's tool calls that never return.
 - Editing `docs/roadmap.md`, the questions files, `docs/working/watching.md` or `docs/working/idea-log.md`: the dev cycle owns those.
+
+Dispatched: 1
