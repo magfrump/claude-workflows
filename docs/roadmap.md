@@ -109,6 +109,18 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   `docs/working/research-2026-11-19-area-a-merge-friction.md`, after the auto send-back build merges.
   Held: Q-323 asks whether to build it at all.
 
+## In flight
+
+- **Agent: Send a gate-refused ready branch back to its loop, with no owner entry** (filed 2026-11-19,
+  step 7; philosophy-research F-006, F-009, F-010). Motive: about 9 re-dispatch answers across the
+  repos, each followed by a second merge answer on review briefs. The research (7c137d5d,
+  `docs/working/research-2026-11-19-generated-file-conflicts.md`) picked: step 7 sends a branch the
+  gate refuses for a conflict with main, or a gap the loop can fix, back once per tip while
+  `Dispatched:` is under 3. First step: the review brief its "For the dev cycle" section drafts
+  (`skills/dev-cycle/SKILL.md`, gate code). Was held on Q-312, area A's ground; Q-312 answered [2]
+  (build now) on 2026-11-19, so it is ready.
+  2026-11-19: briefed (iteration 0316 UTC), review: `docs/working/briefs/2026-11-19-auto-send-back.md`.
+
 - **Agent: The write guard asks on every edit in a `.claude/` worktree once a session is web-tainted**
   (filed 2026-11-19, owner report: a math-research repo's rewrite workflow asked for approval on
   each of hundreds of file edits; the owner confirmed in session that the asks were this guard's
@@ -131,18 +143,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   defaults its worktrees to `.claude/wt-*` (move it to `.worktrees/`, as b3e25cf1 did for build loops).
   Interim relief, until this lands: work in worktrees under `.worktrees/` (sessions started after
   the 0feaf080 install do so by default), where the guard has no opinion.
-
-## In flight
-
-- **Agent: Send a gate-refused ready branch back to its loop, with no owner entry** (filed 2026-11-19,
-  step 7; philosophy-research F-006, F-009, F-010). Motive: about 9 re-dispatch answers across the
-  repos, each followed by a second merge answer on review briefs. The research (7c137d5d,
-  `docs/working/research-2026-11-19-generated-file-conflicts.md`) picked: step 7 sends a branch the
-  gate refuses for a conflict with main, or a gap the loop can fix, back once per tip while
-  `Dispatched:` is under 3. First step: the review brief its "For the dev cycle" section drafts
-  (`skills/dev-cycle/SKILL.md`, gate code). Was held on Q-312, area A's ground; Q-312 answered [2]
-  (build now) on 2026-11-19, so it is ready.
-  2026-11-19: briefed (iteration 0316 UTC), review: `docs/working/briefs/2026-11-19-auto-send-back.md`.
+  2026-11-19: briefed on the owner's word in session ("Brief that now"), review (enforcement file):
+  `docs/working/briefs/2026-11-19-guard-worktree-taint.md`.
 
 ## Next
 
