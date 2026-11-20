@@ -27,13 +27,11 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-323](#q-323--gate-only-changes-approved-by-release) | you: judgment | Should a build loop's change that touches only the gate's own code (`scripts/build-loop.sh`, `d6.sh`, `dev-... | 2026-11-19 |
-| [Q-326](#q-326--merge-2026-11-19-guard-worktree-taint-218f899afd20) | you: judgment | Q-326: [1] | 2026-11-19 |
 | [Q-327](#q-327--trial-set-2-ends-again) | you: judgment | The second trial set (T8–T12), extended a week under Q-286, has now had its second weekly digest (`docs/w... | 2026-11-20 |
-| [Q-328](#q-328--regenerated-reports-turn-health-red) | you: judgment | Q-328: [3] | 2026-11-20 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the ho... | 2026-11-05 |
 | [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there. | 2026-11-18 |
 | [Q-316](#q-316--blessed-config-line) | you: terminal | Paste one line: what `cc-isolated --list` says about the blessed config after today's re-bless. | 2026-11-19 |
-| [Q-317](#q-317--image-lag) | you: terminal | Install the release that carries tonight's six approved code merges (the loop wait rule, the code-review ca... | 2026-11-19 |
+| [Q-317](#q-317--image-lag) | you: terminal | Install the release that carries seven approved code merges (the loop wait rule, the code-review cache corr... | 2026-11-19 |
 <!-- index:end -->
 
 ## Open
@@ -127,12 +125,12 @@ cc-isolated --list 2>&1 | grep -i 'blessed config'
 ### Q-317 · image-lag
 **Needs:** you: terminal · **Opened:** 2026-11-19 · **Status:** OPEN
 
-Install the release that carries tonight's six approved code merges (the loop wait rule, the code-review cache correction and its follow-ons, `--steal --ended`, the A8 records and the auto send-back): run the one paste below on the host.
+Install the release that carries seven approved code merges (the loop wait rule, the code-review cache correction and its follow-ons, `--steal --ended`, the A8 records, the auto send-back, and the write-guard fix for `.claude/` worktrees): run the one paste below on the host.
 
-**If you say no:** sessions keep running the image built from 0feaf080: build loops keep the old prompt (they may hand back early while a reviewer runs, and their reviewers keep trying to save report files that get refused), review skills keep their old briefing text, a dead loop's worktree still waits two hours before re-dispatch, and every gate-refused ready branch still comes to you as a `stopped` entry. Nothing breaks.
+**If you say no:** sessions keep running the image built from 0feaf080: build loops keep the old prompt (they may hand back early while a reviewer runs, and their reviewers keep trying to save report files that get refused), review skills keep their old briefing text, a dead loop's worktree still waits two hours before re-dispatch, every gate-refused ready branch still comes to you as a `stopped` entry, and in a web-tainted session every edit inside a `.claude/` worktree keeps asking you (the math-research rewrite). Nothing breaks.
 
-- **C (the image's commit):** 0feaf08085b524c0c4345c52f8e285d842558f23 · **M (main's commit):** 723fae679439b3fcb1f082e664152a8010b0ceba
-- **Merged without your review** (all nine change only research docs under `docs/`, which the image does not carry):
+- **C (the image's commit):** 0feaf08085b524c0c4345c52f8e285d842558f23 · **M (main's commit):** 61122f342277c0e8bdd6d6b4d0fcfab7d70e28b5
+- **Merged without your review** (nine change only research docs under `docs/`, which the image does not carry; 70e7a28d changes one test file):
   - 74b9181f Merge branch 'docs/live-verify-merge-head-count' (build-loop self-merge)
   - 8ffddfaf Merge branch 'docs/herald-friction-triage' (build-loop self-merge)
   - d6c987f3 Merge branch 'docs/loops-wait-foreground' (build-loop self-merge)
@@ -142,6 +140,7 @@ Install the release that carries tonight's six approved code merges (the loop wa
   - 012b20f9 Merge branch 'docs/steal-wait-research' (build-loop self-merge)
   - f0547bc9 Merge branch 'docs/area-b-ask-habituation' (build-loop self-merge)
   - e9fb762c Merge branch 'docs/area-a-merge-friction' (build-loop self-merge)
+  - 70e7a28d Merge branch 'fix/q125-rename-flake' (build-loop self-merge): the flaky rename case in `test/q125-verify-check.bats`
 - **What changes for you:**
   - acbff6c6 (you approved it, Q-314 [1]): the build-loop dispatch prompt tells a loop to wait inside its turn for reviewers and files (at most 30 minutes per wait, then a `stopped` marker), and has its subagents return reports as text.
   - d383a484 (Q-315 [1]): the code-review skill drops its prompt-cache saving claims and the rules that existed only for them; critics read their skill file by path; decision 032 is amended.
@@ -149,19 +148,22 @@ Install the release that carries tonight's six approved code merges (the loop wa
   - 8ec5a900 (Q-319 [1]): `build-loop.sh --prompt --steal --ended` lets the cycle re-dispatch its own dead loop at once; `--start` and `--prompt` print a `lock UTC` line.
   - eddcaf16 (Q-320 [1]): the A8 settling runs' records, under `runs/` and `docs/` (the image carries neither).
   - 723fae67 (Q-324 [1]): the dev cycle sends a gate-refused ready branch (a conflict with main, or a failure-pattern gap the loop can fix) back to its loop with no entry for you, once per tip and under a dispatch count of 3.
-  - The routine rest: 27 dev-cycle lands.
-- **Full list:** `git -c log.showSignature=false log --first-parent --format='%h %s' 0feaf08085b524c0c4345c52f8e285d842558f23..723fae679439b3fcb1f082e664152a8010b0ceba`
-- **Paths changed outside `docs/` and `runs/` (48 under `docs/` and 44 under `runs/` too, which the image does not carry):** `guides/sub-agent-briefing.md`, `patterns/orchestrated-review.md`, `scripts/build-loop.sh`, `scripts/lib/migrations.sh`, `skills/code-review/SKILL.md`, `skills/dev-cycle/SKILL.md`, `skills/draft-review/SKILL.md`, `skills/matrix-analysis/SKILL.md`, `test/scripts/build-loop-dispatch.bats`, `test/scripts/build-loop-orchestrator.bats`, `test/skills/code-review-context-delivery.bats`, `test/skills/subagent-context-delivery.bats`, `workflows/divergent-design.md`
+  - 61122f34 (Q-326 [1]): the write guard (`hooks/guard-trusted-writes.py`) judges an edit inside a linked git worktree under `.claude/` by its path within that worktree, so an ordinary file there stops asking in a web-tainted session, while the worktree's own CLAUDE.md, settings, skills and hooks still ask; 3 review passes.
+  - The routine rest: 42 dev-cycle lands.
+- **Full list:** `git -c log.showSignature=false log --first-parent --format='%h %s' 0feaf08085b524c0c4345c52f8e285d842558f23..61122f342277c0e8bdd6d6b4d0fcfab7d70e28b5`
+- **Paths changed outside `docs/` and `runs/` (61 under `docs/` and 44 under `runs/` too, which the image does not carry):** `guides/sub-agent-briefing.md`, `hooks/guard-trusted-writes.py`, `patterns/orchestrated-review.md`, `scripts/build-loop.sh`, `scripts/lib/migrations.sh`, `skills/code-review/SKILL.md`, `skills/dev-cycle/SKILL.md`, `skills/draft-review/SKILL.md`, `skills/matrix-analysis/SKILL.md`, `test/hooks/guard-trusted-writes.bats`, `test/q125-verify-check.bats`, `test/scripts/build-loop-dispatch.bats`, `test/scripts/build-loop-orchestrator.bats`, `test/skills/code-review-context-delivery.bats`, `test/skills/subagent-context-delivery.bats`, `workflows/divergent-design.md`
 
 Run this on the host, in your claude-workflows checkout at main's tip, then start a new sandbox session:
 
 ```
-sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "723fae679439b3fcb1f082e664152a8010b0ceba:$p")"; then n=$((n+1)); else echo "release refused: $p changed after 723fae679439b3fcb1f082e664152a8010b0ceba: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
+sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "61122f342277c0e8bdd6d6b4d0fcfab7d70e28b5:$p")"; then n=$((n+1)); else echo "release refused: $p changed after 61122f342277c0e8bdd6d6b4d0fcfab7d70e28b5: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
 ```
 
 **Pass:** the installer finishes without a `release refused` line. **Send back:** `Q-317: done`. If it re-blesses, you can add `| tee "$TMPDIR/install.log"` to the end of the paste and send back `grep -E 'Verified live:|^Next:' "$TMPDIR/install.log"` (two lines) for watch Q-167; optional.
 
-- **Interim:** the image's gate (0feaf080) runs; nothing breaks. The write guard fix (in flight) is not in this release; the next one carries it.
+**The write-guard fix's live check** (its commit says `Live-verified: no`: this sandbox cannot run a live session): after the install, in a new session that has done a web search, an edit to an ordinary file inside a `.claude/worktrees/` worktree (your math-research rewrite) applies with no ask, while an edit to that worktree's CLAUDE.md still asks. Add `guard: fine`, or what asked, to your `Q-317: done`.
+
+- **Interim:** the image's gate (0feaf080) runs; nothing breaks. Until the install, the write guard keeps asking in `.claude/` worktrees once a session is web-tainted; worktrees under `.worktrees/` do not ask.
 
 ### Q-323 · gate-only-changes-approved-by-release
 **Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** OPEN
@@ -184,50 +186,6 @@ One thing the research's summary does not say, which the cycle adds: a self-land
 
 - **Interim:** [2]; nothing is briefed. The drafted brief waits on [1], and after the auto send-back build (in flight) merges.
 - **Also found:** watch Q-262 (`docs/working/watching.md`) listed three of the 2026-11-06 record's five reopen conditions; one of the two it left out, "an approved merge is reverted", fired on 2026-11-12 (the sandbox merge 3cd6d9bb, reverted by 7caea26d). The watch now lists all five; this entry is that reopening.
-
-### Q-326 · merge-2026-11-19-guard-worktree-taint-218f899afd20
-**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** ANSWERED
-Q-326: [1]
-
-Merge the write-guard fix: in a web-tainted session, an ordinary edit inside a git worktree under `.claude/` stops asking, while that worktree's own policy files still ask (your report of hundreds of asks in the math-research rewrite)?
-
-**If you say no:** every Edit or Write inside a `.claude/worktrees/` or `.claude/wt-*` worktree keeps asking once a session has fetched anything from the web; the interim relief stays working in `.worktrees/` (sessions started after the 0feaf080 install do so by default).
-
-- **Why it's yours:** `hooks/guard-trusted-writes.py` is an enforcement file (it carries `Live-verified: no` and names its host check), and the branch adds failure-pattern entry FP-185 to `docs/failure-patterns.md`, which only you review.
-- **Read:** the brief `docs/working/briefs/2026-11-19-guard-worktree-taint.md`; on the branch, `docs/working/research-2026-11-19-guard-worktree-taint.md` (the design, the pre-mortem and the residual risks R1-R3) and the three rubrics. Show the diff: `git diff main...218f899afd20c759a7e22b72e51e52f29c222aca -- hooks/ test/`.
-
-What it changes:
-- For Edit, Write and MultiEdit, a path inside a linked worktree under `.claude/` is judged by its path relative to that worktree's root. An ordinary file (a chapter, a script) gets no opinion, as in the main checkout; the worktree's own `.claude/`, skills, agents, commands, memories, CLAUDE.md, AGENTS.md, `*.mdc`, root `hooks/` and root `settings*.json` still ask when tainted. HARD paths (your real config dir) and Bash are unchanged.
-- A worktree is recognised only from git's own files (a `.git` file pointing into a `worktrees/` directory that points back), never by its name; anything the hook cannot verify, or any error, keeps the old ask (constraint H2: fail closed).
-- Review: three passes. Pass 1 found a must-fix (a symlinked CLAUDE.md inside a worktree lost its ask); pass 3 found a red (a relative path with a deleted working directory crashed the hook, so the edit went ahead with no ask). Both are fixed with tests that fail on the commit before. A checker on 26,164 inputs found no HARD decision changed.
-- Tests: the guard's file 107/107, `test/hooks/` 227/227, the hermeticity lint passes; your reproduction is a case that fails on the old hook.
-- Residual risks the research names: a Bash-capable session can fake a worktree (R1); a worktree is then treated like the main checkout (R2: `.mcp.json`, `@`-imported files and nested hooks or settings get no opinion there, as in the main checkout); a race between the check and the write (R3).
-- The host check after release: in a tainted session, an Edit to an ordinary file in a `.claude/worktrees/` worktree applies with no ask, while that worktree's CLAUDE.md or root settings.json still asks.
-
-Branch tip 218f899afd20c759a7e22b72e51e52f29c222aca. `--check`'s lines, as printed:
-
-> ok docs/working/briefs/2026-11-19-guard-worktree-taint.md 218f899afd20c759a7e22b72e51e52f29c222aca a474d336fbec8444996f2500fcd1822eb0505393
-> path docs/working/briefs/2026-11-19-guard-worktree-taint.md M docs/failure-patterns.md
-> path docs/working/briefs/2026-11-19-guard-worktree-taint.md A docs/reviews/code-review-rubric-2026-11-19-fix-guard-worktree-taint.md
-> path docs/working/briefs/2026-11-19-guard-worktree-taint.md A docs/reviews/code-review-rubric-2026-11-19-guard-worktree-taint-pass1.md
-> path docs/working/briefs/2026-11-19-guard-worktree-taint.md A docs/reviews/code-review-rubric-2026-11-19-guard-worktree-taint-pass2.md
-> path docs/working/briefs/2026-11-19-guard-worktree-taint.md M docs/working/briefs/2026-11-19-guard-worktree-taint.md
-> path docs/working/briefs/2026-11-19-guard-worktree-taint.md A docs/working/research-2026-11-19-guard-worktree-taint.md
-> path docs/working/briefs/2026-11-19-guard-worktree-taint.md M hooks/guard-trusted-writes.py
-> path docs/working/briefs/2026-11-19-guard-worktree-taint.md M test/hooks/guard-trusted-writes.bats
-> rubric docs/working/briefs/2026-11-19-guard-worktree-taint.md: clean docs/reviews/code-review-rubric-2026-11-19-fix-guard-worktree-taint.md: 1 red and 9 amber rows, none open
-> rubric docs/working/briefs/2026-11-19-guard-worktree-taint.md: clean docs/reviews/code-review-rubric-2026-11-19-guard-worktree-taint-pass1.md: 1 red and 5 amber rows, none open
-> rubric docs/working/briefs/2026-11-19-guard-worktree-taint.md: clean docs/reviews/code-review-rubric-2026-11-19-guard-worktree-taint-pass2.md: 0 red and 6 amber rows, none open
-
-`docs/failure-patterns.md` is on the self-merge floor; `hooks/guard-trusted-writes.py` is an enforcement file and reaches sessions at the next release. The red rows the first and last rubrics count are the two fixed above.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] merge** | The cycle merges 218f899a next iteration; it ships at the next release, then one host check | Reading the diff, and the host check | A policy file inside a worktree loses its ask; one `git revert` |
-| **[2] drop** | The brief closes; the asks go on | None | Hundreds of asks per rewrite in `.claude/` worktrees |
-| **[3] changes needed** | Write what to change; the note goes back to the loop | Writing the note | A further round |
-
-- **Interim:** nothing merges.
 
 ### Q-327 · trial-set-2-ends-again
 **Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
@@ -252,23 +210,3 @@ To be honest about how they ran: on 2026-11-19 and 20 the cycle's final messages
 - **Interim:** all five keep running, and the cycle keeps T8–T10 in its final messages from now on.
 - **If the answer differs:** dropped trials stop at the next iteration; kept ones go into one skill change.
 
-### Q-328 · regenerated-reports-turn-health-red
-**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
-Q-328: [3]
-
-The skill eval reports are regenerated (Q-321), but 43 test cases in 16 skills fail on the fresh reports, and those are fast suites the health check runs. Merge them as they are, or first keep the failures from turning every health check red?
-
-**If you say no:** the branch stays unmerged; the reports keep printing NOT RUN on main, and the health check stays green.
-
-- **Why it's yours:** the brief is self-merge, so the gate would land it with no entry, but the cycle held it: once it lands, every health check, the cycle's and every build loop's own, fails until all 43 are fixed, which hides any new failure behind the known ones (the reason the flaky `q125` test was fixed last night).
-- **Read:** on the branch `measure/regenerate-skill-reports` (tip 0cb729edc9351cb1fbe040cda5a9c2995dc3b45c), `docs/working/research-2026-11-19-regenerate-skill-reports.md`: the ledger (per skill: fixtures, suites passing) and findings F1 to F7. Show it: `git diff --stat main...0cb729edc9351cb1fbe040cda5a9c2995dc3b45c` (328 files, almost all under `test/skills/*/output/`).
-
-What the run found: 179 fixtures across 23 skills, none failed to run; 156 reports committed for 22 skills; 23 of 45 runnable suite files pass, 6 skills pass whole. The failures group as: F2, a field value followed by explanation ("Plausible. It depends…"); F3, text before the title; F4, arithmetic-eval's program differs from its SKILL.md; F5, verdict or severity drift in six skills; F6, no Assumption entries in what-if-analysis; F7, wording that misses the test patterns. Each is a finding about a skill or its test, not fixed, as the brief asked. Two gaps: fact-check's 23 reports were held back because headless runs are denied WebSearch and WebFetch, so every verdict came out Unverified (F1: a tool grant in `test/skills/generate-reports.bash`); code-review and draft-review have no fixture runner, so their suites stay NOT RUN.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Merge as is** | The reports land; the health check is red until F2–F7 are fixed, filed as roadmap items | None now | Every health check is red for days, and a new failure hides among the 43 |
-| **[2] Mark them known-failing first** | One small brief lists the 43 cases as known failures, each with its finding ID, so the health check stays green and reports them; then both merge, and F2–F7 become roadmap items that remove entries as they are fixed | One merge entry if the list touches test code | A known-failing case that later fails differently is not noticed until its entry is removed |
-| **[3] Fix first, merge later** | The branch waits; the F2–F7 fixes are briefed and merged first, then this lands green | None now; several merge entries over the next days | The reports go stale against skill edits made meanwhile, and need regenerating |
-
-- **Interim:** nothing merges; the branch waits. F1 (the fact-check tool grant) is filed as a roadmap item whatever the answer.

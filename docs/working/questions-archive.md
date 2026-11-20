@@ -309,6 +309,8 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-321](#q-321--regenerate-skill-eval-reports-after-a8) | Q-321: [2] | 2026-11-19 |
 | [Q-324](#q-324--merge-gate-2026-11-19-auto-send-back-d35f9fa06e91) | Q-324: [1] | 2026-11-19 |
 | [Q-325](#q-325--stopped-2026-11-19-guard-worktree-taint-1) | Q-325: [1] | 2026-11-19 |
+| [Q-326](#q-326--merge-2026-11-19-guard-worktree-taint-218f899afd20) | Q-326: [1] | 2026-11-19 |
+| [Q-328](#q-328--regenerated-reports-turn-health-red) | Q-328: [3] | 2026-11-20 |
 <!-- index:end -->
 
 ## Answered
@@ -8340,4 +8342,70 @@ What the loop reports (from its hand-back, not yet checked by the cycle): the fi
 
 - **Interim:** nothing runs; the branch waits.
 - **2026-11-19, iteration 0552 UTC: the third review has since reported, and it does not pass.** Its rubric is at `/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-guard-worktree-taint/review3/rubric.md` (first line `Commit: 3cf3551c`; a session scratch file, so a re-dispatch should read it soon or re-run the review). One red, introduced by 076ba817: `hooks/guard-trusted-writes.py:394` builds `os.path.abspath` of a relative path outside any `try`, so with a deleted working directory the hook crashes (exit 1, no decision) and the edit goes ahead with no ask, for CLAUDE.md, AGENTS.md and skills files too; the reviewer's repro and a one-line fix (wrap it, fall back to no extra candidate) are in the rubric. Three ambers: A12, folders above the project named like `agents/` or `Skills/` make ordinary worktree files ask again (over-asks only); A13 and A14, two places in the header and research doc that describe the rule wrongly. The reviewer confirmed that no HARD (real config) decision changed across 26,164 inputs. So [1] re-dispatch now means: fix the red and the ambers, re-run the confirming review, then hand back ready.
+
+### Q-326 · merge-2026-11-19-guard-worktree-taint-218f899afd20
+**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** ANSWERED
+Q-326: [1]
+
+Merge the write-guard fix: in a web-tainted session, an ordinary edit inside a git worktree under `.claude/` stops asking, while that worktree's own policy files still ask (your report of hundreds of asks in the math-research rewrite)?
+
+**If you say no:** every Edit or Write inside a `.claude/worktrees/` or `.claude/wt-*` worktree keeps asking once a session has fetched anything from the web; the interim relief stays working in `.worktrees/` (sessions started after the 0feaf080 install do so by default).
+
+- **Why it's yours:** `hooks/guard-trusted-writes.py` is an enforcement file (it carries `Live-verified: no` and names its host check), and the branch adds failure-pattern entry FP-185 to `docs/failure-patterns.md`, which only you review.
+- **Read:** the brief `docs/working/briefs/2026-11-19-guard-worktree-taint.md`; on the branch, `docs/working/research-2026-11-19-guard-worktree-taint.md` (the design, the pre-mortem and the residual risks R1-R3) and the three rubrics. Show the diff: `git diff main...218f899afd20c759a7e22b72e51e52f29c222aca -- hooks/ test/`.
+
+What it changes:
+- For Edit, Write and MultiEdit, a path inside a linked worktree under `.claude/` is judged by its path relative to that worktree's root. An ordinary file (a chapter, a script) gets no opinion, as in the main checkout; the worktree's own `.claude/`, skills, agents, commands, memories, CLAUDE.md, AGENTS.md, `*.mdc`, root `hooks/` and root `settings*.json` still ask when tainted. HARD paths (your real config dir) and Bash are unchanged.
+- A worktree is recognised only from git's own files (a `.git` file pointing into a `worktrees/` directory that points back), never by its name; anything the hook cannot verify, or any error, keeps the old ask (constraint H2: fail closed).
+- Review: three passes. Pass 1 found a must-fix (a symlinked CLAUDE.md inside a worktree lost its ask); pass 3 found a red (a relative path with a deleted working directory crashed the hook, so the edit went ahead with no ask). Both are fixed with tests that fail on the commit before. A checker on 26,164 inputs found no HARD decision changed.
+- Tests: the guard's file 107/107, `test/hooks/` 227/227, the hermeticity lint passes; your reproduction is a case that fails on the old hook.
+- Residual risks the research names: a Bash-capable session can fake a worktree (R1); a worktree is then treated like the main checkout (R2: `.mcp.json`, `@`-imported files and nested hooks or settings get no opinion there, as in the main checkout); a race between the check and the write (R3).
+- The host check after release: in a tainted session, an Edit to an ordinary file in a `.claude/worktrees/` worktree applies with no ask, while that worktree's CLAUDE.md or root settings.json still asks.
+
+Branch tip 218f899afd20c759a7e22b72e51e52f29c222aca. `--check`'s lines, as printed:
+
+> ok docs/working/briefs/2026-11-19-guard-worktree-taint.md 218f899afd20c759a7e22b72e51e52f29c222aca a474d336fbec8444996f2500fcd1822eb0505393
+> path docs/working/briefs/2026-11-19-guard-worktree-taint.md M docs/failure-patterns.md
+> path docs/working/briefs/2026-11-19-guard-worktree-taint.md A docs/reviews/code-review-rubric-2026-11-19-fix-guard-worktree-taint.md
+> path docs/working/briefs/2026-11-19-guard-worktree-taint.md A docs/reviews/code-review-rubric-2026-11-19-guard-worktree-taint-pass1.md
+> path docs/working/briefs/2026-11-19-guard-worktree-taint.md A docs/reviews/code-review-rubric-2026-11-19-guard-worktree-taint-pass2.md
+> path docs/working/briefs/2026-11-19-guard-worktree-taint.md M docs/working/briefs/2026-11-19-guard-worktree-taint.md
+> path docs/working/briefs/2026-11-19-guard-worktree-taint.md A docs/working/research-2026-11-19-guard-worktree-taint.md
+> path docs/working/briefs/2026-11-19-guard-worktree-taint.md M hooks/guard-trusted-writes.py
+> path docs/working/briefs/2026-11-19-guard-worktree-taint.md M test/hooks/guard-trusted-writes.bats
+> rubric docs/working/briefs/2026-11-19-guard-worktree-taint.md: clean docs/reviews/code-review-rubric-2026-11-19-fix-guard-worktree-taint.md: 1 red and 9 amber rows, none open
+> rubric docs/working/briefs/2026-11-19-guard-worktree-taint.md: clean docs/reviews/code-review-rubric-2026-11-19-guard-worktree-taint-pass1.md: 1 red and 5 amber rows, none open
+> rubric docs/working/briefs/2026-11-19-guard-worktree-taint.md: clean docs/reviews/code-review-rubric-2026-11-19-guard-worktree-taint-pass2.md: 0 red and 6 amber rows, none open
+
+`docs/failure-patterns.md` is on the self-merge floor; `hooks/guard-trusted-writes.py` is an enforcement file and reaches sessions at the next release. The red rows the first and last rubrics count are the two fixed above.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The cycle merges 218f899a next iteration; it ships at the next release, then one host check | Reading the diff, and the host check | A policy file inside a worktree loses its ask; one `git revert` |
+| **[2] drop** | The brief closes; the asks go on | None | Hundreds of asks per rewrite in `.claude/` worktrees |
+| **[3] changes needed** | Write what to change; the note goes back to the loop | Writing the note | A further round |
+
+- **Interim:** nothing merges.
+
+
+### Q-328 · regenerated-reports-turn-health-red
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-328: [3]
+
+The skill eval reports are regenerated (Q-321), but 43 test cases in 16 skills fail on the fresh reports, and those are fast suites the health check runs. Merge them as they are, or first keep the failures from turning every health check red?
+
+**If you say no:** the branch stays unmerged; the reports keep printing NOT RUN on main, and the health check stays green.
+
+- **Why it's yours:** the brief is self-merge, so the gate would land it with no entry, but the cycle held it: once it lands, every health check, the cycle's and every build loop's own, fails until all 43 are fixed, which hides any new failure behind the known ones (the reason the flaky `q125` test was fixed last night).
+- **Read:** on the branch `measure/regenerate-skill-reports` (tip 0cb729edc9351cb1fbe040cda5a9c2995dc3b45c), `docs/working/research-2026-11-19-regenerate-skill-reports.md`: the ledger (per skill: fixtures, suites passing) and findings F1 to F7. Show it: `git diff --stat main...0cb729edc9351cb1fbe040cda5a9c2995dc3b45c` (328 files, almost all under `test/skills/*/output/`).
+
+What the run found: 179 fixtures across 23 skills, none failed to run; 156 reports committed for 22 skills; 23 of 45 runnable suite files pass, 6 skills pass whole. The failures group as: F2, a field value followed by explanation ("Plausible. It depends…"); F3, text before the title; F4, arithmetic-eval's program differs from its SKILL.md; F5, verdict or severity drift in six skills; F6, no Assumption entries in what-if-analysis; F7, wording that misses the test patterns. Each is a finding about a skill or its test, not fixed, as the brief asked. Two gaps: fact-check's 23 reports were held back because headless runs are denied WebSearch and WebFetch, so every verdict came out Unverified (F1: a tool grant in `test/skills/generate-reports.bash`); code-review and draft-review have no fixture runner, so their suites stay NOT RUN.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Merge as is** | The reports land; the health check is red until F2–F7 are fixed, filed as roadmap items | None now | Every health check is red for days, and a new failure hides among the 43 |
+| **[2] Mark them known-failing first** | One small brief lists the 43 cases as known failures, each with its finding ID, so the health check stays green and reports them; then both merge, and F2–F7 become roadmap items that remove entries as they are fixed | One merge entry if the list touches test code | A known-failing case that later fails differently is not noticed until its entry is removed |
+| **[3] Fix first, merge later** | The branch waits; the F2–F7 fixes are briefed and merged first, then this lands green | None now; several merge entries over the next days | The reports go stale against skill edits made meanwhile, and need regenerating |
+
+- **Interim:** nothing merges; the branch waits. F1 (the fact-check tool grant) is filed as a roadmap item whatever the answer.
 
