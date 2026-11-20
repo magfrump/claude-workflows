@@ -29,6 +29,7 @@ The index below is generated — edit entries, not the table.
 | [Q-323](#q-323--gate-only-changes-approved-by-release) | you: judgment | Should a build loop's change that touches only the gate's own code (`scripts/build-loop.sh`, `d6.sh`, `dev-... | 2026-11-19 |
 | [Q-326](#q-326--merge-2026-11-19-guard-worktree-taint-218f899afd20) | you: judgment | Merge the write-guard fix: in a web-tainted session, an ordinary edit inside a git worktree under `.claude/... | 2026-11-19 |
 | [Q-327](#q-327--trial-set-2-ends-again) | you: judgment | The second trial set (T8–T12), extended a week under Q-286, has now had its second weekly digest (`docs/w... | 2026-11-20 |
+| [Q-328](#q-328--regenerated-reports-turn-health-red) | you: judgment | The skill eval reports are regenerated (Q-321), but 43 test cases in 16 skills fail on the fresh reports, a... | 2026-11-20 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the ho... | 2026-11-05 |
 | [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there. | 2026-11-18 |
 | [Q-316](#q-316--blessed-config-line) | you: terminal | Paste one line: what `cc-isolated --list` says about the blessed config after today's re-bless. | 2026-11-19 |
@@ -249,3 +250,23 @@ To be honest about how they ran: on 2026-11-19 and 20 the cycle's final messages
 
 - **Interim:** all five keep running, and the cycle keeps T8–T10 in its final messages from now on.
 - **If the answer differs:** dropped trials stop at the next iteration; kept ones go into one skill change.
+
+### Q-328 · regenerated-reports-turn-health-red
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
+
+The skill eval reports are regenerated (Q-321), but 43 test cases in 16 skills fail on the fresh reports, and those are fast suites the health check runs. Merge them as they are, or first keep the failures from turning every health check red?
+
+**If you say no:** the branch stays unmerged; the reports keep printing NOT RUN on main, and the health check stays green.
+
+- **Why it's yours:** the brief is self-merge, so the gate would land it with no entry, but the cycle held it: once it lands, every health check, the cycle's and every build loop's own, fails until all 43 are fixed, which hides any new failure behind the known ones (the reason the flaky `q125` test was fixed last night).
+- **Read:** on the branch `measure/regenerate-skill-reports` (tip 0cb729edc9351cb1fbe040cda5a9c2995dc3b45c), `docs/working/research-2026-11-19-regenerate-skill-reports.md`: the ledger (per skill: fixtures, suites passing) and findings F1 to F7. Show it: `git diff --stat main...0cb729edc9351cb1fbe040cda5a9c2995dc3b45c` (328 files, almost all under `test/skills/*/output/`).
+
+What the run found: 179 fixtures across 23 skills, none failed to run; 156 reports committed for 22 skills; 23 of 45 runnable suite files pass, 6 skills pass whole. The failures group as: F2, a field value followed by explanation ("Plausible. It depends…"); F3, text before the title; F4, arithmetic-eval's program differs from its SKILL.md; F5, verdict or severity drift in six skills; F6, no Assumption entries in what-if-analysis; F7, wording that misses the test patterns. Each is a finding about a skill or its test, not fixed, as the brief asked. Two gaps: fact-check's 23 reports were held back because headless runs are denied WebSearch and WebFetch, so every verdict came out Unverified (F1: a tool grant in `test/skills/generate-reports.bash`); code-review and draft-review have no fixture runner, so their suites stay NOT RUN.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Merge as is** | The reports land; the health check is red until F2–F7 are fixed, filed as roadmap items | None now | Every health check is red for days, and a new failure hides among the 43 |
+| **[2] Mark them known-failing first** | One small brief lists the 43 cases as known failures, each with its finding ID, so the health check stays green and reports them; then both merge, and F2–F7 become roadmap items that remove entries as they are fixed | One merge entry if the list touches test code | A known-failing case that later fails differently is not noticed until its entry is removed |
+| **[3] Fix first, merge later** | The branch waits; the F2–F7 fixes are briefed and merged first, then this lands green | None now; several merge entries over the next days | The reports go stale against skill edits made meanwhile, and need regenerating |
+
+- **Interim:** nothing merges; the branch waits. F1 (the fact-check tool grant) is filed as a roadmap item whatever the answer.
