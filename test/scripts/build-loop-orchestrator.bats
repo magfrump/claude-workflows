@@ -863,7 +863,7 @@ blk() { printf '%s\n' "## Iteration 2026-10-11-$1" "Branch: chore/dev-cycle-2026
     { echo '# Cycle 2026-10-11'; echo; blk 0100 a '9. land: 1111111 (landed)' '10. dispatch: none'; echo; blk 0200 b; } > "$R"; commit_all record
     git checkout -q "$B"; git merge -q --ff-only main
     E="refuse $R: the base's text before its last ## Iteration block changed (an earlier block dropped or edited); an iteration only appends its own block"
-    L="refuse $R: the base's last block (## Iteration 2026-10-11-0200) changed other than its 9. land: and 10. dispatch: lines; an iteration only appends its own block"
+    L="refuse $R: the base's last block (## Iteration 2026-10-11-0200) changed other than its 9. land: and 10. dispatch: lines and lines added under its ### Paths landed; an iteration only appends its own block"
     # An appended block passes.
     { echo; blk 0300 c; } >> "$R"; git add -A; cd_is ok; git reset -q --hard
     # Step 10's land: the last block's 9. line rewritten and its 10. line added; with a block appended after it too.
@@ -876,7 +876,11 @@ blk() { printf '%s\n' "## Iteration 2026-10-11-$1" "Branch: chore/dev-cycle-2026
     sed -i 's/^9\. land: 1111111 (landed)$/9. land: 9999999/' "$R"; git add -A; cd_is "$E"; git reset -q --hard
     # The last block's other lines edited, a line added to it, or the block cut short: refused, an appended block or not.
     sed -i 's/^Main at: b$/Main at: z/' "$R"; git add -A; cd_is "$L"; { echo; blk 0300 c; } >> "$R"; git add -A; cd_is "$L"; git reset -q --hard
-    echo '- M docs/working/questions.md' >> "$R"; git add -A; cd_is "$L"; git reset -q --hard
+    # Step 10's land adds its own paths under the last block's ### Paths landed: taken; dropping one, or a line added elsewhere in the block, refuses.
+    echo '- M docs/working/questions.md' >> "$R"; git add -A; cd_is ok; { echo; blk 0300 c; } >> "$R"; git add -A; cd_is ok; git reset -q --hard
+    head -n -1 "$R" > "$R.x"; mv "$R.x" "$R"; git add -A; cd_is "$L"; git reset -q --hard
+    sed -i 's/^### Steps$/&\nadded/' "$R"; git add -A; cd_is "$E"; git reset -q --hard
+    awk '{ print } /^Main at: b$/ { print "added" }' "$R" > "$R.x"; mv "$R.x" "$R"; git add -A; cd_is "$L"; git reset -q --hard
     head -n -2 "$R" > "$R.x"; mv "$R.x" "$R"; git add -A; cd_is "$L"; git reset -q --hard
     # Deleting a record refuses; a new record is not judged.
     git rm -q "$R"; cd_is "refuse $R: it is deleted"; git reset -q --hard
