@@ -219,7 +219,7 @@ assert_field_values() {
   else
     body="$REPORT_CONTENT"
   fi
-  values=$(echo "$body" | sed -n "s/^\\*\\*${field}:\\*\\* //p")
+  values=$(echo "$body" | sed -n "s/^\\*\\*${field}:\\*\\* //p" | sed -E 's/^[*_]+//')
   [ -n "$values" ] || skip "no ${field} values found"
   bad=$(echo "$values" | field_values_off_vocab "$allowed")
   [ -z "$bad" ]
@@ -233,7 +233,9 @@ assert_field_values() {
 # legitimately qualify, e.g. "High (executed)", "Minor *(carried)*", "High for
 # the mechanism, Low for reachability", "Medium. It is recoverable". Nothing may
 # precede the value, and a value glued to more letters or a hyphen
-# ("Medium-High", "Lowish") is not from the enum.
+# ("Medium-High", "Lowish") is not from the enum. A spaced hedge ("Medium to
+# High") still passes: its leading word is a value. Callers strip a leading
+# emphasis marker first, as eval-helpers.bash's field_values does.
 field_values_off_vocab() {
   grep -viE "^(${1})([ ,(*.].*)?$" || true
 }

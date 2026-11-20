@@ -35,9 +35,9 @@ requires:
 > `User goal:` / `Current task:` / `Success criterion:` lines), do this **before**
 > producing the critique:
 >
-> 1. **Capture the user's goal in 1-2 sentences.** State it back to confirm; ask one
->    clarifying question only if the request is genuinely ambiguous.
-> 2. **Record it verbatim in the report's header**, under the title, as a `**User goal:**` line,
+> 1. **Capture the user's goal in 1-2 sentences.** State it back to confirm (in chat, never
+>    ahead of the report's title); ask one clarifying question only if the request is genuinely ambiguous.
+> 2. **Record it verbatim below the report's title and header fields** as a `**User goal:**` line,
 >    alongside the `Commit: <hash>` metadata line of the saved artifact. The User-goal
 >    anchor must persist in the saved file so downstream readers and tools see what frame
 >    the review was produced under.

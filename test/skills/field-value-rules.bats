@@ -40,10 +40,16 @@ teardown() {
   [ -z "$output" ]
 }
 
-@test "a hyphenated hedge between two values is off the vocabulary" {
+@test "a value glued to a hyphen (Medium-High) is off the vocabulary" {
   run field_values_off_vocab 'Low|Medium|High' <<< 'Medium-High (strong mechanism)'
   [ "$status" -eq 0 ]
   [ "$output" = 'Medium-High (strong mechanism)' ]
+}
+
+@test "a spaced hedge passes: the rule reads only the leading word" {
+  run field_values_off_vocab 'Low|Medium|High' <<< 'Medium to High.'
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
 }
 
 @test "text before the value is off the vocabulary" {
@@ -67,6 +73,9 @@ teardown() {
   REPORT_CONTENT=$'**Confidence:** Medium-High'
   run assert_field_values Confidence 'High|Medium|Low'
   [ "$status" -ne 0 ]
+  REPORT_CONTENT=$'**Confidence:** **High**'
+  run assert_field_values Confidence 'High|Medium|Low'
+  [ "$status" -eq 0 ]
 }
 
 # --- field_values: emphasis-wrapped values ---
@@ -91,8 +100,10 @@ teardown() {
 
 # --- the two format suites whose checks changed ---
 
-# run_suite <suite> <report text>: run a format suite against a report file.
+# run_suite <suite> <report text> <filter>: run the format suite's tests whose
+# names match <filter> against a report file holding <report text>.
 run_suite() {
+  [ -n "${3:-}" ] || return 2
   printf '%s\n' "$2" > "$TEST_TMPDIR/report.md"
   REPORT_PATH="$TEST_TMPDIR/report.md" run bats --tap -f "$3" "$BATS_TEST_DIRNAME/$1"
 }
@@ -102,6 +113,15 @@ run_suite() {
   [ "$status" -eq 0 ]
   [[ "$output" == *"ok 1 summary has Estimated effort field"* ]]
   run_suite dependency-upgrade-format.bats $'### Summary\n**Estimated effort:** Small.' 'Estimated effort'
+  [ "$status" -ne 0 ]
+}
+
+@test "dependency-upgrade's Recommendation must hold its value alone" {
+  run_suite dependency-upgrade-format.bats $'### Summary\n**Recommendation:** Defer.' 'value alone'
+  [ "$status" -eq 0 ]
+  run_suite dependency-upgrade-format.bats $'### Summary\n**Recommendation:** Don\'t merge this PR this week.' 'value alone'
+  [ "$status" -ne 0 ]
+  run_suite dependency-upgrade-format.bats $'### Summary\n**Recommendation:** Upgrade soon. No code changes needed.' 'value alone'
   [ "$status" -ne 0 ]
 }
 

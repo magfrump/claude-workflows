@@ -178,13 +178,15 @@ npm ci
 5. {Step 5 — e.g., "Remove compatibility shim added in v3 migration"}
 
 ### If Not Upgrading
-{If recommending deferral, note what would change the recommendation — e.g., "Revisit when
-we start the API v3 work, which will require the new streaming API in this dependency."}
+{Keep this heading whatever the recommendation. If recommending deferral, note what would
+change the recommendation — e.g., "Revisit when we start the API v3 work, which will require
+the new streaming API in this dependency." Otherwise, one line on what staying put would cost.}
 ````
 
-Each Summary field opens with one of its listed values, in plain text (not bold), and the
-`**Recommendation:**` line holds that value alone. Put the reasoning, conditions and next
-steps on the lines after the Summary, never in place of the value.
+Write the Summary fields in plain text (not bold). The `**Recommendation:**` line holds one of
+its four values alone; Breaking change impact and Risk open with one of their listed values;
+Estimated effort names its unit (minutes, hours or days; "about an hour" is fine). Put the
+reasoning, conditions and next steps after the Summary, never in place of a value.
 
 ### Comparison mode
 
