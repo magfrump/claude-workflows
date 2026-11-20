@@ -46,7 +46,7 @@ At 0cb729ed five of six reports wrote each assumption as a bold title
 and no `**Assumption:**` field. SKILL.md listed `- **Assumption:** the claim itself` as a
 field but showed no worked shape, so turning it into a title is an easy reading. Call:
 skill. (tc-wi2, tc-wi3 and tc-wi5 have the same shape but their eval cases do not run
-`format_check`, so only format test 20 and tc-wi1/tc-wi4 showed it.)
+`format_check`, so only the format suite's own run (on tc-wi1) and tc-wi1/tc-wi4 showed it.)
 
 tc-wi6 is different: it does use the field, as a numbered list item
 (`1. **Assumption:** ...`), which the format test's regex did not accept although the
@@ -115,8 +115,8 @@ committed (saved under the session scratchpad only).
 
 | Skill | Change | Suites run | Result |
 |---|---|---|---|
-| arithmetic-eval | skill | eval + format | 34/34. tc-ae1..ae4 each made one Mode 1 call equal to SKILL.md's |
-| what-if-analysis | skill + test | eval + format | 27/28. Format 14 passes on all six. tc-wi6 still fails on F5 (cliff tag) |
+| arithmetic-eval | skill | eval + format | 30 pass, 4 skip (the opt-in after-denial grades). tc-ae1..ae4 each made one Mode 1 call equal to SKILL.md's |
+| what-if-analysis | skill + test | eval + format | 27/28. Format 14 passes on five of six; tc-wi3 fails it (below), unseen by the suites. tc-wi6 still fails on F5 (cliff tag) |
 | business-plan-critique-moat | test | eval on 0cb729ed reports | tc-moat1 passes; tc-moat7 still fails on F2 (Confidence trailing prose) |
 | tech-debt-triage | skill + test | eval + format | 22/22, after review and one more pattern round (below) |
 | yglesias-critique | skill | eval + format + dimensions | ygl4's Boring Lever now has "lever", but see below |
@@ -124,9 +124,14 @@ committed (saved under the session scratchpad only).
 - tech-debt-triage, second round: on the regenerated reports td4 rated Carrying Cost
   Medium (the skill fix took), but its FUL-1187 tie was worded "fold the fix into it" /
   "the natural vehicle is that migration", and td5's stability "none since 2024-03" /
-  "The last change was 2024-03-14"; both patterns missed. Same call as F7 (test), each
-  new alternative matches only its own report among the six regenerated ones and no
-  fixture.
+  "The last change was 2024-03-14"; both patterns missed. Same call as F7 (test). Each
+  new alternative, taken alone, matches only its own report among the six regenerated
+  ones and no fixture (the td4 pattern as a whole also matches td6 through the older
+  `during ... migration` branch; it is only run on td4).
+- what-if-analysis tc-wi3 (fresh): format 14 counts 7 assumptions but 6 `If wrong`
+  values, because one reads "**If wrong:** this could be a full retreat", not starting
+  with one of the three words as SKILL.md says. A model slip against a stated rule, not
+  a test fault; it shows only when the format suite is pointed at tc-wi3.
 - yglesias-critique, still failing: tc-ygl4's Adoption Survival section now leaves out
   "adoption" (it says "easier to pass"), so format 6 fails on a different keyword; and
   `dimensions.bats` (which reads tc-ygl7) fails because the new tc-ygl7 report omits the
