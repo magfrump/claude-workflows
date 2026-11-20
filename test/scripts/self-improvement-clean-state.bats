@@ -54,6 +54,7 @@ case "$prompt" in
         *) echo "stub: unexpected implementer flag $1" >&2; exit 2 ;;
       esac
     done
+    printf '%s\n' "$PWD" >> "$STUB_DIR/impl.cwd"
     if [ -n "${STUB_IMPL_SLEEP:-}" ]; then
       echo $$ >> "$STUB_DIR/impl.pids"
       exec sleep "$STUB_IMPL_SLEEP"
@@ -200,8 +201,8 @@ run_si() {
     if kill -0 "$p" 2>/dev/null; then alive="$alive $p"; kill "$p"; fi
   done
   [ -z "$alive" ]
-  [ ! -d "$REPO/.claude/wt-a" ]
-  [ ! -d "$REPO/.claude/wt-b" ]
+  [ ! -d "$REPO/.worktrees/si-wt-a" ]
+  [ ! -d "$REPO/.worktrees/si-wt-b" ]
 }
 
 @test "Q146: the loop commits the implementer's work with its message file" {
@@ -209,7 +210,7 @@ run_si() {
   run_si
   [ "$status" -eq 0 ]
   # Task a merged: main carries the stub's message, and never the message file.
-  git -C "$REPO" log --format=%s main | grep -qx 'feat: change from wt-a'
+  git -C "$REPO" log --format=%s main | grep -qx 'feat: change from si-wt-a'
   git -C "$REPO" log -1 --format=%B feat/r1-b | grep -qx 'Confidence: high'
   run git -C "$REPO" log --all --name-only --format=
   [[ "$output" != *".si-commit-msg"* ]]
@@ -253,4 +254,72 @@ run_si() {
   [ "$(jq -r '.validation.a.commits' "$WD/round-1-report.json")" = fail ]
   [ "$(jq -r '.validation.a.verdict_detail.reject_reason' "$WD/round-1-report.json")" \
     = "implementer commit failed: the commit did not land on feat/r1-a" ]
+}
+
+# The default WORKTREE_BASE is .worktrees/si-wt, outside .claude/ (where Claude
+# Code asks before every write). The run makes .worktrees/ and its .gitignore of
+# "*" as build-loop.sh --worktree-base does, and refuses when git would see a
+# task worktree there.
+@test "default worktrees land under .worktrees/ and are gitignored" {
+  export STUB_RESOLVER_RC=1
+  run_si
+  [ "$status" -eq 0 ]
+  grep -qx "$REPO/.worktrees/si-wt-a" "$STUB_DIR/impl.cwd"
+  grep -qx "$REPO/.worktrees/si-wt-b" "$STUB_DIR/impl.cwd"
+  run grep -c '/\.claude/' "$STUB_DIR/impl.cwd"
+  [ "$output" = 0 ]
+  [ "$(cat "$REPO/.worktrees/.gitignore")" = '*' ]
+  git -C "$REPO" check-ignore -q -- .worktrees/si-wt-a
+  [ -z "$(git -C "$REPO" status --porcelain --untracked-files=all)" ]
+  [ ! -e "$REPO/.claude" ]
+}
+
+@test "an existing .worktrees/.gitignore that ignores the worktrees is left as it is" {
+  mkdir -p "$REPO/.worktrees"
+  printf 'si-wt-*\n.gitignore\n' > "$REPO/.worktrees/.gitignore"
+  export STUB_RESOLVER_RC=1
+  run_si
+  [ "$status" -eq 0 ]
+  [ "$(cat "$REPO/.worktrees/.gitignore")" = "$(printf 'si-wt-*\n.gitignore')" ]
+  grep -qx "$REPO/.worktrees/si-wt-a" "$STUB_DIR/impl.cwd"
+}
+
+@test "a .worktrees/.gitignore that leaves the worktrees visible refuses the run" {
+  mkdir -p "$REPO/.worktrees"
+  printf 'other\n' > "$REPO/.worktrees/.gitignore"
+  run_si
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"git does not ignore everything in $REPO/.worktrees"*"set WORKTREE_BASE"* ]]
+  [ ! -e "$STUB_DIR/impl.cwd" ]
+  run git -C "$REPO" show-ref --verify --quiet refs/heads/feat/r1-a
+  [ "$status" -ne 0 ]
+  [ "$(cat "$REPO/.worktrees/.gitignore")" = other ]
+}
+
+@test "a .worktrees that is a symbolic link refuses the run" {
+  mkdir -p "$BATS_TEST_TMPDIR/elsewhere"
+  ln -s "$BATS_TEST_TMPDIR/elsewhere" "$REPO/.worktrees"
+  run_si
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"$REPO/.worktrees is a symbolic link or not a directory"* ]]
+  [ ! -e "$BATS_TEST_TMPDIR/elsewhere/.gitignore" ]
+  [ ! -e "$STUB_DIR/impl.cwd" ]
+}
+
+@test "a .worktrees/.gitignore that is a symbolic link refuses the run" {
+  mkdir -p "$REPO/.worktrees"
+  ln -s "$BATS_TEST_TMPDIR/target" "$REPO/.worktrees/.gitignore"
+  run_si
+  [ "$status" -ne 0 ]
+  [[ "$output" == *".gitignore is a symbolic link or not a plain file"* ]]
+  [ ! -e "$BATS_TEST_TMPDIR/target" ]
+}
+
+@test "an explicit WORKTREE_BASE is used as given, with no .worktrees made" {
+  mkdir -p "$BATS_TEST_TMPDIR/own"
+  export WORKTREE_BASE="$BATS_TEST_TMPDIR/own/x" STUB_RESOLVER_RC=1
+  run_si
+  [ "$status" -eq 0 ]
+  grep -qx "$BATS_TEST_TMPDIR/own/x-a" "$STUB_DIR/impl.cwd"
+  [ ! -e "$REPO/.worktrees" ]
 }

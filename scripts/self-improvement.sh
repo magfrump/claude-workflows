@@ -26,8 +26,10 @@
 #                          this script (scripts/ sits at the repo root), so the
 #                          loop follows the checkout wherever it lives.
 #   WORKTREE_BASE          Prefix for git worktree directories. Defaults to
-#                          <repo>/.claude/wt-* — inside the sandbox
-#                          write-allowlist and gitignored (see .gitignore).
+#                          <repo>/.worktrees/si-wt (worktrees si-wt-<task>),
+#                          the gitignored directory build loops use, made with
+#                          its .gitignore of "*" when missing. It moved out of
+#                          .claude/, where Claude Code asks before every write.
 #
 # Prerequisites:
 #   - jq
@@ -164,6 +166,53 @@ create_task_worktree() {
     fi
     RUN_WORKTREES+=("$wt")
     RUN_BRANCHES+=("$br")
+}
+
+# Make the default worktree directory, $1/.worktrees, the way
+# `scripts/build-loop.sh --worktree-base` makes it (same directory, same
+# .gitignore of "*" when none is there, an existing one left as it is), and
+# check that git ignores what will be put there. It does not call that script:
+# build-loop.sh is gate code and refuses outside its own caller checks.
+# Refuses (returns 1, naming the gap and a way forward) on a symbolic link or
+# non-directory, a .gitignore that is a link or not a plain file, or an ignore
+# setup that would leave a task worktree visible to `git status` — a visible
+# checkout is one `git add -A` away from being committed to main.
+# Args: $1 = repo dir (absolute), $2 = worktree name prefix (e.g. si-wt).
+ensure_worktree_dir() {
+    local repo=$1 prefix=$2 b g out rc=0
+    b="$repo/.worktrees"; g="$b/.gitignore"
+    local fix="or set WORKTREE_BASE to a directory prefix of your own"
+    if [ -L "$b" ] || { [ -e "$b" ] && [ ! -d "$b" ]; }; then
+        echo "Error: $b is a symbolic link or not a directory; remove it, $fix" >&2
+        return 1
+    fi
+    if ! mkdir -p -- "$b" 2>/dev/null; then
+        echo "Error: could not make the worktree directory $b; $fix" >&2
+        return 1
+    fi
+    if [ -L "$g" ] || { [ -e "$g" ] && [ ! -f "$g" ]; }; then
+        echo "Error: $g is a symbolic link or not a plain file; remove it, $fix" >&2
+        return 1
+    fi
+    # set -C (noclobber): never write through a file or link that appeared
+    # after the test above; losing that race leaves the winner's file, which
+    # the ignore check below then judges.
+    if [ ! -e "$g" ] && ! ( set -C; printf '*\n' > "$g" ) 2>/dev/null && { [ ! -f "$g" ] || [ -L "$g" ]; }; then
+        echo "Error: could not write $g; $fix" >&2
+        return 1
+    fi
+    # Two reads: nothing under .worktrees shows in `git status`, and a new
+    # task worktree's name there is ignored too.
+    out=$(git -C "$repo" status --porcelain --untracked-files=normal -- .worktrees 2>/dev/null) || rc=128
+    [ "$rc" -ne 0 ] || git -C "$repo" check-ignore -q -- ".worktrees/$prefix-x" 2>/dev/null || rc=$?
+    if [ "$rc" -gt 1 ]; then
+        echo "Error: git could not say whether it ignores $b (git status or check-ignore failed)" >&2
+        return 1
+    fi
+    if [ "$rc" -eq 1 ] || [ -n "$out" ]; then
+        echo "Error: git does not ignore everything in $b (its .gitignore, or a negation in another one); make it ignore the directory's contents, as a .gitignore of * does, $fix" >&2
+        return 1
+    fi
 }
 
 # Initialize a round log object as a temp file; sets ROUND_LOG_FILE
@@ -429,10 +478,16 @@ REPO_DIR="${REPO_DIR:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 # cd loudly here rather than misbehaving later.
 REPO_DIR="$(cd "$REPO_DIR" && pwd)"
 # WORKTREE_BASE: per-task worktrees must land inside the sandbox write-allowlist
-# (project + scratchpad); the old ~/wt sits outside it. The repo's .gitignore
-# reserves .claude/ as the managed worktree area (Claude Code's own worktrees
-# live in .claude/worktrees/), so worktrees here stay out of `git status`.
-WORKTREE_BASE="${WORKTREE_BASE:-$REPO_DIR/.claude/wt}"
+# (project + scratchpad); the old ~/wt sits outside it. The default is
+# .worktrees/si-wt-<task>, beside the build loops' worktrees
+# (build-loop.sh --worktree-base). It used to be .claude/wt-<task>, but Claude
+# Code asks before a write under .claude/ other than its own .claude/worktrees/,
+# and an allow rule does not stop it, so every write in such a worktree could
+# ask the owner. ensure_worktree_dir (main block) makes the directory and its
+# .gitignore of "*" and refuses if git would see a worktree there. An explicit
+# WORKTREE_BASE is used as given, with no such setup or check.
+SI_DEFAULT_WORKTREE_BASE="$REPO_DIR/.worktrees/si-wt"
+WORKTREE_BASE="${WORKTREE_BASE:-$SI_DEFAULT_WORKTREE_BASE}"
 MAX_ROUNDS=3
 WORKING_DIR="$REPO_DIR/docs/working"
 ROUND_HISTORY="$WORKING_DIR/round-history.json"
@@ -447,6 +502,11 @@ HISTORY_FILE="$REPO_DIR/docs/working/problem-history.json"
 # only makes sense on a clean main. Checked before the first write below so a
 # refused run leaves nothing behind. See require_clean_main().
 (cd "$REPO_DIR" && require_clean_main) || exit 1
+# Before any other write, so a refusal here leaves nothing but the ignored
+# .worktrees/ directory behind.
+if [ "$WORKTREE_BASE" = "$SI_DEFAULT_WORKTREE_BASE" ]; then
+    ensure_worktree_dir "$REPO_DIR" "${SI_DEFAULT_WORKTREE_BASE##*/}" || exit 1
+fi
 
 mkdir -p "$WORKING_DIR"
 touch "$WORKING_DIR/completed-tasks.md"
