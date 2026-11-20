@@ -35,3 +35,5 @@ Policy: review
 - Claude Code's own protected-path prompts (they do not apply to `.claude/worktrees/`).
 - Moving `scripts/self-improvement.sh`'s worktrees out of `.claude/` (a separate item).
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`.
+
+Dispatched: 1
