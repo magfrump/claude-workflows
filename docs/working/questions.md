@@ -28,8 +28,8 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-323](#q-323--gate-only-changes-approved-by-release) | you: judgment | Should a build loop's change that touches only the gate's own code (`scripts/build-loop.sh`, `d6.sh`, `dev-... | 2026-11-19 |
 | [Q-327](#q-327--trial-set-2-ends-again) | you: judgment | The second trial set (T8–T12), extended a week under Q-286, has now had its second weekly digest (`docs/w... | 2026-11-20 |
-| [Q-333](#q-333--merge-gate-2026-11-20-health-checkout-prep-8eec2ef40ea8) | you: judgment | Merge the health-checkout preparation step: a `Health checkout copies:` line in a repo's `docs/dev-cycle.md... | 2026-11-20 |
-| [Q-335](#q-335--merge-2026-11-20-skill-format-fields-preambles-e7935cf46b67) | you: judgment | Merge the fixes for findings F2 (a report field's value followed by prose) and F3 (text before a report's t... | 2026-11-20 |
+| [Q-333](#q-333--merge-gate-2026-11-20-health-checkout-prep-8eec2ef40ea8) | you: judgment | Q-333: [1] | 2026-11-20 |
+| [Q-335](#q-335--merge-2026-11-20-skill-format-fields-preambles-e7935cf46b67) | you: judgment | Q-335: [1] | 2026-11-20 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the ho... | 2026-11-05 |
 | [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there. | 2026-11-18 |
 | [Q-332](#q-332--regenerate-fact-check-reports-host) | you: terminal | Regenerate the fact-check skill's eval reports on the host, where the web works, and commit them. | 2026-11-20 |
@@ -172,7 +172,8 @@ bash test/skills/generate-reports.bash fact-check && bats test/skills/fact-check
 - **Interim:** the suites stay NOT RUN; the regeneration of the other skills' reports (brief `docs/working/briefs/2026-11-19-regenerate-skill-reports.md`, held by Q-328 [3] until the F2 and F3 format fixes merge) excludes fact-check.
 
 ### Q-333 · merge-gate-2026-11-20-health-checkout-prep-8eec2ef40ea8
-**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-333: [1]
 
 Merge the health-checkout preparation step: a `Health checkout copies:` line in a repo's `docs/dev-cycle.md` names gitignored paths (a build cache) that the dev cycle copies into its fresh health checkout before running the health check?
 
@@ -212,7 +213,8 @@ Notes: `scripts/build-loop.sh`, `scripts/lib/dev-cycle-read.sh` and `skills/dev-
 | **[3] changes needed** | Your note goes back to the loop (say, "run a full code-review and commit its rubric") | One line of note | A re-dispatch and another merge entry |
 
 ### Q-335 · merge-2026-11-20-skill-format-fields-preambles-e7935cf46b67
-**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-335: [1]
 
 Merge the fixes for findings F2 (a report field's value followed by prose) and F3 (text before a report's title) across seven skills, so their format and eval suites pass on freshly generated reports?
 
