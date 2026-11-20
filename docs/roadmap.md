@@ -118,33 +118,12 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   then regenerate fact-check alone; the sandbox has no web egress (`WebFetch` fails here), so the run may
   need a host step: say so in the brief.
 
-## In flight
+- **Agent: `scripts/self-improvement.sh` still puts its worktrees under `.claude/`** (filed 2026-11-20,
+  step 7; split from the write-guard item). Motive: Claude Code asks before writes under `.claude/`
+  outside its own `.claude/worktrees/`, so self-improvement runs keep asking; b3e25cf1 moved build
+  loops to `.worktrees/`. First step: a small brief to move its default to `.worktrees/`, as b3e25cf1 did.
 
-- **Agent: The write guard asks on every edit in a `.claude/` worktree once a session is web-tainted**
-  (filed 2026-11-19, owner report: a math-research repo's rewrite workflow asked for approval on
-  each of hundreds of file edits; the owner confirmed in session that the asks were this guard's
-  web-taint ask). Motive: `hooks/guard-trusted-writes.py` puts any Edit/Write path with a `.claude`
-  segment in its SOFT tier (`classify_path`, the `".claude" in low` test), and SOFT asks whenever
-  the session's taint marker exists (one web fetch taints the whole session). So every edit in a
-  worktree under `.claude/` asks, Claude Code's own exempt `.claude/worktrees/` included, though
-  Claude Code itself would not ask there. Reproduced hermetically on 2026-11-19 (a fake path and a
-  test taint marker): ask for `.claude/worktrees/agent-x/chapter3.md` and `.claude/wt-item-1/chapter3.md`
-  when tainted, no opinion when clean; no opinion either way for `.worktrees/wt-x/` and the main
-  checkout. First step: one review brief (the hook is an enforcement file: a pre-mortem listing the
-  bypass families, and a `Live-verified:` trailer). Shape to weigh in its divergent design: for the
-  file tools only, a path inside a linked worktree under `.claude/worktrees/*/` or `.claude/wt-*/`
-  is classified by its path relative to that worktree's root, so a chapter file is no opinion and
-  the worktree's own skills, agents, commands, CLAUDE.md, settings and hooks stay SOFT; Bash
-  classification stays as it is, since Q-048's worktree exemption for Bash was withdrawn after three
-  review passes found bypasses. Tests: the probe's table as bats cases in
-  `test/hooks/guard-trusted-writes.bats`, plus a worktree's own `.claude/settings.json` and
-  `skills/x.md` still asking when tainted. Related, smaller: `scripts/self-improvement.sh` still
-  defaults its worktrees to `.claude/wt-*` (move it to `.worktrees/`, as b3e25cf1 did for build loops).
-  Interim relief, until this lands: work in worktrees under `.worktrees/` (sessions started after
-  the 0feaf080 install do so by default), where the guard has no opinion.
-  2026-11-19: briefed on the owner's word in session ("Brief that now"), review (enforcement file):
-  `docs/working/briefs/2026-11-19-guard-worktree-taint.md`.
-  2026-11-20: ready at 218f899a; Q-326 answered [1], merge (merges next iteration).
+## In flight
 
 - **Regenerate the skill eval reports** (Q-321 [2], owner in session 2026-11-19: "yes"). Motive: 51
   test files marked `@needs-reports` print NOT RUN; the regeneration waited on the A8 measurement
@@ -495,6 +474,14 @@ Unranked. Each names the signal that motivates it.
 ## Done
 
 Items finished since the last cycle, with the merge.
+
+- **The write guard stops asking on ordinary files in `.claude/` worktrees when web-tainted.** Done
+  61122f34 (approved merge, Q-326 [1]), brief `docs/working/briefs/closed/2026-11-19-guard-worktree-taint.md`,
+  research `docs/working/research-2026-11-19-guard-worktree-taint.md`: a file-tool path inside a verified
+  linked worktree under `.claude/` is judged by its path within that worktree, so the worktree's own
+  CLAUDE.md, settings, skills and hooks still ask; Bash classification unchanged. `Live-verified: no`:
+  the live check rides the release entry Q-317. Not done here: `scripts/self-improvement.sh` still
+  defaults its worktrees under `.claude/` (filed in Now, 2026-11-20).
 
 - **`test/q125-verify-check.bats`'s rename case no longer flaky under load.** Done 70e7a28d (self-merge),
   brief `docs/working/briefs/closed/2026-11-19-q125-rename-flake.md`, research
