@@ -52,9 +52,17 @@ report() {
 }
 
 @test "reads ### finding headings too" {
+  # shellcheck disable=SC2034  # read by count_findings (helpers.bash)
   REPORT_CONTENT="$(printf '%s\n' '# Review' '' '## Findings' '' '### 1. A' '' '**Severity:** Structural' '' 'Body.' '' '## Summary Table')"
   count_findings
   run assert_recommendation_per_tiered_finding
   [ "$status" -ne 0 ]
   [[ "$output" == *"### 1. A"* ]]
+}
+
+@test "accepts Informational with trailing text and the **Recommendation**: form" {
+  # shellcheck disable=SC2034  # read by count_findings (helpers.bash)
+  REPORT_CONTENT="$(printf '%s\n' '# Review' '' '### Findings' '' '#### A' '' '**Severity:** Informational (hardening note)' '' 'Body.' '' '#### B' '' '**Severity:** Minor' '' '**Recommendation**: Fix it.' '' '### What Looks Good')"
+  count_findings
+  assert_recommendation_per_tiered_finding
 }

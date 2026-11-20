@@ -179,7 +179,7 @@ assert_recommendation_per_tiered_finding() {
     # ###/#### headings, written without {m,n}: mawk has no interval expressions.
     /^####? / { flush(); head = $0; tiered = 0; rec = 0; next }
     /^\*\*Severity:\*\*/ { tiered = ($0 !~ /^\*\*Severity:\*\*[ \t]*Informational/) }
-    /^\*\*Recommendation:\*\*/ { rec = 1 }
+    /^\*\*Recommendation(:\*\*|\*\*:)/ { rec = 1 }
     END { flush() }')
   [ -z "$missing" ] || { echo "findings without a Recommendation line: $missing"; return 1; }
 }
