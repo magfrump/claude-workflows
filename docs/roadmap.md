@@ -143,7 +143,10 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   correction's at 21:47 UTC) were told to hand back before their confirming review
   reported, with work committed and no marker; each then waits the full two hours.
   2026-11-19: the release ran and the wait rule merged (acbff6c6), so it is no longer "not for this release";
-  briefed (iteration 0121 UTC) as research: `docs/working/briefs/2026-11-19-steal-wait-research.md`.
+  briefed (iteration 0121 UTC) as research: `docs/working/briefs/closed/2026-11-19-steal-wait-research.md`,
+  merged 012b20f9 (self-merge): the dispatching session states its own loop ended (`--steal --ended
+  LOCKTIME ENDTIME`), so its own dead loops are taken at once and any other lock still waits two
+  hours. Build briefed (iteration 0146 UTC), review (gate code): `docs/working/briefs/2026-11-19-steal-ended.md`.
 
 ## Next
 
