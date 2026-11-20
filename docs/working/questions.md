@@ -28,8 +28,8 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-323](#q-323--gate-only-changes-approved-by-release) | you: judgment | Should a build loop's change that touches only the gate's own code (`scripts/build-loop.sh`, `d6.sh`, `dev-... | 2026-11-19 |
 | [Q-327](#q-327--trial-set-2-ends-again) | you: judgment | The second trial set (T8–T12), extended a week under Q-286, has now had its second weekly digest (`docs/w... | 2026-11-20 |
-| [Q-329](#q-329--merge-2026-11-20-skill-format-single-skill-a1b5bfc38718) | you: judgment | Merge the fixes for three of the regenerated-report findings (F4 arithmetic-eval, F6 what-if-analysis, F7 p... | 2026-11-20 |
-| [Q-330](#q-330--merge-2026-11-20-skill-verdict-drift-e13ee2e22313) | you: judgment | Merge the fix for finding F5: ten eval cases where six skills' verdicts differed from what the tests expect... | 2026-11-20 |
+| [Q-329](#q-329--merge-2026-11-20-skill-format-single-skill-a1b5bfc38718) | you: judgment | Q-329: [1] | 2026-11-20 |
+| [Q-330](#q-330--merge-2026-11-20-skill-verdict-drift-e13ee2e22313) | you: judgment | Q-330: [1] | 2026-11-20 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the ho... | 2026-11-05 |
 | [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there. | 2026-11-18 |
 <!-- index:end -->
@@ -151,7 +151,8 @@ To be honest about how they ran: on 2026-11-19 and 20 the cycle's final messages
 - **If the answer differs:** dropped trials stop at the next iteration; kept ones go into one skill change.
 
 ### Q-329 · merge-2026-11-20-skill-format-single-skill-a1b5bfc38718
-**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-329: [1]
 
 Merge the fixes for three of the regenerated-report findings (F4 arithmetic-eval, F6 what-if-analysis, F7 pattern misses), and keep yglesias-critique's rule that each section body uses a set word?
 
@@ -218,7 +219,8 @@ The four `skills/*/SKILL.md` paths are prompt files, which the self-merge floor 
 - **Interim:** nothing merges; the regenerated reports stay held.
 
 ### Q-330 · merge-2026-11-20-skill-verdict-drift-e13ee2e22313
-**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-330: [1]
 
 Merge the fix for finding F5: ten eval cases where six skills' verdicts differed from what the tests expected, each rerun and then fixed on the side that was wrong (four fixtures, two skill texts, the rest tests)?
 
