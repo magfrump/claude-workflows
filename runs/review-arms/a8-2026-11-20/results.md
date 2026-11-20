@@ -153,5 +153,9 @@ diff-only inlining on a large cell costs anything net, as csp says it does not o
   r1 Claims 14, 22, 23 and r2 Claims 21, 23; every non-Verified verdict has one. Per-replicate reports are beside them.
 - Stage 2.5 refuted one endorsement on csp: the performance critic's "constant work per
   request" (Claim 27b, executed: cost grows with request header count). It went in as 🟢 C6.
+- Reviewing this write-up cost 768,441 tokens outside the measured passes: a k=3 fact-check
+  (212,561 / 222,883 / 185,251), then a k=1 pass over its corrections (147,746), plus two
+  lite fix-drift checks with no findings. Loop rubric:
+  `docs/reviews/code-review-rubric-2026-11-19-measure-a8-settling-runs.md`.
 - No agent process was left running; the two scratch worktrees of the benchmark repo are removed
   after this write-up (research doc).
