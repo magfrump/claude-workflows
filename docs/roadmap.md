@@ -104,16 +104,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   as a review brief (iteration 2133): `docs/working/briefs/2026-11-20-remove-worktrees-parked-shell.md`.
   The orchestrator applies R2 by hand from iteration 2133 on.
 
-- **Agent: A per-repo health-checkout preparation line** (filed 2026-11-19, step 6; moved from Ideas: it carries reported friction). (brainstorm 2026-11-16). Signal:
-  philosophy-research F-016: a fresh health checkout has no Lean build cache (1.9 GB), so
-  the iteration linked and copied it in by hand. First step: a `docs/dev-cycle.md` line
-  naming paths to link or copy from the main checkout, read through `--settings`.
-  2026-11-19: moved to Now by step 6 (iteration 2316). First step: the one the signal names; if none, a research or divergent-design pass on it.
-  2026-11-20: briefed (iteration 2017), review (gate code), motive first:
-  `docs/working/briefs/2026-11-20-health-checkout-prep.md`.
-  2026-11-20: ready at 8eec2ef4 (`--health-prep HC` and a `Health checkout copies:` settings line;
-  no code-review rubric committed): merge asked in Q-333.
-
 - **Agent: `scripts/self-improvement.sh` still puts its worktrees under `.claude/`** (filed 2026-11-20,
   step 7; split from the write-guard item). Motive: Claude Code asks before writes under `.claude/`
   outside its own `.claude/worktrees/`, so self-improvement runs keep asking; b3e25cf1 moved build
@@ -130,12 +120,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   2026-11-20: Q-328 answered [3], fix first: the branch waits while findings F2 to F7 are fixed
   (the three briefs below). Once they merge, re-dispatch this brief to merge main in, regenerate
   the skills those fixes changed, and land green.
-
-- **Fix the skill-report format findings F2 and F3** (Q-328 [3]; filed and briefed 2026-11-20, step 6):
-  field values followed by explanation, and text before the title, across seven skills. Review
-  (skill files): `docs/working/briefs/2026-11-20-skill-format-fields-preambles.md`.
-  2026-11-20: ready at e7935cf4 after a second dispatch (seven skills pass on regenerated reports;
-  no code-review rubric committed): merge asked in Q-335.
+  2026-11-20: all three merged (cef30487, ead9191a, 01eff59e); the re-dispatch waits for a free loop
+  slot (iteration 2206: all three slots busy).
 
 
 ## Next
@@ -465,6 +451,13 @@ Unranked. Each names the signal that motivates it.
 ## Done
 
 Items finished since the last cycle, with the merge.
+
+- **A per-repo health-checkout preparation line** (philosophy-research F-016): `Health checkout copies:`
+  in `docs/dev-cycle.md` and `build-loop.sh --health-prep HC`. Done f6d555d8 (approved merge, Q-333 [1]),
+  brief `docs/working/briefs/closed/2026-11-20-health-checkout-prep.md`. Live at the release Q-336.
+
+- **Fix the skill-report format findings F2 and F3** (Q-328 [3]): seven skills' report formats. Done
+  01eff59e (approved merge, Q-335 [1]), brief `docs/working/briefs/closed/2026-11-20-skill-format-fields-preambles.md`.
 
 - **A judgment entry's "Why it's yours" quotes the constraint it relies on: no change, closed.**
   Done 6a07b026 (self-merge, research only), brief

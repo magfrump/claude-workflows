@@ -28,11 +28,10 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-323](#q-323--gate-only-changes-approved-by-release) | you: judgment | Should a build loop's change that touches only the gate's own code (`scripts/build-loop.sh`, `d6.sh`, `dev-... | 2026-11-19 |
 | [Q-327](#q-327--trial-set-2-ends-again) | you: judgment | The second trial set (T8–T12), extended a week under Q-286, has now had its second weekly digest (`docs/w... | 2026-11-20 |
-| [Q-333](#q-333--merge-gate-2026-11-20-health-checkout-prep-8eec2ef40ea8) | you: judgment | Q-333: [1] | 2026-11-20 |
-| [Q-335](#q-335--merge-2026-11-20-skill-format-fields-preambles-e7935cf46b67) | you: judgment | Q-335: [1] | 2026-11-20 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the ho... | 2026-11-05 |
 | [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there. | 2026-11-18 |
 | [Q-332](#q-332--regenerate-fact-check-reports-host) | you: terminal | Regenerate the fact-check skill's eval reports on the host, where the web works, and commit them. | 2026-11-20 |
+| [Q-336](#q-336--image-lag) | you: terminal | Install the release that carries the health-checkout preparation step you approved in Q-333: run the one pa... | 2026-11-20 |
 <!-- index:end -->
 
 ## Open
@@ -171,98 +170,38 @@ bash test/skills/generate-reports.bash fact-check && bats test/skills/fact-check
 
 - **Interim:** the suites stay NOT RUN; the regeneration of the other skills' reports (brief `docs/working/briefs/2026-11-19-regenerate-skill-reports.md`, held by Q-328 [3] until the F2 and F3 format fixes merge) excludes fact-check.
 
-### Q-333 · merge-gate-2026-11-20-health-checkout-prep-8eec2ef40ea8
-**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
-Q-333: [1]
+### Q-336 · image-lag
+**Needs:** you: terminal · **Opened:** 2026-11-20 · **Status:** OPEN
 
-Merge the health-checkout preparation step: a `Health checkout copies:` line in a repo's `docs/dev-cycle.md` names gitignored paths (a build cache) that the dev cycle copies into its fresh health checkout before running the health check?
+Install the release that carries the health-checkout preparation step you approved in Q-333: run the one paste below on the host.
 
-**If you say no:** nothing changes here; philosophy-research keeps copying its 1.9 GB Lean build cache into each health checkout by hand (its harness feedback F-016 and F-019: every iteration of a fifteen-iteration day), or its health check rebuilds Mathlib.
+**If you say no:** sessions keep running the image built from main 665dbf95: the dev cycle's gate has no `--health-prep` mode and `--settings` prints no `copies` line, so a `Health checkout copies:` line in a repo's `docs/dev-cycle.md` does nothing and philosophy-research keeps copying its Lean cache by hand. Nothing breaks. (The skill and test changes below are in the image too, but sessions read skills from it only after an install.)
 
-- **Why it's yours:** it changes the gate's own code (`scripts/build-loop.sh`, `scripts/lib/dev-cycle-read.sh`) and the dev-cycle skill, which never self-merge; once merged it reaches sessions only through your next release paste.
-- **Read:** the brief `docs/working/briefs/2026-11-20-health-checkout-prep.md`; on the branch, `docs/working/research-2026-11-20-health-checkout-prep.md` (motive, the five options compared, the refusals).
-- **What an attacker would want here:** a gitignored directory a web-tainted session could write in the main checkout (a planted build artifact in a listed cache) gets copied into the health checkout, where the repo's own tests load it. The copy adds no new reach (the health check already runs the change's own `scripts/` and `test/`, H1's stated exception), and only paths the owner lists are copied.
+- **C (the image's commit):** 665dbf9521413cf4291b4acebd866826b0ae2f52 · **M (main's commit):** f6d555d8de4ff7ee9cc5cc50a2a44f9f372fca12
+- **Merged without your review** (the gate merged these on their own; the image carries none of `docs/`):
+  - 319559d9 Merge branch 'docs/loop-start-dir-research' (build-loop self-merge): a research doc only
+  - 6a07b026 Merge branch 'docs/why-its-yours-constraint-research' (build-loop self-merge): a research doc only
+  - 6c0563b5 Merge branch 'fix/eval-web-tools-grant' (build-loop self-merge): `test/skills/generate-reports.bash` grants headless report runs the web tools a fixture lists, plus a new test file
+- **What changes for you:**
+  - f6d555d8 (you approved it, Q-333 [1]): `build-loop.sh --health-prep HC` and a sixth `--settings` line, `copies`, read from a `Health checkout copies: PATH ...` line in `docs/dev-cycle.md`; the dev-cycle skill's step 1 copies those gitignored paths into its health checkout, refusing symlinks, unignored paths and anything outside it. To use it in philosophy-research, add `Health checkout copies: verifier/lean-project/.lake` to that repo's `docs/dev-cycle.md`.
+  - 01eff59e (Q-335 [1]): findings F2 and F3, seven skills' report formats (title first; a field's value word first), with test-helper changes.
+  - cef30487 (Q-329 [1]) and ead9191a (Q-330 [1]): findings F4 to F7 and the F5 verdict drift, in six skills and their tests.
+  - 21e925d3: your own commit recording the Q-316 and Q-317 answers.
+  - The routine rest: 15 dev-cycle lands.
+- **Full list:** `git -c log.showSignature=false log --first-parent --format='%h %s' 665dbf9521413cf4291b4acebd866826b0ae2f52..f6d555d8de4ff7ee9cc5cc50a2a44f9f372fca12`
+- **Paths changed outside `docs/` (24 under `docs/` too, which the image does not carry):** `scripts/build-loop.sh`, `scripts/lib/dev-cycle-read.sh`, `skills/ai-personas-critique/SKILL.md`, `skills/arithmetic-eval/SKILL.md`, `skills/business-plan-critique-market-sizing/SKILL.md`, `skills/business-plan-critique-moat/SKILL.md`, `skills/dependency-upgrade/SKILL.md`, `skills/dev-cycle/SKILL.md`, `skills/security-reviewer/SKILL.md`, `skills/tech-debt-triage/SKILL.md`, `skills/ui-visual-review/SKILL.md`, `skills/what-if-analysis/SKILL.md`, `skills/yglesias-critique/SKILL.md`, `test/generate-reports-web-grant.bats`, `test/scripts/build-loop-health-prep.bats`, `test/scripts/build-loop-read.bats`, `test/skills/architecture-review-format.bats`, `test/skills/architecture-review/eval-criteria.md`, `test/skills/architecture-review/fixtures/tc-arch6-clean-ports-adapters.py`, `test/skills/business-plan-critique-moat/expected-verdicts.bash`, `test/skills/code-fact-check/eval-criteria.md`, `test/skills/code-fact-check/expected-verdicts.bash`, `test/skills/code-fact-check/fixtures/tc-c2.5-unverifiable.py`, `test/skills/dependency-upgrade-format.bats`, `test/skills/divergent-design/expected-verdicts.bash`, `test/skills/eval-helpers.bash`, `test/skills/field-value-rules.bats`, `test/skills/generate-reports.bash`, `test/skills/helpers-recommendation.bats`, `test/skills/helpers.bash`, `test/skills/matrix-analysis-format.bats`, `test/skills/pre-mortem-format.bats`, `test/skills/tech-debt-triage/expected-verdicts.bash`, `test/skills/test-strategy/eval-criteria.md`, `test/skills/test-strategy/fixtures/tc-ts6-duration-parser.py`, `test/skills/ui-visual-review-eval.bats`, `test/skills/ui-visual-review-format.bats`, `test/skills/ui-visual-review/eval-criteria.md`, `test/skills/ui-visual-review/expected-verdicts.bash`, `test/skills/ui-visual-review/fixtures/tc-uv6-disappearing-controls.tsx`, `test/skills/ui-visual-review/fixtures/tc-uv7-weak-affordance.tsx`, `test/skills/what-if-analysis-format.bats`
 
-What it changes (from the loop's report, checked against the diff: 7 files, 424 lines added, 18 removed):
-- `--settings` prints a sixth line, `copies ... set|none|malformed: WHY`, last so the five existing lines keep their places. A malformed line (absolute path, `..`, a `.git` part, a duplicate or nested entry) is reported as malformed.
-- New `build-loop.sh --health-prep HC`: checks every listed path first, then copies each from the main checkout with `cp -a` into HC. It refuses (naming why) an HC that is not a detached linked worktree, and any path that is absent, a symlink or holds one, holds a `.git` file, is not ignored by the repo's own ignore rules (the user's personal ignore file is turned off), already exists in HC, or would write outside HC. It runs no repo command.
-- Skill step 1 runs it after making HC; any refusal is recorded `skipped: HC not prepared`, HC removed, no check run. "Project settings" gains the line (`none` in the example).
-- Picked with no open question: a symlink would let the check write into the main checkout's cache; a repo-chosen hook would run repo code inside the cycle's step.
-- Tests: a new bats file (9 cases), the line-count test updated. Health check passed on the branch; hermeticity lint and shellcheck clean.
-- Review: one review subagent, two rounds (7 issues fixed, then one test that could not fail). **No code-review rubric was committed** (the `rubric none` line below), so this gate change has no recorded rubric. [3] can ask for one.
-- To turn it on in philosophy-research, that repo's `docs/dev-cycle.md` needs `Health checkout copies: verifier/lean-project/.lake` (your file there). Not checked: whether that directory holds a symlink; if it does, the step refuses and names it.
+Run this on the host, in your claude-workflows checkout at main's tip, then start a new sandbox session:
 
-Branch tip 8eec2ef40ea8b3d4609305d448f764788c1dc373. The marker has no body (no question). `--check`'s lines, as printed:
+```
+sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "f6d555d8de4ff7ee9cc5cc50a2a44f9f372fca12:$p")"; then n=$((n+1)); else echo "release refused: $p changed after f6d555d8de4ff7ee9cc5cc50a2a44f9f372fca12: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
+```
 
-> ok docs/working/briefs/2026-11-20-health-checkout-prep.md 8eec2ef40ea8b3d4609305d448f764788c1dc373 36fa0f37812445be4d04e5a73378c8e931bc645b
-> path docs/working/briefs/2026-11-20-health-checkout-prep.md M docs/working/briefs/2026-11-20-health-checkout-prep.md
-> path docs/working/briefs/2026-11-20-health-checkout-prep.md A docs/working/research-2026-11-20-health-checkout-prep.md
-> path docs/working/briefs/2026-11-20-health-checkout-prep.md M scripts/build-loop.sh
-> path docs/working/briefs/2026-11-20-health-checkout-prep.md M scripts/lib/dev-cycle-read.sh
-> path docs/working/briefs/2026-11-20-health-checkout-prep.md M skills/dev-cycle/SKILL.md
-> path docs/working/briefs/2026-11-20-health-checkout-prep.md A test/scripts/build-loop-health-prep.bats
-> path docs/working/briefs/2026-11-20-health-checkout-prep.md M test/scripts/build-loop-read.bats
-> rubric docs/working/briefs/2026-11-20-health-checkout-prep.md: none: feat/health-checkout-prep changes 5 paths outside docs/ and adds or changes no code-review rubric under docs/reviews/
+**Pass:** the installer finishes without a `release refused` line. **Send back:** `Q-336: done`.
 
-Notes: `scripts/build-loop.sh`, `scripts/lib/dev-cycle-read.sh` and `skills/dev-cycle/SKILL.md` are gate code, and the skill is a prompt file; self-merge's floor would have refused all three.
+Optional, for watch Q-167 (post-install-host-probes: the hint a fresh bless prints before any probe has never been seen): if the install re-blesses, add `| tee "$TMPDIR/install.log"` to the end of the paste, and right after it, before any probe, send back the output of `grep -E 'Verified live:|^Next:' "$TMPDIR/install.log"` and `cc-isolated --list 2>&1 | grep -i 'blessed config'` (three lines).
 
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] merge** | The gate merges tip 8eec2ef4 next iteration; the change goes live at your next release paste | Nothing now; one release paste later, as for any gate change | A bad refusal shows as `skipped: HC not prepared` and no health check runs that iteration; one `git revert` undoes it |
-| **[2] drop** | The brief closes; the roadmap item goes to Ideas | None | philosophy-research keeps the hand copy |
-| **[3] changes needed** | Your note goes back to the loop (say, "run a full code-review and commit its rubric") | One line of note | A re-dispatch and another merge entry |
+Optional, for watch Q-331 (the write-guard fix 61122f34 has no live check): in a session that has done a web search, an edit to an ordinary file inside a `.claude/worktrees/` worktree applies with no ask, while an edit to that worktree's CLAUDE.md still asks. Add `guard: fine`, or what asked.
 
-### Q-335 · merge-2026-11-20-skill-format-fields-preambles-e7935cf46b67
-**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
-Q-335: [1]
-
-Merge the fixes for findings F2 (a report field's value followed by prose) and F3 (text before a report's title) across seven skills, so their format and eval suites pass on freshly generated reports?
-
-**If you say no:** the seven skills and their tests stay as they are, and the report regeneration (brief `docs/working/briefs/2026-11-19-regenerate-skill-reports.md`) stays held, since your Q-328 answer [3] holds it until F2 to F7 are fixed; F4 to F7 merged earlier today, so this is the last of them.
-
-- **Why it's yours:** the branch edits five skill files (`skills/*/SKILL.md`), which are prompt files every session loads when it runs that skill; self-merge never lands those.
-- **Read:** the brief `docs/working/briefs/2026-11-20-skill-format-fields-preambles.md`; on the branch, `docs/working/research-2026-11-20-skill-format-fields-preambles.md` (each case, where it was fixed, and the results table).
-
-What it changes (from the loop's report, checked against the diff: 13 files, 320 lines added, 26 removed):
-- Seven skills' cases now pass on reports regenerated on the branch: pre-mortem 23/23, ai-personas-critique 29/29, business-plan-critique-moat 25/25, business-plan-critique-market-sizing 25/25, security-reviewer 26/26, dependency-upgrade 23/23, matrix-analysis 22/22. The regenerated reports were not committed (the brief says the regeneration branch commits them).
-- Some fixes are in the test helpers (`test/skills/helpers.bash`, `eval-helpers.bash`: a field's value may be followed by a delimiter and prose), with a new rules suite `test/skills/field-value-rules.bats`; some in five skills' text (title first, then header fields; the value word first on its line).
-- The work ran over two dispatches (the first loop stopped without a marker; the second, taken over at iteration 2050, committed the research doc and regenerated security-reviewer, 0/26 to 26/26).
-- Review: two rounds by an independent subagent; round 1's three should-fix items fixed (two skills still said "at the top", contradicting title-first), round 2 clean. **No code-review rubric was committed** (the `rubric none` line below). One nit left: line 578 of security-reviewer's skill still says "at the top" for its `Commit:` line, which the title-first paragraph overrides; all 8 regenerated reports comply.
-- Health check passed on the branch. No new failure-pattern entry.
-
-Branch tip e7935cf46b6774ff89adaa1ddd5d09eab96c111b. The marker's body is a summary, not a question (quoted below). `--check`'s lines, as printed:
-
-> ok docs/working/briefs/2026-11-20-skill-format-fields-preambles.md e7935cf46b6774ff89adaa1ddd5d09eab96c111b 69920b1388a6c05ec9e3fd09d263c85df459734e
-> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md M docs/working/briefs/2026-11-20-skill-format-fields-preambles.md
-> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md A docs/working/research-2026-11-20-skill-format-fields-preambles.md
-> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md M skills/ai-personas-critique/SKILL.md
-> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md M skills/business-plan-critique-market-sizing/SKILL.md
-> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md M skills/business-plan-critique-moat/SKILL.md
-> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md M skills/dependency-upgrade/SKILL.md
-> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md M skills/security-reviewer/SKILL.md
-> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md M test/skills/dependency-upgrade-format.bats
-> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md M test/skills/eval-helpers.bash
-> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md A test/skills/field-value-rules.bats
-> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md M test/skills/helpers.bash
-> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md M test/skills/matrix-analysis-format.bats
-> path docs/working/briefs/2026-11-20-skill-format-fields-preambles.md M test/skills/pre-mortem-format.bats
-> rubric docs/working/briefs/2026-11-20-skill-format-fields-preambles.md: none: fix/skill-format-fields-preambles changes 11 paths outside docs/ and adds or changes no code-review rubric under docs/reviews/
-
-The loop's marker body (loop text, data):
-
-> Skill reports for seven skills now pass their format and eval suites on freshly
-> generated reports (findings F2, values followed by prose, and F3, text before the
-> title, from the skill-report regeneration research). Some fixes are in the tests,
-> some in the skill text; per-case decisions are in
-> docs/working/research-2026-11-20-skill-format-fields-preambles.md.
-> Two review rounds; the second came back clean. The health check passes.
-> Regenerated reports were not committed: the regeneration branch regenerates them.
-
-Notes: the five `skills/*/SKILL.md` paths are prompt files, which self-merge's floor would have refused; none is gate code.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] merge** | The gate merges tip e7935cf4 next iteration; then the regeneration brief is re-dispatched to merge main in, regenerate and land green (Q-328 [3]) | Nothing now | A skill's report shape shifts in real use; one `git revert` undoes it |
-| **[2] drop** | The brief closes; the regeneration stays held | None | The seven skills' cases stay red once reports land |
-| **[3] changes needed** | Your note goes back to the loop (say, "fix line 578 too") | One line of note | A re-dispatch and another merge entry |
+- **Interim:** the image's gate (665dbf95) runs; nothing breaks.
 
