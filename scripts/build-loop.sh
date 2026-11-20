@@ -16,9 +16,11 @@
 #        scripts/build-loop.sh --start BRIEF [--dir DIR]
 #        scripts/build-loop.sh --prompt BRIEF [--dir DIR] [--steal [--ended LOCKTIME ENDTIME]]
 #        scripts/build-loop.sh --free-worktrees
+#        scripts/build-loop.sh --worktree-base
+#        scripts/build-loop.sh --health-prep HC
 #        scripts/build-loop.sh -h | --help
 #
-#   --settings  five lines from the default branch's commit, never the working
+#   --settings  six lines from the default branch's commit, never the working
 #             tree (a build loop can write any working tree). Lines 1-3 from
 #             one line of docs/dev-cycle.md; a second copy, or a file the lib's
 #             FENCE_AWK refuses, gives review, 3 and malformed (WHY says which):
@@ -56,6 +58,17 @@
 #                 read (brief 2026-11-03-import-walk-plain): ignored names
 #                 the lines found, which can be deleted; none, that there are
 #                 none. Neither turns anything off.
+#             copies PATH... set|none|malformed: WHY
+#                 Gitignored paths the dev cycle's health checkout copies
+#                 from the main worktree (--health-prep): "Health checkout
+#                 copies: PATH ..." (or "...: none"), the never line's grammar
+#                 (single spaces, the next line outside a fence blank or the
+#                 end, each listed once), each PATH a relative path of
+#                 letters, digits and . _ - / (a trailing / ignored) with no
+#                 empty, . or .. part and no part starting .git (any case),
+#                 and none below another listed one. No line, or no docs/dev-cycle.md, is none. Malformed (or a
+#                 file not read) makes --health-prep refuse, so the dev cycle
+#                 runs no health check (step 1); it turns no other setting off.
 #             Copies are found best effort: a line counts as one when its
 #             letters alone, case folded, start with the key's
 #             ("buildlooppolicy"). Markup that adds letters (a checked task
@@ -648,6 +661,31 @@
 #             A worktree made under .claude/ before this is still found by its
 #             branch and lock in git worktree list, so --prompt, --free-worktrees
 #             and the gate read it as before.
+#   --health-prep  copies the paths of --settings' copies line from the main
+#             worktree into HC, the dev cycle's health checkout (step 1),
+#             before its health check runs, so a gitignored build cache need
+#             not be rebuilt. Runs no repo command and writes only below HC.
+#             Every path is checked before any is copied, and a refused
+#             check copies nothing (a copy that fails part way leaves HC
+#             partly filled; the cycle then removes HC). Prints "copied PATH" per path, then
+#             ok HC N
+#             or "refuse health-prep: WHY" (HC or the line) or one "refuse
+#             health-prep PATH: WHY" line per refused path, when:
+#             - the copies line is malformed or docs/dev-cycle.md not read;
+#             - HC is not a detached worktree of this repository in git
+#               worktree list, is the main worktree, or is reached through a
+#               symbolic link; or the repository is bare;
+#             - a PATH is absent in the main worktree, is or is reached through
+#               a symbolic link, is not a regular file or directory, holds a
+#               symbolic link, special file or .git file (a gitdir pointer;
+#               find), holds HC, or is not ignored by git there (check-ignore
+#               with core.excludesFile=/dev/null and this script's hardened
+#               git: the repository's own ignore files alone); or it already exists
+#               in HC, or a parent there is a symbolic link or not a directory;
+#             - a mkdir or the copy (cp -a --reflink=auto) fails;
+#             - or, as for --state, a refuse state line from the state gate,
+#               default_gate or a GIT_DIR-style variable in the caller's
+#               environment.
 #
 # Acts on $PWD's git repo, like dev-cycle.sh, and needs its default branch
 # found by name (origin/HEAD, main or master), but for --check-constraints,
@@ -657,22 +695,22 @@
 # (and in W: its files, index, HEAD reflog and ORIG_HEAD), --start's branch
 # and its reflog, WTB and its .gitignore (--worktree-base, --start), the worktrees and locks --start and --prompt make or
 # replace, the worktrees --free-worktrees removes and the locks it takes off
-# and puts back, the dispatch lock file, and its own
+# and puts back, the dispatch lock file, the copies --health-prep makes below HC, and its own
 # temporary directory, removed at exit.
 # Output passes through the lib's scrub (but for the start-up errors about
 # perl and the lib); printed repo text is data.
 # Exit: 0 every line printed (or help; a --marker skip is a line; for
 # --check-constraints, only an ok line), for
 # --state ok, for --main-log no other line, for --cycle-diff ok, for --check every verdict line ok,
-# for --merge merged, for --start, --prompt and --worktree-base ok, for --free-worktrees any
+# for --merge merged, for --start, --prompt, --worktree-base and --health-prep ok, for --free-worktrees any
 # line but refuse; 2 any other --check,
-# --merge, --start, --prompt or --worktree-base verdict line, --free-worktrees' refuse line, --main-log's other or refuse
+# --merge, --start, --prompt, --worktree-base or --health-prep verdict line, --free-worktrees' refuse line, --main-log's other or refuse
 # line, a --cycle-diff refuse line, a --check-constraints line other than ok, or the state gate (--state's included) not ok. A --check,
 # --merge or --free-worktrees can also stop part way, after the lines before, with 1
 # (need_root) or a failed command's own status: a caller reads any exit but 0
 # as nothing decided. 1 bad usage, a GIT_CONFIG_COUNT that is not plain
 # decimal, not a git repo, no perl, lib/dev-cycle-read.sh or lib/rubric-check.sh, a failed mktemp
-# (--state, --main-log, --cycle-diff, --check, --merge, --start, --prompt, --free-worktrees, --worktree-base; no line printed),
+# (--state, --main-log, --cycle-diff, --check, --merge, --start, --prompt, --free-worktrees, --worktree-base, --health-prep; no line printed),
 # or no default branch found by name.
 
 set -euo pipefail
@@ -735,7 +773,7 @@ constraints_line() {
     *) echo "constraints unreadable: line $c looks like a constraint but is not exactly \"H<n>: text\" or \"S<n>: text\" (optionally after \"- \", n without a leading 0)" ;;
   esac
 }
-usage() { echo "$1 (usage: build-loop.sh --settings | --check-constraints FILE | --status BRIEF... | --marker BRIEF | --state | --main-log SINCE | --cycle-diff [--answered Q-NNN]... [--migrated ID]... | --land-cycle --main SHA [--answered Q-NNN]... [--migrated ID]... | --check BRIEF... [--expect SHA] | --merge BRIEF --expect SHA [--approved Q-NNN] | --start BRIEF [--dir DIR] | --prompt BRIEF [--dir DIR] [--steal [--ended LOCKTIME ENDTIME]] | --free-worktrees | --worktree-base)" >&2; exit 1; }
+usage() { echo "$1 (usage: build-loop.sh --settings | --check-constraints FILE | --status BRIEF... | --marker BRIEF | --state | --main-log SINCE | --cycle-diff [--answered Q-NNN]... [--migrated ID]... | --land-cycle --main SHA [--answered Q-NNN]... [--migrated ID]... | --check BRIEF... [--expect SHA] | --merge BRIEF --expect SHA [--approved Q-NNN] | --start BRIEF [--dir DIR] | --prompt BRIEF [--dir DIR] [--steal [--ended LOCKTIME ENDTIME]] | --free-worktrees | --worktree-base | --health-prep HC)" >&2; exit 1; }
 # utc_epoch TIME: prints TIME's epoch seconds when TIME is exactly YYYY-MM-DDTHH:MM:SSZ
 # and a real UTC time (the round trip refuses one date would normalise, such as 02-30).
 utc_epoch() {
@@ -807,6 +845,9 @@ case "${1:-}" in
     [[ ${#ARGS[@]} -eq 1 ]] || usage "--$MODE takes one brief path" ;;
   --free-worktrees) MODE=free-worktrees; [[ $# -eq 1 ]] || usage "--free-worktrees takes no arguments" ;;
   --worktree-base) MODE=worktree-base; [[ $# -eq 1 ]] || usage "--worktree-base takes no arguments" ;;
+  --health-prep)
+    MODE=health-prep; ARGS=("${2:-}")
+    [[ $# -eq 2 ]] && readerform "$2" || usage "--health-prep takes one absolute path of letters, digits and . _ - / (no empty, . or .. part): the health checkout" ;;
   # The header: from line 2 to the first non-empty line not starting with # (no fixed range to go stale).
   -h|--help) sed -n '2,/^[^#]/{/^#/p}' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
   '') usage "no mode given" ;;
@@ -937,7 +978,7 @@ GATED=""; [[ "$MODE" =~ ^(settings|status|marker)$ ]] || GATED=1  # not the gate
 # The caller's environment first: it can point the state gate's own reads at another repository.
 # --free-worktrees too: it removes what it reads, so it does not lean on an
 # earlier --state; and --worktree-base, which writes in the main worktree.
-if [[ "$MODE" == state || "$MODE" == free-worktrees || "$MODE" == worktree-base ]]; then caller_gate || exit 2; fi
+if [[ "$MODE" == state || "$MODE" == free-worktrees || "$MODE" == worktree-base || "$MODE" == health-prep ]]; then caller_gate || exit 2; fi
 if [[ -n "$GATED" ]]; then state_gate || exit 2; fi
 resolve_main || true
 main_by_name || { echo "build-loop.sh needs a default branch found by name (origin/HEAD, main or master); found none" >&2; exit 1; }
@@ -977,21 +1018,23 @@ globform() {
 }
 # Sets POLICY, POLICY_LINE, SLOTS_LINE, NEVER (an array of the checked globs,
 # each as written, a trailing / kept), NEVER_LINE, CONSTRAINTS_LINE and
-# CONSTRAINTS (its word: ok, missing, none-hard or unreadable) from main's
-# commit. POLICY
+# CONSTRAINTS (its word: ok, missing, none-hard or unreadable), COPIES (the
+# health checkout's paths, each as written, a trailing / kept), COPIES_LINE and
+# COPIES_OK (1 unless malformed) from main's commit. POLICY
 # is for --status and the planned gate, NEVER for the gate.
-POLICY=review; POLICY_LINE=""; SLOTS_LINE=""; NEVER=(); NEVER_LINE=""; CONSTRAINTS_LINE=""; CONSTRAINTS=""
+POLICY=review; POLICY_LINE=""; SLOTS_LINE=""; NEVER=(); NEVER_LINE=""; CONSTRAINTS_LINE=""; CONSTRAINTS=""; COPIES=(); COPIES_LINE=""; COPIES_OK=""
 # shellcheck disable=SC2034  # NEVER: for the planned gate
 read_settings() {
   local f=docs/dev-cycle.md where l k c l1 l2 nx t v why never_ok=""
   local -A cnt=() first=() second=() next=() text=()
-  POLICY=review; NEVER=()
+  POLICY=review; NEVER=(); COPIES=(); COPIES_OK=""
   where="of $f on the default branch"
   if ! main_file "$f" "$SETTINGS_AWK"; then
     [[ "$FILE_WHY" == absent ]] && why="no $f on the default branch" || why="$FILE_WHY"
     POLICY_LINE="policy review unset: $why"; SLOTS_LINE="slots 3 default: $why"
     # An absent file sets nothing; one that is not read turns self-merge off.
-    if [[ "$FILE_WHY" == absent ]]; then NEVER_LINE="never none: $why"; else NEVER_LINE="never malformed: $why"; fi
+    if [[ "$FILE_WHY" == absent ]]; then NEVER_LINE="never none: $why"; COPIES_LINE="copies none: $why"; COPIES_OK=1
+    else NEVER_LINE="never malformed: $why"; COPIES_LINE="copies malformed: $why"; fi
   else
     while IFS= read -r l; do
       [[ -n "$l" ]] || continue
@@ -1023,6 +1066,25 @@ read_settings() {
     elif [[ "${cnt[slots]}" -gt 1 ]]; then SLOTS_LINE="slots 3 default: $(many 'Build-loop slots:' slots)"
     elif [[ "${text[slots]}" =~ ^Build-loop\ slots:\ ([123456789])$ ]]; then SLOTS_LINE="slots ${BASH_REMATCH[1]} set: line ${first[slots]} $where"
     else SLOTS_LINE="slots 3 default: line ${first[slots]} is not exactly \"Build-loop slots: N\" with N from 1 to 9"; fi
+    # Health checkout copies: the never line's grammar, with pathform's paths.
+    if [[ -z "${cnt[copies]-}" ]]; then COPIES_OK=1; COPIES_LINE='copies none: no line starts "Health checkout copies:"'
+    elif [[ "${cnt[copies]}" -gt 1 ]]; then COPIES_LINE="copies malformed: $(many 'Health checkout copies:' copies)"
+    else
+      t="${text[copies]}"; v="${t#Health checkout copies: }"
+      list_entries "$t" "Health checkout copies" path pathform; why="$LIST_WHY"
+      if [[ "$LIST_BAD" != form && "${next[copies]}" != 1 ]]; then why="is followed by a non-blank line outside a fence (it may continue the list)"; fi
+      # One entry at or below another would copy into the other's copy.
+      if [[ -z "$why" ]]; then
+        for v in "${LIST[@]}"; do for t in "${LIST[@]}"; do
+          [[ "$v" == "$t" || "${v%/}/" != "${t%/}/"* ]] || why="lists ${v%/}, which is below ${t%/}, also listed"
+        done; done
+        [[ -z "$why" ]] || LIST=()
+        v="${text[copies]#Health checkout copies: }"
+      fi
+      if [[ -n "$why" ]]; then COPIES_LINE="copies malformed: line ${first[copies]} $why"
+      elif [[ ${#LIST[@]} -eq 0 ]]; then COPIES_OK=1; COPIES_LINE="copies none: line ${first[copies]} $where lists none"
+      else COPIES_OK=1; COPIES=("${LIST[@]}"); COPIES_LINE="copies $v set: line ${first[copies]} $where"; fi
+    fi
   fi
   f=docs/constraints.md
   if ! main_file "$f" "$CONSTRAINTS_AWK"; then
@@ -1972,6 +2034,69 @@ free_one() {
   git worktree lock --reason "${lk#locked }" "$p" 2>/dev/null || why+="; its lock could not be put back"
   echo "kept $b $p: git refused ($why)"
 }
+# health_prep HC: --health-prep. Checks every path of --settings' copies line
+# first, then copies each from the main worktree into HC (cp -a, a reflink
+# where the filesystem has them); any refusal copies nothing. Prints "copied
+# PATH" per path and "ok HC N", or "refuse health-prep ...: WHY" lines and
+# returns 1 (a refused check copies nothing; a failed copy stops part way). Needs wt_of's MAINWT and the listing in $GATE_TMP/wts.
+health_prep() {
+  local hc="$1" x="" p e s d real hcr="" rec="" rest c bad=0 n=0 rc
+  local -a paths=()
+  if [[ -z "$COPIES_OK" ]]; then echo "refuse health-prep: --settings' copies line is not well formed, so nothing is copied (${COPIES_LINE#copies })"; return 1; fi
+  [[ -n "$MAINWT" ]] || { echo "refuse health-prep: the repository has no main worktree (bare)"; return 1; }
+  # HC's own record: a listed worktree, not the main one, detached.
+  while IFS= read -r -d '' e; do
+    case "$e" in
+      "worktree "*) p="${e#worktree }"; rec="" ;;
+      detached) [[ "$p" != "$hc" ]] || rec=detached ;;
+      "") [[ "$p" != "$hc" ]] || hcr="${rec:-attached}" ;;
+    esac
+  done < "$GATE_TMP/wts"
+  if [[ "$hc" == "$MAINWT" ]]; then x="$hc is the main worktree"
+  elif [[ -z "$hcr" ]]; then x="$hc is not a worktree of this repository (git worktree list)"
+  elif [[ "$hcr" != detached ]]; then x="$hc is on a branch; the health checkout is a detached worktree"
+  elif [[ -L "$hc" || ! -d "$hc" ]] || ! real="$(realpath -e -- "$hc" 2>/dev/null)" || [[ "$real" != "$hc" ]]; then x="$hc is not a directory reached without a symbolic link"
+  elif ! real="$(realpath -e -- "$MAINWT" 2>/dev/null)"; then x="the main worktree $MAINWT could not be resolved"; fi
+  [[ -z "$x" ]] || { echo "refuse health-prep: $x"; return 1; }
+  [[ ${#COPIES[@]} -gt 0 ]] || { echo "ok $hc 0"; return 0; }
+  for e in "${COPIES[@]}"; do
+    p="${e%/}"; s="$MAINWT/$p"; d="$hc/$p"; x=""
+    # The source: a plain file or directory in the main worktree, no part a symlink.
+    if [[ ! -e "$s" && ! -L "$s" ]]; then x="it is absent in the main worktree"
+    elif [[ "$(realpath -e -- "$s" 2>/dev/null)" != "$real/$p" || -L "$s" ]]; then x="it is, or is reached through, a symbolic link in the main worktree"
+    elif [[ ! -f "$s" && ! -d "$s" ]]; then x="it is not a regular file or directory in the main worktree"
+    elif [[ "$hc/" == "$real/$p/"* ]]; then x="it holds the health checkout itself"
+    elif [[ -n "$(find "$s" \( \( ! -type f ! -type d \) -o \( -type f -name .git \) \) -print -quit 2>&1)" ]]; then x="it holds a symbolic link, special file or .git file (or could not be listed whole), which could point outside the health checkout"
+    else
+      # No user excludes file (core.excludesFile, or XDG's git/ignore when it
+      # is unset): only the repository's own ignore rules decide.
+      rc=0; GIT_LITERAL_PATHSPECS=0 git -c core.excludesFile=/dev/null -C "$MAINWT" check-ignore -q -- "$p" 2>/dev/null || rc=$?
+      if [[ "$rc" -eq 1 ]]; then x="git does not ignore it in the main worktree (only gitignored paths are copied; a tracked one is in the checkout already)"
+      elif [[ "$rc" -ne 0 ]]; then x="git check-ignore failed on it in the main worktree"; fi
+    fi
+    # The destination: absent, under parents that are plain directories or absent.
+    if [[ -z "$x" ]]; then
+      c="$hc"; rest="$p"
+      while [[ "$rest" == */* ]]; do
+        c="$c/${rest%%/*}"; rest="${rest#*/}"
+        [[ -e "$c" || -L "$c" ]] || break
+        if [[ -L "$c" || ! -d "$c" ]]; then x="${c#"$hc/"} in the health checkout is a symbolic link or not a directory"; break; fi
+      done
+      [[ -n "$x" || ! ( -e "$d" || -L "$d" ) ]] || x="it already exists in the health checkout"
+    fi
+    if [[ -n "$x" ]]; then echo "refuse health-prep $p: $x"; bad=1; else paths+=("$p"); fi
+  done
+  [[ "$bad" -eq 0 ]] || return 1
+  for p in "${paths[@]}"; do
+    : > "$GATE_TMP/cp"
+    # -T: never into a directory already at the destination (checked absent above).
+    if [[ -e "$hc/$p" || -L "$hc/$p" ]] || ! mkdir -p -- "$(dirname -- "$hc/$p")" 2> "$GATE_TMP/cp" || ! cp -a -T --reflink=auto -- "$MAINWT/$p" "$hc/$p" 2> "$GATE_TMP/cp"; then
+      echo "refuse health-prep $p: the copy into the health checkout failed ($(head -n 1 "$GATE_TMP/cp"))"; return 1
+    fi
+    echo "copied $p"; n=$((n + 1))
+  done
+  echo "ok $hc $n"
+}
 # free_worktrees: --free-worktrees, under the dispatch lock its caller holds.
 # The whole list first: a removal changes what git would list next.
 free_worktrees() {
@@ -2615,7 +2740,7 @@ case "$MODE" in
     ;;
   settings)
     read_settings; reader_settings
-    printf '%s\n' "$POLICY_LINE" "$SLOTS_LINE" "$NEVER_LINE" "$CONSTRAINTS_LINE" "$READERS_LINE"
+    printf '%s\n' "$POLICY_LINE" "$SLOTS_LINE" "$NEVER_LINE" "$CONSTRAINTS_LINE" "$READERS_LINE" "$COPIES_LINE"
     ;;
   check)
     gate_start
@@ -2657,5 +2782,11 @@ case "$MODE" in
     wt_of "" || { echo "refuse worktree-base: the worktrees could not be listed"; exit 2; }
     wt_base || { echo "refuse worktree-base: $WT_BASE_WHY"; exit 2; }
     echo "ok $WT_BASE"
+    ;;
+  health-prep)
+    state_start
+    read_settings
+    wt_of "" || { echo "refuse health-prep: the worktrees could not be listed"; exit 2; }
+    health_prep "${ARGS[0]}" || exit 2
     ;;
 esac
