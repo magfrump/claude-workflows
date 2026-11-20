@@ -74,6 +74,21 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   which nothing creates once the worktree fix lands; its "(this harness's)" comment misleads. First step:
   a review brief (gate code, `Live-verified:` trailer) to drop the exemption or correct the comment.
 
+- **Agent: `si_commit_child_work` should turn literal pathspecs off itself** (filed 2026-11-20, step 7; from
+  `docs/working/research-2026-11-20-self-improvement-env-followups.md`). Motive: its `git add` excludes the
+  message file with `":(exclude).si-commit-msg"`, which `GIT_LITERAL_PATHSPECS=1` reads as a file name; 5eab5704
+  guards the one call site in `scripts/self-improvement.sh`, but `test/si-commit-child-work.bats` calls the lib
+  directly and 8 of its cases still fail with the variable exported. First step: a review brief (`scripts/lib/`
+  is gate code) moving the `GIT_LITERAL_PATHSPECS=0` guard into `scripts/lib/si-commit.sh`, with a case that
+  exports the variable.
+
+- **Agent: `test/rubric-selection.bats` "emits nothing when two candidates tie" is flaky** (filed 2026-11-20,
+  step 1). Motive: it failed once in iteration 2317's health check (case 1019, line 152, `[ -z "$result" ]`), at
+  4cab5ae4 plus nothing that touches it, and passed 3 of 3 reruns alone; a build loop was regenerating reports
+  at the time. A flaky case in the fast suites turns a health check red and holds the whole cycle. First step:
+  rerun it under load to reproduce, then find the order or timing the selector depends on (both fixtures share a
+  date and commit; the selector may read file times).
+
 - **Agent: Gate-only changes approved by the release paste (area A's [5n])** (filed 2026-11-19, step 7).
   Motive: 25 merge entries in two weeks, 24 answered [1]; the pick would remove about a quarter.
   First step: the review brief drafted in section 8 of
@@ -81,14 +96,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   Held: Q-323 asks whether to build it at all.
 
 ## In flight
-
-- **Agent: `self-improvement.sh` fails under an exported `GIT_LITERAL_PATHSPECS=1`, and its `TMPDIR`
-  fallback still sits under `.claude/`** (both filed 2026-11-20, step 7, from the self-improvement worktrees
-  loop, `docs/working/research-2026-11-20-self-improvement-worktrees.md`). Motive: with
-  `GIT_LITERAL_PATHSPECS=1` exported (the dev-cycle reader does), a git call in the main loop fails, hidden
-  in tests by the suite's new `unset`; the fallback `TMPDIR=$REPO_DIR/.claude/tmp` asks the owner on each
-  write. One unit (same script). 2026-11-20: briefed (iteration 2217), self-merge (`scripts/self-improvement.sh`,
-  `test/`): `docs/working/briefs/2026-11-20-self-improvement-env-followups.md`.
 
 - **Agent: `--cycle-diff` lets a cycle record lose its earlier blocks** (filed 2026-11-19, step 6).
   Motive: iteration 2026-11-20-0121 landed `docs/working/cycles/cycle-2026-11-19.md` holding only its
@@ -461,6 +468,11 @@ Unranked. Each names the signal that motivates it.
 ## Done
 
 Items finished since the last cycle, with the merge.
+
+- **`self-improvement.sh` under an exported `GIT_LITERAL_PATHSPECS=1`, and its `TMPDIR` fallback**: the commit
+  step's call site runs with literal pathspecs off; the fallback moved to `.worktrees/si-tmp`. Done 5eab5704
+  (self-merge), brief `docs/working/briefs/closed/2026-11-20-self-improvement-env-followups.md`. The lib's own
+  guard is a Now item.
 
 - **`scripts/self-improvement.sh` still puts its worktrees under `.claude/`**: its default is now
   `.worktrees/si-wt-<task>`, set up as build loops' `.worktrees/` is. Done 7b46a90e (self-merge, two
