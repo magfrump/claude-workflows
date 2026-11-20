@@ -109,6 +109,7 @@ At the next release whose install re-blesses, ask the owner for the hint text th
 - **Condition:** the cycle files an `image-lag` release entry (dev-cycle step 0.1). That entry then adds one line asking the owner to paste the bless output's `Verified live:` and `Next:` lines, and `cc-isolated --list`'s `Blessed config` line, before running any probe. Pass: `Verified live:  NO — a bless is a review, not a test.`, `Next: cc-isolated --probe-only <repo>` alone on its line, and `--list` showing `verified live: NO (run: cc-isolated --probe-only <repo>)`.
 - **Interim:** the rebuild-hint commits keep `Live-verified: no`; that output rests on bats. The second half (a probe marks the bless verified) is live-verified on bless 3c5dd7853cf7a3f9.
 - **Closes:** when those pasted lines are on record here.
+- **2026-11-19, iteration 0056 UTC:** the owner reports the 0feaf080 install did re-bless, but its output was too large to find the lines in, and the Q-303 entry's ask was hard to spot. The `--list` line is asked for alone in Q-316 (one grep). The bless's own `Verified live:` and `Next:` lines are gone with that output; at the next re-bless, the image-lag entry's paste ends with `| tee "$TMPDIR/install.log"` and asks for `grep -E 'Verified live:|^Next:' "$TMPDIR/install.log"`, a two-line answer.
 
 ### Q-313 · live-verify-merge-of-main-stop
 **Needs:** trigger · **Opened:** 2026-11-19 · **Status:** OPEN
