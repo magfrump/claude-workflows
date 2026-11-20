@@ -31,8 +31,8 @@ full cycles a light pass skips those checks while nothing new needs them (step 0
   `cd` only when the whole command succeeds and ends inside the working directories, so
   the shell sits where the last successful `cd` took it (WT, a checkout, after any
   `cd WT && …`), and every build loop's and subagent's Bash call runs there too. So every
-  command names its checkout (`cd WT && …`), and a worktree is removed only from WTB, as
-  step 0.3 says. Each iteration works in its own worktree WT
+  command names its checkout (`cd WT && …`), and a worktree is removed only as step 0.3
+  says. Each iteration works in its own worktree WT
   (step 0) on its own branch `chore/dev-cycle-DATE-HHMM`, never commits on another branch,
   and never checks out or switches a branch in a checkout it did not create. Stage named
   paths only, never `git add -A`. Commits and merges follow the Operating Modes rules in the
@@ -44,8 +44,8 @@ full cycles a light pass skips those checks while nothing new needs them (step 0
   loop's worktree (`--start`'s default). Never put one under `.claude/`: Claude Code asks
   before every write there, and an allow rule does not stop it (brief
   2026-11-19-worktrees-outside-dot-claude). A worktree that an earlier iteration or loop
-  left under `.claude/` is found by its name in `worktree list`, and removed or freed as
-  before.
+  left under `.claude/` is found by its name in `worktree list`, and removed (step 0.3's
+  form) or freed (`--free-worktrees`) as before.
 - **A file write and the commands that depend on it go in separate responses.** Write a
   brief, the record or a roadmap edit in one response. Send the commit, merge or other
   command that needs the file in a later response, once the write has succeeded. In
@@ -339,20 +339,22 @@ the iteration with no record, so the next one starts from the same `Main at:`:
    `Asked:` items land now and are not filed again (D13: a failed land is retried); a
    conflict is a stop. Unmerged `chore/dev-cycle-*` branches are named in the final
    message. WT is removed (the land left it clean) once step 10's land is verified: every
-   registered worktree costs disk. **Every worktree removal the orchestrator makes takes
-   two calls** (herald F-008): first a call that is only `cd WTB`, then, in a later call,
-   `git -C MAIN_WT worktree remove X` (forced where a stop says so) with nothing
+   registered worktree costs disk. **Every worktree removal the orchestrator makes
+   outside `--free-worktrees` takes two calls** (herald F-008, the belegarth-herald repo's
+   report of loops' refused Bash calls): first a Bash call that is only `cd WTB`, then, in
+   a separate later call (never joined to it by `&&` or `;`), `git -C MAIN_WT worktree
+   remove X`, X the worktree being removed, (forced where a stop says so) with nothing
    after it in that command. Why: a loop's or subagent's Bash call runs in the
    orchestrator's shell's directory, which can lag one command behind, and after
    `cd X && …` that directory is X; removing X from there refuses the loops' next calls
-   ("no longer exists, so this command was not run"; 31 of 69 loops lost a call so,
+   ("no longer exists, so this command was not run"; 31 of the 69 loops that started in WT lost a call so,
    `docs/working/research-2026-11-20-loop-start-dir-research.md`). A bare `cd WTB` cannot
    fail after its `cd`, so the shell holds WTB, which lives all session, and even a call
    one command behind runs there; with nothing after the removal, the call ends once X is
    gone. HC, GT, the stops' forced removals and a leftover HC use this form.
-   `--free-worktrees`' removals (step 1) are covered the same way: it runs from WT, never
-   from a worktree it frees, so the shell is already outside each one it removes, and
-   nothing follows it in its command.
+   `--free-worktrees` (step 1) is safe without this form: it runs from WT, never from a
+   worktree it frees, and frees only finished loops' worktrees, so the shell is already
+   outside each one it removes.
 4. **The digest**: `dev-cycle.sh` through d6 from WT. It
 reads the window start, triggers, questions, roadmap and idea log from that working tree. Keep
 its output. It is read-only. Its sections feed the steps: 1 activity (context), 2 triggers
