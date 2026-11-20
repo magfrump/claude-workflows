@@ -32,3 +32,5 @@ Paths: scripts/self-improvement.sh test/
 - `scripts/build-loop.sh`, the dev-cycle skill and any other gate code.
 - Moving or cleaning up worktrees that already exist under `.claude/`.
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`.
+
+Dispatched: 1
