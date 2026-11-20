@@ -31,3 +31,5 @@ Paths: scripts/self-improvement.sh test/
 
 - `hooks/guard-trusted-writes.py` (its stale `.claude/wt-*` exemption is a separate review item), `scripts/build-loop.sh` and any other gate code.
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`.
+
+Dispatched: 1
