@@ -31,3 +31,5 @@ Policy: review
 
 - `STEAL_AGE`, the stall rule, the dispatch cap, the lock reason's format, heartbeats.
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`.
+
+Dispatched: 1
