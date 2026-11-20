@@ -26,6 +26,19 @@ skill at base is the one that merge brought in, so I proceeded rather than block
 brief's stop condition by its purpose, not its letter, so the ready marker asks the owner to
 confirm it.
 
+### Open question for the owner (tentative pick)
+
+The brief said to end blocked unless `git log -1 -- skills/code-review/SKILL.md` on the base
+printed the lever #3 correction's merge (d383a484, merged under Q-315, your answer to merge that fix).
+It prints ca328816, the last commit on the merged branch. Git's default history view never prints
+a merge whose tree matches its second parent, so this check could not pass as written.
+The skill at base is the merged version, so I proceeded. Tiebreaker: the check's purpose was met.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| [1] Accept (pick) | Runs stand as measured | None | None: the skill measured is the merged one |
+| [2] Re-run blocked | Discard; re-dispatch after rewording the check | ~2.2M tokens | Same numbers again |
+
 ## What I know (context)
 
 - csp: range `d86d2dc..d90d6bb` of `/workspace/external/meta-formalism-copilot`, 2 files. First
