@@ -27,8 +27,8 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-312](#q-312--friction-ideas-owner-brainstorm-areas) | you: judgment | Two roadmap Ideas from your 2026-10-29 brainstorm carry your own friction report. Build them now, or keep t... | 2026-11-19 |
-| [Q-318](#q-318--merge-2026-11-19-lever3-followons-65dd7d2b0927) | you: judgment | Merge the follow-on to Q-315: the same two false claims ("sub-agents cannot read your files", so paste thei... | 2026-11-19 |
-| [Q-319](#q-319--merge-gate-2026-11-19-steal-ended-2e687f12a30b) | you: judgment | Merge the change that lets the dev cycle re-dispatch its own dead build loop at once, instead of waiting tw... | 2026-11-19 |
+| [Q-318](#q-318--merge-2026-11-19-lever3-followons-65dd7d2b0927) | you: judgment | Q-318: [1] | 2026-11-19 |
+| [Q-319](#q-319--merge-gate-2026-11-19-steal-ended-2e687f12a30b) | you: judgment | Q-319: [1] | 2026-11-19 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the ho... | 2026-11-05 |
 | [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there. | 2026-11-18 |
 | [Q-316](#q-316--blessed-config-line) | you: terminal | Paste one line: what `cc-isolated --list` says about the blessed config after today's re-bless. | 2026-11-19 |
@@ -180,7 +180,8 @@ sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git r
 - **Interim:** the image's gate (0feaf080) runs; nothing breaks.
 
 ### Q-318 · merge-2026-11-19-lever3-followons-65dd7d2b0927
-**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** ANSWERED
+Q-318: [1]
 
 Merge the follow-on to Q-315: the same two false claims ("sub-agents cannot read your files", so paste their skill text; and "a shared prompt prefix is cached across agents") removed from draft-review, matrix-analysis, divergent design and two review guides?
 
@@ -226,7 +227,8 @@ No path is gate code, an instruction file or a dot path. The first rubric line i
 - **Interim:** nothing merges.
 
 ### Q-319 · merge-gate-2026-11-19-steal-ended-2e687f12a30b
-**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** ANSWERED
+Q-319: [1]
 
 Merge the change that lets the dev cycle re-dispatch its own dead build loop at once, instead of waiting two hours (your request of 2026-11-19)?
 
