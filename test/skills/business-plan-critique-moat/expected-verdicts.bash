@@ -28,7 +28,7 @@ declare -gA KEY_CHECK
 
 EXPECTED_VERDICT["tc-moat1-veterinary-booking.md"]="Weak|Absent"
 CLAIM_ACCURACY["tc-moat1-veterinary-booking.md"]="flaw"  # Moat Type: the named moat is an 18-month head start / first-mover land-grab, no structural mechanism
-KEY_CHECK["tc-moat1-veterinary-booking.md"]="verdict_match;;cites_pattern:(first.?mover|head.?start|speed|got here first).{0,150}(not a (durable |real |structural )?moat|isn.t a moat|temporary|erode|copied|copy|replicat|no (structural|durable))|(not a (durable |real |structural )?moat|isn.t a moat|no (durable|structural) moat).{0,150}(first.?mover|head.?start|speed)|first.?mover advantage is not;;format_check"
+KEY_CHECK["tc-moat1-veterinary-booking.md"]="verdict_match;;cites_pattern:(first.?mover|head.?start|speed|got here first).{0,150}(not a (durable |real |structural )?(moat|mechanism)|isn.t a moat|temporary|erode|copied|copy|replicat|no (structural|durable))|(not a (durable |real |structural )?moat|isn.t a moat|no (durable |structural |real )?moat).{0,150}(first.?mover|head.?start|speed)|first.?mover advantage is not;;format_check"
 
 EXPECTED_VERDICT["tc-moat2-meal-planning-app.md"]="Weak|Absent"
 CLAIM_ACCURACY["tc-moat2-meal-planning-app.md"]="flaw"  # Distribution Channel: 88% of installs from App Store search/editorial + TikTok organic (rented demand surfaces), CAC modelled flat for 3 years

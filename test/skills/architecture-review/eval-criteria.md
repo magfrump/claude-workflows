@@ -39,4 +39,9 @@ violation.
 - arch7 is a patch rather than source because the skip path is defined over a
   diff; the single-commit fixture repo has no `main` to diff against, which is why
   the runner prompt names the file as the change under review.
+- arch6 must be clean in fact, not just in layering: its first version had no
+  `mark_sent` (every run re-sent every reminder) and no timezone contract on
+  `due_at`, and two fresh runs reported those as Structural and Coupling. The
+  fixture now gives `Reminder` an id, the store a `mark_sent`, and the domain
+  an aware-UTC check (docs/working/research-2026-11-20-skill-verdict-drift.md).
 - `cites_pattern` values are permissive alternations; they must not contain `;`.

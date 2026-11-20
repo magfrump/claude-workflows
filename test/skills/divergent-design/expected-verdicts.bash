@@ -31,7 +31,7 @@ declare -gA KEY_CHECK
 
 EXPECTED_VERDICT["tc-dd1-job-queue-no-new-infra"]="routes"
 CLAIM_ACCURACY["tc-dd1-job-queue-no-new-infra"]="flaw"  # No Redis/AWS and two-quarter procurement kills Redis and SQS; enqueue-in-the-same-transaction kills both again and the cron; the Postgres SKIP LOCKED queue is the only survivor
-KEY_CHECK["tc-dd1-job-queue-no-new-infra"]="tool_called:Read=workflows/divergent-design\.md;;cites_pattern:step 1 +diverge;;cites_pattern:recommend +\[?[0-9]+\]?[^.]{0,80}(postgres|skip.?locked|database.?(backed|queue))"
+KEY_CHECK["tc-dd1-job-queue-no-new-infra"]="tool_called:Read=workflows/divergent-design\.md;;cites_pattern:step 1 +diverge;;cites_pattern:recommend +\[?[0-9]+\]?[^.]{0,80}(postgres|\bpg\b|skip.?locked|database.?(backed|queue))"
 
 EXPECTED_VERDICT["tc-dd2-date-library-moment-maintenance"]="routes"
 CLAIM_ACCURACY["tc-dd2-date-library-moment-maintenance"]="flaw"  # Moment + timezone data is 74 KB gz against a 60 KB cap with 38 KB already spent, and is in maintenance mode — it must be pruned despite the team knowing it

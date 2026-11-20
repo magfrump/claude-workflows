@@ -128,7 +128,7 @@ For non-policy drafts — engineering manifestos, process documents, technical p
 
 Output the critique as a Markdown document. Begin with a level-1 title heading containing "Yglesias Critique" (e.g., `# Yglesias Critique: <draft title>`). Then use **level-2 (`##`) headings in the output file** for each section below — these section names are checked by downstream tooling, so keep them close to the names given. Not every section applies to every draft; omit a section if you have nothing substantive to say, but never rename a section you do use.
 
-Headings below are shown as `###` only to keep this SKILL.md readable. **In your output document, render each as `## ` (level-2).**
+Headings below are shown as `###` only to keep this SKILL.md readable. **In your output document, render each as `## ` (level-2).** Where a section names a word to use, it goes in the section's body text; the heading does not count.
 
 ### The Goal vs. the Mechanism
 State what the author genuinely cares about (the goal), then assess whether their proposal advances it (move #1). If the mechanism undermines the goal, explain the causal chain. Use the words "goal" and "mechanism" explicitly in this section so downstream tooling can identify the move.
