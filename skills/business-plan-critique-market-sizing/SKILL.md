@@ -293,7 +293,10 @@ Each of the five lens-assessment sections MUST include a `**Verdict:**` line val
 lens the plan does not address — no comp set provided, or no "why now" named). Each section MUST
 also include a `**Confidence:**` line valued `High`, `Medium`, or `Low`, reflecting how
 confidently you can land the verdict given the evidence in the draft (and fact-check report, if
-provided). Place both fields at the top of the section, before prose.
+provided). Place both fields at the top of the section, before prose. Each field line holds
+its single value and nothing else: no hedge between two values (`Medium-High`), no
+parenthetical, no qualifier. When the answer differs by segment or scope, pick the value that
+governs the plan's claim and explain the split in the prose below.
 
 ### TAM Definition Assessment
 Reconcile top-down and bottom-up TAM. Identify category-report misfit, adjacency creep,

@@ -85,15 +85,15 @@ field_count() {
 # SKILL.md ("Calibrate severity and plausibility honestly") defines the labels
 # with glosses — "Likely (>50%)", "High (significant cost, slow recovery)" — while
 # its output template shows the bare word, so both forms are spec. The
-# annotation rule is the same one assert_field_values applies repo-wide
-# (helpers.bash). Anything else — an off-vocabulary word such as bare "Unlikely",
+# annotation rule is helpers.bash's field_values_off_vocab, the one
+# assert_field_values applies repo-wide. Anything else — an off-vocabulary word such as bare "Unlikely",
 # or text before the word — fails. (The old presence check also accepted bare
 # "Unlikely", which this one rejected; SKILL.md's enum has no such value.)
 @test "Plausibility values use only the allowed vocabulary" {
   local values bad
   values=$(echo "$REPORT_CONTENT" | sed -n 's/^[*-]* *\*\*Plausibility:\*\* //p')
   [ -n "$values" ] || { echo "no Plausibility values found"; return 1; }
-  bad=$(echo "$values" | grep -viE '^(Likely|Plausible|Unlikely-but-catastrophic)([ ,(*].*)?$' || true)
+  bad=$(echo "$values" | field_values_off_vocab 'Likely|Plausible|Unlikely-but-catastrophic')
   [ -z "$bad" ]
 }
 
@@ -101,7 +101,7 @@ field_count() {
   local values bad
   values=$(echo "$REPORT_CONTENT" | sed -n 's/^[*-]* *\*\*Severity:\*\* //p')
   [ -n "$values" ] || { echo "no Severity values found"; return 1; }
-  bad=$(echo "$values" | grep -viE '^(Low|Medium|High|Catastrophic)([ ,(*].*)?$' || true)
+  bad=$(echo "$values" | field_values_off_vocab 'Low|Medium|High|Catastrophic')
   [ -z "$bad" ]
 }
 
