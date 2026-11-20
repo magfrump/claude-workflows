@@ -202,9 +202,11 @@ ensure_worktree_dir() {
         return 1
     fi
     # Two reads: nothing under .worktrees shows in `git status`, and a new
-    # task worktree's name there is ignored too.
+    # task worktree's name there is ignored too. check-ignore takes no
+    # pathspec magic, so an inherited GIT_LITERAL_PATHSPECS=1 (the dev-cycle
+    # reader exports it) is turned off for its one fixed name, as wt_base does.
     out=$(git -C "$repo" status --porcelain --untracked-files=normal -- .worktrees 2>/dev/null) || rc=128
-    [ "$rc" -ne 0 ] || git -C "$repo" check-ignore -q -- ".worktrees/$prefix-x" 2>/dev/null || rc=$?
+    [ "$rc" -ne 0 ] || GIT_LITERAL_PATHSPECS=0 git -C "$repo" check-ignore -q -- ".worktrees/$prefix-x" 2>/dev/null || rc=$?
     if [ "$rc" -gt 1 ]; then
         echo "Error: git could not say whether it ignores $b (git status or check-ignore failed)" >&2
         return 1
@@ -502,8 +504,8 @@ HISTORY_FILE="$REPO_DIR/docs/working/problem-history.json"
 # only makes sense on a clean main. Checked before the first write below so a
 # refused run leaves nothing behind. See require_clean_main().
 (cd "$REPO_DIR" && require_clean_main) || exit 1
-# Before any other write, so a refusal here leaves nothing but the ignored
-# .worktrees/ directory behind.
+# Before any other write, so a refusal here leaves at most .worktrees/ and
+# the .gitignore it made there behind.
 if [ "$WORKTREE_BASE" = "$SI_DEFAULT_WORKTREE_BASE" ]; then
     ensure_worktree_dir "$REPO_DIR" "${SI_DEFAULT_WORKTREE_BASE##*/}" || exit 1
 fi

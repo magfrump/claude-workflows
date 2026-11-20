@@ -201,6 +201,8 @@ run_si() {
     if kill -0 "$p" 2>/dev/null; then alive="$alive $p"; kill "$p"; fi
   done
   [ -z "$alive" ]
+  grep -qx "$REPO/.worktrees/si-wt-a" "$STUB_DIR/impl.cwd"
+  grep -qx "$REPO/.worktrees/si-wt-b" "$STUB_DIR/impl.cwd"
   [ ! -d "$REPO/.worktrees/si-wt-a" ]
   [ ! -d "$REPO/.worktrees/si-wt-b" ]
 }
@@ -313,6 +315,14 @@ run_si() {
   [ "$status" -ne 0 ]
   [[ "$output" == *".gitignore is a symbolic link or not a plain file"* ]]
   [ ! -e "$BATS_TEST_TMPDIR/target" ]
+  [ ! -e "$STUB_DIR/impl.cwd" ]
+}
+
+@test "an inherited GIT_LITERAL_PATHSPECS=1 does not refuse a correctly ignored default" {
+  export GIT_LITERAL_PATHSPECS=1 STUB_RESOLVER_RC=1
+  run_si
+  [ "$status" -eq 0 ]
+  grep -qx "$REPO/.worktrees/si-wt-a" "$STUB_DIR/impl.cwd"
 }
 
 @test "an explicit WORKTREE_BASE is used as given, with no .worktrees made" {
