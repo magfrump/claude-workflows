@@ -28,6 +28,7 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-321](#q-321--regenerate-skill-eval-reports-after-a8) | you: judgment | Regenerate the skill eval reports now that the A8 measurement has run, so the 51 test files marked `@needs-... | 2026-11-19 |
 | [Q-323](#q-323--gate-only-changes-approved-by-release) | you: judgment | Should a build loop's change that touches only the gate's own code (`scripts/build-loop.sh`, `d6.sh`, `dev-... | 2026-11-19 |
+| [Q-325](#q-325--stopped-2026-11-19-guard-worktree-taint-1) | you: judgment | Brief 2026-11-19-guard-worktree-taint's build loop stopped; re-dispatch or drop? | 2026-11-19 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the ho... | 2026-11-05 |
 | [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there. | 2026-11-18 |
 | [Q-316](#q-316--blessed-config-line) | you: terminal | Paste one line: what `cc-isolated --list` says about the blessed config after today's re-bless. | 2026-11-19 |
@@ -200,3 +201,25 @@ One thing the research's summary does not say, which the cycle adds: a self-land
 
 - **Interim:** [2]; nothing is briefed. The drafted brief waits on [1], and after the auto send-back build (in flight) merges.
 - **Also found:** watch Q-262 (`docs/working/watching.md`) listed three of the 2026-11-06 record's five reopen conditions; one of the two it left out, "an approved merge is reverted", fired on 2026-11-12 (the sandbox merge 3cd6d9bb, reverted by 7caea26d). The watch now lists all five; this entry is that reopening.
+
+### Q-325 · stopped-2026-11-19-guard-worktree-taint-1
+**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** OPEN
+
+Brief 2026-11-19-guard-worktree-taint's build loop stopped; re-dispatch or drop?
+
+**If you say no:** the write-guard fix (in a web-tainted session, ordinary edits inside a worktree under `.claude/` stop asking) stays on its unmerged branch, and every such edit keeps asking.
+
+> Reason: pass-3 confirmation review still running at handback; passes 1-2 fixed
+
+The loop's marker line, as printed (the loop's text):
+
+> ok docs/working/briefs/2026-11-19-guard-worktree-taint.md 3cf3551c83a6a3c16abdf39be4f0b012c2f78fcb
+
+What the loop reports (from its hand-back, not yet checked by the cycle): the fix is built on `fix/guard-worktree-taint` (three commits on f5fbc9be); `test/hooks/guard-trusted-writes.bats` passes 105/105, with tonight's reproduction as a case that fails on the old hook; two review passes found and fixed one must-fix (a symlinked CLAUDE.md inside a worktree lost its ask) and the rest. The third, confirming pass was still running when the loop handed back early, which is the failure the wait rule merged under Q-314 prevents once it is released (Q-317). The branch also adds a failure-pattern entry, FP-185, which is on the self-merge floor, so the merge was always going to come to you. The next loop would finish that review, commit its rubric, set the brief to done and mark the branch ready; the merge then comes to you as its own entry.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] re-dispatch** | The cycle starts the loop again; it finishes the confirming review and hands back ready | None now; one merge entry later | Another round if the review finds something |
+| **[2] drop** | The brief closes; the branch stays unmerged | None | The per-edit asks in `.claude/` worktrees go on |
+
+- **Interim:** nothing runs; the branch waits.
