@@ -79,4 +79,18 @@ followed by a blank line.
 
 ## Review
 
-(Filled after pr-prep's review-fix loop.)
+pr-prep Step 0 (failure-pattern advisory): the grep above; no prior pattern for this area. No `fix(...)` commits on the branch, so no FP entry is due.
+
+Round 1 (one code-review subagent, correctness, docs against code, test gaps) found seven issues, all fixed in 30c68b70:
+
+- nested entries (`build build/cache`) copied into the first copy: `--settings` now reads such a line as malformed, and the copy uses `cp -T` after a fresh absence check;
+- the "no global excludes file" claim was false (git still reads XDG's `git/ignore` when `core.excludesFile` is unset): `check-ignore` now runs with `-c core.excludesFile=/dev/null`;
+- the skill named only refuse lines: it now treats any exit but 0 as `skipped: HC not prepared`, named in the final message, so a malformed line or a cleaned cache cannot switch the check off unnoticed;
+- a copied `.git` file (a gitdir pointer) is refused like a symlink; `.git` directories (Lake's package clones) are allowed;
+- the header no longer says a refusal "copies nothing" when a copy fails part way, and a failed `mkdir` reports its own error.
+
+Unverified, for the owner's host: whether philosophy-research's `.lake` holds any symlink, which this mode refuses. If it does, the refusal names the first one.
+
+`scripts/health-check.sh` passed on 7a7ddbbe.
+
+Round 2 (the same reviewer on 30c68b70) confirmed every fix, probing the find grouping, the nested-entry loop, `cp -T` and the excludes fix against the old code. One amber: the XDG test case passed on the old code too, since the fixture's `git add -A` kept the file tracked. Fixed by making the file after the last commit and asserting it untracked and XDG-ignored; the case now fails against 7a7ddbbe's script (`copied xdgonly`, exit 0) and passes on the branch. No round 3: the one fix is to a test, checked by running it against both scripts.

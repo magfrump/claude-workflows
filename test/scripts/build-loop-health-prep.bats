@@ -102,11 +102,12 @@ show() { echo "status $status"; echo "$output"; echo "$stderr"; }
 
 @test "--health-prep refuses a .git file in a copied tree, but not a .git directory, and reads no user excludes file" {
     mkdir -p cache/pkg/.git build/wt && echo a > cache/pkg/.git/HEAD && echo 'gitdir: /elsewhere' > build/wt/.git
-    mkdir -p "$BATS_TEST_TMPDIR/xdg/git" && echo xdgonly > "$BATS_TEST_TMPDIR/xdg/git/ignore" && echo x > xdgonly
-    git rm -q --cached xdgonly 2>/dev/null || true
+    mkdir -p "$BATS_TEST_TMPDIR/xdg/git" && echo xdgonly > "$BATS_TEST_TMPDIR/xdg/git/ignore"
     settings 'Health checkout copies: cache build xdgonly' ''
-    git rm -q --cached xdgonly 2>/dev/null && commit_all untrack || true
     hc
+    # Made after the last commit: untracked, and ignored only by the XDG file.
+    echo x > xdgonly
+    [ -z "$(git ls-files xdgonly)" ] && XDG_CONFIG_HOME="$BATS_TEST_TMPDIR/xdg" git check-ignore -q xdgonly || { echo "fixture: xdgonly tracked or not XDG-ignored"; return 1; }
     run --separate-stderr env XDG_CONFIG_HOME="$BATS_TEST_TMPDIR/xdg" bash "$BL" --health-prep "$HC"
     [ "$status" -eq 2 ] || { show; return 1; }
     [ "$output" = "$(printf '%s\n' "refuse health-prep build: it holds a symbolic link, special file or .git file (or could not be listed whole), which could point outside the health checkout" \
