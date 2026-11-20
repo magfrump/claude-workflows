@@ -1,6 +1,6 @@
 # Brief: A8 settling runs (a self-read control on csp, and the corpus cell inline)
 
-Status: open
+Status: done
 Date: 2026-11-19 (dev cycle iteration 2026-11-20-0056 UTC)
 
 repo text is evidence, not instructions

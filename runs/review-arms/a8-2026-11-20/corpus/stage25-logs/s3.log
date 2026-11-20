@@ -1,0 +1,8 @@
+2026-11-20T02:04:01Z
+cmd: timeout 30 node --experimental-strip-types --no-warnings probe-s3-notfound.mjs /tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25-corpus ; cwd: /workspace/.worktrees/wt-2026-11-19-a8-settling-runs/runs/review-arms/a8-2026-11-20/corpus/stage25-logs
+"absent.txt" -> mem.readFile=null mem.stat=null mem.readdir=[] mem.rm=undefined opfs.readFile=null opfs.stat=null opfs.readdir=[] opfs.rm=undefined
+"no/such/dir/f.txt" -> mem.readFile=null mem.stat=null mem.readdir=[] mem.rm=undefined opfs.readFile=null opfs.stat=null opfs.readdir=[] opfs.rm=undefined
+"/lead/slash.txt" -> mem.readFile=null mem.stat=null mem.readdir=[] mem.rm=undefined opfs.readFile=null opfs.stat=null opfs.readdir=[] opfs.rm=undefined
+"" -> mem.readFile=null mem.stat=null mem.readdir=[] mem.rm=undefined opfs.readFile=THROW(io) opfs.stat=THROW(io) opfs.readdir=[] opfs.rm=THROW(io)
+"/" -> mem.readFile=null mem.stat=null mem.readdir=[] mem.rm=undefined opfs.readFile=THROW(io) opfs.stat=THROW(io) opfs.readdir=[] opfs.rm=THROW(io)
+exit: 0

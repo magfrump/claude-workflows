@@ -1,0 +1,110 @@
+{
+  "experiment": "A8 settling runs: csp self-read control and corpus inline (brief docs/working/briefs/2026-11-19-a8-settling-runs.md)",
+  "date": "2026-11-19/20",
+  "setup": "skills/code-review/SKILL.md as merged by d383a484 (lever #3 correction), base 14d450d9; critic and fact-check skills unchanged since the first A8 pass (4330e303). Terminal passes (no --loop-pass): k=3 fact-check (opus), Stage 1.5 gating, gated critic panel (opus) in parallel, Stage 2.5 on routed claims, Stage 3 synthesis inline by the orchestrator. Passes run one after the other.",
+  "comparators": {
+    "csp": "runs/review-arms/a8-2026-11-19 (same cell, same skills, inline delivery)",
+    "corpus": "runs/review-arms/baseline-2026-08-06 (self-read, k=1)"
+  },
+  "method": "Scratch worktrees of /workspace/external/meta-formalism-copilot in the session scratchpad. Tokens = subagent_tokens from each task notification, written to token-ledger.md at notification time; checked equal to each transcript's last API call.",
+  "cells": {
+    "csp": {
+      "range": "d86d2dc..d90d6bb",
+      "commit": "d90d6bb",
+      "delivery_mode": "self-read",
+      "shared_block_bytes": 4576,
+      "shared_block_stage2_bytes": 8181,
+      "critics": [
+        "security",
+        "performance",
+        "api-consistency",
+        "architecture",
+        "test-strategy"
+      ],
+      "critics_skipped": {
+        "ui-visual": "Step 5: layout.tsx hunks are header/nonce plumbing (same call as the first pass and the baseline)"
+      },
+      "tokens": {
+        "fc_r1": 103630,
+        "fc_r2": 122438,
+        "fc_r3": 109582,
+        "stage1_total": 335650,
+        "security": 108306,
+        "performance": 79122,
+        "api_consistency": 84931,
+        "architecture": 86385,
+        "test_strategy": 77354,
+        "stage2_total": 436098,
+        "stage2_5_submitted_claims": 126985,
+        "core_total": 771748,
+        "total_tokens": 898733
+      },
+      "first_pass_inline": {
+        "stage1_total": 311975,
+        "stage2_total": 431780,
+        "core_total": 743755,
+        "total_tokens": 852285
+      },
+      "labels_hit": "6/6 (R1,R2,A1,A2,A3,A4); R1 at red (api-consistency Breaking High)"
+    },
+    "corpus": {
+      "range": "dc6dfb0..2dc403e",
+      "scope": "-- app/",
+      "commit": "2dc403e",
+      "delivery_mode": "inline-diff-only",
+      "part5_full_bytes": 123423,
+      "part5_full_tokens_est": 30856,
+      "shared_block_bytes": 57328,
+      "shared_block_tokens_est": 14332,
+      "shared_block_stage2_bytes": 61902,
+      "shared_block_stage2_tokens_est": 15476,
+      "shared_block_budget_tokens": 25000,
+      "block_delivery": "agent Reads the byte-identical block file as its first step (not pasted text); see research doc",
+      "critics": [
+        "security",
+        "performance",
+        "api-consistency",
+        "architecture",
+        "tech-debt-triage",
+        "test-strategy"
+      ],
+      "tokens": {
+        "fc_r1": 149652,
+        "fc_r2": 146785,
+        "fc_r3": 139167,
+        "stage1_total": 435604,
+        "security": 123116,
+        "performance": 104995,
+        "api_consistency": 135606,
+        "architecture": 119906,
+        "tech_debt_triage": 106520,
+        "test_strategy": 108020,
+        "stage2_total": 698163,
+        "stage2_5_submitted_claims": 139180,
+        "core_total": 1133767,
+        "total_tokens": 1272947
+      },
+      "baseline": {
+        "fc_k1": 93966,
+        "security": 94922,
+        "performance": 82991,
+        "api_consistency": 91492,
+        "architecture": 87879,
+        "tech_debt_triage": 76227,
+        "test_strategy": 88089,
+        "core_total": 615566
+      },
+      "labels_hit": "cor-A2, cor-A3, cor-A4 hit; cor-A1 partial; D3 hit at red (architecture Structural)"
+    }
+  },
+  "totals": {
+    "agents": 19,
+    "pass1_csp_tokens": 898733,
+    "pass2_corpus_tokens": 1272947,
+    "all_agents_tokens": 2171680,
+    "stop_line": 2500000
+  },
+  "run_status": "complete (2026-11-20)",
+  "instrument_note": "subagent_tokens equals the last API call's input+cache_creation+cache_read+output for all 19 agents; every first call read 18,900 cached tokens",
+  "authoritative_records": "token-ledger.md, results.md, csp/ and corpus/ artifacts"
+}

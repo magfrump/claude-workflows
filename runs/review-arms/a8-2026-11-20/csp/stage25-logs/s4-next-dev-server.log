@@ -1,0 +1,248 @@
+▲ Next.js 16.2.4 (webpack)
+- Local:         http://localhost:3917
+- Network:       http://172.17.0.4:3917
+✓ Ready in 256ms
+
+getaddrinfo EAI_AGAIN fonts.googleapis.com
+
+Retrying 1/3...
+getaddrinfo EAI_AGAIN fonts.googleapis.com
+
+Retrying 1/3...
+getaddrinfo EAI_AGAIN fonts.googleapis.com
+
+Retrying 2/3...
+getaddrinfo EAI_AGAIN fonts.googleapis.com
+
+Retrying 2/3...
+getaddrinfo EAI_AGAIN fonts.googleapis.com
+
+Retrying 3/3...
+getaddrinfo EAI_AGAIN fonts.googleapis.com
+
+Retrying 3/3...
+Error: getaddrinfo EAI_AGAIN fonts.googleapis.com
+    at ignore-listed frames {
+  errno: -3001,
+  code: 'EAI_AGAIN',
+  syscall: 'getaddrinfo',
+  hostname: 'fonts.googleapis.com'
+}
+⨯ Failed to download `EB Garamond` from Google Fonts. Using fallback font instead.
+
+Failed to fetch `EB Garamond` from Google Fonts.}
+Error: getaddrinfo EAI_AGAIN fonts.googleapis.com
+    at ignore-listed frames {
+  errno: -3001,
+  code: 'EAI_AGAIN',
+  syscall: 'getaddrinfo',
+  hostname: 'fonts.googleapis.com'
+}
+⨯ Failed to download `Geist Mono` from Google Fonts. Using fallback font instead.
+
+Failed to fetch `Geist Mono` from Google Fonts.}
+○ Compiling / ...
+⨯ ../../../../../../../../workspace/external/cc-review-eval/mfc-csp/node_modules/bluebird/js/release/async.js:50:1
+Module not found: /workspace/external/package.json (directory description file): /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: No file content
+  48 | Async.prototype.fatalError = function(e, isNode) {
+  49 |     if (isNode) {
+> 50 |         process.stderr.write("Fatal " + (e instanceof Error ? e.stack : e) +
+     | ^
+  51 |             "\n");
+  52 |         process.exit(2);
+  53 |     } else {
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+../../../../../../../../workspace/external/cc-review-eval/mfc-csp/node_modules/bluebird/js/release/promise.js
+../../../../../../../../workspace/external/cc-review-eval/mfc-csp/node_modules/mammoth/lib/promises.js
+../../../../../../../../workspace/external/cc-review-eval/mfc-csp/node_modules/mammoth/lib/document-to-html.js
+../../../../../../../../workspace/external/cc-review-eval/mfc-csp/node_modules/mammoth/lib/index.js
+./app/lib/utils/fileExtraction.ts
+./app/components/features/source-input/FileUpload.tsx
+./app/components/panels/InputPanel.tsx
+./app/page.tsx
+⨯ ../../../../../../../../workspace/external/cc-review-eval/mfc-csp/node_modules/bluebird/js/release/async.js:50:1
+Module not found: /workspace/external/package.json (directory description file): /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: /workspace/external/package.json (directory description file): Error: No file content
+  48 | Async.prototype.fatalError = function(e, isNode) {
+  49 |     if (isNode) {
+> 50 |         process.stderr.write("Fatal " + (e instanceof Error ? e.stack : e) +
+     | ^
+  51 |             "\n");
+  52 |         process.exit(2);
+  53 |     } else {
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+../../../../../../../../workspace/external/cc-review-eval/mfc-csp/node_modules/bluebird/js/release/promise.js
+../../../../../../../../workspace/external/cc-review-eval/mfc-csp/node_modules/mammoth/lib/promises.js
+../../../../../../../../workspace/external/cc-review-eval/mfc-csp/node_modules/mammoth/lib/docx/docx-reader.js
+../../../../../../../../workspace/external/cc-review-eval/mfc-csp/node_modules/mammoth/lib/index.js
+./app/lib/utils/fileExtraction.ts
+./app/components/features/source-input/FileUpload.tsx
+./app/components/panels/InputPanel.tsx
+./app/page.tsx
+⨯ Error: ENOENT: no such file or directory, open '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+}
+Error: ENOENT: no such file or directory, open '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+}
+Error: ENOENT: no such file or directory, open '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+}
+ GET / 500 in 15.8s (proxy.ts: 119ms)
+ GET / 500 in 15.8s (proxy.ts: 119ms)
+⨯ Error: ENOENT: no such file or directory, open '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+}
+Error: ENOENT: no such file or directory, open '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+}
+Error: ENOENT: no such file or directory, open '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+}
+ GET / 500 in 651ms (proxy.ts: 7ms)
+ GET / 500 in 651ms (proxy.ts: 7ms)
+⨯ Error: ENOENT: no such file or directory, open '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+}
+Error: ENOENT: no such file or directory, open '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+}
+Error: ENOENT: no such file or directory, open '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+}
+ GET / 500 in 645ms
+ GET / 500 in 645ms
+⨯ Error: ENOENT: no such file or directory, open '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+}
+Error: ENOENT: no such file or directory, open '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+}
+Error: ENOENT: no such file or directory, open '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+}
+ GET / 500 in 641ms
+ GET / 500 in 641ms
+⨯ Error: ENOENT: no such file or directory, open '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+}
+Error: ENOENT: no such file or directory, open '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+}
+Error: ENOENT: no such file or directory, open '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+}
+ GET / 500 in 643ms (proxy.ts: 3ms)
+ GET / 500 in 643ms (proxy.ts: 3ms)
+⨯ Error: ENOENT: no such file or directory, open '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+}
+Error: ENOENT: no such file or directory, open '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+}
+Error: ENOENT: no such file or directory, open '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+}
+ GET / 500 in 648ms (proxy.ts: 3ms)
+ GET / 500 in 648ms (proxy.ts: 3ms)
+⨯ Error: ENOENT: no such file or directory, open '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+}
+Error: ENOENT: no such file or directory, open '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+}
+Error: ENOENT: no such file or directory, open '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy/.next/dev/fallback-build-manifest.json'
+}
+ GET / 500 in 643ms
+ GET / 500 in 643ms
+[?25h
