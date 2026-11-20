@@ -2,7 +2,7 @@
 // Clickable elements that look like static text — no border, background,
 // or cursor change to indicate interactivity.
 //
-// Expected finding: Minor — interactive elements need visible borders,
+// Expected finding: Major — interactive elements need visible borders,
 // backgrounds, or other affordances per WCAG 2.5.8 and NNGroup research
 
 import React from "react";

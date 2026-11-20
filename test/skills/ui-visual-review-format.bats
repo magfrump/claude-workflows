@@ -105,13 +105,10 @@ ui_section() {
 }
 
 @test "each non-Informational finding has a Recommendation line" {
-  # As in architecture-review-format.bats: an Informational finding (a hardening
-  # note) may carry its remedy inline; every finding at Critical, Major or Minor
-  # still needs an explicit Recommendation.
-  local total_info rec_count
-  total_info=$(echo "$FINDINGS_BODY" | grep -cE '^\*\*Severity:\*\* Informational' || true)
-  rec_count=$(echo "$FINDINGS_BODY" | grep -cE '^\*\*Recommendation:\*\*' || true)
-  [ "$rec_count" -ge $((FINDING_COUNT - total_info)) ]
+  # SKILL.md's Findings template: an Informational finding (a hardening note)
+  # may carry its remedy inline; every finding at Critical, Major or Minor
+  # needs its own Recommendation line.
+  assert_recommendation_per_tiered_finding
 }
 
 # --- Best Practices table ---

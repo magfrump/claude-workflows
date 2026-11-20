@@ -15,7 +15,7 @@ Failure-pattern entry: FP-186 (a negative eval fixture planted as clean had real
 
 ## Ledger (model runs)
 
-Stop line about 40. Used: **33** (run 1: 10 reruns of the ten cases; run 2: 9 after the first fixes; run 3: 5 second samples; runs 3-8: 6 of tc-ts6 across three fixture rounds; runs 9-10: 3 of tc-uv1/uv2 after the Recommendation rule). Every run exited 0 and wrote no `.failed` marker.
+Stop line about 40. Used: **37** (run 1: 10 reruns of the ten cases; run 2: 9 after the first fixes; run 3: 5 second samples; runs 3-8: 6 of tc-ts6 across three fixture rounds; runs 9-10: 3 of tc-uv1/uv2 after the Recommendation rule; run 11: 4 after the review round, tc-uv4, uv6, uv7 and ts6, all pass). Every run exited 0 and wrote no `.failed` marker.
 
 | Case | 0cb729ed | Rerun (run 1) | After fix | Second sample | Call |
 |---|---|---|---|---|---|
@@ -88,6 +88,15 @@ Fix: one paragraph in move 6 of `skills/what-if-analysis/SKILL.md` saying what a
 ### divergent-design tc-dd1 (test wrong)
 
 Both runs recommend the Postgres `SKIP LOCKED` queue, the only option that survives the fixture's constraints, and print the workflow's banner shape. The banner's short name was "PG job library" and "PG queue (library)", and the check's alternation knew `postgres`, `skip locked` and `database-backed` but not the standard abbreviation. Fix: add `\bpg\b` to the alternation (the word boundary keeps `pg_cron` out). Both old reports pass, and tc-dd2-dd5 still pass.
+
+## Review round 1 (independent reviewer, fresh context)
+
+No blockers. Fixed:
+- **uv4 under the new Critical clause.** The clause names Step 2 items 1-2, but uv4 (item 3) plants the same outcome (Save footer pushed off screen). Run 11 rated that finding Critical, and the case passed only through a second Major finding. uv4 now accepts Critical or Major, with the reason in eval-criteria.md.
+- **uv6/uv7 fixture headers still said Minor**, and the model reads them. Both now say Major; run 11 regenerated both (pass).
+- **The Recommendation check compared counts**, so one Informational finding's Recommendation could stand in for a Major's missing one. A per-finding helper (`assert_recommendation_per_tiered_finding` in `test/skills/helpers.bash`) replaces the count in both the UV and the architecture-review format suites, with a hermetic suite (`test/skills/helpers-recommendation.bats`). On the saved reports it flags exactly the three pre-template slips found by hand (uv1 run 3, uv4 and uv7 at 0cb729ed) and nothing generated after the template sentence. The first draft used `#{3,4}`, which mawk does not support; the synthetic case caught it.
+- Nits: the bold trigger label also accepts `**Label**:`; the ts6 length message prints the significant digits; the c2.5 CLAIM_ACCURACY comment describes the new claim.
+- Not changed: the c2.5 side comment "vendored wheel" could draw a different verdict on that one claim, but the check passes when any claim is Unverifiable, and spending a run to reword it was not worth it. The reviewer suggested spelling out in what-if move 6 that state the old release cannot read is a cliff; wi4 passed with the current text, so left as is.
 
 ## Design choices
 

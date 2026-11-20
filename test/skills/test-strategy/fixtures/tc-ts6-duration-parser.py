@@ -43,7 +43,7 @@ def parse_duration(text: str) -> Duration:
         digits, unit = match.group(1), match.group(2)
         significant = digits.lstrip("0") or "0"
         if len(significant) > 12:
-            raise DurationError(f"amount too long: {digits[:12]}...")
+            raise DurationError(f"amount too long: {significant[:12]}...")
         amount = int(significant)
         if unit not in _UNITS:
             raise DurationError(f"unknown unit {unit!r}")

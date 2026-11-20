@@ -167,6 +167,23 @@ assert_field_per_finding() {
   [ "$FINDING_COUNT" -eq "$field_count" ]
 }
 
+# Assert every finding in FINDINGS_BODY (set by count_findings) whose Severity
+# is not Informational carries its own "**Recommendation:**" line. Checked per
+# finding (each ###/#### heading to the next), so an Informational finding's
+# Recommendation cannot stand in for a tiered finding's missing one. Prints
+# the headings of the findings that lack it.
+assert_recommendation_per_tiered_finding() {
+  local missing
+  missing=$(echo "$FINDINGS_BODY" | awk '
+    function flush() { if (head != "" && tiered && !rec) print head }
+    # ###/#### headings, written without {m,n}: mawk has no interval expressions.
+    /^####? / { flush(); head = $0; tiered = 0; rec = 0; next }
+    /^\*\*Severity:\*\*/ { tiered = ($0 !~ /^\*\*Severity:\*\*[ \t]*Informational/) }
+    /^\*\*Recommendation:\*\*/ { rec = 1 }
+    END { flush() }')
+  [ -z "$missing" ] || { echo "findings without a Recommendation line: $missing"; return 1; }
+}
+
 # Assert a section (## heading) exists in the report.
 assert_section_exists() {
   local heading="$1"

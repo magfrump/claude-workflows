@@ -30,9 +30,9 @@ EXPECTED_VERDICT["tc-uv3-wrong-positioning.tsx"]="Major"
 CLAIM_ACCURACY["tc-uv3-wrong-positioning.tsx"]="bug"  # Absolute positioning anchored to wrong parent
 KEY_CHECK["tc-uv3-wrong-positioning.tsx"]="finding_match:Major=relative[^.]{0,80}(SectionA|section a|its (own )?(section|parent|container))|(SectionA|section a)[^.]{0,80}relative|positioned ancestor|containing block|nearest (positioned|relative)"
 
-EXPECTED_VERDICT["tc-uv4-flex-sizing-error.tsx"]="Major"
+EXPECTED_VERDICT["tc-uv4-flex-sizing-error.tsx"]="Critical|Major"
 CLAIM_ACCURACY["tc-uv4-flex-sizing-error.tsx"]="bug"  # shrink-0 on content area instead of flex-1 min-h-0
-KEY_CHECK["tc-uv4-flex-sizing-error.tsx"]="finding_match:Major=flex-1|min-h-0|flex-grow|min-height: ?0"
+KEY_CHECK["tc-uv4-flex-sizing-error.tsx"]="finding_match:Critical|Major=flex-1|min-h-0|flex-grow|min-height: ?0"
 
 EXPECTED_VERDICT["tc-uv5-hidden-overflow.tsx"]="Major"
 CLAIM_ACCURACY["tc-uv5-hidden-overflow.tsx"]="bug"  # overflow-hidden silently clips error list

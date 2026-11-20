@@ -35,7 +35,7 @@ setup() {
   eval_fixture "$SKILL" "tc-uv3-wrong-positioning.tsx"
 }
 
-@test "tc-uv4: flex sizing — Major, flex-1 min-h-0 on the content area" {
+@test "tc-uv4: flex sizing — Critical or Major, flex-1 min-h-0 on the content area" {
   eval_fixture "$SKILL" "tc-uv4-flex-sizing-error.tsx"
 }
 

@@ -41,7 +41,7 @@ setup() {
 @test "skip note: evaluates all four trigger categories" {
   local cat
   for cat in "Module structure" "Public APIs" "Data models" "Cross-cutting concerns"; do
-    echo "$REPORT_CONTENT" | grep -qE "^- (\*\*)?${cat}:(\*\*)? " || { echo "missing trigger category: $cat"; return 1; }
+    echo "$REPORT_CONTENT" | grep -qE "^- (\*\*)?${cat}(\*\*)?:(\*\*)? " || { echo "missing trigger category: $cat"; return 1; }
   done
 }
 
@@ -103,10 +103,7 @@ setup() {
   # Informational findings may bundle observations whose remedies live inline
   # (e.g. an F10-style "smaller structural observations" roundup); every finding
   # at a tiered severity still needs an explicit Recommendation.
-  local total_info rec_count
-  total_info=$(echo "$FINDINGS_BODY" | grep -cE '^\*\*Severity:\*\* Informational' || true)
-  rec_count=$(echo "$FINDINGS_BODY" | grep -cE '^\*\*Recommendation' || true)
-  [ "$rec_count" -ge $((FINDING_COUNT - total_info)) ]
+  assert_recommendation_per_tiered_finding
 }
 
 # --- Ending sections ---
