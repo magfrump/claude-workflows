@@ -31,3 +31,5 @@ Policy: review
 - Decision-log row 72 and the plan's D13 text (`docs/decisions/`, `docs/working/plan-build-loop-handoff.md`): name any wording they need in the research doc.
 - Option 2 (moving removals to the next iteration).
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`.
+
+Dispatched: 1
