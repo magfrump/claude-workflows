@@ -62,16 +62,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   is the owner's: Q-302. First step after the answer: compare its gaps and causes with this
   repo's, and file any cause the fixes here do not cover.
 
-- **Agent: `--cycle-diff` lets a cycle record lose its earlier blocks** (filed 2026-11-19, step 6).
-  Motive: iteration 2026-11-20-0121 landed `docs/working/cycles/cycle-2026-11-19.md` holding only its
-  own block (a script truncated the file before appending), as 18a43829 and fd63f0ae, and
-  `--cycle-diff` printed `ok`; iteration 0128 restored the 28 earlier blocks from 72ba83a0. The
-  skill says each iteration appends its own block and never edits earlier ones, and step 0.2 reads
-  the last `Main at:` line, so a record that loses blocks breaks the next window silently. First
-  step: a review brief adding to `--cycle-diff` the rule that a changed record keeps the base's
-  text as a prefix (append-only, as it already holds the idea log), with a bats case for this
-  shape; gate code.
-
 - **Agent: A reproducible ask counter (`questions.sh counts`) for the weekly digest** (filed 2026-11-19,
   step 7; area B's B2). Motive: the owner-load numbers in area B's research were counted by hand; the
   weekly digest's ask counter needs them reproducible, per class (merge, re-dispatch, real choice),
@@ -86,6 +76,18 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   Held: Q-323 asks whether to build it at all.
 
 ## In flight
+
+- **Agent: `--cycle-diff` lets a cycle record lose its earlier blocks** (filed 2026-11-19, step 6).
+  Motive: iteration 2026-11-20-0121 landed `docs/working/cycles/cycle-2026-11-19.md` holding only its
+  own block (a script truncated the file before appending), as 18a43829 and fd63f0ae, and
+  `--cycle-diff` printed `ok`; iteration 0128 restored the 28 earlier blocks from 72ba83a0. The
+  skill says each iteration appends its own block and never edits earlier ones, and step 0.2 reads
+  the last `Main at:` line, so a record that loses blocks breaks the next window silently. First
+  step: a review brief adding to `--cycle-diff` the rule that a changed record keeps the base's
+  text as a prefix (append-only, as it already holds the idea log), with a bats case for this
+  shape; gate code.
+  2026-11-20: briefed (iteration 2148), review; the rule also takes step 10's rewrite of the last
+  block's `9.`/`10.` lines: `docs/working/briefs/2026-11-20-cycle-diff-record-prefix.md`.
 
 - **Agent: Build loops start in the orchestrator's removed worktree** (filed 2026-11-19, step 7; herald F-008). Motive: every loop
   dispatched before the cycle's land loses its first Bash call, because the cycle removes its
@@ -132,6 +134,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 - **Fix the skill-report format findings F2 and F3** (Q-328 [3]; filed and briefed 2026-11-20, step 6):
   field values followed by explanation, and text before the title, across seven skills. Review
   (skill files): `docs/working/briefs/2026-11-20-skill-format-fields-preambles.md`.
+  2026-11-20: ready at e7935cf4 after a second dispatch (seven skills pass on regenerated reports;
+  no code-review rubric committed): merge asked in Q-335.
 
 
 ## Next

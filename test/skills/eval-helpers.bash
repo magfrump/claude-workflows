@@ -378,11 +378,16 @@ assert_no_verdict() {
 # what-if-analysis) lay their graded fields out as bullets. Used by every
 # field-reading check: Verdict, Severity, and field_match's arbitrary fields
 # (tech-debt-triage's **Recommendation:**, test-strategy's **Priority:**).
+# Leading emphasis markers are dropped, so a bold- or italic-wrapped value
+# ("**Upgrade now.** Ship it today") reads as the word it wraps for the
+# prefix checks (field_match, no_field); exact-match checks such as
+# assert_verdict still see the trailing marker.
 # Args: $1 = field name, e.g. "Recommendation"
 field_values() {
   local field="$1"
   echo "$REPORT_CONTENT" | tr -d '\r' \
-    | sed -E -n "s/^[[:space:]]*([-*+][[:space:]]+)?\*\*${field}:\*\* //p"
+    | sed -E -n "s/^[[:space:]]*([-*+][[:space:]]+)?\*\*${field}:\*\* //p" \
+    | sed -E 's/^[*_]+//'
 }
 
 # Assert at least one **<Field>:** line starts with one of the allowed values.

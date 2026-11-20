@@ -604,6 +604,7 @@ fence($0) { next }
   if (index(s, "buildlooppolicy") == 1) k = "policy"
   else if (index(s, "buildloopslots") == 1) k = "slots"
   else if (index(s, "selfmergenever") == 1) k = "never"
+  else if (index(s, "healthcheckoutcopies") == 1) k = "copies"
   else if (index(s, "readerroots") == 1) k = "roots"
   else if (index(s, "readerhomes") == 1) k = "homes"
   if (k != "") { c[k]++; if (c[k] == 1) { l1[k] = NR; t[k] = $0; nx[k] = 1; pk = k } else if (c[k] == 2) l2[k] = NR }

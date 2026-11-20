@@ -134,6 +134,8 @@ Build-loop slots: 3
 
 Self-merge never: none
 
+Health checkout copies: none
+
 ## Idea sources
 
 | Source | Path or glob | Format |
@@ -146,6 +148,11 @@ Self-merge never: none
   from the default branch's commit, never from a working tree; its header gives each line's
   exact form. A malformed never line turns self-merge off. Old **Reader roots** and **Reader
   homes** lines are ignored (`--settings` prints `readers ignored`): the owner can delete them.
+- **Health checkout copies** (gitignored paths step 1's health checkout HC needs from the main
+  checkout, such as a build cache, or `none`): `Health checkout copies: PATH ...`, read the same
+  way (`--settings`' `copies` line; its header gives the form) and copied by
+  `build-loop.sh --health-prep HC`, which refuses a malformed line and any path that is absent,
+  a symbolic link or holds one, not gitignored, under `.git` or outside the main checkout.
 - **Idea sources** (read by step 5, kept by hand).
 
 **Constraints.** `docs/constraints.md` holds the project's hard constraints (`H1: …`, each
@@ -413,7 +420,10 @@ last good one.
   --detach HC W`, W being WT's HEAD commit (`git -C WT rev-parse HEAD`; MAIN, or step 0.3's
   merge of an earlier iteration's commit, which the `1.` line then names in MAIN's place),
   HC at `WTB/wt-dev-cycle-health-DATE-HHMM` (a name taken: the next
-  minute). It is made for this one run and removed
+  minute). Then `build-loop.sh --health-prep HC` (from WT) copies the settings' **Health
+  checkout copies** paths from MAIN_WT into HC, writing nothing outside HC; any exit but 0
+  is recorded as `skipped: HC not prepared` with its refuse lines (or its stderr), named in
+  the final message, HC is removed (step 0.3's form) and no check runs, so the next iteration runs it again. It is made for this one run and removed
   as step 0.3 removes WT once the check exits (in two calls; its log is in the orchestrator's directory,
   not HC). A stop while it runs stops the check by its PID or process group, then removes
   HC with `worktree remove --force` in step 0.3's form (a killed run's files are meant to be discarded).
