@@ -88,9 +88,27 @@ command cannot print the merge hash; the skill at base is the one that merge bro
 - No choice here has three or more viable options with different tradeoffs, so no divergent
   design pass was run.
 
+- Size gate (pr-prep 1a). Its count leaves out only `docs/`, so the brief-mandated review
+  artifacts under `runs/review-arms/a8-2026-11-20/` (agent reports, merged reports, logs,
+  shared blocks) count as thousands of "code lines". They are review artifacts, the class the
+  gate's own parenthetical excludes, and they sit under `runs/` only because the brief puts
+  them there. The branch has no code. Splitting a measurement record would not shrink any
+  review, so I did not split it. The first A8 pass merged the same way: 4,092 lines by this
+  count, approved by the owner.
+- Review scope for the review-fix loop: the files I wrote (results, research doc, ledger,
+  manifest, the two rubrics, the two merged fact-check reports). The agents' own reports are
+  the measured data, so they are not rewritten.
+
+## After the run
+
+- Both scratch worktrees of the benchmark repo were removed (`git worktree remove`). Agent
+  scratch copies stayed in the session scratchpad, outside both repos.
+- Total 2,171,680 tokens over 19 agents, under the 2.5M stop line.
+
 ## Gotchas
 
 Failure-pattern grep: FP-071, FP-108, FP-110
+Failure-pattern skip: any fix(...) commits on this branch correct a measurement write-up's prose against its own records; none carries a reusable symptom/cause/fix shape.
 - FP-071 (ledger write has no owner when it is possible): rows written at notification time.
 - FP-108 / FP-110 (provenance sums results, not the attempt ledger): totals include every
   dispatched agent.

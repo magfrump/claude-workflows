@@ -28,3 +28,27 @@ output). One row per dispatched agent, appended when its notification arrived
 
 | # | Stage | Agent | Model | tokens | tool_uses | duration | outcome |
 |---|---|---|---|---|---|---|---|
+| 1 | Stage 1 fact-check | r3 | opus | 139,167 | 14 | 332 s | 9V/4MA/2S/5I/2U (22 claims; ran manifest/paths/types under node --experimental-strip-types) |
+| 2 | Stage 1 fact-check | r1 | opus | 149,652 | 13 | 351 s | 15V/3MA/2S/8I/5U (33 claims; ran paths/manifest/types/opfsAdapter under node --experimental-strip-types) |
+| 3 | Stage 1 fact-check | r2 | opus | 146,785 | 19 | 384 s | 12V/6MA/2S/9I/6U (35 claims; ran manifest/paths/opfsAdapter with stubbed navigator.storage) |
+| — | Stage 1 subtotal | 3 replicates | | 435,604 | 46 | | baseline corpus fc (k=1) 93,966 |
+| 4 | Stage 2 critic | performance | opus | 104,995 | 11 | 137 s | 1 Medium (corpus setItem: no debounce, unordered full-blob writes) / 1 Low (quota: no backoff; close() masking) / 1 Info; 1 submitted claim |
+| 5 | Stage 2 critic | test-strategy | opus | 108,020 | 7 | 146 s | advisory: 15 gaps G1-G15 (G1 OPFS success path never runs; G7/G8 manifest filters; G12 flag-on rehydrate migrateFromV2) |
+| 6 | Stage 2 critic | tech-debt-triage | opus | 106,520 | 9 | 161 s | advisory: TD1-TD7 (TD1 contract never run on OPFS; TD2 manifest; TD4 migrateFromV2; TD5 stale comments; TD7 paths.ts unused) |
+| 7 | Stage 2 critic | architecture | opus | 119,906 | 10 | 195 s | **1 Structural** (workspaceStore.ts:528-541 rehydrate reads localStorage, migrateFromV2 overwrites OPFS state) / 2 Coupling / 3 Minor / 1 Info |
+| 8 | Stage 2 critic | security | opus | 123,116 | 10 | 211 s | 1 Medium (dev-only flag enableable in production) / 4 Low (rehydrate migrateFromV2; unawaited/unordered writes; close() masks quota; slug collisions) / 2 Info; 3 routed claims |
+| 9 | Stage 2 critic | api-consistency | opus | 135,606 | 16 | 292 s | 0 Breaking / 6 Inconsistent (F1 manifest not fail-loud; F2 bare Error vs CorpusError; F3 custom-type path vs DD-009; F9 rehydrate bypass) / 4 Minor (incl. F10 state/ path outside paths.ts) / 2 Info; 3 routed claims |
+| — | Stage 2 subtotal | 6 critics | | 698,163 | 63 | | baseline corpus 6 critics 521,600 |
+| — | **Core total** (Stage 1 + Stage 2) | 9 agents | | **1,133,767** | | | baseline corpus core 615,566 (7 agents) |
+| 10 | Stage 2.5 submitted claims | fact-check k=1 | opus | 139,180 | 20 | 386 s | 7 claims: 4V / 3MA / 0I (6 executed, zustand 5.0.13 from mfc-corpus) |
+| — | **Pass 2 all agents** | 10 agents | | **1,272,947** | | | |
+
+## Both passes
+
+| | agents | tokens |
+|---|---|---|
+| Pass 1 csp self-read | 9 | 898,733 |
+| Pass 2 corpus inline-diff-only | 10 | 1,272,947 |
+| **Total** | **19** | **2,171,680** (stop line 2.5M not reached) |
+
+Instrument check: for every agent of both passes, the notified figure equals the transcript's last API call (input + cache creation + cache read + output), and every first call read exactly 18,900 cached tokens (system prompt and tools).
