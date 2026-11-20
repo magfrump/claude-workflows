@@ -27,6 +27,7 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-312](#q-312--friction-ideas-owner-brainstorm-areas) | you: judgment | Two roadmap Ideas from your 2026-10-29 brainstorm carry your own friction report. Build them now, or keep t... | 2026-11-19 |
+| [Q-318](#q-318--merge-2026-11-19-lever3-followons-65dd7d2b0927) | you: judgment | Merge the follow-on to Q-315: the same two false claims ("sub-agents cannot read your files", so paste thei... | 2026-11-19 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the ho... | 2026-11-05 |
 | [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there. | 2026-11-18 |
 | [Q-316](#q-316--blessed-config-line) | you: terminal | Paste one line: what `cc-isolated --list` says about the blessed config after today's re-bless. | 2026-11-19 |
@@ -176,3 +177,49 @@ sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git r
 **Pass:** the installer finishes without a `release refused` line. **Send back:** `Q-317: done`. If it re-blesses, you can add `| tee "$TMPDIR/install.log"` to the end of the paste and send back `grep -E 'Verified live:|^Next:' "$TMPDIR/install.log"` (two lines) for watch Q-167; optional.
 
 - **Interim:** the image's gate (0feaf080) runs; nothing breaks.
+
+### Q-318 · merge-2026-11-19-lever3-followons-65dd7d2b0927
+**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** OPEN
+
+Merge the follow-on to Q-315: the same two false claims ("sub-agents cannot read your files", so paste their skill text; and "a shared prompt prefix is cached across agents") removed from draft-review, matrix-analysis, divergent design and two review guides?
+
+**If you say no:** those docs keep telling an orchestrator to paste whole skill files into each sub-agent's prompt, for a reason the A8 measurement (358c2332) and its cache probe (9e89a31e) showed is false; the code-review skill, already corrected under Q-315, then disagrees with them.
+
+- **Why it's yours:** it edits `workflows/divergent-design.md` (a never glob in `docs/dev-cycle.md`), two skills, a decision-log row and an old rubric, none of which the cycle self-merges.
+- **Read:** the brief `docs/working/briefs/2026-11-19-lever3-followons.md`; on the branch, `docs/working/research-2026-11-19-lever3-followons.md` (each line changed and each kept, with reasons). Show the diff: `git diff main...65dd7d2b0927eba08612d52d7eaace918116e247`.
+
+What it changes:
+- `skills/draft-review/SKILL.md`: fact-check and critic agents get their skill file's absolute path and read the whole file with the Read tool; ai-personas-critique reads `personas.md` beside its skill. Draft and intent text are still pasted, since they exist only in the conversation.
+- `skills/matrix-analysis/SKILL.md`: code and docs go by path; conversation-only context stays in the prompt.
+- `workflows/divergent-design.md`: item context still goes in the prompt, now for its real reason (a curated prompt keeps each scoring agent on its axis); the false reason is removed.
+- `patterns/orchestrated-review.md`, `guides/sub-agent-briefing.md`: code-review's inlining is described as giving every agent the same material, not a cacheable prefix.
+- Rubric row A7 (`docs/reviews/code-review-rubric-2026-08-07-main.md`) gets a dated note that its premise does not hold on the Agent-tool path; its status is unchanged. Decision-log row 35 now reads "13 tests as of 2026-11-19; 10 when this row was written".
+- New guard test `test/skills/subagent-context-delivery.bats` (4 cases): it fails on the old text of every file. 77 of 77 related bats cases pass; the hermeticity lint is clean.
+- Review: two reviewer rounds with no must-fix (three should-fixes, all fixed); the third round closed on a mutation run and the final tests rather than a third reviewer, so the rubric shows one clean pass after the last fix, not two in a row.
+
+Branch tip 65dd7d2b0927eba08612d52d7eaace918116e247. `--check`'s lines, as printed:
+
+> ok docs/working/briefs/2026-11-19-lever3-followons.md 65dd7d2b0927eba08612d52d7eaace918116e247 e5efb21e1a04e308373f057169396027147ee11a
+> path docs/working/briefs/2026-11-19-lever3-followons.md M docs/decisions/log.md
+> path docs/working/briefs/2026-11-19-lever3-followons.md M docs/reviews/code-review-rubric-2026-08-07-main.md
+> path docs/working/briefs/2026-11-19-lever3-followons.md A docs/reviews/code-review-rubric-2026-11-19-lever3-followons.md
+> path docs/working/briefs/2026-11-19-lever3-followons.md M docs/working/briefs/2026-11-19-lever3-followons.md
+> path docs/working/briefs/2026-11-19-lever3-followons.md A docs/working/research-2026-11-19-lever3-followons.md
+> path docs/working/briefs/2026-11-19-lever3-followons.md M guides/sub-agent-briefing.md
+> path docs/working/briefs/2026-11-19-lever3-followons.md M patterns/orchestrated-review.md
+> path docs/working/briefs/2026-11-19-lever3-followons.md M skills/draft-review/SKILL.md
+> path docs/working/briefs/2026-11-19-lever3-followons.md M skills/matrix-analysis/SKILL.md
+> path docs/working/briefs/2026-11-19-lever3-followons.md A test/skills/subagent-context-delivery.bats
+> path docs/working/briefs/2026-11-19-lever3-followons.md M workflows/divergent-design.md
+> rubric docs/working/briefs/2026-11-19-lever3-followons.md: clean docs/reviews/code-review-rubric-2026-08-07-main.md: 1 red and 12 amber rows, none open
+> rubric docs/working/briefs/2026-11-19-lever3-followons.md: clean docs/reviews/code-review-rubric-2026-11-19-lever3-followons.md: 0 red and 3 amber rows, none open
+
+No path is gate code, an instruction file or a dot path. The first rubric line is the old 2026-08-07 rubric, touched only by the A7 note; its red row was closed long ago.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The cycle merges 65dd7d2b next iteration | Reading the diff | An agent reads only part of its skill file; one `git revert` |
+| **[2] drop** | The brief closes; the docs keep the old claims | None | Skills disagree with code-review on how to brief agents |
+| **[3] changes needed** | Write what to change; the note goes back to the loop | Writing the note | A further round |
+
+- **Interim:** nothing merges.

@@ -94,6 +94,16 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   `Dispatched:` is under 3. First step: the review brief its "For the dev cycle" section drafts
   (`skills/dev-cycle/SKILL.md`, gate code). Held: it is area A's ground, asked in Q-312.
 
+- **Agent: `--cycle-diff` lets a cycle record lose its earlier blocks** (filed 2026-11-19, step 6).
+  Motive: iteration 2026-11-20-0121 landed `docs/working/cycles/cycle-2026-11-19.md` holding only its
+  own block (a script truncated the file before appending), as 18a43829 and fd63f0ae, and
+  `--cycle-diff` printed `ok`; iteration 0128 restored the 28 earlier blocks from 72ba83a0. The
+  skill says each iteration appends its own block and never edits earlier ones, and step 0.2 reads
+  the last `Main at:` line, so a record that loses blocks breaks the next window silently. First
+  step: a review brief adding to `--cycle-diff` the rule that a changed record keeps the base's
+  text as a prefix (append-only, as it already holds the idea log), with a bats case for this
+  shape; gate code.
+
 ## In flight
 
 - **A8 settling runs: csp self-read and corpus inline** (Q-308 [1], owner in session 2026-11-19).
