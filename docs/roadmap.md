@@ -91,18 +91,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   does not cover, so the whole entry should not have reached the owner.
   2026-11-19: moved to Now by step 6 (iteration 2316). First step: the one the signal names; if none, a research or divergent-design pass on it.
 
-- **Agent: cc-isolated's manual worktree fallback as the default** (filed 2026-11-19, step 6; moved from Ideas: it carries reported friction). (brainstorm 2026-11-12).
-  Signal: herald F-009 and 7caea26d both saw Agent `isolation: "worktree"` refused in the
-  container. It would change `workflows/parallel-worktrees.md` to start with the
-  by-hand `git worktree add` there, once the research says whether the refusal is the
-  sandbox's or the container's.
-  2026-11-19: moved to Now by step 6 (iteration 2316). First step: the one the signal names; if none, a research or divergent-design pass on it.
-
-- **Agent: The cycle cannot create a project's harness-feedback file** (filed 2026-11-19, step 6; moved from Ideas: it carries reported friction). Signal: philosophy-research
-  F-002: `--check-fix` refuses every new file, so the owner made it by hand. Allow
-  `harness-feedback.py init` and appends in-cycle outside claude-workflows.
-  2026-11-19: moved to Now by step 6 (iteration 2316). First step: the one the signal names; if none, a research or divergent-design pass on it.
-
 - **Agent: Build loops start in the orchestrator's removed worktree** (filed 2026-11-19, step 7; herald F-008). Motive: every loop
   dispatched before the cycle's land loses its first Bash call, because the cycle removes its
   worktree after the land while the loop's shell starts there; it reproduced in the 2026-11-19
@@ -110,6 +98,14 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   `docs/working/research-2026-11-19-herald-friction-triage.md` (does a main-session `cd` before
   an Agent call move the subagent's start directory?), then divergent design over its four
   approaches. Gate code, so a review merge.
+
+- **Agent: Send a gate-refused ready branch back to its loop, with no owner entry** (filed 2026-11-19,
+  step 7; philosophy-research F-006, F-009, F-010). Motive: about 9 re-dispatch answers across the
+  repos, each followed by a second merge answer on review briefs. The research (7c137d5d,
+  `docs/working/research-2026-11-19-generated-file-conflicts.md`) picked: step 7 sends a branch the
+  gate refuses for a conflict with main, or a gap the loop can fix, back once per tip while
+  `Dispatched:` is under 3. First step: the review brief its "For the dev cycle" section drafts
+  (`skills/dev-cycle/SKILL.md`, gate code). Held: it is area A's ground, asked in Q-312.
 
 ## In flight
 
@@ -146,14 +142,11 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   `docs/working/briefs/2026-11-19-loop-wait-rule.md`. The same brief carries the report-file
   fix (herald F-010 remainder: loops' subagents return reports as text), which edits the same line.
 
-- **Agent: Re-dispatch a conflict that touches only generated files, with no owner entry** (filed 2026-11-19, step 6; moved from Ideas: it carries reported friction).
-  (brainstorm 2026-11-16). Signal: philosophy-research F-010 (a generated catalog README
-  made approved branches go stale within minutes) and F-006 (a newer gate rule refusing an
-  approved merge), each costing the owner a re-dispatch answer and a second merge answer.
-  Three or more shapes (a repo setting listing generated paths, regenerating at merge time,
-  no change), so a divergent-design pass first. Builds on the in-flight F-009 brief.
+- **Agent: The cycle cannot create a project's harness-feedback file** (filed 2026-11-19, step 6; moved from Ideas: it carries reported friction). Signal: philosophy-research
+  F-002: `--check-fix` refuses every new file, so the owner made it by hand. Allow
+  `harness-feedback.py init` and appends in-cycle outside claude-workflows.
   2026-11-19: moved to Now by step 6 (iteration 2316). First step: the one the signal names; if none, a research or divergent-design pass on it.
-  2026-11-19: briefed (iteration 2351): `docs/working/briefs/2026-11-19-generated-file-conflicts.md`.
+  2026-11-19: briefed (iteration 0014 UTC): `docs/working/briefs/2026-11-19-harness-feedback-file-in-cycle.md`.
 
 ## Next
 
@@ -502,6 +495,15 @@ Unranked. Each names the signal that motivates it.
 ## Done
 
 Items finished since the last cycle, with the merge.
+
+- **Generated-file conflicts: researched.** Done 7c137d5d (self-merge), brief
+  `docs/working/briefs/closed/2026-11-19-generated-file-conflicts.md`, research
+  `docs/working/research-2026-11-19-generated-file-conflicts.md`: never seen here; widened to an
+  automatic send-back for any gate-refused ready branch, filed in Now (held on Q-312).
+
+- **cc-isolated's manual worktree fallback as the default: closed.** The herald triage (8ffddfaf)
+  found `workflows/parallel-worktrees.md` already gives the by-hand fallback herald F-009 used, and
+  the refusal is Claude Code's worktree isolation, not this repo's.
 
 - **Report-file lines: listed, mostly closed.** Done a8a0a496 (self-merge), brief
   `docs/working/briefs/closed/2026-11-19-subagent-report-files-listing.md`, research

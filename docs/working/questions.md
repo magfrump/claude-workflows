@@ -28,6 +28,7 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-308](#q-308--a8-settling-runs) | you: judgment | Run the two larger measurements that would settle the A8 question (the code-review skill's "inlining the sh... | 2026-11-19 |
 | [Q-312](#q-312--friction-ideas-owner-brainstorm-areas) | you: judgment | Two roadmap Ideas from your 2026-10-29 brainstorm carry your own friction report. Build them now, or keep t... | 2026-11-19 |
+| [Q-314](#q-314--merge-gate-2026-11-19-loop-wait-rule-6505ccec60db) | you: judgment | Merge the build-loop prompt change that tells loops to wait inside their turn, and to have their reviewers ... | 2026-11-19 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | One check is left: does a cc-isolated session that leaves a git worktree behind exit cleanly, with one `not... | 2026-09-27 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the ho... | 2026-11-05 |
 | [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there. | 2026-11-18 |
@@ -173,4 +174,43 @@ The two Ideas:
 | **[3] Build these numbers** | Write the numbers (say `[3] 1`); the rest park as in [1] | As [2], for those | As [2], for those |
 
 - **Interim:** [1]: both stay in Ideas, unbuilt; nothing else waits on this.
+- **2026-11-19, iteration 0014 UTC:** one more item now rides with this answer, since it is area A's ground (fewer merge and re-dispatch answers for you): the research merged 7c137d5d (`docs/working/research-2026-11-19-generated-file-conflicts.md`) proposes that step 7 send a ready branch the gate refuses for a conflict with main, or a gap the loop can fix, straight back to its loop with no owner entry, once per tip and only under a dispatch count of 3. It is a review merge (dev-cycle skill). [2] builds it with area A; [1] holds it until the trial ends, like the rest.
 - **If the answer differs:** nothing to redo; the cycle moves them to Now next iteration.
+
+### Q-314 · merge-gate-2026-11-19-loop-wait-rule-6505ccec60db
+**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** OPEN
+
+Merge the build-loop prompt change that tells loops to wait inside their turn, and to have their reviewers return reports as text?
+
+**If you say no:** loops keep the old prompt: a loop waiting on a reviewer may hand back early with no marker (three times on record, two of them tonight), and then waits out the two-hour re-dispatch rule; and loops' reviewers keep trying to save scratch `report.md` files, which Claude Code refused 13 times out of 13.
+
+- **Why it's yours:** the change is to `scripts/build-loop.sh`, the gate's own code, which the cycle never self-merges; it reaches sessions at the next release.
+- **Read:** the brief `docs/working/briefs/2026-11-19-loop-wait-rule.md`; on the branch, `docs/working/research-2026-11-19-loop-wait-rule.md` (the live checks) and the rubric `docs/reviews/code-review-rubric-2026-11-20-fix-loop-wait-rule.md`. Show the diff: `git diff main...6505ccec60db9a64ab4dfdb9061c0d014c021636 -- scripts/build-loop.sh`.
+
+What it changes, in the prompt every build loop gets (two lines and a comment, plus tests):
+- A loop's research and review subagents use their scratch directory for working files and return their report in their final message; "background agents" becomes "agents that outlive your run", since the Agent tool runs every subagent in the background.
+- A new line: wait inside your turn, by short reads for a reviewer's report or one bounded `timeout 540 … until test -e` call for a file; no `run_in_background` or Monitor; at most 30 minutes for any one wait, then end `handoff: stopped`, naming what did not finish.
+- The loop checked both in its own run: reviewers' reports (21 s and 167 s) arrived between its tool calls, and the bounded wait command ran and returned 0 and 124 as expected. The 30-minute bound is a guess for a full code-review round, which has not been timed.
+- Success measure, in the research doc: early hand-backs over the next 20 dispatches; 3 or more means one `git revert`.
+
+Branch tip 6505ccec60db9a64ab4dfdb9061c0d014c021636. `--check`'s lines, as printed:
+
+> ok docs/working/briefs/2026-11-19-loop-wait-rule.md 6505ccec60db9a64ab4dfdb9061c0d014c021636 5337d3de5ee9d3f8d407fa6adbcc9ec72ff55771
+> path docs/working/briefs/2026-11-19-loop-wait-rule.md A docs/reviews/code-review-rubric-2026-11-20-fix-loop-wait-rule.md
+> path docs/working/briefs/2026-11-19-loop-wait-rule.md M docs/working/briefs/2026-11-19-loop-wait-rule.md
+> path docs/working/briefs/2026-11-19-loop-wait-rule.md A docs/working/research-2026-11-19-loop-wait-rule.md
+> path docs/working/briefs/2026-11-19-loop-wait-rule.md M scripts/build-loop.sh
+> path docs/working/briefs/2026-11-19-loop-wait-rule.md M test/scripts/build-loop-dispatch.bats
+> rubric docs/working/briefs/2026-11-19-loop-wait-rule.md: clean docs/reviews/code-review-rubric-2026-11-20-fix-loop-wait-rule.md: 0 red and 2 amber rows, none open
+
+`scripts/build-loop.sh` is gate code (self-merge's floor would have refused it). The rubric's two ambers ("30 minutes at most in all" was ambiguous; the success thresholds had been loosened) were fixed on the branch.
+
+**What an attacker would want here:** the dispatch prompt is text every loop obeys; an outside party who could get words into it (a brief's text reaches only the loop's reading, not this prompt) could steer loops. This change adds fixed text only, with no new input from a brief or repo file, and the one `$1` is escaped so it prints literally.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The cycle merges 6505ccec next iteration; it ships at the next release | Reading the diff above | Loops end `stopped` on a slow review round; one `git revert` |
+| **[2] drop** | The brief closes; loops keep the old prompt | None | Early hand-backs and refused report files go on |
+| **[3] changes needed** | Write what to change; the note goes back to the loop | Writing the note | A further round before it lands |
+
+- **Interim:** nothing merges; loops run the old prompt.
