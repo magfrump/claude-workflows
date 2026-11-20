@@ -99,11 +99,12 @@ section_body() {
 
 @test "every assumption carries an If wrong field with an allowed value" {
   # SKILL.md: "For each [assumption], use these fields: ... If wrong: tweak /
-  # redesign / full retreat".
+  # redesign / full retreat". A field line may be a bullet or a numbered list
+  # item ("1. **Assumption:**"), as the Findings Summary check also allows.
   local body n_a n_w
   body="$(section_body "Assumptions Examined")"
-  n_a=$(echo "$body" | grep -ciE '^[[:space:]]*([-*+][[:space:]]+)?\*\*Assumption:\*\*' || true)
-  n_w=$(echo "$body" | grep -ciE '^[[:space:]]*([-*+][[:space:]]+)?\*\*If wrong:\*\*[[:space:]]*\**(tweak|redesign|full retreat)\b' || true)
+  n_a=$(echo "$body" | grep -ciE '^[[:space:]]*(([-*+]|[0-9]+[.)])[[:space:]]+)?\*\*Assumption:\*\*' || true)
+  n_w=$(echo "$body" | grep -ciE '^[[:space:]]*(([-*+]|[0-9]+[.)])[[:space:]]+)?\*\*If wrong:\*\*[[:space:]]*\**(tweak|redesign|full retreat)\b' || true)
   [ "$n_a" -ge 1 ] || { echo "No **Assumption:** entries in Assumptions Examined"; return 1; }
   [ "$n_a" -eq "$n_w" ] || { echo "$n_a assumptions but $n_w If wrong fields with tweak/redesign/full retreat"; return 1; }
 }
