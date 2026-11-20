@@ -84,6 +84,9 @@
 #                       FP-097)
 #   --tools             the runner's list, never a write-capable tool
 #                       (runner-contract.bash); sub-agents inherit it.
+#   --allowedTools      only the web tools in that list (WEB_GRANT, below), and
+#                       only when it names one: --tools offers a tool, it does
+#                       not grant it.
 # So the model cannot reach expected-verdicts.bash or eval-criteria.md.
 #
 # Environment:
@@ -146,6 +149,25 @@ fi
 # claude -p reads --tools "" as "no tools".
 TOOLS_ARG="$FIXTURE_TOOLS"
 [ "$FIXTURE_TOOLS" = "none" ] && TOOLS_ARG=""
+
+# The runner's web tools, granted as well as offered. Headless claude -p denies
+# WebSearch and WebFetch without a grant (Read, Grep, Glob and Agent runners
+# generate without one), and --restricted ignores the settings files that
+# could allow them, so every
+# fact-check report came out all Unverified (finding F1 of the 2026-11-19
+# regeneration). Probed 2026-11-20 on CLI 2.1.329: --tools WebSearch,WebFetch
+# alone left WebFetch in permission_denials; adding --allowedTools with those
+# names cleared it. Only names in both FIXTURE_TOOLS and RUNNER_ALLOWED_TOOLS
+# are granted, as one argv element; a runner with no web tool gets no grant.
+WEB_GRANT=""
+IFS=',' read -ra _runner_tools <<< "$FIXTURE_TOOLS"
+for _tool in "${_runner_tools[@]}"; do
+  case "$_tool" in WebSearch|WebFetch) ;; *) continue ;; esac
+  for _allowed in "${RUNNER_ALLOWED_TOOLS[@]}"; do
+    [ "$_tool" = "$_allowed" ] && WEB_GRANT="${WEB_GRANT:+$WEB_GRANT,}$_tool"
+  done
+done
+unset _runner_tools _tool _allowed
 
 mkdir -p "$OUTPUT_DIR"
 
@@ -212,6 +234,11 @@ generate_one() {
   # An empty --tools value is its own argv element; the CLI reads it as "no
   # tools" and does not consume the flag after it.
   claude_args+=(--tools "$TOOLS_ARG")
+  # The CLI's --allowedTools is variadic: only generator-built flags follow, and
+  # CLAUDE_FLAGS must start with a flag or its first word becomes a tool name.
+  if [ -n "$WEB_GRANT" ]; then
+    claude_args+=(--allowedTools "$WEB_GRANT")
+  fi
   if [ "$FIXTURE_BASH" = "deny-record" ]; then
     claude_args+=("${DENY_RECORD_FLAGS[@]}")
   fi
