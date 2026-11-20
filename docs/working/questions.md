@@ -26,8 +26,8 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
-| [Q-312](#q-312--friction-ideas-owner-brainstorm-areas) | you: judgment | Two roadmap Ideas from your 2026-10-29 brainstorm carry your own friction report. Build them now, or keep t... | 2026-11-19 |
-| [Q-320](#q-320--merge-2026-11-19-a8-settling-runs-fd8d009f846d) | you: judgment | Merge the A8 settling runs' results (the two measurement passes you asked for in Q-308), accepting the loop... | 2026-11-19 |
+| [Q-312](#q-312--friction-ideas-owner-brainstorm-areas) | you: judgment | Q-312: [2] | 2026-11-19 |
+| [Q-320](#q-320--merge-2026-11-19-a8-settling-runs-fd8d009f846d) | you: judgment | Q-320: [1] | 2026-11-19 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the ho... | 2026-11-05 |
 | [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there. | 2026-11-18 |
 | [Q-316](#q-316--blessed-config-line) | you: terminal | Paste one line: what `cc-isolated --list` says about the blessed config after today's re-bless. | 2026-11-19 |
@@ -106,7 +106,8 @@ Output, in chat (write no files):
 - **If the answer differs:** a cause the fixes here don't cover becomes a roadmap item here (the gate and rules are shared), and anything specific to Behemoth Arsenal is for a session in that repo.
 
 ### Q-312 · friction-ideas-owner-brainstorm-areas
-**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** ANSWERED
+Q-312: [2]
 
 Two roadmap Ideas from your 2026-10-29 brainstorm carry your own friction report. Build them now, or keep them parked while the trial runs?
 
@@ -182,7 +183,8 @@ sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git r
 - **Interim:** the image's gate (0feaf080) runs; nothing breaks.
 
 ### Q-320 · merge-2026-11-19-a8-settling-runs-fd8d009f846d
-**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** ANSWERED
+Q-320: [1]
 
 Merge the A8 settling runs' results (the two measurement passes you asked for in Q-308), accepting the loop's call on a check in my brief that could not pass as written?
 
