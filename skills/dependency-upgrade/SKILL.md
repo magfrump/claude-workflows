@@ -182,6 +182,10 @@ npm ci
 we start the API v3 work, which will require the new streaming API in this dependency."}
 ````
 
+Each Summary field opens with one of its listed values, in plain text (not bold), and the
+`**Recommendation:**` line holds that value alone. Put the reasoning, conditions and next
+steps on the lines after the Summary, never in place of the value.
+
 ### Comparison mode
 
 When the user compares 2+ options ("should we upgrade or switch to a different library"), produce one evaluation block per option using the template above, then add a final comparison block:

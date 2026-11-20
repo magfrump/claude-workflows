@@ -252,6 +252,10 @@ Success criterion: A 100-200 word critique grounded in proposal specifics, with 
 collected from each persona's Goal-Alignment Note]
 ```
 
+Each `**Severity:**` line holds exactly one of the three values and nothing else. When the
+severity depends on a condition or differs by scope, pick the one that governs the decision
+and explain the condition in the critique text or the `**Test/mitigation:**` line.
+
 ## Output Location
 
 Save as `docs/reviews/ai-personas-critique.md`. Create `docs/reviews/` if needed.
