@@ -26,9 +26,9 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
-| [Q-321](#q-321--regenerate-skill-eval-reports-after-a8) | you: judgment | Regenerate the skill eval reports now that the A8 measurement has run, so the 51 test files marked `@needs-... | 2026-11-19 |
+| [Q-321](#q-321--regenerate-skill-eval-reports-after-a8) | you: judgment | Q-321: [2] | 2026-11-19 |
 | [Q-323](#q-323--gate-only-changes-approved-by-release) | you: judgment | Should a build loop's change that touches only the gate's own code (`scripts/build-loop.sh`, `d6.sh`, `dev-... | 2026-11-19 |
-| [Q-325](#q-325--stopped-2026-11-19-guard-worktree-taint-1) | you: judgment | Brief 2026-11-19-guard-worktree-taint's build loop stopped; re-dispatch or drop? | 2026-11-19 |
+| [Q-325](#q-325--stopped-2026-11-19-guard-worktree-taint-1) | you: judgment | Q-325: [1] | 2026-11-19 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the ho... | 2026-11-05 |
 | [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there. | 2026-11-18 |
 | [Q-316](#q-316--blessed-config-line) | you: terminal | Paste one line: what `cc-isolated --list` says about the blessed config after today's re-bless. | 2026-11-19 |
@@ -163,7 +163,8 @@ sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git r
 - **Interim:** the image's gate (0feaf080) runs; nothing breaks. The write guard fix (in flight) is not in this release; the next one carries it.
 
 ### Q-321 · regenerate-skill-eval-reports-after-a8
-**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** ANSWERED
+Q-321: [2]
 
 Regenerate the skill eval reports now that the A8 measurement has run, so the 51 test files marked `@needs-reports` check the current skill text instead of printing NOT RUN?
 
@@ -203,7 +204,8 @@ One thing the research's summary does not say, which the cycle adds: a self-land
 - **Also found:** watch Q-262 (`docs/working/watching.md`) listed three of the 2026-11-06 record's five reopen conditions; one of the two it left out, "an approved merge is reverted", fired on 2026-11-12 (the sandbox merge 3cd6d9bb, reverted by 7caea26d). The watch now lists all five; this entry is that reopening.
 
 ### Q-325 · stopped-2026-11-19-guard-worktree-taint-1
-**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** ANSWERED
+Q-325: [1]
 
 Brief 2026-11-19-guard-worktree-taint's build loop stopped; re-dispatch or drop?
 

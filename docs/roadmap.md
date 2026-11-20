@@ -136,6 +136,11 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   2026-11-19: briefed on the owner's word in session ("Brief that now"), review (enforcement file):
   `docs/working/briefs/2026-11-19-guard-worktree-taint.md`.
 
+- **Regenerate the skill eval reports** (Q-321 [2], owner in session 2026-11-19: "yes"). Motive: 51
+  test files marked `@needs-reports` print NOT RUN; the regeneration waited on the A8 measurement
+  (watch Q-067, closed), which merged at eddcaf16. Briefed (iteration 0712 UTC), self-merge, code-review
+  first to prove the pipeline: `docs/working/briefs/2026-11-19-regenerate-skill-reports.md`.
+
 ## Next
 
 1. **Agent first-pass playtest before each `you: walkthrough`** (owner request, 2026-11-12;
