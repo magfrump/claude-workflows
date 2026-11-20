@@ -27,6 +27,7 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-323](#q-323--gate-only-changes-approved-by-release) | you: judgment | Should a build loop's change that touches only the gate's own code (`scripts/build-loop.sh`, `d6.sh`, `dev-... | 2026-11-19 |
+| [Q-326](#q-326--merge-2026-11-19-guard-worktree-taint-218f899afd20) | you: judgment | Merge the write-guard fix: in a web-tainted session, an ordinary edit inside a git worktree under `.claude/... | 2026-11-19 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the ho... | 2026-11-05 |
 | [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there. | 2026-11-18 |
 | [Q-316](#q-316--blessed-config-line) | you: terminal | Paste one line: what `cc-isolated --list` says about the blessed config after today's re-bless. | 2026-11-19 |
@@ -182,3 +183,45 @@ One thing the research's summary does not say, which the cycle adds: a self-land
 - **Interim:** [2]; nothing is briefed. The drafted brief waits on [1], and after the auto send-back build (in flight) merges.
 - **Also found:** watch Q-262 (`docs/working/watching.md`) listed three of the 2026-11-06 record's five reopen conditions; one of the two it left out, "an approved merge is reverted", fired on 2026-11-12 (the sandbox merge 3cd6d9bb, reverted by 7caea26d). The watch now lists all five; this entry is that reopening.
 
+### Q-326 · merge-2026-11-19-guard-worktree-taint-218f899afd20
+**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** OPEN
+
+Merge the write-guard fix: in a web-tainted session, an ordinary edit inside a git worktree under `.claude/` stops asking, while that worktree's own policy files still ask (your report of hundreds of asks in the math-research rewrite)?
+
+**If you say no:** every Edit or Write inside a `.claude/worktrees/` or `.claude/wt-*` worktree keeps asking once a session has fetched anything from the web; the interim relief stays working in `.worktrees/` (sessions started after the 0feaf080 install do so by default).
+
+- **Why it's yours:** `hooks/guard-trusted-writes.py` is an enforcement file (it carries `Live-verified: no` and names its host check), and the branch adds failure-pattern entry FP-185 to `docs/failure-patterns.md`, which only you review.
+- **Read:** the brief `docs/working/briefs/2026-11-19-guard-worktree-taint.md`; on the branch, `docs/working/research-2026-11-19-guard-worktree-taint.md` (the design, the pre-mortem and the residual risks R1-R3) and the three rubrics. Show the diff: `git diff main...218f899afd20c759a7e22b72e51e52f29c222aca -- hooks/ test/`.
+
+What it changes:
+- For Edit, Write and MultiEdit, a path inside a linked worktree under `.claude/` is judged by its path relative to that worktree's root. An ordinary file (a chapter, a script) gets no opinion, as in the main checkout; the worktree's own `.claude/`, skills, agents, commands, memories, CLAUDE.md, AGENTS.md, `*.mdc`, root `hooks/` and root `settings*.json` still ask when tainted. HARD paths (your real config dir) and Bash are unchanged.
+- A worktree is recognised only from git's own files (a `.git` file pointing into a `worktrees/` directory that points back), never by its name; anything the hook cannot verify, or any error, keeps the old ask (constraint H2: fail closed).
+- Review: three passes. Pass 1 found a must-fix (a symlinked CLAUDE.md inside a worktree lost its ask); pass 3 found a red (a relative path with a deleted working directory crashed the hook, so the edit went ahead with no ask). Both are fixed with tests that fail on the commit before. A checker on 26,164 inputs found no HARD decision changed.
+- Tests: the guard's file 107/107, `test/hooks/` 227/227, the hermeticity lint passes; your reproduction is a case that fails on the old hook.
+- Residual risks the research names: a Bash-capable session can fake a worktree (R1); a worktree is then treated like the main checkout (R2: `.mcp.json`, `@`-imported files and nested hooks or settings get no opinion there, as in the main checkout); a race between the check and the write (R3).
+- The host check after release: in a tainted session, an Edit to an ordinary file in a `.claude/worktrees/` worktree applies with no ask, while that worktree's CLAUDE.md or root settings.json still asks.
+
+Branch tip 218f899afd20c759a7e22b72e51e52f29c222aca. `--check`'s lines, as printed:
+
+> ok docs/working/briefs/2026-11-19-guard-worktree-taint.md 218f899afd20c759a7e22b72e51e52f29c222aca a474d336fbec8444996f2500fcd1822eb0505393
+> path docs/working/briefs/2026-11-19-guard-worktree-taint.md M docs/failure-patterns.md
+> path docs/working/briefs/2026-11-19-guard-worktree-taint.md A docs/reviews/code-review-rubric-2026-11-19-fix-guard-worktree-taint.md
+> path docs/working/briefs/2026-11-19-guard-worktree-taint.md A docs/reviews/code-review-rubric-2026-11-19-guard-worktree-taint-pass1.md
+> path docs/working/briefs/2026-11-19-guard-worktree-taint.md A docs/reviews/code-review-rubric-2026-11-19-guard-worktree-taint-pass2.md
+> path docs/working/briefs/2026-11-19-guard-worktree-taint.md M docs/working/briefs/2026-11-19-guard-worktree-taint.md
+> path docs/working/briefs/2026-11-19-guard-worktree-taint.md A docs/working/research-2026-11-19-guard-worktree-taint.md
+> path docs/working/briefs/2026-11-19-guard-worktree-taint.md M hooks/guard-trusted-writes.py
+> path docs/working/briefs/2026-11-19-guard-worktree-taint.md M test/hooks/guard-trusted-writes.bats
+> rubric docs/working/briefs/2026-11-19-guard-worktree-taint.md: clean docs/reviews/code-review-rubric-2026-11-19-fix-guard-worktree-taint.md: 1 red and 9 amber rows, none open
+> rubric docs/working/briefs/2026-11-19-guard-worktree-taint.md: clean docs/reviews/code-review-rubric-2026-11-19-guard-worktree-taint-pass1.md: 1 red and 5 amber rows, none open
+> rubric docs/working/briefs/2026-11-19-guard-worktree-taint.md: clean docs/reviews/code-review-rubric-2026-11-19-guard-worktree-taint-pass2.md: 0 red and 6 amber rows, none open
+
+`docs/failure-patterns.md` is on the self-merge floor; `hooks/guard-trusted-writes.py` is an enforcement file and reaches sessions at the next release. The red rows the first and last rubrics count are the two fixed above.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The cycle merges 218f899a next iteration; it ships at the next release, then one host check | Reading the diff, and the host check | A policy file inside a worktree loses its ask; one `git revert` |
+| **[2] drop** | The brief closes; the asks go on | None | Hundreds of asks per rewrite in `.claude/` worktrees |
+| **[3] changes needed** | Write what to change; the note goes back to the loop | Writing the note | A further round |
+
+- **Interim:** nothing merges.
