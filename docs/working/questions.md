@@ -26,13 +26,11 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
-| [Q-321](#q-321--regenerate-skill-eval-reports-after-a8) | you: judgment | Regenerate the skill eval reports now that the A8 measurement has run, so the 51 test files marked `@needs-... | 2026-11-19 |
 | [Q-323](#q-323--gate-only-changes-approved-by-release) | you: judgment | Should a build loop's change that touches only the gate's own code (`scripts/build-loop.sh`, `d6.sh`, `dev-... | 2026-11-19 |
-| [Q-324](#q-324--merge-gate-2026-11-19-auto-send-back-d35f9fa06e91) | you: judgment | Q-324: [1] | 2026-11-19 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the ho... | 2026-11-05 |
 | [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there. | 2026-11-18 |
 | [Q-316](#q-316--blessed-config-line) | you: terminal | Paste one line: what `cc-isolated --list` says about the blessed config after today's re-bless. | 2026-11-19 |
-| [Q-317](#q-317--image-lag) | you: terminal | Install the release that carries tonight's four approved merges (the loop wait rule, the code-review cache ... | 2026-11-19 |
+| [Q-317](#q-317--image-lag) | you: terminal | Install the release that carries tonight's six approved code merges (the loop wait rule, the code-review ca... | 2026-11-19 |
 <!-- index:end -->
 
 ## Open
@@ -126,12 +124,12 @@ cc-isolated --list 2>&1 | grep -i 'blessed config'
 ### Q-317 · image-lag
 **Needs:** you: terminal · **Opened:** 2026-11-19 · **Status:** OPEN
 
-Install the release that carries tonight's four approved merges (the loop wait rule, the code-review cache correction and its follow-ons, and `--steal --ended`): run the one paste below on the host.
+Install the release that carries tonight's six approved code merges (the loop wait rule, the code-review cache correction and its follow-ons, `--steal --ended`, the A8 records and the auto send-back): run the one paste below on the host.
 
-**If you say no:** sessions keep running the image built from 0feaf080: build loops keep the old prompt (they may hand back early while a reviewer runs, and their reviewers keep trying to save report files that get refused), review skills keep their old briefing text, and a dead loop's worktree still waits two hours before the cycle can re-dispatch it. Nothing breaks.
+**If you say no:** sessions keep running the image built from 0feaf080: build loops keep the old prompt (they may hand back early while a reviewer runs, and their reviewers keep trying to save report files that get refused), review skills keep their old briefing text, a dead loop's worktree still waits two hours before re-dispatch, and every gate-refused ready branch still comes to you as a `stopped` entry. Nothing breaks.
 
-- **C (the image's commit):** 0feaf08085b524c0c4345c52f8e285d842558f23 · **M (main's commit):** 8ec5a9008dda788850b44766a35e036eee10f1a1
-- **Merged without your review** (all seven change only research docs under `docs/`, which the image does not carry):
+- **C (the image's commit):** 0feaf08085b524c0c4345c52f8e285d842558f23 · **M (main's commit):** 723fae679439b3fcb1f082e664152a8010b0ceba
+- **Merged without your review** (all nine change only research docs under `docs/`, which the image does not carry):
   - 74b9181f Merge branch 'docs/live-verify-merge-head-count' (build-loop self-merge)
   - 8ffddfaf Merge branch 'docs/herald-friction-triage' (build-loop self-merge)
   - d6c987f3 Merge branch 'docs/loops-wait-foreground' (build-loop self-merge)
@@ -139,43 +137,28 @@ Install the release that carries tonight's four approved merges (the loop wait r
   - 7c137d5d Merge branch 'docs/generated-file-conflicts' (build-loop self-merge)
   - d9f475df Merge branch 'docs/harness-feedback-file-in-cycle' (build-loop self-merge)
   - 012b20f9 Merge branch 'docs/steal-wait-research' (build-loop self-merge)
+  - f0547bc9 Merge branch 'docs/area-b-ask-habituation' (build-loop self-merge)
+  - e9fb762c Merge branch 'docs/area-a-merge-friction' (build-loop self-merge)
 - **What changes for you:**
   - acbff6c6 (you approved it, Q-314 [1]): the build-loop dispatch prompt tells a loop to wait inside its turn for reviewers and files (at most 30 minutes per wait, then a `stopped` marker), and has its subagents return reports as text.
   - d383a484 (Q-315 [1]): the code-review skill drops its prompt-cache saving claims and the rules that existed only for them; critics read their skill file by path; decision 032 is amended.
   - 2a71904f (Q-318 [1]): the same two claims removed from draft-review, matrix-analysis, divergent design and two guides, with a guard test.
-  - 8ec5a900 (Q-319 [1]): `build-loop.sh --prompt --steal --ended` lets the cycle re-dispatch its own dead loop at once; `--start` and `--prompt` print a `lock UTC` line; the dev-cycle skill's steps 7 and 10 use them.
-  - The routine rest: 18 dev-cycle lands.
-- **Full list:** `git -c log.showSignature=false log --first-parent --format='%h %s' 0feaf08085b524c0c4345c52f8e285d842558f23..8ec5a9008dda788850b44766a35e036eee10f1a1`
-- **Paths changed outside `docs/` (34 under `docs/` too, which the image does not carry):** `guides/sub-agent-briefing.md`, `patterns/orchestrated-review.md`, `scripts/build-loop.sh`, `scripts/lib/migrations.sh`, `skills/code-review/SKILL.md`, `skills/dev-cycle/SKILL.md`, `skills/draft-review/SKILL.md`, `skills/matrix-analysis/SKILL.md`, `test/scripts/build-loop-dispatch.bats`, `test/skills/code-review-context-delivery.bats`, `test/skills/subagent-context-delivery.bats`, `workflows/divergent-design.md`
+  - 8ec5a900 (Q-319 [1]): `build-loop.sh --prompt --steal --ended` lets the cycle re-dispatch its own dead loop at once; `--start` and `--prompt` print a `lock UTC` line.
+  - eddcaf16 (Q-320 [1]): the A8 settling runs' records, under `runs/` and `docs/` (the image carries neither).
+  - 723fae67 (Q-324 [1]): the dev cycle sends a gate-refused ready branch (a conflict with main, or a failure-pattern gap the loop can fix) back to its loop with no entry for you, once per tip and under a dispatch count of 3.
+  - The routine rest: 27 dev-cycle lands.
+- **Full list:** `git -c log.showSignature=false log --first-parent --format='%h %s' 0feaf08085b524c0c4345c52f8e285d842558f23..723fae679439b3fcb1f082e664152a8010b0ceba`
+- **Paths changed outside `docs/` and `runs/` (48 under `docs/` and 44 under `runs/` too, which the image does not carry):** `guides/sub-agent-briefing.md`, `patterns/orchestrated-review.md`, `scripts/build-loop.sh`, `scripts/lib/migrations.sh`, `skills/code-review/SKILL.md`, `skills/dev-cycle/SKILL.md`, `skills/draft-review/SKILL.md`, `skills/matrix-analysis/SKILL.md`, `test/scripts/build-loop-dispatch.bats`, `test/scripts/build-loop-orchestrator.bats`, `test/skills/code-review-context-delivery.bats`, `test/skills/subagent-context-delivery.bats`, `workflows/divergent-design.md`
 
 Run this on the host, in your claude-workflows checkout at main's tip, then start a new sandbox session:
 
 ```
-sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "8ec5a9008dda788850b44766a35e036eee10f1a1:$p")"; then n=$((n+1)); else echo "release refused: $p changed after 8ec5a9008dda788850b44766a35e036eee10f1a1: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
+sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "723fae679439b3fcb1f082e664152a8010b0ceba:$p")"; then n=$((n+1)); else echo "release refused: $p changed after 723fae679439b3fcb1f082e664152a8010b0ceba: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
 ```
 
 **Pass:** the installer finishes without a `release refused` line. **Send back:** `Q-317: done`. If it re-blesses, you can add `| tee "$TMPDIR/install.log"` to the end of the paste and send back `grep -E 'Verified live:|^Next:' "$TMPDIR/install.log"` (two lines) for watch Q-167; optional.
 
-- **Interim:** the image's gate (0feaf080) runs; nothing breaks.
-
-
-### Q-321 · regenerate-skill-eval-reports-after-a8
-**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** OPEN
-
-Regenerate the skill eval reports now that the A8 measurement has run, so the 51 test files marked `@needs-reports` check the current skill text instead of printing NOT RUN?
-
-**If you say no:** those suites keep printing NOT RUN and the health check keeps warning with the count, as it has since 2026-09-26; a skill-prompt regression stays uncaught by them. Nothing breaks.
-
-- **Why it's yours:** each regeneration is one headless model run per fixture, about 180 across 23 skills, which spends your quota; it was held until the A8 measurement (watch Q-067, `docs/working/watching.md`, now closed), which merged as eddcaf16 under Q-320.
-- **Read:** `docs/working/audit-test-constraint-2026-09-26.md` batch G; `test/skills/generate-reports.bash`.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] One skill now** | Regenerate one high-value skill (code-review, whose text changed tonight) to prove the loop end to end | About 12 model runs | A little quota for one skill's coverage |
-| **[2] All now** | Regenerate every skill's reports | About 180 model runs | Quota spent; reports go stale at each skill edit |
-| **[3] Not now** | Keep the suites NOT RUN | None | Prompt regressions stay uncaught |
-
-- **Interim:** [3]; nothing runs.
+- **Interim:** the image's gate (0feaf080) runs; nothing breaks. The write guard fix (in flight) is not in this release; the next one carries it.
 
 ### Q-323 · gate-only-changes-approved-by-release
 **Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** OPEN
@@ -199,42 +182,3 @@ One thing the research's summary does not say, which the cycle adds: a self-land
 - **Interim:** [2]; nothing is briefed. The drafted brief waits on [1], and after the auto send-back build (in flight) merges.
 - **Also found:** watch Q-262 (`docs/working/watching.md`) listed three of the 2026-11-06 record's five reopen conditions; one of the two it left out, "an approved merge is reverted", fired on 2026-11-12 (the sandbox merge 3cd6d9bb, reverted by 7caea26d). The watch now lists all five; this entry is that reopening.
 
-### Q-324 · merge-gate-2026-11-19-auto-send-back-d35f9fa06e91
-**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** ANSWERED
-Q-324: [1]
-
-Merge the dev-cycle change that sends a gate-refused ready branch straight back to its loop, with no entry for you, when the refusal is a conflict with main or a failure-pattern gap the loop can fix (built on your Q-312 answer)?
-
-**If you say no:** each such refusal keeps becoming a `stopped` entry you answer "re-dispatch", followed on review briefs by a second merge entry, about 9 such round trips across the repos so far (philosophy-research feedback F-006, F-009, F-010).
-
-- **Why it's yours:** it changes `skills/dev-cycle/SKILL.md`, the gate's own instructions, which the cycle never self-merges; it reaches sessions at the next release.
-- **Read:** the brief `docs/working/briefs/2026-11-19-auto-send-back.md`; the design, merged 7c137d5d, `docs/working/research-2026-11-19-generated-file-conflicts.md`; on the branch, `docs/working/research-2026-11-19-auto-send-back.md` (the build and its six-item pre-mortem). Show the diff: `git diff main...d35f9fa06e9122cb1f952c7cdb58b693c199aead`.
-
-What it changes:
-- Step 7: a ready branch the gate refuses for a conflict with main, or under the gate's `refuse ... failure-pattern gaps` line, goes back to its loop, once per branch tip and only while its dispatch count is under 3 (so you keep at least one re-dispatch of your own under the cap of 4). The brief's `Applied:` line records `auto@TIP12=redispatch`; a redispatch item for the current tip also stops the gate from being run on that tip again.
-- Still your `stopped` entry: a dispatch count of 3 or more; the gap whose fix is yours (the failure-patterns migration); a gap naming a failed read; a failure-pattern library that is not a plain file; every other refusal.
-- Step 10: the sent-back loop's prompt ends "Sent back for you: the gate refused TIP: REFUSAL-LINE; merge the default branch in ... or fix the gap it names", and the final message lists each send-back with its brief and refusal, so nothing happens out of your sight.
-- Tests: a new text pin in `test/scripts/build-loop-orchestrator.bats` (52/52 pass; deleting any pinned phrase fails it), plus the other suites that read the skill and the hermeticity lint.
-- Review: three rounds (5, then 3 should-fixes, all fixed; the third clean). No security, performance or API critic ran, since the diff is prose and a text pin with no script reading it; the rubric names that as a coverage gap.
-
-Branch tip d35f9fa06e9122cb1f952c7cdb58b693c199aead. `--check`'s lines, as printed:
-
-> ok docs/working/briefs/2026-11-19-auto-send-back.md d35f9fa06e9122cb1f952c7cdb58b693c199aead 75100c32f49024aa91f94c1bc4bbfaab42c3b400
-> path docs/working/briefs/2026-11-19-auto-send-back.md A docs/reviews/code-review-rubric-2026-11-19-fix-auto-send-back.md
-> path docs/working/briefs/2026-11-19-auto-send-back.md M docs/working/briefs/2026-11-19-auto-send-back.md
-> path docs/working/briefs/2026-11-19-auto-send-back.md A docs/working/research-2026-11-19-auto-send-back.md
-> path docs/working/briefs/2026-11-19-auto-send-back.md M skills/dev-cycle/SKILL.md
-> path docs/working/briefs/2026-11-19-auto-send-back.md M test/scripts/build-loop-orchestrator.bats
-> rubric docs/working/briefs/2026-11-19-auto-send-back.md: clean docs/reviews/code-review-rubric-2026-11-19-fix-auto-send-back.md: 0 red and 8 amber rows, none open
-
-`skills/dev-cycle/SKILL.md` is gate code (self-merge's floor would have refused it).
-
-**What an attacker would want here:** the gate's refusal is what stops a bad branch landing; an outside party who could put text in a loop's branch (the input here) would want a refusal turned into a silent retry until something slips through. The send-back changes no gate check: the new tip is checked again in full, the route covers only two named refusal kinds, it runs once per tip, and it stops under the dispatch cap.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] merge** | The cycle merges d35f9fa0 next iteration; it ships at the next release | Reading the diff | A loop is re-dispatched you would have dropped; one `git revert` |
-| **[2] drop** | The brief closes; refusals keep coming to you | None | The round trips go on |
-| **[3] changes needed** | Write what to change; the note goes back to the loop | Writing the note | A further round |
-
-- **Interim:** nothing merges.

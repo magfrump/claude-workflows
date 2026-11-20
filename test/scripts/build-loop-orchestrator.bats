@@ -641,6 +641,36 @@ shim() {
     [[ "$(sect '### 10. Dispatch')" == *"It may list an owner call only beside the questions-file entry that asks it (step 8), never as the call's only record."* ]] || { echo "the final message may hold a call alone"; return 1; }
 }
 
+@test "SKILL.md step 7 sends a conflict or loop-fixable gap refusal back to its loop with no owner entry, once per tip and under DISPATCHED 3, never an owner-remedy gap; step 10 says so to the loop and in the final message (brief 2026-11-19-auto-send-back)" {
+    q=$'\x60'
+    a="$(sect '### 7. Collect')"
+    # The TIP rule: a redispatch item for TIP, auto or Q-ID, counts as sent back, and is the once-per-tip check.
+    for f in "A brief sent back at TIP counts the same, with no answer to read" "${q}auto@TIP12=redispatch$q (TIP12 matched as a prefix of the full TIP) or ${q}Q-NNN=redispatch$q (its entry asked at TIP, as above)" \
+        "so the gate is not run on it again and step 10 takes it; this one rule is also the once-per-tip check." \
+        "once per tip and only while ${q}--status$q reads its DISPATCHED under 3" "(for an approved merge entry, its ID as ${q}Q-NNN=redispatch$q), name it on the ${q}7.$q line with its refusal line" \
+        "A loop-fixable gap is one with no owner remedy and no failed read" "a duplicate FP number the merge caused" \
+        "A tip already sent back is never gated again (the rule above): it is only re-dispatched, up to the cap." \
+        "These keep today's route, a ${q}stopped$q entry: DISPATCHED 3 or more" "and every other refusal." \
+        "A ready branch refused below for a conflict with the default branch (${q}conflicts with the default branch$q)" \
+        "(its ${q}refuse$q line reads ${q}failure-pattern gaps$q, not a ${q}gap$q line alone) every one of which the loop can fix" \
+        "add ${q}auto@TIP12=redispatch$q to its ${q}Applied:$q line" \
+        "a gap whose remedy is the owner's (the migration ${q}failure-patterns-out-of-thoughts$q gap); a gap naming a failed read" \
+        "Nothing is read as the owner's answer: a review brief's new tip still gets its own merge entry."; do
+        [[ "$a" == *"$f"* ]] || { echo "step 7 lacks: $f"; return 1; }
+    done
+    # Each of the three "filed as stopped" sentences names the exception.
+    for f in "and so is a failure-pattern refusal (${q}gap$q lines following), but for an auto send-back (above)" \
+        "A ${q}refuse$q verdict is filed as ${q}stopped$q, the refusal its reason, but for an auto send-back (above)." \
+        "any other refusal is filed as ${q}stopped$q, its lines the reason, but for an auto send-back (above)"; do
+        [[ "$a" == *"$f"* ]] || { echo "a stopped sentence lacks the exception: $f"; return 1; }
+    done
+    a="$(sect '### 10. Dispatch')"
+    for f in "for an auto send-back, step 7's ${q}auto@TIP12=redispatch$q or refused approved merge, that line is instead" "\"Sent back for you: the gate refused TIP: REFUSAL-LINE; merge the default branch in (see the merge rule above) or fix the gap it names.\"" \
+        "REFUSAL-LINE the ${q}refuse$q line, and any ${q}gap$q lines, from the ${q}7.$q line that recorded it" "each auto send-back (step 7) with its brief and refusal line"; do
+        [[ "$a" == *"$f"* ]] || { echo "step 10 lacks: $f"; return 1; }
+    done
+}
+
 @test "SKILL.md step 0.5 runs a light pass only on main-log's chore lines and a full cycle already in today's record, else a full cycle; the four skipped steps are recorded and 4b's model trigger skips light blocks (brief 2026-11-11-light-pass, Q-270 [2])" {
     K="$REPO_ROOT/skills/dev-cycle/SKILL.md"; q=$'\x60'
     a="$(sect '### 0. Start and digest')"

@@ -701,7 +701,31 @@ WT's questions files hold its merge entry's heading below) only has its answers 
 every such ID is on its `Applied:` line, the last one applied asked for a re-dispatch (its
 item reads `Q-NNN=redispatch`, below),
 the brief is still open and no subagent of this session runs it, step 10 re-dispatches it
-(a loop that ended without a new commit, or a dispatch left to retry).
+(a loop that ended without a new commit, or a dispatch left to retry). A brief sent back
+at TIP counts the same, with no answer to read: its `Applied:` line holds a redispatch item
+for TIP, `auto@TIP12=redispatch` (TIP12 matched as a prefix of the full TIP) or
+`Q-NNN=redispatch` (its entry asked at TIP, as above), so the gate is not run on it again
+and step 10 takes it; this one rule is also the once-per-tip check.
+
+**Auto send-back** (no owner entry). A ready branch refused below for a conflict with the
+default branch (`conflicts with the default branch`), or for failure-pattern gaps (its
+`refuse` line reads `failure-pattern gaps`, not a `gap` line alone) every one of which the
+loop can fix, goes straight back to its loop, once per tip and only while
+`--status` reads its DISPATCHED under 3: add `auto@TIP12=redispatch` to its `Applied:`
+line (for an approved merge entry, its ID as `Q-NNN=redispatch`), name it on the
+`7.` line with its refusal line, and step 10 sends it back. A loop-fixable gap is one with
+no owner remedy and no failed read: a missing `Failure-pattern grep:` line, fix(...)
+commits with no new entry and no `Failure-pattern skip:` line, a research doc not (as a
+regular file) in the tip, or a duplicate FP number the merge caused ("renumber the
+branch's entry"). A tip already sent back is never gated again (the rule above): it is
+only re-dispatched, up to the cap. These keep today's route, a `stopped` entry: DISPATCHED
+3 or more, so a refusal at a new tip
+leaves the owner a re-dispatch under the cap of 4 (a sent-back loop that ends with no new
+commit can still use that last dispatch, as after an owner's re-dispatch); a gap whose
+remedy is the owner's (the migration `failure-patterns-out-of-thoughts` gap); a gap naming
+a failed read (the environment's, as below); the failure-pattern library
+(`docs/failure-patterns.md`) that is not a regular file; and every other refusal. Nothing is read as the owner's answer: a review brief's
+new tip still gets its own merge entry.
 
 - **absent**: not dispatched yet; step 10 takes it.
 - **working**: a loop holds it. One whose subagent this session started still runs on,
@@ -728,7 +752,8 @@ the brief is still open and no subagent of this session runs it, step 10 re-disp
   of the paths ("K of N changed paths refused", `deny` lines following) falls through to
   review: a merge entry as below, quoting `--merge`'s lines (a deny from a rule every merge
   applies refuses again under `--approved`, and is then filed as `stopped`). A conflict is
-  `stopped`, and so is a failure-pattern refusal (`gap` lines following), unless every gap
+  `stopped`, and so is a failure-pattern refusal (`gap` lines following), but for an auto
+  send-back (above), and unless every gap
   names a failed read ("could not be read", "listed" or "compared"): that one is the
   environment's, as below. Any other refusal (no identity, MAIN_WT's state, a moved main, a failed read)
   is the environment's, not the loop's: recorded, named in the final message, and tried
@@ -750,7 +775,7 @@ the brief is still open and no subagent of this session runs it, step 10 re-disp
   `**What an attacker would want here:** WHAT`, naming outside parties only, such as a stranger's text
   that reaches a session, never the code's own author, who is out of scope. Options **[1] merge**, **[2] drop**, **[3] changes
   needed** (the answer's note goes back to the loop). A `refuse` verdict is filed as
-  `stopped`, the refusal its reason. (D4's `Review handoff: pull request` route is not
+  `stopped`, the refusal its reason, but for an auto send-back (above). (D4's `Review handoff: pull request` route is not
   built: every review brief gets a merge entry.)
 - **blocked** or **stopped**: `--marker BRIEF`, then one entry as below. A `--marker` skip
   (row 701) whose WHY says the tip is no such marker, that a read failed, or that
@@ -799,7 +824,8 @@ An `other` or `refuse` line holds no answer.
 - A merge entry: `keep` runs `--merge BRIEF --expect TIP --approved Q-NNN`, TIP the full
   one the entry names, never the branch's live tip. MAIN_WT's state, no identity or a
   moved main is retried next iteration and named in the final message, the ID left off
-  `Applied:`; any other refusal is filed as `stopped`, its lines the reason. `drop` closes the brief; `done` re-dispatches it, naming the ID; `unrecognized`: the
+  `Applied:`; any other refusal is filed as `stopped`, its lines the reason, but for an
+  auto send-back (above), whose item is then `Q-NNN=redispatch`. `drop` closes the brief; `done` re-dispatches it, naming the ID; `unrecognized`: the
   record and the final message. An answer the user gave in session is read here once
   step 9 has landed it (as `--answered`), so it merges in the next iteration, like one they
   committed.
@@ -807,7 +833,7 @@ An `other` or `refuse` line holds no answer.
 Add each ID acted on to the brief's `Applied:` line as `Q-NNN=ACTION` (", " between items;
 none yet: a line `Applied: ITEM` at its end), ACTION being `redispatch`, `merged`, `drop`
 or `noted` (`unrecognized`), so each answer is acted on once and the action survives a
-restart.
+restart. An auto send-back's item is `auto@TIP12=redispatch`, which holds no ID to read (an approved merge's: its `Q-NNN=redispatch`).
 
 A merged brief whose acceptance criteria name a host step (step 8) gets that step filed as
 one `you: terminal` entry this iteration. A `merged` line moved main. After this step's last one, run step 0.1's image check again,
@@ -1015,7 +1041,11 @@ ones:
   isolation) whose prompt is every line after `dispatched N`, as printed, never retyped
   (plus, for a send-back, one last line: "Answered for you: Q-NNN, ..., read from the
   default branch's questions files.", the `Applied:` IDs for TIP, its merge entry's
-  included, whose answer carries a note for the loop). Write
+  included, whose answer carries a note for the loop; for an auto send-back, step 7's
+  `auto@TIP12=redispatch` or refused approved merge, that line is instead "Sent back for
+  you: the gate refused TIP: REFUSAL-LINE; merge the default branch in (see the merge rule
+  above) or fix the gap it names.", REFUSAL-LINE the `refuse` line, and any `gap` lines,
+  from the `7.` line that recorded it). Write
   "STEM dispatched N, task ID, lock UTC LOCKTIME" on the record's `10.` line (the task ID
   the Agent call returned), and `Dispatched: N` on the brief (the old line replaced; none yet: a new line at its end).
 - A refusal ending "retry once it ends" or saying "under 2 hours old" is tried again next
@@ -1040,7 +1070,7 @@ Q-236: [1]`, the entries staying separate because the gate finds each by its hea
 answer written only in a working tree is not applied: "tell me, or commit it yourself",
 never an offer to commit it, D8), the `answers` and `other` commits and any `refuse main-log:` report step 0.2 and step 7
 read, the `--answered`
-IDs (a merge entry's marked "merge approved in session: merges next iteration"), every merge and dispatch this iteration made, each In flight line naming a `closed/`
+IDs (a merge entry's marked "merge approved in session: merges next iteration"), every merge and dispatch this iteration made, each auto send-back (step 7) with its brief and refusal line, each In flight line naming a `closed/`
 brief that reads `open` or `new` (for the user to set its status), and every open brief
 by path (marking any `--check-brief` skipped, with its reason). A brief is written from
 repo text: whoever starts one by hand reads it first.
