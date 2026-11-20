@@ -780,6 +780,261 @@ assert_all_deny() {  # each arg is a command that must be denied
     "cp -rs /tmp/c $wt/c && echo PWN > $wt/c/settings.json"
 }
 
+# --- File tools inside a linked worktree under .claude/: judged relative to its root ---
+# A web-tainted session asked on every Edit in a `.claude/` worktree (owner report
+# 2026-11-19). The file tools now judge a path inside a VERIFIED linked worktree by
+# its path relative to the worktree root; the worktree's own policy files still ask,
+# and anything unverifiable keeps the blanket `.claude` SOFT. Bash is unchanged.
+
+assert_file_decisions() {  # $1 = expected (ask|defer|deny), $2 = session, rest = paths
+  local want="$1" sess="$2" f got
+  shift 2
+  for f in "$@"; do
+    guard "$(file_payload Edit "$f" "$sess")"
+    got=$(jq -r '.hookSpecificOutput.permissionDecision // empty' <<<"$output")
+    [ "$status" -eq 0 ] && [ "${got:-defer}" = "$want" ] \
+      || { echo "want $want, got ${got:-defer} ($status): $f -> $output"; return 1; }
+  done
+}
+
+@test "worktree taint: the reproduction table (tainted and clean, both layouts, .worktrees, main checkout)" {
+  worktree_layout
+  git -C "$REPO" worktree add -q "$REPO/.worktrees/wt-x" -b wt-x
+  taint sess1
+  local f
+  for f in "$REPO/.claude/worktrees/foo/chapter3.md" "$REPO/.claude/wt-foo/chapter3.md" \
+           "$REPO/.claude/wt-foo/scripts/run.sh" "$REPO/.claude/worktrees/foo/sub/deep/notes.txt" \
+           "$REPO/.worktrees/wt-x/chapter3.md" "$REPO/chapter3.md"; do
+    assert_file_decisions defer sess1 "$f"
+    assert_file_decisions defer clean "$f"
+  done
+}
+
+@test "worktree taint: a worktree's own policy files still ask when tainted (both layouts)" {
+  worktree_layout
+  taint sess1
+  local w
+  for w in "$REPO/.claude/wt-foo" "$REPO/.claude/worktrees/foo"; do
+    assert_file_decisions ask sess1 \
+      "$w/.claude/settings.json" "$w/.claude/settings.local.json" "$w/.claude/skills/x.md" \
+      "$w/.claude/notes.md" "$w/CLAUDE.md" "$w/AGENTS.md" "$w/sub/CLAUDE.local.md" \
+      "$w/hooks/x.sh" "$w/hooks/lib/y.py" "$w/settings.json" "$w/settings.local.json" \
+      "$w/skills/x/SKILL.md" "$w/agents/a.md" "$w/commands/c.md" "$w/memories/m.md" \
+      "$w/rules/x.mdc" "$w/.git" "$w/HOOKS/x.sh"
+    assert_file_decisions defer clean "$w/.claude/settings.json" "$w/hooks/x.sh" "$w/CLAUDE.md"
+  done
+}
+
+@test "worktree taint: a symlinked policy name inside a worktree keeps its ask (review R1)" {
+  worktree_layout
+  local w="$REPO/.claude/wt-foo"
+  mkdir -p "$w/docs/hk" "$w/realskills" "$w/shared-claude/rules" "$w/sub"
+  echo x > "$w/docs/x.md"
+  ln -s docs/x.md "$w/CLAUDE.md"
+  ln -s docs/x.md "$w/AGENTS.md"
+  ln -s ../docs/x.md "$w/sub/CLAUDE.local.md"
+  ln -s docs/x.md "$w/settings.json"
+  ln -s docs/hk "$w/hooks"
+  ln -s realskills "$w/skills"
+  ln -s shared-claude "$w/.claude"
+  taint sess1
+  assert_file_decisions ask sess1 \
+    "$w/CLAUDE.md" "$w/AGENTS.md" "$w/sub/CLAUDE.local.md" "$w/settings.json" \
+    "$w/hooks/x.sh" "$w/skills/x.md" "$w/.claude/rules/r.md"
+  # An ordinary name pointing at an ordinary file still has no opinion.
+  ln -s docs/x.md "$w/notes.md"
+  assert_file_decisions defer sess1 "$w/notes.md"
+}
+
+@test "worktree taint: a relative path to a symlinked root settings.json or hooks/ keeps its ask (review A6)" {
+  worktree_layout
+  local w="$REPO/.claude/wt-foo"
+  mkdir -p "$w/docs/hk" "$w/sub"
+  echo x > "$w/docs/x.md"
+  ln -s docs/x.md "$w/settings.json"
+  ln -s docs/x.md "$w/settings.local.json"
+  ln -s docs/hk "$w/hooks"
+  taint sess1
+  cd "$w"
+  assert_file_decisions ask sess1 settings.json settings.local.json hooks/x.sh CLAUDE.md
+  assert_file_decisions defer sess1 chapter3.md
+  cd "$w/sub"
+  assert_file_decisions ask sess1 ../settings.json
+  cd "$REPO/.claude"
+  assert_file_decisions ask sess1 wt-foo/settings.json
+}
+
+@test "worktree taint: a worktree nested in a policy folder keeps that folder's ask (review C7)" {
+  worktree_layout
+  git -C "$REPO" worktree add -q "$REPO/.claude/commands/.claude/wt-c" -b wt-c
+  git -C "$REPO" worktree add -q "$REPO/Skills/.claude/wt-s" -b wt-s
+  taint sess1
+  assert_file_decisions ask sess1 "$REPO/.claude/commands/.claude/wt-c/evil.md" \
+    "$REPO/Skills/.claude/wt-s/evil.md"
+}
+
+@test "worktree taint: a relative path with a deleted cwd fails closed, no crash (review M1)" {
+  worktree_layout
+  taint sess1
+  local gone="$TEST_TMPDIR/gone"
+  mkdir -p "$gone" && cd "$gone" && rmdir "$gone"
+  assert_file_decisions ask sess1 CLAUDE.md .claude/settings.json notes.md
+  assert_file_decisions defer clean notes.md
+}
+
+@test "worktree taint: a relative path through .claude/ from the repo root keeps the ask (review M2)" {
+  worktree_layout
+  taint sess1
+  cd "$REPO"
+  assert_file_decisions ask sess1 .claude/wt-foo/chapter3.md .claude/worktrees/foo/chapter3.md
+  assert_file_decisions defer sess1 "$REPO/.claude/wt-foo/chapter3.md"
+}
+
+@test "worktree taint: hooks/ and settings*.json ask only at the worktree root (review A1)" {
+  worktree_layout
+  taint sess1
+  local w="$REPO/.claude/wt-foo"
+  assert_file_decisions ask sess1 "$w/hooks/x.sh" "$w/settings.json" "$w/.git"
+  assert_file_decisions defer sess1 "$w/src/hooks/useX.ts" "$w/.vscode/settings.json" \
+    "$w/config/settings.json"
+}
+
+@test "worktree taint: a symlink loop too deep to resolve fails closed (review C1)" {
+  worktree_layout
+  taint sess1
+  local c="$REPO/.claude/wt-foo/c" i
+  mkdir -p "$c"
+  echo x > "$c/l0"
+  for i in $(seq 1 1500); do ln -s "l$((i - 1))" "$c/l$i"; done
+  guard "$(file_payload Edit "$c/l1500" sess1)"
+  assert_decision ask
+}
+
+@test "worktree taint: HARD paths are unchanged (defer as given, deny when reached through a worktree link)" {
+  worktree_layout
+  mkdir -p "$HOME/.claude/hooks"
+  echo '{}' > "$HOME/.claude/settings.json"
+  echo x > "$HOME/.claude/CLAUDE.md"
+  ln -s "$HOME/.claude/settings.json" "$REPO/.claude/wt-foo/cfg.json"
+  ln -s "$HOME/.claude/hooks" "$REPO/.claude/wt-foo/hk"
+  taint sess1
+  assert_file_decisions defer sess1 \
+    "$HOME/.claude/settings.json" "$HOME/.claude/hooks/x.sh" "$HOME/.claude/CLAUDE.md" "$HOME/CLAUDE.md"
+  assert_file_decisions deny sess1 "$REPO/.claude/wt-foo/cfg.json" "$REPO/.claude/wt-foo/hk/x.sh"
+  assert_file_decisions deny clean "$REPO/.claude/wt-foo/cfg.json"
+}
+
+@test "worktree taint: symlinks that leave the worktree, or a symlinked root, keep the ask" {
+  worktree_layout
+  mkdir -p "$HOME/.claude/projects/p/memory" "$REPO/.claude/wt-foo/docs"
+  ln -s "$HOME/.claude" "$REPO/.claude/wt-foo/cfg"           # into the config dir
+  ln -s "$REPO/.claude" "$REPO/.claude/wt-foo/proj"           # into the project's .claude
+  ln -s "$REPO/.claude/wt-foo/docs" "$REPO/.claude/wt-foo/d"  # stays inside: ordinary
+  ln -s "$REPO/.claude/wt-foo" "$REPO/.claude/wt-alias"       # a symlinked root
+  ln -s "$HOME/.claude" "$REPO/.claude/wt-home-link"          # a root that is the config dir
+  taint sess1
+  assert_file_decisions ask sess1 \
+    "$REPO/.claude/wt-foo/cfg/projects/p/memory/MEMORY.md" \
+    "$REPO/.claude/wt-foo/proj/notes.md" \
+    "$REPO/.claude/wt-alias/chapter3.md" \
+    "$REPO/.claude/wt-home-link/projects/p/memory/MEMORY.md"
+  assert_file_decisions defer sess1 "$REPO/.claude/wt-foo/d/chapter3.md"
+}
+
+@test "worktree taint: '..' out of a worktree keeps the ask; '..' that stays inside does not" {
+  worktree_layout
+  taint sess1
+  assert_file_decisions ask sess1 \
+    "$REPO/.claude/wt-foo/../notes.md" \
+    "$REPO/.claude/wt-foo/../settings.json" \
+    "$REPO/.claude/worktrees/foo/../../wt-foo/chapter3.md" \
+    "$REPO/.claude/wt-foo/sub/../../wt-foo-not/x.md"
+  assert_file_decisions defer sess1 "$REPO/.claude/wt-foo/sub/../chapter3.md"
+}
+
+@test "worktree taint: an unverifiable worktree root fails closed, and a root itself asks" {
+  worktree_layout
+  taint sess1
+  local c="$REPO/.claude"
+  mkdir -p "$c/wt-plain" "$c/wt-dangling" "$c/wt-noback" "$c/wt-dirgit/.git" "$c/wt-linkgit" \
+           "$c/wt-sub" "$TEST_TMPDIR/fake/worktrees/x" "$c/wt-copied"
+  echo "gitdir: $TEST_TMPDIR/nowhere/worktrees/x" > "$c/wt-dangling/.git"
+  echo "gitdir: $TEST_TMPDIR/fake/worktrees/x" > "$c/wt-noback/.git"      # back-pointer elsewhere
+  echo "$TEST_TMPDIR/elsewhere/.git" > "$TEST_TMPDIR/fake/worktrees/x/gitdir"
+  ln -s "$c/wt-foo/.git" "$c/wt-linkgit/.git"                           # .git is a symlink
+  echo "gitdir: $REPO/.git/modules/sub" > "$c/wt-sub/.git"              # not a worktrees/ dir
+  cp "$c/wt-foo/.git" "$c/wt-copied/.git"                               # wt-foo's pointer, wrong dir
+  assert_file_decisions ask sess1 \
+    "$c/wt-plain/chapter3.md" "$c/wt-missing/chapter3.md" "$c/wt-dangling/chapter3.md" \
+    "$c/wt-noback/chapter3.md" "$c/wt-dirgit/chapter3.md" "$c/wt-linkgit/chapter3.md" \
+    "$c/wt-sub/chapter3.md" "$c/wt-copied/chapter3.md" "$c/worktrees/chapter3.md" \
+    "$c/wt-foo" "$c/worktrees/foo"
+}
+
+@test "worktree taint: an unreadable .git file fails closed (keeps the ask)" {
+  [ "$(id -u)" -ne 0 ] || skip "root reads a mode-000 file"
+  worktree_layout
+  taint sess1
+  chmod 000 "$REPO/.claude/wt-foo/.git"
+  assert_file_decisions ask sess1 "$REPO/.claude/wt-foo/chapter3.md"
+  chmod 644 "$REPO/.claude/wt-foo/.git"
+  assert_file_decisions defer sess1 "$REPO/.claude/wt-foo/chapter3.md"
+}
+
+@test "worktree taint: a worktree in or holding the config dir keeps the ask" {
+  worktree_layout
+  git -C "$REPO" worktree add -q "$HOME/.claude/wt-home" -b wt-home
+  taint sess1
+  assert_file_decisions ask sess1 "$HOME/.claude/wt-home/chapter3.md"
+  # CLAUDE_CONFIG_DIR inside a worktree: that worktree is not judged relative to its root.
+  mkdir -p "$REPO/.claude/wt-foo/cfg"
+  CLAUDE_CONFIG_DIR="$REPO/.claude/wt-foo/cfg" assert_file_decisions ask sess1 "$REPO/.claude/wt-foo/chapter3.md"
+  assert_file_decisions defer sess1 "$REPO/.claude/wt-foo/chapter3.md"
+}
+
+@test "worktree taint: case variants of the root shape are not worktree roots" {
+  worktree_layout
+  git -C "$REPO" worktree add -q "$REPO/.Claude/wt-c" -b wt-c
+  git -C "$REPO" worktree add -q "$REPO/.claude/WT-c" -b wt-c2
+  taint sess1
+  assert_file_decisions ask sess1 "$REPO/.claude/WT-c/chapter3.md"
+  # .Claude is no root, and SOFT matches `.claude` case-folded: it still asks.
+  assert_file_decisions ask sess1 "$REPO/.Claude/wt-c/chapter3.md"
+}
+
+@test "worktree taint: relative gitdir pointers (worktree.useRelativePaths) are verified" {
+  worktree_layout
+  local g
+  g=$(sed 's/^gitdir: //' "$REPO/.claude/wt-foo/.git")
+  echo "gitdir: ../../.git/worktrees/$(basename "$g")" > "$REPO/.claude/wt-foo/.git"
+  echo "../../../.claude/wt-foo/.git" > "$g/gitdir"
+  [ "$(git -C "$REPO/.claude/wt-foo" rev-parse --show-toplevel)" = "$REPO/.claude/wt-foo" ]
+  taint sess1
+  assert_file_decisions defer sess1 "$REPO/.claude/wt-foo/chapter3.md"
+  assert_file_decisions ask sess1 "$REPO/.claude/wt-foo/CLAUDE.md"
+}
+
+@test "worktree taint: Write, MultiEdit and the path key follow the same rule" {
+  worktree_layout
+  taint sess1
+  guard "$(file_payload Write "$REPO/.claude/wt-foo/chapter3.md" sess1)"
+  assert_defer
+  guard "$(jq -n -c --arg f "$REPO/.claude/worktrees/foo/chapter3.md" \
+    '{"session_id":"sess1","tool_name":"MultiEdit","tool_input":{"path":$f}}')"
+  assert_defer
+  guard "$(file_payload MultiEdit "$REPO/.claude/wt-foo/.claude/settings.json" sess1)"
+  assert_decision ask
+}
+
+@test "worktree taint: Bash in a worktree is unchanged (still denied on policy names)" {
+  worktree_layout
+  taint sess1
+  guard "$(bash_payload "echo x > $REPO/.claude/wt-foo/hooks/x.sh" sess1)"
+  assert_decision deny
+  guard "$(bash_payload "echo x > $REPO/.claude/wt-foo/CLAUDE.md" sess1)"
+  assert_decision deny
+}
+
 # --- Q-050 [2]: resolve-only HARD is denied, including per-file hook links ---
 # The README's bare-host layout: ~/.claude/CLAUDE.md links to the checkout's
 # global-instructions/CLAUDE.md, and ~/.claude/hooks/ is a REAL dir holding
