@@ -1,0 +1,45 @@
+# Research: self-improvement's default worktrees out of `.claude/`
+
+Brief: `docs/working/briefs/2026-11-20-self-improvement-worktrees.md` (at 90f7632f).
+Branch: `fix/self-improvement-worktrees`. Policy: self-merge. Paths: `scripts/self-improvement.sh`, `test/`.
+
+## What the code did
+
+- `scripts/self-improvement.sh` set `WORKTREE_BASE="${WORKTREE_BASE:-$REPO_DIR/.claude/wt}"`; every task worktree is `WT_DIR="$WORKTREE_BASE-$TASK_ID"` (three sites in the main loop), made by `create_task_worktree` and removed by `remove_worktree_and_branch` / the EXIT trap. Nothing else in the script assumes the worktree sits under `.claude/`.
+- The header said the default was "inside the sandbox write-allowlist and gitignored (see .gitignore)": the repo `.gitignore` ignores `.claude/`.
+- b3e25cf1 (Q-311, the build-loop worktree move) made `.worktrees/` in the main worktree via `scripts/build-loop.sh --worktree-base` (`wt_base`, :1905-1938): refuse a link or non-directory, `mkdir -p`, write a `.gitignore` of `*` under `set -C` when absent (an existing one is left as it is), then require that `git status` shows nothing under `.worktrees` and `git check-ignore` ignores a new `wt-x` name. The repo's own `.gitignore` is not edited. `health-check.sh` and the hermeticity adapters already skip `.worktrees/`.
+- Tests naming self-improvement worktree paths: `test/scripts/self-improvement-clean-state.bats` (A2's `[ ! -d "$REPO/.claude/wt-a" ]`, Q146's `feat: change from wt-a`). The guard-hook tests' `.claude/wt-*` cases test the hook, not this script, and stay.
+
+## Context packing
+
+- Invariants: an explicit `WORKTREE_BASE` keeps working (tests and cron use it); `require_clean_main` runs before any write; task worktrees must never be visible to `git status` on main (an approved merge and the loop's own commits run in the main checkout).
+- Avoid: calling `build-loop.sh` (gate code, and its `caller_gate` refuses this caller; brief and H1); editing the repo `.gitignore` (outside Paths:).
+
+## Design notes (no choice with 3+ viable options)
+
+- How to make the directory: calling `build-loop.sh --worktree-base` is ruled out by the brief and H1, and extracting `wt_base` into a shared lib needs `build-loop.sh` (out of scope), so the one surviving option is a small local copy of the same steps (`ensure_worktree_dir`). S3 tension noted: the convention (directory, `*` ignore file, ignore check) is reused, the code is duplicated; a later shared helper would need a gate-code change.
+- Name prefix: `.worktrees/si-wt` (worktrees `si-wt-<task>`), not `.worktrees/wt`, so self-improvement worktrees never take the build loops' `wt-<date>-<slug>` / `wt-dev-cycle-*` names that `--free-worktrees` and the cycle read.
+- Fail closed (H2): a link, non-directory, unwritable or link `.gitignore`, or an ignore setup leaving `.worktrees` visible refuses the run before any other write, naming the gap and a way forward (fix the ignore, or set `WORKTREE_BASE`).
+- The check runs only when the default is in use; an explicit `WORKTREE_BASE` is used as given (the header says so), as before.
+- A negation in the repo root `.gitignore` cannot re-include `.worktrees/si-wt-*` past `.worktrees/.gitignore`'s `*` (the deeper file wins), so no test for it; the visible-ignore test covers the refusal path.
+
+## Changes
+
+- `scripts/self-improvement.sh`: header `WORKTREE_BASE` entry and the config comment say what is true now and why the default moved; `SI_DEFAULT_WORKTREE_BASE="$REPO_DIR/.worktrees/si-wt"`; new `ensure_worktree_dir`, called right after `require_clean_main` when the default is in use.
+- `test/scripts/self-improvement-clean-state.bats` (real main loop, stubbed `claude`): A2/Q146 pin the new paths; new cases: default worktrees land under `.worktrees/si-wt-*`, are ignored and leave status clean with no `.claude/` made; an existing ignoring `.gitignore` is kept; a non-ignoring `.gitignore`, a `.worktrees` symlink and a `.gitignore` symlink each refuse with a named message and no worktree; an explicit `WORKTREE_BASE` is used and makes no `.worktrees`.
+
+## Docs naming `.claude/wt` (acceptance 5)
+
+`rg -n '\.claude/wt' docs guides` finds no doc describing self-improvement's default: the hits are dated review reports (historical paths, left as they are) and `docs/roadmap.md:361` (about how orchestrators commit into `.claude/wt-*`; the roadmap is the cycle's, not edited here). Named for the cycle:
+- `docs/roadmap.md:361` may want its `.claude/wt-*` wording refreshed once this lands.
+- Outside the brief: `scripts/self-improvement.sh` still falls back to `TMPDIR=$REPO_DIR/.claude/tmp` when `$TMPDIR` is unset or unwritable (the same Claude Code ask-on-write applies); a candidate follow-up item.
+
+## Verification
+
+- `bats test/scripts/self-improvement-clean-state.bats`: 18/18 pass.
+- `bats` over the suites that source the script (smoke, worktree-cleanup-functions, function-inventory, round-log-functions, claude-headless-flags, validate-task-json, convergence-detection): 79/79 pass.
+- `scripts/hermeticity-lint --root .`: passes. `shellcheck`: info-level only, same classes as before.
+- `scripts/health-check.sh`: see the final commit.
+
+Failure-pattern grep: FP-062, FP-185
+Failure-pattern skip: the fix(...) commit moves a default path following b3e25cf1's already-recorded cause (FP-185, worktrees under .claude/ asking on writes), so it adds no new cause-and-fix shape
