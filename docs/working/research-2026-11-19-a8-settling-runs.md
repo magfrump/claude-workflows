@@ -70,6 +70,21 @@ command cannot print the merge hash; the skill at base is the one that merge bro
 - Corpus fact-check brief: written by me from the diff, knowing the canon labels, as the first
   pass's was; I keep it to the diff's comment/docstring claims and name no label's finding.
 - Corpus critic panel: Step 5 selection as the baseline (6 critics); see results.
+- How the corpus block reaches each agent. The skill's ladder gives inline-diff-only: part 5
+  (diff + the 15 touched files) is 123,423 bytes, about 30.9k tokens, over the 25k budget, so
+  the block is preamble + scope label + intent + the 53,682-byte diff, 57,328 bytes in all
+  (about 14.3k tokens). Pasting that into 10 Agent prompts by hand would cost me about 143k
+  output tokens, risk transcription drift in a 1,300-line diff, and likely overrun my own
+  context mid-pass. Instead each prompt opens by telling the agent to Read the block file
+  (`runs/review-arms/a8-2026-11-20/corpus/shared-block.md`, byte-identical for all) before
+  anything else. The agent's context holds the same bytes from its first step either way; the
+  difference is one tool call (a few hundred tokens) and the block arriving as a tool result
+  rather than prompt text, which the cache probe showed makes no cache difference on this path.
+  This is a deviation from pasting, recorded in results. It dominates on the run finishing at
+  all, so no divergent design pass.
+- csp critics were meant to launch in one message; three of the five calls were refused by a
+  harness working-directory check and were re-sent a minute later. Self-read agents share no
+  prompt cache, so the stagger cannot change their figures.
 - No choice here has three or more viable options with different tradeoffs, so no divergent
   design pass was run.
 

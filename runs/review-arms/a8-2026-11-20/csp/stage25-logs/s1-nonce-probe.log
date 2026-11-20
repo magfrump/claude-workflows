@@ -1,0 +1,16 @@
+2026-11-20T01:38:00Z
+cwd: /tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/app-copy
+cmd: timeout 120 node --experimental-strip-types /tmp/claude-1000/-workspace/42e4626f-a408-4056-99e9-68895fd49c97/scratchpad/2026-11-19-a8-settling-runs/s25/probe/s1.mts  (proxy.ts transpiled verbatim to .s25-proxy.cjs via typescript.transpileModule)
+{
+ "N": 20000,
+ "unique": 20000,
+ "rejected": 0,
+ "mismatch": 0,
+ "escHits": 0,
+ "xnonceMismatch": 0,
+ "nonceLength": 48,
+ "decodedSample": "70bb4da7-f91b-4ea7-98e3-e0482544103f",
+ "alphabet": "012345ABCDEFGIJLMNOQRSTUVWYZcdghijklmtwxyz",
+ "sampleCsp": "default-src 'self'; script-src 'self' 'nonce-YmQ3M2NmNDAtZTE1NC00OWUwLThjYzAtZjg2YWQ0MmYyMGMx' 'strict-dynamic'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'"
+}
+exit: 0
