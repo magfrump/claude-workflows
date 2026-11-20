@@ -100,7 +100,10 @@ scratchpad) show each one read the whole file: 6 with one Read; 2 (`a1a8fdb7` co
 security) with `cat`, which overflowed the Bash output cap to a ~2 KB preview, then re-read the
 saved output; 1 (`a6a0ebd8`, Stage 2.5) via `head -400` then `sed -n 400,600p` (the whole
 535-line file). So the skill now says to use the Read tool, not `cat`. The A8 write-up's review agents (fact-check replicates, prompts ~3-4k bytes) also
-read `skills/code-fact-check/SKILL.md` by path. 9 of 9 in the pass, no failure seen. Every
+read `skills/code-fact-check/SKILL.md` by path, one only in part: `a24af0b2` (pass-2
+re-review) read lines 1-460 with `cat | head` and `sed -n`, never 461-535 (review round 2).
+That partial read is a shell-chunking slip, which the Read-tool clause guards against. 9 of 9
+in the pass read the whole file. Every
 critic skill is under 2,000 lines and ~35 KB (largest `ui-visual-review` 34,440 bytes), so
 one Read returns it whole. Sub-agents of the Agent tool share the orchestrator's filesystem;
 `patterns/orchestrated-review.md` (Context curation, Fallback) already says so.
@@ -140,6 +143,10 @@ Who else shares the rule (for the cycle to file; not changed here):
 - Review round 1 (one fact-check-plus-critic agent): 1 must-fix (the amendment said the
   cross-model harness sets its own breakpoints; it sets none, H4), 3 should-fix (preamble is
   per-agent; threat-model lines sit inside the block; the `cat` overflow), 4 nits. All fixed.
+- Review round 2 (one fresh fact-check-plus-critic agent): no must-fix; 1 should-fix (the
+  write-up agents' "also by path" overstated: one read only lines 1-460) and 4 nits (A8's
+  ~2.2k is the whole shared block; threat-model lines had two homes; the contract test had no
+  guard for "only the tail varies"; the size-guard awk range could run to EOF unnoticed). All fixed.
 - Residual, noted not fixed: read-by-path reads the file on disk at dispatch time, not the copy
   the orchestrator loaded, so a skill edited mid-pass reaches later agents changed. Decision
   log row 35 says the contract test has 10 cases (now 13); a record, left as written.

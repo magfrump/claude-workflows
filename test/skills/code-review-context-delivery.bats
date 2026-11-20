@@ -92,6 +92,9 @@ assert_all_windows_conditional() {
 }
 
 @test "degrade ladder inlines the diff alone before falling back to full self-read" {
+  # The awk range ends at the production-loop-only line; assert it exists so a reword
+  # cannot let the range run silently to end of file.
+  grep -q '^This section is \*\*production-loop-only' "$BATS_TEST_DIRNAME/../../$SKILL"
   awk '/\*\*Size guard/,/^This section is \*\*production-loop-only/' "$BATS_TEST_DIRNAME/../../$SKILL" \
     | grep -qi 'diff only'
 }
@@ -116,7 +119,7 @@ assert_all_windows_conditional() {
 
 @test "the refuted cache-saving claims are gone from the skill" {
   local f="$BATS_TEST_DIRNAME/../../$SKILL"
-  run grep -nE -i 'cacheable|cache-warm|prompt cache serve|because it is free|make the cache actually hit' "$f"
+  run grep -nE -i 'cacheable|cache-warm|prompt cache serve|because it is free|make the cache actually hit|only the tail varies|per-agent variation lives in the tail' "$f"
   [ "$status" -eq 1 ]
 }
 
