@@ -183,7 +183,7 @@ change the recommendation — e.g., "Revisit when we start the API v3 work, whic
 the new streaming API in this dependency." Otherwise, one line on what staying put would cost.}
 ````
 
-Write the Summary fields in plain text (not bold). The `**Recommendation:**` line holds one of
+Keep the bold field labels as shown and write each value in plain text (not bold). The `**Recommendation:**` line holds one of
 its four values alone; Breaking change impact and Risk open with one of their listed values;
 Estimated effort names its unit (minutes, hours or days; "about an hour" is fine). Put the
 reasoning, conditions and next steps after the Summary, never in place of a value.
