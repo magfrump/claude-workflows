@@ -33,3 +33,5 @@ Policy: review
 - Carrying an approval over to a new tip (the research doc's deferred candidate 4).
 - A `Generated paths:` setting; any change to `scripts/build-loop.sh`.
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`.
+
+Dispatched: 1
