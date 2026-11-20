@@ -41,7 +41,18 @@ tc-ts1, tc-ts4 and tc-ts6 also run `format_check` (test-strategy-format.bats).
   is the check most likely to move on the first real run. A model may call a
   property test on the parser "high" even though the table already covers it.
   If that happens, decide whether the check or the rubric reading is wrong
-  before loosening it.
+  before loosening it. It moved on the first real run (2026-11-19) and again
+  on a rerun, and both times the fixture was at fault, not the check: the
+  parser had real untested holes (a digit run past Python's int-parsing limit
+  raised a bare `ValueError`, `\d` accepted non-ASCII digits, non-`str` input
+  raised `AttributeError`, and leading-sign and trailing-digit typos had no
+  rows). The fixture now closes each with code and a table row, asserts exact
+  messages, and pins which error wins when two apply. Each repair was checked
+  by fresh runs, and two of them opened new holes (a digit cap on the
+  `MAX_SECONDS` boundary, zero-padded amounts) that the runs found, so a
+  future edit to the parser needs the same check. "Nothing in ts6 meets both"
+  holds for the current file
+  (docs/working/research-2026-11-20-skill-verdict-drift.md).
 - The Go and TS fixtures put tests in the same file as the code under test.
   The marker comment names the real test file (`client_test.go`,
   `tokenCache.test.ts`). The runner prompt says so and says no other files

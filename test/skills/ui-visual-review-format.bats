@@ -104,8 +104,14 @@ ui_section() {
   assert_field_values "Confidence" "High|Medium|Low"
 }
 
-@test "each finding has a Recommendation line" {
-  assert_field_per_finding "Recommendation"
+@test "each non-Informational finding has a Recommendation line" {
+  # As in architecture-review-format.bats: an Informational finding (a hardening
+  # note) may carry its remedy inline; every finding at Critical, Major or Minor
+  # still needs an explicit Recommendation.
+  local total_info rec_count
+  total_info=$(echo "$FINDINGS_BODY" | grep -cE '^\*\*Severity:\*\* Informational' || true)
+  rec_count=$(echo "$FINDINGS_BODY" | grep -cE '^\*\*Recommendation:\*\*' || true)
+  [ "$rec_count" -ge $((FINDING_COUNT - total_info)) ]
 }
 
 # --- Best Practices table ---

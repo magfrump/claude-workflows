@@ -1,26 +1,30 @@
-# Test fixture for TC-C2.5: Unverifiable verdict
-# Comment claims thread-safety due to GIL, but the code has complex concurrency
-
 import threading
-import queue
+from typing import Callable
 
-# thread-safe due to GIL
-class TaskQueue:
-    def __init__(self):
-        self._queue = queue.Queue()
-        self._results = {}
-        self._lock = threading.Lock()
+from ringbuf import SpscRing  # vendored wheel; the compiled module is not in this repo
 
-    def submit(self, task_id, fn, *args):
-        self._queue.put((task_id, fn, args))
 
-    def process(self):
-        while not self._queue.empty():
-            task_id, fn, args = self._queue.get()
-            result = fn(*args)
-            with self._lock:
-                self._results[task_id] = result
+class EventPump:
+    def __init__(self, capacity: int = 4096) -> None:
+        # SpscRing is lock-free and safe with one producer thread and one
+        # consumer thread running at the same time, so the ring needs no lock.
+        self._ring = SpscRing(capacity)
+        self._handlers: list[Callable[[bytes], None]] = []
+        self._handlers_lock = threading.Lock()
 
-    def get_result(self, task_id):
-        with self._lock:
-            return self._results.get(task_id)
+    def on_event(self, handler: Callable[[bytes], None]) -> None:
+        with self._handlers_lock:
+            self._handlers.append(handler)
+
+    def push(self, payload: bytes) -> bool:
+        return self._ring.try_push(payload)
+
+    def drain(self) -> int:
+        count = 0
+        while (payload := self._ring.try_pop()) is not None:
+            with self._handlers_lock:
+                handlers = list(self._handlers)
+            for handler in handlers:
+                handler(payload)
+            count += 1
+        return count

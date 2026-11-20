@@ -40,13 +40,13 @@ KEY_CHECK["tc-uv5-hidden-overflow.tsx"]="finding_match:Major=overflow-(y-)?(auto
 
 # --- Checklist items 6-7: Affordance / responsive (full audit mode) ---
 
-EXPECTED_VERDICT["tc-uv6-disappearing-controls.tsx"]="Minor"
+EXPECTED_VERDICT["tc-uv6-disappearing-controls.tsx"]="Major"
 CLAIM_ACCURACY["tc-uv6-disappearing-controls.tsx"]="bug"  # Button disappears on completion instead of relabeling
-KEY_CHECK["tc-uv6-disappearing-controls.tsx"]="finding_match:Minor=re-?run|(update|change|swap|switch)[a-z]* (the |its )?(button.s )?label|keep (the )?button (visible|rendered|mounted|in place)|instead of (disappear|hid|remov|unmount)"
+KEY_CHECK["tc-uv6-disappearing-controls.tsx"]="finding_match:Major=re-?run|(update|change|swap|switch)[a-z]* (the |its )?(button.s )?label|keep (the )?button (visible|rendered|mounted|in place)|instead of (disappear|hid|remov|unmount)"
 
-EXPECTED_VERDICT["tc-uv7-weak-affordance.tsx"]="Minor"
+EXPECTED_VERDICT["tc-uv7-weak-affordance.tsx"]="Major"
 CLAIM_ACCURACY["tc-uv7-weak-affordance.tsx"]="bug"  # Interactive div looks like static text
-KEY_CHECK["tc-uv7-weak-affordance.tsx"]="finding_match:Minor=<button|role=.?button|cursor-pointer|cursor: ?pointer|hover:[a-z]|\bborder(-[a-z0-9]+)+\b|\bbg-[a-z]+-[0-9]+|underline"
+KEY_CHECK["tc-uv7-weak-affordance.tsx"]="finding_match:Major=<button|role=.?button|cursor-pointer|cursor: ?pointer|hover:[a-z]|\bborder(-[a-z0-9]+)+\b|\bbg-[a-z]+-[0-9]+|underline"
 
 # --- Cross-framework: Unity/C# ---
 

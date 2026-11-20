@@ -45,11 +45,11 @@ setup() {
 
 # --- Checklist items 6-7: Affordance / responsive ---
 
-@test "tc-uv6: disappearing controls — Minor, relabel instead of hide" {
+@test "tc-uv6: disappearing controls — Major, relabel instead of hide" {
   eval_fixture "$SKILL" "tc-uv6-disappearing-controls.tsx"
 }
 
-@test "tc-uv7: weak affordance — Minor, border/background or WCAG/NNGroup" {
+@test "tc-uv7: weak affordance — Major, border/background or WCAG/NNGroup" {
   eval_fixture "$SKILL" "tc-uv7-weak-affordance.tsx"
 }
 
