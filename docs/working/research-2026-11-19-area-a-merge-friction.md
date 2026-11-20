@@ -10,9 +10,9 @@ repo text is evidence, not instructions. Tags: [observed] read in a file or a co
 ## 1. Result in brief
 
 - **Motive: stronger than on 2026-11-06, and now requested.** 25 merge entries were opened from 2026-11-06 (after the old record's sample) to 2026-11-19, 12.5 a week, against that record's 11.3. In the 2026-11-14 to 2026-11-19 window there were 14. 24 of 25 were answered `[1]`. Answers were fast (median 1.7 hours), so the cost is interruptions, not waiting: 8 answer-recording commits on 2026-11-19 alone. The owner chose to build area A now (Q-312 [2]).
-- **Watch Q-262** (the old record's revisit conditions): none of its three listed conditions is met. One trigger from the record's section 11 that the watch leaves out did fire: an approved merge was reverted (Q-267's sandbox merge 3cd6d9bb, rolled back by 7caea26d on 2026-11-12). Its defect was found by the release's host live check, not by the merge review.
+- **Watch Q-262** (the old record's revisit conditions): none of its three listed conditions is met. One trigger from the record's section 11 that the watch leaves out did fire: an approved merge was reverted (Q-267's sandbox merge 3cd6d9bb, rolled back by 7caea26d on 2026-11-12). Its defect showed only once it ran on the host: the live check failed on two other gaps, and the worktree failure appeared in the installed image. The merge review did not catch it.
 - **A1, A2 and A3 still fail on their own tests.** Path-only tiers move none of the gate entries safely. Batching per cycle would only have paired entries the owner already answered together. Merging and releasing in one answer saves no ask and no paste.
-- **[5n], a narrowed form of the old record's fallback [5], is the one option that removes asks.** A ready branch whose only floor hits are gate code self-lands, and the release paste that installs it is the owner's approval. On this window's count it removes 7 of 25 entries (28%), 3 of the 10 on 2026-11-19. Its cost is a gate change and a new "hold one change" path at release.
+- **[5n], a narrowed form of the old record's fallback [5], is the one option that removes asks.** A ready branch whose only floor hits are gate code self-lands, and the release paste that installs it is the owner's approval. On this window's count it removes 6 of 25 entries (24%), 3 of the 10 on 2026-11-19. Its cost is a gate change and a new "hold one change" path at release.
 - **No clear winner between [0] and [5n]**, so this is Path C. Tentative pick: [5n]. Tiebreaker: the owner's Q-312 [2] removes the old record's main reason to hold [5], and every gate change still needs one human act (the pinned paste) before it runs. Confidence 55%.
 - **A4 is already built:** the release entry has been written as release notes since 3dbf43cb (Q-266, 2026-11-07). **A6, A7 and A8 are set aside**, each for want of a cost that a change would remove; section 7 gives the reasons.
 
@@ -66,14 +66,14 @@ repo text is evidence, not instructions. Tags: [observed] read in a file or a co
 | Q-303 | 11-18 23:23 | 11-19 15:28 | 16.1 |
 | Q-317 | 11-19 17:11 | open at a0ef9528 | — |
 
-Median 49.8 h. That is an upper bound on time from a release being asked for to its install being seen [observed]. It does have a cost. On 2026-11-19 the Ideas-promotion rule (7661a2cf, approved in Q-309) sat on main while "the cycle (which runs the image's skill) moves no Ideas until the release" (`docs/working/cycles/cycle-2026-11-19.md`, step 6 of iteration 2006). Q-317 now holds four approved gate merges [observed]. The brief's "two release pastes in one evening" are Q-303's install and Q-084's check, both answered in `answers-11-19-26.txt` [observed].
+Median 49.8 h. That is an upper bound on time from a release being asked for to its install being seen [observed]. It does have a cost. On 2026-11-19 the Ideas-promotion rule (7661a2cf, approved in Q-309) sat on main while "the cycle (which runs the image's skill) moves no Ideas until the release" (`docs/working/cycles/cycle-2026-11-19.md`, step 6 of iteration 2006). Q-317 now holds four approved merges, two of them gate merges (acbff6c6, 8ec5a900) [observed]. The brief's "two release pastes in one evening" are Q-303's install and Q-084's check, both answered in `answers-11-19-26.txt` [observed].
 
 **Watch Q-262's conditions** (`docs/working/watching.md`; the old record's section 11):
 
 | Condition | State |
 |---|---|
-| The owner names merge entries or approvals as a blocker | Not in their own words. The owner's in-session lines on record are answers and requests ("the 2-hour re-dispatch wait seems excessive", which is the steal-wait item and is merged). Q-312 "yes" (read as [2]) is the owner choosing to build area A now. It does the job of a reopen, but it is not this condition [observed] |
-| Merge entries exceed 11 a week in 3 of the next 4 digests (reopens [5]) | Not met yet: 8 in the 2026-11-13 digest, and at least 14 due in the 2026-11-20 digest, so 1 of 2. It is met only if the 2026-11-27 and 2026-12-04 digests also exceed 11 [observed] |
+| The owner names merge entries or approvals as a blocker | Not in their own words. The owner's in-session lines on record are answers and requests (the re-dispatch wait "seems excessive", paraphrased in the cycle record, which is the steal-wait item and is merged). Q-312 "yes" (read as [2]) is the owner choosing to build area A now. It does the job of a reopen, but it is not this condition [observed] |
+| Merge entries exceed 11 a week in 3 of the next 4 digests (reopens [5]) | Not met yet: 8 in the 2026-11-13 digest, and at least 14 due in the 2026-11-20 digest, so 0 of 1 counted, and likely 1 of 2 once the 2026-11-20 digest is written. It is met only if the 2026-11-27 and 2026-12-04 digests also exceed 11 [observed] |
 | Median wait over 48 h for two weeks running with a `Blocks:` line | Not met: median 1.7 h [observed] |
 | An approved merge is reverted (in section 11, not in the watch) | **Fired on 2026-11-12.** Q-267 [1] merged the Bash sandbox (3cd6d9bb), and 7caea26d reverted it after the release's live check failed and agents could not create worktrees (Q-277 [3]). The merge review approved code whose defect only a host run showed. This record did not audit Q-267's wording [observed] |
 | A sample reply to the weekly digest is recorded (in section 11, not in the watch) | Not met: none on record in the 2026-11-13 digest or the trial doc [observed] |
@@ -90,7 +90,7 @@ So "deliberate looks per week", the second half of the old record's success pair
 - **[2] A1, paths only.** A gate change passing a fixed path test self-merges. [carried: 0 of 22 safely moved]. Re-tested: `merge-gate-` still implies a GATE_CODE path changed, so "test-only" is empty again, and the four skill-only entries here (Q-289's f1238bdb among them) change what the cycle does [inferred from paths].
 - **[1] A1 as written.** [carried: H4, "a fix its brief pins down" is a judgment the gate would key on].
 - **[3] A3, merge and release in one answer.** [carried: removes no ask or paste]. Re-tested on 2026-11-19: the owner approved Q-314, Q-315, Q-318 and Q-319, and step 7 rewrote Q-317 at once (step 7 runs the image check again after a merge). That is A3's "then give me the paste" already, and one paste still follows [observed].
-- **[4] A2, one batched entry per cycle.** [carried: dominated by T3]. Re-tested: the ten 2026-11-19 entries were filed in 8 different iterations, as loops finished. A per-iteration batch would have joined only Q-306/307, Q-314/315 and Q-318/319, and the owner answered each of those pairs in one line already ("Q-306,307: [1]") [observed].
+- **[4] A2, one batched entry per cycle.** [carried: dominated by T3]. Re-tested: the ten 2026-11-19 entries were filed in 8 different iterations, as loops finished. A per-iteration batch would have joined only Q-306/307, Q-314/315 and Q-318/319, and the owner answered each of those pairs in one line already (recorded as "Q-306 [1], Q-307 [1]" in session, 84bbfb83) [observed].
 - **[5] Release as the approval, whole floor.** [revived from the 2026-11-06 record, where it was the named fallback]. Gate branches land on main, and the release entry approves them, with every other floor path lifted as far as needed.
 - **[5n] Release as the approval, gate-only branches (new: a narrowed [5]).** A ready branch whose floor hits are all GATE_CODE paths or `skills/dev-cycle/SKILL.md` (with its own brief, research, reviews and tests, which are already allowed) self-lands, flagged as gate. The release entry lists these first, under a heading saying the paste approves them, with a one-line way to hold one. Any other floor or never path keeps today's entry.
 - **[6] Silence is consent.** [carried: H2].
@@ -133,22 +133,22 @@ So "deliberate looks per week", the second half of the old record's success pair
 | Q-271 | 1f14e270 | decision log, failure library, override log | no |
 | Q-279 | a77bbc97 | none | yes |
 | Q-289 | f1238bdb | none | yes |
-| Q-296 | c1c7a4f3 | none | yes |
+| Q-296 | c1c7a4f3 | `docs/working/plan-build-loop-handoff.md` (a shared plan doc, not its own) | no |
 | Q-298 | 1b50402c | none | yes |
-| Q-305 | 24af50da | failure library | no |
+| Q-305 | 24af50da | failure library, non-own working docs | no |
 | Q-309 | 7661a2cf | none (its rubric's name does not match its stem) | yes, with a stem-named rubric |
 | Q-311 | b3e25cf1 | `workflows/parallel-worktrees.md` | no |
 | Q-314 | acbff6c6 | none (rubric name as Q-309) | yes, with a stem-named rubric |
 | Q-319 | 8ec5a900 | none (rubric name as Q-309) | yes, with a stem-named rubric |
 
-7 of 12 gate entries, 7 of 25 entries (28%) and 3 of the 10 on 2026-11-19. Lifting GATE_CODE alone, without `SKILL.md`, would remove only Q-296 and Q-314. Three of the seven need their review rubric named `…-STEM.md`, which the floor's `ownfile` asks for and a loop controls [inferred from paths and `ownfile`, line 1027].
+6 of 12 gate entries, 6 of 25 entries (24%) and 3 of the 10 on 2026-11-19. Lifting GATE_CODE alone, without `SKILL.md`, would remove only Q-314 (with a stem-named rubric). Three of the seven need their review rubric named `…-STEM.md`, which the floor's `ownfile` asks for and a loop controls [inferred from paths and `ownfile`, line 1027].
 
 **Tradeoffs between the survivors.**
 
 | # | Effort | Risk | Removes | Key downside |
 |---|---|---|---|---|
 | 0 | none | low | 0 | the always-[1] habit and 8-sitting evenings stay; nothing answers Q-312 [2] |
-| 5n | 1-2 days, plus its own merge entry | medium | about 7 of 25 entries | the gate-code review moves into release notes the owner skims (T1); a "no" costs a revert and a second paste |
+| 5n | 1-2 days, plus its own merge entry | medium | about 6 of 25 entries | the gate-code review moves into release notes the owner skims (T1); a "no" costs a revert and a second paste |
 
 **Hypotheses.**
 
@@ -157,7 +157,7 @@ So "deliberate looks per week", the second half of the old record's success pair
 
 **Stress test.**
 
-- **Invert (argue for [0]).** Answers take minutes, the owner says they track work through them (T1), and 28% is a small cut that costs a gate change and its own merge entry. That survives in part. But the old record's tiebreaker, "no recent request", is gone, and the revert shows that a merge review does not catch what the release's host run does. [0] stays live as option [1] of the question.
+- **Invert (argue for [0]).** Answers take minutes, the owner says they track work through them (T1), and 24% is a small cut that costs a gate change and its own merge entry. That survives in part. But the old record's tiebreaker, "no recent request", is gone, and the revert shows that a merge review does not catch what the release's host run does. [0] stays live as option [1] of the question.
 - **Boring alternative.** Wait for Q-262's rate condition (two more digests). That costs about two weeks of the current rate and decides on evidence. It is a fair tiebreaker against [5n], which is why this is Path C rather than A.
 - **Revealed preferences.** The owner answers merge entries within minutes when present and pastes releases within about two days. They have never answered `[2]` to a merge. They did answer `[3]` once, with a correction (Q-288). The entries are read at least sometimes. [5n] keeps every entry that touches anything but gate code.
 - **Second-order.** [5n] moves weight onto the release entry, the channel area B (`docs/working/briefs/2026-11-19-area-b-ask-habituation.md`, in flight) is meant to keep readable. The two should not land in the same week without that being noted. [5n] also exists only in claude-workflows, because other repos have no gate code (S5: no outside value).
@@ -185,12 +185,12 @@ Decision: how gate merges and releases are bundled               top 2 of 5
 
 **Should gate-code-only changes stop getting their own merge entry, with the release paste that installs them as your approval?**
 
-Plain version: today every branch that touches the gate's own scripts or the dev-cycle skill waits for a `merge-gate-` entry, and then waits again for a release paste before it runs. Under the pick, a branch that touches only those files (plus its own tests and records) lands on main without asking. The next release entry lists it first, under a line saying "this paste approves these", and you can hold one with a one-line answer. Nothing it changes runs until you paste. Branches touching workflows, decisions, instruction files or the failure library keep their entries. On the last two weeks it would have removed 7 of 25 merge entries, 3 of the 10 on 2026-11-19.
+Plain version: today every branch that touches the gate's own scripts or the dev-cycle skill waits for a `merge-gate-` entry, and then waits again for a release paste before it runs. Under the pick, a branch that touches only those files (plus its own tests and records) lands on main without asking. The next release entry lists it first, under a line saying "this paste approves these", and you can hold one with a one-line answer. Nothing it changes runs until you paste. Branches touching workflows, decisions, instruction files or the failure library keep their entries. On the last two weeks it would have removed 6 of 25 merge entries, 3 of the 10 on 2026-11-19.
 
 | Option | What it means | Cost to you | If it's wrong |
 |---|---|---|---|
-| **[1] Release approves gate-only changes** (tentative pick) | The cycle briefs it; you see the build as one more merge entry | About 7 fewer entries a fortnight; read the release list before pasting | You miss a gate change in a skimmed list; a hold costs a revert and a second paste |
-| **[2] Keep one entry per gate merge** | Nothing changes; reopen when entries exceed 11 a week in 3 of 4 digests | Today's rate: 12.5 entries a week | You keep answering the 28% that a paste would cover |
+| **[1] Release approves gate-only changes** (tentative pick) | The cycle briefs it; you see the build as one more merge entry | About 6 fewer entries a fortnight; read the release list before pasting | You miss a gate change in a skimmed list; a hold costs a revert and a second paste |
+| **[2] Keep one entry per gate merge** | Nothing changes; reopen when entries exceed 11 a week in 3 of 4 digests | Today's rate: 12.5 entries a week | You keep answering the 24% that a paste would cover |
 
 - **Why it's yours:** it changes what you review and when (your floor, Q-149), and the old record held it back because you had not asked.
 - **Interim:** the cycle drafts and dispatches the brief in section 8 only after [1]. Until then nothing changes, and no work waits.
@@ -199,9 +199,9 @@ Plain version: today every branch that touches the gate's own scripts or the dev
 ## 7. A4, A6, A7, A8, one by one
 
 - **A4, release notes: already built, no change.** 3dbf43cb (Q-266 [1], merged 2026-11-07) writes the release entry as notes, in this order: unreviewed self-merges, what changes for you, the routine rest as a count. Q-317 shows the result: four approved merges each in one plain line, and "18 dev-cycle lands" as a count [observed]. One remnant: its "Merged without your review" list holds 7 research-doc merges the image does not carry. Collapsing those to a count would be a gate change (the skill), for a few lines of reading per release. Set aside.
-- **A6, harness version stamp: set aside.** F-001's failure, a repo migrated by newer rules than its image, is now structural: since 2026-11-02 the cycle runs migrations from the image's registry (`docs/working/briefs/closed/2026-11-02-cycle-runs-migrations.md`), so a due migration cannot need code the image lacks [inferred from the registry living in the image's `scripts/lib/migrations.sh`]. The stamp half has some signal: herald's feedback notes "the image installed 2026-11-11 (claude-workflows 536b708)" by hand, and philosophy-research F-006 was an older approval meeting a newer gate. But those writers found the version unaided, in `/opt/claude-workflows/.manifest` [observed]. Step 0.1 skips silently in a repo that lacks the image's commit, so writing C into the record there would be a one-line skill change, which is a gate merge entry: this brief's own friction, spent for no recorded loss. Revisit if a feedback entry's diagnosis was delayed by not knowing the image.
+- **A6, harness version stamp: set aside.** F-001's failure, a repo migrated by newer rules than its image, is now structural: since 2026-11-03 (merge 89ed0db4, live from the next release) the cycle runs migrations from the image's registry (`docs/working/briefs/closed/2026-11-02-cycle-runs-migrations.md`), so a due migration cannot need code the image lacks [inferred from the registry living in the image's `scripts/lib/migrations.sh`]. The stamp half has some signal: herald's feedback notes "the image installed 2026-11-11 (claude-workflows 536b708)" by hand, and philosophy-research F-006 was an older approval meeting a newer gate. But those writers found the version unaided, in `/opt/claude-workflows/.manifest` [observed]. Step 0.1 skips silently in a repo that lacks the image's commit, so writing C into the record there would be a one-line skill change, which is a gate merge entry: this brief's own friction, spent for no recorded loss. Revisit if a feedback entry's diagnosis was delayed by not knowing the image.
 - **A7, collect feedback files at release: set aside.** S7's hand-copy problem was fixed on 2026-10-29: `harness-feedback.py ingest` (63180796) checks the copy, names it by its `Project:` line and refuses a non-append-only one. Since then three ingests ran, one command each (0321ce95, 30eb0229, 7b0479ee) [observed]. A7 would have the host installer read other repos, a trust-boundary change (S1) and a new host behaviour (S10), to save about one command a week. Revisit if an ingest is lost or mis-named again.
-- **A8, one generated paste: set aside.** S4's pile is gone: Q-084 closed on 2026-11-19, Q-167 moved to a watch on 2026-11-18, and Q-222, Q-227 and Q-234 are archived. Three terminal entries are open, of three kinds: Q-302 is a message to send in another repo's session, Q-316 one `grep`, and Q-317 the release, which must stay one quoted word (FP-179) pinned to M (FP-178). None depends on another [observed]. A generator in `questions.sh` (gate code) would combine at most two shell lines. Practice note instead (section 9).
+- **A8, one generated paste: set aside.** S4's pile is gone: Q-084 closed on 2026-11-19, Q-167 moved to a watch on 2026-11-18, and Q-222, Q-227 and Q-234 are archived. Four terminal entries are open: Q-255 (from 2026-11-05) is a host file copy plus a message to the herald agent, Q-302 a message to send in another repo's session, Q-316 one `grep`, and Q-317 the release, which must stay one quoted word (FP-179) pinned to M (FP-178). None depends on another, and two of the four are messages to other sessions, not shell [observed]. A generator in `questions.sh` (gate code) would combine at most the host lines of Q-255 and Q-316. Practice note instead (section 9).
 
 A5 and A9 are outside this brief's list and were not judged.
 
@@ -218,7 +218,7 @@ Status: open
 A ready branch whose floor hits are all GATE_CODE paths (skills/dev-cycle/SKILL.md included) lands as a self-merge flagged gate, and the image-lag release entry is its approval: it lists such merges first, under a line saying the paste approves them, and gives a one-line hold that has the cycle revert one on main and rewrite the paste.
 
 ## Motive
-docs/working/research-2026-11-19-area-a-merge-friction.md section 6, answered [1]: 7 of 25 merge entries from 2026-11-06 to 2026-11-19 were gate-only.
+docs/working/research-2026-11-19-area-a-merge-friction.md section 6, answered [1]: 6 of 25 merge entries from 2026-11-06 to 2026-11-19 were gate-only.
 
 ## Acceptance criteria
 1. floor()'s caller in scripts/build-loop.sh --merge lands a self-merge-policy branch whose only floor words are gate (and truth for skills/dev-cycle/SKILL.md alone), with a merge subject the release entry can pick out mechanically (for example "(build-loop gate self-merge)"); any other floor word, the never line, or Policy: review still files today's entry.
@@ -240,7 +240,7 @@ Sequencing: after the auto send-back brief merges (both edit build-loop.sh --mer
 - **A4:** built (3dbf43cb).
 - **A6:** F-001's failure is structural now; the stamp would cost a gate merge entry for no recorded loss.
 - **A7:** ingest exists (63180796); A7 adds a host trust boundary to save about one command a week.
-- **A8:** no pile and no dependency among the three open terminal entries; a generator is gate code for at most two lines.
+- **A8:** no pile and no dependency among the four open terminal entries, two of which are messages, not shell; a generator is gate code for a few lines.
 
 ## 9. Notes for the cycle
 
@@ -273,7 +273,7 @@ Failure-pattern grep: FP-012, FP-015, FP-028, FP-029, FP-079, FP-161, FP-178, FP
 
 ## Review
 
-(Filled in by the review-fix loop.)
+Review-fix loop, iteration 1: one fact-check pass of this doc against the repo (git, rg, reads). It confirmed about 60 claims: every wait in section 3 recomputed to 0.1 h, the release table, the merge-to-entry mapping, the floor order and the release-entry form. It found four errors, all fixed: Q-296's merge also edits a shared plan doc, so [5n] covers 6 of 25 entries, not 7; Q-317 holds two gate merges of four; Q-255 is a fourth open terminal entry; and the revert's defect showed in the installed image, not in the live check. Minor fixes: Q-305's non-own working docs, the Q-262 digest count (0 of 1 so far), A6's date, and two quotes marked as paraphrase. No finding remains open.
 
 ## Files read
 
