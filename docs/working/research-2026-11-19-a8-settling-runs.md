@@ -1,0 +1,81 @@
+# Research: A8 settling runs (csp self-read control, corpus inline)
+
+Brief: `docs/working/briefs/2026-11-19-a8-settling-runs.md` (at 14d450d9). Branch: `measure/a8-settling-runs`.
+Results: `runs/review-arms/a8-2026-11-20/results.md`. Per-agent rows: `runs/review-arms/a8-2026-11-20/token-ledger.md`.
+
+## Question
+
+Rubric row A8 (`docs/reviews/code-review-rubric-2026-08-07-main.md`) asks whether inlining the
+shared review context (decision 032 lever #3) is worth its cost. The first A8 pass
+(`runs/review-arms/a8-2026-11-19/results.md`) and its cache probe (`cache-probe.md`) showed the
+cross-agent cache saving is zero on the Agent-tool path, leaving the net cost against self-read
+and the 25k budget untested. This brief runs the two arms that results doc named: a self-read
+control on csp, and the corpus cell inline.
+
+## Precondition check
+
+The brief asks that `skills/code-review/SKILL.md` on the base commit be the version merged under
+Q-315 (the lever #3 correction). `git log -1 -- skills/code-review/SKILL.md` at 14d450d9 prints
+ca328816, a commit on `fix/code-review-lever3-correction`; it is not in the first parent of
+d383a484 (the build-loop merge of that branch), the merge changes SKILL.md (+68/-53), and nothing
+under `skills/code-review/` changed between d383a484 and 14d450d9. Git's default path
+simplification never prints a merge commit that is TREESAME to its second parent, so the literal
+command cannot print the merge hash; the skill at base is the one that merge brought in. Proceeded.
+
+## What I know (context)
+
+- csp: range `d86d2dc..d90d6bb` of `/workspace/external/meta-formalism-copilot`, 2 files. First
+  pass (inline, 2026-11-19): core 743,755 tokens (fc 311,975 = 100,755 / 90,196 / 121,024; critics
+  431,780), Stage 2.5 108,530, all 852,285; 6/6 canon labels; inline block 8,755 B (Stage 1) /
+  11,716 B (Stage 2).
+- corpus: range `dc6dfb0..2dc403e`, scope `-- app/` (baseline note 5: the 13 md files are
+  context-only), 15 files, +1166/-33. Baseline (2026-08-06, self-read, k=1): fc 93,966 + 6 critics
+  (security 94,922, performance 82,991, api 91,492, architecture 87,879, tech-debt 76,227,
+  test-strategy 88,089) = 615,566 core. Canon labels: `docs/working/canon-issue-ledger.md:112-115`
+  (cor-A1..A4, all amber), plus D3 (rehydration seam, `:161`) which the baseline hit as
+  architecture Structural.
+- Critic and fact-check skill files are unchanged between the first pass's base (4330e303) and
+  14d450d9 (`git diff --stat` over the seven skill dirs and `patterns/orchestrated-review.md` is
+  empty), so csp's arm difference is the delivery mode, up to model sampling.
+- The first pass's exact prompts survive in its session transcripts; I extracted them and built
+  the csp self-read prompts from them by one substitution (below), so everything except delivery
+  matches.
+
+## Method
+
+1. Scratch worktrees of the benchmark repo in this session's scratchpad: `wt-csp` at d90d6bb,
+   `wt-corpus` at 2dc403e (`git worktree add --detach`), never in this repo's tree.
+2. Pass 1, csp, self-read: the first pass's prompts with the `## The diff` and
+   `## Enclosing-file context` sections replaced by a `## Review material (self-read delivery)`
+   section naming the `git diff` command and the two files to read in full. Paths re-pointed to
+   this worktree, scratch worktree and run directory. The fact-check brief ("claims that
+   particularly need checking") is the first pass's, verbatim. Stage 2 carries this pass's own
+   merged fact-check summary (part 6), as the skill requires in every delivery mode.
+3. Pass 2, corpus, inline as the skill says: assemble part 5, measure chars/4 against the 25k
+   budget, pick the mode the ladder gives, and run the gated panel.
+4. Passes run one after the other; within a pass, each stage's agents run in parallel as the skill
+   says (the first pass did the same).
+5. Tokens per agent from each task notification, written to the ledger as it arrives; totals in
+   `manifest.json`. Stop line: 2.5M over both passes.
+
+## Design choices
+
+- Self-read wording (brief: "critics get paths and read the diff and enclosing files
+  themselves"): name the files to read in full, not only the scope spec. One option matches the
+  brief's words and keeps decision 021's enclosing-file context, so it dominates.
+- csp fact-check brief: reuse the first pass's verbatim (brief: "everything else as the first
+  pass"). The first pass flagged that brief as written with the canon labels known; reusing it
+  holds that threat constant across arms rather than adding a second one.
+- Corpus delivery mode: decided by the skill's ladder, not by me (see results §2).
+- Corpus fact-check brief: written by me from the diff, knowing the canon labels, as the first
+  pass's was; I keep it to the diff's comment/docstring claims and name no label's finding.
+- Corpus critic panel: Step 5 selection as the baseline (6 critics); see results.
+- No choice here has three or more viable options with different tradeoffs, so no divergent
+  design pass was run.
+
+## Gotchas
+
+Failure-pattern grep: FP-071, FP-108, FP-110
+- FP-071 (ledger write has no owner when it is possible): rows written at notification time.
+- FP-108 / FP-110 (provenance sums results, not the attempt ledger): totals include every
+  dispatched agent.

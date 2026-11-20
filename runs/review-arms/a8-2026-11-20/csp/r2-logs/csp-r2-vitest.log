@@ -1,0 +1,39 @@
+Error: Invalid package config /workspace/external/package.json while importing /workspace/external/cc-review-eval/mfc-csp. Unexpected end of JSON input
+    at __node_internal_ (file:///workspace/external/cc-review-eval/mfc-csp/node_modules/vitest/dist/chunks/index.BCY_7LL2.js:461:11)
+    at new NodeError (file:///workspace/external/cc-review-eval/mfc-csp/node_modules/vitest/dist/chunks/index.BCY_7LL2.js:405:5)
+    at read (file:///workspace/external/cc-review-eval/mfc-csp/node_modules/vitest/dist/chunks/index.BCY_7LL2.js:592:21)
+    at getPackageScopeConfig (file:///workspace/external/cc-review-eval/mfc-csp/node_modules/vitest/dist/chunks/index.BCY_7LL2.js:655:27)
+    ... 6 lines matching cause stack trace ...
+    at _resolve (file:///workspace/external/cc-review-eval/mfc-csp/node_modules/vitest/dist/chunks/index.BCY_7LL2.js:2252:22)
+    at resolvePackage (file:///workspace/external/cc-review-eval/mfc-csp/node_modules/vitest/dist/chunks/index.BCY_7LL2.js:2299:12)
+    at isPackageExists (file:///workspace/external/cc-review-eval/mfc-csp/node_modules/vitest/dist/chunks/index.BCY_7LL2.js:2267:12)
+    at VitestPackageInstaller.ensureInstalled (file:///workspace/external/cc-review-eval/mfc-csp/node_modules/vitest/dist/chunks/cli-api.Cjt90eJu.js:2322:23)
+    at prepareVitest (file:///workspace/external/cc-review-eval/mfc-csp/node_modules/vitest/dist/chunks/cli-api.Cjt90eJu.js:14574:56)
+    at startVitest (file:///workspace/external/cc-review-eval/mfc-csp/node_modules/vitest/dist/chunks/cli-api.Cjt90eJu.js:14515:14)
+    at start (file:///workspace/external/cc-review-eval/mfc-csp/node_modules/vitest/dist/chunks/cac.DJJmV0dT.js:2340:15)
+    at CAC.run (file:///workspace/external/cc-review-eval/mfc-csp/node_modules/vitest/dist/chunks/cac.DJJmV0dT.js:2318:2) {
+  code: 'ERR_INVALID_PACKAGE_CONFIG',
+  cause: SyntaxError: Unexpected end of JSON input
+      at JSON.parse (<anonymous>)
+      at read (file:///workspace/external/cc-review-eval/mfc-csp/node_modules/vitest/dist/chunks/index.BCY_7LL2.js:589:21)
+      at getPackageScopeConfig (file:///workspace/external/cc-review-eval/mfc-csp/node_modules/vitest/dist/chunks/index.BCY_7LL2.js:655:27)
+      at packageResolve (file:///workspace/external/cc-review-eval/mfc-csp/node_modules/vitest/dist/chunks/index.BCY_7LL2.js:1805:25)
+      at moduleResolve (file:///workspace/external/cc-review-eval/mfc-csp/node_modules/vitest/dist/chunks/index.BCY_7LL2.js:1945:18)
+      at _tryModuleResolve (file:///workspace/external/cc-review-eval/mfc-csp/node_modules/vitest/dist/chunks/index.BCY_7LL2.js:1990:12)
+      at _resolve$1 (file:///workspace/external/cc-review-eval/mfc-csp/node_modules/vitest/dist/chunks/index.BCY_7LL2.js:2045:16)
+      at resolveSync (file:///workspace/external/cc-review-eval/mfc-csp/node_modules/vitest/dist/chunks/index.BCY_7LL2.js:2078:10)
+      at resolvePathSync (file:///workspace/external/cc-review-eval/mfc-csp/node_modules/vitest/dist/chunks/index.BCY_7LL2.js:2081:24)
+      at _resolve (file:///workspace/external/cc-review-eval/mfc-csp/node_modules/vitest/dist/chunks/index.BCY_7LL2.js:2252:22)
+}
+ MISSING DEPENDENCY  Cannot find dependency 'jsdom'
+
+
+ RUN  v4.1.5 /workspace/external/cc-review-eval/mfc-csp
+
+
+ Test Files  24 passed (24)
+      Tests  221 passed (221)
+   Start at  17:20:33
+   Duration  5.32s (transform 3.45s, setup 3.67s, import 8.97s, tests 9.07s, environment 37.24s)
+
+exit=1
