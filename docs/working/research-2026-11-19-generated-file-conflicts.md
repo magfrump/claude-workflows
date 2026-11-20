@@ -32,7 +32,7 @@ Workflow: research-plan-implement with divergent design inline (one design choic
 
 **What has changed underneath F-010.** Its branches were review-policy only because F-008 forced it: the self-merge floor refused `docs/thoughts/`. F-008 is now fixed. `truthrule` (`scripts/lib/dev-cycle-read.sh:991`) lists only `docs/failure-patterns.md` and `docs/thoughts/failure-patterns.md` under `docs/thoughts/`, as idea-log line 286 records. So philosophy-research's Lean briefs can be self-merge again. If they are, a README conflict costs one answer (re-dispatch), not two. It also arises more often, because every catalog-editing loop now carries the README on its branch.
 
-**Conclusion.** The problem still arises. The answer that recurs in every repo and every case is the *re-dispatch* answer. It has been paid about 9 times in the cases on record (Q-246, Q-247; philosophy-research Q-129, Q-130, Q-138 to Q-140, Q-146, Q-147). The generated file caused only 2 or 3 of those 9. Only Q-246 and Q-247 can be read here, and both were answered re-dispatch; for the rest, the feedback says they were re-dispatched. The *second merge* answer arises on review briefs, which includes every brief touching gate code: Q-246 and Q-247 each cost one more, Q-248 and Q-249. Closing the item would leave the re-dispatch answer in place.
+**Conclusion.** The problem still arises. The answer that recurs in every repo and every case is the *re-dispatch* answer. It has been paid about 9 times in the cases on record (Q-246, Q-247; philosophy-research Q-129, Q-130, Q-138 to Q-140, Q-146, Q-147). The generated file caused only 2 or 3 of those 9. Only Q-246 and Q-247 can be read here, and both were answered re-dispatch; for the rest, the feedback says they were re-dispatched. The *second merge* answer arises on review briefs, and a brief touching gate code is always one. Q-246 and Q-247 each cost one more: Q-248 (a merge entry) and Q-249 (a merge-gate entry). Closing the item would leave the re-dispatch answer in place.
 
 ## Gotchas
 
@@ -105,7 +105,7 @@ Falsifiable hypotheses:
 - **5:** within 30 days of merging, no `stopped-` entry is filed whose reason is a conflict or gap refusal at a tip that has not yet been sent back, on a brief with `Dispatched:` below 3, for a loop-fixable gap or a conflict. Each such refusal shows as an `Applied:` redispatch item on the brief instead. Counter-evidence: a stopped entry with such a reason, or an owner answering `[2] drop` to a capped entry that the auto runs led to.
 - **6:** as 5, restricted to generated paths. Counter-evidence: hand conflicts keep producing stopped entries that the owner answers re-dispatch, which is what 5 would have absorbed.
 - **4:** at least 2 review-brief merge entries in 30 days whose new tip differs from an approved tip only by main's content and listed generated paths. Counter-evidence: zero such entries, the expected result now that F-008 lets catalog loops self-merge.
-- **1:** no conflict or gap stopped entry in 30 days. Counter-evidence: any, since the record has about 10.
+- **1:** no conflict or gap stopped entry in 30 days. Counter-evidence: any, since the record has about 9.
 
 Stress tests:
 - **5, fast-moving main** (philosophy-research's README moves "within minutes"). The loop merges main in, and main moves again before it is collected, so it is refused again. Each new tip is sent back once, but the auto runs use up the dispatch cap. A `capped-` entry offers only [1] keep (work by hand) and [2] drop, not a re-dispatch. Auto runs would also eat the rounds a review brief's "[3] changes needed" uses. Mitigation: auto re-dispatch only while `Dispatched:` is below 3, and file the normal stopped entry after that, so the owner keeps a re-dispatch under the cap. A re-dispatched loop's merge-in is also the last step before its marker, so its window is short.
@@ -198,7 +198,7 @@ Suggested brief (one unit):
   - Step 7's three "filed as `stopped`" sentences name the exception.
   - The final message lists each auto send-back with its brief and refusal, so the owner can still see it (S10: nothing hidden).
   - A `sect '### 7. Collect'` and `sect '### 10. Dispatch'` text pin in `test/scripts/build-loop-orchestrator.bats` (its existing pattern, `:435`, `:619`, `:640`) names the TIP rule, the below-3 bound and the owner-remedy exclusion.
-  - A short pre-mortem, since this is gate code: what the cycle could now do without the owner, bounded by the below-3 rule, once per tip, the loop's own stop rule and the gate's full re-check at the new tip.
+  - A short pre-mortem, since this is gate code: what the cycle could now do without the owner, bounded by the below-3 rule, once per tip, the loop's own stop rule, and the case of a sent-back loop that ends with no new commit, which re-dispatches each iteration until the cap of 4 files its `capped-` entry (as an owner `Q-NNN=redispatch` does today, so it is not a regression), and the gate's full re-check at the new tip.
 - **Paths:** `skills/dev-cycle/SKILL.md`, `test/scripts/build-loop-orchestrator.bats` and the brief's research doc.
 - **Policy:** review (gate code: `skills/dev-cycle/` is in GATE_CODE).
 - **Out of scope:**
@@ -222,3 +222,4 @@ Fixed in this doc:
 - **should-fix 5:** the reason for deferring 4 is restated: the second merge answers here (Q-248, Q-249) came from hand conflicts.
 - **should-fix 6:** S4 and S6 are added, with the reason prose plus a text pin is enough here.
 - **nits 7 and 8:** the empty-merge note was added and the matrix column was split.
+- **Round 2 (same reviewer):** no must-fix or should-fix items left. It raised three nits: a stale count, the Q-248 entry kind, and the no-new-commit loop in the pre-mortem. All three are fixed.
