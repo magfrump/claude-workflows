@@ -32,7 +32,7 @@ FILES=(
 @test "no guarded file says sub-agents cannot read the orchestrator's files" {
   local p
   for p in "${FILES[@]}"; do
-    run grep -nE -i 'sub-agents? cannot read|cannot read (your|the orchestrator.s) (files|filesystem)|Paste skill file contents|Paste those contents directly' "$ROOT/$p"
+    run grep -nE -i 'sub-?agents? cannot read|cannot read (your|the orchestrator.s) (files|filesystem)|Paste skill file contents|Paste those contents directly' "$ROOT/$p"
     [ "$status" -eq 1 ] || { echo "$p: $output"; return 1; }
   done
 }
@@ -46,8 +46,15 @@ FILES=(
 }
 
 @test "draft-review gives fact-check and critic agents their skill file by path" {
-  local f="$ROOT/skills/draft-review/SKILL.md"
-  awk '/^For each fact-check agent, you MUST:/,/^4\./' "$f" | grep -q 'read that whole file with the Read tool'
-  awk '/^For each critic agent instance, you MUST:/,/^4\./' "$f" | grep -q 'read that whole file with the Read tool'
-  awk '/^For each critic agent instance, you MUST:/,/^4\./' "$f" | grep -q 'only when the agent cannot reach the path'
+  local f="$ROOT/skills/draft-review/SKILL.md" start
+  # Each range ends at its step 4; assert that line exists so a reword cannot let the
+  # range run silently to end of file and match text from another section.
+  for start in 'For each fact-check agent, you MUST:' 'For each critic agent instance, you MUST:'; do
+    awk -v s="$start" 'index($0, s) == 1 { on = 1; next } on && /^4\. Include the full draft text/ { found = 1; exit } END { exit !found }' "$f" \
+      || { echo "no step 4 after: $start"; return 1; }
+    awk -v s="$start" 'index($0, s) == 1 { on = 1 } on && /^4\./ { exit } on' "$f" | grep -q 'read that whole file with the Read tool' \
+      || { echo "no by-path read under: $start"; return 1; }
+    awk -v s="$start" 'index($0, s) == 1 { on = 1 } on && /^4\./ { exit } on' "$f" | grep -q 'only when the agent cannot reach the path' \
+      || { echo "no paste-only-when rule under: $start"; return 1; }
+  done
 }

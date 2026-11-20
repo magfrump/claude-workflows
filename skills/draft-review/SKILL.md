@@ -170,8 +170,8 @@ For each fact-check agent, you MUST:
    its standalone goal-capture block and tries to ask the user a clarifying question.
 2. Give the agent the absolute path of the `fact-check` skill file this session loaded (e.g.
    `$HOME/.claude/skills/fact-check/SKILL.md` when installed, with `$HOME` expanded) as its
-   instructions, and tell it to read that whole file with the Read tool before anything else
-   and follow it
+   instructions, and tell it to read that whole file with the Read tool, not `cat` (the Bash
+   output cap cuts a skill-sized file to a preview), before anything else, and follow it
 3. Paste the contents instead only when the agent cannot reach the path (no file tools, or
    outside its sandbox). Sub-agents share your filesystem: all 9 agents of the 2026-11-19 A8
    review pass read their whole skill file by path (`docs/working/research-2026-11-19-code-review-lever3-correction.md`)
@@ -234,7 +234,7 @@ For each critic agent instance, you MUST:
 1. Begin the prompt with the goal preamble (see [Dispatch goal preamble](#dispatch-goal-preamble))
 2. Give the agent the absolute path of that critic's skill file as this session loaded it
    (e.g., `$HOME/.claude/skills/cowen-critique/SKILL.md` when installed, expanded) and tell it
-   to read that whole file with the Read tool before anything else and follow it
+   to read that whole file with the Read tool, not `cat`, before anything else and follow it
 3. Paste the contents instead only when the agent cannot reach the path (same rule as Stage 1
    step 3). `ai-personas-critique`'s Step 1 reads its persona catalog from the sibling file
    `personas.md` beside that path, so an agent that can read the skill file reads the catalog
