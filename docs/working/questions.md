@@ -174,6 +174,7 @@ The two Ideas:
 | **[3] Build these numbers** | Write the numbers (say `[3] 1`); the rest park as in [1] | As [2], for those | As [2], for those |
 
 - **Interim:** [1]: both stay in Ideas, unbuilt; nothing else waits on this.
+- **2026-11-19, iteration 0014 UTC:** one more item now rides with this answer, since it is area A's ground (fewer merge and re-dispatch answers for you): the research merged 7c137d5d (`docs/working/research-2026-11-19-generated-file-conflicts.md`) proposes that step 7 send a ready branch the gate refuses for a conflict with main, or a gap the loop can fix, straight back to its loop with no owner entry, once per tip and only under a dispatch count of 3. It is a review merge (dev-cycle skill). [2] builds it with area A; [1] holds it until the trial ends, like the rest.
 - **If the answer differs:** nothing to redo; the cycle moves them to Now next iteration.
 
 ### Q-314 · merge-gate-2026-11-19-loop-wait-rule-6505ccec60db
