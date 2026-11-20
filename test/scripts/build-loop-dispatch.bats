@@ -67,7 +67,7 @@ lock() { git worktree unlock "$1" 2>/dev/null; git worktree lock --reason "$2" "
     [ "$status" -eq 0 ] || { show; return 1; }
     p="$(printf '%s\n' "${lines[@]:2}")"
     l="$(grep -F 'Start subagents only for research and review' <<<"$p")"
-    for w in "under 2026-10-01-x/ in your scratchpad directory for its working files; each returns its report in its final message, not as a file (Claude Code refuses a subagent's report file), and you save what you need." \
+    for w in "under 2026-10-01-x/ in your scratchpad directory for its working files; each returns its report in its final message, not as a file (Claude Code has refused subagents' report files), and you save what you need." \
         "Never start build loops, schedules or agents that outlive your run;"; do
         [[ "$l" == *"$w"* ]] || { echo "missing: $w"; show; return 1; }
     done
@@ -78,7 +78,7 @@ lock() { git worktree unlock "$1" 2>/dev/null; git worktree lock --reason "$2" "
     for x in "When pr-prep or code-review has you wait for a subagent or job you started, wait inside your turn: ending your turn can end your run with no marker." \
         "by making short reads (git log, git status) until it arrives;" \
         "one Bash call, its timeout at 600000 ms, running timeout 540 sh -c 'until test -e \"\$1\"; do sleep 15; done' _ ./FILE, not run_in_background or the Monitor tool." \
-        "Wait 30 minutes at most in all; then end with \"handoff: stopped: REASON\", naming what did not finish."; do
+        "Wait at most 30 minutes for any one subagent or job; then end with \"handoff: stopped: REASON\", naming what did not finish."; do
         [[ "$w" == *"$x"* ]] || { echo "missing: $x"; show; return 1; }
     done
     # The heredoc is unquoted: the escaped \$1 prints as a literal $1, never the brief's path.

@@ -25,17 +25,17 @@ Run in this dispatched build loop, 2026-11-20 about 00:04-00:06 UTC, one Claude 
 
 Constraints that bind: S3 (one source per rule: the rule says how to wait; when to wait stays with pr-prep and code-review), S4, S6 (an observable that can come out negative), H3 (hermetic bats), S8 (one revert).
 
-Placement was settled by the wait research (Path A, one rule in `loop_prompt`); not reopened. Change B's wording is as proposed, unchanged. Other choices, each with fewer than three viable options:
+Placement was settled by the wait research (Path A, one rule in `loop_prompt`); not reopened. Change B's wording is as proposed, except its parenthesis: "(Claude Code has refused subagents' report files)" for the proposed "refuses a subagent's report file", since the refusal's trigger is inferred (13 of 13 scratch `report.md` writes refused, 95 of 95 `docs/reviews/` writes accepted) and the stronger form would overstate it (review r1, finding 4). Other choices, each with fewer than three viable options:
 
 - **The wait's exit**: `handoff: stopped: REASON` naming what did not finish, over the drafted `handoff: blocked`. `ready` is out (no clean review-fix loop), and `blocked` is for a question or fact only the owner has, with an options table the loop could not honestly fill; a reviewer that never reported is a stop the orchestrator re-dispatches, which `stopped` with a short reason (1 to 120 characters) already carries.
-- **The bound: 30 minutes, kept.** It rests on: observed review subagents of 21 s (L1), 49 s and 76 s (wait research E6); one Bash file wait of 9 minutes (the 540 s inside a 600000 ms call) fitting three times; and the two-hour re-dispatch rule (decision D1 in `docs/working/plan-build-loop-handoff.md`), which 30 minutes stays a quarter of. A full code-review with replicates and Stage 2 critics has no measured duration here, so 30 minutes is a guess for that case; the S6 count below catches it if loops start stopping on it.
+- **The bound: 30 minutes for any one wait, kept** (per wait, not a run total: pr-prep runs several review rounds). It rests on: observed review subagents of 21 s (L1), 49 s and 76 s (wait research E6); one Bash file wait of 9 minutes (the 540 s inside a 600000 ms call) fitting three times; and the two-hour re-dispatch rule (decision D1 in `docs/working/plan-build-loop-handoff.md`), which 30 minutes stays a quarter of. A full code-review with replicates and Stage 2 critics has no measured duration here, so 30 minutes is a guess for that case; the S6 count below catches it if loops start stopping on it.
 - **Placement within the prompt**: the wait rule is its own heredoc line after the "Start subagents only" line, so the existing grep of that line (test 2) is untouched; B's clause goes inside that line, keeping both pinned substrings ("under $s/ in your scratchpad directory", the merge clauses).
 - **Pausing between reads**: L1 shows a Bash call holds the report until it returns, so a bounded pause would also work as a subagent wait. Left out: the rule stays as drafted (short reads), and naming a `sleep` inside `sh -c` as a way round the harness's sleep steer is not something to write into a prompt.
 - **`\$1`**: the heredoc is unquoted, so the line has `"\$1"`; test 3 asserts the printed `"$1"` and that the brief's path is not on the line, and dropping the backslash fails it (checked by mutation).
 
 ## S6 success measure
 
-Count early hand-backs (a loop ending with no marker, "ended with no marker" in the cycle records' step-7 lines under `docs/working/cycles/`) over the next 20 dispatches after this lands. The base rate is about two in ten (2026-11-19), so about four would be expected without the rule. Zero to two supports it; **three or more means revert** (one `git revert` of the fix commit). Count loops that end `handoff: stopped` on the 30-minute bound separately: several of those say the bound is too short, not that the rule fails.
+Count early hand-backs (a loop ending with no marker, "ended with no marker" in the cycle records' step-7 lines under `docs/working/cycles/`) over the next 20 dispatches after this lands. The base rate is about two in ten (2026-11-19), so about four would be expected without the rule. Zero or one supports it, two is inconclusive (the wait research's thresholds), and **three or more means revert** (one `git revert` of the fix commit). Count loops that end `handoff: stopped` on the 30-minute bound separately: several of those say the bound is too short, not that the rule fails.
 
 ## Verification
 
@@ -45,4 +45,6 @@ Count early hand-backs (a loop ending with no marker, "ended with no marker" in 
 
 ## Review
 
-(Filled in by the review-fix loop below.)
+Round 1 (one fresh general-purpose reviewer, read-only, report as text; rubric in `docs/reviews/code-review-rubric-2026-11-20-fix-loop-wait-rule.md`): 0 red, 2 amber, 6 green. Fixed: "Wait 30 minutes at most in all" read as a run total, now "for any one subagent or job" (A1); the S6 thresholds restored to the wait research's (A2); the refusal parenthesis softened (C4). Won't-fix: widening the trigger to research-subagent waits (C3), kept to the drafted scope until such a hand-back is recorded. The reviewer ran six mutations of the new clauses on a copy; each failed test 3.
+
+The wait itself, during round 1: the reviewer ran 167 s; this loop stayed in its turn with six short reads and two 90 s bounded `until` waits, and the report arrived between tool calls. A second L1 positive in this loop.
