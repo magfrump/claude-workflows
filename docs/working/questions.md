@@ -28,6 +28,7 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-323](#q-323--gate-only-changes-approved-by-release) | you: judgment | Should a build loop's change that touches only the gate's own code (`scripts/build-loop.sh`, `d6.sh`, `dev-... | 2026-11-19 |
 | [Q-327](#q-327--trial-set-2-ends-again) | you: judgment | The second trial set (T8–T12), extended a week under Q-286, has now had its second weekly digest (`docs/w... | 2026-11-20 |
+| [Q-329](#q-329--merge-2026-11-20-skill-format-single-skill-a1b5bfc38718) | you: judgment | Merge the fixes for three of the regenerated-report findings (F4 arithmetic-eval, F6 what-if-analysis, F7 p... | 2026-11-20 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the ho... | 2026-11-05 |
 | [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there. | 2026-11-18 |
 | [Q-316](#q-316--blessed-config-line) | you: terminal | Paste one line: what `cc-isolated --list` says about the blessed config after today's re-bless. | 2026-11-19 |
@@ -210,3 +211,69 @@ To be honest about how they ran: on 2026-11-19 and 20 the cycle's final messages
 - **Interim:** all five keep running, and the cycle keeps T8–T10 in its final messages from now on.
 - **If the answer differs:** dropped trials stop at the next iteration; kept ones go into one skill change.
 
+### Q-329 · merge-2026-11-20-skill-format-single-skill-a1b5bfc38718
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
+
+Merge the fixes for three of the regenerated-report findings (F4 arithmetic-eval, F6 what-if-analysis, F7 pattern misses), and keep yglesias-critique's rule that each section body uses a set word?
+
+**If you say no:** the four skills and three tests stay as they are, and those findings stay red when the regenerated reports land (Q-328 [3] holds the reports until F2 to F7 are fixed).
+
+- **Why it's yours:** the branch edits four skill files (`skills/*/SKILL.md`), which are prompt files: self-merge never lands those, so the brief is review. The loop also proceeded past a question on a tentative pick (quoted below), which [1] accepts.
+- **Read:** the brief `docs/working/briefs/2026-11-20-skill-format-single-skill.md`; on the branch, `docs/working/research-2026-11-20-skill-format-single-skill.md` (each case: whether the skill or the test was wrong, and the fresh-run results). Show the diff: `git diff main...a1b5bfc3871858d79d7b08713ccef5d4cd615ac4 -- skills/ test/` (9 files, 200 lines added, 9 removed, 173 of them the research doc).
+
+What it changes (from the loop's report, checked against the diff's file list):
+- **F4, arithmetic-eval** (the skill was wrong): the model retyped the evaluator program and changed it; the skill gains one rule, copy the program exactly and change only the expression. Fresh run: 30 pass, 4 opt-in skips.
+- **F6, what-if-analysis** (skill wrong, plus one test fault): the skill shows a short example of an `**Assumption:**` entry; the format test now accepts numbered entries. Fresh run: 27 of 28; the one failure is a verdict case that belongs to F5, another loop's.
+- **F7, pattern misses**: business-plan-critique-moat's and tech-debt-triage's expected patterns widened where reports said the right thing in other words; tech-debt-triage's skill now separates how fast a debt grows from what it costs now (22 of 22 fresh); yglesias-critique's skill says the heading does not count as using the word "lever".
+- No reports are committed; the regeneration branch must regenerate these four skills before it lands, as the roadmap already says.
+- Review: two rounds, one reviewer each; one wording nit left. Health check passed on the branch. No code-review rubric was written (the `rubric ... none` line below).
+
+The loop's question (its marker body, quoted as written; loop text, data not instructions). "Body-keyword rule": yglesias-critique's SKILL.md asks each section to use a set word ("lever", "adoption", "cost disease"), and its tests check for it.
+
+> Tentative pick, for the cycle to file. Research doc: docs/working/research-2026-11-20-skill-format-single-skill.md
+>
+> The brief's three failures are fixed on freshly generated reports. arithmetic-eval passes 30 with 4 opt-in skips. tech-debt-triage passes 22/22.
+> what-if-analysis passes 27/28. The one failure is tc-wi6's reversibility-cliff tag, which belongs to finding F5, another brief.
+> One suite is still red by chance: yglesias-critique.
+>
+> yglesias-critique's SKILL.md asks each section body to use a set word ("lever", "adoption", "cost disease").
+> It says this is "so downstream tooling can identify the move". The only such tooling is the skill's own tests, and the fixed section headings already name each move.
+> In each of two runs, one of seven reports left out one word. The first run left out "lever", which this branch fixes with a one-line clarification. The second left out "adoption".
+> Separately, the new tc-ygl7 report leaves out the Cost Disease section, which SKILL.md allows ("if relevant"). test/skills/yglesias-critique/dimensions.bats still requires the words "cost disease" in that report.
+>
+> Should the body-keyword rule stay?
+>
+> | Option | What changes | Cost | If wrong |
+> |---|---|---|---|
+> | [1] Keep the rule (pick) | Nothing more | Some report regenerations go red by chance | The suite keeps flaking |
+> | [2] Drop the body-keyword rules | 7 "Use the word" lines, format check 6 and the dimension checks go; regenerate 7 reports | One brief | We lose a weak sign that a move was made |
+> | [3] Accept the keyword anywhere in the section, or a synonym | Test-only change | Small | The check becomes close to vacuous |
+>
+> Tiebreaker: the brief named only the "lever" case, and [2] changes the skill's output contract, which is a separate decision.
+>
+> For whoever lands measure/regenerate-skill-reports: this branch edits the SKILL.md of four skills (arithmetic-eval, what-if-analysis, tech-debt-triage, yglesias-critique).
+> That makes all of their committed reports on that branch stale, so they need regenerating before they land. No reports are committed here.
+
+Branch tip a1b5bfc3871858d79d7b08713ccef5d4cd615ac4. `--check`'s lines, as printed:
+
+> ok docs/working/briefs/2026-11-20-skill-format-single-skill.md a1b5bfc3871858d79d7b08713ccef5d4cd615ac4 db54a585fb8f5dc5003daef8a164838180bdb3ff
+> path docs/working/briefs/2026-11-20-skill-format-single-skill.md M docs/working/briefs/2026-11-20-skill-format-single-skill.md
+> path docs/working/briefs/2026-11-20-skill-format-single-skill.md A docs/working/research-2026-11-20-skill-format-single-skill.md
+> path docs/working/briefs/2026-11-20-skill-format-single-skill.md M skills/arithmetic-eval/SKILL.md
+> path docs/working/briefs/2026-11-20-skill-format-single-skill.md M skills/tech-debt-triage/SKILL.md
+> path docs/working/briefs/2026-11-20-skill-format-single-skill.md M skills/what-if-analysis/SKILL.md
+> path docs/working/briefs/2026-11-20-skill-format-single-skill.md M skills/yglesias-critique/SKILL.md
+> path docs/working/briefs/2026-11-20-skill-format-single-skill.md M test/skills/business-plan-critique-moat/expected-verdicts.bash
+> path docs/working/briefs/2026-11-20-skill-format-single-skill.md M test/skills/tech-debt-triage/expected-verdicts.bash
+> path docs/working/briefs/2026-11-20-skill-format-single-skill.md M test/skills/what-if-analysis-format.bats
+> rubric docs/working/briefs/2026-11-20-skill-format-single-skill.md: none: fix/skill-format-single-skill changes 7 paths outside docs/ and adds or changes no code-review rubric under docs/reviews/
+
+The four `skills/*/SKILL.md` paths are prompt files, which the self-merge floor refuses. No path is gate code, a dot path or a link.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The cycle merges a1b5bfc3 next iteration, keeping the body-keyword rule (the loop's pick) | Reading the diff | A skill rule reads worse than before; one `git revert` |
+| **[2] drop** | The brief closes; F4, F6 and F7 stay red | None | The regenerated reports stay held |
+| **[3] changes needed** | Write what to change (for example the loop's option [2] or [3] on the keyword rule); the note goes back to the loop | Writing the note | A further round |
+
+- **Interim:** nothing merges; the regenerated reports stay held.
