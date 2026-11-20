@@ -77,7 +77,7 @@ the rest of the analysis does not support; `+0 (inert)` is a valid and common an
 Rate the carrying cost: **High** (actively slowing work or causing bugs), **Medium** (adds
 friction but manageable), **Low** (ugly but inert — doesn't affect day-to-day work).
 The rating is today's level, not its growth: a `+0 — inert` rate above can still carry a
-Medium cost. Copies that have drifted apart or have already caused a bug are not Low.
+Medium cost. Debt that has already caused a defect, or keeps diverging, is at least Medium.
 
 ### 2. Failure cost (optional) — what does an incident cost if this debt remains?
 

@@ -183,9 +183,9 @@ List every load-bearing assumption (move #1). For each, use these fields:
 Each assumption opens with its `**Assumption:**` field line, not a heading or a bold title, and `**If wrong:**` starts with one of the three words:
 
 ```
-- **Assumption:** every consumer is idempotent
-  - **Source:** explicit ("Delivery semantics")
-  - **If wrong:** redesign. Replays double-apply side effects.
+- **Assumption:** translators deliver every locale before the release freeze
+  - **Source:** implicit (the timeline has no slack for late locales)
+  - **If wrong:** tweak. Ship the late locales in the next patch.
   - **Tag:** `[NOVEL]`
 ```
 

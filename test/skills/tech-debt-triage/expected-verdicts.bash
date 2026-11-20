@@ -39,10 +39,11 @@ KEY_CHECK["tc-td1-discount-rules.md"]="field_match:Recommendation=Fix now;;cites
 
 # The runway may be counted from the run's own date, not the write-up's
 # (2026-10-05): a 2026-11-19 run said "about 6 weeks", so any number of days,
-# weeks or months tied to the EOL also counts.
+# weeks or months tied to the EOL also counts, while it is under about three
+# months (1-13 weeks, under 100 days, 1-3 months).
 EXPECTED_VERDICT["tc-td2-statement-renderer.md"]="Fix now"
 CLAIM_ACCURACY["tc-td2-statement-renderer.md"]="flaw"  # Stable, incident-free code, but Quarrel 2.x EOL on 2026-12-31 is 87 days out and the 2027-02 regulator exam requires supported runtimes — imminent urgency trigger, Fix now
-KEY_CHECK["tc-td2-statement-renderer.md"]="field_match:Recommendation=Fix now;;cites_pattern:(86|87|88|~ ?12|12|twelve|13|thirteen) (calendar )?(days|weeks)|(under|less than|about|roughly|within|only|~) ?(3|three) months|(before|ahead of|in time for) (the )?(february|feb|2027).{0,30}(exam|examination|audit)|(end.of.life|eol|2026-12-31|out of support).{0,150}(about|roughly|~|only|under|less than|within|just) ?[0-9]+ (calendar )?(days|weeks|months)|[0-9]+ (calendar )?(days|weeks|months) (until|to|before|from now until) (the )?(end.of.life|eol|2026-12-31|runtime)"
+KEY_CHECK["tc-td2-statement-renderer.md"]="field_match:Recommendation=Fix now;;cites_pattern:(86|87|88|~ ?12|12|twelve|13|thirteen) (calendar )?(days|weeks)|(under|less than|about|roughly|within|only|~) ?(3|three) months|(before|ahead of|in time for) (the )?(february|feb|2027).{0,30}(exam|examination|audit)|(end.of.life|eol|2026-12-31|out of support).{0,150}(about|roughly|~|only|under|less than|within|just) ?(([1-9]|1[0-3]) (calendar )?weeks|[1-9][0-9]? (calendar )?days|[1-3] months)"
 
 EXPECTED_VERDICT["tc-td3-nightly-reconciliation.md"]="Fix now"
 CLAIM_ACCURACY["tc-td3-nightly-reconciliation.md"]="flaw"  # Peak RSS grows 0.6 GB/month toward a 16 GB hard limit: 14.2 GB in September leaves ~3 months (December) before OOM — scaling threshold imminent despite low day-to-day carrying cost, Fix now
