@@ -144,6 +144,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   the 0feaf080 install do so by default), where the guard has no opinion.
   2026-11-19: briefed on the owner's word in session ("Brief that now"), review (enforcement file):
   `docs/working/briefs/2026-11-19-guard-worktree-taint.md`.
+  2026-11-20: ready at 218f899a; Q-326 answered [1], merge (merges next iteration).
 
 - **Regenerate the skill eval reports** (Q-321 [2], owner in session 2026-11-19: "yes"). Motive: 51
   test files marked `@needs-reports` print NOT RUN; the regeneration waited on the A8 measurement
@@ -151,6 +152,21 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   first to prove the pipeline: `docs/working/briefs/2026-11-19-regenerate-skill-reports.md`.
   2026-11-20: the run finished ready (0cb729ed: 156 reports for 22 skills; 43 cases in 16 skills fail on them);
   held from self-merge because it would turn every health check red: asked in Q-328.
+  2026-11-20: Q-328 answered [3], fix first: the branch waits while findings F2 to F7 are fixed
+  (the three briefs below). Once they merge, re-dispatch this brief to merge main in, regenerate
+  the skills those fixes changed, and land green.
+
+- **Fix the skill-report format findings F2 and F3** (Q-328 [3]; filed and briefed 2026-11-20, step 6):
+  field values followed by explanation, and text before the title, across seven skills. Review
+  (skill files): `docs/working/briefs/2026-11-20-skill-format-fields-preambles.md`.
+
+- **Fix the single-skill findings F4, F6 and F7** (Q-328 [3]; filed and briefed 2026-11-20, step 6):
+  arithmetic-eval's program drift, what-if-analysis's missing Assumption entries, and pattern misses
+  in three skills. Review: `docs/working/briefs/2026-11-20-skill-format-single-skill.md`.
+
+- **Resolve the verdict drift F5** (Q-328 [3]; filed and briefed 2026-11-20, step 6): six skills'
+  judgments differ from the expected verdicts; rerun first to separate noise, then fix the skill or
+  the expectation. Review: `docs/working/briefs/2026-11-20-skill-verdict-drift.md`.
 
 ## Next
 

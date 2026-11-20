@@ -27,9 +27,9 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-323](#q-323--gate-only-changes-approved-by-release) | you: judgment | Should a build loop's change that touches only the gate's own code (`scripts/build-loop.sh`, `d6.sh`, `dev-... | 2026-11-19 |
-| [Q-326](#q-326--merge-2026-11-19-guard-worktree-taint-218f899afd20) | you: judgment | Merge the write-guard fix: in a web-tainted session, an ordinary edit inside a git worktree under `.claude/... | 2026-11-19 |
+| [Q-326](#q-326--merge-2026-11-19-guard-worktree-taint-218f899afd20) | you: judgment | Q-326: [1] | 2026-11-19 |
 | [Q-327](#q-327--trial-set-2-ends-again) | you: judgment | The second trial set (T8–T12), extended a week under Q-286, has now had its second weekly digest (`docs/w... | 2026-11-20 |
-| [Q-328](#q-328--regenerated-reports-turn-health-red) | you: judgment | The skill eval reports are regenerated (Q-321), but 43 test cases in 16 skills fail on the fresh reports, a... | 2026-11-20 |
+| [Q-328](#q-328--regenerated-reports-turn-health-red) | you: judgment | Q-328: [3] | 2026-11-20 |
 | [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the ho... | 2026-11-05 |
 | [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there. | 2026-11-18 |
 | [Q-316](#q-316--blessed-config-line) | you: terminal | Paste one line: what `cc-isolated --list` says about the blessed config after today's re-bless. | 2026-11-19 |
@@ -186,7 +186,8 @@ One thing the research's summary does not say, which the cycle adds: a self-land
 - **Also found:** watch Q-262 (`docs/working/watching.md`) listed three of the 2026-11-06 record's five reopen conditions; one of the two it left out, "an approved merge is reverted", fired on 2026-11-12 (the sandbox merge 3cd6d9bb, reverted by 7caea26d). The watch now lists all five; this entry is that reopening.
 
 ### Q-326 · merge-2026-11-19-guard-worktree-taint-218f899afd20
-**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** ANSWERED
+Q-326: [1]
 
 Merge the write-guard fix: in a web-tainted session, an ordinary edit inside a git worktree under `.claude/` stops asking, while that worktree's own policy files still ask (your report of hundreds of asks in the math-research rewrite)?
 
@@ -252,7 +253,8 @@ To be honest about how they ran: on 2026-11-19 and 20 the cycle's final messages
 - **If the answer differs:** dropped trials stop at the next iteration; kept ones go into one skill change.
 
 ### Q-328 · regenerated-reports-turn-health-red
-**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-328: [3]
 
 The skill eval reports are regenerated (Q-321), but 43 test cases in 16 skills fail on the fresh reports, and those are fast suites the health check runs. Merge them as they are, or first keep the failures from turning every health check red?
 
