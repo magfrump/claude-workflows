@@ -62,14 +62,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   is the owner's: Q-302. First step after the answer: compare its gaps and causes with this
   repo's, and file any cause the fixes here do not cover.
 
-- **Agent: Build loops start in the orchestrator's removed worktree** (filed 2026-11-19, step 7; herald F-008). Motive: every loop
-  dispatched before the cycle's land loses its first Bash call, because the cycle removes its
-  worktree after the land while the loop's shell starts there; it reproduced in the 2026-11-19
-  herald triage dispatch. First step: the hermetic probe in group F of
-  `docs/working/research-2026-11-19-herald-friction-triage.md` (does a main-session `cd` before
-  an Agent call move the subagent's start directory?), then divergent design over its four
-  approaches. Gate code, so a review merge.
-
 - **Agent: `--cycle-diff` lets a cycle record lose its earlier blocks** (filed 2026-11-19, step 6).
   Motive: iteration 2026-11-20-0121 landed `docs/working/cycles/cycle-2026-11-19.md` holding only its
   own block (a script truncated the file before appending), as 18a43829 and fd63f0ae, and
@@ -95,6 +87,16 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
+- **Agent: Build loops start in the orchestrator's removed worktree** (filed 2026-11-19, step 7; herald F-008). Motive: every loop
+  dispatched before the cycle's land loses its first Bash call, because the cycle removes its
+  worktree after the land while the loop's shell starts there; it reproduced in the 2026-11-19
+  herald triage dispatch. First step: the hermetic probe in group F of
+  `docs/working/research-2026-11-19-herald-friction-triage.md` (does a main-session `cd` before
+  an Agent call move the subagent's start directory?), then divergent design over its four
+  approaches. Gate code, so a review merge.
+  2026-11-20: probe and pick briefed (iteration 2107) as research only, self-merge:
+  `docs/working/briefs/2026-11-20-loop-start-dir-research.md`.
+
 - **Agent: A per-repo health-checkout preparation line** (filed 2026-11-19, step 6; moved from Ideas: it carries reported friction). (brainstorm 2026-11-16). Signal:
   philosophy-research F-016: a fresh health checkout has no Lean build cache (1.9 GB), so
   the iteration linked and copied it in by hand. First step: a `docs/dev-cycle.md` line
@@ -104,13 +106,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   `docs/working/briefs/2026-11-20-health-checkout-prep.md`.
   2026-11-20: ready at 8eec2ef4 (`--health-prep HC` and a `Health checkout copies:` settings line;
   no code-review rubric committed): merge asked in Q-333.
-
-- **Agent: A judgment entry's "Why it's yours" quotes the constraint it relies on** (filed 2026-11-19, step 6; moved from Ideas: it carries reported friction). (brainstorm
-  2026-11-16). Signal: philosophy-research F-007, an entry that cited H1 for a change H1
-  does not cover, so the whole entry should not have reached the owner.
-  2026-11-19: moved to Now by step 6 (iteration 2316). First step: the one the signal names; if none, a research or divergent-design pass on it.
-  2026-11-20: briefed (iteration 2050) as research only, self-merge:
-  `docs/working/briefs/2026-11-20-why-its-yours-constraint-research.md`.
 
 - **Agent: `scripts/self-improvement.sh` still puts its worktrees under `.claude/`** (filed 2026-11-20,
   step 7; split from the write-guard item). Motive: Claude Code asks before writes under `.claude/`
@@ -461,6 +456,12 @@ Unranked. Each names the signal that motivates it.
 ## Done
 
 Items finished since the last cycle, with the merge.
+
+- **A judgment entry's "Why it's yours" quotes the constraint it relies on: no change, closed.**
+  Done 6a07b026 (self-merge, research only), brief
+  `docs/working/briefs/closed/2026-11-20-why-its-yours-constraint-research.md`: 0 of 153 "Why it's
+  yours" lines here cite a constraint by number, and the two entries routed by one cover their case.
+  Revisit trigger held in watch Q-334 (`docs/working/watching.md`).
 
 - **Headless eval runs are denied WebSearch and WebFetch** (finding F1 of the regeneration run): the
   report generator now grants the web tools a fixture lists. Done 6c0563b5 (self-merge), brief
