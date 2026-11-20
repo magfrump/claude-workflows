@@ -44,6 +44,13 @@ show() { echo "status $status"; echo "$output"; echo "$stderr"; }
         'health checkout copies: cache'; do
         settings "$v"; settings_like copies 'copies malformed: line 1 '
     done
+    # An entry at or below another would copy into the other's copy.
+    for v in 'build build/cache' 'build/cache/ build' 'a/b/c x a/b/'; do
+        settings "Health checkout copies: $v" ''; settings_like copies 'copies malformed: line 1 lists '
+        [[ "$output" == *"which is below"* ]] || { echo "[$v] $output"; return 1; }
+    done
+    settings 'Health checkout copies: build buildx build-x' ''
+    settings_like copies 'copies build buildx build-x set'
     settings 'Health checkout copies: cache' 'build'
     settings_is copies 'copies malformed: line 1 is followed by a non-blank line outside a fence (it may continue the list)'
     settings 'Health checkout copies: cache' '' '- **Health checkout copies:** build'
@@ -83,14 +90,30 @@ show() { echo "status $status"; echo "$output"; echo "$stderr"; }
     [ "$status" -eq 2 ] || { show; return 1; }
     for want in "refuse health-prep absent: it is absent in the main worktree" \
         "refuse health-prep lnk/f: it is, or is reached through, a symbolic link in the main worktree" \
-        "refuse health-prep linked: it holds a symbolic link or special file (or could not be listed whole), which could point outside the health checkout" \
-        "refuse health-prep special: it holds a symbolic link or special file (or could not be listed whole), which could point outside the health checkout" \
+        "refuse health-prep linked: it holds a symbolic link, special file or .git file (or could not be listed whole), which could point outside the health checkout" \
+        "refuse health-prep special: it holds a symbolic link, special file or .git file (or could not be listed whole), which could point outside the health checkout" \
         "refuse health-prep tracked.txt: git does not ignore it in the main worktree (only gitignored paths are copied; a tracked one is in the checkout already)" \
         "refuse health-prep .worktrees: it holds the health checkout itself"; do
         printf '%s\n' "$output" | grep -qxF -- "$want" || { echo "want: $want"; show; return 1; }
     done
     # cache passed its checks, but one refusal copies nothing.
     ! printf '%s\n' "$output" | grep -q '^copied ' && [ ! -e "$HC/cache" ] || { show; ls -la "$HC"; return 1; }
+}
+
+@test "--health-prep refuses a .git file in a copied tree, but not a .git directory, and reads no user excludes file" {
+    mkdir -p cache/pkg/.git build/wt && echo a > cache/pkg/.git/HEAD && echo 'gitdir: /elsewhere' > build/wt/.git
+    mkdir -p "$BATS_TEST_TMPDIR/xdg/git" && echo xdgonly > "$BATS_TEST_TMPDIR/xdg/git/ignore" && echo x > xdgonly
+    git rm -q --cached xdgonly 2>/dev/null || true
+    settings 'Health checkout copies: cache build xdgonly' ''
+    git rm -q --cached xdgonly 2>/dev/null && commit_all untrack || true
+    hc
+    run --separate-stderr env XDG_CONFIG_HOME="$BATS_TEST_TMPDIR/xdg" bash "$BL" --health-prep "$HC"
+    [ "$status" -eq 2 ] || { show; return 1; }
+    [ "$output" = "$(printf '%s\n' "refuse health-prep build: it holds a symbolic link, special file or .git file (or could not be listed whole), which could point outside the health checkout" \
+        "refuse health-prep xdgonly: git does not ignore it in the main worktree (only gitignored paths are copied; a tracked one is in the checkout already)")" ] || { show; return 1; }
+    settings 'Health checkout copies: cache' ''
+    hp "$HC"
+    [ "$status" -eq 0 ] && [ -f "$HC/cache/pkg/.git/HEAD" ] || { show; return 1; }
 }
 
 @test "--health-prep refuses a destination that exists or sits below a symlink in HC" {

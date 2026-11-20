@@ -46,7 +46,7 @@ Constraints that bite: H1 (no repo-chosen command in the gate's logic), H2 (refu
 
 - **Where the step lives**: a new `build-loop.sh --health-prep HC` mode, since `read_settings` and `wt_of` are there (S3); the alternative, a `dev-cycle.sh` mode, would read the settings a second way.
 - **Line form**: `Health checkout copies: PATH ...` or `...: none`, through `list_entries` with `pathform`, the next unfenced line blank (as for `Self-merge never:`), so one grammar serves all three list lines (S3).
-- **What `--settings` prints**: a sixth line, `copies PATH... set|none|malformed: WHY`, after `never` and before `constraints`... placed last instead, after `readers`, so callers reading lines by position see the old five unchanged.
+- **What `--settings` prints**: a sixth line, `copies PATH... set|none|malformed: WHY`, placed last (after `readers`), so a caller reading lines by position sees the old five unchanged.
 - **All or nothing**: every path is checked before any is copied; any refusal copies nothing (H2).
 - **On refusal, the cycle**: records `skipped: HC not prepared` with the refuse lines and runs no check (a cold check can run for hours), so the next iteration runs it again, as for `skipped: HC not made`.
 - **Paths that must be gitignored**: `git check-ignore` in the main worktree, so a tracked or stray untracked path is refused (a tracked one is in HC already; a stray one would make HC's tree differ from W's).

@@ -403,9 +403,9 @@ last good one.
   merge of an earlier iteration's commit, which the `1.` line then names in MAIN's place),
   HC at `WTB/wt-dev-cycle-health-DATE-HHMM` (a name taken: the next
   minute). Then `build-loop.sh --health-prep HC` (from WT) copies the settings' **Health
-  checkout copies** paths from MAIN_WT into HC, writing nothing outside HC; any refuse line
-  is recorded as `skipped: HC not prepared` with that line, HC is removed and no check runs,
-  so the next iteration runs it again. It is made for this one run and removed
+  checkout copies** paths from MAIN_WT into HC, writing nothing outside HC; any exit but 0
+  is recorded as `skipped: HC not prepared` with its refuse lines (or its stderr), named in
+  the final message, HC is removed and no check runs, so the next iteration runs it again. It is made for this one run and removed
   as step 0.3 removes WT once the check exits (its log is in the orchestrator's directory,
   not HC). A stop while it runs stops the check by its PID or process group, then removes
   HC with `worktree remove --force` (a killed run's files are meant to be discarded).

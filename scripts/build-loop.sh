@@ -65,10 +65,10 @@
 #                 (single spaces, the next line outside a fence blank or the
 #                 end, each listed once), each PATH a relative path of
 #                 letters, digits and . _ - / (a trailing / ignored) with no
-#                 empty, . or .. part and no part starting .git (any case).
-#                 No line, or no docs/dev-cycle.md, is none. Malformed (or a
-#                 file not read) makes --health-prep refuse; it turns nothing
-#                 else off.
+#                 empty, . or .. part and no part starting .git (any case),
+#                 and none below another listed one. No line, or no docs/dev-cycle.md, is none. Malformed (or a
+#                 file not read) makes --health-prep refuse, so the dev cycle
+#                 runs no health check (step 1); it turns no other setting off.
 #             Copies are found best effort: a line counts as one when its
 #             letters alone, case folded, start with the key's
 #             ("buildlooppolicy"). Markup that adds letters (a checked task
@@ -665,8 +665,9 @@
 #             worktree into HC, the dev cycle's health checkout (step 1),
 #             before its health check runs, so a gitignored build cache need
 #             not be rebuilt. Runs no repo command and writes only below HC.
-#             Every path is checked before any is copied, and one refusal
-#             copies nothing. Prints "copied PATH" per path, then
+#             Every path is checked before any is copied, and a refused
+#             check copies nothing (a copy that fails part way leaves HC
+#             partly filled; the cycle then removes HC). Prints "copied PATH" per path, then
 #             ok HC N
 #             or "refuse health-prep: WHY" (HC or the line) or one "refuse
 #             health-prep PATH: WHY" line per refused path, when:
@@ -676,9 +677,10 @@
 #               symbolic link; or the repository is bare;
 #             - a PATH is absent in the main worktree, is or is reached through
 #               a symbolic link, is not a regular file or directory, holds a
-#               symbolic link or special file (find), holds HC, or is not
-#               ignored by git there (check-ignore, under this script's
-#               hardened git: no global excludes file); or it already exists
+#               symbolic link, special file or .git file (a gitdir pointer;
+#               find), holds HC, or is not ignored by git there (check-ignore
+#               with core.excludesFile=/dev/null and this script's hardened
+#               git: the repository's own ignore files alone); or it already exists
 #               in HC, or a parent there is a symbolic link or not a directory;
 #             - a mkdir or the copy (cp -a --reflink=auto) fails;
 #             - or, as for --state, a refuse state line from the state gate,
@@ -1071,6 +1073,14 @@ read_settings() {
       t="${text[copies]}"; v="${t#Health checkout copies: }"
       list_entries "$t" "Health checkout copies" path pathform; why="$LIST_WHY"
       if [[ "$LIST_BAD" != form && "${next[copies]}" != 1 ]]; then why="is followed by a non-blank line outside a fence (it may continue the list)"; fi
+      # One entry at or below another would copy into the other's copy.
+      if [[ -z "$why" ]]; then
+        for v in "${LIST[@]}"; do for t in "${LIST[@]}"; do
+          [[ "$v" == "$t" || "${v%/}/" != "${t%/}/"* ]] || why="lists ${v%/}, which is below ${t%/}, also listed"
+        done; done
+        [[ -z "$why" ]] || LIST=()
+        v="${text[copies]#Health checkout copies: }"
+      fi
       if [[ -n "$why" ]]; then COPIES_LINE="copies malformed: line ${first[copies]} $why"
       elif [[ ${#LIST[@]} -eq 0 ]]; then COPIES_OK=1; COPIES_LINE="copies none: line ${first[copies]} $where lists none"
       else COPIES_OK=1; COPIES=("${LIST[@]}"); COPIES_LINE="copies $v set: line ${first[copies]} $where"; fi
@@ -2028,7 +2038,7 @@ free_one() {
 # first, then copies each from the main worktree into HC (cp -a, a reflink
 # where the filesystem has them); any refusal copies nothing. Prints "copied
 # PATH" per path and "ok HC N", or "refuse health-prep ...: WHY" lines and
-# returns 1. Needs wt_of's MAINWT and the listing in $GATE_TMP/wts.
+# returns 1 (a refused check copies nothing; a failed copy stops part way). Needs wt_of's MAINWT and the listing in $GATE_TMP/wts.
 health_prep() {
   local hc="$1" x="" p e s d real hcr="" rec="" rest c bad=0 n=0 rc
   local -a paths=()
@@ -2056,9 +2066,11 @@ health_prep() {
     elif [[ "$(realpath -e -- "$s" 2>/dev/null)" != "$real/$p" || -L "$s" ]]; then x="it is, or is reached through, a symbolic link in the main worktree"
     elif [[ ! -f "$s" && ! -d "$s" ]]; then x="it is not a regular file or directory in the main worktree"
     elif [[ "$hc/" == "$real/$p/"* ]]; then x="it holds the health checkout itself"
-    elif [[ -n "$(find "$s" ! -type f ! -type d -print -quit 2>&1)" ]]; then x="it holds a symbolic link or special file (or could not be listed whole), which could point outside the health checkout"
+    elif [[ -n "$(find "$s" \( \( ! -type f ! -type d \) -o \( -type f -name .git \) \) -print -quit 2>&1)" ]]; then x="it holds a symbolic link, special file or .git file (or could not be listed whole), which could point outside the health checkout"
     else
-      rc=0; GIT_LITERAL_PATHSPECS=0 git -C "$MAINWT" check-ignore -q -- "$p" 2>/dev/null || rc=$?
+      # No user excludes file (core.excludesFile, or XDG's git/ignore when it
+      # is unset): only the repository's own ignore rules decide.
+      rc=0; GIT_LITERAL_PATHSPECS=0 git -c core.excludesFile=/dev/null -C "$MAINWT" check-ignore -q -- "$p" 2>/dev/null || rc=$?
       if [[ "$rc" -eq 1 ]]; then x="git does not ignore it in the main worktree (only gitignored paths are copied; a tracked one is in the checkout already)"
       elif [[ "$rc" -ne 0 ]]; then x="git check-ignore failed on it in the main worktree"; fi
     fi
@@ -2076,7 +2088,9 @@ health_prep() {
   done
   [[ "$bad" -eq 0 ]] || return 1
   for p in "${paths[@]}"; do
-    if ! mkdir -p -- "$(dirname -- "$hc/$p")" 2>/dev/null || ! cp -a --reflink=auto -- "$MAINWT/$p" "$hc/$p" 2> "$GATE_TMP/cp"; then
+    : > "$GATE_TMP/cp"
+    # -T: never into a directory already at the destination (checked absent above).
+    if [[ -e "$hc/$p" || -L "$hc/$p" ]] || ! mkdir -p -- "$(dirname -- "$hc/$p")" 2> "$GATE_TMP/cp" || ! cp -a -T --reflink=auto -- "$MAINWT/$p" "$hc/$p" 2> "$GATE_TMP/cp"; then
       echo "refuse health-prep $p: the copy into the health checkout failed ($(head -n 1 "$GATE_TMP/cp"))"; return 1
     fi
     echo "copied $p"; n=$((n + 1))
