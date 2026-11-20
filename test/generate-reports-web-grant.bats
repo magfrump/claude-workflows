@@ -26,7 +26,7 @@ setup() {
   # --allowedTools and --disallowedTools are variadic in the real CLI, so the
   # stub, like it, takes every following non-flag argument as more tool names,
   # and records each value it took on its own GRANT (or DENY) line; an empty
-# value is refused, so an empty grant cannot pass for an absent one.
+  # value is refused, so an empty grant cannot pass for an absent one.
   cat > "$TEST_TMPDIR/bin/claude" <<'EOF'
 #!/usr/bin/env bash
 calls="$STUB_CALLS"
@@ -36,10 +36,10 @@ rec="$calls/$n"
 while [ "$#" -gt 0 ]; do
   case "$1" in
     -p|--strict-mcp-config|--restricted|--safe-mode|--verbose) shift ;;
-    --system-prompt-file|--output-format|--model)
+    --system-prompt-file|--output-format)
       [ "$#" -ge 2 ] || { echo "error: $1 needs a value" >&2; exit 2; }
       shift 2 ;;
-    --permission-mode|--permission-prompts)
+    --permission-mode|--permission-prompts|--model)
       [ "$#" -ge 2 ] && [ -n "$2" ] || { echo "error: $1 needs a value" >&2; exit 2; }
       printf 'FLAG: %s %s\n' "$1" "$2" >> "$rec"; shift 2 ;;
     --tools)
@@ -133,6 +133,7 @@ grants() {
   CLAUDE_MODEL="m" CLAUDE_FLAGS="--verbose" run bash "$GEN" demo
   [ "$status" -eq 0 ]
   [ "$(grants)" = "WebSearch,WebFetch" ]
+  grep -qx -- 'FLAG: --model m' "$CALLS/0"
 }
 
 @test "deny-record runs get no grant and keep their Bash deny" {

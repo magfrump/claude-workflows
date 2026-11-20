@@ -28,7 +28,8 @@ Brief: `docs/working/briefs/2026-11-20-eval-web-tools-grant.md` (at eb5b55c1). B
 
 - `bats test/generate-reports-web-grant.bats test/generate-reports.bats`: 54/54 pass. The 3 grant-presence cases fail against the eb5b55c1 generator (old-code check), the 2 absence cases pass on both.
 - `scripts/hermeticity-lint --root .`: 147 files, no unstubbed spawns.
-- `scripts/health-check.sh`: see the commit that adds this line's result below.
+- `scripts/health-check.sh`: "All checks passed." (rc 0) at 846eee77.
+- Review-fix loop: round 1 found two amber test gaps (an empty `--allowedTools` could pass as absent; the deny-record case did not assert the deny flags) and an overstated comment; round 2 found test 4 could not fail (the stub dropped `--model`). All fixed; mutants (grant guard removed, grant split, filter removed, deny flags removed or cut, model dropped) each fail at least one case.
 
 ## Host step (for the cycle to file as a `you: terminal` entry once this merges)
 
