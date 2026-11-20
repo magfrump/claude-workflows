@@ -343,7 +343,7 @@ count (7,663–69,575 chars/cell on similar-sized diffs):
   Compute after assembling the diff + enclosing-file context (`wc -c` ÷ 4). The number is
   calibrated to the 2026-08-06 canon: the largest measured cell was ~17.4k tokens, so every
   measured cell inlines with ~45% headroom, and the budget stays ~12% of a 200k agent window
-  after skill text and working room. The 2026-11-19 A8 cell (csp, whole shared block ~2.2k tokens) did not test
+  after skill text and working room. The 2026-11-19 A8 cell (csp, shared block ~2.2k / ~2.9k tokens in Stage 1 / 2) did not test
   the upper edge; the budget's cost-versus-recall test is Q-308's.
 - **Within budget** → inline diff + enclosing files as part 5.
 - **Over budget** → degrade, don't cliff: drop the enclosing-file context and inline the

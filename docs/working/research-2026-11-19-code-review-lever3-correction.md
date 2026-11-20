@@ -147,6 +147,8 @@ Who else shares the rule (for the cycle to file; not changed here):
   write-up agents' "also by path" overstated: one read only lines 1-460) and 4 nits (A8's
   ~2.2k is the whole shared block; threat-model lines had two homes; the contract test had no
   guard for "only the tail varies"; the size-guard awk range could run to EOF unnoticed). All fixed.
+- Review round 3 (fresh agent, the round-2 fix commit): clean; one nit (A8's block is
+  ~2.2k in Stage 1, ~2.9k in Stage 2) applied.
 - Residual, noted not fixed: read-by-path reads the file on disk at dispatch time, not the copy
   the orchestrator loaded, so a skill edited mid-pass reaches later agents changed. Decision
   log row 35 says the contract test has 10 cases (now 13); a record, left as written.
