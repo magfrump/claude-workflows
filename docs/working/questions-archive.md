@@ -300,10 +300,12 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-309](#q-309--merge-gate-2026-11-19-ideas-promotion-ecf9daf1549a) | Q-309: [1] | 2026-11-19 |
 | [Q-310](#q-310--merge-2026-11-19-a8-cache-probe-1f5ef33c511e) | Q-310: [1] | 2026-11-19 |
 | [Q-311](#q-311--merge-gate-2026-11-19-worktrees-outside-dot-claude-feb8ed708fe2) | Q-311: [1] | 2026-11-19 |
+| [Q-312](#q-312--friction-ideas-owner-brainstorm-areas) | Q-312: [2] | 2026-11-19 |
 | [Q-314](#q-314--merge-gate-2026-11-19-loop-wait-rule-6505ccec60db) | Q-314: [1] | 2026-11-19 |
 | [Q-315](#q-315--merge-2026-11-19-code-review-lever3-correction-e100fc0dd7c4) | Q-315: [1] | 2026-11-19 |
 | [Q-318](#q-318--merge-2026-11-19-lever3-followons-65dd7d2b0927) | Q-318: [1] | 2026-11-19 |
 | [Q-319](#q-319--merge-gate-2026-11-19-steal-ended-2e687f12a30b) | Q-319: [1] | 2026-11-19 |
+| [Q-320](#q-320--merge-2026-11-19-a8-settling-runs-fd8d009f846d) | Q-320: [1] | 2026-11-19 |
 <!-- index:end -->
 
 ## Answered
@@ -8116,4 +8118,139 @@ Branch tip 2e687f12a30b5d4af6c327f351ac3972b5e17a94. `--check`'s lines, as print
 | **[3] changes needed** | Write what to change; the note goes back to the loop | Writing the note | A further round |
 
 - **Interim:** nothing merges.
+
+### Q-312 · friction-ideas-owner-brainstorm-areas
+**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** ANSWERED
+Q-312: [2]
+
+Two roadmap Ideas from your 2026-10-29 brainstorm carry your own friction report. Build them now, or keep them parked while the trial runs?
+
+**If you say no:** both stay in the roadmap's Ideas, marked parked with this answer, and the trial set you are running (T8-T12, to about 2026-11-20) goes on unchanged.
+
+- **Why it's yours:** both change how your merges, releases and asks work, which the trial set (`docs/working/trials/2026-11-06-attention-and-trust.md`) is measuring now; building them mid-trial would reorder your stated plan to ask about the trial after the 2026-11-20 weekly digest. The cycle's step 6 (merged 7661a2cf, which you approved in Q-309) moves every other such Idea to Now on its own; seven moved this iteration and two were briefed.
+- **Read:** `docs/working/brainstorm-2026-10-29-friction-and-engagement.md` (areas A and B, 18 ideas); `docs/roadmap.md`, Ideas.
+
+The two Ideas:
+1. **Cut merge and release friction (area A).** 19 of 19 merge entries approved; merged gate fixes wait on a host release. A1/A2/A3/A10 (how gate merges and releases are bundled) go to divergent design first; A4, A6, A7, A8 are independent of that. (A1/A3/A10 were already answered "no change" on 2026-11-06; watch Q-262 holds their revisit.)
+2. **Keep you from habituating to asks (area B).** Always-[1] merge entries and month-old open entries train skimming; eight ideas, with the security-channel form (B1) to divergent design first.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Park both until the trial ends** | Both stay in Ideas, marked parked (Q-312 [1]); they come back when you answer the trial question after the 2026-11-20 digest | None now | Friction you reported waits about a week more |
+| **[2] Build both now** | Both move to Now as agent work; the next free slots brief the independent parts first (A4, A6, A7, A8; then B) | A merge entry per unit that touches gate code or `workflows/` | The trial's readings mix with the changes |
+| **[3] Build these numbers** | Write the numbers (say `[3] 1`); the rest park as in [1] | As [2], for those | As [2], for those |
+
+- **Interim:** [1]: both stay in Ideas, unbuilt; nothing else waits on this.
+- **2026-11-19, iteration 0014 UTC:** one more item now rides with this answer, since it is area A's ground (fewer merge and re-dispatch answers for you): the research merged 7c137d5d (`docs/working/research-2026-11-19-generated-file-conflicts.md`) proposes that step 7 send a ready branch the gate refuses for a conflict with main, or a gap the loop can fix, straight back to its loop with no owner entry, once per tip and only under a dispatch count of 3. It is a review merge (dev-cycle skill). [2] builds it with area A; [1] holds it until the trial ends, like the rest.
+- **If the answer differs:** nothing to redo; the cycle moves them to Now next iteration.
+
+
+### Q-320 · merge-2026-11-19-a8-settling-runs-fd8d009f846d
+**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** ANSWERED
+Q-320: [1]
+
+Merge the A8 settling runs' results (the two measurement passes you asked for in Q-308), accepting the loop's call on a check in my brief that could not pass as written?
+
+**If you say no:** rubric row A8 (does pasting the shared review context into every review agent's prompt pay for itself) stays at "fails on its benefit, net cost unmeasured", and the 2.17M tokens these runs spent stay on an unmerged branch.
+
+- **Why it's yours:** you asked for these runs (Q-308 [1]), and the branch adds review records under `docs/reviews/` and run artifacts under `runs/`, which the cycle does not self-merge; it changes no code, skill or workflow.
+- **Read:** the brief `docs/working/briefs/2026-11-19-a8-settling-runs.md`; on the branch, `runs/review-arms/a8-2026-11-20/results.md` and `docs/working/research-2026-11-19-a8-settling-runs.md`. Show it: `git diff --stat main...fd8d009f846dc8ee424a6518d78f0427c939c7c0`.
+
+What the runs found (the marker below has the numbers): self-read on csp cost 3.8% more than inline, inside one run's noise, with the same 6 of 6 known defects found; corpus overflowed the 25k shared-block budget, so the skill inlined the diff only, and found the cell's known red and 3 of 4 known ambers. Verdict: inlining holds as a cost-neutral default, not as a saving; whether 25k is the right budget is still open, and a self-read run on corpus is the cheapest next evidence (not asked for here).
+
+The loop's question is about my brief, not its work. The brief told it to stop unless `git log -1 -- skills/code-review/SKILL.md` printed the lever #3 merge (d383a484, which you approved in Q-315); git's default history never prints a merge whose tree equals its second parent, so the check could not pass as written. The skill it measured is the merged one, which was the check's purpose. So **[1] merge** below also accepts the loop's pick [1] (the runs stand); **[3] changes needed** with "[2]" would discard them and re-run at about 2.2M tokens.
+
+Branch tip fd8d009f846dc8ee424a6518d78f0427c939c7c0. `--check`'s lines, as printed (44 of the 53 are new files under `runs/review-arms/a8-2026-11-20/`):
+
+> ok docs/working/briefs/2026-11-19-a8-settling-runs.md fd8d009f846dc8ee424a6518d78f0427c939c7c0 2a7eb490a5e1484b9aa75538a29bf14e3f2a4a47
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A docs/reviews/code-fact-check-report-2026-11-19-a8-settling-pass2.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A docs/reviews/code-fact-check-report-2026-11-19-a8-settling-r1.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A docs/reviews/code-fact-check-report-2026-11-19-a8-settling-r2.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A docs/reviews/code-fact-check-report-2026-11-19-a8-settling-r3.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A docs/reviews/code-review-rubric-2026-11-19-measure-a8-settling-runs.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md M docs/working/briefs/2026-11-19-a8-settling-runs.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A docs/working/research-2026-11-19-a8-settling-runs.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/api-consistency-review-2026-11-19.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/architecture-review-2026-11-19.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/code-fact-check-report-r1.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/code-fact-check-report-r2.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/code-fact-check-report-r3.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/code-fact-check-report.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/code-fact-check-submitted-claims.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/code-review-rubric-2026-11-19-corpus.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/part6.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/performance-review-2026-11-19.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/security-review-2026-11-19.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/shared-block-stage2.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/shared-block.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/stage25-logs/probe-s1-s6-zustand.mjs
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/stage25-logs/probe-s2-s5-s7.mjs
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/stage25-logs/probe-s3-notfound.mjs
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/stage25-logs/s1-s6.log
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/stage25-logs/s2-s5-s7.log
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/stage25-logs/s3.log
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/tech-debt-triage-review-2026-11-19.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/corpus/test-strategy-review-2026-11-19.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/api-consistency-review-2026-11-19.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/architecture-review-2026-11-19.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/code-fact-check-report-r1.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/code-fact-check-report-r2.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/code-fact-check-report-r3.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/code-fact-check-report.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/code-fact-check-submitted-claims.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/code-review-rubric-2026-11-19-csp.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/performance-review-2026-11-19.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/r2-logs/csp-r2-eslint.log
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/r2-logs/csp-r2-vitest.log
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/security-review-2026-11-19.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/shared-block-stage2.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/shared-block.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/stage25-logs/s1-nonce-probe.log
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/stage25-logs/s3-cost-bench.log
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/stage25-logs/s4-next-dev-server.log
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/stage25-logs/s4-prefetch-curl.log
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/stage25-logs/s7-directive-diff.log
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/csp/test-strategy-review-2026-11-19.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/manifest.json
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/results.md
+> path docs/working/briefs/2026-11-19-a8-settling-runs.md A runs/review-arms/a8-2026-11-20/token-ledger.md
+> rubric docs/working/briefs/2026-11-19-a8-settling-runs.md: clean docs/reviews/code-review-rubric-2026-11-19-measure-a8-settling-runs.md: 0 red and 17 amber rows, none open
+
+The loop's marker body, as printed (the loop's text):
+
+> > Both A8 settling runs are done. A8 is row A8 of docs/reviews/code-review-rubric-2026-08-07-main.md,
+> > which asks whether pasting the shared review context into every review agent's prompt is worth it.
+> > Total 2,171,680 tokens over 19 agents, under the brief's 2.5M stop line.
+> > Results: runs/review-arms/a8-2026-11-20/results.md.
+> >
+> > - csp (self-read control): core 771,748 tokens against 743,755 inline, +3.8%, inside one-run noise.
+> >   Known defects found: 6 of 6 both ways (labels from docs/working/canon-issue-ledger.md), including
+> >   the hardest one, a CSP rule that breaks PNG export from another file.
+> > - corpus (inline as the skill says): the diff plus touched files came to about 30.9k tokens,
+> >   over the skill's 25k budget, so the skill fell back to inlining the diff only (about 15k per agent).
+> >   Core 1,133,767 against the August baseline's 615,566. It found the cell's known red (a data-loss seam) and 3 of 4 known ambers.
+> > - Verdict: inlining holds as a cost-neutral default. It fails as the skill first justified it
+> >   (no cache saving), and whether the 25k budget is set right still cannot be told.
+> >
+> > One call for you, a tentative pick I made in place of stopping:
+> > The brief said to end blocked unless `git log -1 -- skills/code-review/SKILL.md` on the base
+> > printed the lever #3 correction's merge (d383a484, merged under Q-315, your answer to merge that fix).
+> > It prints ca328816, the last commit on the merged branch. Git's default history view never prints
+> > a merge whose tree matches its second parent, so this check could not pass as written.
+> > The skill at base is the merged version, so I proceeded. Tiebreaker: the check's purpose was met.
+> >
+> > | Option | What it means | Cost to you | If it's wrong |
+> > |---|---|---|---|
+> > | [1] Accept (pick) | Runs stand as measured | None | None: the skill measured is the merged one |
+> > | [2] Re-run blocked | Discard; re-dispatch after rewording the check | ~2.2M tokens | Same numbers again |
+
+No path is gate code, an instruction file or a dot path. The rubric's 17 ambers are review findings on the results doc's prose and counts (a k=3 fact-check, then a k=1 pass over the fixes); none is open.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The cycle merges fd8d009f next iteration; the runs stand as measured | Reading the results | A number in the results is off; it is a record, fixed by a later commit |
+| **[2] drop** | The brief closes; A8 stays unsettled | None | The 2.17M tokens are lost |
+| **[3] changes needed** | Write what to change (or "[2]" to re-run); the note goes back to the loop | Writing the note, and about 2.2M tokens for a re-run | A further round |
+
+- **Interim:** nothing merges; A8 stays as it was.
 

@@ -86,15 +86,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   an Agent call move the subagent's start directory?), then divergent design over its four
   approaches. Gate code, so a review merge.
 
-- **Agent: Send a gate-refused ready branch back to its loop, with no owner entry** (filed 2026-11-19,
-  step 7; philosophy-research F-006, F-009, F-010). Motive: about 9 re-dispatch answers across the
-  repos, each followed by a second merge answer on review briefs. The research (7c137d5d,
-  `docs/working/research-2026-11-19-generated-file-conflicts.md`) picked: step 7 sends a branch the
-  gate refuses for a conflict with main, or a gap the loop can fix, back once per tip while
-  `Dispatched:` is under 3. First step: the review brief its "For the dev cycle" section drafts
-  (`skills/dev-cycle/SKILL.md`, gate code). Was held on Q-312, area A's ground; Q-312 answered [2]
-  (build now) on 2026-11-19, so it is ready.
-
 - **Agent: `--cycle-diff` lets a cycle record lose its earlier blocks** (filed 2026-11-19, step 6).
   Motive: iteration 2026-11-20-0121 landed `docs/working/cycles/cycle-2026-11-19.md` holding only its
   own block (a script truncated the file before appending), as 18a43829 and fd63f0ae, and
@@ -104,6 +95,18 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   step: a review brief adding to `--cycle-diff` the rule that a changed record keeps the base's
   text as a prefix (append-only, as it already holds the idea log), with a bats case for this
   shape; gate code.
+
+## In flight
+
+- **Agent: Send a gate-refused ready branch back to its loop, with no owner entry** (filed 2026-11-19,
+  step 7; philosophy-research F-006, F-009, F-010). Motive: about 9 re-dispatch answers across the
+  repos, each followed by a second merge answer on review briefs. The research (7c137d5d,
+  `docs/working/research-2026-11-19-generated-file-conflicts.md`) picked: step 7 sends a branch the
+  gate refuses for a conflict with main, or a gap the loop can fix, back once per tip while
+  `Dispatched:` is under 3. First step: the review brief its "For the dev cycle" section drafts
+  (`skills/dev-cycle/SKILL.md`, gate code). Was held on Q-312, area A's ground; Q-312 answered [2]
+  (build now) on 2026-11-19, so it is ready.
+  2026-11-19: briefed (iteration 0316 UTC), review: `docs/working/briefs/2026-11-19-auto-send-back.md`.
 
 - **Agent: Cut merge and release friction (owner brainstorm 2026-10-29, area A).** Signal: 19 of 19
   merge entries approved; merged gate fixes wait on a host release; five terminal pastes open.
@@ -115,6 +118,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   pass over area A, starting from what changed since 2026-10-29 (A1, A3 and A10 were answered "no
   change" on 2026-11-06, watch Q-262 holds their revisit; tonight's merges and releases are new
   evidence), and the independent A4, A6, A7 and A8.
+  2026-11-19: briefed (iteration 0316 UTC) as research: `docs/working/briefs/2026-11-19-area-a-merge-friction.md`.
 
 - **Agent: Keep the owner from habituating to asks (owner brainstorm 2026-10-29, area B).** Signal:
   always-[1] merge entries and month-old open entries train skimming. Eight ideas in the same
@@ -124,14 +128,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   2026-11-19: Q-312 answered [2] (build now), moved to Now. First step: one research and divergent-design
   pass over area B (B1 the security-channel form first; B2 as the measure of whether area A lowers
   owner load), drawing on the trial records in `docs/working/trials/`.
-
-## In flight
-
-- **A8 settling runs: csp self-read and corpus inline** (Q-308 [1], owner in session 2026-11-19).
-  Motive: the first A8 pass found inlining saves nothing on the Agent-tool path, leaving its net
-  cost and recall effect unmeasured; these two passes measure both. Briefed (iteration 0056 UTC):
-  `docs/working/briefs/2026-11-19-a8-settling-runs.md`; dispatched 2026-11-19 (iteration 0110
-  UTC), after the lever #3 correction merged (d383a484), so both passes run the corrected skill.
+  2026-11-19: briefed (iteration 0316 UTC) as research: `docs/working/briefs/2026-11-19-area-b-ask-habituation.md`.
 
 ## Next
 
@@ -457,6 +454,13 @@ Unranked. Each names the signal that motivates it.
 ## Done
 
 Items finished since the last cycle, with the merge.
+
+- **A8 settling runs: csp self-read and corpus inline.** Done eddcaf16 (approved merge, Q-320 [1];
+  ran on Q-308 [1]), brief `docs/working/briefs/closed/2026-11-19-a8-settling-runs.md`, results
+  `runs/review-arms/a8-2026-11-20/results.md`: self-read cost 3.8% more than inline on csp, inside
+  one run's noise, same 6 of 6 defects; corpus overflowed the 25k budget and fell back to the diff.
+  Inlining holds as a cost-neutral default, not a saving; the budget's size is still untested.
+  The brief's base-commit check could not pass as written (git's default log omits such a merge).
 
 - **Re-dispatch the cycle's own dead loop at once (`--steal --ended`).** Done 8ec5a900 (approved merge,
   Q-319 [1]), the owner's 2026-11-19 request; brief `docs/working/briefs/closed/2026-11-19-steal-ended.md`,

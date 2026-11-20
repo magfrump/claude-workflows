@@ -16,7 +16,7 @@ Maintained by `~/.claude/scripts/questions.sh` (`check` · `index` · `migrate`)
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
-| [Q-067](#q-067--regenerate-skill-eval-reports) | deferred | When should the skill eval reports be regenerated, so that the 50 `@needs-reports` suites constrain the cur... | 2026-09-26 |
+| [Q-067](#q-067--regenerate-skill-eval-reports) | deferred | Q-067: met — the A8 measurement it waited on ran and merged (eddcaf16, Q-320 [1]); the regeneration quest... | 2026-09-26 |
 | [Q-098](#q-098--global-allowlist-after-sandbox) | deferred | Ship a global `permissions.allow` in `hooks/wiring.json` once cc-isolated has a Bash sandbox (Q-088). Branc... | 2026-09-28 |
 | [Q-167](#q-167--post-install-host-probes) | deferred | At the next release whose install re-blesses, ask the owner for the hint text that the fresh bless prints b... | 2026-10-15 |
 | [Q-276](#q-276--q272-return-with-data) | deferred | Return the run-or-refuse question (Q-272: what the test-confinement script does when it has only its weak t... | 2026-11-11 |
@@ -40,25 +40,6 @@ When Q-125's sandbox merges (bwrap in the cc-isolated image), decision 017's T2 
 - **2026-11-11:** Q-125 merged at 3cd6d9bb (Q-267 [1]). The image a session runs is still the old one, so the condition waits on the release (Q-273) and a new sandbox launch.
 - **2026-11-12, later:** the owner chose to keep no sandbox (decision-log row 88). This watch is dormant unless `bwrap` returns to the image some other way.
 - **2026-11-12:** the sandbox was rolled back (7caea26d, Q-277 [3]), and the revert took `bwrap` out of the image, so the condition cannot be met until the sandbox returns. The image sessions run (80b7dabe) has no `bwrap`.
-
-### Q-067 · regenerate-skill-eval-reports
-**Needs:** deferred · **Opened:** 2026-09-26 · **Status:** OPEN
-
-When should the skill eval reports be regenerated, so that the 50 `@needs-reports` suites constrain the current SKILL.md files instead of being NOT RUN?
-
-- **Why it's yours:** regenerating means one headless model run per fixture, about 180 fixtures across 23 skills. Memory [[run-a8-measurement-after-settling]] says no big compute before the A8 measurement.
-- **Read:** `docs/working/audit-test-constraint-2026-09-26.md` batch G, and commit 48680e2 (stamps plus the per-skill gate).
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Fold into A8** | Regenerate as part of the A8 run once the code settles | None now | Skill-prompt regressions go uncaught until then, as they have all along |
-| **[2] One skill now** | Regenerate one high-value skill (e.g. security-reviewer) to prove the loop end to end | About 12 model runs | A little quota spent before A8 |
-| **[3] All now** | `bash test/skills/generate-reports.bash` for every skill | About 180 runs, which may skew A8's baseline | Quota spent, and A8 comparability muddied |
-
-- **Interim:** [1]. The suites print NOT RUN, and health-check warns with the count, so no one mistakes them for a pass.
-- **Deferred 2026-09-26 behind Q-071:** under the current stamp design, regenerated reports go stale at the next contract edit, so the suite design comes first.
-- **2026-09-27:** Q-071 was answered [1] (narrow stamp, committed reports), so one regeneration now stays valid until the skill itself changes. This remains deferred behind A8 only ([[run-a8-measurement-after-settling]]).
-- **If the answer differs:** nothing to redo; only when regeneration happens changes.
 
 ### Q-098 · global-allowlist-after-sandbox
 **Needs:** deferred · **Opened:** 2026-09-28 · **Status:** OPEN
@@ -121,6 +102,26 @@ Reopen the dropped roadmap Idea "The live-verify hook reads a merge commit's sta
 - **Interim:** nothing is built; such merges carry `Live-verified: no — merge of main; main's commit carries its own trailer`, which the hook accepts.
 
 ## Closed
+
+### Q-067 · regenerate-skill-eval-reports
+**Needs:** deferred · **Opened:** 2026-09-26 · **Status:** ANSWERED
+Q-067: met — the A8 measurement it waited on ran and merged (eddcaf16, Q-320 [1]); the regeneration question returns to the owner as Q-321.
+
+When should the skill eval reports be regenerated, so that the 50 `@needs-reports` suites constrain the current SKILL.md files instead of being NOT RUN?
+
+- **Why it's yours:** regenerating means one headless model run per fixture, about 180 fixtures across 23 skills. Memory [[run-a8-measurement-after-settling]] says no big compute before the A8 measurement.
+- **Read:** `docs/working/audit-test-constraint-2026-09-26.md` batch G, and commit 48680e2 (stamps plus the per-skill gate).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Fold into A8** | Regenerate as part of the A8 run once the code settles | None now | Skill-prompt regressions go uncaught until then, as they have all along |
+| **[2] One skill now** | Regenerate one high-value skill (e.g. security-reviewer) to prove the loop end to end | About 12 model runs | A little quota spent before A8 |
+| **[3] All now** | `bash test/skills/generate-reports.bash` for every skill | About 180 runs, which may skew A8's baseline | Quota spent, and A8 comparability muddied |
+
+- **Interim:** [1]. The suites print NOT RUN, and health-check warns with the count, so no one mistakes them for a pass.
+- **Deferred 2026-09-26 behind Q-071:** under the current stamp design, regenerated reports go stale at the next contract edit, so the suite design comes first.
+- **2026-09-27:** Q-071 was answered [1] (narrow stamp, committed reports), so one regeneration now stays valid until the skill itself changes. This remains deferred behind A8 only ([[run-a8-measurement-after-settling]]).
+- **If the answer differs:** nothing to redo; only when regeneration happens changes.
 
 ### Q-276 · q272-return-with-data
 **Needs:** deferred · **Opened:** 2026-11-11 · **Status:** ANSWERED
