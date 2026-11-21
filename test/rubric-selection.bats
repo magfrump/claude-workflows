@@ -156,8 +156,11 @@ mk_rubric() {
 # The old scorer piped `printf | grep -q` under the script's pipefail: grep exits at
 # its first match, printf dies of SIGPIPE writing the rest, the pipeline reports 141
 # and the point is lost. Small fixtures lost it only when load let grep exit between
-# printf's line-buffered writes (2 of 200 under 32 busy loops); a big body loses it
-# every time, so this pins the race without needing load.
+# printf's two line-buffered writes (2 of 200 under 32 busy loops). A 1 MiB body
+# after the match loses it every time, because the pipe fills: these cases pin the
+# lost-point bug without load. The small-file timing race itself is covered only by
+# the tie case above, and on the fix a body this size takes bash's temp-file
+# here-string path rather than the pipe path small rubrics take.
 mk_big_rubric() {
   mk_rubric "$@"
   head -c 1048576 /dev/zero | tr '\0' 'x' >> "$ARCHIVE/$1"

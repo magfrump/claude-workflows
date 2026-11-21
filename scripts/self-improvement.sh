@@ -394,8 +394,9 @@ select_run_rubric() {
         # Here-strings, not `printf | grep -q`: under this script's pipefail,
         # grep -q exits at its first match, printf dies of SIGPIPE writing the
         # rest, and the pipeline's 141 silently drops the point. That broke ties
-        # under load and lost every point on a rubric past the 64 KiB pipe
-        # buffer (docs/working/research-2026-11-20-rubric-selection-flake.md).
+        # under load, and dropped any point whose match was followed by more
+        # text than the pipe absorbs (always from about 128 KiB on the dev host)
+        # (docs/working/research-2026-11-20-rubric-selection-flake.md).
         if [ -n "$short" ] && grep -qiE "(^|[^0-9a-fA-F])${short}[0-9a-fA-F]*([^0-9a-fA-F]|$)" <<< "$haystack"; then
             score=$((score + 2))
         fi
