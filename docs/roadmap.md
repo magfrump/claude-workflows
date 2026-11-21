@@ -59,8 +59,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 - **Agent: `harness-feedback.py ingest` stores a renamed project twice** (filed 2026-11-20, step 7; the board research's side finding). Motive: ad4f0eef changed `docs/working/feedback/philosophy-research.md`'s `Project:` line to `task-workspace-designer`; ingest keyed on that line would re-seed 22 entries (19 duplicates) and write a second copy. First step: confirm the rename is intended (that project is philosophy-research), then fix the file or teach ingest to refuse a project name that changes under an existing file.
 
-- **Agent: other `printf | grep -q` pipelines under `pipefail`** (filed 2026-11-20, step 7; the rubric flake loop's follow-up, `docs/working/research-2026-11-20-rubric-selection-flake.md`). Motive: the same shape that dropped the selector's points (failure pattern FP-175) is at `scripts/self-improvement.sh:823`, `:1512`, `:1830`, `scripts/lib/si-functions.sh:110`, `:241`, `:253`, `:290`, `:320`, `:327` and `hooks/claude-config-audit.sh:112` (as of 45553ee7). First step: a review brief (`scripts/lib/` is gate code, the hook an enforcement file) checking which can see a large enough input to lose a match, and switching those to here-strings.
-
 - **Agent: `harness-feedback.py ingest` overwrites an empty stored copy under another project name** (filed 2026-11-20, step 7; the board loop's finding, `docs/working/research-2026-11-20-board-pending-feedback.md`). Motive: an empty entry list counts as a prefix of any list, so a stored file with zero entries and a different `Project:` line is overwritten. First step: fold into the "`ingest` stores a renamed project twice" item's brief (same function).
 
 - **Agent: the board's weekly line trusts a future-dated file name** (filed 2026-11-20, step 7; same finding). Motive: the lib's `isweekly` takes the latest `YYYY-MM-DD.md` name, so a mistyped future date shows as latest every week. First step: once Q-352 merges, a small review brief to ignore dates after today and say so on the line.
@@ -68,6 +66,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 - **Agent: the digest's other sections read commit subjects under the repo's own log encoding** (filed 2026-11-20, step 7; the out-of-loop loop's follow-up, `docs/working/research-2026-11-20-out-of-loop-landings.md`, failure pattern FP-188). Motive: a repo-local `i18n.logOutputEncoding` cut subjects short and dropped a line in the new section; the digest's other `git log %s` reads have the same exposure. First step: once Q-353 merges, a review brief pinning `i18n.logOutputEncoding=UTF-8` in the digest's git calls, with a test.
 
 ## In flight
+
+- **Agent: other `printf | grep -q` pipelines under `pipefail`** (from Now, filed 2026-11-20; FP-175). Brief `docs/working/briefs/2026-11-20-pipefail-grep-q.md` (review).
 
 - **Agent: the write guard's Bash deny names the Read tool, and the taint docstring covers subagents** (from Now, filed 2026-11-20; F-022 and F-021's comment). Brief `docs/working/briefs/2026-11-20-guard-read-route-text.md` (review).
 
@@ -79,7 +79,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 - **Agent: fix report findings F8 to F12 so five held-back skills' reports can land** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-report-findings-f8-f12.md` (review; skills are prompt files). Ready at 0df118cd; merge entry Q-349. Q-349 [1]: the merge was refused because the main checkout holds untracked `test/skills/fact-check/output/` reports (the owner's Q-332 host run); retried next iteration.
 
-- **Agent: A reproducible ask counter (`questions.sh counts`) for the weekly digest** (from Now, filed 2026-11-19; area B's B2). Brief `docs/working/briefs/2026-11-20-ask-counter.md` (review, gate code). Ready at 47210f4b; merge entry Q-344. Q-344 [1]: the approved merge conflicted with main after Q-342 merged (both edit step 9's weekly digest); sent back to its loop (2026-11-20).
+- **Agent: A reproducible ask counter (`questions.sh counts`) for the weekly digest** (from Now, filed 2026-11-19; area B's B2). Brief `docs/working/briefs/2026-11-20-ask-counter.md` (review, gate code). Ready at 47210f4b; merge entry Q-344. Q-344 [1]: the approved merge conflicted with main after Q-342 merged (both edit step 9's weekly digest); sent back to its loop (2026-11-20). Ready again at 8a4df684 after merging main; merge entry Q-354 (an approval covers one tip).
 
 ## Next
 
