@@ -2,8 +2,11 @@
 """PostToolUse hook (matcher: WebSearch|WebFetch [+ any web-capable MCP tools]).
 Marks this session as having ingested untrusted web content. Non-blocking; exit 0.
 NOTE: taint covers WebSearch|WebFetch only — add MCP web tool names to the matcher.
-Taint does NOT propagate between subagent and parent sessions. Single-user machine
-assumption: markers live under a 0700 dir so other local users can't forge them.
+Taint is keyed on `session_id`. Workflow subagents report the parent's session_id,
+so they share its taint: one subagent's fetch taints the parent and every sibling
+(observed 2026-11-19, philosophy-research harness feedback F-021). Whether Agent-tool
+subagents report the parent's id too is not verified. Single-user machine assumption:
+markers live under a 0700 dir so other local users can't forge them.
 
 The marker's EXISTENCE is the taint signal (guard-trusted-writes.py checks only
 that), so it is created first and nothing after it can undo it. Then, best-effort:

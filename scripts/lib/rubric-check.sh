@@ -5,7 +5,9 @@
 # "rubric BRIEF: ..." lines never change a verdict or an exit code. Sourced by
 # build-loop.sh from its own directory; rubric_lines uses that script's
 # gate_git, fp_blob, showpath, MAIN_SHA and GATE_TMP and the reader lib's
-# check_answer.
+# check_answer. dev-cycle.sh also sources it: lib/landings.sh gives gate_git,
+# fp_blob, showpath and GATE_TMP over the digest's own git, and the reader
+# lib MAIN_SHA and check_answer.
 
 # rubric_parse FILE: one record per line, fields joined by a tab, none empty
 # ("-" for no Q-IDs, "(empty)" for an empty Status cell), for the rows of
@@ -198,10 +200,13 @@ rubric_parse() {
   ' "$1"
 }
 
-# rubric_lines BRIEF BRANCH TIP PATHS STATUSES: the advisory "rubric BRIEF:
-# ..." lines for check_line, from committed objects alone. PATHS and STATUSES
-# name check_line's arrays of the merge's changed paths and their status
-# letters (namerefs). A rubric is a path added or changed directly in
+# rubric_lines BRIEF BRANCH TIP PATHS STATUSES [BASE]: the advisory "rubric
+# BRIEF: ..." lines for check_line, and for the digest's section 6b
+# (lib/landings.sh), from committed objects alone. PATHS and STATUSES name the
+# caller's arrays of the merge's changed paths and their status letters
+# (namerefs). BASE, MAIN_SHA by default, is the commit BRANCH's own commits
+# are counted against: a landing already on main passes its first parent (a
+# root commit passes itself, so its stale count prints unread). A rubric is a path added or changed directly in
 # docs/reviews/ whose name starts "code-review-rubric" or holds
 # "-code-review-rubric", ending .md. Of the canonical names
 # (code-review-rubric-DATE-SLUG.md) only the newest DATE per SLUG is read, the
@@ -211,13 +216,13 @@ rubric_parse() {
 #   open PATH ID TIER: STATUS   a red or amber row neither fixed nor closed
 #   unread PATH[ line N]: WHY   a table, row or file the parser cannot read
 #   stale PATH: K fix(...) commits on BRANCH follow its last change in SHA12
-#                               (commits on BRANCH, not on main, that the last
+#                               (commits on BRANCH, not on BASE, that the last
 #                               commit changing PATH does not contain)
 #   clean PATH: R red and A amber rows, none open
 # or, with no rubric, one "none: WHY" line. A PATH outside pathform's
 # characters prints as "?". A failed read is an unread line, never silence.
 rubric_lines() {
-  local a="$1" br="$2" sha="$3" i p b f k d code=0 last nfix out tier id cl st q x ok nred namb
+  local a="$1" br="$2" sha="$3" base="${6:-$MAIN_SHA}" i p b f k d code=0 last nfix out tier id cl st q x ok nred namb
   local -n rl_ps="$4" rl_ss="$5"
   local -A newest=() ndate=() qdone=()
   local files=() rows=() sold=() sslug=()
@@ -276,8 +281,8 @@ rubric_lines() {
       esac
     done < "$GATE_TMP/rubp"
     [[ ${#rows[@]} -eq 0 ]] || printf '%s\n' "${rows[@]}"
-    if last="$(gate_git rev-list -1 "$sha" "^$MAIN_SHA" -- "$f")" && [[ -n "$last" ]] \
-      && x="$(gate_git rev-list --no-commit-header --format=%s "$sha" "^$last" "^$MAIN_SHA")" \
+    if last="$(gate_git rev-list -1 "$sha" "^$base" -- "$f")" && [[ -n "$last" ]] \
+      && x="$(gate_git rev-list --no-commit-header --format=%s "$sha" "^$last" "^$base")" \
       && nfix="$(printf '%s\n' "$x" | LC_ALL=C awk '{ if (tolower($0) ~ /^fix[(:!]/) n++ } END { print n + 0 }')"; then
       if [[ "$nfix" -gt 0 ]]; then ok=""; echo "rubric $a: stale $p: $nfix fix(...) commits on $br follow its last change in ${last:0:12}"; fi
     else ok=""; echo "rubric $a: unread $p: its commits on $br could not be listed, so whether fixes follow it is unknown"; fi

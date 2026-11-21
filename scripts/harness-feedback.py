@@ -13,16 +13,21 @@ Usage:
   harness-feedback.py ingest FILE     claude-workflows only: copy FILE to
                                       docs/working/feedback/PROJECT.md and append
                                       one idea-log seed per entry not yet seeded
+  harness-feedback.py pending FILE CW SRC [STORED...]
+                                      read-only, for board.sh: one line on what
+                                      of FILE the STORED copies lack
 
 FILE defaults to docs/harness-feedback.md in the git toplevel of the current
 directory ($PWD outside a repository). ingest writes into the toplevel of the
 current directory, never through a symbolic link or outside that toplevel.
-Exit: 0 ok, 1 refused (problems listed), 2 usage or an unreadable file.
+Exit: 0 ok, 1 refused (problems listed), 2 usage or an unreadable file;
+pending exits 3 when a file cannot be read or compared.
 """
 
 import datetime
 import os
 import re
+import shlex
 import subprocess
 import sys
 import unicodedata
@@ -362,8 +367,93 @@ def cmd_ingest(args):
     return 0
 
 
+def entry_texts(text, entries):
+    """Each entry's lines, heading to the line before the next heading."""
+    lines = text.split("\n")
+    ends = [e["line"] - 1 for e in entries[1:]] + [len(lines)]
+    return ["\n".join(lines[e["line"] - 1:end]).rstrip()
+            for e, end in zip(entries, ends)]
+
+
+def span(es):
+    ids = [e["id"] for e in es]
+    return ids[0] if len(ids) == 1 else f"{ids[0]} to {ids[-1]}"
+
+
+def cmd_pending(args):
+    """Read-only, for board.sh: one line on what of FILE the STORED copies lack.
+    CW and SRC only shape the printed ingest command; runs no git. Exit 3 when a
+    file cannot be read or compared (1 stays an uncaught error's)."""
+    if len(args) < 3:
+        raise Usage("pending takes FILE CW SRC [STORED...]")
+    (src, cw, shown), stored = args[:3], args[3:]
+
+    def parsed(path, name):
+        try:
+            text = read_text(path)
+        except Usage as exc:
+            return None, str(exc).replace(path, name, 1)
+        project, entries, problems = parse(text)
+        if problems:
+            return None, f"{name}: {problems[0]}"
+        return (project, entries, entry_texts(text, entries)), None
+
+    got, why = parsed(src, DEFAULT_REL)
+    if got is None:
+        print(f"feedback UNREADABLE: {why}")
+        return 3
+    project, entries, texts = got
+    by_project = {}
+    for path in stored:
+        name = os.path.join(FEEDBACK_DIR, os.path.basename(path))
+        s, why = parsed(path, name)
+        if s is None:
+            print(f"feedback NOT COMPARED: the stored copy {why}")
+            return 3
+        if s[0] in by_project:
+            print(f"feedback NOT COMPARED: {by_project[s[0]][0]} and {name} "
+                  f"both hold Project {s[0]}")
+            return 3
+        by_project[s[0]] = (name,) + s
+    own = os.path.join(FEEDBACK_DIR, project + ".md")
+    names = {v[0]: k for k, v in by_project.items()}
+    match = by_project.get(project)
+    if match is None:
+        for other, (name, _p, oents, _t) in by_project.items():
+            if entries and oents and sig(oents[0]) == sig(entries[0]):
+                print(f"feedback: {len(entries)} entries, stored under Project {other} "
+                      f"({name}); renamed? No command: ingest would store and seed them twice")
+                return 0
+    stored_entries, stored_texts = match[2:] if match else ([], [])
+    n = len(stored_entries)
+    if [sig(e) for e in stored_entries] != [sig(e) for e in entries[:n]]:
+        bad = next(i for i, e in enumerate(stored_entries)
+                   if i >= len(entries) or sig(e) != sig(entries[i]))
+        print(f"feedback: {stored_entries[bad]['id']} differs from the stored copy "
+              f"{match[0]}; no command: ingest would refuse it")
+        return 0
+    new = entries[n:]
+    changed = [e for e, t, o in zip(entries, texts, stored_texts) if t != o]
+    if not new and not changed:
+        print(f"feedback: {len(entries)} entr{'y' if len(entries) == 1 else 'ies'}, all copied")
+        return 0
+    parts = ([f"{len(new)} not copied ({span(new)})"] if new else []) \
+        + ([f"{len(changed)} changed ({span(changed)})"] if changed else [])
+    line = "feedback: " + ", ".join(parts)
+    if match is not None and match[0] != own:
+        line += (f"; no command: its stored copy is {match[0]}, not {own}, "
+                 "so ingest would store it twice")
+    elif match is None and own in names:
+        line += f"; no command: {own} holds Project {names[own]}"
+    else:
+        line += (f": cd {shlex.quote(cw)} && ~/.claude/scripts/harness-feedback.py "
+                 f"ingest {shlex.quote(shown)}")
+    print(line)
+    return 0
+
+
 COMMANDS = {"check": cmd_check, "next-id": cmd_next_id,
-            "init": cmd_init, "ingest": cmd_ingest}
+            "init": cmd_init, "ingest": cmd_ingest, "pending": cmd_pending}
 
 
 def main(argv):

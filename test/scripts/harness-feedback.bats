@@ -397,3 +397,75 @@ make_repo() {
     run -2 python3 "$HF" ingest
     [[ "$output" == *"ingest takes exactly one FILE"* ]]
 }
+
+# ---- pending: the board's read-only comparison (docs/working/research-2026-11-20-board-pending-feedback.md) ----
+
+# stored NAME [SED-EXPR]: good.md (Project example-app, F-001 and F-002) as stored/NAME.md, edited.
+stored() { mkdir -p "$W/stored"; sed -e "${2:-}" "$GOOD" > "$W/stored/$1.md"; }
+pending() { run python3 -I "$HF" pending "$1" /cw "/p q/docs/harness-feedback.md" "${@:2}"; }
+CMD=": cd /cw && ~/.claude/scripts/harness-feedback.py ingest '/p q/docs/harness-feedback.md'"
+
+@test "pending: all copied, none stored, some new, and a changed bullet, with the ingest command quoted" {
+    stored example-app
+    pending "$GOOD" "$W/stored/example-app.md"
+    [ "$status" -eq 0 ] && [ "$output" = "feedback: 2 entries, all copied" ]
+    pending "$GOOD"
+    [ "$status" -eq 0 ] && [ "$output" = "feedback: 2 not copied (F-001 to F-002)$CMD" ]
+    stored example-app '/^### F-002/,$d'
+    pending "$GOOD" "$W/stored/example-app.md"
+    [ "$status" -eq 0 ] && [ "$output" = "feedback: 1 not copied (F-002)$CMD" ]
+    stored example-app 's/^- \*\*Context:\*\* opening a PR.*/- **Context:** older text/'
+    pending "$GOOD" "$W/stored/example-app.md"
+    [ "$status" -eq 0 ] && [ "$output" = "feedback: 1 changed (F-001)$CMD" ]
+}
+
+@test "pending: a differing signature or a stored copy with more entries withholds the command" {
+    stored example-app 's/review-loop-skipped-rubric/other-slug/'
+    pending "$GOOD" "$W/stored/example-app.md"
+    [ "$status" -eq 0 ] && [ "$output" = "feedback: F-001 differs from the stored copy docs/working/feedback/example-app.md; no command: ingest would refuse it" ]
+    sed '/^### F-002/,$d' "$GOOD" > "$W/short.md"; stored example-app
+    pending "$W/short.md" "$W/stored/example-app.md"
+    [ "$status" -eq 0 ] && [ "$output" = "feedback: F-002 differs from the stored copy docs/working/feedback/example-app.md; no command: ingest would refuse it" ]
+}
+
+@test "pending: a renamed project (another file name, another Project, or its name's file held by another) withholds the command" {
+    stored old-name '/^### F-002/,$d'
+    pending "$GOOD" "$W/stored/old-name.md"
+    [ "$status" -eq 0 ] && [ "$output" = "feedback: 1 not copied (F-002); no command: its stored copy is docs/working/feedback/old-name.md, not docs/working/feedback/example-app.md, so ingest would store it twice" ]
+    stored old-name 's/^Project: example-app$/Project: old-name/'
+    pending "$GOOD" "$W/stored/old-name.md"
+    [ "$status" -eq 0 ] && [ "$output" = "feedback: 2 entries, stored under Project old-name (docs/working/feedback/old-name.md); renamed? No command: ingest would store and seed them twice" ]
+    stored example-app 's/^Project: example-app$/Project: other/; s/review-loop-skipped-rubric/x/'
+    pending "$GOOD" "$W/stored/example-app.md"
+    [ "$status" -eq 0 ] && [ "$output" = "feedback: 2 not copied (F-001 to F-002); no command: docs/working/feedback/example-app.md holds Project other" ]
+}
+
+@test "pending: an unreadable project file is UNREADABLE, a bad or duplicated stored copy NOT COMPARED, each exit 3" {
+    mutate '/^Project:/d'
+    pending "$W/bad.md"
+    [ "$status" -eq 3 ] && [ "$output" = "feedback UNREADABLE: docs/harness-feedback.md: preamble: no 'Project: NAME' line before the first entry" ]
+    printf '\xff\n' > "$W/bin.md"
+    pending "$W/bin.md"
+    [ "$status" -eq 3 ] && [ "$output" = "feedback UNREADABLE: docs/harness-feedback.md: not UTF-8 (byte 0)" ]
+    stored broken 's/^\*\*Feature:\*\* pr-prep/**Feature:** pr-prep x/; s/Verdict:\*\* fails/Verdict:** maybe/'
+    pending "$GOOD" "$W/stored/broken.md"
+    [ "$status" -eq 3 ] && [[ "$output" == "feedback NOT COMPARED: the stored copy docs/working/feedback/broken.md: line 8: F-001 verdict 'maybe'"* ]]
+    stored a; stored b
+    pending "$GOOD" "$W/stored/a.md" "$W/stored/b.md"
+    [ "$status" -eq 3 ] && [ "$output" = "feedback NOT COMPARED: docs/working/feedback/a.md and docs/working/feedback/b.md both hold Project example-app" ]
+    run python3 -I "$HF" pending "$GOOD" /cw
+    [ "$status" -eq 2 ] && [[ "$output" == *"pending takes FILE CW SRC [STORED...]"* ]]
+}
+
+@test "pending agrees with ingest end to end: the printed copy is taken, and then all is copied" {
+    top="$W/cw"; mkdir -p "$top/guides" "$top/docs/working"; git init -q "$top"; : > "$top/guides/harness-feedback.md"
+    pending "$GOOD"
+    [ "$status" -eq 0 ] && [[ "$output" == *": cd /cw && "* ]]
+    ( cd "$top" && python3 "$HF" ingest "$GOOD" ) >/dev/null
+    pending "$GOOD" "$top"/docs/working/feedback/*.md
+    [ "$status" -eq 0 ] && [ "$output" = "feedback: 2 entries, all copied" ]
+    sed '/^### F-002/,$d' "$GOOD" > "$W/one.md"; rm "$top"/docs/working/feedback/*.md
+    ( cd "$top" && python3 "$HF" ingest "$W/one.md" ) >/dev/null
+    pending "$W/one.md" "$top"/docs/working/feedback/*.md
+    [ "$status" -eq 0 ] && [ "$output" = "feedback: 1 entry, all copied" ]
+}

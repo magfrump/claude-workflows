@@ -1154,7 +1154,32 @@ bare_host_layout() {
   # A2: the file advice is for prose passed as data, never a file to run.
   [[ "$reason" == *"git commit -F"* && "$reason" == *"--body-file"* ]] || { echo "$reason"; return 1; }
   [[ "$reason" != *"pass the file instead"* ]] || { echo "$reason"; return 1; }
-  [[ "$reason" != *"script"* && "$reason" != *" run "* ]] || { echo "$reason"; return 1; }
+  # A2, narrowed 2026-11-20 (F-022): a script appears only as a read route,
+  # and the same clause says a writing script breaks the rule. Every mention
+  # of "script" must sit in that one sentence.
+  local read_sentence="If the command only reads or tests these files, read them with the Read tool, or write the check to a script file with the Write tool and run it by path; that route is for reads only, and a script that writes these files breaks the same rule."
+  local rest="${reason/"$read_sentence"/}"
+  [[ "$rest" != "$reason" ]] || { echo "$reason"; return 1; }
+  [[ "$rest" != *"script"* && "$rest" != *" run "* ]] || { echo "$reason"; return 1; }
+}
+
+@test "F-022: the Bash deny names read routes, and read-only commands are still denied" {
+  # Both of F-022's read-only shapes stay denied (no change to what is
+  # denied); the reason gives the way forward instead.
+  local cmd reason
+  for cmd in \
+    "python3 -c 'import json; print(json.load(open(\"$HOME/.claude/settings.json\")))'" \
+    "printf '%s -> ' a | python3 $HOME/.claude/hooks/guard-trusted-writes.py"; do
+    guard "$(bash_payload "$cmd")"
+    assert_decision deny
+    reason=$(jq -r '.hookSpecificOutput.permissionDecisionReason' <<<"$output")
+    [[ "$reason" == *"only reads or tests these files, read them with the Read tool"* ]] || { echo "$reason"; return 1; }
+    [[ "$reason" == *"run it by path; that route is for reads only"* ]] || { echo "$reason"; return 1; }
+    [[ "$reason" == *"a script that writes these files breaks the same rule"* ]] || { echo "$reason"; return 1; }
+    # The original meaning is kept.
+    [[ "$reason" == "Bash write that names a protected policy file"* ]] || { echo "$reason"; return 1; }
+    [[ "$reason" == *"Bash can't write these."* ]] || { echo "$reason"; return 1; }
+  done
 }
 
 @test "C1: an unreadable ~/.claude/hooks entry does not stop the linked-hook scan" {
