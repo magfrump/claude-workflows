@@ -463,6 +463,9 @@ EOF
     [ "$status" -eq 1 ]
     run --separate-stderr bash "$DC" --since=2026-13-45
     [ "$status" -eq 1 ]
+    # Well shaped but not a real day: the lib's realday refuses it.
+    run --separate-stderr bash "$DC" --since=2026-02-30
+    [ "$status" -eq 1 ] && [[ "$stderr" == *"--since must be a real YYYY-MM-DD date"* ]]
     run --separate-stderr bash "$DC" --bogus
     [ "$status" -eq 1 ]
     # An empty value is an error, not "no flag", and the message is plain.
