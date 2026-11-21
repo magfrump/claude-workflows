@@ -39,11 +39,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   what remains here is the first live `--probe` run.
   2026-11-18: the run-or-refuse question now waits on watch Q-301 (`docs/working/watching.md`), not Q-278.
 
-- **Agent: the write guard's `.claude/wt-*` exemption is stale** (filed 2026-11-20, step 7; same research
-  doc). Motive: `hooks/guard-trusted-writes.py` exempts the old `.claude/wt-*` self-improvement worktrees,
-  which nothing creates once the worktree fix lands; its "(this harness's)" comment misleads. First step:
-  a review brief (gate code, `Live-verified:` trailer) to drop the exemption or correct the comment.
-
 - **Agent: `si_commit_child_work` should turn literal pathspecs off itself** (filed 2026-11-20, step 7; from
   `docs/working/research-2026-11-20-self-improvement-env-followups.md`). Motive: its `git add` excludes the
   message file with `":(exclude).si-commit-msg"`, which `GIT_LITERAL_PATHSPECS=1` reads as a file name; 5eab5704
@@ -94,11 +89,15 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 - **Agent: the health check prints 312 "harness changed since generation" warnings** (filed 2026-11-20, step 1). Motive: since the regenerated reports landed (4f1e4150), every health check warns that the shared report harness (`test/skills/generate-reports.bash`, `transcript.jq`, runner settings) changed since generation, for 11 skills' reports (api-consistency-reviewer, architecture-review, business-plan-critique-unit-economics, code-fact-check, cowen-critique, design-space-situating, divergent-design, matrix-analysis, performance-reviewer, pre-mortem, self-eval); a warning on every run hides a new one. The harness last changed in 8abd0b51 and 846eee77 (the web-tools grant, 6c0563b5). First step: read the stamp check (`rg -n "changed since generation" test/skills/`) and the stamps in those reports, and decide whether they predate the grant (regenerate, a sandbox run as 4f1e4150 was) or the check compares the wrong thing (fix the check); research first, then a brief.
 
+- **Agent: the dev cycle lists code landings on main that came outside the build loop** (filed 2026-11-20, step 7; from `docs/working/research-2026-11-20-review-gap-ba-compare.md`, brief 1). Motive: the merge-time rubric check runs only in `build-loop.sh --check` and `--merge`; since the review rules merged (21097afa), five code landings came another way (44000c6d, 386ccfa3, 22735b6e, 9e7c0542, ded17c89), four with no rubric, so no audit sees them. First step: a review brief (gate code) from that doc's "For the dev cycle" section: an advisory digest line per such landing, keyed on paths, with its rubric's open rows; removed if the count stays zero for ten cycles.
+
+- **Agent: close the six still-true rows of the 2026-11-13 review-gap audit** (filed 2026-11-20, step 7; same doc, brief 2). Motive: iter3 N5, N13, N17, N18 and questions-closeout A10, A11 still hold and nothing routed them; N13 is a security finding (the write guard). First step: a review brief confirming each row, then a fix, a revisit trigger or a Won't-Fix override row; N13 may need an owner call, asked from the loop's marker.
+
 ## In flight
 
-- **Write trials T9, T11 and T12 into the dev-cycle skill** (from Now "Trial week: less friction, less habituation", 2026-11-20; Q-327 [2]). Brief `docs/working/briefs/2026-11-20-codify-trial-set-2.md` (review, gate code). The T11 board integration rides with the board item in Now.
+- **Agent: the write guard's `.claude/wt-*` exemption is stale** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-write-guard-wt-exemption.md` (review). `.claude/wt-q096b` still exists in the main checkout, so the brief decides drop versus correct the comments.
 
-- **Compare Behemoth Arsenal's review-gap causes with this repo's** (from Now "Review-gap audit in Behemoth Arsenal", owner feedback 2026-10-29, point 3; Q-302 answered done). Brief `docs/working/briefs/2026-11-20-review-gap-ba-compare.md` (self-merge, research only).
+- **Write trials T9, T11 and T12 into the dev-cycle skill** (from Now "Trial week: less friction, less habituation", 2026-11-20; Q-327 [2]). Brief `docs/working/briefs/2026-11-20-codify-trial-set-2.md` (review, gate code). The T11 board integration rides with the board item in Now.
 
 - **Agent: A reproducible ask counter (`questions.sh counts`) for the weekly digest** (from Now, filed 2026-11-19; area B's B2). Brief `docs/working/briefs/2026-11-20-ask-counter.md` (review, gate code).
 
@@ -442,6 +441,8 @@ Unranked. Each names the signal that motivates it.
 ## Done
 
 Items finished since the last cycle, with the merge.
+
+- Compare Behemoth Arsenal's review-gap causes with this repo's (owner feedback 2026-10-29, point 3; Q-302): 867f6546 (self-merge), `docs/working/research-2026-11-20-review-gap-ba-compare.md`, brief `docs/working/briefs/closed/2026-11-20-review-gap-ba-compare.md`. Same causes; uncovered: landings outside the build loop and six still-true rows (both now in Now).
 
 - **`--cycle-diff` lets a cycle record lose its earlier blocks**: the gate now refuses a record change that drops
   or rewrites earlier blocks, or deletes the record. Done fec9f7a3 (approved merge, Q-339 [1]), brief
