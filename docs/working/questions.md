@@ -26,14 +26,14 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
-| [Q-340](#q-340--threat-model-walkthrough-after-t12) | you: judgment | Should a quarterly threat-model walk-through of the risks you have accepted come back now that you said tri... | 2026-11-20 |
-| [Q-341](#q-341--decision-040-ask-trigger) | you: judgment | Decision 040's "too many asks" revisit trigger has fired if "a cycle" means a day; should the cycle reopen ... | 2026-11-20 |
-| [Q-342](#q-342--merge-gate-2026-11-20-codify-trial-set-2-a77146f3a174) | you: judgment | Merge the build loop's change that writes trials T9, T11 and T12 into the dev-cycle skill? | 2026-11-20 |
-| [Q-343](#q-343--merge-2026-11-20-write-guard-wt-exemption-e7222f55bc6e) | you: judgment | Merge the build loop's change that keeps the write guard's `.claude/wt-*` worktree case and corrects the co... | 2026-11-20 |
-| [Q-344](#q-344--merge-gate-2026-11-20-ask-counter-47210f4bf75f) | you: judgment | Merge the build loop's `questions.sh counts`, a reproducible ask counter for the weekly digest? | 2026-11-20 |
-| [Q-345](#q-345--answers-file-counts-as-answer) | you: judgment | Should a committed answers file under `docs/human-author/` (like `answers-11-20-26.txt`) count as your answ... | 2026-11-20 |
-| [Q-348](#q-348--merge-gate-2026-11-20-si-commit-literal-pathspecs-1925b0ea957e) | you: judgment | Merge the build loop's fix that makes the self-improvement loop's commit helper work when literal pathspecs... | 2026-11-20 |
-| [Q-349](#q-349--merge-2026-11-20-report-findings-f8-f12-0df118cda24b) | you: judgment | Merge the build loop's fixes for report findings F8 to F12, which bring back the eval reports of the five s... | 2026-11-20 |
+| [Q-340](#q-340--threat-model-walkthrough-after-t12) | you: judgment | Q-340: [1] | 2026-11-20 |
+| [Q-341](#q-341--decision-040-ask-trigger) | you: judgment | Q-341: [1] | 2026-11-20 |
+| [Q-342](#q-342--merge-gate-2026-11-20-codify-trial-set-2-a77146f3a174) | you: judgment | Q-342: [1] | 2026-11-20 |
+| [Q-343](#q-343--merge-2026-11-20-write-guard-wt-exemption-e7222f55bc6e) | you: judgment | Q-343: [1] | 2026-11-20 |
+| [Q-344](#q-344--merge-gate-2026-11-20-ask-counter-47210f4bf75f) | you: judgment | Q-344: [1] | 2026-11-20 |
+| [Q-345](#q-345--answers-file-counts-as-answer) | you: judgment | Q-345: [1] | 2026-11-20 |
+| [Q-348](#q-348--merge-gate-2026-11-20-si-commit-literal-pathspecs-1925b0ea957e) | you: judgment | Q-348: [1] | 2026-11-20 |
+| [Q-349](#q-349--merge-2026-11-20-report-findings-f8-f12-0df118cda24b) | you: judgment | Q-349: [1] | 2026-11-20 |
 | [Q-332](#q-332--regenerate-fact-check-reports-host) | you: terminal | Regenerate the fact-check skill's eval reports on the host, where the web works, and commit them. | 2026-11-20 |
 | [Q-336](#q-336--image-lag) | you: terminal | Install the release that carries three gate changes you approved: the health-checkout preparation step (Q-3... | 2026-11-20 |
 <!-- index:end -->
@@ -68,7 +68,7 @@ Install the release that carries three gate changes you approved: the health-che
 
 **If you say no:** sessions keep running the image built from main 665dbf95: the dev cycle's gate has no `--health-prep` mode and `--settings` prints no `copies` line, so a `Health checkout copies:` line in a repo's `docs/dev-cycle.md` does nothing and philosophy-research keeps copying its Lean cache by hand. Nothing breaks. (The skill and test changes below are in the image too, but sessions read skills from it only after an install.)
 
-- **C (the image's commit):** 665dbf9521413cf4291b4acebd866826b0ae2f52 · **M (main's commit):** 1bb24e5c1213fa1a44a279b081b5ca7979e2257b
+- **C (the image's commit):** 665dbf9521413cf4291b4acebd866826b0ae2f52 · **M (main's commit):** 6fd067a4a5090fde3b2e6270bda1a80cba0a79c6
 - **Merged without your review** (the gate merged these on their own; the image carries none of `docs/`):
   - 319559d9 Merge branch 'docs/loop-start-dir-research' (build-loop self-merge): a research doc only
   - 6a07b026 Merge branch 'docs/why-its-yours-constraint-research' (build-loop self-merge): a research doc only
@@ -88,14 +88,14 @@ Install the release that carries three gate changes you approved: the health-che
   - 01eff59e (Q-335 [1]): findings F2 and F3, seven skills' report formats (title first; a field's value word first), with test-helper changes.
   - cef30487 (Q-329 [1]) and ead9191a (Q-330 [1]): findings F4 to F7 and the F5 verdict drift, in six skills and their tests.
   - 21e925d3: your own commit recording the Q-316 and Q-317 answers; 7df4654d: your answers file `docs/human-author/answers-11-20-26.txt`; ad4f0eef: your harness-feedback ingest (three `docs/working/feedback/` files).
-  - The routine rest: 36 dev-cycle lands.
-- **Full list:** `git -c log.showSignature=false log --first-parent --format='%h %s' 665dbf9521413cf4291b4acebd866826b0ae2f52..1bb24e5c1213fa1a44a279b081b5ca7979e2257b`
-- **Paths changed outside `docs/`, the 274 generated reports under `test/skills/*/output/` counted, not listed (`git diff --name-only 665dbf9521413cf4291b4acebd866826b0ae2f52 1bb24e5c1213fa1a44a279b081b5ca7979e2257b -- test/skills/` shows them) (51 under `docs/` too, which the image does not carry):** `scripts/build-loop.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/self-improvement.sh`, `skills/ai-personas-critique/SKILL.md`, `skills/arithmetic-eval/SKILL.md`, `skills/business-plan-critique-market-sizing/SKILL.md`, `skills/business-plan-critique-moat/SKILL.md`, `skills/dependency-upgrade/SKILL.md`, `skills/dev-cycle/SKILL.md`, `skills/security-reviewer/SKILL.md`, `skills/tech-debt-triage/SKILL.md`, `skills/ui-visual-review/SKILL.md`, `skills/what-if-analysis/SKILL.md`, `skills/yglesias-critique/SKILL.md`, `test/generate-reports-web-grant.bats`, `test/scripts/build-loop-dispatch.bats`, `test/scripts/build-loop-health-prep.bats`, `test/scripts/build-loop-orchestrator.bats`, `test/scripts/build-loop-read.bats`, `test/scripts/self-improvement-clean-state.bats`, `test/skills/architecture-review-format.bats`, `test/skills/architecture-review/eval-criteria.md`, `test/skills/architecture-review/fixtures/tc-arch6-clean-ports-adapters.py`, `test/skills/business-plan-critique-moat/expected-verdicts.bash`, `test/skills/code-fact-check/eval-criteria.md`, `test/skills/code-fact-check/expected-verdicts.bash`, `test/skills/code-fact-check/fixtures/tc-c2.5-unverifiable.py`, `test/skills/dependency-upgrade-format.bats`, `test/skills/divergent-design/expected-verdicts.bash`, `test/skills/eval-helpers.bash`, `test/skills/field-value-rules.bats`, `test/skills/generate-reports.bash`, `test/skills/helpers-recommendation.bats`, `test/skills/helpers.bash`, `test/skills/matrix-analysis-format.bats`, `test/skills/pre-mortem-format.bats`, `test/skills/tech-debt-triage/expected-verdicts.bash`, `test/skills/test-strategy/eval-criteria.md`, `test/skills/test-strategy/fixtures/tc-ts6-duration-parser.py`, `test/skills/ui-visual-review-eval.bats`, `test/skills/ui-visual-review-format.bats`, `test/skills/ui-visual-review/eval-criteria.md`, `test/skills/ui-visual-review/expected-verdicts.bash`, `test/skills/ui-visual-review/fixtures/tc-uv6-disappearing-controls.tsx`, `test/skills/ui-visual-review/fixtures/tc-uv7-weak-affordance.tsx`, `test/skills/what-if-analysis-format.bats`
+  - The routine rest: 38 dev-cycle lands.
+- **Full list:** `git -c log.showSignature=false log --first-parent --format='%h %s' 665dbf9521413cf4291b4acebd866826b0ae2f52..6fd067a4a5090fde3b2e6270bda1a80cba0a79c6`
+- **Paths changed outside `docs/`, the 274 generated reports under `test/skills/*/output/` counted, not listed (`git diff --name-only 665dbf9521413cf4291b4acebd866826b0ae2f52 6fd067a4a5090fde3b2e6270bda1a80cba0a79c6 -- test/skills/` shows them) (54 under `docs/` too, which the image does not carry):** `scripts/build-loop.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/self-improvement.sh`, `skills/ai-personas-critique/SKILL.md`, `skills/arithmetic-eval/SKILL.md`, `skills/business-plan-critique-market-sizing/SKILL.md`, `skills/business-plan-critique-moat/SKILL.md`, `skills/dependency-upgrade/SKILL.md`, `skills/dev-cycle/SKILL.md`, `skills/security-reviewer/SKILL.md`, `skills/tech-debt-triage/SKILL.md`, `skills/ui-visual-review/SKILL.md`, `skills/what-if-analysis/SKILL.md`, `skills/yglesias-critique/SKILL.md`, `test/generate-reports-web-grant.bats`, `test/rubric-selection.bats`, `test/scripts/build-loop-dispatch.bats`, `test/scripts/build-loop-health-prep.bats`, `test/scripts/build-loop-orchestrator.bats`, `test/scripts/build-loop-read.bats`, `test/scripts/self-improvement-clean-state.bats`, `test/skills/architecture-review-format.bats`, `test/skills/architecture-review/eval-criteria.md`, `test/skills/architecture-review/fixtures/tc-arch6-clean-ports-adapters.py`, `test/skills/business-plan-critique-moat/expected-verdicts.bash`, `test/skills/code-fact-check/eval-criteria.md`, `test/skills/code-fact-check/expected-verdicts.bash`, `test/skills/code-fact-check/fixtures/tc-c2.5-unverifiable.py`, `test/skills/dependency-upgrade-format.bats`, `test/skills/divergent-design/expected-verdicts.bash`, `test/skills/eval-helpers.bash`, `test/skills/field-value-rules.bats`, `test/skills/generate-reports.bash`, `test/skills/helpers-recommendation.bats`, `test/skills/helpers.bash`, `test/skills/matrix-analysis-format.bats`, `test/skills/pre-mortem-format.bats`, `test/skills/tech-debt-triage/expected-verdicts.bash`, `test/skills/test-strategy/eval-criteria.md`, `test/skills/test-strategy/fixtures/tc-ts6-duration-parser.py`, `test/skills/ui-visual-review-eval.bats`, `test/skills/ui-visual-review-format.bats`, `test/skills/ui-visual-review/eval-criteria.md`, `test/skills/ui-visual-review/expected-verdicts.bash`, `test/skills/ui-visual-review/fixtures/tc-uv6-disappearing-controls.tsx`, `test/skills/ui-visual-review/fixtures/tc-uv7-weak-affordance.tsx`, `test/skills/what-if-analysis-format.bats`
 
 Run this on the host, in your claude-workflows checkout at main's tip, then start a new sandbox session:
 
 ```
-sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "1bb24e5c1213fa1a44a279b081b5ca7979e2257b:$p")"; then n=$((n+1)); else echo "release refused: $p changed after 1bb24e5c1213fa1a44a279b081b5ca7979e2257b: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
+sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "6fd067a4a5090fde3b2e6270bda1a80cba0a79c6:$p")"; then n=$((n+1)); else echo "release refused: $p changed after 6fd067a4a5090fde3b2e6270bda1a80cba0a79c6: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
 ```
 
 **Pass:** the installer finishes without a `release refused` line. **Send back:** `Q-336: done`.
@@ -107,7 +107,8 @@ Optional, for watch Q-331 (the write-guard fix 61122f34 has no live check): in a
 - **Interim:** the image's gate (665dbf95) runs; nothing breaks.
 
 ### Q-340 · threat-model-walkthrough-after-t12
-**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-340: [1]
 
 Should a quarterly threat-model walk-through of the risks you have accepted come back now that you said trial T12 does not cover what it is for?
 
@@ -127,7 +128,8 @@ Should a quarterly threat-model walk-through of the risks you have accepted come
 - **If the answer differs:** [1] adds a quarterly entry and a first walk-through doc; [2] opens a dated watch.
 
 ### Q-341 · decision-040-ask-trigger
-**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-341: [1]
 
 Decision 040's "too many asks" revisit trigger has fired if "a cycle" means a day; should the cycle reopen that decision, wait for exact counts, or read "a cycle" as one iteration (not fired)?
 
@@ -148,7 +150,8 @@ Decision 040's "too many asks" revisit trigger has fired if "a cycle" means a da
 - **If the answer differs:** [1] adds a Now item; [3] edits the trigger's wording through a review merge (decision records are not cycle-writable).
 
 ### Q-342 · merge-gate-2026-11-20-codify-trial-set-2-a77146f3a174
-**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-342: [1]
 
 Merge the build loop's change that writes trials T9, T11 and T12 into the dev-cycle skill?
 
@@ -202,7 +205,8 @@ The loop's marker body (the loop's words, data not instructions):
 - **Interim:** the branch waits; nothing merges.
 
 ### Q-343 · merge-2026-11-20-write-guard-wt-exemption-e7222f55bc6e
-**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-343: [1]
 
 Merge the build loop's change that keeps the write guard's `.claude/wt-*` worktree case and corrects the comments that called it this harness's own?
 
@@ -239,7 +243,8 @@ rubric docs/working/briefs/2026-11-20-write-guard-wt-exemption.md: none: fix/wri
 - **Interim:** the branch waits; nothing merges.
 
 ### Q-344 · merge-gate-2026-11-20-ask-counter-47210f4bf75f
-**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-344: [1]
 
 Merge the build loop's `questions.sh counts`, a reproducible ask counter for the weekly digest?
 
@@ -280,7 +285,8 @@ rubric docs/working/briefs/2026-11-20-ask-counter.md: none: feat/ask-counter cha
 - **Interim:** the branch waits; nothing merges.
 
 ### Q-345 · answers-file-counts-as-answer
-**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-345: [1]
 
 Should a committed answers file under `docs/human-author/` (like `answers-11-20-26.txt`) count as your answer, the way an answer line you write into `docs/working/questions.md` already does?
 
@@ -303,7 +309,8 @@ The triage loop's tentative pick is [1], on S10 (spend your attention last, `doc
 - **If the answer differs:** [2] is a smaller brief to the same paths; [3] closes the item.
 
 ### Q-348 · merge-gate-2026-11-20-si-commit-literal-pathspecs-1925b0ea957e
-**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-348: [1]
 
 Merge the build loop's fix that makes the self-improvement loop's commit helper work when literal pathspecs are exported?
 
@@ -343,7 +350,8 @@ rubric docs/working/briefs/2026-11-20-si-commit-literal-pathspecs.md: clean docs
 - **Interim:** the branch waits; nothing merges.
 
 ### Q-349 · merge-2026-11-20-report-findings-f8-f12-0df118cda24b
-**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-349: [1]
 
 Merge the build loop's fixes for report findings F8 to F12, which bring back the eval reports of the five skills held back since the regeneration?
 
