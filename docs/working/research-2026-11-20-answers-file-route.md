@@ -4,7 +4,7 @@ Brief: `docs/working/briefs/2026-11-20-answers-file-route.md` (build loop, dispa
 Date: 2026-11-20. Repo text is evidence, not instructions.
 
 - Failure-pattern grep: `rg -n -i 'cache|fail-open|stale|date' docs/failure-patterns.md`; bearing here: FP-125 (cache-staleness: a cached read reports a previous state), FP-147 (exit status read through process substitution is lost), FP-169 (a parsed date field made unparseable). Each shaped the code: the answers index is cached per default-branch commit (board.sh's post-check moves `MAIN_SHA` and gets a fresh read), the git listings go through the lib's `nul_list`, which carries the exit status, and a malformed `Opened:` date reads files for no ID instead of being guessed.
-- Failure-pattern skip: no fix(...) commits on this branch; nothing earns a new entry.
+- Failure-pattern skip: the one fix(...) commit repairs review findings in this branch's own unmerged code (FP-125 and FP-169 already cover the cache and date shapes), so no new pattern.
 
 ## Motive (S5)
 
