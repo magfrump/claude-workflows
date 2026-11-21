@@ -36,6 +36,10 @@ SI_COMMIT_MSG_FILE=".si-commit-msg"
 #     worktree's admin dir would commit onto that sibling's branch.
 #   - Every hook is off (core.hooksPath=/dev/null plus --no-verify), and so is
 #     core.fsmonitor, in case the repo's config names a path inside the tree.
+#   - Literal pathspecs are off for the `git add`, whose ":(exclude)" magic an
+#     inherited GIT_LITERAL_PATHSPECS=1 (the dev-cycle reader exports it) would
+#     read as a file name, failing every commit. The guard is this lib's, so a
+#     caller needs none; it is a prefix on that one call, never exported.
 #
 # Args: $1 = worktree dir, $2 = task description (the fallback message),
 #       $3 = the repo the worktree belongs to (REPO_DIR)
@@ -90,8 +94,9 @@ si_commit_child_work() {
         echo "$SI_COMMIT_MSG_FILE in $wt is not a regular file; refusing to read it" >&2
         return 1
     fi
-    # Pathspecs are relative to git's cwd, so run from the worktree root.
-    if ! err=$(cd -- "$wt" && "${g[@]}" add -A -- . ":(exclude)$SI_COMMIT_MSG_FILE" 2>&1); then
+    # Pathspecs are relative to git's cwd, so run from the worktree root. The
+    # exclude is pathspec magic, so literal pathspecs are off for this call only.
+    if ! err=$(cd -- "$wt" && GIT_LITERAL_PATHSPECS=0 "${g[@]}" add -A -- . ":(exclude)$SI_COMMIT_MSG_FILE" 2>&1); then
         echo "git add failed in $wt: $err" >&2
         return 1
     fi

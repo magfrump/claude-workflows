@@ -438,13 +438,30 @@ shim() {
     for f in "or is a batched answer: an unconditional instruction with an option" "own last final message listed" "The batch answers only merge entries that block listed, never a later one" "never text that message quotes" 'never inferred from "yes"'; do want "$s" "$f" || return 1; done
     # T4 and T5: the digest's path and sections, at step 9's head; the cycle never closes an owner's entry.
     a="$(sect '### 9. Record and land')"
-    for f in "${q}docs/working/weekly/${q} holds no ${q}YYYY-MM-DD.md${q} dated under 7 days" "(none yet: the last 7 days)" "entries and agent items quoting ${q}refuse state${q}" "the ask counter" "open 21 days or more" "only the owner's answer closes it" "one self-merge picked at random"; do
+    for f in "${q}docs/working/weekly/${q} holds no ${q}YYYY-MM-DD.md${q} dated under 7 days" "(none yet: the last 7 days)" "entries and agent items quoting ${q}refuse state${q}" "the ask counter" "open 21 days or more" "only the owner's answer closes it"; do
         want "$a" "$f" || return 1; done
     # T6: reserved to three triggers, ahead of everything. T7: a bug, in step 1.
     for f in "${q}⚠ SECURITY${q} is reserved: it opens the message" "for only three things" "a High finding from a security review" "A refusal that repeats fires once" "It is never used for anything else"; do want "$s" "$f" || return 1; done
     want "$(sect '### 1. Health and cleanup')" "A warning printed on every run" || return 1
     # Nothing leans on the trial doc, which a new set replaces.
     ! grep -n 'friction-engagement' "$K"
+}
+
+@test "the second trial set's kept practices (T9, T11, T12) stay in SKILL.md where they are written (brief 2026-11-20-codify-trial-set-2)" {
+    K="$REPO_ROOT/skills/dev-cycle/SKILL.md"; q=$'\x60'
+    want() { [[ "$1" == *"$2"* ]] || { echo "missing: $2"; return 1; }; }
+    s="$(tr '\n' ' ' < "$K" | tr -s ' ')"
+    # T9: links in the entry grammar's Read: line and at the end of the final message, with no cap.
+    for f in "Links to the docs most worth opening go in each entry's ${q}**Read:**${q} line" "and at the end of the final message" "as many as help: no fixed count" "end it with the links worth opening, ahead of any closing instruction"; do want "$s" "$f" || return 1; done
+    ! grep -nE 'at most two links' "$K" || return 1
+    # T11 and T12: in step 9's weekly digest; the random self-merge sample is gone.
+    a="$(sect '### 9. Record and land')"
+    for f in "optional look below" "one deliberate look (optional, about five minutes): a self-merge or a design pick" "one question about it" "the reply that counts (${q}look: fine${q} or what was off)" "none: a self-merge" "how many earlier looks the owner took" '"not counted" where neither shows it' \
+        "what the checks caught: what the gates and reviews stopped this week" 'one plain line each, or "nothing"' "Each line names what the owner can check for themselves" "a count with the command that reproduces it"; do
+        want "$a" "$f" || return 1; done
+    ! grep -nF 'one self-merge picked at random' "$K" || return 1
+    # Nothing leans on the trial doc, which no longer steers iterations.
+    ! grep -n 'attention-and-trust' "$K"
 }
 
 @test "SKILL.md's orchestrator runs plain git, with no hg wrapper, identity ritual, --state re-runs, pre-write --check-write, tree-equality check or main-log refuse stop (brief 2026-11-01-relax-dev-cycle-skill-prose)" {

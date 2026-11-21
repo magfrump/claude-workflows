@@ -1035,6 +1035,23 @@ assert_file_decisions() {  # $1 = expected (ask|defer|deny), $2 = session, rest 
   assert_decision deny
 }
 
+# The harness no longer creates `.claude/wt-*` worktrees (7b46a90e, b3e25cf1),
+# but the guard keeps judging one left from before relative to its root
+# (docs/working/research-2026-11-20-write-guard-wt-exemption.md). Dropping the
+# case would turn the plain-file defer below into an ask. The `wt-foo` fixtures
+# above exercise the same case; this one names it.
+@test "worktree taint: a leftover .claude/wt-x worktree is still judged relative to its root" {
+  worktree_layout
+  git -C "$REPO" worktree add -q "$REPO/.claude/wt-x" -b wt-x
+  taint sess1
+  assert_file_decisions defer sess1 "$REPO/.claude/wt-x/notes.md"
+  assert_file_decisions ask sess1 "$REPO/.claude/wt-x/CLAUDE.md"
+  assert_file_decisions defer clean "$REPO/.claude/wt-x/notes.md" "$REPO/.claude/wt-x/CLAUDE.md"
+  # A plain directory of that shape is no worktree: the blanket `.claude` ask holds.
+  mkdir -p "$REPO/.claude/wt-plain-x"
+  assert_file_decisions ask sess1 "$REPO/.claude/wt-plain-x/notes.md"
+}
+
 # --- Q-050 [2]: resolve-only HARD is denied, including per-file hook links ---
 # The README's bare-host layout: ~/.claude/CLAUDE.md links to the checkout's
 # global-instructions/CLAUDE.md, and ~/.claude/hooks/ is a REAL dir holding

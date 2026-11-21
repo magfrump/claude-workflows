@@ -21,6 +21,7 @@ Maintained by `~/.claude/scripts/questions.sh` (`check` · `index` · `migrate`)
 | [Q-167](#q-167--post-install-host-probes) | deferred | At the next release whose install re-blesses, ask the owner for the hint text that the fresh bless prints b... | 2026-10-15 |
 | [Q-276](#q-276--q272-return-with-data) | deferred | Return the run-or-refuse question (Q-272: what the test-confinement script does when it has only its weak t... | 2026-11-11 |
 | [Q-322](#q-322--quarterly-threat-model-walkthrough-due) | deferred | Q-322: met — the owner's T12 verdict came first (Q-327 [2], `docs/human-author/answers-11-20-26.txt` line... | 2026-11-19 |
+| [Q-351](#q-351--threat-model-walkthrough-2027-q1-due) | deferred | Bring the next quarterly threat-model walkthrough back as a `you: walkthrough` entry when it falls due (Q-3... | 2026-11-20 |
 | [Q-161](#q-161--revive-hermeticity-layer2-after-q125) | trigger | When Q-125's sandbox merges (bwrap in the cc-isolated image), decision 017's T2 fires: revive hermeticity l... | 2026-10-14 |
 | [Q-262](#q-262--merge-approval-revisit) | trigger | Should merge approval be reopened? The design record picked no change on 2026-11-06, and this watch holds i... | 2026-11-06 |
 | [Q-264](#q-264--gloss-rule-falsifier) | trigger | Q-264: met — counted on 2026-11-11 at five entries opened since the install (Q-269 to Q-273): the falsifi... | 2026-11-06 |
@@ -30,6 +31,8 @@ Maintained by `~/.claude/scripts/questions.sh` (`check` · `index` · `migrate`)
 | [Q-331](#q-331--write-guard-claude-worktree-live-check) | trigger | Record the live check of the write-guard fix in 61122f34 (Q-326 [1]: `hooks/guard-trusted-writes.py` judges... | 2026-11-20 |
 | [Q-334](#q-334--constraint-cited-routing-revisit) | trigger | Reopen "a judgment entry's 'Why it's yours' quotes the constraint it relies on" if a second case appears of... | 2026-11-20 |
 | [Q-338](#q-338--parked-shell-removal-observable) | trigger | Replace R2 (worktrees removed in a separate call after a bare `cd` into `.worktrees`) with option 2 (each r... | 2026-11-20 |
+| [Q-346](#q-346--loop-idle-on-unanswered-tool-call) | trigger | Reopen philosophy-research's harness feedback F-020 (a background subagent blocks silently on a write that ... | 2026-11-20 |
+| [Q-347](#q-347--second-toolchain-cache-loss) | trigger | Bring back a per-project cache volume (belegarth-herald's harness feedback F-013: toolchain caches wiped on... | 2026-11-20 |
 <!-- index:end -->
 
 ## Open
@@ -138,6 +141,36 @@ Replace R2 (worktrees removed in a separate call after a bare `cd` into `.worktr
 - **When it fires:** file a review brief for option 2, citing the refusal, and close this watch.
 - **Closes:** also when ten parked removals in a row show no such refusal, recorded here with the iterations.
 - **Interim:** R2 by hand (and in the skill once Q-337 merges and installs). Since 2133: the R2, self-improvement and `--cycle-diff` loops started from a parked shell; none of the two that handed back reports a refusal.
+
+### Q-346 · loop-idle-on-unanswered-tool-call
+**Needs:** trigger · **Opened:** 2026-11-20 · **Status:** OPEN
+
+Reopen philosophy-research's harness feedback F-020 (a background subagent blocks silently on a write that needs approval) if a build loop is seen idle on an unanswered tool call again.
+
+- **Read:** `docs/working/research-2026-11-20-harness-feedback-triage.md`, section "philosophy F-020": its trigger (worktrees under `.claude/` plus web taint) is fixed by 61122f34 and b3e25cf1, both in the installed image; what remains is that the orchestrator cannot see a pending approval, with step 7's two-hour stall rule as the backstop.
+- **Condition:** a cycle record, a loop's hand-back or a harness-feedback entry reports a subagent whose last transcript line is a `tool_use` with no result while the loop shows as running.
+- **When it fires:** a brief for the transcript-tail check the triage names as the fix.
+- **Interim:** the stall rule stops such a loop after two hours with no new tip.
+
+### Q-347 · second-toolchain-cache-loss
+**Needs:** trigger · **Opened:** 2026-11-20 · **Status:** OPEN
+
+Bring back a per-project cache volume (belegarth-herald's harness feedback F-013: toolchain caches wiped on every harness update) if a second project reports losing a toolchain cache to an update.
+
+- **Read:** `docs/working/research-2026-11-20-harness-feedback-triage.md`, section "herald F-013" (status quo by divergent design; the project works around it) · F-013 in `docs/working/feedback/belegarth-herald.md`. Note for that project: the shared base image already ships the Android SDK to every project by design (decision log row 19).
+- **Condition:** a harness-feedback entry from a second project, or a cycle record here, reports a cache or toolchain state lost on a harness update.
+- **When it fires:** a review brief for the per-project cache volume (the herald divergent design's recommended option), with the enforcement-file trailer it needs.
+- **Interim:** projects keep caches on the `~/.claude` volume themselves, as herald does.
+
+### Q-351 · threat-model-walkthrough-2027-q1-due
+**Needs:** deferred · **Opened:** 2026-11-20 · **Status:** OPEN
+
+Bring the next quarterly threat-model walkthrough back as a `you: walkthrough` entry when it falls due (Q-340 [1]: one each quarter).
+
+- **Read:** `docs/working/research-2026-11-20-threat-model-walkthrough-prep.md` (the first one's table, checks and script); Q-350 (the first walkthrough).
+- **Condition:** the first cycle iteration on or after 2027-02-20.
+- **When it fires:** refresh the table from the decision records and questions files since the last walkthrough (a research brief like the first), file the entry, and open the next quarter's watch. Then close this one.
+- **Interim:** nothing is scheduled; Q-350 is the current walkthrough.
 
 ## Closed
 

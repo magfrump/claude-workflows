@@ -323,6 +323,14 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-335](#q-335--merge-2026-11-20-skill-format-fields-preambles-e7935cf46b67) | Q-335: [1] | 2026-11-20 |
 | [Q-337](#q-337--merge-gate-2026-11-20-remove-worktrees-parked-shell-415006dec476) | Q-337: [1] | 2026-11-20 |
 | [Q-339](#q-339--merge-gate-2026-11-20-cycle-diff-record-prefix-f2d9abc53623) | Q-339: [1] | 2026-11-20 |
+| [Q-340](#q-340--threat-model-walkthrough-after-t12) | Q-340: [1] | 2026-11-20 |
+| [Q-341](#q-341--decision-040-ask-trigger) | Q-341: [1] | 2026-11-20 |
+| [Q-342](#q-342--merge-gate-2026-11-20-codify-trial-set-2-a77146f3a174) | Q-342: [1] | 2026-11-20 |
+| [Q-343](#q-343--merge-2026-11-20-write-guard-wt-exemption-e7222f55bc6e) | Q-343: [1] | 2026-11-20 |
+| [Q-344](#q-344--merge-gate-2026-11-20-ask-counter-47210f4bf75f) | Q-344: [1] | 2026-11-20 |
+| [Q-345](#q-345--answers-file-counts-as-answer) | Q-345: [1] | 2026-11-20 |
+| [Q-348](#q-348--merge-gate-2026-11-20-si-commit-literal-pathspecs-1925b0ea957e) | Q-348: [1] | 2026-11-20 |
+| [Q-349](#q-349--merge-2026-11-20-report-findings-f8-f12-0df118cda24b) | Q-349: [1] | 2026-11-20 |
 <!-- index:end -->
 
 ## Answered
@@ -8913,4 +8921,407 @@ Notes: `scripts/build-loop.sh` and `skills/dev-cycle/SKILL.md` are gate code, an
 | **[2] drop** | The brief closes; the roadmap item goes to Ideas | None | A truncated record lands silently again |
 | **[3] changes needed** | Your note goes back to the loop | One line of note | A re-dispatch and another merge entry |
 
+
+### Q-340 · threat-model-walkthrough-after-t12
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-340: [1]
+
+Should a quarterly threat-model walk-through of the risks you have accepted come back now that you said trial T12 does not cover what it is for?
+
+**If you say no:** nothing is scheduled; the reshaped T12 (below) is the only regular look at those risks, and the question does not come back on its own.
+
+- **Background:** Q-103's residual risks are the known gaps you accepted in the build-loop design (for example, a process running as your user can still reach the gate's shell through PATH or the session's settings). Area B's research (`docs/working/research-2026-11-19-area-b-ask-habituation.md` §6) proposed a short walk-through of them each quarter (idea B8, about 20 minutes) and set it aside while trial T12 ("what the checks caught" in the weekly digest, `docs/working/trials/2026-11-06-attention-and-trust.md`) tested a cheaper answer. The watch holding it (Q-322, now closed) fired on your T12 verdict of 2026-11-20 (Q-327 [2]): "this is alright, but it doesn't really address the chain of trust between the reports and the facts in the code".
+- **Why it's yours:** it spends about 20 minutes of your time a quarter; only you can say whether that look is worth it.
+- **Read:** the research doc §6 above; the in-flight brief `docs/working/briefs/2026-11-20-codify-trial-set-2.md`, which reshapes T12 so each line names a number or output you can check yourself.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] schedule it** | The cycle files one `you: walkthrough` each quarter, the first now: a list of the accepted risks, each with what would show it has become live. | About 20 minutes a quarter. | You spend the time on risks that have not moved. |
+| **[2] hold to 2027-01** | A watch brings this question back at the first iteration on or after 2027-01-01, after the reshaped T12 has run about six weeks. | Nothing now. | A risk that becomes live waits up to six weeks for a deliberate look (the `⚠ SECURITY` line still fires on one). |
+| **[3] the reshaped T12 replaces it** | No walk-through; the digest's "what the checks caught" lines, each naming a fact you can check, are the regular look. | A minute a week, reading the digest. | The digest reports what the checks stopped, not risks no check covers, so a gap in the design itself is never revisited. |
+
+- **Interim:** nothing is scheduled; the T12 brief runs either way.
+- **If the answer differs:** [1] adds a quarterly entry and a first walk-through doc; [2] opens a dated watch.
+
+
+### Q-341 · decision-040-ask-trigger
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-341: [1]
+
+Decision 040's "too many asks" revisit trigger has fired if "a cycle" means a day; should the cycle reopen that decision, wait for exact counts, or read "a cycle" as one iteration (not fired)?
+
+**If you say no:** nothing is reopened; the interim below holds and the next weekly digest shows the counts.
+
+- **Background:** decision 040 (`docs/decisions/040-questions-doc-owner-only.md`) made `questions.md` hold only things that need you. One of its revisit triggers is "`you:` asks exceed ~5 per cycle for 3 cycles". Counting one day's cycle record as one cycle, the asks opened were 6 (2026-11-18), 19 (11-19) and 10 (11-20); 19 of those 35 were merge entries (requests to approve a finished build loop's merge). Read as one iteration, a cycle opens one or two asks and the trigger has not fired. The roadmap Idea "Say what 'a cycle' is in decision 040's ask-count trigger" has waited on this since 2026-11-13.
+- **Why it's yours:** the trigger exists to protect your attention, and which reading it meant is your call.
+- **The number:** counted by hand from the questions files by this iteration's trigger pass; the hand counts behind area B's research disagreed by edition, which is why the in-flight brief `docs/working/briefs/2026-11-20-ask-counter.md` builds a reproducible counter (`questions.sh counts`). You answered fast: 2 of the 35 are still open.
+- **Read:** decision 040's revisit triggers; watch Q-262 in `docs/working/watching.md` (reopens merge approval if merge entries pass 11 a week in 3 of 4 weekly digests), which covers the merge share only.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reopen 040 now** | Agent work: a divergent-design pass on cutting asks per day (merge entries first), answered with a brief or "no change". | One later read of its result. | Effort on a problem you do not feel; the merge share is already watched by Q-262. |
+| **[2] wait for the counter** | Decide after the ask counter lands and one weekly digest prints exact per-class counts. | Nothing now. | A week more at today's ask rate. |
+| **[3] a cycle is one iteration** | The trigger has not fired; the record's wording is fixed to say so and the Idea closes. | Nothing. | A real overload by day goes unflagged by this trigger (Q-262 still flags merge entries). |
+
+- **Interim:** [2]; nothing is reopened.
+- **If the answer differs:** [1] adds a Now item; [3] edits the trigger's wording through a review merge (decision records are not cycle-writable).
+
+
+### Q-342 · merge-gate-2026-11-20-codify-trial-set-2-a77146f3a174
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-342: [1]
+
+Merge the build loop's change that writes trials T9, T11 and T12 into the dev-cycle skill?
+
+**If you say no:** the branch waits unmerged; the cycle keeps following the trial doc for T9, T11 and T12 by hand, as it does today.
+
+This is the work you asked for in Q-327 [2] (keep T9 further reading, T11 one deliberate look a week, T12 what the checks caught; stop T8 and T10), from brief `docs/working/briefs/2026-11-20-codify-trial-set-2.md`. The skill is gate code (the dev cycle's own instructions), which is why it needs your review and reaches sessions only with the next release (Q-336).
+
+- **What changes:** T9: links in each entry's existing `**Read:**` line and at the end of the final message, as many as help, no cap of two. T11: the weekly digest's random self-merge sample becomes one deliberate look (a self-merge or a design pick, one question, about five minutes), and the digest counts the looks you took. T12: a new weekly-digest bullet listing what the gates and reviews stopped, each line naming a refusal line, a red row's file or a count with its command, so you can check it yourself.
+- **Outside the brief:** one line of your ratified audience profile `docs/audiences/owner.md` (who reads final messages, ratified in Q-299) changes from "at most two links" to links with no fixed count, to match T9.
+- **Left open:** rubric row A6 (amber): whether "a fact you can check" answers your note that T12 should report numbers you have actually seen; the next weekly digests show it.
+- **Read:** the loop's research doc `docs/working/research-2026-11-20-codify-trial-set-2.md`; the rubric `docs/reviews/code-review-rubric-2026-11-20-codify-trial-set-2.md`; the diff: `git diff b7663bf2 a77146f3 -- skills/ test/ docs/audiences/` (3 files, 37 lines added, 6 removed).
+
+TIP: a77146f3a1746f8da8c5bbe776098110f07ef4a7
+
+`--check`'s lines:
+
+```
+ok docs/working/briefs/2026-11-20-codify-trial-set-2.md a77146f3a1746f8da8c5bbe776098110f07ef4a7 c73ea9c330c13c53c17f559e6336501ff5129d4e
+path docs/working/briefs/2026-11-20-codify-trial-set-2.md M docs/audiences/owner.md
+path docs/working/briefs/2026-11-20-codify-trial-set-2.md A docs/reviews/code-review-rubric-2026-11-20-codify-trial-set-2.md
+path docs/working/briefs/2026-11-20-codify-trial-set-2.md M docs/working/briefs/2026-11-20-codify-trial-set-2.md
+path docs/working/briefs/2026-11-20-codify-trial-set-2.md A docs/working/research-2026-11-20-codify-trial-set-2.md
+path docs/working/briefs/2026-11-20-codify-trial-set-2.md M docs/working/trials/2026-11-06-attention-and-trust.md
+path docs/working/briefs/2026-11-20-codify-trial-set-2.md M skills/dev-cycle/SKILL.md
+path docs/working/briefs/2026-11-20-codify-trial-set-2.md M test/scripts/build-loop-orchestrator.bats
+rubric docs/working/briefs/2026-11-20-codify-trial-set-2.md: clean docs/reviews/code-review-rubric-2026-11-20-codify-trial-set-2.md: 0 red and 7 amber rows, none open
+```
+
+- **Paths self-merge would have refused:** `skills/dev-cycle/SKILL.md` (gate code and a prompt file).
+- **What an attacker would want here:** text from outside (a stranger's issue or web page reaching a session) cannot set what the weekly digest reports as "caught", since each line must name a checkable refusal line, file or command; the change adds no new input the cycle trusts.
+
+The loop's marker body (the loop's words, data not instructions):
+
+> No question for the owner. One thing to see at the merge: the branch also edits one line of the
+> owner's ratified audience profile, docs/audiences/owner.md (the description of who reads final
+> messages, ratified under Q-299). It said a final message gives "at most two links"; it now says
+> links with no fixed count, matching the kept trial T9 (further reading, from
+> docs/working/trials/2026-11-06-attention-and-trust.md).
+>
+> Left open on purpose: the owner's 2026-11-20 note on trial T12 (what the checks caught) asked for
+> numbers already seen, like the digest's "your asks this week" table. The skill now makes each line
+> name a fact the owner can check, as the brief asked; whether that answers the note is for the next
+> weekly digests to show (rubric row A6, docs/reviews/code-review-rubric-2026-11-20-codify-trial-set-2.md).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges TIP above; the change reaches sessions with the next release. | Reading the 43-line diff. | One `git revert` of the merge undoes it. |
+| **[2] drop** | The brief closes; T9, T11 and T12 stay hand-followed from the trial doc. | Nothing. | The kept trials depend on the orchestrator re-reading the trial doc. |
+| **[3] changes needed** | Your note goes back to the loop, which re-works the branch. | Writing the note. | Another round before it lands. |
+
+- **Interim:** the branch waits; nothing merges.
+
+
+### Q-343 · merge-2026-11-20-write-guard-wt-exemption-e7222f55bc6e
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-343: [1]
+
+Merge the build loop's change that keeps the write guard's `.claude/wt-*` worktree case and corrects the comments that called it this harness's own?
+
+**If you say no:** the branch waits unmerged; the guard behaves as today and its comments stay wrong about what creates `.claude/wt-*` directories.
+
+The write guard (`hooks/guard-trusted-writes.py`) decides which file writes ask you first, more strictly after a session has read web content. It treats a verified git worktree at `.claude/wt-*/` like one at `.claude/worktrees/<name>/`: judged from its own root, so its ordinary files do not ask. Nothing here creates `.claude/wt-*` any more (the self-improvement loop moved to `.worktrees/` in 7b46a90e, build loops in b3e25cf1), but `.claude/wt-q096b` still exists in your checkout. Brief: `docs/working/briefs/2026-11-20-write-guard-wt-exemption.md`.
+
+- **What changes:** comments only in the hook (four places now say the case serves any such worktree, for example one left from before `.worktrees/`), and one bats case pinning it: in a web-tainted session a plain file in a `.claude/wt-x/` worktree gets no opinion and that worktree's `CLAUDE.md` asks. The loop checked the code is unchanged (same syntax tree with docstrings blanked).
+- **Why keep the case:** dropping it removes no risk (the worktree's policy files still ask) and would bring back failure pattern FP-185 in `docs/failure-patterns.md` ("every edit in a worktree under `.claude/` asks") for `.claude/wt-q096b`.
+- **No code-review rubric:** the loop's two review rounds are in its research doc, not a `docs/reviews/` rubric file, so `--check` printed `rubric … none`. No `Live-verified:` trailer: `hooks/live-verify-gate.sh` gates only `devcontainer-config/` files.
+- **Read:** `docs/working/research-2026-11-20-write-guard-wt-exemption.md`; the diff: `git diff b06a2b8b e7222f55 -- hooks/ test/` (2 files, 37 lines added, 10 removed).
+
+TIP: e7222f55bc6e97c8ef21c8bb70a590c8d540f317
+
+`--check`'s lines:
+
+```
+ok docs/working/briefs/2026-11-20-write-guard-wt-exemption.md e7222f55bc6e97c8ef21c8bb70a590c8d540f317 047e2ce79efc31990dceb7db206125812da7cd5b
+path docs/working/briefs/2026-11-20-write-guard-wt-exemption.md M docs/working/briefs/2026-11-20-write-guard-wt-exemption.md
+path docs/working/briefs/2026-11-20-write-guard-wt-exemption.md A docs/working/research-2026-11-20-write-guard-wt-exemption.md
+path docs/working/briefs/2026-11-20-write-guard-wt-exemption.md M hooks/guard-trusted-writes.py
+path docs/working/briefs/2026-11-20-write-guard-wt-exemption.md M test/hooks/guard-trusted-writes.bats
+rubric docs/working/briefs/2026-11-20-write-guard-wt-exemption.md: none: fix/write-guard-wt-exemption changes 2 paths outside docs/ and adds or changes no code-review rubric under docs/reviews/
+```
+
+- **Paths self-merge would have refused:** none is gate code; `hooks/guard-trusted-writes.py` is a hook the harness installs into sessions.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges TIP above; the comment fix reaches sessions with the next release. | Reading a comment-only diff. | One `git revert` undoes it. |
+| **[2] drop** | The brief closes; the comments stay as they are. | Nothing. | Readers of the hook keep a wrong account of what creates `.claude/wt-*`. |
+| **[3] changes needed** | Your note goes back to the loop (for example, drop the case after all). | Writing the note. | Another round. |
+
+- **Interim:** the branch waits; nothing merges.
+
+
+### Q-344 · merge-gate-2026-11-20-ask-counter-47210f4bf75f
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-344: [1]
+
+Merge the build loop's `questions.sh counts`, a reproducible ask counter for the weekly digest?
+
+**If you say no:** the branch waits unmerged; weekly digests keep counting your asks by hand, and Q-341 (whether decision 040's "too many asks" trigger fired) has no exact numbers to wait for.
+
+Brief: `docs/working/briefs/2026-11-20-ask-counter.md` (area B's B2, from `docs/working/research-2026-11-19-area-b-ask-habituation.md`). `scripts/questions.sh` and the dev-cycle skill are gate code, so this needs your review and reaches sessions only with the next release (Q-336).
+
+- **What it does:** `questions.sh counts --since YYYY-MM-DD [--until YYYY-MM-DD]` prints one table: per class (merge, re-dispatch, real choice, walkthrough, terminal, fyi) the entries opened, answered, answered with the first option, and the median and longest wait in days; then sittings (distinct commits that record a judgment answer), and by ID any answer it could not read as an option and any entry it could not date. It refuses, naming the entry or file, on a malformed entry, unreadable file or history. The weekly digest's ask-counter bullet now says to paste its output.
+- **Checked against the hand count** behind area B (2026-10-30 to 11-19): merge 44 answered, 43 first option, and terminal 12 and fyi 1 match; re-dispatch 5 as the brief predicted; real choice 18 (the hand count's 17 plus Q-278, which it had left out as withdrawn).
+- **Worth knowing:** an answer's date is its commit's author date, so a branch commit merged later can shift an already-printed window by one; answers `[4]` and up are listed as "not read as an option" (the shared answer rule models 1 to 3) but still counted as not first option.
+- **Review:** one reviewer subagent, two rounds; round 1's High (an unreadable questions file printed a zero table and exit 0) is fixed with tests. No `docs/reviews/` rubric file, so `--check` printed `rubric … none`.
+- **Overlap:** Q-342 (trial set 2) also edits the weekly-digest step of the same skill; whichever merges second may be sent back automatically to merge main in.
+- **Read:** `docs/working/research-2026-11-20-ask-counter.md`; the diff: `git diff b7663bf2 47210f4b -- scripts/ skills/ test/` (3 files, 335 lines added: 146 in `questions.sh`, 3 in the skill, 187 of tests).
+
+TIP: 47210f4bf75f3d63979c000bf9ba145251b1ac5d
+
+`--check`'s lines:
+
+```
+ok docs/working/briefs/2026-11-20-ask-counter.md 47210f4bf75f3d63979c000bf9ba145251b1ac5d 5df6c8ea40f9baf9152353cf689ef7b99607e813
+path docs/working/briefs/2026-11-20-ask-counter.md M docs/working/briefs/2026-11-20-ask-counter.md
+path docs/working/briefs/2026-11-20-ask-counter.md A docs/working/research-2026-11-20-ask-counter.md
+path docs/working/briefs/2026-11-20-ask-counter.md M scripts/questions.sh
+path docs/working/briefs/2026-11-20-ask-counter.md M skills/dev-cycle/SKILL.md
+path docs/working/briefs/2026-11-20-ask-counter.md A test/scripts/questions-counts.bats
+rubric docs/working/briefs/2026-11-20-ask-counter.md: none: feat/ask-counter changes 3 paths outside docs/ and adds or changes no code-review rubric under docs/reviews/
+```
+
+- **Paths self-merge would have refused:** `scripts/questions.sh` and `skills/dev-cycle/SKILL.md` (gate code; the skill is also a prompt file).
+- **What an attacker would want here:** `counts` reads the questions files and git history, which a session can write; a stranger's text that reached a session could plant entries to skew the counts you read. It only reports and decides nothing (no gate keys on it), and it refuses malformed entries by name.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges TIP above; the digest uses `counts` after the next release. | Reading a 146-line script change. | One `git revert` undoes it. |
+| **[2] drop** | The brief closes; asks stay hand-counted. | Nothing. | The counts behind Q-262 and Q-341 stay inconsistent between editions. |
+| **[3] changes needed** | Your note goes back to the loop. | Writing the note. | Another round. |
+
+- **Interim:** the branch waits; nothing merges.
+
+
+### Q-345 · answers-file-counts-as-answer
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-345: [1]
+
+Should a committed answers file under `docs/human-author/` (like `answers-11-20-26.txt`) count as your answer, the way an answer line you write into `docs/working/questions.md` already does?
+
+**If you say no:** nothing is built; answers files stay unread by the gate, and the cycle picks up their answers only when it notices them and you confirm in session, as on 2026-11-20.
+
+- **Background:** the cycle reads answers only through `dev-cycle.sh --check-answer`, which looks at the two questions files on main. A commit adding an answers file is classed `other`, and every ID in it stays open. This happened in three projects: behemoth-arsenal (its harness-feedback entry F-002, whose 21 answers merged nothing until you repeated three in session), philosophy-research (its F-004 and F-005) and here (7df4654d, your answers to Q-255, Q-302 and Q-327). Build loops and the cycle cannot write `docs/human-author/` (the self-merge floor and `--cycle-diff` refuse it), so only you and hand sessions can, as with `questions.md`.
+- **Why it's yours:** it decides what counts as your word.
+- **Read:** the triage's F-002 section in `docs/working/research-2026-11-20-harness-feedback-triage.md` (design and residual risks); the global instructions' "Running questions document" (you may answer "in a file").
+
+The triage loop's tentative pick is [1], on S10 (spend your attention last, `docs/constraints.md`).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] read the file** | The gate reads `Q-NNN: [N]` lines from new `docs/human-author/answers-*` files on main dated after the entry opened; a conflict with the questions file skips; `--main-log` classes such a commit `answers`. | None per batch. | A hand session's file could answer for you, as `questions.md` already can. |
+| **[2] detect and confirm** | The cycle lists a new file's answers in its final message; one reply from you takes them. | One reply per batch. | Answers wait for your next session. |
+| **[3] status quo** | Answer in `questions.md` or in session. | Changing your habit. | Answers files keep being ignored. |
+
+- **Blocks:** the roadmap Now item "answers files count as the owner's answer" (brief 2 of the triage).
+- **Interim:** nothing is built; the cycle reads a new answers file by hand and asks you to confirm in session.
+- **If the answer differs:** [2] is a smaller brief to the same paths; [3] closes the item.
+
+
+### Q-348 · merge-gate-2026-11-20-si-commit-literal-pathspecs-1925b0ea957e
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-348: [1]
+
+Merge the build loop's fix that makes the self-improvement loop's commit helper work when literal pathspecs are exported?
+
+**If you say no:** the branch waits unmerged; the helper keeps relying on its one caller's guard (5eab5704), and `test/si-commit-child-work.bats` keeps failing 8 of 15 cases whenever `GIT_LITERAL_PATHSPECS=1` is exported, as the dev-cycle reader does.
+
+`si_commit_child_work` (in `scripts/lib/si-commit.sh`, gate code because everything under `scripts/lib/` is) commits a self-improvement child's work with `git add -A -- . ":(exclude).si-commit-msg"`. Under `GIT_LITERAL_PATHSPECS=1` git reads that exclude as a file name, and the add fails. Brief: `docs/working/briefs/2026-11-20-si-commit-literal-pathspecs.md`.
+
+- **What changes:** the lib sets `GIT_LITERAL_PATHSPECS=0` on that one `git add` only (not exported); the caller's copy of the guard in `scripts/self-improvement.sh` is removed so the rule has one home (S3, one source of truth per rule, `docs/constraints.md`); a new bats case exports the variable and checks the commit, that the message file is not committed, and that the caller's value is still 1.
+- **Tests:** the helper's suite 16/16 and the self-improvement clean-state suite 29/29, each with the variable exported and unset; health check and hermeticity lint pass. Rubric clean (0 red, 0 amber).
+- **Left for later:** `guides/validation-gates.md:33` lists this helper's hardening but not the new guard; the cycle cannot write `guides/`, so it is a roadmap item.
+- **Read:** `docs/working/research-2026-11-20-si-commit-literal-pathspecs.md`; the rubric `docs/reviews/code-review-rubric-2026-11-20-si-commit-literal-pathspecs.md`; the diff: `git diff 10c42a29 1925b0ea -- scripts/ test/` (3 files, 27 lines added, 5 removed).
+
+TIP: 1925b0ea957ed9cda91c14b43c2c2fb6773475c8
+
+`--check`'s lines:
+
+```
+ok docs/working/briefs/2026-11-20-si-commit-literal-pathspecs.md 1925b0ea957ed9cda91c14b43c2c2fb6773475c8 9ee93e1d1f9047414761fc46c3fbe047e96766bb
+path docs/working/briefs/2026-11-20-si-commit-literal-pathspecs.md A docs/reviews/code-review-rubric-2026-11-20-si-commit-literal-pathspecs.md
+path docs/working/briefs/2026-11-20-si-commit-literal-pathspecs.md M docs/working/briefs/2026-11-20-si-commit-literal-pathspecs.md
+path docs/working/briefs/2026-11-20-si-commit-literal-pathspecs.md A docs/working/research-2026-11-20-si-commit-literal-pathspecs.md
+path docs/working/briefs/2026-11-20-si-commit-literal-pathspecs.md M scripts/lib/si-commit.sh
+path docs/working/briefs/2026-11-20-si-commit-literal-pathspecs.md M scripts/self-improvement.sh
+path docs/working/briefs/2026-11-20-si-commit-literal-pathspecs.md M test/si-commit-child-work.bats
+rubric docs/working/briefs/2026-11-20-si-commit-literal-pathspecs.md: clean docs/reviews/code-review-rubric-2026-11-20-si-commit-literal-pathspecs.md: 0 red and 0 amber rows, none open
+```
+
+- **Paths self-merge would have refused:** `scripts/lib/si-commit.sh` (gate code).
+- **What an attacker would want here:** nothing new: the change narrows a git variable for one call and adds no input the loop trusts.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges TIP above. | Reading a 32-line diff. | One `git revert` undoes it. |
+| **[2] drop** | The brief closes; the caller's guard stays the only one. | Nothing. | A new caller of the helper fails the same way. |
+| **[3] changes needed** | Your note goes back to the loop. | Writing the note. | Another round. |
+
+- **Interim:** the branch waits; nothing merges.
+
+
+### Q-349 · merge-2026-11-20-report-findings-f8-f12-0df118cda24b
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-349: [1]
+
+Merge the build loop's fixes for report findings F8 to F12, which bring back the eval reports of the five skills held back since the regeneration?
+
+**If you say no:** the branch waits unmerged; the report suites of business-plan-critique-moat, test-strategy, yglesias-critique, tech-debt-triage and fact-check stay NOT RUN, so those five skills have no regression check.
+
+The regeneration (4f1e4150) held back five skills' reports because 14 cases failed on fresh output (findings F8 to F12 in `docs/working/research-2026-11-19-regenerate-skill-reports.md`). Brief: `docs/working/briefs/2026-11-20-report-findings-f8-f12.md`.
+
+- **What changed, per finding:** F8 (moat tc-moat4) and F10 (yglesias tc-ygl7) and F12's tc-3.3, tc-7.1, tc-7.3: the test was wrong (patterns widened; an optional section checked only when present; a new `graceful_decline` check for empty and binary input). F9 (test-strategy tc-ts6), F11 (tech-debt tc-td2) and F12's tc-7.2: the fixture was wrong (a "well-tested" parser that had real gaps, fixed in five rounds; a stated date instead of the run date; a request instead of a statement). No skill text changed. Three fixtures were regenerated; the other 95 reports are restored unchanged from before the hold-back.
+- **One owner file:** a new failure pattern, FP-187 in `docs/failure-patterns.md` (a fixture whose expected answer depends on the date the test runs), one line; that file is yours, which is why this needs review.
+- **Worth knowing:** fact-check's 23 reports were generated in the sandbox, so Q-332 (regenerate them on the host, where the web works) may be moot; tc-ts6 may still turn up a new gap on a later model run (its `eval-criteria.md` records the rounds).
+- **Tests:** all five report suites pass; health check passes with 2 report suites NOT RUN (code-review's and draft-review's, which have no generator), down from 14. Rubric clean (0 red, 4 amber, all fixed).
+- **Read:** `docs/working/research-2026-11-20-report-findings-f8-f12.md`; the rubric `docs/reviews/code-review-rubric-2026-11-20-report-findings-f8-f12.md`; the non-report diff: `git diff a8bcff67 0df118cd -- docs/failure-patterns.md test/skills/eval-helpers.bash test/skills/yglesias-critique/dimensions.bats 'test/skills/*/expected-verdicts.bash' 'test/skills/*/fixtures/'` (118 files in all, 98 of them generated reports and stamps).
+
+TIP: 0df118cda24be3816add011de2dcfdfe0eb7a73f
+
+`--check`'s lines:
+
+```
+ok docs/working/briefs/2026-11-20-report-findings-f8-f12.md 0df118cda24be3816add011de2dcfdfe0eb7a73f 3f4cfd820edc30ac4d82626ca6ae0eb324763313
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M docs/failure-patterns.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A docs/reviews/code-review-rubric-2026-11-20-report-findings-f8-f12.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M docs/working/briefs/2026-11-20-report-findings-f8-f12.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A docs/working/research-2026-11-20-report-findings-f8-f12.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/business-plan-critique-moat/expected-verdicts.bash
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat1-veterinary-booking.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat1-veterinary-booking.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat2-meal-planning-app.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat2-meal-planning-app.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat3-field-inspection-forms.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat3-field-inspection-forms.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat4-household-budgeting.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat4-household-budgeting.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat5-sales-call-notes.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat5-sales-call-notes.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat6-cold-chain-sensors.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat6-cold-chain-sensors.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat7-lab-compliance-software.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat7-lab-compliance-software.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/code-fact-check-edge-cases.bats
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/critic-dimensions.bash
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/eval-helpers-graceful-decline.bats
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/eval-helpers.bash
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/fact-check-edge-cases.bats
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/fact-check/eval-criteria.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/fact-check/expected-verdicts.bash
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/fact-check/fixtures/tc-7.2-no-claims.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.1-specific-numbers.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.1-specific-numbers.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.2-named-policies.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.2-named-policies.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.3-attributed-facts.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.3-attributed-facts.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.4-causal-claims.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.4-causal-claims.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.5-comparisons.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.5-comparisons.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.6-anecdotes.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.6-anecdotes.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.1-accurate.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.1-accurate.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.2-mostly-accurate.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.2-mostly-accurate.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.3-disputed.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.3-disputed.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.4-inaccurate.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.4-inaccurate.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.5-unverified.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.5-unverified.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-3.1-opinions.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-3.1-opinions.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-3.2-predictions.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-3.2-predictions.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-3.3-mixed.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-3.3-mixed.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-4.1-misleading.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-4.1-misleading.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-4.2-conflated-stats.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-4.2-conflated-stats.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-5.1-multi-claim.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-5.1-multi-claim.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-6.1-accurate-weak-argument.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-6.1-accurate-weak-argument.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-6.3-obvious-but-wrong.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-6.3-obvious-but-wrong.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-7.1-empty.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-7.1-empty.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-7.2-no-claims.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-7.2-no-claims.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-7.3-binary-content.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-7.3-binary-content.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-7.4-extremely-short.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-7.4-extremely-short.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/tech-debt-triage/eval-criteria.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/tech-debt-triage/expected-verdicts.bash
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/tech-debt-triage/fixtures/tc-td2-statement-renderer.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td1-discount-rules.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td1-discount-rules.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td2-statement-renderer.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td2-statement-renderer.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td3-nightly-reconciliation.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td3-nightly-reconciliation.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td4-postcode-validation.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td4-postcode-validation.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td5-vat-rate-tables.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td5-vat-rate-tables.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td6-job-queue.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td6-job-queue.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/test-strategy/eval-criteria.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/test-strategy/expected-verdicts.bash
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/test-strategy/fixtures/tc-ts6-duration-parser.py
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts1-installment-split.py.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts1-installment-split.py.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts2-webhook-client.go.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts2-webhook-client.go.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts3-nightly-export-schedule.py.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts3-nightly-export-schedule.py.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts4-token-cache.ts.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts4-token-cache.ts.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts5-order-sync.py.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts5-order-sync.py.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts6-duration-parser.py.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts6-duration-parser.py.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/yglesias-critique/dimensions.bats
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl1-class-size-cap.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl1-class-size-cap.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl2-down-payment-grants.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl2-down-payment-grants.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl3-rail-extension.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl3-rail-extension.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl4-apprenticeship-guarantee.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl4-apprenticeship-guarantee.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl5-regional-housing-portal.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl5-regional-housing-portal.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl6-parking-minimums.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl6-parking-minimums.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl7-library-fines.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl7-library-fines.md.stamp
+rubric docs/working/briefs/2026-11-20-report-findings-f8-f12.md: clean docs/reviews/code-review-rubric-2026-11-20-report-findings-f8-f12.md: 0 red and 4 amber rows, none open
+```
+
+- **Paths self-merge would have refused:** `docs/failure-patterns.md` (your file, on the self-merge floor).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges TIP above; the five suites run in every health check. | Reading FP-187 and skimming the test changes. | One `git revert` undoes it. |
+| **[2] drop** | The brief closes; the five suites stay NOT RUN. | Nothing. | Five skills keep no regression check. |
+| **[3] changes needed** | Your note goes back to the loop (for example, leave FP-187 out). | Writing the note. | Another round. |
+
+- **Interim:** the branch waits; nothing merges.
 

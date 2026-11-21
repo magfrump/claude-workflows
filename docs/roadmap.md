@@ -39,49 +39,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   what remains here is the first live `--probe` run.
   2026-11-18: the run-or-refuse question now waits on watch Q-301 (`docs/working/watching.md`), not Q-278.
 
-- **Agent: the write guard's `.claude/wt-*` exemption is stale** (filed 2026-11-20, step 7; same research
-  doc). Motive: `hooks/guard-trusted-writes.py` exempts the old `.claude/wt-*` self-improvement worktrees,
-  which nothing creates once the worktree fix lands; its "(this harness's)" comment misleads. First step:
-  a review brief (gate code, `Live-verified:` trailer) to drop the exemption or correct the comment.
-
-- **Agent: `si_commit_child_work` should turn literal pathspecs off itself** (filed 2026-11-20, step 7; from
-  `docs/working/research-2026-11-20-self-improvement-env-followups.md`). Motive: its `git add` excludes the
-  message file with `":(exclude).si-commit-msg"`, which `GIT_LITERAL_PATHSPECS=1` reads as a file name; 5eab5704
-  guards the one call site in `scripts/self-improvement.sh`, but `test/si-commit-child-work.bats` calls the lib
-  directly and 8 of its cases still fail with the variable exported. First step: a review brief (`scripts/lib/`
-  is gate code) moving the `GIT_LITERAL_PATHSPECS=0` guard into `scripts/lib/si-commit.sh`, with a case that
-  exports the variable.
-
-- **Agent: `test/rubric-selection.bats` "emits nothing when two candidates tie" is flaky** (filed 2026-11-20,
-  step 1). Motive: it failed once in iteration 2317's health check (case 1019, line 152, `[ -z "$result" ]`), at
-  4cab5ae4 plus nothing that touches it, and passed 3 of 3 reruns alone; a build loop was regenerating reports
-  at the time. A flaky case in the fast suites turns a health check red and holds the whole cycle. First step:
-  rerun it under load to reproduce, then find the order or timing the selector depends on (both fixtures share a
-  date and commit; the selector may read file times).
-
-- **Agent: fix report findings F8 to F12 so five held-back skills' reports can land** (filed 2026-11-20,
-  step 7; from the regeneration's research doc, "Dispatch 2" section). Motive: 14 cases fail on fresh reports in
-  fact-check (9), yglesias-critique (2), business-plan-critique-moat, tech-debt-triage and test-strategy (1 each),
-  so those five skills' suites stay NOT RUN. F8 (moat tc-moat4: right judgment, wording misses the pattern), F9
-  (test-strategy tc-ts6: open whether skill or check changes), F10 (yglesias: `dimensions.bats` requires a
-  section the skill adds only "if relevant"), F11 (tech-debt tc-td2: the fixture depends on the run date), F12
-  (fact-check: no "Total claims checked" line on declined input; claim-count drift in tc-7.2 and tc-3.3). The
-  reports are in history (b4f458c9, 0d51e240, 956bb566). First step: a review brief (skills are prompt files)
-  deciding each case skill-side or test-side, as the F5 work did, then restore and land those reports.
-
-- **Agent: the cross-project board shows which projects have new harness feedback to copy here** (owner
-  request, 2026-11-20, in session: "I would like the cross-project board to also surface projects that have new
-  harness feedback to copy to this repo"). Motive: each project records harness friction in its own
-  `docs/harness-feedback.md`, and it reaches this repo only when the owner copies it and
-  `scripts/harness-feedback.py ingest` files it under `docs/working/feedback/PROJECT.md`; nothing says when a
-  project has entries this repo has not ingested, so feedback waits until the owner happens to look. The board
-  (`scripts/board.sh`, host only; guide `guides/cross-project-board.md`) already reads every registered repo's
-  default branch. First step: a research pass on how the board can tell "new" without reading this repo's
-  working tree (for example, comparing each project's highest F-NNN on its main with the highest in this repo's
-  `docs/working/feedback/PROJECT.md` on main), and what one listing line per project says (its count and the
-  ingest command); then a review brief (`scripts/board.sh` is host code under H1's trust rules). Related owner
-  feedback, recorded with Q-327 [2]: the weekly digest surfaced in the same board (T11).
-
 - **Agent: record the egress probe results in `devcontainer-config/egress/android.txt`** (filed 2026-11-20,
   step 7; Q-255 answered passed). Motive: the comment above `plugins-artifacts.gradle.org` still reads
   "Fronting: NOT YET PROBED", though the probe ran on 2026-11-07 (all four foreign-Host probes 403,
@@ -92,15 +49,37 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   it reaches sessions with a release that re-blesses (watch Q-167 asks for that bless's hint lines).
 
 
-- **Agent: the health check prints 312 "harness changed since generation" warnings** (filed 2026-11-20, step 1). Motive: since the regenerated reports landed (4f1e4150), every health check warns that the shared report harness (`test/skills/generate-reports.bash`, `transcript.jq`, runner settings) changed since generation, for 11 skills' reports (api-consistency-reviewer, architecture-review, business-plan-critique-unit-economics, code-fact-check, cowen-critique, design-space-situating, divergent-design, matrix-analysis, performance-reviewer, pre-mortem, self-eval); a warning on every run hides a new one. The harness last changed in 8abd0b51 and 846eee77 (the web-tools grant, 6c0563b5). First step: read the stamp check (`rg -n "changed since generation" test/skills/`) and the stamps in those reports, and decide whether they predate the grant (regenerate, a sandbox run as 4f1e4150 was) or the check compares the wrong thing (fix the check); research first, then a brief.
+- **Agent: close the six still-true rows of the 2026-11-13 review-gap audit** (filed 2026-11-20, step 7; same doc, brief 2). Motive: iter3 N5, N13, N17, N18 and questions-closeout A10, A11 still hold and nothing routed them; N13 is a security finding (the write guard). First step: a review brief confirming each row, then a fix, a revisit trigger or a Won't-Fix override row; N13 may need an owner call, asked from the loop's marker.
+
+- **Agent: `questions.sh check` flags an entry outside `## Open`, and `migrate` drops a heading it empties** (filed 2026-11-20, step 7; behemoth-arsenal harness feedback F-001; triage brief 1 in `docs/working/research-2026-11-20-harness-feedback-triage.md`). Motive: after a migration left stale route headings, 19 of 20 owner questions there were filed under "Watched conditions". First step: a review brief (gate code) once the ask counter (Q-344) settles `scripts/questions.sh`.
+
+- **Agent: answers files count as the owner's answer** (filed 2026-11-20, step 7; behemoth-arsenal F-002, philosophy-research F-004 and F-005, this repo's 7df4654d; triage brief 2). Q-345 answered [1] (2026-11-20, in session): the gate reads `Q-NNN: [N]` lines from new `docs/human-author/answers-*` files on main dated after the entry opened. First step: a review brief (gate code: `scripts/lib/dev-cycle-read.sh`, `scripts/build-loop.sh`, the skill).
+
+- **Agent: `guides/validation-gates.md` names the commit helper's literal-pathspecs guard** (filed 2026-11-20, step 7; the si-commit loop's nit). Motive: line 33 lists `si_commit_child_work`'s hardening but not the guard Q-348 moves into the lib. First step: once Q-348 merges, one line in that guide, riding with the next review unit that touches `guides/` (the cycle cannot write it).
+
+- **Agent: `harness-feedback.py ingest` stores a renamed project twice** (filed 2026-11-20, step 7; the board research's side finding). Motive: ad4f0eef changed `docs/working/feedback/philosophy-research.md`'s `Project:` line to `task-workspace-designer`; ingest keyed on that line would re-seed 22 entries (19 duplicates) and write a second copy. First step: confirm the rename is intended (that project is philosophy-research), then fix the file or teach ingest to refuse a project name that changes under an existing file.
+
+- **Agent: other `printf | grep -q` pipelines under `pipefail`** (filed 2026-11-20, step 7; the rubric flake loop's follow-up, `docs/working/research-2026-11-20-rubric-selection-flake.md`). Motive: the same shape that dropped the selector's points (failure pattern FP-175) is at `scripts/self-improvement.sh:823`, `:1512`, `:1830`, `scripts/lib/si-functions.sh:110`, `:241`, `:253`, `:290`, `:320`, `:327` and `hooks/claude-config-audit.sh:112` (as of 45553ee7). First step: a review brief (`scripts/lib/` is gate code, the hook an enforcement file) checking which can see a large enough input to lose a match, and switching those to here-strings.
+
+- **Agent: `harness-feedback.py ingest` overwrites an empty stored copy under another project name** (filed 2026-11-20, step 7; the board loop's finding, `docs/working/research-2026-11-20-board-pending-feedback.md`). Motive: an empty entry list counts as a prefix of any list, so a stored file with zero entries and a different `Project:` line is overwritten. First step: fold into the "`ingest` stores a renamed project twice" item's brief (same function).
+
+- **Agent: the board's weekly line trusts a future-dated file name** (filed 2026-11-20, step 7; same finding). Motive: the lib's `isweekly` takes the latest `YYYY-MM-DD.md` name, so a mistyped future date shows as latest every week. First step: once Q-352 merges, a small review brief to ignore dates after today and say so on the line.
+
+- **Agent: the digest's other sections read commit subjects under the repo's own log encoding** (filed 2026-11-20, step 7; the out-of-loop loop's follow-up, `docs/working/research-2026-11-20-out-of-loop-landings.md`, failure pattern FP-188). Motive: a repo-local `i18n.logOutputEncoding` cut subjects short and dropped a line in the new section; the digest's other `git log %s` reads have the same exposure. First step: once Q-353 merges, a review brief pinning `i18n.logOutputEncoding=UTF-8` in the digest's git calls, with a test.
 
 ## In flight
 
-- **Write trials T9, T11 and T12 into the dev-cycle skill** (from Now "Trial week: less friction, less habituation", 2026-11-20; Q-327 [2]). Brief `docs/working/briefs/2026-11-20-codify-trial-set-2.md` (review, gate code). The T11 board integration rides with the board item in Now.
+- **Agent: the write guard's Bash deny names the Read tool, and the taint docstring covers subagents** (from Now, filed 2026-11-20; F-022 and F-021's comment). Brief `docs/working/briefs/2026-11-20-guard-read-route-text.md` (review).
 
-- **Compare Behemoth Arsenal's review-gap causes with this repo's** (from Now "Review-gap audit in Behemoth Arsenal", owner feedback 2026-10-29, point 3; Q-302 answered done). Brief `docs/working/briefs/2026-11-20-review-gap-ba-compare.md` (self-merge, research only).
+- **Agent: reopen decision 040 on asks per day** (from Now, Q-341 [1]). Brief `docs/working/briefs/2026-11-20-reopen-040-asks-per-day.md` (self-merge, research only).
 
-- **Agent: A reproducible ask counter (`questions.sh counts`) for the weekly digest** (from Now, filed 2026-11-19; area B's B2). Brief `docs/working/briefs/2026-11-20-ask-counter.md` (review, gate code).
+- **Agent: the cross-project board lists harness feedback not yet copied here, and each repo's latest weekly digest** (from Now, owner request 2026-11-20). Brief `docs/working/briefs/2026-11-20-board-pending-feedback.md` (review, host code). Ready at 87ce7a6d; merge entry Q-352.
+
+- **Agent: the dev cycle lists code landings on main that came outside the build loop** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-out-of-loop-landings.md` (review, gate code). Ready at 93e88269; merge entry Q-353.
+
+- **Agent: fix report findings F8 to F12 so five held-back skills' reports can land** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-report-findings-f8-f12.md` (review; skills are prompt files). Ready at 0df118cd; merge entry Q-349. Q-349 [1]: the merge was refused because the main checkout holds untracked `test/skills/fact-check/output/` reports (the owner's Q-332 host run); retried next iteration.
+
+- **Agent: A reproducible ask counter (`questions.sh counts`) for the weekly digest** (from Now, filed 2026-11-19; area B's B2). Brief `docs/working/briefs/2026-11-20-ask-counter.md` (review, gate code). Ready at 47210f4b; merge entry Q-344. Q-344 [1]: the approved merge conflicted with main after Q-342 merged (both edit step 9's weekly digest); sent back to its loop (2026-11-20).
 
 ## Next
 
@@ -163,6 +142,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   its brief's rule "nothing writes outside the health checkout", which no H or S line in
   `docs/constraints.md` states; the same sample takes it, with the question for the owner whether
   that rule becomes a constraint (a `constraints-builder` amend run).
+  2026-11-20 (iteration 2026-11-21-0336): step 4b fired on `skills/dev-cycle/SKILL.md` as
+  9e27a4ea (Q-342) changed it (trials T9, T11 and T12 written in); the same sample takes it.
   2026-11-19 (iteration 0121 UTC): step 4b fired on `skills/code-review/SKILL.md` and decision
   032's amendment (d383a484, Q-315: the lever #3 cache claims withdrawn); the same sample takes
   them, with one question: do other review-cost decisions (log rows 33-35) rest on the same
@@ -442,6 +423,17 @@ Unranked. Each names the signal that motivates it.
 ## Done
 
 Items finished since the last cycle, with the merge.
+
+- Prepare the first quarterly threat-model walkthrough: 10785140 (self-merge), `docs/working/research-2026-11-20-threat-model-walkthrough-prep.md`, brief `docs/working/briefs/closed/2026-11-20-threat-model-walkthrough-prep.md`; filed as Q-350 (you: walkthrough), next due 2027-02-20 (watch Q-351).
+- Write trials T9, T11 and T12 into the dev-cycle skill: 9e27a4ea (approved merge, Q-342 [1]), brief `docs/working/briefs/closed/2026-11-20-codify-trial-set-2.md`.
+- The write guard's `.claude/wt-*` exemption: kept, comments corrected: abd8e21f (approved merge, Q-343 [1]), brief `docs/working/briefs/closed/2026-11-20-write-guard-wt-exemption.md`.
+- `si_commit_child_work` turns literal pathspecs off itself: 2c388cfc (approved merge, Q-348 [1]), brief `docs/working/briefs/closed/2026-11-20-si-commit-literal-pathspecs.md`.
+- Re-stamp the 81 pre-grant report stamps: 88c695fd (self-merge), `docs/working/research-2026-11-20-restamp-pre-grant-reports.md`, brief `docs/working/briefs/closed/2026-11-20-restamp-pre-grant-reports.md`. The health check's 312 stale-report warnings are gone (0 on the branch); the 11 skills' 23 suites pass.
+- Why the health check prints 312 stale-report warnings: 1bb24e5c (self-merge), `docs/working/research-2026-11-20-stale-report-warnings.md`, brief `docs/working/briefs/closed/2026-11-20-stale-report-warnings.md`. 81 stamps in 11 skills predate the web-tools grant, which cannot change those runners' output; the re-stamp is In flight.
+- `test/rubric-selection.bats` flake: 8daaa173 (self-merge), `docs/working/research-2026-11-20-rubric-selection-flake.md`, brief `docs/working/briefs/closed/2026-11-20-rubric-selection-flake.md`. Cause: `printf | grep -q` under `pipefail` (SIGPIPE read as no match); 2 of 200 failed under load before, 0 of 200 after. The Idea "`test/rubric-selection.bats` looks load-sensitive" is answered by it.
+- Cross-project board feedback research: 7f086d40 (self-merge), `docs/working/research-2026-11-20-board-feedback-research.md`, brief `docs/working/briefs/closed/2026-11-20-board-feedback-research.md`. Build brief and the ingest rename finding: Now.
+- Triage the six harness-feedback entries ingested in ad4f0eef: aa91635c (self-merge), `docs/working/research-2026-11-20-harness-feedback-triage.md`, brief `docs/working/briefs/closed/2026-11-20-harness-feedback-triage.md`. F-001, F-002, F-022: Now; F-021 closed (61122f34); F-020 and F-013 closed to watches Q-346 and Q-347.
+- Compare Behemoth Arsenal's review-gap causes with this repo's (owner feedback 2026-10-29, point 3; Q-302): 867f6546 (self-merge), `docs/working/research-2026-11-20-review-gap-ba-compare.md`, brief `docs/working/briefs/closed/2026-11-20-review-gap-ba-compare.md`. Same causes; uncovered: landings outside the build loop and six still-true rows (both now in Now).
 
 - **`--cycle-diff` lets a cycle record lose its earlier blocks**: the gate now refuses a record change that drops
   or rewrites earlier blocks, or deletes the record. Done fec9f7a3 (approved merge, Q-339 [1]), brief

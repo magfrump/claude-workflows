@@ -291,3 +291,47 @@ passed.
 - **Evidence:** Live failures in October 2026, first in a transcript on 2026-10-17; probe sessions
 on 2026-11-07. Sources: transcripts and the project's memory note on sandbox builds. The number of
 failed builds was not counted.
+
+### F-013 · toolchain-state-wiped-on-harness-update
+**Feature:** cc-isolated sandbox image and volumes · **Date:** 2026-11-20 · **Verdict:** friction
+
+- **Context:** Android builds in the agent sandbox. The image's `/opt/android-sdk` is read-only and
+AGP 8.7.3 installs build-tools 34, so builds used a writable SDK overlay. It was in `~/.cache`, with
+the Gradle cache (~1.2 GB) in `~/.gradle`.
+
+- **Expected:** Per-project build state survives a harness update, as the `~/.claude` volume
+(memory, settings) does.
+
+- **Observed:** Both live on the container's root filesystem, so every harness update wiped them.
+Each time, a session rebuilt the overlay by hand from a memory note, and the first build
+re-downloaded the Gradle cache (~3 min). The project now works around it in two ways. It pins
+`buildToolsVersion` to the 35.0.0 the image ships, so no overlay is needed. And
+`scripts/with-sandbox-sdk.sh` keeps `GRADLE_USER_HOME` on the `~/.claude` volume. The owner chose
+that over baking the SDK into the image, since they don't want the SDK in images for projects
+without Android egress. That means one Gradle cache per Android project.
+
+- **Evidence:** Overlay missing and rebuilt by hand at iteration 2026-11-19-2318 (the fourth time,
+`docs/working/idea-log.md`) and again on 2026-11-20; fix in commits e681505, 47f51d5, 9c20be9 and
+7174513 on branch `chore/persistent-sdk-overlay`. Count of past
+updates that wiped it was not recorded.
+
+Ideas from a divergent-design pass in the project (`docs/working/dd-sandbox-toolchain-persistence.md`,
+14 candidates, 4 survived), offered for a claude-workflows dev cycle:
+1. Recommended (about 75% confidence): mount a generic per-project cache volume and point
+`XDG_CACHE_HOME`, `GRADLE_USER_HOME`, `npm_config_cache` and `PIP_CACHE_DIR` into it, so no
+project needs its own wrapper. Add a per-project cache-size report, since caches would otherwise
+grow out of sight, and document deleting the volume as the reset step.
+2. Later, only if a second toolchain needs it: a per-project toolchain manifest that provisions the
+toolchain and derives the egress allowlist from the same list, so an SDK is present exactly when
+its egress is.
+3. Cheap dedupe without a shared writable mount: bind the host's Gradle cache read-only and set
+`GRADLE_RO_DEP_CACHE`. A read-write cache shared across projects was pruned as a cross-project
+poisoning path.
+Whatever holds the caches, keep it out of what the config auditor (`claude_config_audit.py`) scans.
+The project first put the Gradle cache at `~/.claude/cache/gradle`, and a `--summary` scan of
+that tree reported 2,078 HIGH and over 3 million MED findings, mostly from build binaries. The
+auditor skips directories by exact name, and its list has `.cache` but not `cache`, so the cache
+moved to `~/.claude/.cache/gradle`.
+4. Worth checking on the host: this image already ships `/opt/android-sdk` (root-owned, dated
+2026-09-28). If it is the shared base image, the owner's no-SDK-without-egress rule is already
+broken, and an Android-only image variant becomes the fix.
