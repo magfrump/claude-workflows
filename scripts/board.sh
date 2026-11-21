@@ -142,8 +142,9 @@ read_stored() {
 # The feedback line: none for the harness repo itself, a repo with no file, or
 # with no harness repo registered. Returns 1 after UNREADABLE or NOT COMPARED.
 feedback() {
-  local e out rc=0 f=docs/harness-feedback.md
-  [[ "$(git rev-parse --path-format=absolute --git-common-dir)" != "$CWKEY" ]] || return 0
+  local e k out rc=0 f=docs/harness-feedback.md
+  k="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" || { echo "   feedback UNREADABLE: the git directory could not be read"; return 1; }
+  [[ -z "$CWKEY" || "$k" != "$CWKEY" ]] || return 0
   e="$(main_entry "$f")"
   case "$e" in
     absent) return 0 ;;
@@ -457,7 +458,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
       CWWHY="$line holds part of the harness, but its main reads guides/harness-feedback.md and scripts/harness-feedback.py as: ${r%%$'\n'*}" ;;
   esac
 done < "$REG"
-[[ $hn -le 1 ]] || { CW=""; CWWHY="$hn registered repos hold the harness (guides/harness-feedback.md and scripts/harness-feedback.py on main)"; }
+[[ $hn -le 1 ]] || { CW=""; CWKEY=""; CWWHY="$hn registered repos hold the harness (guides/harness-feedback.md and scripts/harness-feedback.py on main)"; }
 [[ -z "$CW" || -n "$CWWHY" ]] || CWWHY="$( set -e; cd -- "$CW" && read_stored )" || CWWHY="the stored copies in $CW could not be read"
 shopt -s nullglob dotglob; STORED=("$TMP"/stored/*); shopt -u nullglob dotglob
 

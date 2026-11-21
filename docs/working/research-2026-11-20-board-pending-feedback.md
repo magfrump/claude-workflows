@@ -100,6 +100,8 @@ Iteration 2 (a fresh reviewer on f934786f). No Must Fix. Addressed:
 - Consider, taken: a project with the guide as a file and a symlinked `scripts/` (`blob notdir scripts`) was refused for every project; only `notfile`, `error` or `badform` beside a `blob` now refuse (guide says so). The harness's own block is skipped by common dir, not by registry string.
 - Consider, left: with several refusal reasons only the last is printed (each still refuses). For a bare harness repo the printed `cd BARE && … ingest` would be refused by `ingest` itself (no checkout); a bare registration of claude-workflows is not a modelled owner setup.
 
+Iteration 3 (a fresh reviewer on fbafd923): no Must Fix, no Must Address; the common-dir key was probed through symlinks, subdirectories, worktrees, bare clones and `gitdir:` files and compares in both places. Three Considers taken after it, each checked by the touched suites: with two harness repos the key is cleared too, so the last one's own block also says NOT COMPARED; a failed common-dir read in feedback() is UNREADABLE, not a silent skip; and the self-skip is now tested (the harness's own file, through a symlinked registry line). Loop exit: clean convergence.
+
 ## Files read
 
 Last verified: 2026-11-20

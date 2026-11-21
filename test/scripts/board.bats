@@ -521,6 +521,9 @@ fbline() { printf '%s\n' "$output" | awk -v h="== $BATS_TEST_TMPDIR/$1" '$0 == h
     # Right after the main line; no line for a repo with no file or for the harness repo itself.
     [[ "$output" == *"open watch"$'\n'"   $l"$'\n'* ]]
     [ -z "$(fbline gamma)" ] && [ -z "$(fbline cw)" ]
+    # The harness's own file, through a symlinked registry line, is never compared with itself.
+    hfile "$CW/docs/harness-feedback.md" cw F-001; commit "$CW"; ln -s cw "$BATS_TEST_TMPDIR/cw-link"; echo "$BATS_TEST_TMPDIR/cw-link" >> "$BOARD_REGISTRY"
+    board; [ -z "$(fbline cw)" ] && [ -z "$(fbline cw-link)" ] && [[ "$(fbline beta)" == "feedback: 2 not copied"* ]] || { echo "$output"; false; }
     # A copy only in the harness repo's working tree is not on main yet.
     cp "$BATS_TEST_TMPDIR/beta/docs/harness-feedback.md" "$CW/docs/working/feedback/beta.md"
     board; [[ "$(fbline beta)" == "feedback: 2 not copied"* ]]
@@ -580,8 +583,10 @@ fbline() { printf '%s\n' "$output" | awk -v h="== $BATS_TEST_TMPDIR/$1" '$0 == h
     [ "$status" -eq 0 ] && [ -z "$(fbline beta)" ] || { echo "$output"; false; }
     [[ "$output" == *$'\n'"feedback not compared: no registered repo holds the harness"* ]]
     mkcw; git clone -q "$CW" "$BATS_TEST_TMPDIR/cw2"; echo "$BATS_TEST_TMPDIR/cw2" >> "$BOARD_REGISTRY"
+    hfile "$BATS_TEST_TMPDIR/cw2/docs/harness-feedback.md" cw2 F-001; commit "$BATS_TEST_TMPDIR/cw2"
     board
     [ "$status" -eq 1 ] && [[ "$(fbline beta)" == "feedback NOT COMPARED: 2 registered repos hold the harness"* ]] || { echo "$output"; false; }
+    [[ "$(fbline cw2)" == "feedback NOT COMPARED: 2 registered repos"* ]] || { echo "$output"; false; }
 }
 
 @test "weekly: the latest edition on main with its date; none without the directory; none yet when empty" {
