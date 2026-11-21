@@ -31,3 +31,5 @@ Policy: review
 
 - Removing `.claude/wt-q096b` or any other worktree, and any other guard rule (the open rows N13 and N18 of the 2026-11-13 audit are their own roadmap item).
 - Editing `docs/roadmap.md`, the questions files, `docs/working/watching.md` or `docs/working/idea-log.md`: the dev cycle owns those.
+
+Dispatched: 1
