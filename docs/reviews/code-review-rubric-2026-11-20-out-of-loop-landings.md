@@ -1,7 +1,7 @@
 Commit: fa2dcfc8
 # Code Review Rubric
 
-**Scope:** feat/out-of-loop-landings, `git diff 977c3f70...fa2dcfc8` (ded4a73d, fa2dcfc8) | **Reviewed:** 2026-11-20 | **Status:** iteration 1: 🔴 DOES NOT PASS (1 red); fixes in the next commit, re-checked in iteration 2 below
+**Scope:** feat/out-of-loop-landings, `git diff 977c3f70...fa2dcfc8` (ded4a73d, fa2dcfc8) | **Reviewed:** 2026-11-20 | **Status:** iteration 1: 🔴 DOES NOT PASS (1 red); fixed in 14f0e543; iteration 2 (narrow re-review of 14f0e543) held R1 and A1-A12 and added A13, C20, C21
 
 Pipeline: code-fact-check k=3 (opus) → security, performance, api-consistency, architecture (opus, parallel) → submitted-claims fact-check (8 routed endorsements) → executable-defect runs X1–X3 (fixture repos in the review's scratch dir). Delivery mode: inline-diff-only. Run by a read-only review subagent; the author saved this file and filled Status and Author note.
 
@@ -27,6 +27,7 @@ Pipeline: code-fact-check k=3 (opus) → security, performance, api-consistency,
 | A10 | landings.sh is a third reader of the trailer, and `gate_msg`'s comment names only `log_class`. | Architecture | Coupling | architecture 2 | Deferred | TODO in landings.sh's header (name this reader in gate_msg's comment: build-loop.sh is out of scope here); the header also states that a `--land-cycle` merge never reaches the check. |
 | A11 | Step 4 has no record form for **Out-of-loop landings were NOT checked**, so it would be recorded as 0 and count toward removal. | API / Skill contract | Inconsistent | api F1 | Fixed | Step 4: such a section records `not checked: why`, never a 0. |
 | A12 | The ten-zero removal rule cannot be evaluated: step 4 may not read old records, and the count was of items filed after the SHA dedupe. | API / Skill contract | Inconsistent | api F2 | Fixed | The `4.` line records `N listed, K filed`; the rule reads `0 listed` over the last ten days' records, and the record rules now let step 4 read them. |
+| A13 | Iteration 2: the removal rule (`SKILL.md:586-588`) could fire on one block, or vacuously when no block carries the field. | API / Skill contract | Soundness | iteration 2 re-review | Fixed | The rule now needs at least ten full blocks that carry the field, on ten different days, all `0 listed`; with fewer it keeps the step. |
 
 ## 🟢 Consider
 
@@ -51,3 +52,5 @@ Pipeline: code-fact-check k=3 (opus) → security, performance, api-consistency,
 | C17 | Research doc's "(found by the tests)" has no trace in history. | Fact-check | Unverifiable | Fixed (reworded) |
 | C18 | The message guard covers octopus merges too. | Fact-check | Mostly accurate | Open |
 | C19 | Brief Status line still to flip. | architecture | Informational | Open (the final commit flips it) |
+| C20 | A7 and A10 are Deferred but have no override-log row. | iteration 2 | Informational | Open (each Author note carries its reason and a trigger or TODO, which rubric.md accepts where the log is not edited; the log is not in this brief's scope) |
+| C21 | A CRLF build-loop merge message would be listed. It only over-lists, and gate_msg never writes CR. | iteration 2 | Informational | Open |
