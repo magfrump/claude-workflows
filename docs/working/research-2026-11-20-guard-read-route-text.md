@@ -4,10 +4,12 @@ Date: 2026-11-20 · Brief: `docs/working/briefs/2026-11-20-guard-read-route-text
 
 ## What the code does
 
+Line numbers are at the dispatch commit 0423fe3b.
+
 - `hooks/guard-trusted-writes.py` classifies a Bash command by its text. `bash_targets`
   (about line 470) returns `hard` when the text has a write primitive (`WRITE_PRIMITIVE`,
-  line 437: any `>` not to `/dev/null` or an fd, `tee`, `sed -i`, `cp`/`mv`, and any
-  `python3 ... -c`) plus a policy name. `main` then denies with one fixed text (line 512).
+  line 437: any `>` not to `/dev/null` or an fd, `tee`, `sed -i`, `dd of=`, `truncate`,
+  `cp`/`mv`/`install`/`rsync`, and `python`/`node`/`perl`/`ruby` with `-c` or `-e`) plus a policy name. `main` then denies with one fixed text (line 512).
   The text says Bash can't write these files, points project files to Edit/Write and
   global ones outside Claude, and routes prose to `git commit -F` / `--body-file`.
 - A read-only command that quotes a `>` or runs `python3 -c` near a policy path is
@@ -48,7 +50,7 @@ S11 (pure text), S3.
 |---|---|---|---|---|
 | A. Read tool only | "To read these files, use the Read tool." | Misses the script route | Fully kept | Reads yes; testing a hook on a payload no (F-022's second case) |
 | B. Literal brief | "...or run a check from a script file passed by path." | Met | Reopened: an unqualified "run a script" route, the M2 wording | Yes |
-| C. Scoped script route | "If the command only reads or tests these files, read them with the Read tool, or put the check in a script file and run it by path; that route is for reads only, and a script that writes these files breaks the same rule." | Met | Narrowed: the route is offered only for reads and says a writing script is the same violation | Yes |
+| C. Scoped script route | "If the command only reads or tests these files, read them with the Read tool, or write the check to a script file with the Write tool and run it by path; that route is for reads only, and a script that writes these files breaks the same rule." | Met | Narrowed: the route is offered only for reads and says a writing script is the same violation | Yes |
 | D. Describe the trigger | "Quoted `>` and `python3 -c` count as writes; rephrase." | Misses Read/script | Worse: teaches how to dodge the classifier, for writes too | Yes |
 | E. Status quo | none | Fails | Kept | No |
 
@@ -65,6 +67,9 @@ Residual risk, stated: a model that ignores the caveat can still use A8; that wa
 before this change and is the accepted A8 gap.
 
 Other choices (one line each):
+- "With the Write tool" (review round 1 nit): without it, a session may write the script
+  with a Bash heredoc that names the path and hit the same deny. The reads-only caveat in
+  the same sentence is what keeps A2's intent, so naming the tool adds no write route.
 - Where the sentence goes: before the prose sentence, so the three routes read in order
   read, test, prose. The prose route already exists and stays as written.
 - Taint docstring: state what was observed (Workflow subagents share the parent's

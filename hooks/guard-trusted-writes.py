@@ -520,8 +520,9 @@ def main():
                          "or Write tool. For global ones (~/.claude, ~/CLAUDE.md), make the change "
                          "outside Claude, in your own editor or shell, and review it there. If the "
                          "command only reads or tests these files, read them with the Read tool, or "
-                         "put the check in a script file and run it by path; that route is for reads "
-                         "only, and a script that writes these files breaks the same rule. If the "
+                         "write the check to a script file with the Write tool and run it by path; that "
+                         "route is for reads only, and a script that writes these files breaks the same "
+                         "rule. If the "
                          "path only appears in prose, such as a commit message or PR body, put that "
                          "prose in a file with the Write tool and pass it with `git commit -F <file>` "
                          "or `--body-file <file>`.")

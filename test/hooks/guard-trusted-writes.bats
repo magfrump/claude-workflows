@@ -1157,7 +1157,7 @@ bare_host_layout() {
   # A2, narrowed 2026-11-20 (F-022): a script appears only as a read route,
   # and the same clause says a writing script breaks the rule. Every mention
   # of "script" must sit in that one sentence.
-  local read_sentence="If the command only reads or tests these files, read them with the Read tool, or put the check in a script file and run it by path; that route is for reads only, and a script that writes these files breaks the same rule."
+  local read_sentence="If the command only reads or tests these files, read them with the Read tool, or write the check to a script file with the Write tool and run it by path; that route is for reads only, and a script that writes these files breaks the same rule."
   local rest="${reason/"$read_sentence"/}"
   [[ "$rest" != "$reason" ]] || { echo "$reason"; return 1; }
   [[ "$rest" != *"script"* && "$rest" != *" run "* ]] || { echo "$reason"; return 1; }
