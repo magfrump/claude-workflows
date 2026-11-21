@@ -39,13 +39,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   what remains here is the first live `--probe` run.
   2026-11-18: the run-or-refuse question now waits on watch Q-301 (`docs/working/watching.md`), not Q-278.
 
-- **Agent: `test/rubric-selection.bats` "emits nothing when two candidates tie" is flaky** (filed 2026-11-20,
-  step 1). Motive: it failed once in iteration 2317's health check (case 1019, line 152, `[ -z "$result" ]`), at
-  4cab5ae4 plus nothing that touches it, and passed 3 of 3 reruns alone; a build loop was regenerating reports
-  at the time. A flaky case in the fast suites turns a health check red and holds the whole cycle. First step:
-  rerun it under load to reproduce, then find the order or timing the selector depends on (both fixtures share a
-  date and commit; the selector may read file times).
-
 - **Agent: fix report findings F8 to F12 so five held-back skills' reports can land** (filed 2026-11-20,
   step 7; from the regeneration's research doc, "Dispatch 2" section). Motive: 14 cases fail on fresh reports in
   fact-check (9), yglesias-critique (2), business-plan-critique-moat, tech-debt-triage and test-strategy (1 each),
@@ -87,6 +80,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
+- **Agent: `test/rubric-selection.bats` "emits nothing when two candidates tie" is flaky** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-rubric-selection-flake.md` (self-merge; the selector is in `scripts/self-improvement.sh`).
+
 - **Agent: triage the six harness-feedback entries ingested in ad4f0eef** (filed 2026-11-20, step 6; behemoth-arsenal F-001 and F-002, belegarth-herald F-013, philosophy-research F-020 to F-022). Brief `docs/working/briefs/2026-11-20-harness-feedback-triage.md` (self-merge, research only).
 
 - **Agent: `si_commit_child_work` should turn literal pathspecs off itself** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-si-commit-literal-pathspecs.md` (review, `scripts/lib/` is gate code).
@@ -95,7 +90,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 - **Write trials T9, T11 and T12 into the dev-cycle skill** (from Now "Trial week: less friction, less habituation", 2026-11-20; Q-327 [2]). Brief `docs/working/briefs/2026-11-20-codify-trial-set-2.md` (review, gate code). Ready at a77146f3; merge entry Q-342. The T11 board integration rides with the board item in Now.
 
-- **Agent: A reproducible ask counter (`questions.sh counts`) for the weekly digest** (from Now, filed 2026-11-19; area B's B2). Brief `docs/working/briefs/2026-11-20-ask-counter.md` (review, gate code).
+- **Agent: A reproducible ask counter (`questions.sh counts`) for the weekly digest** (from Now, filed 2026-11-19; area B's B2). Brief `docs/working/briefs/2026-11-20-ask-counter.md` (review, gate code). Ready at 47210f4b; merge entry Q-344.
 
 ## Next
 
