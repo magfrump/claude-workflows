@@ -152,6 +152,33 @@ mk_rubric() {
   [ -z "$result" ]
 }
 
+# A rubric whose match sits early, followed by a body far past the 64 KiB pipe buffer.
+# The old scorer piped `printf | grep -q` under the script's pipefail: grep exits at
+# its first match, printf dies of SIGPIPE writing the rest, the pipeline reports 141
+# and the point is lost. Small fixtures lost it only when load let grep exit between
+# printf's line-buffered writes (2 of 200 under 32 busy loops); a big body loses it
+# every time, so this pins the race without needing load.
+mk_big_rubric() {
+  mk_rubric "$@"
+  head -c 1048576 /dev/zero | tr '\0' 'x' >> "$ARCHIVE/$1"
+  printf '\n' >> "$ARCHIVE/$1"
+}
+
+@test "a tie is a tie when one candidate is large (no SIGPIPE-lost points)" {
+  mk_rubric 'code-review-rubric-2026-07-30-feat-a.md' '2026-07-30' 'd90d6bb'
+  mk_big_rubric 'code-review-rubric-2026-07-30-feat-b.md' '2026-07-30' 'd90d6bb'
+
+  result=$(select_run_rubric "$ARCHIVE" 'd90d6bbcafe1234567890' '2026-07-30')
+  [ -z "$result" ] || { echo "tie broken, picked: $result"; false; }
+}
+
+@test "a large rubric that is the only match is selected" {
+  mk_big_rubric 'code-review-rubric-2026-07-30-feat-x.md' '2026-07-30' 'd90d6bb'
+
+  result=$(select_run_rubric "$ARCHIVE" 'd90d6bbcafe1234567890' '2026-07-30')
+  [ "$result" = "$ARCHIVE/code-review-rubric-2026-07-30-feat-x.md" ]
+}
+
 @test "emits nothing for an empty archive directory" {
   result=$(select_run_rubric "$ARCHIVE" 'd90d6bbcafe1234567890' '2026-07-30')
   [ -z "$result" ]
