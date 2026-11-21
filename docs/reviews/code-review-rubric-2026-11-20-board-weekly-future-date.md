@@ -18,8 +18,8 @@ None.
 | # | Finding | Domain | Severity | Source | Legibility-target | Considered overrides | Status | Author note |
 |---|---|---|---|---|---|---|---|---|
 | A1 | `realday` parsed with local `date -d`, which rejects a real day whose local midnight a clock change skips (America/Santiago 2024-09-08), so the board would refuse its whole run that day. `scripts/lib/dev-cycle-read.sh:236` | Correctness | Bug | Pass 1 | for-author | — | Fixed 49261297 | `date -u -d`, and a bats case under TZ=America/Santiago. |
-| A2 | The research doc said the digest's brainstorm-age check keeps a local parse because its arithmetic needs it; the local parse is itself faulty across DST. `docs/working/research-2026-11-20-board-weekly-future-date.md` | Docs | Incorrect | Pass 2 | for-author | — | Fixed e8e5b76a | Reworded: a separate digest bug, out of this brief's scope. |
-| A3 | The digest's default window (`TODAY - 14 days`, `scripts/dev-cycle.sh:248`) fails on a skipped-midnight TODAY with a misleading --since message; predates this branch. | Correctness | Pre-existing | Pass 2 | for-author | — | Won't-Fix | Out of scope (the brief is the board's weekly line); recorded in the research doc for its own fix. |
+| A2 | The research doc said the digest's brainstorm-age check keeps a local parse because its arithmetic needs it; the local parse is itself faulty across DST. `docs/working/research-2026-11-20-board-weekly-future-date.md` | Docs | Incorrect | Pass 2 | for-author | — | Fixed (pass 2 fixes, final commit) | Reworded; the code it described is fixed too (A3). |
+| A3 | The digest's default window (`TODAY - 14 days`, `scripts/dev-cycle.sh:248`) fails on a skipped-midnight TODAY with a misleading --since message; predates this branch. | Correctness | Pre-existing | Pass 2 | for-author | — | Fixed (pass 2 fixes, final commit) | `date -u -d` for the window and the brainstorm-age count; guard uses realday. |
 
 ---
 

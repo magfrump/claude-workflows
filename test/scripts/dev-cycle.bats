@@ -335,6 +335,12 @@ make_repo() {
     [[ "$output" == *"Window: since 2026-03-01 (from --since)"* ]]
 }
 
+@test "the default window holds on a day whose local midnight a clock change skips" {
+    # Chile's clocks went from 00:00 to 01:00 on 2024-09-08: a local parse of that day fails.
+    TZ=America/Santiago DEV_CYCLE_TODAY=2024-09-08 run --separate-stderr bash "$DC"
+    [ "$status" -eq 0 ] && [[ "$output" == *"Window: since 2024-08-25 ("* ]] || { echo "$stderr"; echo "$output" | sed -n 3p; return 1; }
+}
+
 @test "--since includes commits from the start date itself" {
     GIT_COMMITTER_DATE="$(date +%F)T00:00:30" git commit -q --allow-empty --date="$(date +%F)T00:00:30" -m "just after midnight"
     # All commits here are from today: a window starting today counts all of them.

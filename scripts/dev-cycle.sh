@@ -245,7 +245,7 @@ elif [[ -n "$last_record" ]]; then
     source_note+="; a newer record, docs/working/cycles/cycle-$skipped_record.md, was skipped as not a plain file (section 8), so this window may start too early"
   fi
 else
-  SINCE="$(date -d "$TODAY - 14 days" +%F)"
+  SINCE="$(date -u -d "$TODAY - 14 days" +%F)"  # UTC: a skipped local midnight is no time
   if [[ $records_skipped -gt 0 ]]; then
     source_note="no readable cycle record (records, or a directory above them, were skipped as not a plain file or directory: section 8), so the default of 14 days"
   else
@@ -691,8 +691,8 @@ if inrepo "$LOG"; then
   # No {n} intervals in the awk regex: mawk, Debian's default awk, lacks them.
   # Each committed copy of a line cancels one working-tree copy (a multiset difference).
   seeded="$(awk -v from="$bs_from" '{ sub(/\r$/, "") } FILENAME == ARGV[1] { old[$0]++; next } FNR > from && /^- [^ ]/ && index(substr($0, 4), "(signal: ") && /\)[[:space:]]*$/ { if (old[$0] > 0) old[$0]--; else c++ } END { print c + 0 }' <(if [[ -n "$bs_old" ]]; then git cat-file blob "$bs_old"; fi) "$LOG")"
-  if [[ -n "$last_bs" ]] && date -d "$last_bs" >/dev/null 2>&1; then
-    echo "- Last brainstorm: $last_bs ($(( ($(date -d "$TODAY" +%s) - $(date -d "$last_bs" +%s)) / 86400 )) day(s) ago)"
+  if [[ -n "$last_bs" ]] && realday "$last_bs"; then
+    echo "- Last brainstorm: $last_bs ($(( ($(date -u -d "$TODAY" +%s) - $(date -u -d "$last_bs" +%s)) / 86400 )) day(s) ago)"
   else
     echo "- Last brainstorm: none recorded in $LOG"
   fi
