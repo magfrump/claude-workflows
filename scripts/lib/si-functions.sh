@@ -316,15 +316,16 @@ validate_task_json() {
                 continue
             fi
 
-            # Reject directory traversal (..) which could escape the repo
-            if echo "$fpath" | grep -qE '(^|/)\.\.(/|$)'; then
+            # Reject directory traversal (..) which could escape the repo.
+            # Here-string, not a pipe: under pipefail a match before more lines lost to SIGPIPE 141 (FP-175).
+            if grep -qE '(^|/)\.\.(/|$)' <<< "$fpath"; then
                 ft_errors="${ft_errors}directory traversal in files_touched: $fpath (paths must not contain '..'); "
                 echo "  PATH_VALIDATOR_REJECT [$tid]: $fpath" >&2
                 continue
             fi
 
-            # Reject glob patterns (*, ?, [)
-            if echo "$fpath" | grep -qE '[*?[]'; then
+            # Reject glob patterns (*, ?, [). Here-string, not a pipe (FP-175).
+            if grep -qE '[*?[]' <<< "$fpath"; then
                 ft_errors="${ft_errors}glob pattern in files_touched: $fpath; "
                 continue
             fi

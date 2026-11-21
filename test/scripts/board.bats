@@ -99,6 +99,19 @@ mkrepo() {
     [[ "$output" != *Q-001* ]]
 }
 
+@test "a refusal line followed by a long check output is reported once (FP-175)" {
+    # 3000 refusals make about 220 KB of check output after the first one.
+    # A pipe into grep -m1 under pipefail lost that match to SIGPIPE 141 and
+    # ran the head -n1 fallback too, doubling the line.
+    mkrepo alpha
+    for i in $(seq 3000); do printf '\n### Q-9 · Bad Heading %d\n' "$i"; done \
+        >> "$BATS_TEST_TMPDIR/alpha/docs/working/questions.md"; commit "$BATS_TEST_TMPDIR/alpha"
+    board
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"UNREADABLE (questions.sh check: ✗ questions.md: malformed entry heading: ### Q-9 · Bad Heading 1)"* ]]
+    [[ "$output" != *"Bad Heading 1"$'\n'* ]]
+}
+
 @test "an unknown route is refused by name" {
     mkrepo alpha
     entry Q-007 odd-route 'you: someday' OPEN >> "$BATS_TEST_TMPDIR/alpha/docs/working/questions.md"
