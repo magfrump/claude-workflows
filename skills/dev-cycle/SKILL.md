@@ -945,8 +945,8 @@ optional look below, and lands with this iteration. Keep each part short, and sa
   week; none: a self-merge), picked at random saying how, with the command or path that
   shows it, one question about it, and the reply that counts (`look: fine` or what was off);
   then how many earlier looks the owner took of those offered in past editions, counted from
-  that reply in the questions files or the owner's words in session, or "not counted" where
-  neither shows it.
+  that reply (or an earlier edition's `sample: fine`) in the questions files or the owner's
+  words in session, or "not counted" where neither shows it.
 
 Write the record `docs/working/cycles/cycle-YYYY-MM-DD.md`, dated as the digest dates
 (`date +%F`, local time; the branch name's DATE-HHMM is UTC): one file per day, each
