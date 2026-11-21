@@ -43,9 +43,9 @@ Two tiers of policy path:
           `.claude/` dir (`.claude/worktrees/<name>/`, Claude Code's own; and
           `.claude/wt-*/`, which this harness no longer creates: its loops put
           worktrees under `.worktrees/` since 7b46a90e and b3e25cf1, and the shape
-          is kept for worktrees left from before, in this or another repo) is
-          judged by its path RELATIVE to the worktree root, so an ordinary file there gets no
-          opinion, as in the main checkout. The worktree's own policy files stay SOFT:
+          is kept for any such worktree, such as one left from before in this or
+          another repo) is judged by its path RELATIVE to the worktree root, so an
+          ordinary file there gets no opinion, as in the main checkout. The worktree's own policy files stay SOFT:
           everything the SOFT name rules above match, judged on the relative path
           (_is_soft_parts: its `.claude/`, `.md`/`.txt`/extensionless files under
           skills/agents/commands/memories, CLAUDE.md, CLAUDE.local.md, AGENTS.md,
@@ -252,10 +252,10 @@ def _is_hard(cand: Path, dirs) -> bool:
 # `.claude/worktrees/<name>/` (Claude Code's own) and `.claude/wt-*/` hold whole
 # checkouts. This harness no longer makes `.claude/wt-*/` (the self-improvement
 # loop moved to `.worktrees/si-wt-*` in 7b46a90e, the dev cycle's build loops use
-# `.worktrees/` since b3e25cf1); the case stays for worktrees left from before,
-# in this repo or another, so a write there is judged as it was when they were
-# made (docs/working/research-2026-11-20-write-guard-wt-exemption.md). Without this, the blanket `.claude` SOFT rule
-# makes every edit there ask once a session is web-tainted. A path inside one is
+# `.worktrees/` since b3e25cf1); the case stays for any such worktree, such as
+# one left from before in this repo or another, so a write there is judged as it
+# was when it was made (docs/working/research-2026-11-20-write-guard-wt-exemption.md).
+# Without this, the blanket `.claude` SOFT rule makes every edit there ask once a session is web-tainted. A path inside one is
 # classified by its path RELATIVE to the worktree root, but only when the root is
 # a verified linked worktree; anything unverifiable keeps today's SOFT (H2).
 _SOFT_SEGS = {"skills", "memories", "commands", "agents"}
@@ -275,8 +275,9 @@ def _is_soft_parts(parts) -> bool:
     return ".claude" in low
 
 def _worktree_root(cand: Path):
-    """The innermost `.claude/wt-*` (a harness worktree from before `.worktrees/`)
-    or `.claude/worktrees/<name>` (Claude Code's) prefix of `cand` (exact case: a case variant is not a worktree root and stays SOFT), or None.
+    """The innermost `.claude/wt-*` (e.g. a harness worktree from before
+    `.worktrees/`) or `.claude/worktrees/<name>` (Claude Code's) prefix of `cand`
+    (exact case: a case variant is not a worktree root and stays SOFT), or None.
     None too when a skills/agents/commands/memories segment (any case) sits above
     the root: a worktree nested in a policy folder keeps that folder's ask."""
     parts = cand.parts

@@ -1038,7 +1038,8 @@ assert_file_decisions() {  # $1 = expected (ask|defer|deny), $2 = session, rest 
 # The harness no longer creates `.claude/wt-*` worktrees (7b46a90e, b3e25cf1),
 # but the guard keeps judging one left from before relative to its root
 # (docs/working/research-2026-11-20-write-guard-wt-exemption.md). Dropping the
-# case would turn the plain-file defer below into an ask.
+# case would turn the plain-file defer below into an ask. The `wt-foo` fixtures
+# above exercise the same case; this one names it.
 @test "worktree taint: a leftover .claude/wt-x worktree is still judged relative to its root" {
   worktree_layout
   git -C "$REPO" worktree add -q "$REPO/.claude/wt-x" -b wt-x

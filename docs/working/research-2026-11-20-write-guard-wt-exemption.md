@@ -24,7 +24,8 @@ to its root" in `test/hooks/guard-trusted-writes.bats`.
   `test/scripts/build-loop-*.bats` use the shape as fixtures for leftover handling.
 - Live leftovers in the main checkout: `.claude/wt-q096b` (a real linked worktree,
   branch fix/q096b-exit-scan-remote-names) and `.claude/wt-egress-dnsmasq-ipset` (a
-  plain directory, not in `git worktree list`, so it is judged by the blanket
+  stale worktree: its `.git` file points at a gitdir that no longer exists, so it
+  is not in `git worktree list`, fails verification and is judged by the blanket
   `.claude` rule under every option).
 - History of the case: ccda554e (exempt agent worktrees), 835f99dd (verify at hook
   time, Q-048), 3e9e448b (withdraw the Bash exemption), f2829bcf (file tools judge a
@@ -54,7 +55,8 @@ Constraints in play: S1 (proportionate: a restriction must remove real risk), S5
   git worktree and leaves its policy files asking, the same treatment a main
   checkout and `.claude/worktrees/<name>/` get (S1). It adds asks in the leftover
   worktree and any such worktree in another repo using this harness, and it would
-  force re-pointing about twenty existing tests that use `.claude/wt-foo` as the
+  force re-pointing about a dozen existing tests (11 fail with the `wt-` branch
+  disabled) that use `.claude/wt-foo` as the
   main fixture (S8).
 - Keep, correct the comments. No behaviour change; the comments stop claiming the
   shape is the harness's current one. Smallest diff; one revert undoes it.
@@ -78,21 +80,36 @@ trailer is required; none is carried.
 
 ## Gotchas
 
-- Failure-pattern grep: FP-011, FP-013, FP-014 (see Prior failures section)
+- Failure-pattern grep: FP-011, FP-013, FP-014, FP-062, FP-068, FP-185 (see Prior failures section)
 - Bash writes naming `.claude` plus a policy name are denied by this very guard,
   so the hook was edited with the Edit tool, not a shell script.
 
 ### Prior failures
 
 `grep -inE 'guard-trusted|write-guard|exemption|stale-doc|stale-comment|worktree|wt-' docs/failure-patterns.md`
-matched only on "worktree": FP-011 (orphaned worktree after a partial add), FP-013
-(exit trap reprocesses a disposed worktree), FP-014 (stale `.git/worktrees` entry
-breaks the next add). All are worktree lifecycle bugs in the loops, not path
-judging in the guard; none bears on this change.
+matched on "worktree" (an earlier grep without that word matched nothing):
+
+- FP-185 (2026-11-19): the web-taint guard asked on every edit in a worktree under
+  `.claude/` because the blanket `.claude` segment rule caught whole checkouts;
+  fixed by narrowing the guard (f2829bcf). This is the exemption itself, and it
+  is the reason against dropping the case: dropping it brings FP-185's symptom
+  back for any `.claude/wt-*` worktree still in use.
+- FP-011, FP-013, FP-014, FP-062, FP-068: worktree lifecycle and base-path bugs
+  in the loops (partial add, exit trap, stale `.git/worktrees` entry, relative
+  base override, artifacts deleted with a worktree). None bears on path judging
+  in the guard.
 
 Failure-pattern skip: no fix(...) commits on this branch; the change is comments and a test.
 
 ## Tests
 
-See the commit body for the gate results (guard, web-taint-mark and
-link-claude-home-wiring suites, hermeticity lint, confine-tests probe, health check).
+- `test/hooks/guard-trusted-writes.bats`: 108/108 ok (with the new case).
+- `test/hooks/web-taint-mark.bats` + `test/link-claude-home-wiring.bats`: 34/34 ok.
+- `scripts/hermeticity-lint --root .`: exit 0.
+- `scripts/confine-tests.sh --probe`: exit 3, first line "confine-tests: NO
+  CONFINEMENT PRIMITIVE AVAILABLE — refusing to run." So the suites ran
+  unconfined, with the hermeticity lint as the check.
+- Review round 1 (one reviewer, code-fact-check focus): no red findings. The
+  ambers were in this doc (an incomplete FP grep, a missing test record, an
+  overstated test count) and are fixed here. The comment wording is widened to
+  "any such worktree" and long lines are rewrapped.
