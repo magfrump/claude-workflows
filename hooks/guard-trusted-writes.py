@@ -40,9 +40,13 @@ Two tiers of policy path:
           The ask lists the session's last few fetches from the marker's log
           (fetch_summary(); web-taint-mark.py writes it) and names the marker path.
           Worktrees (file tools only): a path inside a linked git worktree under a
-          `.claude/` dir (`.claude/wt-*/`, `.claude/worktrees/<name>/`) is judged by
-          its path RELATIVE to the worktree root, so an ordinary file there gets no
-          opinion, as in the main checkout. The worktree's own policy files stay SOFT:
+          `.claude/` dir (`.claude/worktrees/<name>/`, Claude Code's own; and
+          `.claude/wt-*/`, which this harness no longer creates: its loops put
+          worktrees under `.worktrees/` since 7b46a90e and b3e25cf1, and the shape
+          is kept for any such worktree, such as one left from before in this or
+          another repo) is judged by its path RELATIVE to the worktree root, so an
+          ordinary file there gets no opinion, as in the main checkout. The
+          worktree's own policy files stay SOFT:
           everything the SOFT name rules above match, judged on the relative path
           (_is_soft_parts: its `.claude/`, `.md`/`.txt`/extensionless files under
           skills/agents/commands/memories, CLAUDE.md, CLAUDE.local.md, AGENTS.md,
@@ -72,8 +76,8 @@ one many ways. The global tier is therefore decided by CO-OCCURRENCE in the text
           settings*.json / hooks mention together with `.claude` / the config dir.
           Conservative: a heredoc that names ~/.claude/CLAUDE.md in prose is denied.
           No worktree exemption for Bash (the file tools have one, above, because
-          their path can be resolved): Q-048 [2]'s exemption for agent worktrees
-          (`.claude/wt-*`, `.claude/worktrees/*`) was tried and withdrawn after
+          their path can be resolved): Q-048 [2]'s exemption for worktrees under
+          `.claude/` (`.claude/wt-*`, `.claude/worktrees/*`) was tried and withdrawn after
           three review passes each found bypasses (quote-split `..`, `cd ..`/`../`,
           same-command swaps, `-t..`, brace expansion, `env -C`, link-creating
           tools; docs/reviews/code-review-rubric-2026-09-23-ans-guard-q048-q050.md),
@@ -246,10 +250,15 @@ def _is_hard(cand: Path, dirs) -> bool:
     return False
 
 # ── linked worktrees under a `.claude/` dir (file tools only) ───────────────
-# `.claude/worktrees/<name>/` (Claude Code's own) and `.claude/wt-*/` (this
-# harness's) hold whole checkouts. Without this, the blanket `.claude` SOFT rule
-# makes every edit there ask once a session is web-tainted. A path inside one is
-# classified by its path RELATIVE to the worktree root, but only when the root is
+# `.claude/worktrees/<name>/` (Claude Code's own) and `.claude/wt-*/` hold whole
+# checkouts. This harness no longer makes `.claude/wt-*/` (the self-improvement
+# loop moved to `.worktrees/si-wt-*` in 7b46a90e, the dev cycle's build loops use
+# `.worktrees/` since b3e25cf1); the case stays for any such worktree, such as
+# one left from before in this repo or another, so a write there is judged as it
+# was when it was made (docs/working/research-2026-11-20-write-guard-wt-exemption.md).
+# Without this, the blanket `.claude` SOFT rule makes every edit there ask once
+# a session is web-tainted. A path inside one is classified by its path
+# RELATIVE to the worktree root, but only when the root is
 # a verified linked worktree; anything unverifiable keeps today's SOFT (H2).
 _SOFT_SEGS = {"skills", "memories", "commands", "agents"}
 
@@ -268,7 +277,8 @@ def _is_soft_parts(parts) -> bool:
     return ".claude" in low
 
 def _worktree_root(cand: Path):
-    """The innermost `.claude/wt-*` or `.claude/worktrees/<name>` prefix of `cand`
+    """The innermost `.claude/wt-*` (e.g. a harness worktree from before
+    `.worktrees/`) or `.claude/worktrees/<name>` (Claude Code's) prefix of `cand`
     (exact case: a case variant is not a worktree root and stays SOFT), or None.
     None too when a skills/agents/commands/memories segment (any case) sits above
     the root: a worktree nested in a policy folder keeps that folder's ask."""
