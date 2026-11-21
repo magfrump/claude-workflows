@@ -74,13 +74,13 @@ Size gate (pr-prep 1a): 400 code lines against main after trimming (417 at first
 
 - `test/scripts/board.bats`: 8 new cases (not copied with command, all copied, changed, no line without a file or for the harness repo; UNREADABLE file and symlink; differs and other file name (the other withheld states are covered in harness-feedback.bats, since the board prints pending's line verbatim); NOT COMPARED for a bad stored copy, a shared Project and a symlinked copy; no harness repo and two; weekly latest, absent-from-main, none yet; weekly symlinked edition and directory; `pending` crashing), and `harness-feedback.py` added to the beside-the-script refusal case.
 - `test/scripts/harness-feedback.bats`: 4 new cases covering every `pending` state, usage included.
-- `scripts/confine-tests.sh --probe`: exit 3, first line "confine-tests: NO CONFINEMENT PRIMITIVE AVAILABLE — refusing to run." So the suites ran through `bats` / `scripts/run-tests.sh` plus `scripts/hermeticity-lint --root .` (passes).
+- `scripts/confine-tests.sh --probe`: exit 3, first line "confine-tests: NO CONFINEMENT PRIMITIVE AVAILABLE — refusing to run." So the suites ran through `bats` / `scripts/run-tests.sh` plus `scripts/hermeticity-lint --root .` (passes). `scripts/health-check.sh` on the branch at c45a2ab3: exit 0, "All checks passed."
 
 ## Host step
 
 The board is a host tool. One host run shows it live, after the next release installs it: `~/.claude/scripts/board.sh; echo "board exit $?"` with claude-workflows and at least one project with `docs/harness-feedback.md` in the registry; expect a `feedback:` line under each such project and a `weekly:` line under each repo with digests.
 
-Failure-pattern skip: the one fix(...) commit (f934786f) repairs this branch's own unshipped code (a pre-pass that read a half-readable harness repo as none, found in review); no shipped defect, so no reusable cause-fix entry.
+Failure-pattern skip: the three fix(...) commits (f934786f, fbafd923, c45a2ab3) repair review findings in this branch's own unshipped code; no shipped defect, so no reusable cause-fix entry.
 
 ## Review record
 
