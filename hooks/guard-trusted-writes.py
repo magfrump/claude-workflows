@@ -16,9 +16,14 @@ Two tiers of policy path:
           Critical: a hook that returns "ask" SILENTLY OVERRIDES permissions.deny
           (Claude Code issue #39344, precedence deny > defer > ask > allow). So this
           hook must NEVER "ask" on a HARD path. For the file tools HARD splits in two:
-            covered  = the path AS GIVEN (lexical, or normpath with `..` folded) names a
-                       HARD entry under the config dir as the deny rules spell it. A
-                       deny rule names that string, so the hook DEFERS to it.
+            covered  = the path AS GIVEN, with no `..` segment, names a HARD entry
+                       under the config dir as the deny rules spell it. A deny rule
+                       names that string, so the hook DEFERS to it. A spelling with
+                       `..` whose folded form (normpath) is HARD is DENIED by the
+                       hook instead (N13): the kernel follows a symlink before it
+                       applies `..`, so `~/.claude/skills/../CLAUDE.md` with a linked
+                       skills/ writes outside the config dir, and whether a deny rule
+                       matches the folded string is unverified (N3, Q-049).
             resolved = the path is HARD only after resolve() (or only under the config
                        dir's resolved form): e.g. the payload CLAUDE.md addressed by
                        its real /opt path (installed layout: hooks and CLAUDE.md link
@@ -378,7 +383,8 @@ def _is_soft_path(cand: Path) -> bool:
 
 def classify_path(fp: str) -> str:
     """"hard" (a deny rule names this string: defer), "hard-resolved" (HARD only
-    after resolve(), no deny rule names it: deny), "soft", or "none"."""
+    after resolve(), or a `..` spelling of a HARD path; no deny rule is known to
+    name it: deny), "soft", or "none"."""
     p = Path(os.path.expanduser(str(fp)))
     # pathlib already collapses `//` and `/./`; normpath also folds `..` lexically,
     # so `~/.claude/x/../CLAUDE.md` is seen as `~/.claude/CLAUDE.md` (R4).
@@ -387,10 +393,15 @@ def classify_path(fp: str) -> str:
     cands = (p, norm, rp)
     # HARD first, on EVERY candidate: a HARD path must never reach the "ask" below
     # (an ask overrides permissions.deny, #39344).
-    # (a) As given, under the config dir as the deny rules spell it: covered.
+    # (a) As given, under the config dir as the deny rules spell it: covered. Never
+    # defer on a `..` spelling (N13): the kernel applies `..` after following a
+    # symlink, so the folded string need not be the file written, and no deny rule
+    # is known to name it. Deny it here instead. This also denies a `..` spelling
+    # whose kernel target is SOFT or ordinary (e.g. `hooks/../skills/s/SKILL.md`);
+    # the deny text tells the caller to respell it without `..`.
     for cand in (p, norm):
         if _is_hard(cand, [CONFIG_DIR]):
-            return "hard"
+            return "hard-resolved" if ".." in p.parts else "hard"
     # (b) Only via the config dir's resolved form, only after resolve(), or onto the
     # target of a symlinked global entry (R4): no deny rule names this string.
     for cand in cands:
@@ -400,7 +411,8 @@ def classify_path(fp: str) -> str:
         return "hard-resolved"
     # SOFT. A project's own .claude/ (settings, hooks) lands here (Q-026), and so does
     # managed-settings.json: no deny rule names it, so deferring would leave it ungated.
-    # Case-folded on purpose: SOFT only ever asks, so over-matching is safe.
+    # Case-folded on purpose: SOFT never denies and asks only in a tainted
+    # session, so over-matching costs at most an extra ask.
     # A candidate inside a verified linked worktree under `.claude/` is judged by its
     # path relative to that worktree (_is_soft_path); any candidate SOFT is SOFT.
     # A relative path is also judged in its absolute, unresolved form (anchored at the
@@ -418,8 +430,10 @@ def classify_path(fp: str) -> str:
 
 # ── write-intent detection for the BASH tool ───────────────────────────────
 # TODO(N2): command TEXT that writes a global policy file but carries no
-# indicator token the co-occurrence rules below look for, so it gets no
-# opinion (pre-existing; code-review 2026-09-21 iteration 2, N2):
+# indicator token the co-occurrence rules below look for, so it is not denied
+# (pre-existing; code-review 2026-09-21 iteration 2, N2). The first two shapes
+# name a CLAUDE.md, so they are SOFT (ask when tainted, Q-035); the rest get no
+# opinion:
 #   - a bare `cd; echo x > CLAUDE.md` (cd to home with no `~`);
 #   - `/home/$USER/CLAUDE.md`;
 #   - a globbed or quoted `.claude` name: `~/.clau*/settings.json`,
@@ -545,6 +559,14 @@ def main():
             # No deny rule names this spelling, so a defer would be no gate at all,
             # and an ask is wrong for a HARD target. Deny outright.
             # N15: do not point at the config-dir spelling: permissions.deny blocks it.
+            if ".." in Path(os.path.expanduser(str(fp))).parts:
+                # N13: the `..` spelling reads as a protected file, but its real
+                # target may be an ordinary one, so name the respelling route.
+                emit("deny", f"This path ({Path(fp).name}) is spelled with `..` and reads as a "
+                             "global hook, settings or CLAUDE.md, so Claude's file tools will not "
+                             "edit it by that spelling. If the real file is not one of those, "
+                             "spell its path without `..`. If it is, make the change outside "
+                             "Claude, in your own editor or shell, and review it there.")
             emit("deny", f"This path is a live protected policy file ({Path(fp).name}: a global "
                          "hook, settings or CLAUDE.md, reached here by its real path or through a "
                          "symlink), so Claude's file tools cannot edit it. Don't use Bash for it "

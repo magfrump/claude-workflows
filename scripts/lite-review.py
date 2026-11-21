@@ -15,6 +15,13 @@ Two modes:
                     fact-check of prose the fix adds or changes (decision 031,
                     2026-10-25 amendment)
 
+Only fix-drift has a wired caller (workflows/pr-prep.md and
+workflows/review-fix-loop.md pass `--mode fix-drift`; decision 030's
+2026-09-26 note). `full` is the default for a manual run only: nothing in the
+loop runs it, so a claim that the production review runs this mode, or that a
+Sonnet pass is "just a flag" on it, describes a mode no step calls.
+test/lite-review-fix-drift-prompt.bats pins that every call names fix-drift.
+
 Backend notes (why the flags are what they are):
 - NOT --bare, although `claude -p --bare` is the obvious spelling of "a
   minimal headless call" (and the one asked for in Q-025): --bare restricts

@@ -421,20 +421,60 @@ install_layout() {
     "$HOME/.claude/CLAUDE.md" \
     "$HOME/.claude/hooks/foo.sh" \
     "$HOME/.claude/hooks/new.sh" \
-    "$HOME/.claude/x/../CLAUDE.md" \
-    "$HOME/.claude/x/../hooks/foo.sh" \
     "$HOME/.claude//CLAUDE.md"; do
     guard "$(file_payload Edit "$f" sess1)"
     [ "$status" -eq 0 ] && [ -z "$output" ] || { echo "not deferred: $f -> $output"; return 1; }
   done
 }
 
-@test "R4: the MultiEdit tool and the path key defer on a '..' global path" {
+# N13: a `..` spelling that folds onto a HARD path is denied by the hook, never
+# deferred: the kernel follows a symlink before applying `..`, so the folded
+# string need not be the file written, and no deny rule is known to name it.
+@test "N13: a '..' spelling of a global path is denied (R4's never-ask holds), tainted or not" {
+  install_layout
+  local f s
+  for s in clean sess1; do
+    [ "$s" = sess1 ] && taint sess1
+    for f in "$HOME/.claude/x/../CLAUDE.md" "$HOME/.claude/x/../hooks/foo.sh" \
+             "$HOME/.claude/x/../settings.json" "$HOME/sub/../CLAUDE.md"; do
+      guard "$(file_payload Edit "$f" "$s")"
+      [ "$status" -eq 0 ] && [ "$(jq -r '.hookSpecificOutput.permissionDecision' <<<"$output")" = deny ] \
+        || { echo "not denied ($s): $f -> $output"; return 1; }
+      [[ "$output" == *"without \`..\`"* ]] || { echo "no respelling text ($s): $f -> $output"; return 1; }
+    done
+  done
+}
+
+@test "N13: the MultiEdit tool and the path key deny a '..' global path" {
   install_layout
   taint sess1
   guard "$(jq -n -c --arg f "$HOME/.claude/x/../CLAUDE.md" \
     '{"session_id":"sess1","tool_name":"MultiEdit","tool_input":{"path":$f}}')"
-  assert_defer
+  assert_decision deny
+}
+
+@test "N13: '..' through a linked skills/ out of the config dir is denied, not deferred" {
+  # The iter3 reproduction: skills/ links elsewhere, so the kernel writes
+  # <elsewhere>/CLAUDE.md, while normpath reads ~/.claude/CLAUDE.md (covered).
+  mkdir -p "$HOME/.claude" "$TEST_TMPDIR/repo/skills"
+  ln -s "$TEST_TMPDIR/repo/skills" "$HOME/.claude/skills"
+  taint sess1
+  guard "$(file_payload Write "$HOME/.claude/skills/../CLAUDE.md" sess1)"
+  assert_decision deny
+  # The deny names the respelling route, since the real target may be ordinary.
+  [[ "$output" == *"without \`..\`"* ]]
+  # The direct spelling of the real target is SOFT: it asks when tainted.
+  guard "$(file_payload Write "$TEST_TMPDIR/repo/CLAUDE.md" sess1)"
+  assert_decision ask
+}
+
+@test "N13: a '..' that steps out of a lexically HARD prefix is denied too (respell without '..')" {
+  # Over-deny by design: `hooks/` matches before the fold, and the kernel target
+  # (a skill file) is not HARD. The caller respells it; nothing is deferred.
+  install_layout
+  guard "$(file_payload Write "$HOME/.claude/hooks/../skills/s/SKILL.md")"
+  assert_decision deny
+  [[ "$output" == *"without \`..\`"* ]]
 }
 
 # N1: a path that is HARD only after resolve() is not named by any deny rule,

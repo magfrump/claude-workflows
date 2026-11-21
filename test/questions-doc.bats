@@ -508,6 +508,31 @@ make_symlink_project() {
     [ ! -e "$elsewhere/working" ]
 }
 
+@test "N5: refuses a docs/ symlink that resolves into the project's .git/" {
+    unset QUESTIONS_LIVE QUESTIONS_ARCHIVE
+    local proj="$BATS_TEST_TMPDIR/gitlink"
+    mkdir -p "$proj"
+    git -C "$proj" init -q
+    ln -s .git "$proj/docs"
+    cd "$proj"
+    run --separate-stderr bash "$QS" init
+    [ "$status" -ne 0 ]
+    [[ "$stderr" == *"inside"*".git"* ]]
+    [ ! -e "$proj/.git/working" ]
+}
+
+@test "N5: a docs/ symlink that stays in the working tree is written through, as the header says" {
+    unset QUESTIONS_LIVE QUESTIONS_ARCHIVE
+    local proj="$BATS_TEST_TMPDIR/inrepo"
+    mkdir -p "$proj/site/docs"
+    git -C "$proj" init -q
+    ln -s site/docs "$proj/docs"
+    cd "$proj"
+    run --separate-stderr bash "$QS" init
+    [ "$status" -eq 0 ]
+    [ -f "$proj/site/docs/working/questions.md" ]
+}
+
 @test "index and archive preserve the files' mode" {
     chmod 0640 "$QUESTIONS_LIVE" "$QUESTIONS_ARCHIVE"
     bash "$QS" index
