@@ -253,6 +253,19 @@ refused() {
     [[ "$output" == *" answer Q-001 written"*" answer Q-001 printed"* ]]
 }
 
+@test "an entry the owner's answers file answers is off the listing, and answer names the file (brief 2026-11-20-answers-file-route)" {
+    offmain alpha; a="$BATS_TEST_TMPDIR/alpha"
+    git -C "$a" checkout -q main && mkdir -p "$a/docs/human-author" && printf 'Q-001: [1]\n' > "$a/docs/human-author/answers-x.txt"
+    commit "$a"; git -C "$a" checkout -q work
+    board
+    [[ "$output" != *Q-001* && "$output" == *Q-002* ]] || { echo "$output"; false; }
+    ans alpha Q-001 '[2]'; refused alpha "Q-001 is already answered by the owner's answers file docs/human-author/answers-x.txt:1 on main"
+    # A prose line there is no option: the board records one, and the recorded option is what the cycle reads.
+    git -C "$a" checkout -q main && printf 'Q-002: let me think about it\n' >> "$a/docs/human-author/answers-x.txt"; commit "$a"; git -C "$a" checkout -q work
+    ans alpha Q-002 '[1]'
+    [ "$status" -eq 0 ] && [[ "$output" == *"The cycle's reader reads it as keep."* ]] || { echo "$output"; false; }
+}
+
 @test "answer prints the line instead, and moves nothing, for each case it cannot write safely" {
     offmain alpha; a="$BATS_TEST_TMPDIR/alpha"
     ans alpha Q-001 $'two\nlines'; refused alpha "the answer is more than one line"

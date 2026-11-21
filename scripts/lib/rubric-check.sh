@@ -269,7 +269,7 @@ rubric_lines() {
             cl=open
             for x in $q; do
               if [[ -z "${qdone[$x]-}" ]]; then
-                out="$(check_answer "$x")" || out=""; qdone[$x]=n
+                out="$(check_answer "$x")" || out=""; qdone[$x]=n; out="$(answer_word "$out" "$x")"
                 case "$out" in "keep $x"|"drop $x"|"done $x"|"unrecognized $x") qdone[$x]=y ;; esac
               fi
               [[ "${qdone[$x]}" == n ]] || cl=closed

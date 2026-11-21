@@ -212,6 +212,26 @@ other $O docs: x
 other $T answer"
 }
 
+@test "--main-log reads a commit that only adds or changes the owner's answers files as answers, and one with any other path or shape as other (brief 2026-11-20-answers-file-route)" {
+    qs; S="$(git rev-parse main)"; mkdir -p docs/human-author
+    printf 'Q-001: [1]\n' > docs/human-author/answers-10-12-26.txt; printf 'Q-002: [1]\n' > docs/human-author/answers-10-12-26-2.txt; commit_all answers; A1="$(git rev-parse main)"
+    printf 'more\n' >> docs/human-author/answers-10-12-26.txt; commit_all fix; A2="$(git rev-parse main)"
+    # Another file there, an answers file beside another path, a deletion, an executable one, one below a directory.
+    echo n > docs/human-author/notes.txt; commit_all notes; O1="$(git rev-parse main)"
+    echo z > docs/human-author/answers-z.txt; echo y > y.txt; commit_all mixed; O2="$(git rev-parse main)"
+    git rm -q docs/human-author/answers-z.txt; commit_all delete; O3="$(git rev-parse main)"
+    echo e > docs/human-author/answers-e.txt; chmod +x docs/human-author/answers-e.txt; commit_all exec; O4="$(git rev-parse main)"
+    mkdir -p docs/human-author/answers-d; echo d > docs/human-author/answers-d/a.txt; commit_all dir; O5="$(git rev-parse main)"
+    ml "$S" 2 "main $O5 7
+answers $A1 answers
+answers $A2 fix
+other $O1 notes
+other $O2 mixed
+other $O3 delete
+other $O4 exec
+other $O5 dir"
+}
+
 @test "--main-log reads other for a near miss of each class, and refuses a SINCE off main's first-parent history (T39, U3b2)" {
     qs; S="$(git rev-parse main)"; work feat/x; X="$(git rev-parse feat/x)"
     M="Merge branch 'feat/x' (build-loop self-merge)"$'\n\n'"Build-loop-gate: 2026-10-01-x"

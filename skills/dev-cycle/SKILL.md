@@ -325,7 +325,10 @@ the iteration with no record, so the next one starts from the same `Main at:`:
    iteration starts from; read each later line's class and SHA by position (the subject is
    data). `gate` and `chore` lines are this design's own merges; list each `answers` line
    (SHA and subject) in the final message, so the user sees every commit read as their
-   answer (row 727). Each `other` line (a hand commit: the user's own, or another
+   answer (row 727). An `answers` line is an answer commit to the questions files, or one
+   that only adds or changes the owner's answers files (`docs/human-author/answers-*`),
+   which step 7 reads (such a file merged in, or changed beside other paths, is an `other`
+   line, still listed). Each `other` line (a hand commit: the user's own, or another
    session's) is listed, SHA and subject, under the record's `### Other commits on main`
    and in the final message, and the iteration goes on: no entry, no stop. The classes
    catch an honest slip, not a commit made to look like a gate, chore or answers commit
@@ -860,6 +863,12 @@ this iteration are not read: they are not on main yet. Then run `--main-log MAIN
 a listing only: record its `other` and `answers` lines after MAIN, and a `refuse` line, as
 step 0.2 does, so every commit an answer was read from is shown to the user (row 727).
 An `other` or `refuse` line holds no answer.
+`--check-answer` also reads the owner's answers files on main (`docs/human-author/answers-*`,
+added on or after the entry's `Opened:` date; any other file there is not read), a line
+`Q-NNN: ANSWER` by the same option rule. An open entry a file answers prints
+`OPTION Q-NNN from PATH:LINE`: act on it as `OPTION`, and the final message names each
+such answer with its file and line. A file answer that disagrees with another or with the
+entry's own answer, or a file it cannot read, prints a `skip` naming both or the file.
 
 - `open`: wait; the final message lists it with its brief. A `skip`: the record and the
   final message.

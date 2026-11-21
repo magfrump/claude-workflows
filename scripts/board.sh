@@ -379,6 +379,8 @@ answer() {
   check_answer "$QID" > "$TMP/r"; r="$(cat -- "$TMP/r")"; slug="$ANSWER_HEADING"
   case "$r" in
     "open $QID") ;;
+    "unrecognized $QID from "*) ;;  # a prose line in an answers file: the board records the option
+    *" $QID from "*) nope "$QID is already answered by the owner's answers file ${r#* from } on $MAIN" ;;
     keep\ *|drop\ *|done\ *|unrecognized\ *) nope "$QID is already ANSWERED on $MAIN" ;;
     *) nope "${r#skip }" ;;
   esac
