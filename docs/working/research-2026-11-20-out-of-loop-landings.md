@@ -64,3 +64,5 @@ On this repo, a window since 2026-11-14 (about 200 first-parent commits) adds ab
 ## Review
 
 `docs/reviews/code-review-rubric-2026-11-20-out-of-loop-landings.md`. Iteration 1 at fa2dcfc8: 1 red, 12 ambers, 19 considers. Fixed: R1 (encoding pinned, test), A1 to A6, A8, A11, A12 (comments, skill text, trailer position, record form, removal rule), A9 (parity test); A7 and A10 carry revisit trigger and TODO notes above. Considers applied: C7, C8, C12, C17; C6 as a step 4 clause. Others left as they are.
+
+Iteration 2 (a narrow re-review of 14f0e543) found that R1 and A1 to A12 hold. It added A13, which is fixed: the removal rule now reads the latest block of each of the last ten days and needs ten such blocks. It also added C20 and C21, both left open. The loop closes at iteration 2. `scripts/health-check.sh` passed at 14f0e543 (exit 0). The commits after it change only skill prose, and `scripts/lib/migrations.sh check` passes on them.
