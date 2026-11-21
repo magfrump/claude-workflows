@@ -57,10 +57,10 @@
 # refused, while one that stays in the working tree (docs -> ./site/docs, a
 # real layout) is followed and written through (iter3 N5). Explicit
 # QUESTIONS_LIVE/ARCHIVE paths get only the symlink checks. Because the
-# script runs inside arbitrary cloned repos, docs/working/ and its files are attacker-authored input: a
-# planted symlink would otherwise turn `archive`, `index` or `init` into an
-# append/overwrite/create of any file the user can write (security review
-# 2026-09-21, finding 2). See assert_write_target.
+# script runs inside arbitrary cloned repos, docs/working/ and its files are
+# attacker-authored input: a planted symlink would otherwise turn `archive`,
+# `index` or `init` into an append/overwrite/create of any file the user can
+# write (security review 2026-09-21, finding 2). See assert_write_target.
 
 set -euo pipefail
 

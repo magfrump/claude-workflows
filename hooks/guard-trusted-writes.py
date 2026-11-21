@@ -396,7 +396,9 @@ def classify_path(fp: str) -> str:
     # (a) As given, under the config dir as the deny rules spell it: covered. Never
     # defer on a `..` spelling (N13): the kernel applies `..` after following a
     # symlink, so the folded string need not be the file written, and no deny rule
-    # is known to name it. Deny it here instead; a HARD target is denied either way.
+    # is known to name it. Deny it here instead. This also denies a `..` spelling
+    # whose kernel target is SOFT or ordinary (e.g. `hooks/../skills/s/SKILL.md`);
+    # the deny text tells the caller to respell it without `..`.
     for cand in (p, norm):
         if _is_hard(cand, [CONFIG_DIR]):
             return "hard-resolved" if ".." in p.parts else "hard"
@@ -557,9 +559,17 @@ def main():
             # No deny rule names this spelling, so a defer would be no gate at all,
             # and an ask is wrong for a HARD target. Deny outright.
             # N15: do not point at the config-dir spelling: permissions.deny blocks it.
+            if ".." in Path(os.path.expanduser(str(fp))).parts:
+                # N13: the `..` spelling reads as a protected file, but its real
+                # target may be an ordinary one, so name the respelling route.
+                emit("deny", f"This path ({Path(fp).name}) is spelled with `..` and reads as a "
+                             "global hook, settings or CLAUDE.md, so Claude's file tools will not "
+                             "edit it by that spelling. If the real file is not one of those, "
+                             "spell its path without `..`. If it is, make the change outside "
+                             "Claude, in your own editor or shell, and review it there.")
             emit("deny", f"This path is a live protected policy file ({Path(fp).name}: a global "
-                         "hook, settings or CLAUDE.md, reached here by its real path, through a "
-                         "symlink or through `..`), so Claude's file tools cannot edit it. Don't use Bash for it "
+                         "hook, settings or CLAUDE.md, reached here by its real path or through a "
+                         "symlink), so Claude's file tools cannot edit it. Don't use Bash for it "
                          "either: make the change outside Claude, in your own editor or shell, "
                          "and review it there.")
         if tier == "soft" and tainted:

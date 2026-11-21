@@ -75,11 +75,13 @@ STUB
   [[ "$output" == *"stub claude: argv[9]=--bare"* ]]
 }
 
-@test "A10: every lite-review.py call the loop runs passes --mode fix-drift" {
+@test "closeout A10: every lite-review.py call the loop runs passes --mode fix-drift" {
   # lite-review.py's header says only fix-drift has a wired caller and `full`
   # is for manual runs. A new call in a workflow, skill, guide or script that
   # runs another mode (or none, which is full) fails here, so the header and
   # the callers cannot drift apart silently. The two known callers must exist.
+  # A heuristic: a call through a variable or with flags on a continuation
+  # line is not matched.
   local calls bad
   calls="$(cd "$REPO_ROOT" && grep -rnE 'lite-review\.py +--' \
     workflows skills guides global-instructions scripts hooks \
