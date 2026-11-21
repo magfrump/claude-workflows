@@ -164,7 +164,9 @@ The hook test suites cover the same ground offline: `bats test/hooks/` and
 
 - Taint marking covers only `WebSearch|WebFetch`. MCP web tools have to be added to the
   matcher by name.
-- Taint does not pass between a parent session and its subagents.
+- Taint is keyed on the session id. Workflow subagents report their parent's id, so
+  one subagent's fetch taints the parent and all its siblings (observed 2026-11-19).
+  Whether Agent-tool subagents share the parent's id is not verified.
 - The guard's Bash write detection is regex heuristics, not a shell parse, so an
   obfuscated write can get past it. The backstop is sandbox `denyWrite ~/.claude`, and
   only where a sandbox is actually configured. The PostToolUse config audit is wired
