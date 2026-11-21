@@ -39,52 +39,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   what remains here is the first live `--probe` run.
   2026-11-18: the run-or-refuse question now waits on watch Q-301 (`docs/working/watching.md`), not Q-278.
 
-- **Trial week: less friction, less habituation (2026-10-30 to about 2026-11-06).** Motive:
-  the owner's 2026-10-29 brainstorm request ("try things for a few days to a week").
-  Every iteration writes owner entries, the image-lag entry and the final message as
-  `docs/working/trials/2026-10-30-friction-engagement.md` says (T1-T7), and the first
-  iteration of each week writes `docs/working/weekly/`. First step: done (T1, T2, T4, T5 started
-  2026-10-30). Owner feedback on T1-T7 recorded there on 2026-11-06.
-  The owner's decision (2026-11-06, after the cycle's reading): "none of them have hurt and
-  some have helped so let's commit them and start a new set of trials". So T1-T7 all stay,
-  T4 included, and they are written into the skill (3dbf43cb, live in the image since 2026-11-10). A1/A3/A10: no change (Done; watch Q-262). New set: T8-T12, in
-  `docs/working/trials/2026-11-06-attention-and-trust.md`, running to about 2026-11-13; no owner feedback on it yet.
-  2026-11-13: the set's end is asked in Q-286 (keep all, some, or none).
-  2026-11-14: Q-286 answered in session: extend a week, all five running to about 2026-11-20,
-  because T11 and T12 live in the weekly digest and have had one edition. Ask again after the
-  2026-11-20 weekly digest.
-  2026-11-20: the digest ran (`docs/working/weekly/2026-11-20.md`); the trial-end question is Q-327.
-  2026-11-20: Q-327 answered [2] T9 T11 T12 (owner in session, from the answers file 7df4654d): T8 and T10
-  stop now. Kept: T9 (owner: "more than two links is fine when appropriate", links most valuable in
-  `questions.md`), T11 (the digest is worthwhile but not easily surfaced; owner: integrate it into the
-  cross-project board), T12 (owner: alright, but it "doesn't really address the chain of trust between the
-  reports and the facts in the code"; a good trust answer reports numbers the owner has actually seen, like
-  the digest's "your asks this week"). Next: one review brief writing T9, T11 and T12 into the dev-cycle skill
-  (gate code), with T9 loosened to "links where they help" and T12 reshaped toward seen numbers; the T11 board
-  integration rides with the board item below. The owner's feedback goes into the trial doc in that change
-  (the cycle does not write `docs/working/trials/`).
-
-- **Review-gap audit in Behemoth Arsenal** (owner feedback 2026-10-29, point 3). Motive: the
-  gap that prompted the audit came up in Behemoth Arsenal; the run here (84f8532e,
-  `docs/working/research-2026-11-13-review-gap-audit.md`) found 21 amber rows that reached
-  main open, and its fixes merged. What remains is the read-only paste in that repo, which
-  is the owner's: Q-302. First step after the answer: compare its gaps and causes with this
-  repo's, and file any cause the fixes here do not cover.
-  2026-11-20: Q-302 answered done; the audit's output is in `docs/human-author/answers-11-20-26.txt`
-  (7df4654d): 44 GAPs, all landed 2026-08-22 to 09-17, none since (31 bypassed, 13 no-gate), and one fix
-  proposed per cause (a blocking rubric check on every change to main, including hand merges and
-  fast-forwards; a rubric `Commit:` stamp that must be an ancestor; lapsed revisit triggers as open rows; the
-  stale line made blocking; a one-time re-tally of six rows). Now agent work: a research pass comparing these
-  causes with this repo's (`docs/working/research-2026-11-13-review-gap-audit.md`) and the merged fixes, filing
-  any cause not covered; Behemoth Arsenal's own fixes are that repo's.
-
-- **Agent: A reproducible ask counter (`questions.sh counts`) for the weekly digest** (filed 2026-11-19,
-  step 7; area B's B2). Motive: the owner-load numbers in area B's research were counted by hand; the
-  weekly digest's ask counter needs them reproducible, per class (merge, re-dispatch, real choice),
-  with first-option share and waits. First step: the review brief that research drafts
-  (`docs/working/research-2026-11-19-area-b-ask-habituation.md`, "For the dev cycle"); gate code.
-  Area A's research (e9fb762c) drafted no counter, so this one stands; brief it when a slot frees.
-
 - **Agent: the write guard's `.claude/wt-*` exemption is stale** (filed 2026-11-20, step 7; same research
   doc). Motive: `hooks/guard-trusted-writes.py` exempts the old `.claude/wt-*` self-improvement worktrees,
   which nothing creates once the worktree fix lands; its "(this harness's)" comment misleads. First step:
@@ -138,7 +92,15 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   it reaches sessions with a release that re-blesses (watch Q-167 asks for that bless's hint lines).
 
 
+- **Agent: the health check prints 312 "harness changed since generation" warnings** (filed 2026-11-20, step 1). Motive: since the regenerated reports landed (4f1e4150), every health check warns that the shared report harness (`test/skills/generate-reports.bash`, `transcript.jq`, runner settings) changed since generation, for 11 skills' reports (api-consistency-reviewer, architecture-review, business-plan-critique-unit-economics, code-fact-check, cowen-critique, design-space-situating, divergent-design, matrix-analysis, performance-reviewer, pre-mortem, self-eval); a warning on every run hides a new one. The harness last changed in 8abd0b51 and 846eee77 (the web-tools grant, 6c0563b5). First step: read the stamp check (`rg -n "changed since generation" test/skills/`) and the stamps in those reports, and decide whether they predate the grant (regenerate, a sandbox run as 4f1e4150 was) or the check compares the wrong thing (fix the check); research first, then a brief.
+
 ## In flight
+
+- **Write trials T9, T11 and T12 into the dev-cycle skill** (from Now "Trial week: less friction, less habituation", 2026-11-20; Q-327 [2]). Brief `docs/working/briefs/2026-11-20-codify-trial-set-2.md` (review, gate code). The T11 board integration rides with the board item in Now.
+
+- **Compare Behemoth Arsenal's review-gap causes with this repo's** (from Now "Review-gap audit in Behemoth Arsenal", owner feedback 2026-10-29, point 3; Q-302 answered done). Brief `docs/working/briefs/2026-11-20-review-gap-ba-compare.md` (self-merge, research only).
+
+- **Agent: A reproducible ask counter (`questions.sh counts`) for the weekly digest** (from Now, filed 2026-11-19; area B's B2). Brief `docs/working/briefs/2026-11-20-ask-counter.md` (review, gate code).
 
 ## Next
 
@@ -196,6 +158,11 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   2026-11-19 (iteration 2026-11-19-2316): step 4b fired on `skills/dev-cycle/SKILL.md` and
   `workflows/parallel-worktrees.md` as b3e25cf1 changed them (worktrees under `.worktrees/`);
   the same sample takes them.
+  2026-11-20 (iteration 2026-11-21-0027): step 4b fired on a drift finding: f6d555d8's research
+  doc (`docs/working/research-2026-11-20-health-checkout-prep.md`) ruled out the symlink option by
+  its brief's rule "nothing writes outside the health checkout", which no H or S line in
+  `docs/constraints.md` states; the same sample takes it, with the question for the owner whether
+  that rule becomes a constraint (a `constraints-builder` amend run).
   2026-11-19 (iteration 0121 UTC): step 4b fired on `skills/code-review/SKILL.md` and decision
   032's amendment (d383a484, Q-315: the lever #3 cache claims withdrawn); the same sample takes
   them, with one question: do other review-cost decisions (log rows 33-35) rest on the same
@@ -208,6 +175,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   iteration 2026-11-13-2237 a full cycle with a health run.
 - **Say what "a cycle" is in decision 040's ask-count trigger** (per day or per full block).
   Signal: 9 asks opened 2026-11-13 (Q-281..289), counted as one cycle.
+  2026-11-20: asked in Q-341, since the trigger fired under the per-day reading.
 - **Align the record template's `8.` line with step 8's new rule.** Signal: Q-289's loop kept
   the template's old wording because changing it needs a migration line in
   `scripts/lib/migrations.sh`; `docs/working/seed-build-loop-handoff.md:81` also restates the
