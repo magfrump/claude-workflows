@@ -31,3 +31,5 @@ Paths: scripts/self-improvement.sh test/rubric-selection.bats
 
 - Any other change to the self-improvement loop, and `scripts/lib/rubric-check.sh` (gate code; if the cause is there, end with a blocked marker naming it).
 - Editing `docs/roadmap.md`, the questions files, `docs/working/watching.md` or `docs/working/idea-log.md`: the dev cycle owns those.
+
+Dispatched: 1
