@@ -431,10 +431,10 @@ CMD=": cd /cw && ~/.claude/scripts/harness-feedback.py ingest '/p q/docs/harness
 @test "pending: a renamed project (another file name, another Project, or its name's file held by another) withholds the command" {
     stored old-name '/^### F-002/,$d'
     pending "$GOOD" "$W/stored/old-name.md"
-    [ "$status" -eq 0 ] && [ "$output" = "feedback: 1 not copied (F-002); no command: its stored copy is docs/working/feedback/old-name.md, not docs/working/feedback/example-app.md, so ingest would store it twice" ]
+    [ "$status" -eq 0 ] && [ "$output" = "feedback: 1 not copied (F-002); no command: its stored copy is docs/working/feedback/old-name.md, not docs/working/feedback/example-app.md, so ingest refuses until it is renamed" ]
     stored old-name 's/^Project: example-app$/Project: old-name/'
     pending "$GOOD" "$W/stored/old-name.md"
-    [ "$status" -eq 0 ] && [ "$output" = "feedback: 2 entries, stored under Project old-name (docs/working/feedback/old-name.md); renamed? No command: ingest would store and seed them twice" ]
+    [ "$status" -eq 0 ] && [ "$output" = "feedback: 2 entries, stored under Project old-name (docs/working/feedback/old-name.md); renamed? No command: ingest refuses until it is renamed" ]
     stored example-app 's/^Project: example-app$/Project: other/; s/review-loop-skipped-rubric/x/'
     pending "$GOOD" "$W/stored/example-app.md"
     [ "$status" -eq 0 ] && [ "$output" = "feedback: 2 not copied (F-001 to F-002); no command: docs/working/feedback/example-app.md holds Project other" ]
@@ -468,4 +468,113 @@ CMD=": cd /cw && ~/.claude/scripts/harness-feedback.py ingest '/p q/docs/harness
     ( cd "$top" && python3 "$HF" ingest "$W/one.md" ) >/dev/null
     pending "$W/one.md" "$top"/docs/working/feedback/*.md
     [ "$status" -eq 0 ] && [ "$output" = "feedback: 1 entry, all copied" ]
+}
+
+# ---- a renamed project (docs/working/research-2026-11-20-ingest-project-rename.md) ----
+
+F3=$'\n### F-003 · new-one\n**Feature:** spike · **Date:** 2026-10-31 · **Verdict:** friction\n\n- **Context:** c\n- **Expected:** e\n- **Observed:** o\n- **Evidence:** v'
+FB=docs/working/feedback
+# signals: the idea log's harness-feedback signals, one per line.
+signals() { grep -o '(signal: harness feedback [^)]*)' docs/working/idea-log.md; }
+
+@test "rename: an old name's copy is refused by ingest and pending, renamed, then ingested without a second copy or seed" {
+    make_repo
+    sed 's/^Project: example-app$/Project: old-name/' "$GOOD" > "$W/old.md"
+    run -0 python3 "$HF" ingest "$W/old.md"
+    printf '%s\n' "$F3" >> "$GOOD"
+    before="$(cat docs/working/idea-log.md)"
+    run -1 python3 "$HF" ingest "$GOOD"
+    [ "$output" = "refused: its entries are stored under Project old-name ($FB/old-name.md), so ingest would store and seed them twice; if the project was renamed, run scripts/harness-feedback.py rename $FB/old-name.md example-app; nothing written" ]
+    [ "$(cat docs/working/idea-log.md)" = "$before" ] && [ ! -e "$FB/example-app.md" ]
+    pending "$GOOD" "$FB"/*.md
+    [[ "$output" == *"stored under Project old-name ($FB/old-name.md); renamed? No command:"* ]]
+    run -0 python3 "$HF" rename "$FB/old-name.md" example-app
+    [ "$output" = "renamed $FB/old-name.md (Project old-name) to $FB/example-app.md (Project example-app): 2 seeds rekeyed; commit the copy and docs/working/idea-log.md together" ]
+    [ ! -e "$FB/old-name.md" ] && grep -qx 'Project: example-app' "$FB/example-app.md"
+    pending "$GOOD" "$FB"/*.md
+    [ "$output" = "feedback: 1 not copied (F-003)$CMD" ]
+    run -0 python3 "$HF" ingest "$GOOD"
+    [ "$output" = "ingested example-app: 1 new seeds, 2 already seeded; copy at $FB/example-app.md" ]
+    run -0 signals
+    [ "$output" = "(signal: harness feedback example-app F-001, $FB/example-app.md)
+(signal: harness feedback example-app F-002, $FB/example-app.md)
+(signal: harness feedback example-app F-003, $FB/example-app.md)" ]
+    [ "$(ls "$FB")" = example-app.md ]
+}
+
+@test "rename: a stored copy under another file name is refused by ingest, as pending withholds it" {
+    make_repo
+    run -0 python3 "$HF" ingest "$GOOD"
+    mv "$FB/example-app.md" "$FB/old-name.md"
+    printf '%s\n' "$F3" >> "$GOOD"
+    run -1 python3 "$HF" ingest "$GOOD"
+    [ "$output" = "refused: its stored copy is $FB/old-name.md, not $FB/example-app.md, so ingest would store it twice; run scripts/harness-feedback.py rename $FB/old-name.md example-app; nothing written" ]
+    [ ! -e "$FB/example-app.md" ]
+    pending "$GOOD" "$FB"/*.md
+    [[ "$output" == *"no command: its stored copy is $FB/old-name.md"* ]]
+}
+
+@test "rename: a Project line changed in place is refused (its seeds hold the old name) until renamed or restored" {
+    make_repo
+    mkdir -p "$FB"; cp "$GOOD" "$FB/old-name.md"
+    sed -i 's/^Project: example-app$/Project: old-name/' "$FB/old-name.md"
+    run -0 python3 "$HF" ingest "$FB/old-name.md"
+    sed -i 's/^Project: old-name$/Project: example-app/' "$FB/old-name.md"
+    printf '%s\n' "$F3" >> "$FB/old-name.md"
+    before="$(cat docs/working/idea-log.md)"
+    run -1 python3 "$HF" ingest "$FB/old-name.md"
+    [ "$output" = "refused: docs/working/idea-log.md seeds $FB/old-name.md under Project old-name, not example-app, so ingest would seed its entries twice; if the project was renamed, run scripts/harness-feedback.py rename $FB/old-name.md example-app, else restore its Project line; nothing written" ]
+    [ "$(cat docs/working/idea-log.md)" = "$before" ]
+    # rename to the same file keeps its name and rekeys its seeds.
+    run -0 python3 "$HF" rename "$FB/old-name.md" old-name
+    [[ "$output" == *"to $FB/old-name.md (Project old-name): 2 seeds rekeyed;"* ]]
+    run -0 python3 "$HF" ingest "$FB/old-name.md"
+    [ "$output" = "ingested old-name: 1 new seeds, 2 already seeded; copy at $FB/old-name.md" ]
+}
+
+@test "ingest: an empty stored copy under another Project is refused, not overwritten, as pending withholds it" {
+    make_repo
+    mkdir -p "$FB"; printf '# Harness feedback\n\nProject: other\n' > "$FB/example-app.md"
+    cp "$FB/example-app.md" "$W/empty.md"
+    run -1 python3 "$HF" ingest "$GOOD"
+    [ "$output" = "refused: $FB/example-app.md holds Project other, not example-app (another project under this file name); nothing written" ]
+    cmp "$W/empty.md" "$FB/example-app.md"
+    [ "$(grep -c 'harness feedback' docs/working/idea-log.md)" = 0 ]
+    pending "$GOOD" "$FB"/*.md
+    [ "$output" = "feedback: 2 not copied (F-001 to F-002); no command: $FB/example-app.md holds Project other" ]
+}
+
+@test "ingest: two stored copies with one Project, or one failing check, are refused, as pending does not compare them" {
+    make_repo
+    mkdir -p "$FB"; cp "$GOOD" "$FB/a.md"; cp "$GOOD" "$FB/b.md"
+    sed 's/^Project: example-app$/Project: zeta/' "$GOOD" > "$W/z.md"
+    run -1 python3 "$HF" ingest "$W/z.md"
+    [ "$output" = "refused: $FB/a.md and $FB/b.md both hold Project example-app; nothing written" ]
+    pending "$W/z.md" "$FB"/*.md
+    [ "$status" -eq 3 ]
+    printf 'not a feedback file\n' > "$FB/b.md"
+    run -1 python3 "$HF" ingest "$W/z.md"
+    [ "$output" = "refused: the stored copy $FB/b.md: preamble: no 'Project: NAME' line before the first entry; nothing written" ]
+    [ ! -e "$FB/zeta.md" ]
+}
+
+@test "rename: refuses a taken name, a bad name, a path outside the feedback dir, and runs only in claude-workflows" {
+    make_repo
+    mkdir -p "$FB"; cp "$GOOD" "$FB/a.md"
+    sed 's/^Project: example-app$/Project: b/' "$GOOD" > "$FB/b.md"
+    run -1 python3 "$HF" rename "$FB/a.md" b
+    [ "$output" = "refused: $FB/b.md exists; nothing written" ]
+    mv "$FB/b.md" "$FB/c.md"
+    run -1 python3 "$HF" rename "$FB/a.md" b
+    [ "$output" = "refused: $FB/c.md holds Project b; nothing written" ]
+    run -2 python3 "$HF" rename "$FB/a.md" .bad
+    [[ "$output" == *"not a Project name"* ]]
+    run -2 python3 "$HF" rename "$GOOD" b
+    [[ "$output" == *"not a stored copy"* ]]
+    run -2 python3 "$HF" rename "$FB/a.md"
+    [[ "$output" == *"rename takes STORED NAME"* ]]
+    rm guides/harness-feedback.md
+    run -2 python3 "$HF" rename "$FB/a.md" z
+    [[ "$output" == *"not a claude-workflows checkout"* ]]
+    cmp "$GOOD" "$FB/a.md" && [ ! -e "$FB/z.md" ]
 }

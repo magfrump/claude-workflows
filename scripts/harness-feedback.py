@@ -13,6 +13,10 @@ Usage:
   harness-feedback.py ingest FILE     claude-workflows only: copy FILE to
                                       docs/working/feedback/PROJECT.md and append
                                       one idea-log seed per entry not yet seeded
+  harness-feedback.py rename STORED NAME
+                                      claude-workflows only: move a stored copy
+                                      to docs/working/feedback/NAME.md, set its
+                                      Project line and rekey its seeds
   harness-feedback.py pending FILE CW SRC [STORED...]
                                       read-only, for board.sh: one line on what
                                       of FILE the STORED copies lack
@@ -301,6 +305,55 @@ def sig(e):
     return (e["id"], e["slug"], e["meta"])
 
 
+def stored_match(project, entries, stored):
+    """Find a project's stored copy. STORED is a list of (name, project,
+    entries, ...). Return (match, other): match holds this Project; other, when
+    none does, holds the same first entry under another Project (a rename).
+    Raise ValueError when two stored copies hold one Project."""
+    by_project = {}
+    for s in stored:
+        if s[1] in by_project:
+            raise ValueError(f"{by_project[s[1]][0]} and {s[0]} both hold Project {s[1]}")
+        by_project[s[1]] = s
+    match = by_project.get(project)
+    other = None
+    if match is None and entries:
+        other = next((s for s in stored if s[2] and sig(s[2][0]) == sig(entries[0])), None)
+    return match, other
+
+
+def seed_re(rel_copy):
+    """A seed's signal for the stored copy rel_copy: group 1 the Project name it
+    was seeded under, group 2 the entry ID. seed_line neutralises "(signal:" in
+    entry text, so only the signal itself matches."""
+    return re.compile(r"\(signal: harness feedback ([A-Za-z0-9._-]+) (F-[0-9]+), "
+                      + re.escape(rel_copy) + r"\)")
+
+
+def rename_cmd(rel_copy, project):
+    return f"scripts/harness-feedback.py rename {shlex.quote(rel_copy)} {shlex.quote(project)}"
+
+
+def read_stored(top, skip):
+    """Every docs/working/feedback/*.md but skip, as (rel, project, entries).
+    One that cannot be read raises Usage; one that fails check returns its
+    first problem as a str. ingest refuses either way, as pending does."""
+    feedback_dir = os.path.join(top, FEEDBACK_DIR)
+    if not os.path.isdir(feedback_dir) or os.path.islink(feedback_dir):
+        return []
+    out = []
+    for fname in sorted(os.listdir(feedback_dir)):
+        path = os.path.join(feedback_dir, fname)
+        if not fname.endswith(".md") or os.path.realpath(path) == skip:
+            continue
+        rel = os.path.join(FEEDBACK_DIR, fname)
+        project, entries, problems = parse(read_text(path))
+        if problems:
+            return f"the stored copy {rel}: {problems[0]}"
+        out.append((rel, project, entries))
+    return out
+
+
 def seed_line(project, rel_copy, e):
     feature, _date, verdict = e["meta"]
     observed = e["bullets"]["Observed"]
@@ -337,16 +390,20 @@ def cmd_ingest(args):
     for target in (dest, log):
         assert_inside(top, target)
     rel_copy = os.path.relpath(dest, top)
-    if dest != src_real and os.path.lexists(dest):
-        # The project's file only grows: a copy whose entries do not extend the
-        # stored one is another project under the same name, or a lost history.
-        old = load(dest)
-        if old is None or [sig(e) for e in old[1]] != [sig(e) for e in entries[:len(old[1])]]:
-            print(f"refused: {rel_copy} holds entries this file does not start with "
-                  "(another project with the same Project name, or entries removed); "
-                  "nothing written", file=sys.stderr)
-            return 1
+    why = ingest_refusal(top, project, entries, src_real, rel_copy)
     log_text = read_text(log) if os.path.lexists(log) else None
+    if why is None and log_text is not None:
+        # Seeds of this copy under another Project name: the Project line was
+        # renamed, and the skip test below, keyed on the name, would seed again.
+        olds = sorted({m.group(1) for m in seed_re(rel_copy).finditer(log_text)} - {project})
+        if olds:
+            why = (f"{IDEA_LOG} seeds {rel_copy} under Project {', '.join(olds)}, not "
+                   f"{project}, so ingest would seed its entries twice; if the project "
+                   f"was renamed, run {rename_cmd(rel_copy, project)}, else restore its "
+                   "Project line")
+    if why is not None:
+        print(f"refused: {why}; nothing written", file=sys.stderr)
+        return 1
     if log_text is not None and not log_text.strip():
         log_text = None
     make_dirs(top, FEEDBACK_DIR)
@@ -364,6 +421,91 @@ def cmd_ingest(args):
         write_file(log, prefix + "".join(new), append=log_text is not None)
     print(f"ingested {project}: {len(new)} new seeds, "
           f"{len(entries) - len(new)} already seeded; copy at {rel_copy}")
+    return 0
+
+
+def ingest_refusal(top, project, entries, src_real, rel_copy):
+    """Why ingest must not copy or seed this file, or None. stored_match makes
+    the same comparison for pending, so the board withholds its command here."""
+    stored = read_stored(top, src_real)
+    if isinstance(stored, str):
+        return stored
+    try:
+        match, other = stored_match(project, entries, stored)
+    except ValueError as exc:
+        return str(exc)
+    if match is not None and match[0] != rel_copy:
+        return (f"its stored copy is {match[0]}, not {rel_copy}, so ingest would "
+                f"store it twice; run {rename_cmd(match[0], project)}")
+    if other is not None:
+        return (f"its entries are stored under Project {other[1]} ({other[0]}), so "
+                "ingest would store and seed them twice; if the project was renamed, "
+                f"run {rename_cmd(other[0], project)}")
+    held = next((c for c in stored if c[0] == rel_copy), None)
+    if held is not None and held[1] != project:
+        # Compare the name first: an empty entry list is a prefix of any list.
+        return (f"{rel_copy} holds Project {held[1]}, not {project} (another "
+                "project under this file name)")
+    if match is not None and [sig(e) for e in match[2]] != \
+            [sig(e) for e in entries[:len(match[2])]]:
+        # The project's file only grows: a copy whose entries do not extend the
+        # stored one is another project under the same name, or a lost history.
+        return (f"{rel_copy} holds entries this file does not start with "
+                "(another project with the same Project name, or entries removed)")
+    return None
+
+
+def cmd_rename(args):
+    """Move a stored copy to NAME.md, set its Project line, rekey its seeds."""
+    if len(args) != 2:
+        raise Usage("rename takes STORED NAME")
+    src, name = args
+    if not PROJECT_RE.match(f"Project: {name}"):
+        raise Usage(f"{name}: not a Project name (1-64 of A-Z a-z 0-9 . _ -, "
+                    "not starting with . or -)")
+    top = toplevel()
+    if not os.path.isfile(os.path.join(top, "guides", "harness-feedback.md")):
+        raise Usage(f"{top}: not a claude-workflows checkout "
+                    "(no guides/harness-feedback.md); rename runs there only")
+    feedback_dir = os.path.join(top, FEEDBACK_DIR)
+    src_abs = os.path.abspath(src)
+    if os.path.dirname(src_abs) != feedback_dir or not src_abs.endswith(".md"):
+        raise Usage(f"{src}: not a stored copy (a .md file in {FEEDBACK_DIR})")
+    dest = os.path.join(feedback_dir, name + ".md")
+    log = os.path.join(top, IDEA_LOG)
+    # Check every target before the first write, so a refusal writes nothing.
+    for target in (src_abs, dest, log):
+        assert_inside(top, target)
+    got = load(src_abs)
+    if got is None:
+        print("refused: nothing written", file=sys.stderr)
+        return 1
+    old_project, entries, text = got
+    rel_old, rel_new = os.path.relpath(src_abs, top), os.path.relpath(dest, top)
+    stored = read_stored(top, os.path.realpath(src_abs))
+    if isinstance(stored, str):
+        why = stored
+    elif dest != src_abs and os.path.lexists(dest):
+        why = f"{rel_new} exists"
+    else:
+        why = next((f"{c[0]} holds Project {name}" for c in stored if c[1] == name), None)
+    if why is not None:
+        print(f"refused: {why}; nothing written", file=sys.stderr)
+        return 1
+    lines = text.split("\n")
+    first = entries[0]["line"] - 1 if entries else len(lines)
+    lines[:first] = [f"Project: {name}" if PROJECT_RE.match(ln) else ln
+                     for ln in lines[:first]]
+    log_text = read_text(log) if os.path.lexists(log) else ""
+    new_log, n = seed_re(rel_old).subn(
+        lambda m: f"(signal: harness feedback {name} {m.group(2)}, {rel_new})", log_text)
+    write_file(dest, "\n".join(lines), exclusive=dest != src_abs)
+    if n:
+        write_file(log, new_log)
+    if dest != src_abs:
+        os.unlink(src_abs)
+    print(f"renamed {rel_old} (Project {old_project}) to {rel_new} (Project {name}): "
+          f"{n} seeds rekeyed; commit the copy and {IDEA_LOG} together")
     return 0
 
 
@@ -403,27 +545,25 @@ def cmd_pending(args):
         print(f"feedback UNREADABLE: {why}")
         return 3
     project, entries, texts = got
-    by_project = {}
+    copies = []
     for path in stored:
         name = os.path.join(FEEDBACK_DIR, os.path.basename(path))
-        s, why = parsed(path, name)
-        if s is None:
+        c, why = parsed(path, name)
+        if c is None:
             print(f"feedback NOT COMPARED: the stored copy {why}")
             return 3
-        if s[0] in by_project:
-            print(f"feedback NOT COMPARED: {by_project[s[0]][0]} and {name} "
-                  f"both hold Project {s[0]}")
-            return 3
-        by_project[s[0]] = (name,) + s
+        copies.append((name,) + c)
     own = os.path.join(FEEDBACK_DIR, project + ".md")
-    names = {v[0]: k for k, v in by_project.items()}
-    match = by_project.get(project)
-    if match is None:
-        for other, (name, _p, oents, _t) in by_project.items():
-            if entries and oents and sig(oents[0]) == sig(entries[0]):
-                print(f"feedback: {len(entries)} entries, stored under Project {other} "
-                      f"({name}); renamed? No command: ingest would store and seed them twice")
-                return 0
+    names = {c[0]: c[1] for c in copies}
+    try:
+        match, other = stored_match(project, entries, copies)
+    except ValueError as exc:
+        print(f"feedback NOT COMPARED: {exc}")
+        return 3
+    if other is not None:
+        print(f"feedback: {len(entries)} entries, stored under Project {other[1]} "
+              f"({other[0]}); renamed? No command: ingest refuses until it is renamed")
+        return 0
     stored_entries, stored_texts = match[2:] if match else ([], [])
     n = len(stored_entries)
     if [sig(e) for e in stored_entries] != [sig(e) for e in entries[:n]]:
@@ -442,7 +582,7 @@ def cmd_pending(args):
     line = "feedback: " + ", ".join(parts)
     if match is not None and match[0] != own:
         line += (f"; no command: its stored copy is {match[0]}, not {own}, "
-                 "so ingest would store it twice")
+                 "so ingest refuses until it is renamed")
     elif match is None and own in names:
         line += f"; no command: {own} holds Project {names[own]}"
     else:
@@ -453,7 +593,8 @@ def cmd_pending(args):
 
 
 COMMANDS = {"check": cmd_check, "next-id": cmd_next_id,
-            "init": cmd_init, "ingest": cmd_ingest, "pending": cmd_pending}
+            "init": cmd_init, "ingest": cmd_ingest, "rename": cmd_rename,
+            "pending": cmd_pending}
 
 
 def main(argv):
