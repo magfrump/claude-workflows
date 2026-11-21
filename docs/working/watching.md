@@ -20,7 +20,7 @@ Maintained by `~/.claude/scripts/questions.sh` (`check` · `index` · `migrate`)
 | [Q-098](#q-098--global-allowlist-after-sandbox) | deferred | Ship a global `permissions.allow` in `hooks/wiring.json` once cc-isolated has a Bash sandbox (Q-088). Branc... | 2026-09-28 |
 | [Q-167](#q-167--post-install-host-probes) | deferred | At the next release whose install re-blesses, ask the owner for the hint text that the fresh bless prints b... | 2026-10-15 |
 | [Q-276](#q-276--q272-return-with-data) | deferred | Return the run-or-refuse question (Q-272: what the test-confinement script does when it has only its weak t... | 2026-11-11 |
-| [Q-322](#q-322--quarterly-threat-model-walkthrough-due) | deferred | Bring the owner's quarterly threat-model walk-through of Q-103's accepted residual risks (area B's idea B8)... | 2026-11-19 |
+| [Q-322](#q-322--quarterly-threat-model-walkthrough-due) | deferred | Q-322: met — the owner's T12 verdict came first (Q-327 [2], `docs/human-author/answers-11-20-26.txt` line... | 2026-11-19 |
 | [Q-161](#q-161--revive-hermeticity-layer2-after-q125) | trigger | When Q-125's sandbox merges (bwrap in the cc-isolated image), decision 017's T2 fires: revive hermeticity l... | 2026-10-14 |
 | [Q-262](#q-262--merge-approval-revisit) | trigger | Should merge approval be reopened? The design record picked no change on 2026-11-06, and this watch holds i... | 2026-11-06 |
 | [Q-264](#q-264--gloss-rule-falsifier) | trigger | Q-264: met — counted on 2026-11-11 at five entries opened since the install (Q-269 to Q-273): the falsifi... | 2026-11-06 |
@@ -118,15 +118,6 @@ Reopen the dropped roadmap Idea "The live-verify hook reads a merge commit's sta
 - **Condition:** a `blocked` or `stopped` marker, or a cycle record, names this hook during a merge of main.
 - **Interim:** nothing is built; such merges carry `Live-verified: no — merge of main; main's commit carries its own trailer`, which the hook accepts.
 
-### Q-322 · quarterly-threat-model-walkthrough-due
-**Needs:** deferred · **Opened:** 2026-11-19 · **Status:** OPEN
-
-Bring the owner's quarterly threat-model walk-through of Q-103's accepted residual risks (area B's idea B8) back as a question when it first falls due, in 2027-01, unless trial T12's verdict covers it first.
-
-- **Read:** `docs/working/research-2026-11-19-area-b-ask-habituation.md` §6 (set aside: about 20 owner minutes a quarter; T12, `docs/working/trials/2026-11-06-attention-and-trust.md`, tests a cheaper answer to the same need) · the idea-log line "Quarterly threat-model walk-through of Q-103's residuals".
-- **Condition:** the first cycle iteration on or after 2027-01-01, or the owner's T12 verdict, whichever comes first.
-- **Interim:** nothing is scheduled; T12 runs.
-
 ### Q-334 · constraint-cited-routing-revisit
 **Needs:** trigger · **Opened:** 2026-11-20 · **Status:** OPEN
 
@@ -149,6 +140,16 @@ Replace R2 (worktrees removed in a separate call after a bare `cd` into `.worktr
 - **Interim:** R2 by hand (and in the skill once Q-337 merges and installs). Since 2133: the R2, self-improvement and `--cycle-diff` loops started from a parked shell; none of the two that handed back reports a refusal.
 
 ## Closed
+
+### Q-322 · quarterly-threat-model-walkthrough-due
+**Needs:** deferred · **Opened:** 2026-11-19 · **Status:** ANSWERED
+Q-322: met — the owner's T12 verdict came first (Q-327 [2], `docs/human-author/answers-11-20-26.txt` line 246, 7df4654d): T12 is kept but "doesn't really address the chain of trust between the reports and the facts in the code"; the walk-through question is Q-340.
+
+Bring the owner's quarterly threat-model walk-through of Q-103's accepted residual risks (area B's idea B8) back as a question when it first falls due, in 2027-01, unless trial T12's verdict covers it first.
+
+- **Read:** `docs/working/research-2026-11-19-area-b-ask-habituation.md` §6 (set aside: about 20 owner minutes a quarter; T12, `docs/working/trials/2026-11-06-attention-and-trust.md`, tests a cheaper answer to the same need) · the idea-log line "Quarterly threat-model walk-through of Q-103's residuals".
+- **Condition:** the first cycle iteration on or after 2027-01-01, or the owner's T12 verdict, whichever comes first.
+- **Interim:** nothing is scheduled; T12 runs.
 
 ### Q-067 · regenerate-skill-eval-reports
 **Needs:** deferred · **Opened:** 2026-09-26 · **Status:** ANSWERED
