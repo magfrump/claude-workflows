@@ -452,11 +452,11 @@ shim() {
     want() { [[ "$1" == *"$2"* ]] || { echo "missing: $2"; return 1; }; }
     s="$(tr '\n' ' ' < "$K" | tr -s ' ')"
     # T9: links in the entry grammar's Read: line and at the end of the final message, with no cap.
-    for f in "Links to the docs most worth opening go in each entry's ${q}**Read:**${q} line" "and at the end of the final message" "as many as help: no fixed count" "end it with the links worth opening"; do want "$s" "$f" || return 1; done
+    for f in "Links to the docs most worth opening go in each entry's ${q}**Read:**${q} line" "and at the end of the final message" "as many as help: no fixed count" "end it with the links worth opening, ahead of any closing instruction"; do want "$s" "$f" || return 1; done
     ! grep -nE 'at most two links' "$K" || return 1
     # T11 and T12: in step 9's weekly digest; the random self-merge sample is gone.
     a="$(sect '### 9. Record and land')"
-    for f in "optional look below" "one deliberate look (optional, about five minutes): a self-merge or a design pick" "one question about it" "how many earlier looks the owner took" '"not counted" where neither shows it' \
+    for f in "optional look below" "one deliberate look (optional, about five minutes): a self-merge or a design pick" "one question about it" "the reply that counts (${q}look: fine${q} or what was off)" "none: a self-merge" "how many earlier looks the owner took" '"not counted" where neither shows it' \
         "what the checks caught: what the gates and reviews stopped this week" 'one plain line each, or "nothing"' "Each line names what the owner can check for themselves" "a count with the command that reproduces it"; do
         want "$a" "$f" || return 1; done
     ! grep -nF 'one self-merge picked at random' "$K" || return 1

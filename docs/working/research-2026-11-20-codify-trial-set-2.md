@@ -11,7 +11,7 @@ Failure-pattern grep: `grep -n 'cause:vacuous-assertion' docs/failure-patterns.m
 - Q-327's archived entry (`docs/working/questions-archive.md`, answered `[2] T9 T11 T12`) and the owner's words in `docs/human-author/answers-11-20-26.txt` (commit 7df4654d).
 - The first set's codifying brief `docs/working/briefs/closed/2026-11-06-codify-trial-practices.md` and its merge 3dbf43cb9: each practice written once where its writer meets it, and a bats test in `test/scripts/build-loop-orchestrator.bats` pinning the wording per step.
 - `skills/dev-cycle/SKILL.md`: the Rules' "Attention is the budget" bullet, step 9's weekly digest bullets, and the "Final message" paragraph.
-- The 2026-11-20 weekly digest (`docs/working/weekly/2026-11-20.md`), which ran T11 and T12 as written: its "What the checks caught" section and its "Your asks this week" table, the shape the owner held up as a good trust answer.
+- The 2026-11-20 weekly digest (`docs/working/weekly/2026-11-20.md`), which ran T11 as a self-merge sample and T12 as written: its "What the checks caught" section and its "Your asks this week" table, the shape the owner held up as a good trust answer.
 - `docs/constraints.md`: S3 (one source of truth per rule), S10 (spend the owner's attention last), S2, S4.
 
 ## Context
@@ -36,3 +36,12 @@ Failure-pattern grep: `grep -n 'cause:vacuous-assertion' docs/failure-patterns.m
 
 - `test/scripts/build-loop-orchestrator.bats`: a new test pins T9, T11 and T12's wording at the steps that write them, checks "at most two links" and "one self-merge picked at random" are gone, and that the skill does not name the trial doc; the first set's test drops its now-replaced pin.
 - Results are recorded in the commit bodies.
+
+## Review round 1 (fresh reviewer, no reds)
+
+Ambers fixed in the skill: the final message's links come ahead of the Wait paragraph's closing line; T11's look names its reply (`look: fine`), the count reads past editions' offers, and the design-pick pool adds `docs/decisions/` records and falls back to a self-merge when empty. Nit fixed: "finds links most valuable".
+
+Left, with reasons:
+- `docs/audiences/owner.md:40` still says a final message "gives at most two links (trials T8, T9 ...)". That file is the owner's ratified profile (0e95e3f2, Q-299), so this loop does not edit it; the cycle should offer the owner a one-line edit.
+- T12 residual: the skill makes each caught-line name a fact the owner can check, as the brief's criterion 4 asks. The owner's own model was numbers they have already seen (the asks table); whether checkable-but-unseen facts answer the chain-of-trust note is for the next digests to show.
+

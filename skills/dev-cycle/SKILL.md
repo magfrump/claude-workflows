@@ -112,7 +112,7 @@ full cycles a light pass skips those checks while nothing new needs them (step 0
   its one-line question, with a line `**If you say no:** WHAT`: what happens if they decline
   or never answer. Links to the docs most worth opening go in each entry's `**Read:**` line
   and at the end of the final message, where they help, as many as help: no fixed count
-  (the owner reads links most in `questions.md`, Q-327).
+  (the owner finds links most valuable in `questions.md`, Q-327).
 - **Three homes** (decision 040). `questions.md` takes only the owner's routes (`you:
   judgment`, `you: walkthrough`, `you: terminal`, `you: fyi`). **Agent work** is a roadmap Now
   item `- **Agent: TITLE** (filed YYYY-MM-DD, step N).`, then its motive and first step;
@@ -941,10 +941,12 @@ optional look below, and lands with this iteration. Keep each part short, and sa
   whose own closure line is met proposes closing, with the evidence: only the owner's answer
   closes it (`--cycle-diff`; step 0.1's image entries aside), while watches and agent items close in steps 3 and 6;
 - one deliberate look (optional, about five minutes): a self-merge or a design pick (a
-  divergent-design decision in a research doc merged this week), picked at random saying
-  how, with the command or path that shows it and one question about it; then how many
-  earlier looks the owner took, counted from answers recorded in the questions files or the
-  owner's words in session, or "not counted" where neither shows it.
+  `docs/decisions/` record, or a divergent-design decision in a research doc, merged this
+  week; none: a self-merge), picked at random saying how, with the command or path that
+  shows it, one question about it, and the reply that counts (`look: fine` or what was off);
+  then how many earlier looks the owner took of those offered in past editions, counted from
+  that reply in the questions files or the owner's words in session, or "not counted" where
+  neither shows it.
 
 Write the record `docs/working/cycles/cycle-YYYY-MM-DD.md`, dated as the digest dates
 (`date +%F`, local time; the branch name's DATE-HHMM is UTC): one file per day, each
@@ -1105,7 +1107,7 @@ own dispatch (its `10.` line names them). A session that ends first loses them, 
 count on main reads one low per lost line, one more loop run under the cap (a Q-103
 residual). Then remove WT (step 0.3's two calls: `cd WTB`, then the removal).
 
-**Final message**, then wait. Gloss every reference in it, and end it with the links worth opening (both: the Rules' "Attention is the budget"). It may list an owner call only beside the questions-file entry that asks it (step 8), never as the call's only record. `⚠ SECURITY` is reserved: it opens the message, saying what happened and not who did it, and goes out as a push notification when the session has a tool for one, for only three things: a `--state` refusal (step 0.1's, or a `refuse state` line from any other mode), a High finding from a security review that still holds after its fix round, or a Q-103 residual (a known risk the owner accepted) becoming live. A refusal that repeats fires once. It is never used for anything else, "this touches security code" included. Below it, list migrations first (step 1b: what ran, then what is pending), then the new `you: judgment` entries by ID, name and a plain line on what each asks (merge
+**Final message**, then wait. Gloss every reference in it, and end it with the links worth opening, ahead of any closing instruction below (both: the Rules' "Attention is the budget"). It may list an owner call only beside the questions-file entry that asks it (step 8), never as the call's only record. `⚠ SECURITY` is reserved: it opens the message, saying what happened and not who did it, and goes out as a push notification when the session has a tool for one, for only three things: a `--state` refusal (step 0.1's, or a `refuse state` line from any other mode), a High finding from a security review that still holds after its fix round, or a Q-103 residual (a known risk the owner accepted) becoming live. A refusal that repeats fires once. It is never used for anything else, "this touches security code" included. Below it, list migrations first (step 1b: what ran, then what is pending), then the new `you: judgment` entries by ID, name and a plain line on what each asks (merge
 entries marked; several open ones also as one block, offered as `Q-235..237: [1]` or `all but
 Q-236: [1]`, the entries staying separate because the gate finds each by its heading), each answer still `open`, skipped or `unrecognized` (with its brief; an
 answer written only in a working tree is not applied: "tell me, or commit it yourself",
