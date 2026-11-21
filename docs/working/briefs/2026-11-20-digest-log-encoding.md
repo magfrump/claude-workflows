@@ -30,3 +30,5 @@ Policy: review
 
 - Git calls outside the digest and the gate's lib (`scripts/self-improvement.sh`, `scripts/board.sh`).
 - Editing `docs/roadmap.md`, the questions files, `docs/working/watching.md` or `docs/working/idea-log.md`: the dev cycle owns those.
+
+Dispatched: 1
