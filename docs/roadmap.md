@@ -71,8 +71,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 - **Agent: the write guard's Bash deny names the Read tool, and the taint docstring covers subagents** (from Now, filed 2026-11-20; F-022 and F-021's comment). Brief `docs/working/briefs/2026-11-20-guard-read-route-text.md` (review).
 
-- **Agent: reopen decision 040 on asks per day** (from Now, Q-341 [1]). Brief `docs/working/briefs/2026-11-20-reopen-040-asks-per-day.md` (self-merge, research only).
-
 - **Agent: the cross-project board lists harness feedback not yet copied here, and each repo's latest weekly digest** (from Now, owner request 2026-11-20). Brief `docs/working/briefs/2026-11-20-board-pending-feedback.md` (review, host code). Ready at 87ce7a6d; merge entry Q-352.
 
 - **Agent: the dev cycle lists code landings on main that came outside the build loop** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-out-of-loop-landings.md` (review, gate code). Ready at 93e88269; merge entry Q-353.
@@ -424,6 +422,7 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- Reopen decision 040 on asks per day (Q-341 [1]): c3698169 (self-merge), `docs/working/research-2026-11-20-reopen-040-asks-per-day.md`, brief `docs/working/briefs/closed/2026-11-20-reopen-040-asks-per-day.md`. No change: the owner's Q-323 [2] words (separate merge entries, read 1-2 at a time) rule out the options that would cut asks a lot; watch Q-355 holds the baseline and reopen triggers.
 - Prepare the first quarterly threat-model walkthrough: 10785140 (self-merge), `docs/working/research-2026-11-20-threat-model-walkthrough-prep.md`, brief `docs/working/briefs/closed/2026-11-20-threat-model-walkthrough-prep.md`; filed as Q-350 (you: walkthrough), next due 2027-02-20 (watch Q-351).
 - Write trials T9, T11 and T12 into the dev-cycle skill: 9e27a4ea (approved merge, Q-342 [1]), brief `docs/working/briefs/closed/2026-11-20-codify-trial-set-2.md`.
 - The write guard's `.claude/wt-*` exemption: kept, comments corrected: abd8e21f (approved merge, Q-343 [1]), brief `docs/working/briefs/closed/2026-11-20-write-guard-wt-exemption.md`.
