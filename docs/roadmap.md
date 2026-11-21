@@ -39,16 +39,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   what remains here is the first live `--probe` run.
   2026-11-18: the run-or-refuse question now waits on watch Q-301 (`docs/working/watching.md`), not Q-278.
 
-- **Agent: fix report findings F8 to F12 so five held-back skills' reports can land** (filed 2026-11-20,
-  step 7; from the regeneration's research doc, "Dispatch 2" section). Motive: 14 cases fail on fresh reports in
-  fact-check (9), yglesias-critique (2), business-plan-critique-moat, tech-debt-triage and test-strategy (1 each),
-  so those five skills' suites stay NOT RUN. F8 (moat tc-moat4: right judgment, wording misses the pattern), F9
-  (test-strategy tc-ts6: open whether skill or check changes), F10 (yglesias: `dimensions.bats` requires a
-  section the skill adds only "if relevant"), F11 (tech-debt tc-td2: the fixture depends on the run date), F12
-  (fact-check: no "Total claims checked" line on declined input; claim-count drift in tc-7.2 and tc-3.3). The
-  reports are in history (b4f458c9, 0d51e240, 956bb566). First step: a review brief (skills are prompt files)
-  deciding each case skill-side or test-side, as the F5 work did, then restore and land those reports.
-
 - **Agent: the cross-project board shows which projects have new harness feedback to copy here** (owner
   request, 2026-11-20, in session: "I would like the cross-project board to also surface projects that have new
   harness feedback to copy to this repo"). Motive: each project records harness friction in its own
@@ -78,11 +68,17 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 - **Agent: close the six still-true rows of the 2026-11-13 review-gap audit** (filed 2026-11-20, step 7; same doc, brief 2). Motive: iter3 N5, N13, N17, N18 and questions-closeout A10, A11 still hold and nothing routed them; N13 is a security finding (the write guard). First step: a review brief confirming each row, then a fix, a revisit trigger or a Won't-Fix override row; N13 may need an owner call, asked from the loop's marker.
 
+- **Agent: `questions.sh check` flags an entry outside `## Open`, and `migrate` drops a heading it empties** (filed 2026-11-20, step 7; behemoth-arsenal harness feedback F-001; triage brief 1 in `docs/working/research-2026-11-20-harness-feedback-triage.md`). Motive: after a migration left stale route headings, 19 of 20 owner questions there were filed under "Watched conditions". First step: a review brief (gate code) once the ask counter (Q-344) settles `scripts/questions.sh`.
+
+- **Agent: answers files count as the owner's answer** (filed 2026-11-20, step 7; behemoth-arsenal F-002, philosophy-research F-004 and F-005, this repo's 7df4654d; triage brief 2). Held by Q-345 (which route: read the file, detect and confirm, or status quo). First step after the answer: a review brief (gate code: `scripts/lib/dev-cycle-read.sh`, `scripts/build-loop.sh`, the skill).
+
+- **Agent: the write guard's Bash deny names the Read tool, and the taint docstring covers subagents** (filed 2026-11-20, step 7; philosophy-research F-022, and F-021's comment fix; triage brief 3). Rides after Q-343 (the write-guard merge entry), which edits the same hook. First step: a review brief to `hooks/guard-trusted-writes.py`, `hooks/web-taint-mark.py` and the guard's bats.
+
 ## In flight
 
-- **Agent: `test/rubric-selection.bats` "emits nothing when two candidates tie" is flaky** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-rubric-selection-flake.md` (self-merge; the selector is in `scripts/self-improvement.sh`).
+- **Agent: fix report findings F8 to F12 so five held-back skills' reports can land** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-report-findings-f8-f12.md` (review; skills are prompt files).
 
-- **Agent: triage the six harness-feedback entries ingested in ad4f0eef** (filed 2026-11-20, step 6; behemoth-arsenal F-001 and F-002, belegarth-herald F-013, philosophy-research F-020 to F-022). Brief `docs/working/briefs/2026-11-20-harness-feedback-triage.md` (self-merge, research only).
+- **Agent: `test/rubric-selection.bats` "emits nothing when two candidates tie" is flaky** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-rubric-selection-flake.md` (self-merge; the selector is in `scripts/self-improvement.sh`).
 
 - **Agent: `si_commit_child_work` should turn literal pathspecs off itself** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-si-commit-literal-pathspecs.md` (review, `scripts/lib/` is gate code).
 
@@ -433,6 +429,7 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- Triage the six harness-feedback entries ingested in ad4f0eef: aa91635c (self-merge), `docs/working/research-2026-11-20-harness-feedback-triage.md`, brief `docs/working/briefs/closed/2026-11-20-harness-feedback-triage.md`. F-001, F-002, F-022: Now; F-021 closed (61122f34); F-020 and F-013 closed to watches Q-346 and Q-347.
 - Compare Behemoth Arsenal's review-gap causes with this repo's (owner feedback 2026-10-29, point 3; Q-302): 867f6546 (self-merge), `docs/working/research-2026-11-20-review-gap-ba-compare.md`, brief `docs/working/briefs/closed/2026-11-20-review-gap-ba-compare.md`. Same causes; uncovered: landings outside the build loop and six still-true rows (both now in Now).
 
 - **`--cycle-diff` lets a cycle record lose its earlier blocks**: the gate now refuses a record change that drops

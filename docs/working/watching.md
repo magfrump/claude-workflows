@@ -30,6 +30,8 @@ Maintained by `~/.claude/scripts/questions.sh` (`check` · `index` · `migrate`)
 | [Q-331](#q-331--write-guard-claude-worktree-live-check) | trigger | Record the live check of the write-guard fix in 61122f34 (Q-326 [1]: `hooks/guard-trusted-writes.py` judges... | 2026-11-20 |
 | [Q-334](#q-334--constraint-cited-routing-revisit) | trigger | Reopen "a judgment entry's 'Why it's yours' quotes the constraint it relies on" if a second case appears of... | 2026-11-20 |
 | [Q-338](#q-338--parked-shell-removal-observable) | trigger | Replace R2 (worktrees removed in a separate call after a bare `cd` into `.worktrees`) with option 2 (each r... | 2026-11-20 |
+| [Q-346](#q-346--loop-idle-on-unanswered-tool-call) | trigger | Reopen philosophy-research's harness feedback F-020 (a background subagent blocks silently on a write that ... | 2026-11-20 |
+| [Q-347](#q-347--second-toolchain-cache-loss) | trigger | Bring back a per-project cache volume (belegarth-herald's harness feedback F-013: toolchain caches wiped on... | 2026-11-20 |
 <!-- index:end -->
 
 ## Open
@@ -138,6 +140,26 @@ Replace R2 (worktrees removed in a separate call after a bare `cd` into `.worktr
 - **When it fires:** file a review brief for option 2, citing the refusal, and close this watch.
 - **Closes:** also when ten parked removals in a row show no such refusal, recorded here with the iterations.
 - **Interim:** R2 by hand (and in the skill once Q-337 merges and installs). Since 2133: the R2, self-improvement and `--cycle-diff` loops started from a parked shell; none of the two that handed back reports a refusal.
+
+### Q-346 · loop-idle-on-unanswered-tool-call
+**Needs:** trigger · **Opened:** 2026-11-20 · **Status:** OPEN
+
+Reopen philosophy-research's harness feedback F-020 (a background subagent blocks silently on a write that needs approval) if a build loop is seen idle on an unanswered tool call again.
+
+- **Read:** `docs/working/research-2026-11-20-harness-feedback-triage.md`, section "philosophy F-020": its trigger (worktrees under `.claude/` plus web taint) is fixed by 61122f34 and b3e25cf1, both in the installed image; what remains is that the orchestrator cannot see a pending approval, with step 7's two-hour stall rule as the backstop.
+- **Condition:** a cycle record, a loop's hand-back or a harness-feedback entry reports a subagent whose last transcript line is a `tool_use` with no result while the loop shows as running.
+- **When it fires:** a brief for the transcript-tail check the triage names as the fix.
+- **Interim:** the stall rule stops such a loop after two hours with no new tip.
+
+### Q-347 · second-toolchain-cache-loss
+**Needs:** trigger · **Opened:** 2026-11-20 · **Status:** OPEN
+
+Bring back a per-project cache volume (belegarth-herald's harness feedback F-013: toolchain caches wiped on every harness update) if a second project reports losing a toolchain cache to an update.
+
+- **Read:** `docs/working/research-2026-11-20-harness-feedback-triage.md`, section "herald F-013" (status quo by divergent design; the project works around it) · F-013 in `docs/working/feedback/belegarth-herald.md`. Note for that project: the shared base image already ships the Android SDK to every project by design (decision log row 19).
+- **Condition:** a harness-feedback entry from a second project, or a cycle record here, reports a cache or toolchain state lost on a harness update.
+- **When it fires:** a review brief for the per-project cache volume (the herald divergent design's recommended option), with the enforcement-file trailer it needs.
+- **Interim:** projects keep caches on the `~/.claude` volume themselves, as herald does.
 
 ## Closed
 
