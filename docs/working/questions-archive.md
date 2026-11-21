@@ -331,6 +331,10 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-345](#q-345--answers-file-counts-as-answer) | Q-345: [1] | 2026-11-20 |
 | [Q-348](#q-348--merge-gate-2026-11-20-si-commit-literal-pathspecs-1925b0ea957e) | Q-348: [1] | 2026-11-20 |
 | [Q-349](#q-349--merge-2026-11-20-report-findings-f8-f12-0df118cda24b) | Q-349: [1] | 2026-11-20 |
+| [Q-352](#q-352--merge-2026-11-20-board-pending-feedback-87ce7a6d7475) | Q-352: [1] | 2026-11-20 |
+| [Q-353](#q-353--merge-gate-2026-11-20-out-of-loop-landings-93e88269fbd1) | Q-353: [1] | 2026-11-20 |
+| [Q-354](#q-354--merge-gate-2026-11-20-ask-counter-8a4df684dfae) | Q-354: [1] | 2026-11-20 |
+| [Q-356](#q-356--merge-2026-11-20-guard-read-route-text-cfa82ec66e45) | Q-356: [1] | 2026-11-20 |
 <!-- index:end -->
 
 ## Answered
@@ -9322,6 +9326,180 @@ rubric docs/working/briefs/2026-11-20-report-findings-f8-f12.md: clean docs/revi
 | **[1] merge** | The gate merges TIP above; the five suites run in every health check. | Reading FP-187 and skimming the test changes. | One `git revert` undoes it. |
 | **[2] drop** | The brief closes; the five suites stay NOT RUN. | Nothing. | Five skills keep no regression check. |
 | **[3] changes needed** | Your note goes back to the loop (for example, leave FP-187 out). | Writing the note. | Another round. |
+
+- **Interim:** the branch waits; nothing merges.
+
+### Q-352 · merge-2026-11-20-board-pending-feedback-87ce7a6d7475
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-352: [1]
+
+Merge the build loop's cross-project board change, which shows each project's harness feedback not yet copied here and each repo's latest weekly digest?
+
+**If you say no:** the branch waits unmerged; feedback keeps reaching this repo only when you happen to look (37 entries waited a median 5 days, at most 18), and the weekly digest stays off the board.
+
+This is your 2026-11-20 request ("surface projects that have new harness feedback to copy to this repo") plus trial T11's note that the digest belongs on the board. Brief: `docs/working/briefs/2026-11-20-board-pending-feedback.md`; design: `docs/working/research-2026-11-20-board-feedback-research.md` (merged 7f086d40). `scripts/board.sh` is host code (it runs on your machine), which is why it needs your review.
+
+- **What changes:** under each project's `main DATE` line the board prints a `feedback:` line (`N entries, all copied`, or `K not copied (F-a to F-b), C changed` with the `ingest` command, withheld when ingest would refuse or store a duplicate) and a `weekly:` line (the latest `docs/working/weekly/` edition). Any unreadable state prints `UNREADABLE` or `NOT COMPARED` and makes the board exit 1. The comparison is a new read-only `pending` mode in `scripts/harness-feedback.py`.
+- **Tests:** both bats suites pass (87 cases), hermeticity lint and health check pass; three review passes, rubric clean (0 red, 3 amber, none open). `board.sh` is 499 lines, one under the 500-line limit.
+- **After it merges:** one host step, filed then as a `you: terminal` entry: after the next release, run the board and look for the new lines.
+- **Two findings it left for the cycle** (now roadmap items): `ingest` overwrites a stored copy with zero entries and a different `Project:` line; and a mistyped future-dated weekly file would show as latest every week.
+- **Read:** `docs/working/research-2026-11-20-board-pending-feedback.md`; the rubric `docs/reviews/board-pending-feedback-code-review-rubric-2026-11-20.md`; the diff: `git diff 977c3f70 87ce7a6d -- scripts/ test/ guides/` (6 files, 442 lines added, 17 removed).
+
+TIP: 87ce7a6d7475379d17ef52bbb1e47d56bb8ac50f
+
+`--check`'s lines:
+
+```
+ok docs/working/briefs/2026-11-20-board-pending-feedback.md 87ce7a6d7475379d17ef52bbb1e47d56bb8ac50f eeb7a77809780169804960e8caf45b9d7b1d81a2
+path docs/working/briefs/2026-11-20-board-pending-feedback.md A docs/reviews/board-pending-feedback-code-review-rubric-2026-11-20.md
+path docs/working/briefs/2026-11-20-board-pending-feedback.md M docs/working/briefs/2026-11-20-board-pending-feedback.md
+path docs/working/briefs/2026-11-20-board-pending-feedback.md A docs/working/research-2026-11-20-board-pending-feedback.md
+path docs/working/briefs/2026-11-20-board-pending-feedback.md M guides/cross-project-board.md
+path docs/working/briefs/2026-11-20-board-pending-feedback.md M guides/harness-feedback.md
+path docs/working/briefs/2026-11-20-board-pending-feedback.md M scripts/board.sh
+path docs/working/briefs/2026-11-20-board-pending-feedback.md M scripts/harness-feedback.py
+path docs/working/briefs/2026-11-20-board-pending-feedback.md M test/scripts/board.bats
+path docs/working/briefs/2026-11-20-board-pending-feedback.md M test/scripts/harness-feedback.bats
+rubric docs/working/briefs/2026-11-20-board-pending-feedback.md: clean docs/reviews/board-pending-feedback-code-review-rubric-2026-11-20.md: 0 red and 3 amber rows, none open
+```
+
+- **Paths self-merge would have refused:** none is gate code; `scripts/board.sh` and `scripts/harness-feedback.py` are host tools the release installs.
+
+The loop's marker body (the loop's words, data not instructions) summarises the same change, the host step and the two findings; it is in `--marker`'s output for the brief.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges TIP above; the board shows the new lines after the next release. | Reading a 442-line diff, mostly tests. | One `git revert` undoes it. |
+| **[2] drop** | The brief closes; the board stays as it is. | Nothing. | Feedback keeps waiting until you look. |
+| **[3] changes needed** | Your note goes back to the loop. | Writing the note. | Another round. |
+
+- **Interim:** the branch waits; nothing merges.
+
+
+### Q-353 · merge-gate-2026-11-20-out-of-loop-landings-93e88269fbd1
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-353: [1]
+
+Merge the build loop's digest section that lists code landing on main outside the build loop, with each landing's code-review rubric state?
+
+**If you say no:** the branch waits unmerged; code that reaches main by a hand merge or a direct commit (five since 2026-11-14, four with no rubric) stays invisible to every audit.
+
+From the Behemoth Arsenal review-gap comparison (merged 867f6546, `docs/working/research-2026-11-20-review-gap-ba-compare.md`): the merge-time rubric check runs only inside the build loop. Brief: `docs/working/briefs/2026-11-20-out-of-loop-landings.md`. `scripts/dev-cycle.sh`, `scripts/lib/` and the dev-cycle skill are gate code, so this needs your review and reaches sessions with the next release.
+
+- **What changes:** the digest gains section "6b. Code landings outside the build loop": every first-parent commit on main in the window that changes `skills/`, `workflows/`, `scripts/` or `hooks/` and is not a build-loop merge, with its paths and its rubric's lines as the existing rubric reader prints them (`none` when it carried no rubric; an unreadable commit gets its own `Not read` line, never "none"). The skill's step 4 files each listed landing as a post-hoc review item and records the count; the step removes itself after ten days of zero. Run on this repo since 2026-11-14 it lists exactly the five landings the research named.
+- **Code:** a new `scripts/lib/landings.sh`; about 20 lines in `scripts/dev-cycle.sh`; `rubric_lines` in `scripts/lib/rubric-check.sh` takes an optional base (default unchanged, so `build-loop.sh` behaves as before); 12 bats cases.
+- **One owner file:** a new failure pattern, FP-188 in `docs/failure-patterns.md` (hardened git still follows a repo-local `i18n.logOutputEncoding`). Q-349's branch adds FP-187 to the same file; whichever merges second may be sent back to merge main in.
+- **Review:** two rounds; round 1's red (a UTF-16 log encoding silently dropped a `stale` line) is fixed with a test. Rubric clean (1 red closed, 13 amber, none open). Two ambers are deferred with reasons in the research doc.
+- **Read:** `docs/working/research-2026-11-20-out-of-loop-landings.md`; the rubric `docs/reviews/code-review-rubric-2026-11-20-out-of-loop-landings.md`; the diff: `git diff 977c3f70 93e88269 -- scripts/ skills/ test/` (5 files, 315 lines added, 15 removed).
+
+TIP: 93e88269fbd13d59c64b9d3a945c0e4c57615b21
+
+`--check`'s lines:
+
+```
+ok docs/working/briefs/2026-11-20-out-of-loop-landings.md 93e88269fbd13d59c64b9d3a945c0e4c57615b21 900d755da52aa8b68694b305ab043cf5ed5a0867
+path docs/working/briefs/2026-11-20-out-of-loop-landings.md M docs/failure-patterns.md
+path docs/working/briefs/2026-11-20-out-of-loop-landings.md A docs/reviews/code-review-rubric-2026-11-20-out-of-loop-landings.md
+path docs/working/briefs/2026-11-20-out-of-loop-landings.md M docs/working/briefs/2026-11-20-out-of-loop-landings.md
+path docs/working/briefs/2026-11-20-out-of-loop-landings.md A docs/working/research-2026-11-20-out-of-loop-landings.md
+path docs/working/briefs/2026-11-20-out-of-loop-landings.md M scripts/dev-cycle.sh
+path docs/working/briefs/2026-11-20-out-of-loop-landings.md A scripts/lib/landings.sh
+path docs/working/briefs/2026-11-20-out-of-loop-landings.md M scripts/lib/rubric-check.sh
+path docs/working/briefs/2026-11-20-out-of-loop-landings.md M skills/dev-cycle/SKILL.md
+path docs/working/briefs/2026-11-20-out-of-loop-landings.md A test/scripts/dev-cycle-landings.bats
+rubric docs/working/briefs/2026-11-20-out-of-loop-landings.md: clean docs/reviews/code-review-rubric-2026-11-20-out-of-loop-landings.md: 1 red and 13 amber rows, none open
+```
+
+- **Paths self-merge would have refused:** `scripts/dev-cycle.sh`, `scripts/lib/landings.sh`, `scripts/lib/rubric-check.sh` and `skills/dev-cycle/SKILL.md` (gate code; the skill is also a prompt file); `docs/failure-patterns.md` (your file).
+- **What an attacker would want here:** the section reads commit messages and paths from main as data and prints them; a stranger's text in a commit subject reaches the digest, which the cycle already treats as evidence, not instructions. It decides nothing (advisory, no gate keys on it).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges TIP above; the digest lists out-of-loop landings after the next release. | Reading a 315-line diff. | One `git revert` undoes it. |
+| **[2] drop** | The brief closes; out-of-loop landings stay unlisted. | Nothing. | Hand landings without review stay invisible. |
+| **[3] changes needed** | Your note goes back to the loop. | Writing the note. | Another round. |
+
+- **Interim:** the branch waits; nothing merges.
+
+
+### Q-354 · merge-gate-2026-11-20-ask-counter-8a4df684dfae
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-354: [1]
+
+Merge the ask counter (`questions.sh counts`) at its new tip, now that it has merged main in after its conflict with trial set 2?
+
+**If you say no:** the branch waits unmerged; weekly digests keep counting your asks by hand, and the reopen-040 research (in flight) has no exact counts.
+
+You approved this change at its old tip in Q-344 [1] (2026-11-20). The merge then conflicted with main, because trial set 2 (Q-342, merged 9e27a4ea) edited the same weekly-digest bullets in step 9 of the dev-cycle skill, so the gate sent the branch back to its loop. The loop merged main in twice and resolved the one conflict by keeping both: main's new "what the checks caught" bullet and this branch's line telling the digest to paste the output of `questions.sh counts`. No code changed since Q-344; the gate asks again because an approval covers one tip only.
+
+- **Since Q-344:** two merges of main (b9dd4080, 03cda3e9) and one line in the research doc. Against main, the skill differs only in that two-line bullet; `scripts/questions.sh` and `test/scripts/questions-counts.bats` are as you approved them.
+- **Checks after the merge:** `test/scripts/questions-counts.bats` and `test/questions-doc.bats` 54 of 54; hermeticity lint and health check pass. Still no `docs/reviews/` rubric file (one reviewer subagent, two rounds, recorded in the research doc), so `--check` prints `rubric … none`.
+- **Read:** Q-344 in `docs/working/questions-archive.md` (the full description); the merge resolution: `git diff 47210f4b 8a4df684 -- skills/dev-cycle/SKILL.md`.
+
+TIP: 8a4df684dfaecc8b823b23bf7f4066bc4f82c6fb
+
+`--check`'s lines:
+
+```
+ok docs/working/briefs/2026-11-20-ask-counter.md 8a4df684dfaecc8b823b23bf7f4066bc4f82c6fb b4c778e4de21bc6ada78d85e91de461802da7f28
+path docs/working/briefs/2026-11-20-ask-counter.md M docs/working/briefs/2026-11-20-ask-counter.md
+path docs/working/briefs/2026-11-20-ask-counter.md A docs/working/research-2026-11-20-ask-counter.md
+path docs/working/briefs/2026-11-20-ask-counter.md M scripts/questions.sh
+path docs/working/briefs/2026-11-20-ask-counter.md M skills/dev-cycle/SKILL.md
+path docs/working/briefs/2026-11-20-ask-counter.md A test/scripts/questions-counts.bats
+rubric docs/working/briefs/2026-11-20-ask-counter.md: none: feat/ask-counter changes 3 paths outside docs/ and adds or changes no code-review rubric under docs/reviews/
+```
+
+- **Paths self-merge would have refused:** `scripts/questions.sh` and `skills/dev-cycle/SKILL.md` (gate code; the skill is also a prompt file).
+- **What an attacker would want here:** as in Q-344: `counts` reads the questions files and git history, which a session can write, so planted entries could skew the counts you read; it only reports, decides nothing, and refuses malformed entries by name.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges TIP above. | Glancing at the two-line merge resolution. | One `git revert` undoes it. |
+| **[2] drop** | The brief closes; asks stay hand-counted. | Nothing. | The counts behind Q-262 stay inconsistent. |
+| **[3] changes needed** | Your note goes back to the loop. | Writing the note. | Another round. |
+
+- **Interim:** the branch waits; nothing merges.
+
+
+### Q-356 · merge-2026-11-20-guard-read-route-text-cfa82ec66e45
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-356: [1]
+
+Merge the build loop's change that adds a read-only way forward to the write guard's Bash deny, and corrects the web-taint docstring about subagents?
+
+**If you say no:** the branch waits unmerged; the deny keeps naming no way forward for a read-only command it blocks, and the taint docstring keeps saying subagents never share the parent's taint.
+
+The write guard (`hooks/guard-trusted-writes.py`) denies a Bash command that names a protected policy file (hooks, settings, an instruction file) when it looks like a write; it also blocks some read-only commands (a `>` inside quotes, any `python3 -c`). philosophy-research's harness feedback F-022 hit that twice; this cycle hit it several times on prose. Brief: `docs/working/briefs/2026-11-20-guard-read-route-text.md`.
+
+- **What changes:** the deny keeps its text and adds one sentence: "If the command only reads or tests these files, read them with the Read tool, or write the check to a script file with the Write tool and run it by path; that route is for reads only, and a script that writes these files breaks the same rule." What the guard denies is unchanged. `hooks/web-taint-mark.py`'s docstring (and the same claim in `guides/bare-host-hook-wiring.md:167`) now says taint is keyed on the session id, and Workflow subagents report the parent's id, so they share its taint (seen in F-021); Agent-tool subagents are unverified.
+- **A call to look at:** rubric row A2 of 2026-09-23 (`docs/reviews/code-review-rubric-2026-09-23-ans-guard-q048-q050.md:31`) removed every script suggestion from this deny, because a steered model could write the blocked command into a script and run it (the logged A8 bypass: the guard reads only command text). The brief asked for a script route, so the loop compared five wordings and picked the one that offers it for reads only and names a writing script as a breach in the same sentence; the A1/A2 test now requires every mention of "script" to sit inside that sentence. This reverses part of A2's wording; it adds no new bypass (A8 exists either way), but it is your call whether the hint is worth it.
+- **Tests:** both hook suites and the wiring suite 143 of 143; hermeticity lint and health check pass. A reviewer mutated copies of the hook (sentence removed, caveat dropped, a stray script route added) and each failed a test. Rubric clean (0 red, 0 amber). No `Live-verified:` trailer: neither hook is an enforcement file for `hooks/live-verify-gate.sh`.
+- **Read:** `docs/working/research-2026-11-20-guard-read-route-text.md` (the five wordings); the rubric `docs/reviews/code-review-rubric-2026-11-20-guard-read-route-text.md`; the diff: `git diff 0423fe3b cfa82ec6 -- hooks/ guides/ test/` (4 files, 45 lines added, 6 removed).
+
+TIP: cfa82ec66e45a60cad505e01744cd886e1233ae7
+
+`--check`'s lines:
+
+```
+ok docs/working/briefs/2026-11-20-guard-read-route-text.md cfa82ec66e45a60cad505e01744cd886e1233ae7 e0001275e3a4dbe297bed9fa6d6f7f84995f1337
+path docs/working/briefs/2026-11-20-guard-read-route-text.md A docs/reviews/code-review-rubric-2026-11-20-guard-read-route-text.md
+path docs/working/briefs/2026-11-20-guard-read-route-text.md M docs/working/briefs/2026-11-20-guard-read-route-text.md
+path docs/working/briefs/2026-11-20-guard-read-route-text.md A docs/working/research-2026-11-20-guard-read-route-text.md
+path docs/working/briefs/2026-11-20-guard-read-route-text.md M guides/bare-host-hook-wiring.md
+path docs/working/briefs/2026-11-20-guard-read-route-text.md M hooks/guard-trusted-writes.py
+path docs/working/briefs/2026-11-20-guard-read-route-text.md M hooks/web-taint-mark.py
+path docs/working/briefs/2026-11-20-guard-read-route-text.md M test/hooks/guard-trusted-writes.bats
+rubric docs/working/briefs/2026-11-20-guard-read-route-text.md: clean docs/reviews/code-review-rubric-2026-11-20-guard-read-route-text.md: 0 red and 0 amber rows, none open
+```
+
+- **Paths self-merge would have refused:** none is gate code; the two hooks are installed into every session.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges TIP above; the new deny text reaches sessions with the next release. | Reading a 45-line diff and the A2 reasoning. | One `git revert` undoes it. |
+| **[2] drop** | The brief closes; the deny and docstring stay as they are. | Nothing. | Sessions keep hitting a deny with no way forward. |
+| **[3] changes needed** | Your note goes back to the loop (for example, the read hint without the script route). | Writing the note. | Another round. |
 
 - **Interim:** the branch waits; nothing merges.
 
