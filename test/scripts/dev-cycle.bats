@@ -1024,6 +1024,18 @@ skip Q-2: $W" ] || { echo "$output"; return 1; }
     git rm -q docs/human-author/answers-link.txt; mkdir -p docs/human-author; printf 'Q-1: [1]\n```\n' > docs/human-author/answers-fence.txt; af_commit 2026-10-13 fence
     run --separate-stderr bash "$DC" --check-answer Q-1
     [ "$output" = "skip Q-1: an answers file on or after its Opened: date cannot be read: the code fence opened at line 2 of docs/human-author/answers-fence.txt is never closed, so the file is not read" ] || { echo "$output"; return 1; }
+    # An answers file added before the entry opened and edited since: its line for the ID is named, not read.
+    git rm -q docs/human-author/answers-fence.txt; mkdir -p docs/human-author; printf 'x\n' > docs/human-author/answers-old.txt; af_commit 2026-10-11 old
+    printf 'Q-1: [1]\n' >> docs/human-author/answers-old.txt; af_commit 2026-10-13 append
+    run --separate-stderr bash "$DC" --check-answer Q-1 Q-2
+    [ "$output" = "skip Q-1: docs/human-author/answers-old.txt:2 is in a file added before the entry opened (2026-10-11) and changed since (2026-10-13), so it is not read
+keep Q-2" ] || { echo "$output"; return 1; }
+    # The index is read per default-branch commit: moving MAIN_SHA and back re-reads it (board.sh's post-check does).
+    run bash -c 'source "$1/scripts/lib/dev-cycle-read.sh" && resolve_main && check_answer Q-1 && MAIN_SHA="$(git rev-parse main~1)" && check_answer Q-1 && resolve_main && check_answer Q-1' _ "$REPO_ROOT"
+    [ "$output" = "skip Q-1: docs/human-author/answers-old.txt:2 is in a file added before the entry opened (2026-10-11) and changed since (2026-10-13), so it is not read
+open Q-1
+skip Q-1: docs/human-author/answers-old.txt:2 is in a file added before the entry opened (2026-10-11) and changed since (2026-10-13), so it is not read" ] || { echo "$output"; return 1; }
+    git rm -q docs/human-author/answers-old.txt; mkdir -p docs/human-author; printf 'Q-1: [1]\n```\n' > docs/human-author/answers-fence.txt; af_commit 2026-10-13 fence-again
     # A directory named answers-NAME is not a file to read either; it is named, never looked into.
     git rm -q docs/human-author/answers-fence.txt; mkdir -p docs/human-author/answers-dir; printf 'Q-1: [1]\n' > docs/human-author/answers-dir/a.txt; af_commit 2026-10-13 dir
     run --separate-stderr bash "$DC" --check-answer Q-1

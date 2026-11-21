@@ -51,12 +51,17 @@ own smaller choices.
     when the file gives a *different option*;
   - an unreadable `answers-*` entry in the window is a skip naming it;
   - an open entry with no valid `Opened:` date and any file line for the ID is a skip
-    (the line is not read as its answer).
+    (the line is not read as its answer);
+  - a line for the ID in a file added before `Opened:` but changed on or after it is a
+    skip naming it (an append to an old file may be this entry's answer or an old ID's).
+- **Callers that match the line whole.** The lib's `answer_word` drops the ` from PATH:LINE`
+  suffix; `approval` (`--approved`) and rubric-check's `qref` rows use it. board.sh's
+  `answer` names the file when only a file answers the entry.
 - **`--main-log`.** A one-parent commit whose every path is a direct
   `docs/human-author/answers-*` child, added or changed, mode 100644 (before and after),
   is `answers`. A deletion, an executable, a directory child or any other path is `other`.
-- **`--approved`.** `approval` strips a ` from PATH:LINE` suffix, so a file answer approves
-  a merge like a questions-file one; the entry's heading still has to name the merge.
+- **`--approved`.** Through `answer_word`, a file answer approves a merge like a
+  questions-file one; the entry's heading still has to name the merge.
 - **Skill.** Step 0.2 says what an `answers` line can now be; step 7 says how a file answer
   prints, that the final message names each one with its file and line, and how a
   conflict shows.
@@ -73,7 +78,8 @@ own smaller choices.
   recorder's `[3]` in the archive is the reading; a strict rule turned Q-302 and Q-327 into
   skips. The reverse (questions file `unrecognized`, file an option) stays a skip: taking
   the file's option there would read an answer neither source alone gives (10 archived IDs
-  here, Q-069 to Q-109, all long applied).
+  here, Q-069 to Q-116, all long applied; a rubric `qref` row naming one would reopen,
+which fails closed).
 - Modified answers files count as `answers` in `--main-log` (not only added ones): the reader
   reads the file's content at main, so a later edit can change an answer, and step 0.2 has to
   show it.
@@ -81,16 +87,29 @@ own smaller choices.
 ## Real-repo check
 
 Every ID named in this repo's answers files, through `--check-answer` on this branch:
-37 keep, 22 drop, 6 done, 27 unrecognized, 10 skip (Q-045: two files disagree, the later
-one prose; the nine archived IDs above). `--main-log` from 7df4654d's parent reads
+37 keep, 22 drop, 6 done, 27 unrecognized, 10 skip at first count (Q-045: two files
+disagree, the later one prose; the archived IDs above; the reviewer counted 11 with Q-116). `--main-log` from 7df4654d's parent reads
 7df4654d as `answers`.
 
 ## Residual risks
+
+- Dates are calendar days in the writer's own zone on both sides (`%cs`, and `Opened:` by
+  `date +%F`); a committer in another zone can shift the window a day. A line it misses
+  stays `open` and is asked again; a line it takes early is at worst one day's collision.
+- A merge that brings in an answers file, or a commit that changes one beside a questions
+  file, is read by `--check-answer` but listed by `--main-log` as `other` (still shown).
 
 - Same as the triage's for option D: a hand session can write an answers file, as it can
   already write `questions.md`.
 - A file renamed (a delete plus an add under `--no-renames`) dates from the rename.
 - A range line (`Q-235..237: [1]`) in a file is not read, as in the questions files.
+
+## Review (round 1)
+
+A fresh reviewer found nothing blocking; fixed: an append to an older answers file was
+silently ignored (now a named skip), an undated unreadable row lost its reason (tab
+parsing), the cache key was not cleared on a failed re-read, rubric-check and board.sh
+matched the line whole. Documented: the two `other` shapes and the date zones.
 
 ## Verification
 

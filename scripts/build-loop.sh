@@ -192,7 +192,9 @@
 #                 and every path a regular file (mode 100644, before too when
 #                 changed) directly under docs/human-author/ named
 #                 answers-NAME, added or changed: the owner's answers files,
-#                 which --check-answer reads. Any other commit,
+#                 which --check-answer reads (it also reads such a file
+#                 merged in, or changed beside a questions file: those
+#                 commits are other, and listed as such). Any other commit,
 #                 or one whose message, parents or changes cannot be read, is
 #                 other. The class is read from the commit's own text (and
 #                 objects are not re-hashed): it catches an honest slip, not a
@@ -1738,8 +1740,7 @@ approval() {
   s+="${VERDICT[stem]}-${VERDICT[tip]:0:12}"
   # In this shell, to a file: ANSWER_HEADING would not leave a $(...).
   check_answer "$1" > "$GATE_TMP/answer"; r="$(< "$GATE_TMP/answer")"
-  # An answer read from the owner's answers file names it after " from ": the same answer.
-  case "$r" in "keep $1 from "*|"drop $1 from "*|"done $1 from "*|"unrecognized $1 from "*) r="${r%% from *}" ;; esac
+  r="$(answer_word "$r" "$1")"  # an answers file's answer names it after " from ": the same answer
   case "$r" in
     "keep $1") ;;
     "open $1") MERGE_WHY="$1 does not approve this merge: it is not answered on the default branch"; return 1 ;;

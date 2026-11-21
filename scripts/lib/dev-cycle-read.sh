@@ -1229,7 +1229,10 @@ END {
 # Each file's date is the committer date (YYYY-MM-DD, as %cs prints it) of the
 # newest first-parent commit that added it (diffed against its first parent,
 # renames off), so a file merged in from a side branch dates from its merge.
-# Sets ANS_ROWS ("ID<TAB>PATH<TAB>LINE<TAB>RESULT<TAB>DATE" per answer line)
+# Both sides of the date window are the writer's local calendar date: %cs is
+# in the committer's own zone, and questions.sh writes Opened: by date +%F.
+# Sets ANS_ROWS ("ID<TAB>PATH<TAB>LINE<TAB>RESULT<TAB>DATE<TAB>CHANGED" per
+# answer line, CHANGED the newest add or change)
 # and ANS_BAD ("DATE<TAB>WHY" per answers-NAME entry that could not be read:
 # not a regular file or not an allowed path form (main_entry), a read that
 # failed, a file FENCE_AWK refuses, or no adding commit found, DATE then
@@ -1237,23 +1240,27 @@ END {
 # listed at all.
 ANS_FOR=""; ANS_ROWS=(); ANS_BAD=(); ANS_WHY=""
 answers_index() {
-  local - ents=() toks=() t d="" p e c line id l res
-  local -A added=()
+  local - ents=() toks=() t d="" p e c id l res f flt
+  local -A added=() changed=()
   set -o pipefail
   [[ "$ANS_FOR" != "$MAIN_SHA" || -z "$MAIN_SHA" ]] || return 0
-  ANS_ROWS=(); ANS_BAD=(); ANS_WHY=""
+  ANS_FOR=""; ANS_ROWS=(); ANS_BAD=(); ANS_WHY=""
   nul_list ents git ls-tree -z --full-tree "$MAIN_SHA" -- docs/human-author/ \
     || { ANS_WHY="docs/human-author/ could not be listed on the default branch"; return 1; }
-  # -z: each commit is "\001DATE" then NUL, then its added names, the first
-  # after a newline, each ending in NUL. Newest first, so a name's first date wins.
-  nul_list toks git log --first-parent --diff-merges=first-parent --root --no-renames --diff-filter=A \
-      --no-textconv --no-ext-diff --name-only -z --format=%x01%cs "$MAIN_SHA" -- docs/human-author/ \
-    || { ANS_WHY="the commits that added files under docs/human-author/ could not be listed"; return 1; }
-  for t in "${toks[@]}"; do
-    if [[ "$t" == $'\001'* ]]; then d="${t#$'\001'}"; continue; fi
-    t="${t#$'\n'}"; [[ "$t" == docs/human-author/* ]] || continue
-    c="${t#docs/human-author/}"; c="docs/human-author/${c%%/*}"  # a file below a directory dates the directory
-    [[ -n "${added[$c]+set}" ]] || added["$c"]="$d"
+  # -z: each commit is "\001DATE" then NUL, then its names, the first after a
+  # newline, each ending in NUL. Newest first, so a name's first date wins: in
+  # added the newest add, in changed the newest add or change.
+  for flt in A AM; do
+    nul_list toks git log --first-parent --diff-merges=first-parent --root --no-renames --diff-filter="$flt" \
+        --no-textconv --no-ext-diff --name-only -z --format=%x01%cs "$MAIN_SHA" -- docs/human-author/ \
+      || { ANS_WHY="the commits that added or changed files under docs/human-author/ could not be listed"; return 1; }
+    for t in "${toks[@]}"; do
+      if [[ "$t" == $'\001'* ]]; then d="${t#$'\001'}"; continue; fi
+      t="${t#$'\n'}"; [[ "$t" == docs/human-author/* ]] || continue
+      c="${t#docs/human-author/}"; c="docs/human-author/${c%%/*}"  # a file below a directory dates the directory
+      if [[ "$flt" == A ]]; then [[ -n "${added[$c]+set}" ]] || added["$c"]="$d"
+      else [[ -n "${changed[$c]+set}" ]] || changed["$c"]="$d"; fi
+    done
   done
   for e in "${ents[@]}"; do
     p="${e#*$'\t'}"
@@ -1262,7 +1269,7 @@ answers_index() {
     if [[ -z "$d" ]]; then ANS_BAD+=($'\t'"${p//[$'\n\t']/ } has no adding commit on the default branch's first-parent history"); continue; fi
     if ! main_file "$p" "$OPTION_AWK$ANSWERS_FILE_AWK"; then ANS_BAD+=("$d"$'\t'"${FILE_WHY//[$'\n\t']/ }"); continue; fi
     while IFS=$'\t' read -r id l res; do
-      [[ -n "$id" ]] && ANS_ROWS+=("$id"$'\t'"$p"$'\t'"$l"$'\t'"$res"$'\t'"$d")
+      [[ -n "$id" ]] && ANS_ROWS+=("$id"$'\t'"$p"$'\t'"$l"$'\t'"$res"$'\t'"$d"$'\t'"${changed[$p]-$d}")
     done <<<"$FILE_OUT"
   done
   ANS_FOR="$MAIN_SHA"
@@ -1289,11 +1296,18 @@ answers_index() {
 # Any other disagreement, between two file lines or with the entry's own
 # answer, is a skip naming both; so is an answers-NAME entry in
 # that window that could not be read, and, for an open entry with no Opened:
-# date, any file line for the ID (none is read as its answer).
+# date, any file line for the ID (none is read as its answer), and a line for
+# the ID in a file added before Opened: but changed on or after it.
+# answer_word LINE ID: check_answer's line LINE for ID with an answers file's
+# " from PATH:LINE" suffix dropped (the same answer), for a caller that
+# matches the line whole; any other line is printed as it is.
+answer_word() {
+  case "$1" in "keep $2 from "*|"drop $2 from "*|"done $2 from "*|"unrecognized $2 from "*) printf '%s\n' "${1%% from *}" ;; *) printf '%s\n' "$1" ;; esac
+}
 ANSWER_HEADING=""
 # shellcheck disable=SC2034  # ANSWER_HEADING is read by the caller
 check_answer() {
-  local - a="$1" f e r hit="" where="" n why head="" opened="" rest row id p l res d src="" fr=""; set -o pipefail  # as brief_fields
+  local - a="$1" f e r hit="" where="" n why head="" opened="" rest row id p l res d c src="" fr=""; set -o pipefail  # as brief_fields
   ANSWER_HEADING=""
   if [[ ! "$a" =~ ^Q-[0123456789]+$ ]]; then echo "skip ${a//$'\n'/ }: not a question ID (Q- and digits)"; return; fi
   if ! main_by_name; then echo "skip $a: no default branch found by name (origin/HEAD, main or master), or resolve_main has not run"; return; fi
@@ -1332,12 +1346,18 @@ check_answer() {
     ANSWER_HEADING="$head"; echo "$hit $a"; return
   fi
   for row in "${ANS_BAD[@]}"; do
-    IFS=$'\t' read -r d why <<<"$row"; [[ -n "$d" && "$d" < "$opened" ]] && continue
+    d="${row%%$'\t'*}"; why="${row#*$'\t'}"  # not read: a tab is IFS whitespace, and an empty DATE would be dropped
+    [[ -n "$d" && "$d" < "$opened" ]] && continue
     echo "skip $a: an answers file on or after its Opened: date cannot be read: $why"; return
   done
   for row in "${ANS_ROWS[@]}"; do
-    IFS=$'\t' read -r id p l res d <<<"$row"
-    [[ "$id" == "$a" && ! "$d" < "$opened" ]] || continue
+    IFS=$'\t' read -r id p l res d c <<<"$row"
+    [[ "$id" == "$a" ]] || continue
+    if [[ "$d" < "$opened" ]]; then
+      # An older file edited since: its line may be this entry's answer or an old one's (an ID collision).
+      [[ "$c" < "$opened" ]] || { echo "skip $a: $p:$l is in a file added before the entry opened ($d) and changed since ($c), so it is not read"; return; }
+      continue
+    fi
     if [[ -z "$src" ]]; then fr="$res"; src="$p:$l"
     elif [[ "$res" != "$fr" ]]; then echo "skip $a: $src reads $fr but $p:$l reads $res"; return; fi
   done

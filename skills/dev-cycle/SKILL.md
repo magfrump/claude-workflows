@@ -327,7 +327,8 @@ the iteration with no record, so the next one starts from the same `Main at:`:
    (SHA and subject) in the final message, so the user sees every commit read as their
    answer (row 727). An `answers` line is an answer commit to the questions files, or one
    that only adds or changes the owner's answers files (`docs/human-author/answers-*`),
-   which step 7 reads. Each `other` line (a hand commit: the user's own, or another
+   which step 7 reads (such a file merged in, or changed beside other paths, is an `other`
+   line, still listed). Each `other` line (a hand commit: the user's own, or another
    session's) is listed, SHA and subject, under the record's `### Other commits on main`
    and in the final message, and the iteration goes on: no entry, no stop. The classes
    catch an honest slip, not a commit made to look like a gate, chore or answers commit
