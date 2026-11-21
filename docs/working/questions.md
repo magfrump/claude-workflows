@@ -27,6 +27,7 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-365](#q-365--philosophy-research-project-line) | you: judgment | Which name does philosophy-research's own `docs/harness-feedback.md` give on its `Project:` line: `task-wor... | 2026-11-20 |
+| [Q-366](#q-366--merge-gate-2026-11-20-head-readers-set-e-5a016447ed9c) | you: judgment | Merge the build loop's fix for three `X=$(… | head -1)`-style reads that could stop a script under `set -... | 2026-11-21 |
 | [Q-350](#q-350--threat-model-walkthrough-2026-q4) | you: walkthrough | Walk through the risks you accepted in the build-loop design (about 20 minutes) and say for each: keep, tig... | 2026-11-20 |
 | [Q-332](#q-332--regenerate-fact-check-reports-host) | you: terminal | Regenerate the fact-check skill's eval reports on the host, where the web works, and commit them. | 2026-11-20 |
 | [Q-336](#q-336--image-lag) | you: terminal | Install the release that carries sixteen changes you approved: the health-checkout preparation step (Q-333)... | 2026-11-20 |
@@ -160,3 +161,45 @@ Which name does philosophy-research's own `docs/harness-feedback.md` give on its
 - **Blocks:** ingest of philosophy-research's feedback.
 - **Interim:** ingest of that project refuses and writes nothing.
 - **If the answer differs:** the rename runs again with the other name.
+
+### Q-366 · merge-gate-2026-11-20-head-readers-set-e-5a016447ed9c
+**Needs:** you: judgment · **Opened:** 2026-11-21 · **Status:** OPEN
+
+Merge the build loop's fix for three `X=$(… | head -1)`-style reads that could stop a script under `set -e` and `pipefail`?
+
+**If you say no:** the branch waits unmerged; the self-improvement loop's replication check (Gate 1h) can still end an overnight run when a fact-check report holds about 13 KB of matching lines, and the digest's section 5 when the open entries pass about 64 KB.
+
+This is the follow-up to the `grep -q` fixes you merged in Q-357: same cause, failure pattern FP-175 in `docs/failure-patterns.md` (a reader that exits early makes the writer die of SIGPIPE, exit 141, under `pipefail`), but here `set -e` then stops the script instead of losing a match. Brief: `docs/working/briefs/2026-11-20-head-readers-set-e.md`. The loop's marker has no body: no question left open.
+
+- **Fixed:** in `scripts/self-improvement.sh`, Gate 1h's two `sed -n … | head -1` reads of the fact-check report: sed now stops at its own first match, so a read error still fails as before. In `scripts/dev-cycle.sh` section 5, `printf … | awk '… exit'` becomes a here-string, the shape Q-357's fix used. Each site has a comment naming FP-175.
+- **Left alone, with a reason per site in the research doc:** masked by `|| true`, reads all its input, writes far under a buffer, or only runs inside an `if`.
+- **Tests:** one bats case per site (two in `test/code-review-gate.bats`, one in `test/scripts/dev-cycle.bats` with about 150 KB of open entries), each exiting 141 on the old code; `test/skills/code-review-factcheck-replication.bats` now pins the new sed text. Health check passed (2766 ok); hermeticity lint passes. Rubric clean (0 red, 3 amber, none open).
+- **Read:** `docs/working/research-2026-11-20-head-readers-set-e.md` (the site table); the rubric `docs/reviews/head-readers-set-e-code-review-rubric-2026-11-20.md`; the diff: `git diff 21990ee9 5a016447 -- scripts/ test/` (5 files, 65 lines added, 6 removed).
+
+TIP: 5a016447ed9c66d5f81151210e17d4d497f1c08c
+
+`--check`'s lines:
+
+```
+ok docs/working/briefs/2026-11-20-head-readers-set-e.md 5a016447ed9c66d5f81151210e17d4d497f1c08c 5aff602e645be72f278fd8b12d9a596b63c538fe
+path docs/working/briefs/2026-11-20-head-readers-set-e.md A docs/reviews/head-readers-set-e-code-review-rubric-2026-11-20.md
+path docs/working/briefs/2026-11-20-head-readers-set-e.md M docs/working/briefs/2026-11-20-head-readers-set-e.md
+path docs/working/briefs/2026-11-20-head-readers-set-e.md A docs/working/research-2026-11-20-head-readers-set-e.md
+path docs/working/briefs/2026-11-20-head-readers-set-e.md M scripts/dev-cycle.sh
+path docs/working/briefs/2026-11-20-head-readers-set-e.md M scripts/self-improvement.sh
+path docs/working/briefs/2026-11-20-head-readers-set-e.md M test/code-review-gate.bats
+path docs/working/briefs/2026-11-20-head-readers-set-e.md M test/scripts/dev-cycle.bats
+path docs/working/briefs/2026-11-20-head-readers-set-e.md M test/skills/code-review-factcheck-replication.bats
+rubric docs/working/briefs/2026-11-20-head-readers-set-e.md: clean docs/reviews/head-readers-set-e-code-review-rubric-2026-11-20.md: 0 red and 3 amber rows, none open
+```
+
+- **Paths self-merge would have refused:** `scripts/dev-cycle.sh` (gate code).
+- **What an attacker would want here:** nothing new: the change only stops two reads from aborting on long input; it adds no input and widens nothing.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges TIP above. | Reading a 65-line diff. | One `git revert` undoes it. |
+| **[2] drop** | The brief closes; nothing merges. | Nothing. | Long inputs can still end those scripts. |
+| **[3] changes needed** | Your note goes back to the loop. | Writing the note. | Another round. |
+
+- **Interim:** the branch waits; nothing merges.

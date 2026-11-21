@@ -304,3 +304,14 @@ Trigger: roadmap Now held one item ready for a brief (the Q-278 rewrite), and No
 - Hold further reader-testing and audience-profiles skill edits until a second real session, since every lesson in ded17c89 rests on one contaminated session (signal: ded17c89's own Confidence: medium note); do nothing until then
 - Reader-test the weekly digest once against the owner profile, since it is the one page the owner is meant to read cold every week (signal: trials T11/T12 live in the weekly digest, Q-286, asked again after the 2026-11-20 edition)
 - Build loops write commit messages only under their own scratchpad, never a shared `$TMPDIR` name (signal: reopen-040 loop's 3e177e46 took another session's stale `$TMPDIR/msg1` after its own write was denied)
+
+## Brainstorm 2026-11-21 (iteration 2026-11-21-0815)
+
+Trigger: roadmap Now holds no item ready for a brief (all three are held), and Now changed since 75e5b4f5. Signals read: today's eight merge entries and their loops' reports, the two refused approved merges of report-findings (Q-349, Q-361), and iteration 0749's third land.
+
+- Split `scripts/board.sh` (513 lines) under the ~400-line cap of constraint S8, before its next feature (signal: the board-weekly loop's note, merged f68df711 under Q-364: it grew from 499 to 513)
+- `--check` names a review brief that touches code and commits no rubric as a line the merge entry must quote, so the owner is not the first to notice (signal: Q-362, questions-check-section merged 40e34124 with rubric `none` though its loop reported two review rounds)
+- An approved merge refused for the main checkout's state files one `you: terminal` entry naming the paths and the command that clears them, instead of a silent retry each iteration (signal: Q-361 [1], refused at 0749 for the owner's untracked `test/skills/fact-check/output/` reports; Q-349 was refused for the same files on 2026-11-20)
+- Step 6's "git mv the brief" says to stage the brief after its `Applied:` edit, or to move it first and edit after (signal: iteration 2026-11-21-0749 needed a third land because `git mv` staged the brief without its seven `Applied:` lines)
+- An approval carries to a new tip whose change against main is byte-identical to the approved tip's (a pure merge of main), so a send-back after an approved merge does not cost a second ask; flag for divergent design, since it touches what an answer approves (signal: Q-361 re-asked for 82c11016 after Q-349 [1] approved 0df118cd, with the loop reporting the delta unchanged)
+- Do nothing about merge-entry volume today: the owner answered eight at once with one line (signal: "Q-357..364: [1]" in session; watch Q-262 already holds the reopen triggers)
