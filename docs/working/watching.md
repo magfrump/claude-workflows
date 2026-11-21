@@ -21,6 +21,7 @@ Maintained by `~/.claude/scripts/questions.sh` (`check` · `index` · `migrate`)
 | [Q-167](#q-167--post-install-host-probes) | deferred | At the next release whose install re-blesses, ask the owner for the hint text that the fresh bless prints b... | 2026-10-15 |
 | [Q-276](#q-276--q272-return-with-data) | deferred | Return the run-or-refuse question (Q-272: what the test-confinement script does when it has only its weak t... | 2026-11-11 |
 | [Q-322](#q-322--quarterly-threat-model-walkthrough-due) | deferred | Q-322: met — the owner's T12 verdict came first (Q-327 [2], `docs/human-author/answers-11-20-26.txt` line... | 2026-11-19 |
+| [Q-351](#q-351--threat-model-walkthrough-2027-q1-due) | deferred | Bring the next quarterly threat-model walkthrough back as a `you: walkthrough` entry when it falls due (Q-3... | 2026-11-20 |
 | [Q-161](#q-161--revive-hermeticity-layer2-after-q125) | trigger | When Q-125's sandbox merges (bwrap in the cc-isolated image), decision 017's T2 fires: revive hermeticity l... | 2026-10-14 |
 | [Q-262](#q-262--merge-approval-revisit) | trigger | Should merge approval be reopened? The design record picked no change on 2026-11-06, and this watch holds i... | 2026-11-06 |
 | [Q-264](#q-264--gloss-rule-falsifier) | trigger | Q-264: met — counted on 2026-11-11 at five entries opened since the install (Q-269 to Q-273): the falsifi... | 2026-11-06 |
@@ -160,6 +161,16 @@ Bring back a per-project cache volume (belegarth-herald's harness feedback F-013
 - **Condition:** a harness-feedback entry from a second project, or a cycle record here, reports a cache or toolchain state lost on a harness update.
 - **When it fires:** a review brief for the per-project cache volume (the herald divergent design's recommended option), with the enforcement-file trailer it needs.
 - **Interim:** projects keep caches on the `~/.claude` volume themselves, as herald does.
+
+### Q-351 · threat-model-walkthrough-2027-q1-due
+**Needs:** deferred · **Opened:** 2026-11-20 · **Status:** OPEN
+
+Bring the next quarterly threat-model walkthrough back as a `you: walkthrough` entry when it falls due (Q-340 [1]: one each quarter).
+
+- **Read:** `docs/working/research-2026-11-20-threat-model-walkthrough-prep.md` (the first one's table, checks and script); Q-350 (the first walkthrough).
+- **Condition:** the first cycle iteration on or after 2027-02-20.
+- **When it fires:** refresh the table from the decision records and questions files since the last walkthrough (a research brief like the first), file the entry, and open the next quarter's watch. Then close this one.
+- **Interim:** nothing is scheduled; Q-350 is the current walkthrough.
 
 ## Closed
 

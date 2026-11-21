@@ -55,23 +55,27 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 - **Agent: answers files count as the owner's answer** (filed 2026-11-20, step 7; behemoth-arsenal F-002, philosophy-research F-004 and F-005, this repo's 7df4654d; triage brief 2). Q-345 answered [1] (2026-11-20, in session): the gate reads `Q-NNN: [N]` lines from new `docs/human-author/answers-*` files on main dated after the entry opened. First step: a review brief (gate code: `scripts/lib/dev-cycle-read.sh`, `scripts/build-loop.sh`, the skill).
 
-- **Agent: the write guard's Bash deny names the Read tool, and the taint docstring covers subagents** (filed 2026-11-20, step 7; philosophy-research F-022, and F-021's comment fix; triage brief 3). Rides after Q-343 (the write-guard merge entry), which edits the same hook. First step: a review brief to `hooks/guard-trusted-writes.py`, `hooks/web-taint-mark.py` and the guard's bats.
-
 - **Agent: `guides/validation-gates.md` names the commit helper's literal-pathspecs guard** (filed 2026-11-20, step 7; the si-commit loop's nit). Motive: line 33 lists `si_commit_child_work`'s hardening but not the guard Q-348 moves into the lib. First step: once Q-348 merges, one line in that guide, riding with the next review unit that touches `guides/` (the cycle cannot write it).
 
 - **Agent: `harness-feedback.py ingest` stores a renamed project twice** (filed 2026-11-20, step 7; the board research's side finding). Motive: ad4f0eef changed `docs/working/feedback/philosophy-research.md`'s `Project:` line to `task-workspace-designer`; ingest keyed on that line would re-seed 22 entries (19 duplicates) and write a second copy. First step: confirm the rename is intended (that project is philosophy-research), then fix the file or teach ingest to refuse a project name that changes under an existing file.
 
 - **Agent: other `printf | grep -q` pipelines under `pipefail`** (filed 2026-11-20, step 7; the rubric flake loop's follow-up, `docs/working/research-2026-11-20-rubric-selection-flake.md`). Motive: the same shape that dropped the selector's points (failure pattern FP-175) is at `scripts/self-improvement.sh:823`, `:1512`, `:1830`, `scripts/lib/si-functions.sh:110`, `:241`, `:253`, `:290`, `:320`, `:327` and `hooks/claude-config-audit.sh:112` (as of 45553ee7). First step: a review brief (`scripts/lib/` is gate code, the hook an enforcement file) checking which can see a large enough input to lose a match, and switching those to here-strings.
 
-- **Agent: reopen decision 040 on asks per day** (filed 2026-11-20, step 7; Q-341 answered [1] in session). Motive: under the per-day reading, decision 040's revisit trigger fired (6, 19 and 10 asks on 11-18 to 11-20; 19 of 35 merge entries). First step: a divergent-design research pass on cutting asks per day, merge entries first, ending in a brief or "no change"; it can use `questions.sh counts` once Q-344 merges.
+- **Agent: `harness-feedback.py ingest` overwrites an empty stored copy under another project name** (filed 2026-11-20, step 7; the board loop's finding, `docs/working/research-2026-11-20-board-pending-feedback.md`). Motive: an empty entry list counts as a prefix of any list, so a stored file with zero entries and a different `Project:` line is overwritten. First step: fold into the "`ingest` stores a renamed project twice" item's brief (same function).
+
+- **Agent: the board's weekly line trusts a future-dated file name** (filed 2026-11-20, step 7; same finding). Motive: the lib's `isweekly` takes the latest `YYYY-MM-DD.md` name, so a mistyped future date shows as latest every week. First step: once Q-352 merges, a small review brief to ignore dates after today and say so on the line.
+
+- **Agent: the digest's other sections read commit subjects under the repo's own log encoding** (filed 2026-11-20, step 7; the out-of-loop loop's follow-up, `docs/working/research-2026-11-20-out-of-loop-landings.md`, failure pattern FP-188). Motive: a repo-local `i18n.logOutputEncoding` cut subjects short and dropped a line in the new section; the digest's other `git log %s` reads have the same exposure. First step: once Q-353 merges, a review brief pinning `i18n.logOutputEncoding=UTF-8` in the digest's git calls, with a test.
 
 ## In flight
 
-- **Agent: prepare the first quarterly threat-model walkthrough** (from Now, Q-340 [1]). Brief `docs/working/briefs/2026-11-20-threat-model-walkthrough-prep.md` (self-merge, research only); the cycle files the `you: walkthrough` entry from it.
+- **Agent: the write guard's Bash deny names the Read tool, and the taint docstring covers subagents** (from Now, filed 2026-11-20; F-022 and F-021's comment). Brief `docs/working/briefs/2026-11-20-guard-read-route-text.md` (review).
 
-- **Agent: the cross-project board lists harness feedback not yet copied here, and each repo's latest weekly digest** (from Now, owner request 2026-11-20). Brief `docs/working/briefs/2026-11-20-board-pending-feedback.md` (review, host code).
+- **Agent: reopen decision 040 on asks per day** (from Now, Q-341 [1]). Brief `docs/working/briefs/2026-11-20-reopen-040-asks-per-day.md` (self-merge, research only).
 
-- **Agent: the dev cycle lists code landings on main that came outside the build loop** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-out-of-loop-landings.md` (review, gate code).
+- **Agent: the cross-project board lists harness feedback not yet copied here, and each repo's latest weekly digest** (from Now, owner request 2026-11-20). Brief `docs/working/briefs/2026-11-20-board-pending-feedback.md` (review, host code). Ready at 87ce7a6d; merge entry Q-352.
+
+- **Agent: the dev cycle lists code landings on main that came outside the build loop** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-out-of-loop-landings.md` (review, gate code). Ready at 93e88269; merge entry Q-353.
 
 - **Agent: fix report findings F8 to F12 so five held-back skills' reports can land** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-report-findings-f8-f12.md` (review; skills are prompt files). Ready at 0df118cd; merge entry Q-349. Q-349 [1]: the merge was refused because the main checkout holds untracked `test/skills/fact-check/output/` reports (the owner's Q-332 host run); retried next iteration.
 
@@ -420,6 +424,7 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- Prepare the first quarterly threat-model walkthrough: 10785140 (self-merge), `docs/working/research-2026-11-20-threat-model-walkthrough-prep.md`, brief `docs/working/briefs/closed/2026-11-20-threat-model-walkthrough-prep.md`; filed as Q-350 (you: walkthrough), next due 2027-02-20 (watch Q-351).
 - Write trials T9, T11 and T12 into the dev-cycle skill: 9e27a4ea (approved merge, Q-342 [1]), brief `docs/working/briefs/closed/2026-11-20-codify-trial-set-2.md`.
 - The write guard's `.claude/wt-*` exemption: kept, comments corrected: abd8e21f (approved merge, Q-343 [1]), brief `docs/working/briefs/closed/2026-11-20-write-guard-wt-exemption.md`.
 - `si_commit_child_work` turns literal pathspecs off itself: 2c388cfc (approved merge, Q-348 [1]), brief `docs/working/briefs/closed/2026-11-20-si-commit-literal-pathspecs.md`.
