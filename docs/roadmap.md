@@ -53,7 +53,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 - **Agent: `questions.sh check` flags an entry outside `## Open`, and `migrate` drops a heading it empties** (filed 2026-11-20, step 7; behemoth-arsenal harness feedback F-001; triage brief 1 in `docs/working/research-2026-11-20-harness-feedback-triage.md`). Motive: after a migration left stale route headings, 19 of 20 owner questions there were filed under "Watched conditions". First step: a review brief (gate code) once the ask counter (Q-344) settles `scripts/questions.sh`.
 
-- **Agent: answers files count as the owner's answer** (filed 2026-11-20, step 7; behemoth-arsenal F-002, philosophy-research F-004 and F-005, this repo's 7df4654d; triage brief 2). Held by Q-345 (which route: read the file, detect and confirm, or status quo). First step after the answer: a review brief (gate code: `scripts/lib/dev-cycle-read.sh`, `scripts/build-loop.sh`, the skill).
+- **Agent: answers files count as the owner's answer** (filed 2026-11-20, step 7; behemoth-arsenal F-002, philosophy-research F-004 and F-005, this repo's 7df4654d; triage brief 2). Q-345 answered [1] (2026-11-20, in session): the gate reads `Q-NNN: [N]` lines from new `docs/human-author/answers-*` files on main dated after the entry opened. First step: a review brief (gate code: `scripts/lib/dev-cycle-read.sh`, `scripts/build-loop.sh`, the skill).
 
 - **Agent: the write guard's Bash deny names the Read tool, and the taint docstring covers subagents** (filed 2026-11-20, step 7; philosophy-research F-022, and F-021's comment fix; triage brief 3). Rides after Q-343 (the write-guard merge entry), which edits the same hook. First step: a review brief to `hooks/guard-trusted-writes.py`, `hooks/web-taint-mark.py` and the guard's bats.
 
@@ -63,11 +63,13 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 - **Agent: other `printf | grep -q` pipelines under `pipefail`** (filed 2026-11-20, step 7; the rubric flake loop's follow-up, `docs/working/research-2026-11-20-rubric-selection-flake.md`). Motive: the same shape that dropped the selector's points (failure pattern FP-175) is at `scripts/self-improvement.sh:823`, `:1512`, `:1830`, `scripts/lib/si-functions.sh:110`, `:241`, `:253`, `:290`, `:320`, `:327` and `hooks/claude-config-audit.sh:112` (as of 45553ee7). First step: a review brief (`scripts/lib/` is gate code, the hook an enforcement file) checking which can see a large enough input to lose a match, and switching those to here-strings.
 
+- **Agent: reopen decision 040 on asks per day** (filed 2026-11-20, step 7; Q-341 answered [1] in session). Motive: under the per-day reading, decision 040's revisit trigger fired (6, 19 and 10 asks on 11-18 to 11-20; 19 of 35 merge entries). First step: a divergent-design research pass on cutting asks per day, merge entries first, ending in a brief or "no change"; it can use `questions.sh counts` once Q-344 merges.
+
 ## In flight
 
-- **Agent: the cross-project board lists harness feedback not yet copied here, and each repo's latest weekly digest** (from Now, owner request 2026-11-20). Brief `docs/working/briefs/2026-11-20-board-pending-feedback.md` (review, host code).
+- **Agent: prepare the first quarterly threat-model walkthrough** (from Now, Q-340 [1]). Brief `docs/working/briefs/2026-11-20-threat-model-walkthrough-prep.md` (self-merge, research only); the cycle files the `you: walkthrough` entry from it.
 
-- **Agent: re-stamp the 81 report stamps written before the web-tools grant** (filed 2026-11-20, step 7; the stale-warnings research's brief). Brief `docs/working/briefs/2026-11-20-restamp-pre-grant-reports.md` (self-merge; `.stamp` files under 11 skills' `output/`).
+- **Agent: the cross-project board lists harness feedback not yet copied here, and each repo's latest weekly digest** (from Now, owner request 2026-11-20). Brief `docs/working/briefs/2026-11-20-board-pending-feedback.md` (review, host code).
 
 - **Agent: the dev cycle lists code landings on main that came outside the build loop** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-out-of-loop-landings.md` (review, gate code).
 
@@ -422,6 +424,7 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- Re-stamp the 81 pre-grant report stamps: 88c695fd (self-merge), `docs/working/research-2026-11-20-restamp-pre-grant-reports.md`, brief `docs/working/briefs/closed/2026-11-20-restamp-pre-grant-reports.md`. The health check's 312 stale-report warnings are gone (0 on the branch); the 11 skills' 23 suites pass.
 - Why the health check prints 312 stale-report warnings: 1bb24e5c (self-merge), `docs/working/research-2026-11-20-stale-report-warnings.md`, brief `docs/working/briefs/closed/2026-11-20-stale-report-warnings.md`. 81 stamps in 11 skills predate the web-tools grant, which cannot change those runners' output; the re-stamp is In flight.
 - `test/rubric-selection.bats` flake: 8daaa173 (self-merge), `docs/working/research-2026-11-20-rubric-selection-flake.md`, brief `docs/working/briefs/closed/2026-11-20-rubric-selection-flake.md`. Cause: `printf | grep -q` under `pipefail` (SIGPIPE read as no match); 2 of 200 failed under load before, 0 of 200 after. The Idea "`test/rubric-selection.bats` looks load-sensitive" is answered by it.
 - Cross-project board feedback research: 7f086d40 (self-merge), `docs/working/research-2026-11-20-board-feedback-research.md`, brief `docs/working/briefs/closed/2026-11-20-board-feedback-research.md`. Build brief and the ingest rename finding: Now.
