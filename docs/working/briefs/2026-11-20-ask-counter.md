@@ -54,3 +54,5 @@ Over the next 4 weekly digests, any of these:
 
 - Any change to the routes, to merge entries, or to `⚠ SECURITY`.
 - Counting deliberate looks (T11 counts them by hand until its verdict).
+
+Dispatched: 1
