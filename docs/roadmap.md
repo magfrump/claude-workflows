@@ -87,9 +87,11 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
+- **Agent: triage the six harness-feedback entries ingested in ad4f0eef** (filed 2026-11-20, step 6; behemoth-arsenal F-001 and F-002, belegarth-herald F-013, philosophy-research F-020 to F-022). Brief `docs/working/briefs/2026-11-20-harness-feedback-triage.md` (self-merge, research only).
+
 - **Agent: `si_commit_child_work` should turn literal pathspecs off itself** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-si-commit-literal-pathspecs.md` (review, `scripts/lib/` is gate code).
 
-- **Agent: the write guard's `.claude/wt-*` exemption is stale** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-write-guard-wt-exemption.md` (review). `.claude/wt-q096b` still exists in the main checkout, so the brief decides drop versus correct the comments.
+- **Agent: the write guard's `.claude/wt-*` exemption is stale** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-write-guard-wt-exemption.md` (review). Ready at e7222f55; merge entry Q-343. `.claude/wt-q096b` still exists in the main checkout, so the brief decides drop versus correct the comments.
 
 - **Write trials T9, T11 and T12 into the dev-cycle skill** (from Now "Trial week: less friction, less habituation", 2026-11-20; Q-327 [2]). Brief `docs/working/briefs/2026-11-20-codify-trial-set-2.md` (review, gate code). Ready at a77146f3; merge entry Q-342. The T11 board integration rides with the board item in Now.
 
