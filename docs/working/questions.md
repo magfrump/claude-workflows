@@ -26,12 +26,12 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
-| [Q-323](#q-323--gate-only-changes-approved-by-release) | you: judgment | Should a build loop's change that touches only the gate's own code (`scripts/build-loop.sh`, `d6.sh`, `dev-... | 2026-11-19 |
-| [Q-327](#q-327--trial-set-2-ends-again) | you: judgment | The second trial set (T8–T12), extended a week under Q-286, has now had its second weekly digest (`docs/w... | 2026-11-20 |
-| [Q-337](#q-337--merge-gate-2026-11-20-remove-worktrees-parked-shell-415006dec476) | you: judgment | Merge R2: the dev cycle removes each of its worktrees in a separate call made after a bare `cd` into `.work... | 2026-11-20 |
-| [Q-339](#q-339--merge-gate-2026-11-20-cycle-diff-record-prefix-f2d9abc53623) | you: judgment | Merge the gate rule that refuses a cycle-record change which drops or rewrites the record's earlier iterati... | 2026-11-20 |
-| [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the ho... | 2026-11-05 |
-| [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there. | 2026-11-18 |
+| [Q-323](#q-323--gate-only-changes-approved-by-release) | you: judgment | Q-323: [2] | 2026-11-19 |
+| [Q-327](#q-327--trial-set-2-ends-again) | you: judgment | Q-327: [2] T9 T11 T12 | 2026-11-20 |
+| [Q-337](#q-337--merge-gate-2026-11-20-remove-worktrees-parked-shell-415006dec476) | you: judgment | Q-337: [1] | 2026-11-20 |
+| [Q-339](#q-339--merge-gate-2026-11-20-cycle-diff-record-prefix-f2d9abc53623) | you: judgment | Q-339: [1] | 2026-11-20 |
+| [Q-255](#q-255--herald-egress-fix-unconfirmed) | you: terminal | Q-255: passed — check 1 counted 0 rejected addresses and 0 `FAIL sni=dl.google.com`; check 2, 40 `host-re... | 2026-11-05 |
+| [Q-302](#q-302--review-gap-audit-behemoth-paste) | you: terminal | Q-302: done — the audit's output is in `docs/human-author/answers-11-20-26.txt` (7df4654d): 44 GAPs, all ... | 2026-11-18 |
 | [Q-332](#q-332--regenerate-fact-check-reports-host) | you: terminal | Regenerate the fact-check skill's eval reports on the host, where the web works, and commit them. | 2026-11-20 |
 | [Q-336](#q-336--image-lag) | you: terminal | Install the release that carries the health-checkout preparation step you approved in Q-333: run the one pa... | 2026-11-20 |
 <!-- index:end -->
@@ -39,7 +39,8 @@ The index below is generated — edit entries, not the table.
 ## Open
 
 ### Q-255 · herald-egress-fix-unconfirmed
-**Needs:** you: terminal · **Opened:** 2026-11-05 · **Status:** OPEN
+**Needs:** you: terminal · **Opened:** 2026-11-05 · **Status:** ANSWERED
+Q-255: passed — check 1 counted 0 rejected addresses and 0 `FAIL sni=dl.google.com`; check 2, 40 `host-record` lines; check 3, `BUILD SUCCESSFUL` (full output in `docs/human-author/answers-11-20-26.txt`, 7df4654d)
 
 Did the 2026-10-28 egress fix (Q-214) stop herald's `dl.google.com` build failures? One file copy on the host and one message to the herald agent answer it.
 
@@ -72,7 +73,8 @@ If check 1 counts 0 and the build finishes, retire the "dl.google.com refused TL
 - **If the answer differs:** a `FAIL sni=dl.google.com` for an address that is not pinned is decision 039's revisit trigger; a failed build gets a follow-up fix.
 
 ### Q-302 · review-gap-audit-behemoth-paste
-**Needs:** you: terminal · **Opened:** 2026-11-18 · **Status:** OPEN
+**Needs:** you: terminal · **Opened:** 2026-11-18 · **Status:** ANSWERED
+Q-302: done — the audit's output is in `docs/human-author/answers-11-20-26.txt` (7df4654d): 44 GAPs, all landed 2026-08-22 to 09-17 (31 bypassed, 13 no-gate), one fix proposed per cause
 
 Run the read-only review-gap audit in Behemoth Arsenal: one message to a Claude Code session there.
 
@@ -108,7 +110,8 @@ Output, in chat (write no files):
 - **If the answer differs:** a cause the fixes here don't cover becomes a roadmap item here (the gate and rules are shared), and anything specific to Behemoth Arsenal is for a session in that repo.
 
 ### Q-323 · gate-only-changes-approved-by-release
-**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-19 · **Status:** ANSWERED
+Q-323: [2]
 
 Should a build loop's change that touches only the gate's own code (`scripts/build-loop.sh`, `d6.sh`, `dev-cycle.sh`, `questions.sh`, `scripts/lib/`, `skills/dev-cycle/`, plus its own tests and records) land on main without its own merge entry, with the release paste that installs it serving as your approval?
 
@@ -130,7 +133,8 @@ One thing the research's summary does not say, which the cycle adds: a self-land
 - **Also found:** watch Q-262 (`docs/working/watching.md`) listed three of the 2026-11-06 record's five reopen conditions; one of the two it left out, "an approved merge is reverted", fired on 2026-11-12 (the sandbox merge 3cd6d9bb, reverted by 7caea26d). The watch now lists all five; this entry is that reopening.
 
 ### Q-327 · trial-set-2-ends-again
-**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-327: [2] T9 T11 T12
 
 The second trial set (T8–T12), extended a week under Q-286, has now had its second weekly digest (`docs/working/weekly/2026-11-20.md`). Which of the five should stay?
 
@@ -212,7 +216,8 @@ Optional, for watch Q-331 (the write-guard fix 61122f34 has no live check): in a
 - **Interim:** the image's gate (665dbf95) runs; nothing breaks.
 
 ### Q-337 · merge-gate-2026-11-20-remove-worktrees-parked-shell-415006dec476
-**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-337: [1]
 
 Merge R2: the dev cycle removes each of its worktrees in a separate call made after a bare `cd` into `.worktrees`, so a build loop running in the background no longer has its commands refused when the orchestrator's directory disappears?
 
@@ -250,7 +255,8 @@ Notes: `scripts/build-loop.sh` and `skills/dev-cycle/SKILL.md` are gate code, an
 | **[3] changes needed** | Your note goes back to the loop | One line of note | A re-dispatch and another merge entry |
 
 ### Q-339 · merge-gate-2026-11-20-cycle-diff-record-prefix-f2d9abc53623
-**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-339: [1]
 
 Merge the gate rule that refuses a cycle-record change which drops or rewrites the record's earlier iteration blocks, while still taking an appended block and step 10's own updates to the last block?
 
