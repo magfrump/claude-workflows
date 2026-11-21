@@ -24,8 +24,12 @@ Reproduction: `GIT_LITERAL_PATHSPECS=1 bats test/si-commit-child-work.bats` on 1
 
 ## Tests
 
-- New case in `test/si-commit-child-work.bats`: exports `GIT_LITERAL_PATHSPECS=1`, commits with a message file, checks the message, that the file is not in the tree, and that the caller's variable is still 1 (scoped, not exported). Fails on the 10c42a29 lib, passes now.
+- New case in `test/si-commit-child-work.bats`: exports `GIT_LITERAL_PATHSPECS=1`, commits with a message file, checks the message, that the file is not in the tree, and that the caller's variable is still 1 (scoped, not exported; called without `run`, whose subshell would hide a function-wide export). Fails on the 10c42a29 lib, passes now.
 - `test/si-commit-child-work.bats`: 16/16 with the variable exported and unset.
 - `test/scripts/self-improvement-clean-state.bats`: 29/29 with the variable exported and unset.
 - `scripts/hermeticity-lint --root .`: passes (150 files).
 - `scripts/confine-tests.sh --probe`: exit 3, first line "confine-tests: NO CONFINEMENT PRIMITIVE AVAILABLE — refusing to run.", so the confined run is replaced by `scripts/run-tests.sh` plus the lint (brief criterion 3).
+
+## Review
+
+- Round 1 (fresh reviewer on 064e2a38): nothing at medium. Fixed: (low) the new case's closing `[ "$GIT_LITERAL_PATHSPECS" = 1 ]` could not fail under `run`'s subshell; the case now calls the function directly. Declined: (nit) also unsetting GIT_GLOB/NOGLOB/ICASE_PATHSPECS on the add: each alone leaves the exclude working, nothing in the harness exports them, and the brief scopes the change to literal pathspecs. Left for the cycle (outside the brief's doc scope): (nit) `guides/validation-gates.md:33` lists this function's hardening but not the literal-pathspec guard.

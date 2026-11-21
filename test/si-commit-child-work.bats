@@ -50,8 +50,10 @@ commit_work() { si_commit_child_work "$WT" "$1" "$REPO"; }
   export GIT_LITERAL_PATHSPECS=1
   echo changed > "$WT/a.txt"
   printf 'feat: literal\n' > "$WT/$SI_COMMIT_MSG_FILE"
-  run commit_work "task"
-  [ "$status" -eq 0 ]
+  # Not `run`: its subshell would hide a function-wide export from the check
+  # at the end.
+  rc=0; commit_work "task" || rc=$?
+  [ "$rc" -eq 0 ]
   [ "$(git -C "$WT" log -1 --format=%s)" = "feat: literal" ]
   run git -C "$WT" ls-tree -r --name-only HEAD
   [[ "$output" != *"$SI_COMMIT_MSG_FILE"* ]]
