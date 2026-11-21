@@ -20,7 +20,7 @@ So the risk needs text after the matching line. A single-line input is safe at a
 
 ## Sites
 
-`pipefail` comes from `set -euo pipefail` in `scripts/self-improvement.sh`, `scripts/health-check.sh` and `scripts/board.sh`. `scripts/lib/si-functions.sh` is sourced by `self-improvement.sh` and by `health-check.sh`, so it runs under it too. The hooks below set no `pipefail`. Search: `rg -n '\|\s*(grep|rg|egrep|fgrep)\b[^|]*\s-[a-zA-Z]*[qm]' scripts/ hooks/`, which also catches `-Eq`, `-iq` and `-m1` forms that `\| *grep -q` misses.
+`rg -l pipefail scripts hooks` lists 16 files, among them `scripts/self-improvement.sh`, `scripts/health-check.sh`, `scripts/board.sh`, `scripts/run-tests.sh`, `scripts/dev-cycle.sh` and `hooks/auto-approve-allowed-commands.sh`. The search below ran over all of `scripts/` and `hooks/`, and every hit in a pipefail file is in the table. `scripts/lib/si-functions.sh` is sourced by `self-improvement.sh` and by `health-check.sh`, so it runs under pipefail too. The hooks in the table that are marked "no" set no `pipefail`. Search: `rg -n '\|\s*(grep|rg|egrep|fgrep)\b[^|]*\s-[a-zA-Z]*[qm]' scripts/ hooks/`, which also catches `-Eq`, `-iq` and `-m1` forms that `\| *grep -q` misses.
 
 | Site | pipefail | Largest input (why) | Verdict |
 |---|---|---|---|
@@ -34,13 +34,14 @@ So the risk needs text after the matching line. A single-line input is safe at a
 | `scripts/board.sh:82` `printf '%s\n' "$1" \| grep -a -m1 '✗' \|\| printf ... \| head -n1` (missed by the brief's list) | yes | `questions.sh check` output, one line per refusal (3000 refusals is about 220 KB) | fix: a lost match also ran the fallback, so the board printed the refusal line twice. Bats case |
 | `scripts/health-check.sh:555` `head -1 "$wf" \| grep -q` | yes | one line | safe: single line |
 | `scripts/run-tests.sh:335` `head -15 "$f" \| grep -m1` | yes | 15 header lines of a bats file, far under one pipe write | safe: head's single write ends before grep can exit |
+| `scripts/dev-cycle.sh:558` `printf '%s\n' "$open_q" \| awk '… exit'` (found in review) | yes | `questions.sh open` output, a few dozen lines | safe from a lost match: awk prints its match before it exits. A 141 would abort the script under `set -e`, which needs about 64 KB of open entries. That is the `\| head` class below |
 | `hooks/claude-config-audit.sh:112` `printf '%s' "$OUTPUT" \| grep -q` | no (`set -e` deliberately off, no pipefail) | large | safe: the pipeline status is grep's own |
 | `hooks/live-verify-gate.sh:65/68/75`, `hooks/batch-feedback-routing-reminder.sh:90/95`, `hooks/dd-routing-reminder.sh:52` | no | the command or prompt text | safe: no pipefail |
 | `scripts/self-improvement.sh:394`, `scripts/health-check.sh:144` | yes | already here-strings | fixed before (FP-175, the rubric flake) |
 
 ## Design
 
-Fix form: a here-string (`grep … <<< "$x"`). The other forms are `< <(printf …)`, a `[[ =~ ]]` rewrite, or masking the 141. The here-string dominates: it is the prior art at the two fixed sites and keeps the regexes unchanged, and a `git revert` undoes it. Path A (one option dominates), no divergent-design pass. For the board fallback, `head -n1 <<< "$1"` also removes that pipe's own 141. For `1830`, `<<< "$(git diff …)"` keeps the old semantics: a failing `git diff` still reads as no conflicts, as it did when pipefail turned its status into the `!`'s true.
+Fix form: a here-string (`grep … <<< "$x"`). The other forms are `< <(printf …)`, a `[[ =~ ]]` rewrite, or masking the 141. The here-string dominates: it is the prior art at the two fixed sites and keeps the regexes unchanged, and a `git revert` undoes it. Path A (one option dominates), no divergent-design pass. For the board fallback, `head -n1 <<< "$1"` also removes that pipe's own 141. For `1830`, `<<< "$(git diff …)"` keeps the old semantics: a failing `git diff` still reads as no conflicts, as before: grep then saw no input and returned 1, so the pipeline failed and `!` turned that into true.
 
 ## Tests
 
@@ -48,6 +49,8 @@ Fix form: a here-string (`grep … <<< "$x"`). The other forms are `< <(printf �
 - `test/scripts/board.bats`: 3000 malformed headings. The UNREADABLE line must be the first refusal, printed once. It fails on the old `board.sh`.
 - Touched suites (`validate-task-json`, `scripts/board`, `merge-safety`, `scripts/self-improvement-smoke`, `rubric-selection`) pass. `scripts/hermeticity-lint --root .` passes.
 - `scripts/confine-tests.sh --probe` exits 3: "confine-tests: NO CONFINEMENT PRIMITIVE AVAILABLE — refusing to run." So the suites ran plain, backed by the lint.
+- `scripts/health-check.sh` on the branch: exit 0, "All checks passed." (2685 bats cases ok, none not ok).
+- Review (one fresh reviewer subagent): no blocking findings. Its should-fixes were all in this doc: the pipefail-file list was incomplete, `dev-cycle.sh:558` was missing from the table, and the health check was not yet recorded. All three are fixed here.
 - No changed file is in `hooks/live-verify-gate.sh`'s enforcement or host-tool sets, so no trailer is needed.
 
 ## Out of scope, noted
