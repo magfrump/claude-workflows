@@ -412,10 +412,10 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
-- The write guard's Bash deny names a read-only route; taint docstring covers subagents: b9319b18 (approved merge, Q-356 [1]).
-- The cross-project board lists harness feedback not yet copied, and each repo's latest weekly digest: 8409f853 (approved merge, Q-352 [1]); its host check rides in Q-336.
-- A reproducible ask counter (`questions.sh counts`): d80b3250 (approved merge, Q-354 [1], first approved as Q-344 and sent back once for a conflict).
-- The digest lists code landings outside the build loop (section 6b): 24d9ba2a (approved merge, Q-353 [1]).
+- The write guard's Bash deny names a read-only route; taint docstring covers subagents: b9319b18 (approved merge, Q-356 [1]). Brief `docs/working/briefs/closed/2026-11-20-guard-read-route-text.md`.
+- The cross-project board lists harness feedback not yet copied, and each repo's latest weekly digest: 8409f853 (approved merge, Q-352 [1]); its host check rides in Q-336. Brief `docs/working/briefs/closed/2026-11-20-board-pending-feedback.md`.
+- A reproducible ask counter (`questions.sh counts`): d80b3250 (approved merge, Q-354 [1], first approved as Q-344 and sent back once for a conflict). Brief `docs/working/briefs/closed/2026-11-20-ask-counter.md`.
+- The digest lists code landings outside the build loop (section 6b): 24d9ba2a (approved merge, Q-353 [1]). Brief `docs/working/briefs/closed/2026-11-20-out-of-loop-landings.md`.
 - Reopen decision 040 on asks per day (Q-341 [1]): c3698169 (self-merge), `docs/working/research-2026-11-20-reopen-040-asks-per-day.md`, brief `docs/working/briefs/closed/2026-11-20-reopen-040-asks-per-day.md`. No change: the owner's Q-323 [2] words (separate merge entries, read 1-2 at a time) rule out the options that would cut asks a lot; watch Q-355 holds the baseline and reopen triggers.
 - Prepare the first quarterly threat-model walkthrough: 10785140 (self-merge), `docs/working/research-2026-11-20-threat-model-walkthrough-prep.md`, brief `docs/working/briefs/closed/2026-11-20-threat-model-walkthrough-prep.md`; filed as Q-350 (you: walkthrough), next due 2027-02-20 (watch Q-351).
 - Write trials T9, T11 and T12 into the dev-cycle skill: 9e27a4ea (approved merge, Q-342 [1]), brief `docs/working/briefs/closed/2026-11-20-codify-trial-set-2.md`.
