@@ -143,17 +143,17 @@ read_stored() {
 # with no harness repo registered. Returns 1 after UNREADABLE or NOT COMPARED.
 feedback() {
   local e out rc=0 f=docs/harness-feedback.md
-  [[ "$1" != "$CW" ]] || return 0
+  [[ "$(git rev-parse --path-format=absolute --git-common-dir)" != "$CWKEY" ]] || return 0
   e="$(main_entry "$f")"
   case "$e" in
     absent) return 0 ;;
-    blob) git cat-file blob "$MAIN_SHA:$f" > "$TMP/$2/hf.md" || { echo "   feedback UNREADABLE: $f could not be read from $MAIN"; return 1; } ;;
+    blob) git cat-file blob "$MAIN_SHA:$f" > "$TMP/$1/hf.md" || { echo "   feedback UNREADABLE: $f could not be read from $MAIN"; return 1; } ;;
     *) echo "   feedback UNREADABLE: $(entry_why "$e" "$f")"; return 1 ;;
   esac
   [[ -n "$CW$CWWHY" ]] || { : > "$TMP/fb-uncompared"; return 0; }
   [[ -z "$CWWHY" ]] || { echo "   feedback NOT COMPARED: $CWWHY"; return 1; }
   # -I: no PYTHON* variables, current directory or script directory on sys.path.
-  out="$(python3 -I "$HF" pending "$TMP/$2/hf.md" "$CW" "$TOP/$f" "${STORED[@]}" 2>&1)" || rc=$?
+  out="$(python3 -I "$HF" pending "$TMP/$1/hf.md" "$CW" "$TOP/$f" "${STORED[@]}" 2>&1)" || rc=$?
   [[ ( $rc -eq 0 || $rc -eq 3 ) && -n "$out" ]] || out="feedback UNREADABLE: harness-feedback.py pending stopped (exit $rc): ${out##*$'\n'}"
   echo "   ${out%%$'\n'*}"; [[ $rc -eq 0 ]]
 }
@@ -203,7 +203,7 @@ repo() {
   fi
   printf '   main %s · %d open watch%s\n' "$day" "$watches" "$([[ $watches -eq 1 ]] || echo es)"
   TOP="$(git rev-parse --show-toplevel 2>/dev/null)" || TOP="$p"
-  feedback "$p" "$n" || : > "$TMP/$n.bad"; weekly "$n" || : > "$TMP/$n.bad"
+  feedback "$n" || : > "$TMP/$n.bad"; weekly "$n" || : > "$TMP/$n.bad"
   if [[ $shown -eq 0 ]]; then echo "   nothing open for you"; else printf '%s' "$lines"; fi
   echo "$shown" > "$TMP/$n.count"
 }
@@ -444,17 +444,17 @@ if [[ $# -eq 4 ]]; then
   exit "$rc"
 fi
 
-# The harness repo: the one registered repo (by top level) whose main holds
-# ingest's marker and the script (choice 3 of docs/working/research-2026-11-20-board-feedback-research.md);
-# one of them a file and the other neither a file nor absent is refused, never taken as no harness.
-CW=""; CWWHY=""; hn=0; mkdir "$TMP/stored"; declare -A TOPS=()
+# The harness repo (choice 3 of the 2026-11-20 board-feedback research): one by git common dir with
+# ingest's marker and the script on main; one a file, the other a non-file, refuses.
+CW=""; CWKEY=""; CWWHY=""; hn=0; mkdir "$TMP/stored"; declare -A KEYS=()
 while IFS= read -r line || [[ -n "$line" ]]; do
   line="$(trim "$line")"; [[ "$line" == /* && -d "$line" ]] || continue
-  r="$( cd -- "$line" && resolve_main && main_by_name && echo "$(main_entry guides/harness-feedback.md) $(main_entry scripts/harness-feedback.py)" && git rev-parse --show-toplevel )" 2>/dev/null || continue
+  r="$( { cd -- "$line" && resolve_main && main_by_name && echo "$(main_entry guides/harness-feedback.md) $(main_entry scripts/harness-feedback.py)" && git rev-parse --path-format=absolute --git-common-dir; } 2>/dev/null )" || continue
+  k="${r#*$'\n'}"
   case "${r%%$'\n'*}" in
-    "blob blob") [[ -n "${TOPS[${r#*$'\n'}]+set}" ]] || { TOPS[${r#*$'\n'}]=1; CW="$line"; hn=$((hn + 1)); } ;;
-    blob\ absent|absent\ *) ;;
-    *blob*) CWWHY="$line holds part of the harness, but its main reads guides/harness-feedback.md and scripts/harness-feedback.py as: ${r%%$'\n'*}" ;;
+    "blob blob") [[ -n "${KEYS[$k]+set}" ]] || { KEYS[$k]=1; CW="$line"; CWKEY="$k"; hn=$((hn + 1)); } ;;
+    "blob notfile"|"blob error"|"blob badform"|"notfile blob"|"error blob"|"badform blob")
+      CWWHY="$line holds part of the harness, but its main reads guides/harness-feedback.md and scripts/harness-feedback.py as: ${r%%$'\n'*}" ;;
   esac
 done < "$REG"
 [[ $hn -le 1 ]] || { CW=""; CWWHY="$hn registered repos hold the harness (guides/harness-feedback.md and scripts/harness-feedback.py on main)"; }

@@ -634,3 +634,19 @@ fbline() { printf '%s\n' "$output" | awk -v h="== $BATS_TEST_TMPDIR/$1" '$0 == h
     board
     [ "$status" -eq 1 ] && [ "$(fbline beta)" = "feedback NOT COMPARED: in $CW, docs/working/feedback is not a directory on the default branch" ] || { echo "$output"; false; }
 }
+
+@test "feedback: a bare or worktree registration of the harness is found and counts once, with no git noise; a symlinked scripts/ is no harness" {
+    mkcw; mkrepo beta; hfile "$BATS_TEST_TMPDIR/beta/docs/harness-feedback.md" beta F-001; commit "$BATS_TEST_TMPDIR/beta"
+    git -C "$CW" worktree add -q -b wt "$BATS_TEST_TMPDIR/cw-wt"; echo "$BATS_TEST_TMPDIR/cw-wt" >> "$BOARD_REGISTRY"
+    board
+    [ "$status" -eq 0 ] && [[ "$(fbline beta)" == "feedback: 1 not copied (F-001): cd $CW && "* ]] || { echo "$output"; false; }
+    [ -z "$(fbline cw-wt)" ]
+    git clone -q --bare "$CW" "$BATS_TEST_TMPDIR/cwbare.git"; printf '%s\n' "$BATS_TEST_TMPDIR/cwbare.git" "$BATS_TEST_TMPDIR/beta" > "$BOARD_REGISTRY"
+    board
+    [ "$status" -eq 0 ] && [[ "$(fbline beta)" == "feedback: 1 not copied (F-001): cd $BATS_TEST_TMPDIR/cwbare.git && "* ]] || { echo "$output"; false; }
+    [[ "$output" != *fatal* ]]
+    # A project with the guide vendored and scripts/ a symlink is not the harness, and refuses nothing.
+    mkrepo del; d="$BATS_TEST_TMPDIR/del"; mkdir -p "$d/guides" "$d/tools"; echo g > "$d/guides/harness-feedback.md"; ln -s tools "$d/scripts"; commit "$d"
+    board
+    [ "$status" -eq 0 ] && [[ "$(fbline beta)" == "feedback: 1 not copied"* ]] || { echo "$output"; false; }
+}

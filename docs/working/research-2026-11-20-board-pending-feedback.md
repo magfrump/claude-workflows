@@ -80,7 +80,25 @@ Size gate (pr-prep 1a): 400 code lines against main after trimming (417 at first
 
 The board is a host tool. One host run shows it live, after the next release installs it: `~/.claude/scripts/board.sh; echo "board exit $?"` with claude-workflows and at least one project with `docs/harness-feedback.md` in the registry; expect a `feedback:` line under each such project and a `weekly:` line under each repo with digests.
 
-Failure-pattern skip: no fix(...) commit on this branch is a root-caused defect in shipped code; the one bug found (pending's exit 1 colliding with Python's) was in this branch's own unshipped code.
+Failure-pattern skip: the one fix(...) commit (f934786f) repairs this branch's own unshipped code (a pre-pass that read a half-readable harness repo as none, found in review); no shipped defect, so no reusable cause-fix entry.
+
+## Review record
+
+Iteration 1 (one general-purpose reviewer, fresh context; correctness, H1/H2, tests, guide fact-check). No Must Fix; no H1 break found. Addressed in f934786f:
+
+- Must Address: the pre-pass took a harness repo whose main holds one marker file and a non-file at the other as "no harness" (footer, exit 0). Now `feedback NOT COMPARED: … holds part of the harness …`, exit 1; bats case added.
+- A repo registered twice (a subdirectory line, a trailing slash) counted as two harness repos: now counted by top level.
+- Guide: "harmless" for ingesting the checkout's file overstated it (run with the project on main); a rename names the `git mv` step; the `pending stopped` state is listed. Module docstring names exit 3; "1 entry" singular.
+- Tests added: half-readable harness, subdirectory line, the stored directory as a file, new and changed on one line, `pending` then `ingest` end to end.
+- Not changed: `isweekly` checks the digit shape only (a mistyped future date would show as latest). It is the lib's one grammar for edition names (S3); a calendar check there is a lib change for the cycle to weigh.
+- Outside the diff, for the cycle: `ingest` overwrites a zero-entry stored copy that holds another Project (an empty list is a prefix of any list; `harness-feedback.py`'s prefix check). `pending` withholds the command in that state.
+
+Iteration 2 (a fresh reviewer on f934786f). No Must Fix. Addressed:
+
+- Must Address: keying by `--show-toplevel` dropped a bare harness repo silently (show-toplevel fails there); now keyed by `git rev-parse --path-format=absolute --git-common-dir`, which also counts a linked worktree of the harness once. Bats case added (bare, worktree).
+- Must Address: `2>/dev/null` on the assignment did not silence git inside `$( )`; now inside the substitution, and the test asserts no `fatal` in the output.
+- Consider, taken: a project with the guide as a file and a symlinked `scripts/` (`blob notdir scripts`) was refused for every project; only `notfile`, `error` or `badform` beside a `blob` now refuse (guide says so). The harness's own block is skipped by common dir, not by registry string.
+- Consider, left: with several refusal reasons only the last is printed (each still refuses). For a bare harness repo the printed `cd BARE && … ingest` would be refused by `ingest` itself (no checkout); a bare registration of claude-workflows is not a modelled owner setup.
 
 ## Files read
 
