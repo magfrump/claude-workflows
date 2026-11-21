@@ -13,7 +13,7 @@ below is a code path or a test name, not a run.
   `scripts/dev-cycle.sh` (mode list, line 114), implemented by `check_answer` in
   `scripts/lib/dev-cycle-read.sh:1203`. `build-loop.sh` holds `--main-log`'s `answers`
   class, which reuses the same answer labels.
-- `philosophy-research.md` was renamed in the same commit: its `Project:` line now
+- In the same commit, `philosophy-research.md`'s `Project:` line now
   reads `task-workspace-designer` (ad4f0eef's diff, line 3). The file name was left as
   it was. The F-020 to F-022 entries describe the philosophy-research workspace
   (MAIS drafts, Theorem Atlas). Nothing here depends on the name.
@@ -50,7 +50,7 @@ below is a code path or a test name, not a run.
   is an instance of it.
 - `hooks/guard-trusted-writes.py` (543 lines) and `hooks/web-taint-mark.py` (86
   lines), in full.
-- `scripts/questions.sh` `cmd_check` (292-405), `cmd_migrate` (529-573),
+- `scripts/questions.sh` `cmd_check` (292-392), `cmd_migrate` (529-573),
   `entry_sections` (282), `cmd_init`'s layout (631-660).
 - `scripts/lib/dev-cycle-read.sh` `check_answer` (1203-1230) and `GATE_CODE` (1038);
   `scripts/build-loop.sh` `--main-log`'s class rules (160-200).
@@ -74,8 +74,8 @@ below is a code path or a test name, not a run.
 | behemoth F-002: an owner answers file is invisible to the gate | not covered (by design) | `check_answer` reads only `docs/working/questions.md` and `questions-archive.md` (`dev-cycle-read.sh:1208`). `--main-log`'s `answers` class needs a commit that changes only those two files (`build-loop.sh:182`). Step 0.2 lists an `other` commit, and step 7 says it "holds no answer" (SKILL.md:844) | Yes, and it does here: 7df4654d (this repo's owner, answers to Q-255, Q-302, Q-327) was classed `other`. Iteration 2317 recorded none of them and "asked in the final message". Same failure as behemoth's, caught by hand |
 | herald F-013: toolchain caches wiped on every harness update | not covered (worked around in the project) | `devcontainer.json:78-79` mounts only two per-project volumes, `/commandhistory` and `/home/node/.claude`. `~/.cache` and `~/.gradle` are on the container's root filesystem, which a harness update recreates | Yes, for any toolchain cache outside `~/.claude`. Herald now pins build-tools 35.0.0 and keeps `GRADLE_USER_HOME` under `~/.claude/.cache` |
 | philosophy F-020: a background subagent blocks silently on a write that needs approval | partly covered | The trigger is gone. The asks came from web taint plus the `.claude` path rule (F-021's diagnosis), now fixed for file tools in `.claude/worktrees/<name>/` and `.claude/wt-*/` by 61122f34. b3e25cf1 also moves dispatched loops to `.worktrees/`. Both are in image 665dbf95. The general gap remains: the stall rule waits for a TIP unmoved over two hours of iterations (SKILL.md:759-761) and never reads a transcript | Yes, for any other ask in a background subagent: a tainted write to a real SOFT file (a skill, a `CLAUDE.md`), or a non-allowlisted command outside `auto` mode. Its old trigger can't occur on the fixed image |
-| philosophy F-021: web taint plus a worktree under `.claude/` asks on every write | covered (cause 2); not changed (causes 1 and 3) | 61122f34, `hooks/guard-trusted-writes.py` `_worktree_root` (270), `_verified_worktree` (288), `_is_soft_path`. Pinned by `test/hooks/guard-trusted-writes.bats` "worktree taint: the reproduction table (tainted and clean, both layouts, .worktrees, main checkout)" and 18 sibling cases. Cause 1 (taint keyed on `session_id`, `web-taint-mark.py:48`, `guard-trusted-writes.py:491`) and cause 3 (SOFT plus taint asks) are unchanged | Not for ordinary files in a verified linked worktree. Yes for real SOFT files there, which is intended. Session-wide taint still makes one subagent's fetch taint its siblings, but now only real SOFT files ask |
-| philosophy F-022: the write guard denies read-only Bash that names a hook | not covered | `WRITE_PRIMITIVE` (`guard-trusted-writes.py:427-435`) matches any `>` (quoted or not) and any `python3 ... -c`. `HARD_FRAG` (456) or `SETTINGS_OR_HOOKS` plus `CFG_INDICATOR` then denies (`bash_targets`, 461; deny text 502). No bats case pins a read-only false positive of this shape. The one read-only case, "read-only commands on a project CLAUDE.md are not denied" (265), has no `.claude` indicator | Yes, in any session, any project |
+| philosophy F-021: web taint plus a worktree under `.claude/` asks on every write | covered (cause 2); not changed (causes 1 and 3) | 61122f34, `hooks/guard-trusted-writes.py` `_worktree_root` (270), `_verified_worktree` (288), `_is_soft_path`. Pinned by `test/hooks/guard-trusted-writes.bats` "worktree taint: the reproduction table (tainted and clean, both layouts, .worktrees, main checkout)" and 18 sibling cases. Cause 1 (taint keyed on `session_id`, `web-taint-mark.py:48`, `guard-trusted-writes.py:490-491`) and cause 3 (SOFT plus taint asks) are unchanged | Not for ordinary files in a verified linked worktree. Yes for real SOFT files there, which is intended. Session-wide taint still makes one subagent's fetch taint its siblings, but now only real SOFT files ask |
+| philosophy F-022: the write guard denies read-only Bash that names a hook | not covered | `WRITE_PRIMITIVE` (`guard-trusted-writes.py:427-435`) matches a `>` whether quoted or not (only `/dev/null` and fd duplicates are excepted) and any `python3 ... -c` or `-e`. `HARD_FRAG` (456) or `SETTINGS_OR_HOOKS` plus `CFG_INDICATOR` then denies (`bash_targets`, 461; deny text 502). No bats case pins a read-only false positive of this shape. The one read-only case, "read-only commands on a project CLAUDE.md are not denied" (265), has no `.claude` indicator | Yes, in any session, any project |
 
 An extra finding under F-021: the `web-taint-mark.py` docstring (line 5) says "Taint
 does NOT propagate between subagent and parent sessions". F-021 observed the opposite
@@ -117,7 +117,7 @@ after.
 ### behemoth F-002: owner answers files (divergent design)
 
 Motive (S5): real and repeated. The owner has answered by committed files since
-September in at least two projects. This repo has about ten `answers` commits under
+September in at least three projects: behemoth F-002, philosophy-research's earlier F-004 (answers-file-not-read-by-gate) and F-005, and this repo. This repo has about ten `answers` commits under
 `docs/human-author/`, the latest 7df4654d. Each time the cycle reads the IDs as
 `open`, and the owner or a hand session has to restate or copy the answers. The global
 instructions' "Running questions document" says the owner writes `Q-NNN: <answer>`
@@ -180,7 +180,7 @@ The question for the owner (also in the marker): should a committed answers file
   `skills/dev-cycle/SKILL.md` (step 7, final message), bats. For B:
   `skills/dev-cycle/SKILL.md` and a small parse helper in `scripts/dev-cycle.sh`.
 - Policy: review (gate code), whichever option.
-- Worth it now: yes. It recurs every batch, in two projects, and the loop stalls on it.
+- Worth it now: yes. It recurs every batch, in three projects, and the loop stalls on it.
 
 ### herald F-013: toolchain caches (divergent design)
 
@@ -258,7 +258,7 @@ found bypasses. The same quoting and indirection families apply here (`"$(printf
 for a friction cost of one retry per hit. (c) changes no decision, only text, and it
 cuts the retry loop by naming the route on the first deny. (c) dominates (Path A).
 
-Note on (c): `python3 script.py` is already ungated (TODO A8, `guard-trusted-writes.py:422`),
+Note on (c): `python3 script.py` is already ungated (TODO A8, `guard-trusted-writes.py:421-423`),
 so naming a script file as the read route adds no bypass that isn't already allowed
 (S1). The text should say it is for reads and tests.
 
@@ -287,7 +287,7 @@ Suggested briefs (one per entry worth fixing):
    `## Open` (⚠ before `LEGACY_BEFORE`, ✗ after), and `migrate` drops a route heading
    it leaves empty. Paths: `scripts/questions.sh`, `test/scripts/questions*.bats`.
    Policy: review (gate code). Doc change: the `check` and `migrate` usage text.
-2. **answers-file-route** (closes behemoth F-002; this repo's answers files too).
+2. **answers-file-route** (closes behemoth F-002; philosophy-research F-004/F-005 and this repo's answers files too).
    Waits on the owner's question below. Interim pick D: `check_answer` reads
    `Q-NNN:` lines from `docs/human-author/answers-*` files on main added after the
    entry's `Opened` date, a conflict skips, and `--main-log` classes such a commit
