@@ -26,14 +26,14 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
-| [Q-357](#q-357--merge-gate-2026-11-20-pipefail-grep-q-265fdab2a55a) | you: judgment | Merge the build loop's fix for pipelines into `grep -q` that can lose a match under `pipefail`, two of whic... | 2026-11-20 |
-| [Q-358](#q-358--merge-gate-2026-11-20-answers-file-route-a7a04dc995e1) | you: judgment | Merge the build loop's change that lets a committed `docs/human-author/answers-*` file count as your answer? | 2026-11-20 |
-| [Q-359](#q-359--merge-2026-11-20-ingest-project-rename-82e794ae342f) | you: judgment | Merge the build loop's fix so harness-feedback ingest refuses a renamed project instead of storing or seedi... | 2026-11-20 |
-| [Q-360](#q-360--merge-gate-2026-11-20-six-still-true-rows-ed98d39e8fba) | you: judgment | Merge the build loop's fixes for six old review findings that were still true, one of them a write-guard gap? | 2026-11-20 |
-| [Q-361](#q-361--merge-2026-11-20-report-findings-f8-f12-82c11016daf0) | you: judgment | Merge the report-findings fixes again, now that the loop has merged main in? You approved the earlier tip i... | 2026-11-20 |
-| [Q-362](#q-362--merge-gate-2026-11-20-questions-check-section-5106fc0a52a9) | you: judgment | Merge the build loop's change so `questions.sh check` names an owner entry filed outside `## Open`, and `mi... | 2026-11-20 |
-| [Q-363](#q-363--merge-gate-2026-11-20-digest-log-encoding-5ffb12a25d79) | you: judgment | Merge the build loop's fix that makes every git call in the digest and the gate read commit text as UTF-8, ... | 2026-11-20 |
-| [Q-364](#q-364--merge-gate-2026-11-20-board-weekly-future-date-894fbb661325) | you: judgment | Merge the build loop's fix so the board's weekly line ignores a digest dated in the future, with a shared r... | 2026-11-20 |
+| [Q-357](#q-357--merge-gate-2026-11-20-pipefail-grep-q-265fdab2a55a) | you: judgment | Q-357: [1] | 2026-11-20 |
+| [Q-358](#q-358--merge-gate-2026-11-20-answers-file-route-a7a04dc995e1) | you: judgment | Q-358: [1] | 2026-11-20 |
+| [Q-359](#q-359--merge-2026-11-20-ingest-project-rename-82e794ae342f) | you: judgment | Q-359: [1] | 2026-11-20 |
+| [Q-360](#q-360--merge-gate-2026-11-20-six-still-true-rows-ed98d39e8fba) | you: judgment | Q-360: [1] | 2026-11-20 |
+| [Q-361](#q-361--merge-2026-11-20-report-findings-f8-f12-82c11016daf0) | you: judgment | Q-361: [1] | 2026-11-20 |
+| [Q-362](#q-362--merge-gate-2026-11-20-questions-check-section-5106fc0a52a9) | you: judgment | Q-362: [1] | 2026-11-20 |
+| [Q-363](#q-363--merge-gate-2026-11-20-digest-log-encoding-5ffb12a25d79) | you: judgment | Q-363: [1] | 2026-11-20 |
+| [Q-364](#q-364--merge-gate-2026-11-20-board-weekly-future-date-894fbb661325) | you: judgment | Q-364: [1] | 2026-11-20 |
 | [Q-350](#q-350--threat-model-walkthrough-2026-q4) | you: walkthrough | Walk through the risks you accepted in the build-loop design (about 20 minutes) and say for each: keep, tig... | 2026-11-20 |
 | [Q-332](#q-332--regenerate-fact-check-reports-host) | you: terminal | Regenerate the fact-check skill's eval reports on the host, where the web works, and commit them. | 2026-11-20 |
 | [Q-336](#q-336--image-lag) | you: terminal | Install the release that carries nine changes you approved: the health-checkout preparation step (Q-333), w... | 2026-11-20 |
@@ -141,7 +141,8 @@ Walk through the risks you accepted in the build-loop design (about 20 minutes) 
 - **If the answer differs:** each "tighten" becomes a roadmap item; each "retire" gets a decision-log row and leaves next quarter's table.
 
 ### Q-357 · merge-gate-2026-11-20-pipefail-grep-q-265fdab2a55a
-**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-357: [1]
 
 Merge the build loop's fix for pipelines into `grep -q` that can lose a match under `pipefail`, two of which failed open?
 
@@ -184,7 +185,8 @@ rubric docs/working/briefs/2026-11-20-pipefail-grep-q.md: clean docs/reviews/pip
 - **Interim:** the branch waits; nothing merges.
 
 ### Q-358 · merge-gate-2026-11-20-answers-file-route-a7a04dc995e1
-**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-358: [1]
 
 Merge the build loop's change that lets a committed `docs/human-author/answers-*` file count as your answer?
 
@@ -231,7 +233,8 @@ rubric docs/working/briefs/2026-11-20-answers-file-route.md: clean docs/reviews/
 - **Interim:** the branch waits; nothing merges.
 
 ### Q-359 · merge-2026-11-20-ingest-project-rename-82e794ae342f
-**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-359: [1]
 
 Merge the build loop's fix so harness-feedback ingest refuses a renamed project instead of storing or seeding it twice?
 
@@ -295,7 +298,8 @@ rubric docs/working/briefs/2026-11-20-ingest-project-rename.md: clean docs/revie
 - **Interim:** the branch waits; nothing merges.
 
 ### Q-360 · merge-gate-2026-11-20-six-still-true-rows-ed98d39e8fba
-**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-360: [1]
 
 Merge the build loop's fixes for six old review findings that were still true, one of them a write-guard gap?
 
@@ -360,7 +364,8 @@ rubric docs/working/briefs/2026-11-20-six-still-true-rows.md: clean docs/reviews
 - **Interim:** the branch waits; nothing merges.
 
 ### Q-361 · merge-2026-11-20-report-findings-f8-f12-82c11016daf0
-**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-361: [1]
 
 Merge the report-findings fixes again, now that the loop has merged main in? You approved the earlier tip in Q-349.
 
@@ -516,7 +521,8 @@ rubric docs/working/briefs/2026-11-20-report-findings-f8-f12.md: clean docs/revi
 - **Interim:** the branch waits; nothing merges.
 
 ### Q-362 · merge-gate-2026-11-20-questions-check-section-5106fc0a52a9
-**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-362: [1]
 
 Merge the build loop's change so `questions.sh check` names an owner entry filed outside `## Open`, and `migrate` drops route headings it leaves empty?
 
@@ -555,7 +561,8 @@ rubric docs/working/briefs/2026-11-20-questions-check-section.md: none: fix/ques
 - **Interim:** the branch waits; nothing merges.
 
 ### Q-363 · merge-gate-2026-11-20-digest-log-encoding-5ffb12a25d79
-**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-363: [1]
 
 Merge the build loop's fix that makes every git call in the digest and the gate read commit text as UTF-8, whatever the repo's own log-encoding setting?
 
@@ -597,7 +604,8 @@ rubric docs/working/briefs/2026-11-20-digest-log-encoding.md: clean docs/reviews
 - **Interim:** the branch waits; nothing merges.
 
 ### Q-364 · merge-gate-2026-11-20-board-weekly-future-date-894fbb661325
-**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-364: [1]
 
 Merge the build loop's fix so the board's weekly line ignores a digest dated in the future, with a shared real-date check that the digest now uses too?
 
