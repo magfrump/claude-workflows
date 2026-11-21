@@ -31,3 +31,5 @@ Paths: test/skills/api-consistency-reviewer/output/ test/skills/architecture-rev
 
 - Regenerating any report, any change to the freshness check or the generator, and the five held-back skills (the F8 to F12 brief, in flight).
 - Editing `docs/roadmap.md`, the questions files, `docs/working/watching.md` or `docs/working/idea-log.md`: the dev cycle owns those.
+
+Dispatched: 1

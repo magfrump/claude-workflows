@@ -29,3 +29,5 @@ Policy: review
 
 - Fixing `ingest`'s handling of a renamed project (its own roadmap item), and running `ingest` or the board.
 - Editing `docs/roadmap.md`, the questions files, `docs/working/watching.md` or `docs/working/idea-log.md`: the dev cycle owns those.
+
+Dispatched: 1
