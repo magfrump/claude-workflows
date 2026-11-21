@@ -31,3 +31,4 @@ Policy: review
 - Editing existing cycle records, `docs/roadmap.md`, the questions files or `docs/working/watching.md`.
 
 Dispatched: 1
+Applied: Q-339=merged
