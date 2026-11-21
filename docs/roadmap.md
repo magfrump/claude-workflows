@@ -51,8 +51,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 - **Agent: `guides/validation-gates.md` names the commit helper's literal-pathspecs guard** (filed 2026-11-20, step 7; the si-commit loop's nit). Motive: line 33 lists `si_commit_child_work`'s hardening but not the guard Q-348 moves into the lib. First step: once Q-348 merges, one line in that guide, riding with the next review unit that touches `guides/` (the cycle cannot write it).
 
-- **Agent: the digest's other sections read commit subjects under the repo's own log encoding** (filed 2026-11-20, step 7; the out-of-loop loop's follow-up, `docs/working/research-2026-11-20-out-of-loop-landings.md`, failure pattern FP-188). Motive: a repo-local `i18n.logOutputEncoding` cut subjects short and dropped a line in the new section; the digest's other `git log %s` reads have the same exposure. First step: once Q-353 merges, a review brief pinning `i18n.logOutputEncoding=UTF-8` in the digest's git calls, with a test.
-
 - **Agent: `| head` readers under `set -e` can abort a script** (filed 2026-11-20, step 7; the pipefail loop's follow-up, `docs/working/research-2026-11-20-pipefail-grep-q.md`). Motive: `sed … | head -1` assigned under `set -e` with no `|| true` (for example `scripts/self-improvement.sh:1695`, `:1699`) can exit the script on SIGPIPE instead of losing a match. First step: once Q-357 merges, a small review brief listing such sites and guarding the ones a large input can reach.
 
 ## In flight
@@ -65,11 +63,13 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 - **Agent: other `printf | grep -q` pipelines under `pipefail`** (from Now, filed 2026-11-20; FP-175). Brief `docs/working/briefs/2026-11-20-pipefail-grep-q.md` (review). Ready at 265fdab2; merge entry Q-357.
 
-- **Agent: fix report findings F8 to F12 so five held-back skills' reports can land** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-report-findings-f8-f12.md` (review; skills are prompt files). Ready at 0df118cd; merge entry Q-349. Q-349 [1]: the approved merge now conflicts with the default branch (iteration 2026-11-21-0624), so it was sent back to its loop to merge main in.
+- **Agent: fix report findings F8 to F12 so five held-back skills' reports can land** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-report-findings-f8-f12.md` (review; skills are prompt files). Q-349 [1] approved tip 0df118cd, which then conflicted with main and was sent back (iteration 2026-11-21-0624); the loop merged main in, ready at 82c11016; merge entry Q-361.
 
 - **Agent: `questions.sh check` flags an entry outside `## Open`, and `migrate` drops a heading it empties** (from Now, filed 2026-11-20; behemoth-arsenal F-001). Brief `docs/working/briefs/2026-11-20-questions-check-section.md` (review, gate code).
 
 - **Agent: the board's weekly line ignores a future-dated digest** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-board-weekly-future-date.md` (review).
+
+- **Agent: the digest reads commit subjects under UTF-8** (from Now, filed 2026-11-20; FP-188). Brief `docs/working/briefs/2026-11-20-digest-log-encoding.md` (review, gate code).
 
 ## Next
 
