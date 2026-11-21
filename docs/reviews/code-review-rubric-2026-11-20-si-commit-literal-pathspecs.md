@@ -17,6 +17,9 @@ None.
 
 None.
 
+| # | Finding | Domain | Severity | Source | Legibility-target | Considered overrides | Status | Author note |
+|---|---|---|---|---|---|---|---|---|
+
 ---
 
 ## 🟢 Consider
