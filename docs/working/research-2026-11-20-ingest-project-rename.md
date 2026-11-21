@@ -49,3 +49,11 @@ Other choices (one line each):
 
 - `scripts/confine-tests.sh --probe`: exit 3, "confine-tests: NO CONFINEMENT PRIMITIVE AVAILABLE — refusing to run." So the suites ran unconfined plus the hermeticity lint.
 - `bats test/scripts/harness-feedback.bats test/scripts/board.bats`: 93 ok. `scripts/hermeticity-lint --root .`: exit 0.
+
+## Review round 1 (fresh reviewer, no reds)
+
+- A2 fixed: a rename match now needs the stored copy's whole signature list to lead the new file's and the first entry's text to be equal, so two projects that filed the same F-001 heading, feature, date and verdict both ingest (new bats case). Applied in `stored_match`, so `pending` moves with it.
+- A3 fixed: the first rename case holds a seed for another stored path under the same old name (left alone) and a `Project:` line in an entry body (kept); the rename refusals assert the idea log unchanged. Both new assertions fail under the matching mutation.
+- G1: the guides now say which refusals print the rename command. G2: a failed idea-log write in `rename` undoes the new copy. G3: a symlinked stored `.md` pointing at the source is refused, not skipped. G4: `rename` resolves the source's directory. G5: docstring.
+- A1 kept as a stated residual: `pending` reads no idea log, so for a copy whose seeds sit under another name at the project's own file name (a hand-made half rename) the board prints a command that `ingest` then refuses. Closing it means board.sh extracting main's idea log for `pending`, a second change to the board's read path for a state that only a hand edit reaches; the miss is loud and writes nothing (H2's fail-closed side). Said in `guides/harness-feedback.md`.
+- G6 (a copy moved by hand with seeds left on the old path is re-seeded) is not in the repo today; left.

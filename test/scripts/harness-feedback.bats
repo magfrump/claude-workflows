@@ -479,8 +479,12 @@ signals() { grep -o '(signal: harness feedback [^)]*)' docs/working/idea-log.md;
 
 @test "rename: an old name's copy is refused by ingest and pending, renamed, then ingested without a second copy or seed" {
     make_repo
+    # A Project line in an entry body is entry text, which rename leaves alone.
+    sed -i 's/^  (a continuation line is fine)$/Project: kept-in-body/' "$GOOD"
     sed 's/^Project: example-app$/Project: old-name/' "$GOOD" > "$W/old.md"
     run -0 python3 "$HF" ingest "$W/old.md"
+    # Another copy's seed under the same old name is not this copy's to rekey.
+    echo "- x (signal: harness feedback old-name F-001, $FB/other.md)" >> docs/working/idea-log.md
     printf '%s\n' "$F3" >> "$GOOD"
     before="$(cat docs/working/idea-log.md)"
     run -1 python3 "$HF" ingest "$GOOD"
@@ -491,6 +495,7 @@ signals() { grep -o '(signal: harness feedback [^)]*)' docs/working/idea-log.md;
     run -0 python3 "$HF" rename "$FB/old-name.md" example-app
     [ "$output" = "renamed $FB/old-name.md (Project old-name) to $FB/example-app.md (Project example-app): 2 seeds rekeyed; commit the copy and docs/working/idea-log.md together" ]
     [ ! -e "$FB/old-name.md" ] && grep -qx 'Project: example-app' "$FB/example-app.md"
+    grep -qx 'Project: kept-in-body' "$FB/example-app.md"
     pending "$GOOD" "$FB"/*.md
     [ "$output" = "feedback: 1 not copied (F-003)$CMD" ]
     run -0 python3 "$HF" ingest "$GOOD"
@@ -498,6 +503,7 @@ signals() { grep -o '(signal: harness feedback [^)]*)' docs/working/idea-log.md;
     run -0 signals
     [ "$output" = "(signal: harness feedback example-app F-001, $FB/example-app.md)
 (signal: harness feedback example-app F-002, $FB/example-app.md)
+(signal: harness feedback old-name F-001, $FB/other.md)
 (signal: harness feedback example-app F-003, $FB/example-app.md)" ]
     [ "$(ls "$FB")" = example-app.md ]
 }
@@ -561,12 +567,15 @@ signals() { grep -o '(signal: harness feedback [^)]*)' docs/working/idea-log.md;
 @test "rename: refuses a taken name, a bad name, a path outside the feedback dir, and runs only in claude-workflows" {
     make_repo
     mkdir -p "$FB"; cp "$GOOD" "$FB/a.md"
+    python3 "$HF" ingest "$FB/a.md" >/dev/null
     sed 's/^Project: example-app$/Project: b/' "$GOOD" > "$FB/b.md"
+    before="$(cat docs/working/idea-log.md)"
     run -1 python3 "$HF" rename "$FB/a.md" b
     [ "$output" = "refused: $FB/b.md exists; nothing written" ]
     mv "$FB/b.md" "$FB/c.md"
     run -1 python3 "$HF" rename "$FB/a.md" b
     [ "$output" = "refused: $FB/c.md holds Project b; nothing written" ]
+    [ "$(cat docs/working/idea-log.md)" = "$before" ]
     run -2 python3 "$HF" rename "$FB/a.md" .bad
     [[ "$output" == *"not a Project name"* ]]
     run -2 python3 "$HF" rename "$GOOD" b
@@ -577,4 +586,15 @@ signals() { grep -o '(signal: harness feedback [^)]*)' docs/working/idea-log.md;
     run -2 python3 "$HF" rename "$FB/a.md" z
     [[ "$output" == *"not a claude-workflows checkout"* ]]
     cmp "$GOOD" "$FB/a.md" && [ ! -e "$FB/z.md" ]
+}
+
+@test "ingest: two projects that filed the same first heading and meta line are not taken for a rename" {
+    make_repo
+    sed 's/^Project: example-app$/Project: alpha/' "$GOOD" > "$W/alpha.md"
+    sed 's/^Project: example-app$/Project: beta/; s/rows was committed/rows was skipped/' "$GOOD" > "$W/beta.md"
+    run -0 python3 "$HF" ingest "$W/alpha.md"
+    run -0 python3 "$HF" ingest "$W/beta.md"
+    [ "$output" = "ingested beta: 2 new seeds, 0 already seeded; copy at $FB/beta.md" ]
+    pending "$W/beta.md" "$FB/alpha.md"
+    [ "$output" = "feedback: 2 not copied (F-001 to F-002)$CMD" ]
 }

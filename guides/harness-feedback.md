@@ -104,10 +104,13 @@ Commit the copy and the idea log together.
 **A renamed project.** Seeds and the stored copy's file name both key on the `Project:`
 name, so `ingest` refuses, naming the stored file, rather than store or seed a project
 twice when its name and the stored copy's disagree: its entries are stored under another
-`Project:` name (same first entry), its stored copy has another file name, or the idea log
-seeds this copy under another name (the `Project:` line was edited here). It also refuses a
-stored `NAME.md` that holds another `Project:` line, even one with no entries. A rename is
-one command, which the refusal prints:
+`Project:` name (the stored signatures lead this file's and the first entry's text is the
+same, so two projects that filed one F-001 heading stay apart), its stored copy has another
+file name, or the idea log seeds this copy under another name (the `Project:` line was
+edited here). The board's `pending` reads no idea log, so in that last state it still prints
+the command, which then refuses. `ingest` also refuses a stored `NAME.md` that holds another
+`Project:` line, even one with no entries (another project under this file name: no rename
+command). For the renamed states the refusal prints one command:
 
 ```
 scripts/harness-feedback.py rename docs/working/feedback/OLD.md NEW

@@ -22,7 +22,7 @@ Usage:
                                       of FILE the STORED copies lack
 
 FILE defaults to docs/harness-feedback.md in the git toplevel of the current
-directory ($PWD outside a repository). ingest writes into the toplevel of the
+directory ($PWD outside a repository). ingest and rename write into the toplevel of the
 current directory, never through a symbolic link or outside that toplevel.
 Exit: 0 ok, 1 refused (problems listed), 2 usage or an unreadable file;
 pending exits 3 when a file cannot be read or compared.
@@ -305,10 +305,12 @@ def sig(e):
     return (e["id"], e["slug"], e["meta"])
 
 
-def stored_match(project, entries, stored):
+def stored_match(project, entries, texts, stored):
     """Find a project's stored copy. STORED is a list of (name, project,
-    entries, ...). Return (match, other): match holds this Project; other, when
-    none does, holds the same first entry under another Project (a rename).
+    entries, texts). Return (match, other): match holds this Project; other,
+    when none does, holds these entries under another Project (a rename): its
+    signatures lead this file's and its first entry's text is this one's, so
+    two projects that filed the same F-001 heading are not taken for one.
     Raise ValueError when two stored copies hold one Project."""
     by_project = {}
     for s in stored:
@@ -318,7 +320,9 @@ def stored_match(project, entries, stored):
     match = by_project.get(project)
     other = None
     if match is None and entries:
-        other = next((s for s in stored if s[2] and sig(s[2][0]) == sig(entries[0])), None)
+        other = next((s for s in stored if s[2] and s[3][0] == texts[0]
+                      and [sig(e) for e in s[2]] == [sig(e) for e in entries[:len(s[2])]]),
+                     None)
     return match, other
 
 
@@ -335,7 +339,8 @@ def rename_cmd(rel_copy, project):
 
 
 def read_stored(top, skip):
-    """Every docs/working/feedback/*.md but skip, as (rel, project, entries).
+    """Every docs/working/feedback/*.md but skip, as (rel, project, entries,
+    texts).
     One that cannot be read raises Usage; one that fails check returns its
     first problem as a str. ingest refuses either way, as pending does."""
     feedback_dir = os.path.join(top, FEEDBACK_DIR)
@@ -344,13 +349,16 @@ def read_stored(top, skip):
     out = []
     for fname in sorted(os.listdir(feedback_dir)):
         path = os.path.join(feedback_dir, fname)
-        if not fname.endswith(".md") or os.path.realpath(path) == skip:
+        # A link is never skipped: read_text refuses it, as pending does.
+        if not fname.endswith(".md") or (not os.path.islink(path)
+                                         and os.path.realpath(path) == skip):
             continue
         rel = os.path.join(FEEDBACK_DIR, fname)
-        project, entries, problems = parse(read_text(path))
+        text = read_text(path)
+        project, entries, problems = parse(text)
         if problems:
             return f"the stored copy {rel}: {problems[0]}"
-        out.append((rel, project, entries))
+        out.append((rel, project, entries, entry_texts(text, entries)))
     return out
 
 
@@ -390,7 +398,8 @@ def cmd_ingest(args):
     for target in (dest, log):
         assert_inside(top, target)
     rel_copy = os.path.relpath(dest, top)
-    why = ingest_refusal(top, project, entries, src_real, rel_copy)
+    why = ingest_refusal(top, project, entries, entry_texts(text, entries),
+                         src_real, rel_copy)
     log_text = read_text(log) if os.path.lexists(log) else None
     if why is None and log_text is not None:
         # Seeds of this copy under another Project name: the Project line was
@@ -424,14 +433,14 @@ def cmd_ingest(args):
     return 0
 
 
-def ingest_refusal(top, project, entries, src_real, rel_copy):
+def ingest_refusal(top, project, entries, texts, src_real, rel_copy):
     """Why ingest must not copy or seed this file, or None. stored_match makes
     the same comparison for pending, so the board withholds its command here."""
     stored = read_stored(top, src_real)
     if isinstance(stored, str):
         return stored
     try:
-        match, other = stored_match(project, entries, stored)
+        match, other = stored_match(project, entries, texts, stored)
     except ValueError as exc:
         return str(exc)
     if match is not None and match[0] != rel_copy:
@@ -469,8 +478,10 @@ def cmd_rename(args):
                     "(no guides/harness-feedback.md); rename runs there only")
     feedback_dir = os.path.join(top, FEEDBACK_DIR)
     src_abs = os.path.abspath(src)
-    if os.path.dirname(src_abs) != feedback_dir or not src_abs.endswith(".md"):
+    if os.path.realpath(os.path.dirname(src_abs)) != feedback_dir \
+            or not src_abs.endswith(".md"):
         raise Usage(f"{src}: not a stored copy (a .md file in {FEEDBACK_DIR})")
+    src_abs = os.path.join(feedback_dir, os.path.basename(src_abs))
     dest = os.path.join(feedback_dir, name + ".md")
     log = os.path.join(top, IDEA_LOG)
     # Check every target before the first write, so a refusal writes nothing.
@@ -501,7 +512,15 @@ def cmd_rename(args):
         lambda m: f"(signal: harness feedback {name} {m.group(2)}, {rel_new})", log_text)
     write_file(dest, "\n".join(lines), exclusive=dest != src_abs)
     if n:
-        write_file(log, new_log)
+        try:
+            write_file(log, new_log)
+        except OSError:
+            # Undo the new copy, so a failed rename leaves the old state whole.
+            if dest != src_abs:
+                os.unlink(dest)
+            else:
+                write_file(dest, text)
+            raise
     if dest != src_abs:
         os.unlink(src_abs)
     print(f"renamed {rel_old} (Project {old_project}) to {rel_new} (Project {name}): "
@@ -556,7 +575,7 @@ def cmd_pending(args):
     own = os.path.join(FEEDBACK_DIR, project + ".md")
     names = {c[0]: c[1] for c in copies}
     try:
-        match, other = stored_match(project, entries, copies)
+        match, other = stored_match(project, entries, texts, copies)
     except ValueError as exc:
         print(f"feedback NOT COMPARED: {exc}")
         return 3
