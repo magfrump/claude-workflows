@@ -29,6 +29,7 @@ Reproduction: `GIT_LITERAL_PATHSPECS=1 bats test/si-commit-child-work.bats` on 1
 - `test/scripts/self-improvement-clean-state.bats`: 29/29 with the variable exported and unset.
 - `scripts/hermeticity-lint --root .`: passes (150 files).
 - `scripts/confine-tests.sh --probe`: exit 3, first line "confine-tests: NO CONFINEMENT PRIMITIVE AVAILABLE — refusing to run.", so the confined run is replaced by `scripts/run-tests.sh` plus the lint (brief criterion 3).
+- `scripts/health-check.sh` on the branch (at 94bbae87, before the docs-only rubric commits): exit 0, no failing case.
 
 ## Review
 
