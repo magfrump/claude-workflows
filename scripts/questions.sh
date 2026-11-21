@@ -284,14 +284,15 @@ extract_entry() {
     ' "$file"
 }
 
-# --- The dev cycle's reader lib, sourced for FENCE_AWK (check, migrate) ---
+# --- The dev cycle's reader lib: FENCE_AWK (check, migrate), ANSWER_AWK (counts) ---
 # One fence model for every reader of these files (repo S3): the lib's, which
 # --check-answer already applies to questions.md. Missing, the command stops
 # and names it (H2) rather than reading sections without fences.
+# need_lib COMMAND WHY WHAT-IS-SKIPPED
 need_lib() {
     local lib
     lib="$(dirname -- "${BASH_SOURCE[0]}")/lib/dev-cycle-read.sh"
-    [[ -f "$lib" ]] || die "$1 needs $lib (its FENCE_AWK finds the code fences); stopped before reading either file"
+    [[ -f "$lib" ]] || die "$1 needs $lib ($2); $3"
     # shellcheck source=lib/dev-cycle-read.sh
     source "$lib"
 }
@@ -348,10 +349,10 @@ section_problem() {
 }
 
 cmd_check() {
-    local rc=0 file seen_ids="" id route opened status slug home kind text place h
+    local rc=0 file seen_ids="" id route opened status slug home kind text place h secs
     local -a files=("$LIVE" "$ARCHIVE")
     local -A sect=()
-    need_lib check
+    need_lib check "its FENCE_AWK finds the code fences" "stopped before reading either file"
     # The watching file is optional (no file, no entry to check); present but
     # not a plain file, it is reported like a missing questions file.
     if [[ -e "$WATCHING" || -L "$WATCHING" ]]; then
@@ -365,7 +366,13 @@ cmd_check() {
         # files: an entry fenced as text has none and is not placed.
         sect=()
         if [[ "$file" == "$LIVE" || "$file" == "$WATCHING" ]]; then
-            while IFS=$'\t' read -r id kind text; do sect[$id]="$kind$text"; done < <(entry_sections "$file")
+            # Into a variable first, so a reader that fails is reported, not
+            # read as a file whose entries have no section to check.
+            if secs="$(entry_sections "$file")"; then
+                while IFS=$'\t' read -r id kind text; do [[ -n "$id" ]] && sect[$id]="$kind$text"; done <<<"$secs"
+            else
+                echo "  ✗ $(basename "$file"): its sections could not be read, so where each entry sits is unchecked" >&2; rc=1
+            fi
         fi
 
         # Precondition for every other assertion below. An invalid byte makes
@@ -422,7 +429,12 @@ cmd_check() {
                 fi
             fi
             place="${sect[$id]-}"
-            if [[ "$place" == u* ]]; then
+            if [[ "$place" == u* && "$file" == "$WATCHING" ]]; then
+                # Strict here, as before this reader was fence-aware: the
+                # watching file is newer than LEGACY_BEFORE's reason, and an
+                # unplaced watch would otherwise skip the ## Closed rule below.
+                echo "  ✗ $id in watching.md: not placed in a section, so whether it sits under ## Closed is unchecked: $(unplaced_why "${place#u}")" >&2; rc=1
+            elif [[ "$place" == u* ]]; then
                 rc="$(section_problem "$rc" "$file" "$id" "$opened" "not placed in a section, so where it sits is unchecked: $(unplaced_why "${place#u}")")"
             elif [[ "$file" == "$LIVE" && -z "$home" && "$place" == h* && ! "${place#h}" =~ ^\#\#\ Open[[:space:]]*$ ]]; then
                 # Only `## Open` holds entries (init writes Index, then Open):
@@ -630,7 +642,7 @@ live_without_empty_headings() {
 cmd_migrate() {
     local moved=0 id route status home entry heads h
     require_files
-    need_lib migrate
+    need_lib migrate "its FENCE_AWK finds the code fences" "stopped before reading either file"
     assert_write_targets
     assert_write_target "$LISTING" "${QUESTIONS_LIVE:-}"
     [[ ! -e "$LISTING" || -f "$LISTING" ]] || die "refusing to write: $LISTING is not a regular file"
@@ -823,7 +835,7 @@ median_max() {
 }
 
 cmd_counts() {
-    local since="" until="" lib file id route opened status slug class date commit r i
+    local since="" until="" file id route opened status slug class date commit r i
     while (( $# )); do
         case "$1" in
             --since) since="${2:-}"; shift 2 || die "--since needs a date" ;;
@@ -837,10 +849,7 @@ cmd_counts() {
         fi
     done
     require_files
-    lib="$(dirname -- "${BASH_SOURCE[0]}")/lib/dev-cycle-read.sh"
-    [[ -f "$lib" ]] || die "counts needs $lib (its ANSWER_AWK reads the answers); nothing counted"
-    # shellcheck source=lib/dev-cycle-read.sh
-    source "$lib"
+    need_lib counts "its ANSWER_AWK reads the answers" "nothing counted"
 
     local -A dated=() sha=() opn=() ans=() first=() waits=() sittings=() days=()
     local undated="" unread="" other="" history

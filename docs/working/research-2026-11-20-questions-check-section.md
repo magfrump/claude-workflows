@@ -18,6 +18,7 @@ Branch: `fix/questions-check-section`. Workflow: research-plan-implement (no pla
 - **Fence reader.** Reuse the lib's `FENCE_AWK`, sourced through a `need_lib` helper (S3: one fence model; the brief says "fence-aware, as the existing readers are"). Without the lib, `check` and `migrate` stop and name the missing file (H2). Writing a second fence tracker would break S3, and leaving fences out would fail the brief. Path A.
 - **One section reader.** `entry_sections` now prints `ID<TAB>h<TAB>heading` (or `ID<TAB>u<TAB>why`). Both the watching `## Closed` rule and the new live `## Open` rule read it (S3).
 - **Entries the reader cannot place** sit after a line `FENCE_AWK` refuses (CR, NUL, BOM, an indented or list fence, an unclosed `<!--`) or inside a fence that never closes. Each one is named, with the same `LEGACY_BEFORE` split: ✗ for a new entry, ⚠ for an old one. This fails closed for new entries without turning every older clone red (FP-113). Refusing the whole file would hit old clones; skipping it silently would break H2.
+- **In `watching.md`, an unplaced watch is always ✗** (review amber 1). Before this change the `## Closed` rule judged every watch, and migrated watches keep old Opened dates, so the legacy split would have turned that ✗ into a ⚠.
 - **A fenced `### Q-` line** is text, so it is not placed or judged, in either file. The brief requires this for the live file; using the same reader makes it true in `watching.md` too.
 - **`## Index`.** An entry under `## Index` is reported like any other heading. I read the brief's "(and other than the `## Index` block)" as saying that the index table's rows are not entries. Exempting the heading would hide a real misfiling. Low stakes either way, since `init` puts nothing between the index markers and `## Open`.
 - **An entry above every `##` heading** is reported too ("sits above every ## heading").
@@ -25,9 +26,18 @@ Branch: `fix/questions-check-section`. Workflow: research-plan-implement (no pla
 - **Which headings `migrate` drops.** Three options: (a) only headings this run emptied; (b) any `##` heading other than Index and Open whose section holds only blank lines; (c) any heading with no entry under it, dropping only the heading line. Option (b) dominates (Path A). It loses nothing, because only a heading line and blank lines are removed. It is safe to resume: a run interrupted after its last move still drops the heading on the re-run, which (a) misses. It never re-attaches prose to the section above, which (c) does. Headings are read outside fences. A refused line and everything after it count as content, so a file the reader cannot read loses no heading.
 - **What (b) leaves.** A heading with an owner entry still under it is kept, and `check` keeps naming that entry. Moving entries under `## Open` would be a grammar or filing change: option (c) of the triage, out of scope.
 
+## Review (pr-prep review-fix loop)
+
+Round 1 was a general-purpose code review of the diff, with probes. It found no red issues.
+- Amber 1 (an unplaced watch skipped the `## Closed` rule): fixed, with a new bats case.
+- Amber 2 (the legacy split on unplaced entries lets `check` pass a file that the cycle's answer reader refuses): kept as designed. Refusing the whole file regardless of date is the FP-113 shape for any older project with a list-item fence. Every entry opened since the cutoff is still refused, and the answer reader's own skip already names the file to the cycle. Recorded below.
+- Green 2 (an awk failure was swallowed): fixed. The sections are read into a variable, and a failure is ✗.
+- Green 3 (two copies of the lib lookup): fixed. `counts` calls `need_lib`, with its message unchanged.
+- Green 1 (a `##<TAB>` heading is not read): not changed. The cycle's own questions reader (`QKEYS_AWK`) and `extract_entry` read `## ` with a space only, and one heading rule across readers matters more.
+
 ## Residual risk
 
-- A project whose `questions.md` has an indented fence (for example inside a list bullet) has every entry after that line reported as unplaced: ✗ for entries opened on or after 2026-10-30. `--check-answer` already skips such a file whole, so its answers are already unreadable to the cycle. The new message names the line and why, which is the fix-forward path. That project's `check` goes red at install, but only for entries opened since the cutoff.
+- A project whose `questions.md` has an indented fence (for example inside a list bullet) has every entry after that line reported as unplaced: ✗ for entries opened on or after 2026-10-30. `--check-answer` already skips such a file whole, so its answers are already unreadable to the cycle. The new message names the line and why, which is the fix-forward path. That project's `check` goes red at install, but only for entries opened since the cutoff. A file whose refused line has only older entries after it passes `check` with ⚠ lines (review amber 2).
 - The entry spans that `archive` and `migrate` move (`extract_entry`, `live_without_entry`) are still not fence-aware. A fenced `## ` line ends an entry's span. This predates the change and is unchanged; the bats fixture keeps clear of it.
 
 ## Gotchas
@@ -39,7 +49,7 @@ Branch: `fix/questions-check-section`. Workflow: research-plan-implement (no pla
 
 ## Verification
 
-- `bats test/questions-doc.bats` (50 cases, 8 new) and `bats test/scripts/questions-counts.bats` pass.
+- `bats test/questions-doc.bats` (51 cases, 9 new) and `bats test/scripts/questions-counts.bats` pass.
 - Mutations: making `fence()` a no-op fails 3 of the new cases, dropping the ✗ rc fails the cutoff case, and disabling heading removal fails the migrate case.
 - `scripts/hermeticity-lint --root .` passes. `scripts/confine-tests.sh --probe` exited 3, with first line: "confine-tests: NO CONFINEMENT PRIMITIVE AVAILABLE — refusing to run." So the runner plus the lint stand in for confinement.
 - `bash scripts/questions.sh check` on this repo passes, and `bash scripts/lib/migrations.sh check` passes.

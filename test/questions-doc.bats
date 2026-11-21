@@ -770,6 +770,19 @@ parse_ids() { grep -ao '^### Q-[0-9]*' "$1" | sed 's/^### //' | paste -sd' '; }
     [ "$status" -eq 1 ] && [[ "$stderr" == *"Q-010 is ANSWERED (closed) but sits above watching.md's ## Closed"* ]] || { echo "$stderr"; return 1; }
 }
 
+@test "check refuses a watch it cannot place in watching.md whatever its Opened date (review 2026-11-20 amber 1)" {
+    make_watching
+    printf -- '\n- note:\n  ```\n  x\n  ```\n' >> "$BATS_TEST_TMPDIR/watching.md"
+    add_dated Q-010 deferred OPEN 2026-10-01 "$BATS_TEST_TMPDIR/watching.md"
+    bash "$QS" index
+    run --separate-stderr bash "$QS" check
+    [ "$status" -eq 1 ] && [[ "$stderr" == *"✗ Q-010 in watching.md: not placed in a section, so whether it sits under ## Closed is unchecked: line "*" is a fence-like line"* ]] \
+        || { echo "$stderr"; return 1; }
+    sed -i 's/^  ```$/```/' "$BATS_TEST_TMPDIR/watching.md"   # a plain fence: placed, and under ## Closed while OPEN
+    run --separate-stderr bash "$QS" check
+    [ "$status" -eq 1 ] && [[ "$stderr" == *"Q-010 is OPEN but sits under watching.md's ## Closed"* && "$stderr" != *"not placed"* ]] || { echo "$stderr"; return 1; }
+}
+
 @test "check and migrate refuse without the dev cycle's fence reader beside them" {
     mkdir -p "$BATS_TEST_TMPDIR/bare"
     cp "$QS" "$BATS_TEST_TMPDIR/bare/questions.sh"
