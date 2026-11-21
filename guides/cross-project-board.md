@@ -2,7 +2,7 @@
 
 `scripts/board.sh` shows which of your projects is waiting on you, and takes a one-line answer back to the right repo. It reads a list of repos and prints the open `you:` questions each one holds, as that repo's default branch has them. It calls no LLM and no network tool.
 
-**Host only.** Run it in your own terminal on the host, never inside a `cc-isolated` session. It reaches the host as `~/.claude/scripts/board.sh` at the next release, through `install.sh`'s existing `scripts` payload (the reviewed diff and y/N you already approve), together with the `questions.sh` and `lib/dev-cycle-read.sh` it needs beside it. Nothing from a registered repo runs: every git call is hardened (the lib's `git_harden`), only git objects are read and written (the one exception: an answer written in place, below, replaces one file and its index entry in the checkout that has `main` out), and output is scrubbed of control characters.
+**Host only.** Run it in your own terminal on the host, never inside a `cc-isolated` session. It reaches the host as `~/.claude/scripts/board.sh` at the next release, through `install.sh`'s existing `scripts` payload (the reviewed diff and y/N you already approve), together with the `questions.sh`, `harness-feedback.py` and `lib/dev-cycle-read.sh` it needs beside it (`harness-feedback.py` runs under `python3 -I`, on file contents read out of git). Nothing from a registered repo runs: every git call is hardened (the lib's `git_harden`), only git objects are read and written (the one exception: an answer written in place, below, replaces one file and its index entry in the checkout that has `main` out), and output is scrubbed of control characters.
 
 ## The registry
 
@@ -25,24 +25,42 @@ It sits outside every repo, so no project can add itself. A project is active wh
 One block per project:
 
 ```
-== /home/me/code/claude-workflows
+== /home/me/code/other-project
    main 2026-11-12 · 3 open watches
+   feedback: 3 not copied (F-020 to F-022): cd /home/me/code/claude-workflows && ~/.claude/scripts/harness-feedback.py ingest /home/me/code/other-project/docs/harness-feedback.md
+   weekly: /home/me/code/other-project/docs/working/weekly/2026-11-20.md (2026-11-20)
    Q-012  you: judgment     pick-a-name
 ```
 
 - The second line is the date of main's last commit and the number of open watches (`deferred`/`trigger` entries in `watching.md`), given as a count.
+- The `feedback` line (below) counts the project's harness feedback not yet copied to claude-workflows, and the `weekly` line names the latest weekly digest on main.
 - Then each open owner entry as `ID  route  slug`, most costly route first, or `nothing open for you`. An entry already marked ANSWERED on main but not yet archived is left out.
 - What is read is main's commit (`docs/working/questions.md`, `questions-archive.md`, `watching.md`), not whatever branch or edits the checkout has: that is what the dev cycle reads.
 - A project that cannot be read says so in its block, never as an empty list: `no questions doc on main`, `UNREADABLE (questions.sh check: …)` with the first refusal, `UNREADABLE: no branch named main or master`, `UNREADABLE Q-NNN (check_answer: …)` when an entry's file cannot be read, or `UNREADABLE: the board stopped reading this repo (exit N)`. A bad registry line prints `REGISTRY LINE N: …`.
 - `REGISTRY LINE N: not a git repository (git: fatal: detected dubious ownership …)` means the repo is owned by another user on the host. The board hides your global git config, so your `safe.directory` setting does not apply. That is deliberate: a repo another user owns is refused, for listing and answering alike. Run the board as that user, or take ownership of the repo.
+
+## The feedback and weekly lines
+
+**Feedback.** For a project whose main has `docs/harness-feedback.md` (see `guides/harness-feedback.md`), the board compares its entries with the stored copies on claude-workflows' main, `docs/working/feedback/*.md`, matching by the `Project:` line inside each file, not the file name. claude-workflows is the one registered repo whose main holds both `guides/harness-feedback.md` and `scripts/harness-feedback.py`; its own block has no feedback line. The comparison is `harness-feedback.py pending`, `ingest`'s own entry signature (ID, slug and meta line), so what it says `ingest` would do is what `ingest` does. The line reads:
+
+- `feedback: N entries, all copied`.
+- `feedback: K not copied (F-a to F-b), C changed (F-x to F-y): cd CW && ~/.claude/scripts/harness-feedback.py ingest P/docs/harness-feedback.md`: entries missing from the stored copy, or whose text changed (an edited bullet) with the same signature, and the command that copies them. The command names the installed script, run from your claude-workflows checkout; it reads the project checkout's file, which may hold entries not yet on main (harmless: the file only grows and `ingest` checks it). Commit the copy: the count drops once that commit reaches claude-workflows' main.
+- With **no command**, because `ingest` would refuse or store a duplicate: `F-NNN differs from the stored copy …` (an old entry's ID, slug or meta line changed, or the stored copy has more entries); `its stored copy is X, not docs/working/feedback/NAME.md, so ingest would store it twice` (the stored file has another name); `stored under Project OTHER (X); renamed?` (the project's entries are stored under another `Project:` name); or `X holds Project OTHER` (its name's file belongs to another project). Settle the rename by hand first.
+- `feedback UNREADABLE: …`: the project's file is not a regular file on main, or fails `check` (the first problem is shown).
+- `feedback NOT COMPARED: …`: a stored copy fails `check` or is not a regular file, two stored copies hold one `Project:` name, or two registered repos hold the harness. It shows on every project with a file.
+- No line: the project has no file, or no registered repo holds the harness; the latter adds one footer line, `feedback not compared: no registered repo holds the harness …`, and leaves the exit code alone.
+
+**Weekly.** For a repo whose main has `docs/working/weekly/` (the dev cycle writes one digest a week), `weekly: PATH (DATE)` names the latest `YYYY-MM-DD.md` there. The path is the checkout's file, which matches main's while main is checked out; otherwise the edition reaches the checkout when it next takes main. `weekly: none yet` means the directory holds no edition. `weekly UNREADABLE: …` means `docs/working/weekly` (or a directory above it) is not a directory on main, or the latest edition is not a regular file; an older edition is never shown in its place. No directory, no line.
+
+Every `UNREADABLE` or `NOT COMPARED` line counts the project as unreadable (exit 1); its questions still list. A project whose questions doc cannot be read stops before these lines.
 
 A footer counts projects, open entries and unreadable ones. Each run appends one line to `~/.local/state/claude-board/runs.log`.
 
 ## Exit code
 
 - `0`: every listed project was read.
-- `1`: a bad registry line, an unreadable project, an empty registry, or the run log could not be written. The other projects still print.
-- `2`: the run refused before reading any repo: no registry, `questions.sh` or the lib missing beside the script, no `perl` (the scrub needs it) or `python3` (`questions.sh check` needs it), or arguments other than the `answer` form below.
+- `1`: a bad registry line, an unreadable project (a `feedback` or `weekly` line marked `UNREADABLE` or `NOT COMPARED` included), an empty registry, or the run log could not be written. The other projects still print.
+- `2`: the run refused before reading any repo: no registry, `questions.sh`, `harness-feedback.py` or the lib missing beside the script, no `perl` (the scrub needs it) or `python3` (`questions.sh check` needs it), or arguments other than the `answer` form below.
 - `3` (`answer` only): the answer is on main, but the checkout that has `main` out could not be brought level with it; the repair is printed (see "In place" below).
 
 ## Answering

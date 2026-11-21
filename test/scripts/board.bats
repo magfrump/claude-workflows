@@ -138,9 +138,9 @@ mkrepo() {
     done
     board "$BOARD" answer alpha Q1 x
     [ "$status" -eq 2 ] && [[ "$output" == *"not a question ID (Q- and digits): Q1"* ]] || { echo "$output"; false; }
-    for gone in questions.sh lib/dev-cycle-read.sh; do
-        c="$BATS_TEST_TMPDIR/copy-${gone%%/*}"; mkdir -p "$c/lib"
-        cp "$BOARD" "$QS" "$c/"; cp "$REPO_ROOT/scripts/lib/dev-cycle-read.sh" "$c/lib/"; rm "$c/$gone"
+    for gone in questions.sh harness-feedback.py lib/dev-cycle-read.sh; do
+        c="$BATS_TEST_TMPDIR/copy-${gone%%[/.]*}"; mkdir -p "$c/lib"
+        cp "$BOARD" "$QS" "$REPO_ROOT/scripts/harness-feedback.py" "$c/"; cp "$REPO_ROOT/scripts/lib/dev-cycle-read.sh" "$c/lib/"; rm "$c/$gone"
         board "$c/board.sh"
         [ "$status" -eq 2 ] && [[ "$output" == *"refusing to run: $c/$gone is missing"* ]] || { echo "$output"; false; }
     done
@@ -489,4 +489,136 @@ notemp() { local x; for x in "$1"/.questions.*; do [ ! -e "$x" ] || return 1; do
     # The positive control: an index write in W, unhardened, runs the filter.
     git -C "$a" update-index --cacheinfo "100644,$(git -C "$a" rev-parse main:docs/working/questions.md),docs/working/questions.md"
     [ -e "$hit" ]
+}
+
+# ---- the feedback and weekly lines (docs/working/research-2026-11-20-board-pending-feedback.md) ----
+
+# hfile PATH PROJECT ID...: a feedback file that passes check, one entry per ID.
+hfile() {
+    local f="$1" p="$2" id; shift 2
+    mkdir -p "${f%/*}"; printf '# Harness feedback\n\nProject: %s\n' "$p" > "$f"
+    for id in "$@"; do
+        printf '\n### %s · slug-%s\n**Feature:** pr-prep · **Date:** 2026-11-01 · **Verdict:** fails\n\n- **Context:** c\n- **Expected:** e\n- **Observed:** o\n- **Evidence:** v\n' "$id" "${id#F-}" >> "$f"
+    done
+}
+# mkcw: the harness repo (ingest's marker and the script on main) as "cw".
+mkcw() {
+    mkrepo cw; CW="$BATS_TEST_TMPDIR/cw"
+    mkdir -p "$CW/guides" "$CW/scripts"; echo g > "$CW/guides/harness-feedback.md"; echo s > "$CW/scripts/harness-feedback.py"
+    commit "$CW"
+}
+# fbline REPO: the line under REPO's block that starts "feedback" ("" for none).
+fbline() { printf '%s\n' "$output" | awk -v h="== $BATS_TEST_TMPDIR/$1" '$0 == h { f = 1; next } /^== / { f = 0 } f && /^   feedback/ { sub(/^   /, ""); print }'; }
+
+@test "feedback: entries not on the harness repo's main are counted with the ingest command; then all copied; none without a file" {
+    mkcw; mkrepo beta; mkrepo gamma
+    hfile "$BATS_TEST_TMPDIR/beta/docs/harness-feedback.md" beta F-001 F-002 F-003; commit "$BATS_TEST_TMPDIR/beta"
+    hfile "$CW/docs/working/feedback/beta.md" beta F-001; commit "$CW"
+    board
+    [ "$status" -eq 0 ] || { echo "$output"; false; }
+    l="$(fbline beta)"
+    [[ "$l" == "feedback: 2 not copied (F-002 to F-003): cd $CW && ~/.claude/scripts/harness-feedback.py ingest "*"/beta/docs/harness-feedback.md" ]] || { echo "$output"; false; }
+    # Right after the main line; no line for a repo with no file or for the harness repo itself.
+    [[ "$output" == *"open watch"$'\n'"   $l"$'\n'* ]]
+    [ -z "$(fbline gamma)" ] && [ -z "$(fbline cw)" ]
+    # A copy only in the harness repo's working tree is not on main yet.
+    cp "$BATS_TEST_TMPDIR/beta/docs/harness-feedback.md" "$CW/docs/working/feedback/beta.md"
+    board; [[ "$(fbline beta)" == "feedback: 2 not copied"* ]]
+    commit "$CW"; board
+    [ "$status" -eq 0 ] && [ "$(fbline beta)" = "feedback: 3 entries, all copied" ] || { echo "$output"; false; }
+    # An edited bullet keeps the signature: counted as changed, command kept.
+    sed -i 's/^- \*\*Observed:\*\* o$/- **Observed:** o, rechecked/' "$BATS_TEST_TMPDIR/beta/docs/harness-feedback.md"; commit "$BATS_TEST_TMPDIR/beta"
+    board; [[ "$(fbline beta)" == "feedback: 3 changed (F-001 to F-003): cd $CW && "* ]] || { echo "$output"; false; }
+}
+
+@test "feedback: a project file failing check is UNREADABLE with its first problem, the questions still list, exit 1" {
+    mkcw; mkrepo beta
+    hfile "$BATS_TEST_TMPDIR/beta/docs/harness-feedback.md" beta F-001
+    sed -i '/^Project:/d' "$BATS_TEST_TMPDIR/beta/docs/harness-feedback.md"; commit "$BATS_TEST_TMPDIR/beta"
+    board
+    [ "$status" -eq 1 ] || { echo "$output"; false; }
+    [ "$(fbline beta)" = "feedback UNREADABLE: docs/harness-feedback.md: preamble: no 'Project: NAME' line before the first entry" ] || { echo "$output"; false; }
+    [[ "$output" == *"Q-001"*"2 projects, 4 open for you, 1 unreadable or refused; exit 1"* ]]
+    # A symlink there is refused by main_entry, never read.
+    rm "$BATS_TEST_TMPDIR/beta/docs/harness-feedback.md"; ln -s /etc/passwd "$BATS_TEST_TMPDIR/beta/docs/harness-feedback.md"; commit "$BATS_TEST_TMPDIR/beta"
+    board
+    [ "$status" -eq 1 ] && [ "$(fbline beta)" = "feedback UNREADABLE: docs/harness-feedback.md is not a regular file on the default branch" ] || { echo "$output"; false; }
+}
+
+@test "feedback: a changed signature, a stored copy under another file name, or another Project withholds the command" {
+    mkcw; mkrepo beta; b="$BATS_TEST_TMPDIR/beta/docs/harness-feedback.md"
+    hfile "$b" beta F-001 F-002; commit "$BATS_TEST_TMPDIR/beta"
+    hfile "$CW/docs/working/feedback/beta.md" beta F-001; sed -i 's/slug-001/renamed-slug/' "$CW/docs/working/feedback/beta.md"; commit "$CW"
+    board
+    [ "$status" -eq 0 ] && [ "$(fbline beta)" = "feedback: F-001 differs from the stored copy docs/working/feedback/beta.md; no command: ingest would refuse it" ] || { echo "$output"; false; }
+    # The renamed project: stored with this Project line, but under the old file name.
+    git -C "$CW" mv docs/working/feedback/beta.md docs/working/feedback/old-name.md; hfile "$CW/docs/working/feedback/old-name.md" beta F-001; commit "$CW"
+    board
+    [ "$(fbline beta)" = "feedback: 1 not copied (F-002); no command: its stored copy is docs/working/feedback/old-name.md, not docs/working/feedback/beta.md, so ingest would store it twice" ] || { echo "$output"; false; }
+    # Stored under another Project name (renamed in the project): no count of "new", no command.
+    hfile "$CW/docs/working/feedback/old-name.md" old-name F-001; commit "$CW"
+    board
+    [ "$status" -eq 0 ] && [ "$(fbline beta)" = "feedback: 2 entries, stored under Project old-name (docs/working/feedback/old-name.md); renamed? No command: ingest would store and seed them twice" ] || { echo "$output"; false; }
+}
+
+@test "feedback: a stored copy failing check, or two with one Project, or a non-file there, is NOT COMPARED on every project, exit 1" {
+    mkcw; mkrepo beta; mkrepo delta
+    hfile "$BATS_TEST_TMPDIR/beta/docs/harness-feedback.md" beta F-001; commit "$BATS_TEST_TMPDIR/beta"
+    hfile "$BATS_TEST_TMPDIR/delta/docs/harness-feedback.md" delta F-001; commit "$BATS_TEST_TMPDIR/delta"
+    hfile "$CW/docs/working/feedback/x.md" x F-001; sed -i '/^### /s/·/-/' "$CW/docs/working/feedback/x.md"; commit "$CW"
+    board
+    [ "$status" -eq 1 ] || { echo "$output"; false; }
+    for r in beta delta; do [[ "$(fbline "$r")" == "feedback NOT COMPARED: the stored copy docs/working/feedback/x.md: line 5: an entry heading must be"* ]] || { echo "$output"; false; }; done
+    [[ "$output" == *"3 projects, 6 open for you, 2 unreadable or refused; exit 1"* ]]
+    hfile "$CW/docs/working/feedback/x.md" delta F-001; hfile "$CW/docs/working/feedback/y.md" delta F-001; commit "$CW"
+    board
+    [ "$status" -eq 1 ] && [ "$(fbline beta)" = "feedback NOT COMPARED: docs/working/feedback/x.md and docs/working/feedback/y.md both hold Project delta" ] || { echo "$output"; false; }
+    git -C "$CW" rm -q docs/working/feedback/y.md; ln -s x.md "$CW/docs/working/feedback/z.md"; commit "$CW"
+    board
+    [ "$status" -eq 1 ] && [ "$(fbline delta)" = "feedback NOT COMPARED: in $CW, docs/working/feedback/z.md is not a regular file on the default branch" ] || { echo "$output"; false; }
+}
+
+@test "feedback: with no harness repo registered, one footer line and the exit unchanged; with two, NOT COMPARED" {
+    mkrepo beta; hfile "$BATS_TEST_TMPDIR/beta/docs/harness-feedback.md" beta F-001; commit "$BATS_TEST_TMPDIR/beta"
+    board
+    [ "$status" -eq 0 ] && [ -z "$(fbline beta)" ] || { echo "$output"; false; }
+    [[ "$output" == *$'\n'"feedback not compared: no registered repo holds the harness"* ]]
+    mkcw; git clone -q "$CW" "$BATS_TEST_TMPDIR/cw2"; echo "$BATS_TEST_TMPDIR/cw2" >> "$BOARD_REGISTRY"
+    board
+    [ "$status" -eq 1 ] && [[ "$(fbline beta)" == "feedback NOT COMPARED: 2 registered repos hold the harness"* ]] || { echo "$output"; false; }
+}
+
+@test "weekly: the latest edition on main with its date; none without the directory; none yet when empty" {
+    mkrepo alpha; mkrepo beta; a="$BATS_TEST_TMPDIR/alpha"
+    mkdir -p "$a/docs/working/weekly"; for d in 2026-11-06 2026-11-13; do echo w > "$a/docs/working/weekly/$d.md"; done
+    echo x > "$a/docs/working/weekly/notes.md"; commit "$a"
+    echo w > "$a/docs/working/weekly/2026-11-20.md"   # not on main
+    board
+    [ "$status" -eq 0 ] || { echo "$output"; false; }
+    [[ "$output" == *"== $a"$'\n'*"open watch"$'\n'"   weekly: "*"/alpha/docs/working/weekly/2026-11-13.md (2026-11-13)"$'\n'* ]] || { echo "$output"; false; }
+    [[ "$(printf '%s\n' "$output" | grep -c 'weekly')" -eq 1 ]]
+    git -C "$a" rm -q docs/working/weekly/2026-11-06.md docs/working/weekly/2026-11-13.md; rm "$a/docs/working/weekly/2026-11-20.md"; commit "$a"
+    board
+    [ "$status" -eq 0 ] && [[ "$output" == *"   weekly: none yet"* ]] || { echo "$output"; false; }
+}
+
+@test "weekly: a symlinked directory, a non-directory parent or a latest edition that is not a file is UNREADABLE, never an older one" {
+    mkrepo alpha; a="$BATS_TEST_TMPDIR/alpha"
+    mkdir -p "$a/docs/working/weekly" "$a/elsewhere"; echo w > "$a/docs/working/weekly/2026-11-06.md"
+    ln -s ../../elsewhere/x "$a/docs/working/weekly/2026-11-13.md"; commit "$a"
+    board
+    [ "$status" -eq 1 ] && [[ "$output" == *"   weekly UNREADABLE: docs/working/weekly/2026-11-13.md is not a regular file on the default branch"* ]] || { echo "$output"; false; }
+    [[ "$output" != *2026-11-06* ]]
+    git -C "$a" rm -rq docs/working/weekly; ln -s ../../elsewhere "$a/docs/working/weekly"; commit "$a"
+    board
+    [ "$status" -eq 1 ] && [[ "$output" == *"   weekly UNREADABLE: docs/working/weekly is not a directory on the default branch"* ]] || { echo "$output"; false; }
+    [[ "$output" == *"1 project, 2 open for you, 1 unreadable or refused; exit 1"* ]]
+}
+
+@test "feedback: pending failing in an unmodelled way (an uncaught error) is UNREADABLE with its last line, never a count" {
+    mkcw; mkrepo beta; hfile "$BATS_TEST_TMPDIR/beta/docs/harness-feedback.md" beta F-001; commit "$BATS_TEST_TMPDIR/beta"
+    c="$BATS_TEST_TMPDIR/copy"; mkdir -p "$c/lib"; cp "$BOARD" "$QS" "$c/"; cp "$REPO_ROOT/scripts/lib/dev-cycle-read.sh" "$c/lib/"
+    printf 'import sys\nprint("Traceback (most recent call last):")\nsys.exit("KeyError: x")\n' > "$c/harness-feedback.py"
+    board "$c/board.sh"
+    [ "$status" -eq 1 ] && [ "$(fbline beta)" = "feedback UNREADABLE: harness-feedback.py pending stopped (exit 1): KeyError: x" ] || { echo "$output"; false; }
 }
