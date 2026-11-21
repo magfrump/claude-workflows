@@ -80,7 +80,8 @@ trap 'rm -rf -- "$TMP"' EXIT
 # as the repo's own.
 first_refusal() {
   local l
-  l="$(printf '%s\n' "$1" | grep -a -m1 '✗' || printf '%s\n' "$1" | head -n1)"
+  # Here-strings, not pipes: under pipefail a SIGPIPE 141 ran the fallback too (FP-175).
+  l="$(grep -a -m1 '✗' <<< "$1" || head -n1 <<< "$1")"
   l="${l#"${l%%[! ]*}"}"
   printf '%s' "${l//"$2/"/docs/working/}"
 }
