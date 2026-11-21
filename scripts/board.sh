@@ -172,13 +172,13 @@ weekly() {
   case "$d" in absent) return 0 ;; dir) ;; *) echo "   weekly UNREADABLE: $d"; return 1 ;; esac
   while IFS= read -r -d '' x; do ! isweekly "$x" || ws+=("$x"); done < "$TMP/$1/wk"
   # Names come sorted: walk back from the newest, so realday forks date only
-  # for the future-dated few and the one shown.
+  # for the names newer than the one shown, and that one.
   for ((i = ${#ws[@]} - 1; i >= 0; i--)); do
     x="${ws[i]##*/}"; x="${x%.md}"
     realday "$x" || continue
     if [[ "$x" > "$TODAY" ]]; then k=$((k + 1)); [[ -n "$f" ]] || f="${ws[i]}"; else l="${ws[i]}"; break; fi
   done
-  case $k in 0) ;; 1) s="; skipped future-dated $f" ;; *) s="; skipped $k future-dated, the newest $f" ;; esac
+  case $k in 0) ;; 1) s="; skipped future-dated $TOP/$f" ;; *) s="; skipped $k future-dated, the newest $TOP/$f" ;; esac
   [[ -n "$l" ]] || { echo "   weekly: none yet$s"; return 0; }
   e="$(main_entry "$l")"; [[ "$e" == blob ]] || { echo "   weekly UNREADABLE: $(entry_why "$e" "$l")$s"; return 1; }
   x="${l##*/}"; echo "   weekly: $TOP/$l (${x%.md})$s"

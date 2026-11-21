@@ -230,9 +230,10 @@ isrecord() { [[ "$1" =~ ^docs/working/cycles/cycle-$DIGIT{4}-$DIGIT{2}-$DIGIT{2}
 # A weekly digest: the skill's step 9 writes one a week, and it lands with the record.
 isweekly() { [[ "$1" =~ ^docs/working/weekly/$DIGIT{4}-$DIGIT{2}-$DIGIT{2}\.md$ ]]; }
 # A YYYY-MM-DD that names a real calendar day (GNU date: 2026-13-40 and
-# 2026-02-30 do not): the one date rule for the digest's cycle records and the
-# board's weekly line, which each also skip a day after their own TODAY.
-realday() { [[ "$1" =~ ^$DIGIT{4}-$DIGIT{2}-$DIGIT{2}$ ]] && date -d "$1" >/dev/null 2>&1; }
+# 2026-02-30 do not): the one date rule for the digest's cycle records and
+# --since and the board's weekly line, which each also skip a day after their
+# own TODAY. In UTC, since a local midnight a clock change skips is no time.
+realday() { [[ "$1" =~ ^$DIGIT{4}-$DIGIT{2}-$DIGIT{2}$ ]] && date -u -d "$1" >/dev/null 2>&1; }
 # watching.md holds the cycle's watches (decision 040), and
 # roadmap-from-questions.md the agent entries `questions.sh migrate` left for
 # step 6 to fold into the roadmap and delete.

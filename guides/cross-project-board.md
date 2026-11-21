@@ -59,7 +59,7 @@ A footer counts projects, open entries and unreadable ones. Each run appends one
 
 - `0`: every listed project was read.
 - `1`: a bad registry line, an unreadable project (a `feedback` or `weekly` line marked `UNREADABLE` or `NOT COMPARED` included), an empty registry, or the run log could not be written. The other projects still print.
-- `2`: the run refused before reading any repo: no registry, `questions.sh`, `harness-feedback.py` or the lib missing beside the script, no `perl` (the scrub needs it) or `python3` (`questions.sh check` needs it), arguments other than the `answer` form below, or a today's date that is not a real `YYYY-MM-DD` date (only a test's `BOARD_TODAY` can set one).
+- `2`: the run refused before reading any repo: no registry, `questions.sh`, `harness-feedback.py` or the lib missing beside the script, no `perl` (the scrub needs it) or `python3` (`questions.sh check` needs it), arguments other than the `answer` form below, or a today's date that is not a real `YYYY-MM-DD` date (only a test's `BOARD_TODAY` can set one; the board needs GNU `date`, as the digest does).
 - `3` (`answer` only): the answer is on main, but the checkout that has `main` out could not be brought level with it; the repair is printed (see "In place" below).
 
 ## Answering

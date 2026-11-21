@@ -252,7 +252,7 @@ else
     source_note="no cycle record found, so the default of 14 days (the previous cycle, if any, did not write its record)"
   fi
 fi
-if ! [[ "$SINCE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || ! date -d "$SINCE" >/dev/null 2>&1; then echo "--since must be a real YYYY-MM-DD date" >&2; exit 1; fi
+if ! realday "$SINCE"; then echo "--since must be a real YYYY-MM-DD date" >&2; exit 1; fi
 
 echo "# Dev-cycle digest — $TODAY"
 echo
