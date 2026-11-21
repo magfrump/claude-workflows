@@ -706,7 +706,7 @@ shim() {
     q=$'\x60'
     for f in "**Worktrees go under WTB.** WTB is the directory in the ${q}ok WTB${q} line that ${q}build-loop.sh --worktree-base${q} prints" \
         "a ${q}refuse worktree-base:${q} line is a stop" "WT, HC and GT go there, and so does each loop's worktree" \
-        "is found by its name in ${q}worktree list${q}, and removed or freed as before" \
+        "is found by its name in ${q}worktree list${q}, and removed (step 0.3's form) or freed (${q}--free-worktrees${q}) as before" \
         "step 0.3's ${q}--worktree-base${q} from MAIN_WT" \
         "3. **The worktree.** ${q}build-loop.sh --worktree-base${q} (WTB, the Rules)" "${q}WTB/wt-dev-cycle-DATE-HHMM${q}" \
         "GT at ${q}WTB/wt-dev-cycle-gate-DATE-HHMM${q}" \
@@ -852,6 +852,49 @@ refuse docs/working/watching.md: Q-011's heading changed or is gone; a watch clo
     git reset -q --hard; sed -n '/^### Q-001/,/^| \*\*\[1\]/p' docs/working/questions.md >> docs/working/watching.md
     sed -i '/^### Q-001/,/^| \*\*\[1\]/d' docs/working/questions.md; git add -A
     cd_is "refuse docs/working/questions.md: Q-001's heading, Needs or answer lines changed or are gone, and Q-001 is not in --answered"
+}
+
+# blk HHMM MAIN [9-LINE [10-LINE]]: one iteration block of a cycle record for 2026-10-11.
+blk() { printf '%s\n' "## Iteration 2026-10-11-$1" "Branch: chore/dev-cycle-2026-10-11-$1" "Main at: $2" '### Steps' '8. briefs: none' "${3-9. land: this commit.}" ${4+"$4"} '### Paths landed' '- M docs/roadmap.md' '### Roadmap diff' '- none'; }
+
+@test "--cycle-diff and --land-cycle keep a cycle record's earlier blocks and its last block but for its 9. and 10. lines and lines added under its ### Paths landed; a new record is not judged (brief 2026-11-20-cycle-diff-record-prefix)" {
+    R=docs/working/cycles/cycle-2026-10-11.md; B=chore/dev-cycle-2026-10-12
+    qa; git checkout -q main; mkdir -p docs/working/cycles
+    { echo '# Cycle 2026-10-11'; echo; blk 0100 a '9. land: 1111111 (landed)' '10. dispatch: none'; echo; blk 0200 b; } > "$R"; commit_all record
+    git checkout -q "$B"; git merge -q --ff-only main
+    E="refuse $R: the base's text before its last ## Iteration block changed (an earlier block dropped or edited); an iteration only appends its own block"
+    L="refuse $R: the base's last block (## Iteration 2026-10-11-0200) changed other than its 9. land: and 10. dispatch: lines and lines added under its ### Paths landed; an iteration only appends its own block"
+    # An appended block passes.
+    { echo; blk 0300 c; } >> "$R"; git add -A; cd_is ok; git reset -q --hard
+    # Step 10's land: the last block's 9. line rewritten and its 10. line added; with a block appended after it too.
+    { echo '# Cycle 2026-10-11'; echo; blk 0100 a '9. land: 1111111 (landed)' '10. dispatch: none'; echo; blk 0200 b '9. land: 2222222 (landed, main at 3333333)' '10. dispatch: x dispatched 1'; } > "$R"; git add -A; cd_is ok
+    { echo; blk 0300 c; } >> "$R"; git add -A; cd_is ok; git reset -q --hard
+    # Iteration 0121's shape: the record holds only the new block.
+    { echo '# Cycle 2026-10-11'; echo; blk 0300 c; } > "$R"; git add -A; cd_is "$E"; git reset -q --hard
+    # An earlier block edited (its 9. line too: only the last block's are free), or the title line.
+    sed -i 's/^Main at: a$/Main at: z/' "$R"; git add -A; cd_is "$E"; git reset -q --hard
+    sed -i 's/^9\. land: 1111111 (landed)$/9. land: 9999999/' "$R"; git add -A; cd_is "$E"; git reset -q --hard
+    # The last block's other lines edited, a line added to it, or the block cut short: refused, an appended block or not.
+    sed -i 's/^Main at: b$/Main at: z/' "$R"; git add -A; cd_is "$L"; { echo; blk 0300 c; } >> "$R"; git add -A; cd_is "$L"; git reset -q --hard
+    # Step 10's land adds its own paths under the last block's ### Paths landed (here, or mid-section before ### Roadmap diff): taken, a block appended or not.
+    P='- M docs/working/questions.md'; pl() { awk -v p="$P" -v w="$1" '{ print } $0 == w { n++ } $0 == w && n == 2 { print p }' "$R" > "$R.x" && mv "$R.x" "$R"; }
+    pl '- M docs/roadmap.md'; git add -A; cd_is ok; { echo; blk 0300 c; } >> "$R"; git add -A; cd_is ok; git reset -q --hard
+    pl '### Paths landed'; git add -A; cd_is ok; git reset -q --hard
+    # A Paths landed line dropped, or a line added elsewhere in the last block (under ### Steps, after ### Roadmap diff's line), refuses.
+    awk '$0 == "- M docs/roadmap.md" && ++n == 2 { next } { print }' "$R" > "$R.x"; mv "$R.x" "$R"; git add -A; cd_is "$L"; git reset -q --hard
+    pl '### Steps'; git add -A; cd_is "$L"; git reset -q --hard
+    echo '- moved' >> "$R"; git add -A; cd_is "$L"; git reset -q --hard
+    # A line added to an earlier block refuses as an earlier block edited.
+    awk '{ print } $0 == "### Steps" && ++n == 1 { print "added" }' "$R" > "$R.x"; mv "$R.x" "$R"; git add -A; cd_is "$E"; git reset -q --hard
+    head -n -2 "$R" > "$R.x"; mv "$R.x" "$R"; git add -A; cd_is "$L"; git reset -q --hard
+    # Deleting a record refuses; a new record is not judged.
+    git rm -q "$R"; cd_is "refuse $R: it is deleted"; git reset -q --hard
+    printf '%s\n' '# Cycle 2026-10-12' 'Branch: x' > docs/working/cycles/cycle-2026-10-12.md; git add -A; cd_is ok; git reset -q --hard
+    # --land-cycle judges the merge against main the same way.
+    M="$(git rev-parse main)"; { echo '# Cycle 2026-10-11'; echo; blk 0300 c; } > "$R"; rec "Branch: $B"
+    lc_is "$E" --main "$M"
+    git checkout -q main -- "$R"; { echo; blk 0300 c; } >> "$R"; commit_all fixed; bl --land-cycle --main "$M"
+    [ "$status" -eq 0 ] && [[ "$output" == "landed $B "* ]] || { show; return 1; }
 }
 
 # legacy: the questions files questions.sh init writes, plus an owner entry (Q-001) and three legacy
@@ -1162,4 +1205,25 @@ plant_hooks() { local h d; d="$(git rev-parse --path-format=absolute --git-commo
     lc_is "refuse docs/working/questions.md: Q-001 is a new entry filed answered (Status ANSWERED or an answer line), and Q-001 is not in --answered" --main "$(git rev-parse main)"
     git merge -q --no-edit main; echo chore > x.md; commit_all x; onmain x.md main
     lc_is "refuse HEAD: it conflicts with the default branch; merge the default branch into HEAD first" --main "$(git rev-parse main)"
+}
+
+@test "SKILL.md states the two-call worktree removal once, in step 0.3, and every other removal points to it; D13 no longer says the shell stays outside a checkout (brief 2026-11-20-remove-worktrees-parked-shell)" {
+    K="$REPO_ROOT/skills/dev-cycle/SKILL.md"; q=$'\x60'
+    want() { [[ "$1" == *"$2"* ]] || { echo "missing: $2"; return 1; }; }
+    s="$(tr '\n' ' ' < "$K" | tr -s ' ')"
+    a="$(sect '### 0. Start and digest')"
+    for f in "**Every worktree removal the orchestrator makes outside ${q}--free-worktrees${q} takes two calls**" "first a Bash call that is only ${q}cd WTB${q}, then, in a separate later call (never joined to it by ${q}&&${q} or ${q};${q}), ${q}git -C MAIN_WT worktree remove X${q}, X the worktree being removed," \
+        "with nothing after it in that command" "can lag one command behind" "HC, GT, the stops' forced removals and a leftover HC use this form" \
+        "${q}--free-worktrees${q} (step 1) is safe without this form: it runs from WT, never from a worktree it frees"; do want "$a" "$f" || return 1; done
+    # One source of truth (S3): the form is stated once, and each other removal points to step 0.3.
+    [ "$(grep -o 'only `cd WTB`' <<<"$s" | wc -l)" -eq 1 ] || return 1
+    for f in "${q}worktree remove --force${q} (step 0.3's two calls;" "removed as step 0.3 removes WT once the check exits (in two calls;" "HC with ${q}worktree remove --force${q} in step 0.3's form" \
+        "removed after it as step 0.3 removes WT, in two calls" "Then remove WT (step 0.3's two calls: ${q}cd WTB${q}, then the removal)."; do want "$s" "$f" || return 1; done
+    # No removal is chained to a later command in the same call.
+    ! grep -nE 'worktree remove[^`]*(&&|;|\|)' "$K" || return 1
+    # D13 says where the shell really is; the old false premise is gone.
+    want "$s" "Its shell does not stay there: the Bash tool keeps a call's ${q}cd${q} only when the whole command succeeds" || return 1
+    want "$s" "and every build loop's and subagent's Bash call runs there too" || return 1
+    want "$s" "and a worktree is removed only as step 0.3 says" || return 1
+    for f in "shell stays in" "not a git checkout" "fails with \"not a git repository\""; do [[ "$s" != *"$f"* ]] || { echo "stale: $f"; return 1; }; done
 }
