@@ -74,7 +74,9 @@ one many ways. The global tier is therefore decided by CO-OCCURRENCE in the text
           in the command (`~`, `$HOME`, `${HOME…`, the literal home path, `.claude`,
           `global-instructions`, `CLAUDE_CONFIG_DIR`, the literal config dir); OR a
           settings*.json / hooks mention together with `.claude` / the config dir.
-          Conservative: a heredoc that names ~/.claude/CLAUDE.md in prose is denied.
+          Conservative: a heredoc that names ~/.claude/CLAUDE.md in prose is denied,
+          and so is a read-only command with a quoted `>` or a `python3 -c` (F-022);
+          the deny text names the Read tool and a script run by path for reads.
           No worktree exemption for Bash (the file tools have one, above, because
           their path can be resolved): Q-048 [2]'s exemption for worktrees under
           `.claude/` (`.claude/wt-*`, `.claude/worktrees/*`) was tried and withdrawn after
@@ -508,12 +510,18 @@ def main():
             # "deny" wins over any auto-approve hook's "allow" (deny > ... > allow).
             # One text for every target (A1): command text can't tell a project's
             # own .claude/ from the global one, so the reason must be true for both.
-            # A2: the only file it suggests writing is prose passed as data.
+            # A2: the only file it suggests writing is prose passed as data. A script
+            # appears only as a READ route (F-022: read-only commands with a quoted `>`
+            # or `python3 -c` are denied too), with the caveat that a writing script
+            # breaks the rule: the A8 gap stays a breach, never a suggested route.
             emit("deny", "Bash write that names a protected policy file (.claude hooks or settings, "
                          "or a CLAUDE.md next to a home or .claude reference). Bash can't write these. "
                          "For a project's or worktree's own .claude/ files or CLAUDE.md, use the Edit "
                          "or Write tool. For global ones (~/.claude, ~/CLAUDE.md), make the change "
                          "outside Claude, in your own editor or shell, and review it there. If the "
+                         "command only reads or tests these files, read them with the Read tool, or "
+                         "put the check in a script file and run it by path; that route is for reads "
+                         "only, and a script that writes these files breaks the same rule. If the "
                          "path only appears in prose, such as a commit message or PR body, put that "
                          "prose in a file with the Write tool and pass it with `git commit -F <file>` "
                          "or `--body-file <file>`.")
