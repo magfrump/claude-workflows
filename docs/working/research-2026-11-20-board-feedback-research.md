@@ -3,7 +3,7 @@
 Brief: `docs/working/briefs/2026-11-20-board-feedback-research.md` (self-merge, research only, Paths: none).
 Date: 2026-11-20. Base: main at 9d405e46.
 Method: reads, `git` and `rg` only (acceptance criterion 6); the board was not run.
-Review: one fact-check and design pass (round 1: 1 High, 5 Medium, 2 Low); every finding is addressed below (see "Review record").
+Review: a fact-check and design reviewer, three rounds; every finding is addressed below (see "Review record").
 
 ## Sources read
 
@@ -76,16 +76,22 @@ The project side is the same for every option except D: main's `docs/harness-fee
 
 Paths and policy for each (criterion 3). All of A, B1 and B2 change `scripts/board.sh`, `scripts/harness-feedback.py` (a read-only mode), their two bats files and the two guides; policy **review**, since `board.sh` is host code under H1 and `harness-feedback.py` reaches the host through `install.sh`'s `scripts/` payload. C adds the same plus a change to `ingest`'s write path and its tests (review). D changes nothing (no policy).
 
-Path A: **B1** dominates. It answers the owner's question exactly ("new harness feedback to copy to this repo"), counts a hand copy and an ingest alike, and gets the renamed project right (0 not copied: its stored copy is current) because it matches by the Project line. B2 counts against the seeds, which a hand copy never writes and which the cycle does not need to notice a copy, so it would report triaged entries as new and send the owner to re-seed them. A is B1 with a worse lookup at the same parse cost. C adds state that hand copies bypass. D fails the motive.
+Path A: **B1** dominates. It answers the owner's question exactly ("new harness feedback to copy to this repo"), counts a hand copy and an ingest alike, and matches by the Project line, not the file name. Assumption, unverifiable from the sandbox: the renamed project's own main also says `Project: task-workspace-designer` (the rename in ad4f0eef was a hand edit of this repo's copy). If so it shows 0 not copied; if its file still says `philosophy-research`, no stored file has that name, and the "entries stored under another name" state below catches it.
+
+"Copied" compares each entry's signature, not just its ID: `pending` reuses `ingest`'s `sig()` (ID, slug and meta line, `harness-feedback.py:339`), so an old entry edited in the project, which `ingest` refuses, is reported, never shown as "all copied". An edited bullet (the herald file's later "Recheck" lines, for example) is not in the signature; `pending` also compares each entry's whole text with the stored copy's and counts a changed one as `changed`, so revised feedback is listed too. B2 counts against the seeds, which a hand copy never writes and which the cycle does not need to notice a copy, so it would report triaged entries as new and send the owner to re-seed them. A is B1 with a worse lookup at the same parse cost. C adds state that hand copies bypass. D fails the motive.
 
 How each state prints under B1 (one line, after the `main DATE · N open watches` line):
 
 - project file absent on main: no line. The file is optional; a repo that never filed has nothing to copy. (Absent is modelled, not unreadable.)
 - file present, every ID in its stored copy: `feedback: 13 entries, all copied`, so a run that read the file is distinguishable from one that did not (H2: nothing present-but-inert).
 - some IDs not in the stored copy, or no stored copy: `feedback: 3 not copied (F-020 to F-022): cd CW && ~/.claude/scripts/harness-feedback.py ingest P/docs/harness-feedback.md`, with CW and P the registry paths. The installed copy, not CW's own script, so nothing from a checkout runs on the host; `ingest` finds its target from the current directory, so the installed copy does the same job.
+- some entries changed text but kept their signature: `feedback: 2 changed (F-001, F-004)`, with the same command (`ingest` accepts that copy).
+- an old entry's signature differs from the stored copy's: `feedback: F-003 differs from the stored copy; ingest would refuse it` and **no command**.
 - the stored copy's file name is not `NAME.md` (the renamed project): the count as above, then `stored as docs/working/feedback/philosophy-research.md under another name; ingest would store it twice`, and **no command**, until the rename item below is decided.
+- no stored file has this Project name, but one holds the same leading entries (same signatures) under another name: `feedback: entries stored under Project OTHER (docs/working/feedback/X.md); renamed?` and **no command**.
 - file unreadable, not a regular file, or failing `check`: `feedback UNREADABLE: docs/harness-feedback.md: <first problem>`; counts toward exit 1, as an unreadable questions doc does. The problem text can echo the file's bytes (`check` quotes a bad verdict); the board's existing scrub covers that.
-- two stored files with the same Project name, or a stored file failing `check`: `feedback UNREADABLE: <why>` (exit 1).
+- two stored files with the same Project name, or a stored file failing `check` (whose Project line cannot be trusted, so it cannot be tied to one project): `feedback NOT COMPARED: <why>` on **every** project with a file, exit 1.
+- no stored files at all: every project with a file counts all its entries as not copied (`pending` takes zero stored paths; the board expands the glob with `nullglob`).
 - claude-workflows not registered: one footer line (choice 3); its feedback directory unreadable on main: `feedback NOT COMPARED: <why>` on each project with a file (exit 1).
 - claude-workflows' own block: no feedback line (the guide says that repo keeps no such file).
 
@@ -93,7 +99,7 @@ How each state prints under B1 (one line, after the `main DATE · N open watches
 
 Options: (a) bash/awk in `board.sh`; (b) a new read-only mode in `harness-feedback.py`, e.g. `pending FILE STORED...`, printing the project name, its entry count and the IDs missing from the stored copy with that Project name, or exiting 1 with the problems; (c) a new beside-the-board script.
 
-Path A: (b). One parser for the grammar (S3), about 25 lines, and the board already requires `python3`. (a) restates the grammar in a second language; (c) adds a second script for it. The board calls `python3 -I "$HERE/harness-feedback.py" pending "$d/hf.md" "$TMP"/stored/*.md` on blobs it copied out of git objects. `-I` keeps `PYTHON*` variables, the current directory (each `repo()` runs with the repo as its current directory, `board.sh:121`) and the script's directory off `sys.path`; the script imports only the standard library. `harness-feedback.py` joins the files that must sit beside the board (exit 2 when missing). `pending` takes every path explicitly and runs no git, so `toplevel()` is never called on the host.
+Path A: (b). One parser for the grammar (S3), about 45 lines, and the board already requires `python3`. (a) restates the grammar in a second language; (c) adds a second script for it. The board calls `python3 -I "$HERE/harness-feedback.py" pending "$d/hf.md" "$TMP"/stored/*.md` on blobs it copied out of git objects. `-I` keeps `PYTHON*` variables, the current directory (each `repo()` runs with the repo as its current directory, `board.sh:121`) and the script's directory off `sys.path`; the script imports only the standard library. `harness-feedback.py` joins the files that must sit beside the board (exit 2 when missing). `pending` takes every path explicitly and runs no git, so `toplevel()` is never called on the host.
 
 ## Design choice 3: how the board knows which registered repo is claude-workflows
 
@@ -115,7 +121,7 @@ Options: (a) for each repo whose main has `docs/working/weekly/`, print the late
 
 Path A: (a). (b) couples the listing to a log written for another purpose and hides an unread edition whenever the board ran for another reason; it can follow if (a) proves noisy. (c) leaves the owner's stated gap.
 
-How it reads and fails: `main_entry docs/working/weekly` first; `absent` prints no line; any other refusal (a symlink, a file, a failed read) prints `weekly UNREADABLE: <entry_why>` and counts toward exit 1. Then one `git ls-tree "$MAIN_SHA" -- docs/working/weekly/` (with modes, not `--name-only`, so only `100644`/`100755` blobs named `YYYY-MM-DD.md` count, the form `isweekly` accepts); a failed `ls-tree` is UNREADABLE too; a directory with no edition prints `weekly: none yet`. No blob is read, so no new trust surface. About 15 lines of bash and three bats cases.
+How it reads and fails: `main_entry` models files only (a directory, mode 040000, answers `notfile`, `dev-cycle-read.sh:384`), so it cannot be asked about the directory itself. Instead one `git ls-tree "$MAIN_SHA" -- docs/working/weekly` decides the directory: no output prints no line; a `040000 tree` line goes on; any other mode (a symlink, a file, a gitlink) or a failed `ls-tree` prints `weekly UNREADABLE: docs/working/weekly is not a directory on the default branch` (or the failed read) and counts toward exit 1. Then `git ls-tree "$MAIN_SHA" -- docs/working/weekly/` lists the editions with their modes (not `--name-only`); the latest name of the `YYYY-MM-DD.md` form (`isweekly`'s) is then checked with `main_entry` on its own path, and only a `blob` answer prints; a directory with no edition prints `weekly: none yet`. No blob is read, so no new trust surface. About 20 lines of bash and four bats cases (present, absent, a symlinked `weekly`, a real directory holding no edition).
 
 Line: `   weekly: P/docs/working/weekly/2026-11-20.md (2026-11-20)`, after the feedback line. That path is the checkout's file, which matches main's when main is checked out (the common case, per the board guide). The guide should not suggest `git -C P show ...` for the other case, since that runs git unhardened in the repo on the host; it can say the edition reaches the checkout when that checkout next takes main.
 
@@ -124,10 +130,10 @@ Suggestion: build it in the same review unit as the feedback line (same file, te
 ## Cost of the suggested change
 
 - `scripts/board.sh`: about 45 lines (the pre-pass, the per-repo feedback and weekly lines, the beside-the-script check). 421 to about 465, under S8's 500.
-- `scripts/harness-feedback.py`: about 25 lines (`pending`).
-- Tests: about 8 cases in `test/scripts/board.bats` (not-copied count and command; all copied; absent file prints nothing; a file failing check is UNREADABLE with exit 1; a stored copy under another file name withholds the command; no harness repo registered; weekly line present, absent, and a symlinked `weekly` UNREADABLE), about 4 in `test/scripts/harness-feedback.bats` (`pending`: all copied, some new, a bad file, two stored files with one Project name). Hermetic: fixture repos under `BATS_TEST_TMPDIR` and the existing network shims (H3).
+- `scripts/harness-feedback.py`: about 45 lines (`pending`: signatures, entry text, the other-name match).
+- Tests: about 10 cases in `test/scripts/board.bats` (not-copied count and command; all copied; absent file prints nothing; a file failing check is UNREADABLE with exit 1; a stored copy under another file name withholds the command; a signature that differs withholds it; a stored file failing check is NOT COMPARED everywhere; no harness repo registered; weekly present, absent, symlinked, empty), about 7 in `test/scripts/harness-feedback.bats` (`pending`: all copied, some new, a changed entry, a differing signature, entries under another name, zero stored files, two stored files with one Project name). Hermetic: fixture repos under `BATS_TEST_TMPDIR` and the existing network shims (H3).
 - `guides/cross-project-board.md` and `guides/harness-feedback.md`: a few lines each.
-- Policy: **review** (host code, H1). About 160 changed lines, one unit, one `git revert` (S8); no new image package; no new host chore (S10), since the board already runs on the host.
+- Policy: **review** (host code, H1). About 220 changed lines, one unit, one `git revert` (S8); no new image package; no new host chore (S10), since the board already runs on the host.
 
 ## Review record
 
@@ -141,6 +147,14 @@ Round 1 (one general-purpose reviewer, fact-check and design). The figures, file
 - Medium, H2, the weekly read had no failure states: it now goes through `main_entry` and reads modes.
 - Low, the marker claim (ingest tests only the guide) and the "grammar-restricted" bound on the UNREADABLE line: both corrected.
 - Low, main lag after a copy and the missing-questions-doc case: added under Gotchas.
+
+Round 2 (same reviewer, on 3c522476): seven of the eight resolved; one new High and three new Mediums, plus one Low. Fixed:
+
+- High, `main_entry` answers `notfile` for a directory, so the weekly read would print UNREADABLE in every repo that has one: the directory is now decided by `ls-tree` mode `040000`, with `main_entry` used only on the chosen edition.
+- Medium, the renamed project's "0 not copied" rests on its own main's Project line: stated as an assumption, and a "stored under another name" state added.
+- Medium, ID sets miss edited entries and copies `ingest` would refuse: `pending` compares `sig()` and entry text; new `changed` and `differs` states, the latter withholding the command.
+- Medium, scope of a stored file failing check: NOT COMPARED on every project.
+- Low, an empty glob: `nullglob`, zero stored paths allowed.
 
 ## For the dev cycle
 
