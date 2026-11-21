@@ -583,9 +583,11 @@ reads the row), unless an item already names that SHA (windows overlap on the re
 day). File a `Not read` line the same way, saying what could not be read. Record on the
 `4.` line, after what was checked, `; out-of-loop landings: N listed, K filed`; a section
 that says **Out-of-loop landings were NOT checked** records `not checked: why`, never a 0.
-The section is advisory: nothing waits on it. When the records hold at least ten full blocks
-carrying this field, on ten different days, and every one of them reads `0 listed`, file an
-agent item to remove this step and the section (fewer such blocks: keep it) (design: `docs/working/research-2026-11-20-out-of-loop-landings.md`).
+The section is advisory: nothing waits on it. Take, from the records, the latest full block
+carrying this field on each of the last ten days that have one. When there are ten such
+blocks and all of them read `0 listed`, file an agent item to remove this step and the
+section. With fewer than ten, keep it (design:
+`docs/working/research-2026-11-20-out-of-loop-landings.md`).
 
 **Drift check** (D2). For each sampled merge a build loop made (a `--merge` commit, with a
 `Build-loop-gate:` trailer), read one Path A decision from the divergent-design record in
