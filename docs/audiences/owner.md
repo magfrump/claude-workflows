@@ -38,7 +38,8 @@ entry" (global CLAUDE.md, "Answering costs one line"). The record it becomes is 
 `questions-archive.md`, which a later agent acts on.
 
 **What a final message is for.** It tells a returning owner what needs them now and what can wait, and
-gives at most two links (trials T8, T9, `docs/working/trials/2026-11-06-attention-and-trust.md:13-17`).
+ends with the links worth opening, with no fixed count (trial T9, kept on 2026-11-20 under Q-327 and now in
+`skills/dev-cycle/SKILL.md`'s Rules, "Attention is the budget").
 The owner's own word on one with two links: "great" (`2026-10-30-friction-engagement.md:37`).
 
 **Declared reader.** The grammar addresses the owner and no one else: "It holds only what is blocked on

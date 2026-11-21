@@ -110,7 +110,9 @@ full cycles a light pass skips those checks while nothing new needs them (step 0
   become one `you: terminal` entry. Every entry and the final message follow that section's
   "Gloss every reference" rule. So an owner can read an entry cold, each one opens, right after
   its one-line question, with a line `**If you say no:** WHAT`: what happens if they decline
-  or never answer.
+  or never answer. Links to the docs most worth opening go in each entry's `**Read:**` line
+  and at the end of the final message, where they help, as many as help: no fixed count
+  (the owner finds links most valuable in `questions.md`, Q-327).
 - **Three homes** (decision 040). `questions.md` takes only the owner's routes (`you:
   judgment`, `you: walkthrough`, `you: terminal`, `you: fyi`). **Agent work** is a roadmap Now
   item `- **Agent: TITLE** (filed YYYY-MM-DD, step N).`, then its motive and first step;
@@ -921,7 +923,7 @@ The briefs land with step 9, so they are on the default branch before step 10 di
 **Weekly digest** (not step 0's). When `docs/working/weekly/` holds no `YYYY-MM-DD.md` dated under 7 days
 before today (section 8 lists the directory: skipped, and the record says so), write one
 dated `date +%F`, for the days since the last edition (none yet: the last 7 days). It asks for nothing but the
-optional sample below, and lands with this iteration. Keep each part short, and say so when one is empty:
+optional look below, and lands with this iteration. Keep each part short, and say so when one is empty:
 
 - `⚠ SECURITY`: how often the Final message's triggers occurred (expected: never), from
   entries and agent items quoting `refuse state`, High findings in `docs/reviews/` and Q-103
@@ -929,11 +931,22 @@ optional sample below, and lands with this iteration. Keep each part short, and 
   stop's uncommitted filing is discarded);
 - what changed: behaviour changes, live in the image or merged but not yet live;
 - what merged without review (self-merges), and security-review findings by severity;
+- what the checks caught: what the gates and reviews stopped this week (a `--merge` or
+  `--check` refusal, a health-check failure, a red or High finding a fix round closed), one
+  plain line each, or "nothing". Each line names what the owner can check for themselves:
+  the refusal line quoted, a red row's file, or a count with the command that reproduces it,
+  so it points at a fact in the code or history rather than asking to be trusted;
 - the ask counter: asks opened and answered, and how often the owner picked the default;
 - stale entries: one line per `you:` entry open 21 days or more, with a proposed fate. One
   whose own closure line is met proposes closing, with the evidence: only the owner's answer
   closes it (`--cycle-diff`; step 0.1's image entries aside), while watches and agent items close in steps 3 and 6;
-- one self-merge picked at random, with the command that shows it, and "anything surprising?".
+- one deliberate look (optional, about five minutes): a self-merge or a design pick (a
+  `docs/decisions/` record, or a divergent-design decision in a research doc, merged this
+  week; none: a self-merge), picked at random saying how, with the command or path that
+  shows it, one question about it, and the reply that counts (`look: fine` or what was off);
+  then how many earlier looks the owner took of those offered in past editions, counted from
+  that reply (or an earlier edition's `sample: fine`) in the questions files or the owner's
+  words in session, or "not counted" where neither shows it.
 
 Write the record `docs/working/cycles/cycle-YYYY-MM-DD.md`, dated as the digest dates
 (`date +%F`, local time; the branch name's DATE-HHMM is UTC): one file per day, each
@@ -1094,7 +1107,7 @@ own dispatch (its `10.` line names them). A session that ends first loses them, 
 count on main reads one low per lost line, one more loop run under the cap (a Q-103
 residual). Then remove WT (step 0.3's two calls: `cd WTB`, then the removal).
 
-**Final message**, then wait. Gloss every reference in it (the Rules' "Attention is the budget"). It may list an owner call only beside the questions-file entry that asks it (step 8), never as the call's only record. `⚠ SECURITY` is reserved: it opens the message, saying what happened and not who did it, and goes out as a push notification when the session has a tool for one, for only three things: a `--state` refusal (step 0.1's, or a `refuse state` line from any other mode), a High finding from a security review that still holds after its fix round, or a Q-103 residual (a known risk the owner accepted) becoming live. A refusal that repeats fires once. It is never used for anything else, "this touches security code" included. Below it, list migrations first (step 1b: what ran, then what is pending), then the new `you: judgment` entries by ID, name and a plain line on what each asks (merge
+**Final message**, then wait. Gloss every reference in it, and end it with the links worth opening, ahead of any closing instruction below (both: the Rules' "Attention is the budget"). It may list an owner call only beside the questions-file entry that asks it (step 8), never as the call's only record. `⚠ SECURITY` is reserved: it opens the message, saying what happened and not who did it, and goes out as a push notification when the session has a tool for one, for only three things: a `--state` refusal (step 0.1's, or a `refuse state` line from any other mode), a High finding from a security review that still holds after its fix round, or a Q-103 residual (a known risk the owner accepted) becoming live. A refusal that repeats fires once. It is never used for anything else, "this touches security code" included. Below it, list migrations first (step 1b: what ran, then what is pending), then the new `you: judgment` entries by ID, name and a plain line on what each asks (merge
 entries marked; several open ones also as one block, offered as `Q-235..237: [1]` or `all but
 Q-236: [1]`, the entries staying separate because the gate finds each by its heading), each answer still `open`, skipped or `unrecognized` (with its brief; an
 answer written only in a working tree is not applied: "tell me, or commit it yourself",
