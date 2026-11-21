@@ -98,6 +98,9 @@ refused the same way: rename its `Project:` line, or delete the stored copy here
 nothing is written. `ingest` refuses to run outside a claude-workflows checkout. A file already under `docs/working/feedback/` is seeded
 in place, not copied. Commit the copy and the idea log together.
 
+**When to copy.** The cross-project board (`guides/cross-project-board.md`) counts each project's entries on main not yet copied to claude-workflows' main, and prints this
+command unless `ingest` would refuse the copy or store it twice (a changed signature, a renamed project); `scripts/harness-feedback.py pending` makes that comparison, read-only.
+
 From there the dev cycle's own intake routes it: new seeds count toward the brainstorm
 trigger, and the brainstorm moves surviving ideas to the roadmap's Ideas. A `fails` entry
 that names a defect class can be carried into `docs/failure-patterns.md` by the

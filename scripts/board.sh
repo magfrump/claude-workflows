@@ -7,8 +7,8 @@
 # Design: docs/working/research-2026-11-12-host-board-answer-route.md sections
 # 3 to 6, docs/working/research-2026-11-12-host-board-listing.md (unit 1) and
 # docs/working/research-2026-11-12-host-board-answer-commit.md (unit 2) and
-# docs/working/research-2026-11-12-host-board-answer-in-place.md (unit 3);
-# owner guide: guides/cross-project-board.md.
+# docs/working/research-2026-11-12-host-board-answer-in-place.md (unit 3); the
+# feedback and weekly lines: docs/working/research-2026-11-20-board-pending-feedback.md.
 #
 # Usage: ~/.claude/scripts/board.sh                          (the listing)
 #        ~/.claude/scripts/board.sh answer PROJECT Q-NNN TEXT (one answer)
@@ -25,9 +25,9 @@
 # python3, no registry, bad arguments).
 #
 # Trust (H1): the repos are container-writable, so nothing from them runs here.
-# questions.sh and the lib are the copies beside this script (the installed,
+# questions.sh, harness-feedback.py and the lib are the copies beside it (the installed,
 # install-reviewed ones on the host), every git call runs under the lib's
-# git_harden, only git objects are read (no working tree, so no filter runs;
+# git_harden (python3 runs with -I), only git objects are read (no working tree, so no filter runs;
 # the in-place write's one index update runs against an empty work tree, so
 # git's racy-entry re-hash of other files cannot run a clean filter either),
 # and everything printed passes through the lib's scrub. It assumes the
@@ -40,9 +40,10 @@ HERE="$(cd -- "$(dirname -- "$0")" && pwd -P)"
 SELF="$HERE/${0##*/}"
 QS="$HERE/questions.sh"
 LIB="$HERE/lib/dev-cycle-read.sh"
+HF="$HERE/harness-feedback.py"
 die() { echo "board: $*" >&2; exit 2; }
-for f in "$QS" "$LIB"; do
-  [[ -f "$f" ]] || die "refusing to run: $f is missing (questions.sh and lib/dev-cycle-read.sh must sit beside board.sh)"
+for f in "$QS" "$LIB" "$HF"; do
+  [[ -f "$f" ]] || die "refusing to run: $f is missing (questions.sh, harness-feedback.py and lib/dev-cycle-read.sh must sit beside board.sh)"
 done
 [[ $# -eq 0 || ( $# -eq 4 && "$1" == answer ) ]] || die "usage: board.sh, or board.sh answer PROJECT Q-NNN TEXT"
 [[ $# -eq 0 || "$3" =~ ^Q-[0123456789]+$ ]] || die "not a question ID (Q- and digits): $3"
@@ -112,6 +113,63 @@ read_main() {
 # open's lines as ID, route and slug, tab-separated.
 open_rows() { printf '%s\n' "$QOPEN" | awk -F'  +' 'NF { print $1 "\t" $2 "\t" $3 }'; }
 
+# Directory $1 on main: main_entry's checks for it and its parents, then its
+# mode; prints "absent", or "dir" with the names directly under it in file $2
+# (NUL-ended), or why it cannot be listed.
+main_dir() {
+  local e; e="$(main_entry "$1")"
+  case "$e" in
+    absent) echo absent; return ;;
+    blob|notfile) [[ "$(git ls-tree --full-tree "$MAIN_SHA" -- "$1")" == "040000 tree "* ]] || { echo "$1 is not a directory on the default branch"; return; } ;;
+    *) entry_why "$e" "$1"; return ;;
+  esac
+  git ls-tree -z --full-tree --name-only "$MAIN_SHA" -- "$1/" > "$2" && echo dir || echo "$1 could not be listed on the default branch"
+}
+
+# In the harness repo: main's docs/working/feedback/*.md into $TMP/stored,
+# printing nothing, or why they cannot be compared (a non-file there is not skipped).
+read_stored() {
+  local d x e f=docs/working/feedback
+  resolve_main && main_by_name || { echo "$CW has no default branch by name"; return; }
+  d="$(main_dir "$f" "$TMP/fb")"
+  case "$d" in absent) return ;; dir) ;; *) echo "in $CW, $d"; return ;; esac
+  while IFS= read -r -d '' x; do
+    [[ "$x" == *.md ]] || continue
+    e="$(main_entry "$x")"; [[ "$e" == blob ]] || { echo "in $CW, $(entry_why "$e" "$x")"; return; }
+    git cat-file blob "$MAIN_SHA:$x" > "$TMP/stored/${x##*/}" || { echo "in $CW, $x could not be read"; return; }
+  done < "$TMP/fb"
+}
+# The feedback line: none for the harness repo itself, a repo with no file, or
+# with no harness repo registered. Returns 1 after UNREADABLE or NOT COMPARED.
+feedback() {
+  local e k out rc=0 f=docs/harness-feedback.md
+  k="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" || { echo "   feedback UNREADABLE: the git directory could not be read"; return 1; }
+  [[ -z "$CWKEY" || "$k" != "$CWKEY" ]] || return 0
+  e="$(main_entry "$f")"
+  case "$e" in
+    absent) return 0 ;;
+    blob) git cat-file blob "$MAIN_SHA:$f" > "$TMP/$1/hf.md" || { echo "   feedback UNREADABLE: $f could not be read from $MAIN"; return 1; } ;;
+    *) echo "   feedback UNREADABLE: $(entry_why "$e" "$f")"; return 1 ;;
+  esac
+  [[ -n "$CW$CWWHY" ]] || { : > "$TMP/fb-uncompared"; return 0; }
+  [[ -z "$CWWHY" ]] || { echo "   feedback NOT COMPARED: $CWWHY"; return 1; }
+  # -I: no PYTHON* variables, current directory or script directory on sys.path.
+  out="$(python3 -I "$HF" pending "$TMP/$1/hf.md" "$CW" "$TOP/$f" "${STORED[@]}" 2>&1)" || rc=$?
+  [[ ( $rc -eq 0 || $rc -eq 3 ) && -n "$out" ]] || out="feedback UNREADABLE: harness-feedback.py pending stopped (exit $rc): ${out##*$'\n'}"
+  echo "   ${out%%$'\n'*}"; [[ $rc -eq 0 ]]
+}
+# The weekly line: main's latest docs/working/weekly/YYYY-MM-DD.md, never an
+# older one when the latest is not a file. Returns 1 after UNREADABLE.
+weekly() {
+  local d e x l="" w=docs/working/weekly
+  d="$(main_dir "$w" "$TMP/$1/wk")"
+  case "$d" in absent) return 0 ;; dir) ;; *) echo "   weekly UNREADABLE: $d"; return 1 ;; esac
+  while IFS= read -r -d '' x; do ! isweekly "$x" || l="$x"; done < "$TMP/$1/wk"
+  [[ -n "$l" ]] || { echo "   weekly: none yet"; return 0; }
+  e="$(main_entry "$l")"; [[ "$e" == blob ]] || { echo "   weekly UNREADABLE: $(entry_why "$e" "$l")"; return 1; }
+  x="${l##*/}"; echo "   weekly: $TOP/$l (${x%.md})"
+}
+
 # One project's block. Runs in its own subshell (it cds and sets MAIN_*);
 # returns 3 after printing why the project is unreadable.
 repo() {
@@ -145,6 +203,8 @@ repo() {
     echo "   UNREADABLE: the date of $MAIN's last commit could not be read"; return 3
   fi
   printf '   main %s · %d open watch%s\n' "$day" "$watches" "$([[ $watches -eq 1 ]] || echo es)"
+  TOP="$(git rev-parse --show-toplevel 2>/dev/null)" || TOP="$p"
+  feedback "$n" || : > "$TMP/$n.bad"; weekly "$n" || : > "$TMP/$n.bad"
   if [[ $shown -eq 0 ]]; then echo "   nothing open for you"; else printf '%s' "$lines"; fi
   echo "$shown" > "$TMP/$n.count"
 }
@@ -385,6 +445,23 @@ if [[ $# -eq 4 ]]; then
   exit "$rc"
 fi
 
+# The harness repo (choice 3 of the 2026-11-20 board-feedback research): one by git common dir with
+# ingest's marker and the script on main; one a file, the other a non-file, refuses.
+CW=""; CWKEY=""; CWWHY=""; hn=0; mkdir "$TMP/stored"; declare -A KEYS=()
+while IFS= read -r line || [[ -n "$line" ]]; do
+  line="$(trim "$line")"; [[ "$line" == /* && -d "$line" ]] || continue
+  r="$( { cd -- "$line" && resolve_main && main_by_name && echo "$(main_entry guides/harness-feedback.md) $(main_entry scripts/harness-feedback.py)" && git rev-parse --path-format=absolute --git-common-dir; } 2>/dev/null )" || continue
+  k="${r#*$'\n'}"
+  case "${r%%$'\n'*}" in
+    "blob blob") [[ -n "${KEYS[$k]+set}" ]] || { KEYS[$k]=1; CW="$line"; CWKEY="$k"; hn=$((hn + 1)); } ;;
+    "blob notfile"|"blob error"|"blob badform"|"notfile blob"|"error blob"|"badform blob")
+      CWWHY="$line holds part of the harness, but its main reads guides/harness-feedback.md and scripts/harness-feedback.py as: ${r%%$'\n'*}" ;;
+  esac
+done < "$REG"
+[[ $hn -le 1 ]] || { CW=""; CWKEY=""; CWWHY="$hn registered repos hold the harness (guides/harness-feedback.md and scripts/harness-feedback.py on main)"; }
+[[ -z "$CW" || -n "$CWWHY" ]] || CWWHY="$( set -e; cd -- "$CW" && read_stored )" || CWWHY="the stored copies in $CW could not be read"
+shopt -s nullglob dotglob; STORED=("$TMP"/stored/*); shopt -u nullglob dotglob
+
 n=0; projects=0; bad=0; total=0
 while IFS= read -r line || [[ -n "$line" ]]; do
   n=$((n + 1))
@@ -403,13 +480,14 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     [[ $rc -eq 3 ]] || echo "   UNREADABLE: the board stopped reading this repo (exit $rc)"
     bad=$((bad + 1))
   else
-    total=$((total + $(cat -- "$TMP/$n.count")))
+    total=$((total + $(cat -- "$TMP/$n.count"))); [[ ! -e "$TMP/$n.bad" ]] || bad=$((bad + 1))  # an UNREADABLE feedback or weekly line
   fi
 done < "$REG"
 
 status=0
 [[ $bad -eq 0 && $projects -gt 0 ]] || status=1
 [[ $projects -gt 0 ]] || echo "board: the registry $REG lists no project"
+[[ ! -e "$TMP/fb-uncompared" ]] || echo "feedback not compared: no registered repo holds the harness (guides/harness-feedback.md and scripts/harness-feedback.py on main)"
 LOG_DIR="$HOME/.local/state/claude-board"
 if ! { mkdir -p -- "$LOG_DIR" && printf '%s projects=%d open=%d unreadable=%d exit=%d\n' \
          "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$projects" "$total" "$bad" "$status" >> "$LOG_DIR/runs.log"; }; then
