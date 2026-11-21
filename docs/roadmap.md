@@ -49,8 +49,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   it reaches sessions with a release that re-blesses (watch Q-167 asks for that bless's hint lines).
 
 
-- **Agent: the health check prints 312 "harness changed since generation" warnings** (filed 2026-11-20, step 1). Motive: since the regenerated reports landed (4f1e4150), every health check warns that the shared report harness (`test/skills/generate-reports.bash`, `transcript.jq`, runner settings) changed since generation, for 11 skills' reports (api-consistency-reviewer, architecture-review, business-plan-critique-unit-economics, code-fact-check, cowen-critique, design-space-situating, divergent-design, matrix-analysis, performance-reviewer, pre-mortem, self-eval); a warning on every run hides a new one. The harness last changed in 8abd0b51 and 846eee77 (the web-tools grant, 6c0563b5). First step: read the stamp check (`rg -n "changed since generation" test/skills/`) and the stamps in those reports, and decide whether they predate the grant (regenerate, a sandbox run as 4f1e4150 was) or the check compares the wrong thing (fix the check); research first, then a brief.
-
 - **Agent: the dev cycle lists code landings on main that came outside the build loop** (filed 2026-11-20, step 7; from `docs/working/research-2026-11-20-review-gap-ba-compare.md`, brief 1). Motive: the merge-time rubric check runs only in `build-loop.sh --check` and `--merge`; since the review rules merged (21097afa), five code landings came another way (44000c6d, 386ccfa3, 22735b6e, 9e7c0542, ded17c89), four with no rubric, so no audit sees them. First step: a review brief (gate code) from that doc's "For the dev cycle" section: an advisory digest line per such landing, keyed on paths, with its rubric's open rows; removed if the count stays zero for ten cycles.
 
 - **Agent: close the six still-true rows of the 2026-11-13 review-gap audit** (filed 2026-11-20, step 7; same doc, brief 2). Motive: iter3 N5, N13, N17, N18 and questions-closeout A10, A11 still hold and nothing routed them; N13 is a security finding (the write guard). First step: a review brief confirming each row, then a fix, a revisit trigger or a Won't-Fix override row; N13 may need an owner call, asked from the loop's marker.
@@ -63,9 +61,13 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 - **Agent: `guides/validation-gates.md` names the commit helper's literal-pathspecs guard** (filed 2026-11-20, step 7; the si-commit loop's nit). Motive: line 33 lists `si_commit_child_work`'s hardening but not the guard Q-348 moves into the lib. First step: once Q-348 merges, one line in that guide, riding with the next review unit that touches `guides/` (the cycle cannot write it).
 
+- **Agent: the cross-project board lists harness feedback not yet copied here, and each repo's latest weekly digest** (owner request 2026-11-20; research merged 7f086d40, `docs/working/research-2026-11-20-board-feedback-research.md`). Motive: 37 entries waited a median 5 days, at most 18, before being copied. First step: the review brief in that doc's "For the dev cycle" section (`scripts/board.sh`, a read-only `pending` mode in `scripts/harness-feedback.py`, their bats and guides; about 220 lines; host code).
+
+- **Agent: `harness-feedback.py ingest` stores a renamed project twice** (filed 2026-11-20, step 7; the board research's side finding). Motive: ad4f0eef changed `docs/working/feedback/philosophy-research.md`'s `Project:` line to `task-workspace-designer`; ingest keyed on that line would re-seed 22 entries (19 duplicates) and write a second copy. First step: confirm the rename is intended (that project is philosophy-research), then fix the file or teach ingest to refuse a project name that changes under an existing file.
+
 ## In flight
 
-- **Agent: the cross-project board shows which projects have new harness feedback to copy here** (from Now, owner request 2026-11-20; with T11's digest-on-the-board note). Brief `docs/working/briefs/2026-11-20-board-feedback-research.md` (self-merge, research only).
+- **Agent: the health check prints 312 "harness changed since generation" warnings** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-stale-report-warnings.md` (self-merge, research only).
 
 - **Agent: fix report findings F8 to F12 so five held-back skills' reports can land** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-report-findings-f8-f12.md` (review; skills are prompt files).
 
@@ -420,6 +422,7 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- Cross-project board feedback research: 7f086d40 (self-merge), `docs/working/research-2026-11-20-board-feedback-research.md`, brief `docs/working/briefs/closed/2026-11-20-board-feedback-research.md`. Build brief and the ingest rename finding: Now.
 - Triage the six harness-feedback entries ingested in ad4f0eef: aa91635c (self-merge), `docs/working/research-2026-11-20-harness-feedback-triage.md`, brief `docs/working/briefs/closed/2026-11-20-harness-feedback-triage.md`. F-001, F-002, F-022: Now; F-021 closed (61122f34); F-020 and F-013 closed to watches Q-346 and Q-347.
 - Compare Behemoth Arsenal's review-gap causes with this repo's (owner feedback 2026-10-29, point 3; Q-302): 867f6546 (self-merge), `docs/working/research-2026-11-20-review-gap-ba-compare.md`, brief `docs/working/briefs/closed/2026-11-20-review-gap-ba-compare.md`. Same causes; uncovered: landings outside the build loop and six still-true rows (both now in Now).
 
