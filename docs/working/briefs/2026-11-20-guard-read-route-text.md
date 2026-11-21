@@ -30,3 +30,5 @@ Policy: review
 
 - Changing what the guard denies or allows, and the audit's still-true rows N13 and N18 (their own roadmap item).
 - Editing `docs/roadmap.md`, the questions files, `docs/working/watching.md` or `docs/working/idea-log.md`: the dev cycle owns those.
+
+Dispatched: 1
