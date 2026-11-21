@@ -367,8 +367,8 @@ the iteration with no record, so the next one starts from the same `Main at:`:
 4. **The digest**: `dev-cycle.sh` through d6 from WT. It
 reads the window start, triggers, questions, roadmap and idea log from that working tree. Keep
 its output. It is read-only. Its sections feed the steps: 1 activity (context), 2 triggers
-(step 2), 3 watched questions (step 3), 4 spot-check sample and 6 merges with code but no
-docs (step 4), 5 roadmap (steps 6 and 8), 7 inputs (steps 4b and 5), 7b pending migrations (step
+(step 2), 3 watched questions (step 3), 4 spot-check sample, 6 merges with code but no
+docs and 6b code landings outside the build loop (step 4), 5 roadmap (steps 6 and 8), 7 inputs (steps 4b and 5), 7b pending migrations (step
 1b), 8 skipped inputs (the record's `### Skipped inputs`). If the digest says the repo has no
 `docs/working/questions.md`, step 1 creates it unless section 8 blocks the path. Then check the Window line, in this order:
 
@@ -574,6 +574,22 @@ code path. Also check every merge the digest lists under "Merges with code but n
 fourth rule). A claim that no longer holds is a finding: fix it if mechanical, otherwise file
 it on the roadmap. Record what was checked even when everything held. This is closer to code
 review than to an audit; a deep audit is step 4b's job.
+
+**Out-of-loop landings.** For each landing the digest's section 6b lists (a commit on main
+that changed `skills/`, `workflows/`, `scripts/` or `hooks/` without a build-loop merge),
+file one agent work item, `- **Agent: post-hoc review of SHA** (filed DATE, step 4).`, for
+step 8 to brief, naming its code paths and quoting, as data, every line the section printed
+for it (`open`, `unread`, `stale`, `clean`, `superseded` or `none`; an `open` row may be one
+the parser over-reports, such as a Split red or a "Fixed ... only for" cell, so the review
+reads the row), unless an item already names that SHA (windows overlap on the record's
+day). File a `Not read` line the same way, saying what could not be read. Record on the
+`4.` line, after what was checked, `; out-of-loop landings: N listed, K filed`; a section
+that says **Out-of-loop landings were NOT checked** records `not checked: why`, never a 0.
+The section is advisory: nothing waits on it. Take, from the records, the latest full block
+carrying this field on each of the last ten days that have one. When there are ten such
+blocks and all of them read `0 listed`, file an agent item to remove this step and the
+section. With fewer than ten, keep it (design:
+`docs/working/research-2026-11-20-out-of-loop-landings.md`).
 
 **Drift check** (D2). For each sampled merge a build loop made (a `--merge` commit, with a
 `Build-loop-gate:` trailer), read one Path A decision from the divergent-design record in
@@ -952,8 +968,9 @@ optional look below, and lands with this iteration. Keep each part short, and sa
 Write the record `docs/working/cycles/cycle-YYYY-MM-DD.md`, dated as the digest dates
 (`date +%F`, local time; the branch name's DATE-HHMM is UTC): one file per day, each
 iteration appending its own block below the earlier ones and never editing them (reading
-them only for what steps 0.5, 1, 2, 4b and 7 take from the last ones: `1.`, `4.` and `7.`
-lines, verdicts and `Model:` from the last full block, the last `Main at:`; the file grows
+them only for what steps 0.5, 1, 2, 4, 4b and 7 take from the last ones: `1.`, `4.` and `7.`
+lines, verdicts and `Model:` from the last full block, step 4's count from ten days' blocks,
+the last `Main at:`; the file grows
 all day):
 
 ```markdown
