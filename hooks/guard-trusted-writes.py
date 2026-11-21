@@ -257,7 +257,8 @@ def _is_hard(cand: Path, dirs) -> bool:
 # one left from before in this repo or another, so a write there is judged as it
 # was when it was made (docs/working/research-2026-11-20-write-guard-wt-exemption.md).
 # Without this, the blanket `.claude` SOFT rule makes every edit there ask once
-# a session is web-tainted. A path inside one is classified by its path RELATIVE to the worktree root, but only when the root is
+# a session is web-tainted. A path inside one is classified by its path
+# RELATIVE to the worktree root, but only when the root is
 # a verified linked worktree; anything unverifiable keeps today's SOFT (H2).
 _SOFT_SEGS = {"skills", "memories", "commands", "agents"}
 
