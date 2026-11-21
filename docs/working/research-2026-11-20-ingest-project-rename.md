@@ -57,3 +57,9 @@ Other choices (one line each):
 - G1: the guides now say which refusals print the rename command. G2: a failed idea-log write in `rename` undoes the new copy. G3: a symlinked stored `.md` pointing at the source is refused, not skipped. G4: `rename` resolves the source's directory. G5: docstring.
 - A1 kept as a stated residual: `pending` reads no idea log, so for a copy whose seeds sit under another name at the project's own file name (a hand-made half rename) the board prints a command that `ingest` then refuses. Closing it means board.sh extracting main's idea log for `pending`, a second change to the board's read path for a state that only a hand edit reaches; the miss is loud and writes nothing (H2's fail-closed side). Said in `guides/harness-feedback.md`.
 - G6 (a copy moved by hand with seeds left on the old path is re-seeded) is not in the repo today; left.
+
+## Review round 2 (fresh reviewer, no reds)
+
+- Amber, round 1's stricter match let a rename that also edited F-001 store a second copy (fail-open). Now a rename match needs the stored signatures to lead and either two or more stored entries or an unchanged first entry text; a two-entry rename with an edited bullet is refused (new case). Residual, stated in the guide: a one-entry stored copy renamed and edited is stored again (the price of letting two projects with one identical F-001 heading both ingest).
+- Amber, `rename`'s log write truncated before writing; now the log (and an in-place copy) is written to a sibling temp file and renamed over, so a failed write leaves it whole, and the rollback hides no error. New case: a read-only `docs/working` leaves copy and log as they were.
+- Greens: tests for a relative `rename` path and for a stored link to the ingest source (exit 2, "not a regular file"; it is an unreadable copy, as `pending`'s NOT COMPARED).

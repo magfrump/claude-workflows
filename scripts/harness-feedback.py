@@ -246,6 +246,18 @@ def write_file(path, text, append=False, exclusive=False):
         fh.write(text)
 
 
+def replace_file(path, text):
+    """Write a sibling temp file, then rename it over path: a failed write
+    leaves path as it was."""
+    tmp = f"{path}.tmp{os.getpid()}"
+    try:
+        write_file(tmp, text, exclusive=True)
+        os.replace(tmp, path)
+    finally:
+        if os.path.lexists(tmp):
+            os.unlink(tmp)
+
+
 def make_dirs(top, rel_dir):
     cur = top
     for part in rel_dir.split(os.sep):
@@ -309,8 +321,9 @@ def stored_match(project, entries, texts, stored):
     """Find a project's stored copy. STORED is a list of (name, project,
     entries, texts). Return (match, other): match holds this Project; other,
     when none does, holds these entries under another Project (a rename): its
-    signatures lead this file's and its first entry's text is this one's, so
-    two projects that filed the same F-001 heading are not taken for one.
+    signatures lead this file's, and it holds two or more entries or its one
+    entry's text is this file's. Two projects that filed one F-001 heading
+    stay apart; one entry stored, renamed and edited is the case it misses.
     Raise ValueError when two stored copies hold one Project."""
     by_project = {}
     for s in stored:
@@ -320,7 +333,8 @@ def stored_match(project, entries, texts, stored):
     match = by_project.get(project)
     other = None
     if match is None and entries:
-        other = next((s for s in stored if s[2] and s[3][0] == texts[0]
+        other = next((s for s in stored if s[2]
+                      and (len(s[2]) > 1 or s[3][0] == texts[0])
                       and [sig(e) for e in s[2]] == [sig(e) for e in entries[:len(s[2])]]),
                      None)
     return match, other
@@ -510,16 +524,22 @@ def cmd_rename(args):
     log_text = read_text(log) if os.path.lexists(log) else ""
     new_log, n = seed_re(rel_old).subn(
         lambda m: f"(signal: harness feedback {name} {m.group(2)}, {rel_new})", log_text)
-    write_file(dest, "\n".join(lines), exclusive=dest != src_abs)
+    if dest != src_abs:
+        write_file(dest, "\n".join(lines), exclusive=True)
+    else:
+        replace_file(dest, "\n".join(lines))
     if n:
         try:
-            write_file(log, new_log)
+            replace_file(log, new_log)
         except OSError:
-            # Undo the new copy, so a failed rename leaves the old state whole.
-            if dest != src_abs:
-                os.unlink(dest)
-            else:
-                write_file(dest, text)
+            # The log is as it was; undo the copy, so the old state is whole.
+            try:
+                if dest != src_abs:
+                    os.unlink(dest)
+                else:
+                    replace_file(dest, text)
+            except OSError:
+                pass
             raise
     if dest != src_abs:
         os.unlink(src_abs)

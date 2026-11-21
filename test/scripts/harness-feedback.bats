@@ -588,13 +588,50 @@ signals() { grep -o '(signal: harness feedback [^)]*)' docs/working/idea-log.md;
     cmp "$GOOD" "$FB/a.md" && [ ! -e "$FB/z.md" ]
 }
 
-@test "ingest: two projects that filed the same first heading and meta line are not taken for a rename" {
+@test "ingest: two projects that filed the same first heading and meta line, with other text, are not taken for a rename" {
     make_repo
     sed 's/^Project: example-app$/Project: alpha/' "$GOOD" > "$W/alpha.md"
-    sed 's/^Project: example-app$/Project: beta/; s/rows was committed/rows was skipped/' "$GOOD" > "$W/beta.md"
+    sed 's/^Project: example-app$/Project: beta/; s/rows was committed/rows was skipped/; s/questions-check-caught-dup/other-second/' "$GOOD" > "$W/beta.md"
     run -0 python3 "$HF" ingest "$W/alpha.md"
     run -0 python3 "$HF" ingest "$W/beta.md"
     [ "$output" = "ingested beta: 2 new seeds, 0 already seeded; copy at $FB/beta.md" ]
     pending "$W/beta.md" "$FB/alpha.md"
     [ "$output" = "feedback: 2 not copied (F-001 to F-002)$CMD" ]
+}
+
+@test "rename: a failed idea-log write leaves the copy and the log as they were" {
+    make_repo
+    sed 's/^Project: example-app$/Project: old-name/' "$GOOD" > "$W/old.md"
+    run -0 python3 "$HF" ingest "$W/old.md"
+    before="$(cat docs/working/idea-log.md)"
+    chmod 555 docs/working
+    run -2 python3 "$HF" rename "$FB/old-name.md" example-app
+    chmod 755 docs/working
+    [[ "$output" == *"Permission denied"* ]]
+    cmp "$W/old.md" "$FB/old-name.md" && [ ! -e "$FB/example-app.md" ]
+    [ "$(cat docs/working/idea-log.md)" = "$before" ]
+    [ "$(ls -A docs/working | sort | tr '\n' ' ')" = "feedback idea-log.md " ]
+}
+
+@test "rename takes a relative path; ingest refuses a stored link to its own source" {
+    make_repo
+    sed 's/^Project: example-app$/Project: old-name/' "$GOOD" > "$W/old.md"
+    run -0 python3 "$HF" ingest "$W/old.md"
+    mkdir -p sub && cd sub
+    run -0 python3 "$HF" rename ../docs/working/feedback/old-name.md example-app
+    cd ..
+    ln -s "$W/cw/$FB/example-app.md" "$FB/zz.md"
+    run -2 python3 "$HF" ingest "$FB/example-app.md"
+    [[ "$output" == *"zz.md: not a regular file"* ]]
+}
+
+@test "ingest: a renamed project that also edited an old entry's bullet is still refused as a rename" {
+    make_repo
+    sed 's/^Project: example-app$/Project: old-name/' "$GOOD" > "$W/old.md"
+    run -0 python3 "$HF" ingest "$W/old.md"
+    sed -i 's/^- \*\*Evidence:\*\* docs\/reviews.*/- **Evidence:** edited later/' "$GOOD"
+    run -1 python3 "$HF" ingest "$GOOD"
+    [[ "$output" == "refused: its entries are stored under Project old-name"* ]]
+    pending "$GOOD" "$FB"/*.md
+    [[ "$output" == *"renamed? No command:"* ]]
 }

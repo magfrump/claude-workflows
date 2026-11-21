@@ -104,8 +104,9 @@ Commit the copy and the idea log together.
 **A renamed project.** Seeds and the stored copy's file name both key on the `Project:`
 name, so `ingest` refuses, naming the stored file, rather than store or seed a project
 twice when its name and the stored copy's disagree: its entries are stored under another
-`Project:` name (the stored signatures lead this file's and the first entry's text is the
-same, so two projects that filed one F-001 heading stay apart), its stored copy has another
+`Project:` name (the stored signatures lead this file's, and the stored copy holds two or
+more entries or its one entry's text is unchanged: two projects that filed one F-001
+heading stay apart, and a one-entry copy renamed and edited is stored again), its stored copy has another
 file name, or the idea log seeds this copy under another name (the `Project:` line was
 edited here). The board's `pending` reads no idea log, so in that last state it still prints
 the command, which then refuses. `ingest` also refuses a stored `NAME.md` that holds another
