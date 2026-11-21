@@ -109,6 +109,7 @@ Failure-pattern skip: no fix(...) commits on this branch; the change is comments
 - `scripts/confine-tests.sh --probe`: exit 3, first line "confine-tests: NO
   CONFINEMENT PRIMITIVE AVAILABLE — refusing to run." So the suites ran
   unconfined, with the hermeticity lint as the check.
+- `scripts/health-check.sh` at 7dfca342: exit 0, "All checks passed."
 - Review round 1 (one reviewer, code-fact-check focus): no red findings. The
   ambers were in this doc (an incomplete FP grep, a missing test record, an
   overstated test count) and are fixed here. The comment wording is widened to
