@@ -262,6 +262,17 @@ Build-loop-approved: Q-001" ]
         && [ "$(git rev-parse main)" = "$M" ] || { show; return 1; }
 }
 
+@test "--merge --approved takes an answer from the owner's answers file on the default branch, as --check-answer reads it (brief 2026-11-20-answers-file-route)" {
+    rv; no="Q-001 does not approve this merge"
+    approve Q-001 "$S" OPEN; git checkout -q main; mkdir -p docs/human-author
+    printf 'Q-001: [2]\n' > docs/human-author/answers-a.txt; commit_all answers; git checkout -q --detach main; M="$(git rev-parse main)"
+    mrg "$B" --expect "$T" --approved Q-001; refused "$no: its answer on the default branch is option 2"
+    git checkout -q main; printf 'Q-001: [1]\n' > docs/human-author/answers-a.txt; commit_all answers; git checkout -q --detach main; M="$(git rev-parse main)"
+    mrg "$B" --expect "$T" --approved Q-001; n="$(git rev-parse main)"
+    [ "$status" -eq 0 ] && [ "$output" = "merged $B $T $(git rev-parse "$n^{tree}") $n
+path $B A work-feat-x.txt" ] && [ "$(git rev-parse "$n^1")" = "$M" ] || { show; return 1; }
+}
+
 @test "--merge --approved refuses an answer other than [1], an open entry, an answer only in the working tree, no entry, and a slug naming another brief, an older tip or the gate (T35, U3a3)" {
     rv; no="Q-001 does not approve this merge"
     approve Q-001 "$S" ANSWERED "Q-001: [2]"; mrg "$B" --expect "$T" --approved Q-001; refused "$no: its answer on the default branch is option 2"

@@ -71,7 +71,13 @@
 #             NUL byte, a byte-order mark on line 1, a question heading
 #             inside a fence, a questions file that is not a regular file
 #             under plain directories on the default branch, or a default
-#             branch whose tree or file could not be read).
+#             branch whose tree or file could not be read). The owner's
+#             answers files on that commit count too (docs/human-author/answers-NAME,
+#             added in a first-parent commit dated on or after the entry's
+#             Opened: date): "<option> Q-NNN from PATH:LINE" when only a file
+#             answers an open entry, and a skip naming both sides when two
+#             answers disagree or such a file cannot be read (the lib's
+#             check_answer has the rule).
 #   --check-brief, --check-branch and --check-answer need a default branch
 #   found by name (origin/HEAD, main or master): they read its commit.
 #

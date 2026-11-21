@@ -962,6 +962,74 @@ skip docs/working/Weekly/2026-11-13.md: not one of the dev cycle's own files" ] 
     done
 }
 
+# af_entries: questions.md with entries opened 2026-10-12 (ID STATUS ANSWER-LINE), committed.
+af_entries() {
+    mkdir -p docs/working docs/human-author
+    {
+        echo '# Questions'; echo
+        while [[ $# -gt 0 ]]; do
+            printf '### %s · x\n**Needs:** you: judgment · **Opened:** 2026-10-12 · **Status:** %s\n\nq?\n\n%s\n\n' "$1" "$2" "$3"; shift 3
+        done
+    } > docs/working/questions.md
+    GIT_COMMITTER_DATE='2026-10-01T12:00:00+00:00' git add -A
+    GIT_COMMITTER_DATE='2026-10-01T12:00:00+00:00' git commit -qm q
+}
+# af_commit DATE MESSAGE: commit the tree with that committer date (YYYY-MM-DD, noon UTC).
+af_commit() { git add -A && GIT_COMMITTER_DATE="$1T12:00:00+00:00" git commit -qm "$2"; }
+
+@test "--check-answer reads an owner's answers file added on or after the entry's Opened date; a conflict skips naming both (brief 2026-11-20-answers-file-route)" {
+    af_entries Q-1 OPEN '' Q-2 OPEN '' Q-3 ANSWERED 'Q-3: [2]' Q-4 ANSWERED 'Q-4: [1]' Q-5 ANSWERED 'Q-5: [3]' \
+        Q-6 OPEN '' Q-7 OPEN '' Q-8 OPEN '' Q-10 OPEN ''
+    printf '### Q-9 · x\n**Needs:** you: judgment · **Status:** OPEN\n\nq?\n' >> docs/working/questions.md
+    # An answers file added before Q-6 opened is not read (an old file's ID may name another question).
+    printf 'Q-6: [1]\n' > docs/human-author/answers-10-11-26.txt; af_commit 2026-10-11 old
+    printf '%s\n' 'Q-1: [1]' '- Q-2: drop, because' 'Q-3: [1]' 'Q-4: keep' 'Q-5: it shipped, see the thread' 'Q-7: [1]' 'Q-7: [2]' '```' 'Q-10: [1]' '```' 'Q-9: [1]' \
+        > docs/human-author/answers-10-12-26.txt
+    # Any other file under docs/human-author/ is not read.
+    printf 'Q-8: [1]\n' > docs/human-author/notes.txt; printf 'Q-8: [1]\n' > docs/human-author/answers.md
+    af_commit 2026-10-12 answers
+    F=docs/human-author/answers-10-12-26.txt
+    run --separate-stderr bash "$DC" --check-answer Q-1 Q-2 Q-3 Q-4 Q-5 Q-6 Q-7 Q-8 Q-9 Q-10
+    [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output"; echo "$stderr"; return 1; }
+    [ "$output" = "keep Q-1 from $F:1
+drop Q-2 from $F:2
+skip Q-3: its entry in docs/working/questions.md reads drop but $F:3 reads keep
+keep Q-4
+done Q-5
+open Q-6
+skip Q-7: $F:6 reads keep but $F:7 reads drop
+open Q-8
+skip Q-9: its entry in docs/working/questions.md has no Opened: date (YYYY-MM-DD), so $F:11 is not read as its answer
+open Q-10" ] || { echo "$output"; return 1; }
+    # A file merged in from a side branch dates from the merge; a working-tree-only file counts for nothing.
+    git checkout -q -b side; printf 'Q-6: [2]\n' > docs/human-author/answers-late.txt; af_commit 2026-10-01 side
+    git checkout -q main; GIT_COMMITTER_DATE='2026-10-20T12:00:00+00:00' git merge -q --no-ff -m merge side
+    printf 'Q-8: [1]\n' > docs/human-author/answers-wt.txt
+    run --separate-stderr bash "$DC" --check-answer Q-6 Q-8
+    [ "$output" = "drop Q-6 from docs/human-author/answers-late.txt:1
+open Q-8" ] || { echo "$output"; return 1; }
+}
+
+@test "--check-answer names an answers file it cannot read, unless it predates the entry (brief 2026-11-20-answers-file-route)" {
+    af_entries Q-1 OPEN '' Q-2 ANSWERED 'Q-2: [1]'
+    ln -s answers-x.txt docs/human-author/answers-link.txt; af_commit 2026-10-11 link
+    run --separate-stderr bash "$DC" --check-answer Q-1 Q-2
+    [ "$output" = "open Q-1
+keep Q-2" ] || { echo "$output"; return 1; }
+    git rm -q docs/human-author/answers-link.txt; af_commit 2026-10-12 unlink; mkdir -p docs/human-author; ln -s answers-x.txt docs/human-author/answers-link.txt; af_commit 2026-10-13 relink
+    run --separate-stderr bash "$DC" --check-answer Q-1 Q-2
+    W="an answers file on or after its Opened: date cannot be read: docs/human-author/answers-link.txt is not a regular file on the default branch"
+    [ "$output" = "skip Q-1: $W
+skip Q-2: $W" ] || { echo "$output"; return 1; }
+    git rm -q docs/human-author/answers-link.txt; mkdir -p docs/human-author; printf 'Q-1: [1]\n```\n' > docs/human-author/answers-fence.txt; af_commit 2026-10-13 fence
+    run --separate-stderr bash "$DC" --check-answer Q-1
+    [ "$output" = "skip Q-1: an answers file on or after its Opened: date cannot be read: the code fence opened at line 2 of docs/human-author/answers-fence.txt is never closed, so the file is not read" ] || { echo "$output"; return 1; }
+    # A directory named answers-NAME is not a file to read either; it is named, never looked into.
+    git rm -q docs/human-author/answers-fence.txt; mkdir -p docs/human-author/answers-dir; printf 'Q-1: [1]\n' > docs/human-author/answers-dir/a.txt; af_commit 2026-10-13 dir
+    run --separate-stderr bash "$DC" --check-answer Q-1
+    [ "$output" = "skip Q-1: an answers file on or after its Opened: date cannot be read: docs/human-author/answers-dir is not a regular file on the default branch" ] || { echo "$output"; return 1; }
+}
+
 @test "--check-brief reads the status line from the default branch only" {
     mkdir -p docs/working/briefs
     printf '# Brief\nStatus: open\n\n- set this brief to Status: done in the merge\n' > docs/working/briefs/2026-01-01-a.md

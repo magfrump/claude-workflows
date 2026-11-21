@@ -188,7 +188,11 @@
 #                 Status field alone changed (in each hunk the removed and the
 #                 added header lines, Status values set aside, match in
 #                 order); at least one answer line added (any entry's: the
-#                 class trusts the content, F19). Any other commit,
+#                 class trusts the content, F19). Also answers: one parent,
+#                 and every path a regular file (mode 100644, before too when
+#                 changed) directly under docs/human-author/ named
+#                 answers-NAME, added or changed: the owner's answers files,
+#                 which --check-answer reads. Any other commit,
 #                 or one whose message, parents or changes cannot be read, is
 #                 other. The class is read from the commit's own text (and
 #                 objects are not re-hashed): it catches an honest slip, not a
@@ -1734,6 +1738,8 @@ approval() {
   s+="${VERDICT[stem]}-${VERDICT[tip]:0:12}"
   # In this shell, to a file: ANSWER_HEADING would not leave a $(...).
   check_answer "$1" > "$GATE_TMP/answer"; r="$(< "$GATE_TMP/answer")"
+  # An answer read from the owner's answers file names it after " from ": the same answer.
+  case "$r" in "keep $1 from "*|"drop $1 from "*|"done $1 from "*|"unrecognized $1 from "*) r="${r%% from *}" ;; esac
   case "$r" in
     "keep $1") ;;
     "open $1") MERGE_WHY="$1 does not approve this merge: it is not answered on the default branch"; return 1 ;;
@@ -2250,6 +2256,13 @@ log_class() {
     ! chore_record "$b" || CLASS=chore
   elif [[ ${#ps[@]} -eq 1 ]]; then
     gate_git diff-tree -r --no-renames --raw -z "${ps[0]}" "$c" > "$GATE_TMP/d" && raw_records "$GATE_TMP/d" && [[ ${#RAW_P[@]} -gt 0 ]] || return 0
+    # An owner's answers files alone (check_answer reads them): each added or changed, a regular 100644 file directly under docs/human-author/.
+    x=1
+    for i in "${!RAW_P[@]}"; do
+      [[ "${RAW_NM[i]}" == 100644 && ( "${RAW_S[i]}" == A || "${RAW_OM[i]} ${RAW_S[i]}" == "100644 M" ) \
+         && "${RAW_P[i]}" == docs/human-author/answers-* && "${RAW_P[i]}" != docs/human-author/answers-*/* ]] || { x=""; break; }
+    done
+    if [[ -n "$x" ]]; then CLASS=answers; return 0; fi
     for i in "${!RAW_P[@]}"; do
       [[ "${RAW_OM[i]} ${RAW_NM[i]} ${RAW_S[i]}" == "100644 100644 M" && ( "${RAW_P[i]}" == docs/working/questions.md || "${RAW_P[i]}" == docs/working/questions-archive.md ) ]] || return 0
     done
