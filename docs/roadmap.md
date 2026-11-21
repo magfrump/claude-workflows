@@ -39,14 +39,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   what remains here is the first live `--probe` run.
   2026-11-18: the run-or-refuse question now waits on watch Q-301 (`docs/working/watching.md`), not Q-278.
 
-- **Agent: `si_commit_child_work` should turn literal pathspecs off itself** (filed 2026-11-20, step 7; from
-  `docs/working/research-2026-11-20-self-improvement-env-followups.md`). Motive: its `git add` excludes the
-  message file with `":(exclude).si-commit-msg"`, which `GIT_LITERAL_PATHSPECS=1` reads as a file name; 5eab5704
-  guards the one call site in `scripts/self-improvement.sh`, but `test/si-commit-child-work.bats` calls the lib
-  directly and 8 of its cases still fail with the variable exported. First step: a review brief (`scripts/lib/`
-  is gate code) moving the `GIT_LITERAL_PATHSPECS=0` guard into `scripts/lib/si-commit.sh`, with a case that
-  exports the variable.
-
 - **Agent: `test/rubric-selection.bats` "emits nothing when two candidates tie" is flaky** (filed 2026-11-20,
   step 1). Motive: it failed once in iteration 2317's health check (case 1019, line 152, `[ -z "$result" ]`), at
   4cab5ae4 plus nothing that touches it, and passed 3 of 3 reruns alone; a build loop was regenerating reports
@@ -95,9 +87,13 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
-- **Agent: the write guard's `.claude/wt-*` exemption is stale** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-write-guard-wt-exemption.md` (review). `.claude/wt-q096b` still exists in the main checkout, so the brief decides drop versus correct the comments.
+- **Agent: triage the six harness-feedback entries ingested in ad4f0eef** (filed 2026-11-20, step 6; behemoth-arsenal F-001 and F-002, belegarth-herald F-013, philosophy-research F-020 to F-022). Brief `docs/working/briefs/2026-11-20-harness-feedback-triage.md` (self-merge, research only).
 
-- **Write trials T9, T11 and T12 into the dev-cycle skill** (from Now "Trial week: less friction, less habituation", 2026-11-20; Q-327 [2]). Brief `docs/working/briefs/2026-11-20-codify-trial-set-2.md` (review, gate code). The T11 board integration rides with the board item in Now.
+- **Agent: `si_commit_child_work` should turn literal pathspecs off itself** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-si-commit-literal-pathspecs.md` (review, `scripts/lib/` is gate code).
+
+- **Agent: the write guard's `.claude/wt-*` exemption is stale** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-write-guard-wt-exemption.md` (review). Ready at e7222f55; merge entry Q-343. `.claude/wt-q096b` still exists in the main checkout, so the brief decides drop versus correct the comments.
+
+- **Write trials T9, T11 and T12 into the dev-cycle skill** (from Now "Trial week: less friction, less habituation", 2026-11-20; Q-327 [2]). Brief `docs/working/briefs/2026-11-20-codify-trial-set-2.md` (review, gate code). Ready at a77146f3; merge entry Q-342. The T11 board integration rides with the board item in Now.
 
 - **Agent: A reproducible ask counter (`questions.sh counts`) for the weekly digest** (from Now, filed 2026-11-19; area B's B2). Brief `docs/working/briefs/2026-11-20-ask-counter.md` (review, gate code).
 
