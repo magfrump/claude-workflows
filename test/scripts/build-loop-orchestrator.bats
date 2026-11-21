@@ -706,7 +706,7 @@ shim() {
     q=$'\x60'
     for f in "**Worktrees go under WTB.** WTB is the directory in the ${q}ok WTB${q} line that ${q}build-loop.sh --worktree-base${q} prints" \
         "a ${q}refuse worktree-base:${q} line is a stop" "WT, HC and GT go there, and so does each loop's worktree" \
-        "is found by its name in ${q}worktree list${q}, and removed or freed as before" \
+        "is found by its name in ${q}worktree list${q}, and removed (step 0.3's form) or freed (${q}--free-worktrees${q}) as before" \
         "step 0.3's ${q}--worktree-base${q} from MAIN_WT" \
         "3. **The worktree.** ${q}build-loop.sh --worktree-base${q} (WTB, the Rules)" "${q}WTB/wt-dev-cycle-DATE-HHMM${q}" \
         "GT at ${q}WTB/wt-dev-cycle-gate-DATE-HHMM${q}" \
@@ -1162,4 +1162,25 @@ plant_hooks() { local h d; d="$(git rev-parse --path-format=absolute --git-commo
     lc_is "refuse docs/working/questions.md: Q-001 is a new entry filed answered (Status ANSWERED or an answer line), and Q-001 is not in --answered" --main "$(git rev-parse main)"
     git merge -q --no-edit main; echo chore > x.md; commit_all x; onmain x.md main
     lc_is "refuse HEAD: it conflicts with the default branch; merge the default branch into HEAD first" --main "$(git rev-parse main)"
+}
+
+@test "SKILL.md states the two-call worktree removal once, in step 0.3, and every other removal points to it; D13 no longer says the shell stays outside a checkout (brief 2026-11-20-remove-worktrees-parked-shell)" {
+    K="$REPO_ROOT/skills/dev-cycle/SKILL.md"; q=$'\x60'
+    want() { [[ "$1" == *"$2"* ]] || { echo "missing: $2"; return 1; }; }
+    s="$(tr '\n' ' ' < "$K" | tr -s ' ')"
+    a="$(sect '### 0. Start and digest')"
+    for f in "**Every worktree removal the orchestrator makes outside ${q}--free-worktrees${q} takes two calls**" "first a Bash call that is only ${q}cd WTB${q}, then, in a separate later call (never joined to it by ${q}&&${q} or ${q};${q}), ${q}git -C MAIN_WT worktree remove X${q}, X the worktree being removed," \
+        "with nothing after it in that command" "can lag one command behind" "HC, GT, the stops' forced removals and a leftover HC use this form" \
+        "${q}--free-worktrees${q} (step 1) is safe without this form: it runs from WT, never from a worktree it frees"; do want "$a" "$f" || return 1; done
+    # One source of truth (S3): the form is stated once, and each other removal points to step 0.3.
+    [ "$(grep -o 'only `cd WTB`' <<<"$s" | wc -l)" -eq 1 ] || return 1
+    for f in "${q}worktree remove --force${q} (step 0.3's two calls;" "removed as step 0.3 removes WT once the check exits (in two calls;" "HC with ${q}worktree remove --force${q} in step 0.3's form" \
+        "removed after it as step 0.3 removes WT, in two calls" "Then remove WT (step 0.3's two calls: ${q}cd WTB${q}, then the removal)."; do want "$s" "$f" || return 1; done
+    # No removal is chained to a later command in the same call.
+    ! grep -nE 'worktree remove[^`]*(&&|;|\|)' "$K" || return 1
+    # D13 says where the shell really is; the old false premise is gone.
+    want "$s" "Its shell does not stay there: the Bash tool keeps a call's ${q}cd${q} only when the whole command succeeds" || return 1
+    want "$s" "and every build loop's and subagent's Bash call runs there too" || return 1
+    want "$s" "and a worktree is removed only as step 0.3 says" || return 1
+    for f in "shell stays in" "not a git checkout" "fails with \"not a git repository\""; do [[ "$s" != *"$f"* ]] || { echo "stale: $f"; return 1; }; done
 }
