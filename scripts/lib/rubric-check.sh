@@ -5,8 +5,9 @@
 # "rubric BRIEF: ..." lines never change a verdict or an exit code. Sourced by
 # build-loop.sh from its own directory; rubric_lines uses that script's
 # gate_git, fp_blob, showpath, MAIN_SHA and GATE_TMP and the reader lib's
-# check_answer. dev-cycle.sh also sources it, with lib/landings.sh giving
-# those names over the digest's own git.
+# check_answer. dev-cycle.sh also sources it: lib/landings.sh gives gate_git,
+# fp_blob, showpath and GATE_TMP over the digest's own git, and the reader
+# lib MAIN_SHA and check_answer.
 
 # rubric_parse FILE: one record per line, fields joined by a tab, none empty
 # ("-" for no Q-IDs, "(empty)" for an empty Status cell), for the rows of
@@ -204,7 +205,8 @@ rubric_parse() {
 # (lib/landings.sh), from committed objects alone. PATHS and STATUSES name the
 # caller's arrays of the merge's changed paths and their status letters
 # (namerefs). BASE, MAIN_SHA by default, is the commit BRANCH's own commits
-# are counted against: a landing already on main passes its first parent. A rubric is a path added or changed directly in
+# are counted against: a landing already on main passes its first parent (a
+# root commit passes itself, so its stale count prints unread). A rubric is a path added or changed directly in
 # docs/reviews/ whose name starts "code-review-rubric" or holds
 # "-code-review-rubric", ending .md. Of the canonical names
 # (code-review-rubric-DATE-SLUG.md) only the newest DATE per SLUG is read, the

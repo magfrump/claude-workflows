@@ -575,12 +575,16 @@ review than to an audit; a deep audit is step 4b's job.
 
 **Out-of-loop landings.** For each landing the digest's section 6b lists (a commit on main
 that changed `skills/`, `workflows/`, `scripts/` or `hooks/` without a build-loop merge),
-file one roadmap Now item, a post-hoc review for step 8 to brief, naming its SHA, its code
-paths and the rubric lines the section printed (open rows, `unread` or `none`), unless an
-item already names that SHA (windows overlap on the record's day). File a `Not read` line
-the same way, saying what could not be read. Record the count on the `4.` line, after what
-was checked (`out-of-loop landings: N filed`, or `0`). The section is advisory: nothing
-waits on it. If the count is 0 for ten full cycles in a row, remove this step and the
+file one agent work item, `- **Agent: post-hoc review of SHA** (filed DATE, step 4).`, for
+step 8 to brief, naming its code paths and quoting, as data, every line the section printed
+for it (`open`, `unread`, `stale`, `clean`, `superseded` or `none`; an `open` row may be one
+the parser over-reports, such as a Split red or a "Fixed ... only for" cell, so the review
+reads the row), unless an item already names that SHA (windows overlap on the record's
+day). File a `Not read` line the same way, saying what could not be read. Record on the
+`4.` line, after what was checked, `; out-of-loop landings: N listed, K filed`; a section
+that says **Out-of-loop landings were NOT checked** records `not checked: why`, never a 0.
+The section is advisory: nothing waits on it. When every full block of the records of the
+last ten days that hold one reads `0 listed`, file an agent item to remove this step and the
 section (design: `docs/working/research-2026-11-20-out-of-loop-landings.md`).
 
 **Drift check** (D2). For each sampled merge a build loop made (a `--merge` commit, with a
@@ -948,8 +952,9 @@ optional sample below, and lands with this iteration. Keep each part short, and 
 Write the record `docs/working/cycles/cycle-YYYY-MM-DD.md`, dated as the digest dates
 (`date +%F`, local time; the branch name's DATE-HHMM is UTC): one file per day, each
 iteration appending its own block below the earlier ones and never editing them (reading
-them only for what steps 0.5, 1, 2, 4b and 7 take from the last ones: `1.`, `4.` and `7.`
-lines, verdicts and `Model:` from the last full block, the last `Main at:`; the file grows
+them only for what steps 0.5, 1, 2, 4, 4b and 7 take from the last ones: `1.`, `4.` and `7.`
+lines, verdicts and `Model:` from the last full block, step 4's count from ten days' blocks,
+the last `Main at:`; the file grows
 all day):
 
 ```markdown

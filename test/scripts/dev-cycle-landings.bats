@@ -72,14 +72,41 @@ AMBER=$'# Rubric\n\n## 🟡 Must Address\n\n| ID | Finding | Status | Author not
     [[ "$s" == *"None in the window."* ]] || { echo "$s"; return 1; }
 }
 
-@test "a merge that only names the trailer in its subject is still listed" {
+@test "a merge with the trailer anywhere but line 3 after a blank line is still listed" {
     git checkout -q -b b
     commit "feat: z" hooks/z.sh=z
     git checkout -q main
     git merge -q --no-ff b -m "Merge b, not Build-loop-gate: x"
+    commit "feat: z2" hooks/z.sh=z2 && git checkout -q b && commit "feat: y" hooks/y.sh=y && git checkout -q main
+    git merge -q --no-ff b -m "Build-loop-gate: x hand merge"
+    git checkout -q b && commit "feat: w" hooks/w.sh=w && git checkout -q main
+    git merge -q --no-ff b -m "Merge b by hand" -m "Quoting an old one:" -m "Build-loop-gate: 2026-01-01-old"
     run --separate-stderr bash "$DC" --since=2000-01-01
     s="$(section)"
-    [[ "$s" == *"1 code landing(s)"* && "$s" == *"code paths (1): hooks/z.sh"* ]] || { echo "$s"; return 1; }
+    [[ "$s" == *"4 code landing(s)"* ]] || { echo "$s"; return 1; }
+    [[ "$s" == *"· Merge b, not Build-loop-gate: x"* && "$s" == *"· Build-loop-gate: x hand merge"* && "$s" == *"· Merge b by hand"* ]] || { echo "$s"; return 1; }
+}
+
+@test "a repo-local log output encoding changes nothing in the section" {
+    git checkout -q -b f
+    commit "fix: y" scripts/y.sh=y "docs/reviews/code-review-rubric-2026-01-01-f.md=$AMBER"
+    commit "fix: after the rubric" scripts/y.sh=y2
+    git checkout -q main
+    git merge -q --no-ff f -m "Merge branch 'f'"
+    run --separate-stderr bash "$DC" --since=2000-01-01
+    want="$(section)"
+    [[ "$want" == *"rubric stale docs/reviews/code-review-rubric-2026-01-01-f.md: 1 fix(...) commits"* ]] || { echo "$want"; return 1; }
+    git config i18n.logOutputEncoding UTF-16
+    run --separate-stderr bash "$DC" --since=2000-01-01
+    [ "$(section)" == "$want" ] || { diff <(echo "$want") <(section); return 1; }
+}
+
+@test "fp_blob and showpath are the same as build-loop.sh's" {
+    body() { awk -v f="$1" 'index($0, f "() {") == 1 { on = 1 } on { print } on && /^}|^[a-z_]+\(\) \{.*\}$/ { exit }' "$2"; }
+    for f in fp_blob showpath; do
+        a="$(body "$f" "$REPO_ROOT/scripts/build-loop.sh")"; b="$(body "$f" "$REPO_ROOT/scripts/lib/landings.sh")"
+        [ -n "$a" ] && [ "$a" == "$b" ] || { echo "$f differs"; diff <(echo "$a") <(echo "$b"); return 1; }
+    done
 }
 
 @test "an unreadable rubric is named, not counted as none" {
@@ -97,7 +124,7 @@ AMBER=$'# Rubric\n\n## 🟡 Must Address\n\n| ID | Finding | Status | Author not
 @test "a commit whose changes cannot be read is named on a Not read line" {
     commit "feat: gone" skills/g/SKILL.md=g
     # Remove the commit's tree: log still lists the commit, diff-tree fails.
-    t="$(git rev-parse HEAD^{tree})"
+    t="$(git rev-parse "HEAD^{tree}")"
     rm -f ".git/objects/${t:0:2}/${t:2}"
     run --separate-stderr bash "$DC" --since=2000-01-01
     s="$(section)"
