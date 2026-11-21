@@ -444,17 +444,21 @@ if [[ $# -eq 4 ]]; then
   exit "$rc"
 fi
 
-# The harness repo: the one registered repo whose main holds ingest's marker
-# and the script (choice 3 of docs/working/research-2026-11-20-board-feedback-research.md).
-CW=""; CWWHY=""; hn=0; mkdir "$TMP/stored"
+# The harness repo: the one registered repo (by top level) whose main holds
+# ingest's marker and the script (choice 3 of docs/working/research-2026-11-20-board-feedback-research.md);
+# one of them a file and the other neither a file nor absent is refused, never taken as no harness.
+CW=""; CWWHY=""; hn=0; mkdir "$TMP/stored"; declare -A TOPS=()
 while IFS= read -r line || [[ -n "$line" ]]; do
-  line="$(trim "$line")"
-  [[ "$line" == /* && -d "$line" ]] && ( cd -- "$line" && resolve_main && main_by_name \
-    && [[ "$(main_entry guides/harness-feedback.md) $(main_entry scripts/harness-feedback.py)" == "blob blob" ]] ) 2>/dev/null || continue
-  CW="$line"; hn=$((hn + 1))
+  line="$(trim "$line")"; [[ "$line" == /* && -d "$line" ]] || continue
+  r="$( cd -- "$line" && resolve_main && main_by_name && echo "$(main_entry guides/harness-feedback.md) $(main_entry scripts/harness-feedback.py)" && git rev-parse --show-toplevel )" 2>/dev/null || continue
+  case "${r%%$'\n'*}" in
+    "blob blob") [[ -n "${TOPS[${r#*$'\n'}]+set}" ]] || { TOPS[${r#*$'\n'}]=1; CW="$line"; hn=$((hn + 1)); } ;;
+    blob\ absent|absent\ *) ;;
+    *blob*) CWWHY="$line holds part of the harness, but its main reads guides/harness-feedback.md and scripts/harness-feedback.py as: ${r%%$'\n'*}" ;;
+  esac
 done < "$REG"
 [[ $hn -le 1 ]] || { CW=""; CWWHY="$hn registered repos hold the harness (guides/harness-feedback.md and scripts/harness-feedback.py on main)"; }
-[[ -z "$CW" ]] || CWWHY="$( set -e; cd -- "$CW" && read_stored )" || CWWHY="the stored copies in $CW could not be read"
+[[ -z "$CW" || -n "$CWWHY" ]] || CWWHY="$( set -e; cd -- "$CW" && read_stored )" || CWWHY="the stored copies in $CW could not be read"
 shopt -s nullglob dotglob; STORED=("$TMP"/stored/*); shopt -u nullglob dotglob
 
 n=0; projects=0; bad=0; total=0

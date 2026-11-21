@@ -456,3 +456,16 @@ CMD=": cd /cw && ~/.claude/scripts/harness-feedback.py ingest '/p q/docs/harness
     run python3 -I "$HF" pending "$GOOD" /cw
     [ "$status" -eq 2 ] && [[ "$output" == *"pending takes FILE CW SRC [STORED...]"* ]]
 }
+
+@test "pending agrees with ingest end to end: the printed copy is taken, and then all is copied" {
+    top="$W/cw"; mkdir -p "$top/guides" "$top/docs/working"; git init -q "$top"; : > "$top/guides/harness-feedback.md"
+    pending "$GOOD"
+    [ "$status" -eq 0 ] && [[ "$output" == *": cd /cw && "* ]]
+    ( cd "$top" && python3 "$HF" ingest "$GOOD" ) >/dev/null
+    pending "$GOOD" "$top"/docs/working/feedback/*.md
+    [ "$status" -eq 0 ] && [ "$output" = "feedback: 2 entries, all copied" ]
+    sed '/^### F-002/,$d' "$GOOD" > "$W/one.md"; rm "$top"/docs/working/feedback/*.md
+    ( cd "$top" && python3 "$HF" ingest "$W/one.md" ) >/dev/null
+    pending "$W/one.md" "$top"/docs/working/feedback/*.md
+    [ "$status" -eq 0 ] && [ "$output" = "feedback: 1 entry, all copied" ]
+}

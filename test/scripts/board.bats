@@ -617,3 +617,20 @@ fbline() { printf '%s\n' "$output" | awk -v h="== $BATS_TEST_TMPDIR/$1" '$0 == h
     board "$c/board.sh"
     [ "$status" -eq 1 ] && [ "$(fbline beta)" = "feedback UNREADABLE: harness-feedback.py pending stopped (exit 1): KeyError: x" ] || { echo "$output"; false; }
 }
+
+@test "feedback: the harness half-readable on main is NOT COMPARED, not 'no harness'; a subdirectory line of it counts once; new and changed share a line" {
+    mkcw; mkrepo beta; b="$BATS_TEST_TMPDIR/beta/docs/harness-feedback.md"
+    hfile "$b" beta F-001 F-002; commit "$BATS_TEST_TMPDIR/beta"
+    hfile "$CW/docs/working/feedback/beta.md" beta F-001; sed -i 's/^- \*\*Context:\*\* c$/- **Context:** older/' "$CW/docs/working/feedback/beta.md"; commit "$CW"
+    mkdir -p "$CW/sub"; echo x > "$CW/sub/f"; commit "$CW"; echo "$CW/sub/" >> "$BOARD_REGISTRY"
+    board
+    [ "$status" -eq 0 ] && [[ "$(fbline beta)" == "feedback: 1 not copied (F-002), 1 changed (F-001): cd $CW && "* ]] || { echo "$output"; false; }
+    rm "$CW/guides/harness-feedback.md"; ln -s ../README "$CW/guides/harness-feedback.md"; commit "$CW"
+    board
+    [ "$status" -eq 1 ] && [[ "$(fbline beta)" == "feedback NOT COMPARED: $CW"*" holds part of the harness, but its main reads guides/harness-feedback.md and scripts/harness-feedback.py as: notfile blob" ]] || { echo "$output"; false; }
+    [[ "$output" != *"no registered repo holds the harness"* ]]
+    # The stored directory itself a file on the harness repo's main.
+    rm "$CW/guides/harness-feedback.md"; echo g > "$CW/guides/harness-feedback.md"; git -C "$CW" rm -rq docs/working/feedback; echo x > "$CW/docs/working/feedback"; commit "$CW"
+    board
+    [ "$status" -eq 1 ] && [ "$(fbline beta)" = "feedback NOT COMPARED: in $CW, docs/working/feedback is not a directory on the default branch" ] || { echo "$output"; false; }
+}

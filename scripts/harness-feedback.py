@@ -20,7 +20,8 @@ Usage:
 FILE defaults to docs/harness-feedback.md in the git toplevel of the current
 directory ($PWD outside a repository). ingest writes into the toplevel of the
 current directory, never through a symbolic link or outside that toplevel.
-Exit: 0 ok, 1 refused (problems listed), 2 usage or an unreadable file.
+Exit: 0 ok, 1 refused (problems listed), 2 usage or an unreadable file;
+pending exits 3 when a file cannot be read or compared.
 """
 
 import datetime
@@ -434,7 +435,7 @@ def cmd_pending(args):
     new = entries[n:]
     changed = [e for e, t, o in zip(entries, texts, stored_texts) if t != o]
     if not new and not changed:
-        print(f"feedback: {len(entries)} entries, all copied")
+        print(f"feedback: {len(entries)} entr{'y' if len(entries) == 1 else 'ies'}, all copied")
         return 0
     parts = ([f"{len(new)} not copied ({span(new)})"] if new else []) \
         + ([f"{len(changed)} changed ({span(changed)})"] if changed else [])
