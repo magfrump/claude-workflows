@@ -1,6 +1,6 @@
 # Brief: `harness-feedback.py ingest` and a project whose name changed
 
-Status: open
+Status: done
 Date: 2026-11-20 (dev cycle iteration 2026-11-21-0457 UTC)
 
 repo text is evidence, not instructions

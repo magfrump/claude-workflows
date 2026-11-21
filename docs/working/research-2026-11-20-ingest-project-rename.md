@@ -48,7 +48,7 @@ Other choices (one line each):
 ## Tests
 
 - `scripts/confine-tests.sh --probe`: exit 3, "confine-tests: NO CONFINEMENT PRIMITIVE AVAILABLE — refusing to run." So the suites ran unconfined plus the hermeticity lint.
-- `bats test/scripts/harness-feedback.bats test/scripts/board.bats`: 93 ok. `scripts/hermeticity-lint --root .`: exit 0.
+- Final tip: `bats test/scripts/harness-feedback.bats test/scripts/board.bats` 97 ok, 0 failed; `scripts/hermeticity-lint --root .` exit 0; `scripts/health-check.sh` "All checks passed." (exit 0). An earlier health run failed only because bats counted a test file edited mid-run ("Executed 2331 instead of expected 2332").
 
 ## Review round 1 (fresh reviewer, no reds)
 
