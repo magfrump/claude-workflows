@@ -42,6 +42,6 @@ Failure-pattern grep: `grep -n 'cause:vacuous-assertion' docs/failure-patterns.m
 Ambers fixed in the skill: the final message's links come ahead of the Wait paragraph's closing line; T11's look names its reply (`look: fine`), the count reads past editions' offers, and the design-pick pool adds `docs/decisions/` records and falls back to a self-merge when empty. Nit fixed: "finds links most valuable".
 
 Left, with reasons:
-- `docs/audiences/owner.md:40` still says a final message "gives at most two links (trials T8, T9 ...)". That file is the owner's ratified profile (0e95e3f2, Q-299), so this loop does not edit it; the cycle should offer the owner a one-line edit.
+- `docs/audiences/owner.md:40` said a final message "gives at most two links (trials T8, T9 ...)", a stale second copy of T9 (S3). It is the owner's ratified profile (0e95e3f2, Q-299); since this brief merges only on the owner's review, the one line is updated here (links with no fixed count, citing the skill) and the marker names it, so the owner sees it at the merge.
 - T12 residual: the skill makes each caught-line name a fact the owner can check, as the brief's criterion 4 asks. The owner's own model was numbers they have already seen (the asks table); whether checkable-but-unseen facts answer the chain-of-trust note is for the next digests to show.
 
