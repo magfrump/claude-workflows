@@ -51,25 +51,11 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 - **Agent: `guides/validation-gates.md` names the commit helper's literal-pathspecs guard** (filed 2026-11-20, step 7; the si-commit loop's nit). Motive: line 33 lists `si_commit_child_work`'s hardening but not the guard Q-348 moves into the lib. First step: once Q-348 merges, one line in that guide, riding with the next review unit that touches `guides/` (the cycle cannot write it).
 
-- **Agent: `| head` readers under `set -e` can abort a script** (filed 2026-11-20, step 7; the pipefail loop's follow-up, `docs/working/research-2026-11-20-pipefail-grep-q.md`). Motive: `sed … | head -1` assigned under `set -e` with no `|| true` (for example `scripts/self-improvement.sh:1695`, `:1699`) can exit the script on SIGPIPE instead of losing a match. First step: once Q-357 merges, a small review brief listing such sites and guarding the ones a large input can reach.
-
 ## In flight
 
-- **Agent: close the six still-true rows of the 2026-11-13 review-gap audit** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-six-still-true-rows.md` (review). Ready at ed98d39e; merge entry Q-360 (gate code: `scripts/questions.sh`).
+- **Agent: fix report findings F8 to F12 so five held-back skills' reports can land** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-report-findings-f8-f12.md` (review; skills are prompt files). Q-349 [1] approved tip 0df118cd, which then conflicted with main and was sent back (iteration 2026-11-21-0624); the loop merged main in, ready at 82c11016; merge entry Q-361 [1] approved, but the merge was refused (iteration 2026-11-21-0749): the main checkout holds untracked `test/skills/fact-check/output/` reports at paths the merge adds (your Q-332 host run); retried each iteration.
 
-- **Agent: answers files count as the owner's answer** (from Now; Q-345 [1]). Brief `docs/working/briefs/2026-11-20-answers-file-route.md` (review, gate code). Ready at a7a04dc9; merge entry Q-358.
-
-- **Agent: `harness-feedback.py ingest` and a renamed project** (from Now: the renamed-project and empty-copy-overwrite items, one function). Brief `docs/working/briefs/2026-11-20-ingest-project-rename.md` (review). Ready at 82e794ae; merge entry Q-359.
-
-- **Agent: other `printf | grep -q` pipelines under `pipefail`** (from Now, filed 2026-11-20; FP-175). Brief `docs/working/briefs/2026-11-20-pipefail-grep-q.md` (review). Ready at 265fdab2; merge entry Q-357.
-
-- **Agent: fix report findings F8 to F12 so five held-back skills' reports can land** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-report-findings-f8-f12.md` (review; skills are prompt files). Q-349 [1] approved tip 0df118cd, which then conflicted with main and was sent back (iteration 2026-11-21-0624); the loop merged main in, ready at 82c11016; merge entry Q-361.
-
-- **Agent: `questions.sh check` flags an entry outside `## Open`, and `migrate` drops a heading it empties** (from Now, filed 2026-11-20; behemoth-arsenal F-001). Brief `docs/working/briefs/2026-11-20-questions-check-section.md` (review, gate code). Ready at 5106fc0a; merge entry Q-362.
-
-- **Agent: the board's weekly line ignores a future-dated digest** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-board-weekly-future-date.md` (review). Ready at 894fbb66; merge entry Q-364.
-
-- **Agent: the digest reads commit subjects under UTF-8** (from Now, filed 2026-11-20; FP-188). Brief `docs/working/briefs/2026-11-20-digest-log-encoding.md` (review, gate code). Ready at 5ffb12a2; merge entry Q-363.
+- **Agent: `| head` readers under `set -e` can abort a script** (from Now, filed 2026-11-20; FP-175). Brief `docs/working/briefs/2026-11-20-head-readers-set-e.md` (review, gate code if it touches `scripts/lib/`).
 
 ## Next
 
@@ -417,6 +403,13 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- Six still-true review-gap rows closed, including the write guard's `..` deny: 9080c90e (approved merge, Q-360 [1]). Brief `docs/working/briefs/closed/2026-11-20-six-still-true-rows.md`.
+- A committed `docs/human-author/answers-*` file counts as the owner's answer: 3422221b (approved merge, Q-358 [1]). Brief `docs/working/briefs/closed/2026-11-20-answers-file-route.md`.
+- Ingest refuses a renamed project and gains a `rename` mode: 7e0e6ce3 (approved merge, Q-359 [1]); the philosophy-research Project line follow-up is Q-365. Brief `docs/working/briefs/closed/2026-11-20-ingest-project-rename.md`.
+- `printf | grep -q` pipelines under `pipefail` fixed at three sites: 6b377cb1 (approved merge, Q-357 [1]). Brief `docs/working/briefs/closed/2026-11-20-pipefail-grep-q.md`.
+- `questions.sh check` names entries outside `## Open`; `migrate` drops emptied headings: 40e34124 (approved merge, Q-362 [1]). Brief `docs/working/briefs/closed/2026-11-20-questions-check-section.md`.
+- The board's weekly line ignores future-dated digests; shared `realday` date rule: f68df711 (approved merge, Q-364 [1]). Brief `docs/working/briefs/closed/2026-11-20-board-weekly-future-date.md`.
+- Gate and digest git calls read commit text as UTF-8 (`HARDEN`): 401b5670 (approved merge, Q-363 [1]). Brief `docs/working/briefs/closed/2026-11-20-digest-log-encoding.md`.
 - The write guard's Bash deny names a read-only route; taint docstring covers subagents: b9319b18 (approved merge, Q-356 [1]). Brief `docs/working/briefs/closed/2026-11-20-guard-read-route-text.md`.
 - The cross-project board lists harness feedback not yet copied, and each repo's latest weekly digest: 8409f853 (approved merge, Q-352 [1]); its host check rides in Q-336. Brief `docs/working/briefs/closed/2026-11-20-board-pending-feedback.md`.
 - A reproducible ask counter (`questions.sh counts`): d80b3250 (approved merge, Q-354 [1], first approved as Q-344 and sent back once for a conflict). Brief `docs/working/briefs/closed/2026-11-20-ask-counter.md`.

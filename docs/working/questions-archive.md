@@ -335,6 +335,14 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-353](#q-353--merge-gate-2026-11-20-out-of-loop-landings-93e88269fbd1) | Q-353: [1] | 2026-11-20 |
 | [Q-354](#q-354--merge-gate-2026-11-20-ask-counter-8a4df684dfae) | Q-354: [1] | 2026-11-20 |
 | [Q-356](#q-356--merge-2026-11-20-guard-read-route-text-cfa82ec66e45) | Q-356: [1] | 2026-11-20 |
+| [Q-357](#q-357--merge-gate-2026-11-20-pipefail-grep-q-265fdab2a55a) | Q-357: [1] | 2026-11-20 |
+| [Q-358](#q-358--merge-gate-2026-11-20-answers-file-route-a7a04dc995e1) | Q-358: [1] | 2026-11-20 |
+| [Q-359](#q-359--merge-2026-11-20-ingest-project-rename-82e794ae342f) | Q-359: [1] | 2026-11-20 |
+| [Q-360](#q-360--merge-gate-2026-11-20-six-still-true-rows-ed98d39e8fba) | Q-360: [1] | 2026-11-20 |
+| [Q-361](#q-361--merge-2026-11-20-report-findings-f8-f12-82c11016daf0) | Q-361: [1] | 2026-11-20 |
+| [Q-362](#q-362--merge-gate-2026-11-20-questions-check-section-5106fc0a52a9) | Q-362: [1] | 2026-11-20 |
+| [Q-363](#q-363--merge-gate-2026-11-20-digest-log-encoding-5ffb12a25d79) | Q-363: [1] | 2026-11-20 |
+| [Q-364](#q-364--merge-gate-2026-11-20-board-weekly-future-date-894fbb661325) | Q-364: [1] | 2026-11-20 |
 <!-- index:end -->
 
 ## Answered
@@ -9500,6 +9508,521 @@ rubric docs/working/briefs/2026-11-20-guard-read-route-text.md: clean docs/revie
 | **[1] merge** | The gate merges TIP above; the new deny text reaches sessions with the next release. | Reading a 45-line diff and the A2 reasoning. | One `git revert` undoes it. |
 | **[2] drop** | The brief closes; the deny and docstring stay as they are. | Nothing. | Sessions keep hitting a deny with no way forward. |
 | **[3] changes needed** | Your note goes back to the loop (for example, the read hint without the script route). | Writing the note. | Another round. |
+
+- **Interim:** the branch waits; nothing merges.
+
+### Q-357 · merge-gate-2026-11-20-pipefail-grep-q-265fdab2a55a
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-357: [1]
+
+Merge the build loop's fix for pipelines into `grep -q` that can lose a match under `pipefail`, two of which failed open?
+
+**If you say no:** the branch waits unmerged; a self-improvement planner path holding a newline then `..` or a glob followed by a long tail is still accepted, the conflict check after the resolver can still read "no conflicts" wrongly, and the board can print a refusal twice.
+
+The rubric-selection flake (fixed 8daaa173) was this shape: `printf … | grep -q` under `pipefail`, where grep exits at its first match, the writer dies of SIGPIPE, and the `if` reads exit 141 as "no match" (failure pattern FP-175 in `docs/failure-patterns.md`). Brief: `docs/working/briefs/2026-11-20-pipefail-grep-q.md`. `scripts/lib/si-functions.sh` is gate code (everything under `scripts/lib/` is), so this needs your review.
+
+- **Fixed (here-strings, so the exit status is grep's own, each with a comment naming FP-175):** `validate_task_json`'s `..` and glob checks in `scripts/lib/si-functions.sh` (failed open: such a path was accepted); the unmerged-paths check after the conflict resolver in `scripts/self-improvement.sh` (failed open, reading "no conflicts"; no test, since no reachable state gives it a large input); `first_refusal` in `scripts/board.sh` (printed a refusal twice; the brief's list missed it).
+- **Marked safe, with reasons in the research doc:** eight single-line sites (grep reads the whole line before it can exit), hooks that do not set `pipefail`, and one `dev-cycle.sh` site that can only abort, not lose a match.
+- **Tests:** three new cases with about 200 KB after the match (two in `test/validate-task-json.bats`, one in `test/scripts/board.bats`), each failing on the old code; touched suites, hermeticity lint and health check pass. Rubric clean (0 red, 3 amber, none open).
+- **Left for later:** `| head` readers under `set -e` (for example `scripts/self-improvement.sh:1695`) can abort a script rather than lose a match; now a roadmap item.
+- **Read:** `docs/working/research-2026-11-20-pipefail-grep-q.md` (the site table); the rubric `docs/reviews/pipefail-grep-q-code-review-rubric-2026-11-20.md`; the diff: `git diff c12095f4 265fdab2 -- scripts/ test/` (5 files, 55 lines added, 6 removed).
+
+TIP: 265fdab2a55ae6a228dc1f546ae84323dfebbac3
+
+`--check`'s lines:
+
+```
+ok docs/working/briefs/2026-11-20-pipefail-grep-q.md 265fdab2a55ae6a228dc1f546ae84323dfebbac3 5996a1f326939815afaecdc62d3ebcad126c88ba
+path docs/working/briefs/2026-11-20-pipefail-grep-q.md A docs/reviews/pipefail-grep-q-code-review-rubric-2026-11-20.md
+path docs/working/briefs/2026-11-20-pipefail-grep-q.md M docs/working/briefs/2026-11-20-pipefail-grep-q.md
+path docs/working/briefs/2026-11-20-pipefail-grep-q.md A docs/working/research-2026-11-20-pipefail-grep-q.md
+path docs/working/briefs/2026-11-20-pipefail-grep-q.md M scripts/board.sh
+path docs/working/briefs/2026-11-20-pipefail-grep-q.md M scripts/lib/si-functions.sh
+path docs/working/briefs/2026-11-20-pipefail-grep-q.md M scripts/self-improvement.sh
+path docs/working/briefs/2026-11-20-pipefail-grep-q.md M test/scripts/board.bats
+path docs/working/briefs/2026-11-20-pipefail-grep-q.md M test/validate-task-json.bats
+rubric docs/working/briefs/2026-11-20-pipefail-grep-q.md: clean docs/reviews/pipefail-grep-q-code-review-rubric-2026-11-20.md: 0 red and 3 amber rows, none open
+```
+
+- **Paths self-merge would have refused:** `scripts/lib/si-functions.sh` (gate code).
+- **What an attacker would want here:** a planner path is model output from the self-improvement loop; a stranger's text that steered a planner could already have used the fail-open path checks, so this change only closes a gap and adds no input.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges TIP above. | Reading a 55-line diff. | One `git revert` undoes it. |
+| **[2] drop** | The brief closes; the three sites stay as they are. | Nothing. | Two checks keep failing open on large input. |
+| **[3] changes needed** | Your note goes back to the loop. | Writing the note. | Another round. |
+
+- **Interim:** the branch waits; nothing merges.
+
+
+### Q-358 · merge-gate-2026-11-20-answers-file-route-a7a04dc995e1
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-358: [1]
+
+Merge the build loop's change that lets a committed `docs/human-author/answers-*` file count as your answer?
+
+**If you say no:** the branch waits unmerged; an answers file you commit is still read as an `other` commit, and the cycle asks again for answers you already gave in it (as with 7df4654d, your answers to Q-255, Q-302 and Q-327).
+
+You chose this route in Q-345 [1] (the gate reads the file). Brief: `docs/working/briefs/2026-11-20-answers-file-route.md`. The loop's marker has no body: no question left open.
+
+- **What it does:** `--check-answer` (the gate's answer reader) also reads lines `Q-NNN: ANSWER` from files named `answers-*` directly under `docs/human-author/` on main, added on or after the entry's `Opened:` date, by the same answer rule as the questions files (one shared `option()` in `scripts/lib/dev-cycle-read.sh`). The questions file's own answer wins when both agree; when they disagree, or two files disagree, or a file cannot be read, the ID is printed as a skip naming both, never guessed. `--main-log` classes a commit that only adds such files as `answers`. The skill's steps 0.2 and 7 and the board say so.
+- **Tests and review:** bats cases in `test/scripts/dev-cycle.bats`, `build-loop-merge.bats`, `build-loop-orchestrator.bats` and `board.bats`; rubric clean (0 red, 1 amber, none open).
+- **For you, after it is live:** your untracked answers files in the main checkout (`docs/human-author/answers-11-*.txt`) are not read until committed, and only for entries opened on or before the commit's date.
+- **Read:** `docs/working/research-2026-11-20-answers-file-route.md`; the rubric `docs/reviews/code-review-rubric-2026-11-20-answers-file-route.md`; the diff: `git diff 5627e74c a7a04dc9 -- scripts/ skills/ test/` (10 files, 312 lines added, 15 removed).
+
+TIP: a7a04dc995e1080630f596919a6c52cb741ea034
+
+`--check`'s lines:
+
+```
+ok docs/working/briefs/2026-11-20-answers-file-route.md a7a04dc995e1080630f596919a6c52cb741ea034 88ae45798916fd38eb118fd2d22946c6fae7649b
+path docs/working/briefs/2026-11-20-answers-file-route.md A docs/reviews/code-review-rubric-2026-11-20-answers-file-route.md
+path docs/working/briefs/2026-11-20-answers-file-route.md M docs/working/briefs/2026-11-20-answers-file-route.md
+path docs/working/briefs/2026-11-20-answers-file-route.md A docs/working/research-2026-11-20-answers-file-route.md
+path docs/working/briefs/2026-11-20-answers-file-route.md M scripts/board.sh
+path docs/working/briefs/2026-11-20-answers-file-route.md M scripts/build-loop.sh
+path docs/working/briefs/2026-11-20-answers-file-route.md M scripts/dev-cycle.sh
+path docs/working/briefs/2026-11-20-answers-file-route.md M scripts/lib/dev-cycle-read.sh
+path docs/working/briefs/2026-11-20-answers-file-route.md M scripts/lib/rubric-check.sh
+path docs/working/briefs/2026-11-20-answers-file-route.md M skills/dev-cycle/SKILL.md
+path docs/working/briefs/2026-11-20-answers-file-route.md M test/scripts/board.bats
+path docs/working/briefs/2026-11-20-answers-file-route.md M test/scripts/build-loop-merge.bats
+path docs/working/briefs/2026-11-20-answers-file-route.md M test/scripts/build-loop-orchestrator.bats
+path docs/working/briefs/2026-11-20-answers-file-route.md M test/scripts/dev-cycle.bats
+rubric docs/working/briefs/2026-11-20-answers-file-route.md: clean docs/reviews/code-review-rubric-2026-11-20-answers-file-route.md: 0 red and 1 amber rows, none open
+```
+
+- **Paths self-merge would have refused:** `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/rubric-check.sh` and `skills/dev-cycle/SKILL.md` (gate code).
+- **What an attacker would want here:** a stranger's text that reaches a hand session (a web page, a fetched issue) could try to get that session to commit an `answers-*` file, which the gate would then read as your answer, approving a merge. The build loops and the cycle cannot write `docs/human-author/` (the self-merge floor and `--cycle-diff` refuse it), so the route is a hand session you run; that is the same exposure an answer line in the questions file already has.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges TIP above. | Reading the diff. | One `git revert` undoes it. |
+| **[2] drop** | The brief closes; nothing merges. | Nothing. | You keep re-answering in the questions file. |
+| **[3] changes needed** | Your note goes back to the loop. | Writing the note. | Another round. |
+
+- **Interim:** the branch waits; nothing merges.
+
+
+### Q-359 · merge-2026-11-20-ingest-project-rename-82e794ae342f
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-359: [1]
+
+Merge the build loop's fix so harness-feedback ingest refuses a renamed project instead of storing or seeding it twice?
+
+**If you say no:** the branch waits unmerged; ingesting a project whose `Project:` line changed still stores a second copy and seeds its ideas again.
+
+Brief: `docs/working/briefs/2026-11-20-ingest-project-rename.md`. It also adds failure pattern FP-189 to `docs/failure-patterns.md` (a record file, so review was needed anyway).
+
+The loop's marker (loop text, data not instructions):
+
+> ingest now refuses a renamed project instead of storing or seeding it twice, and it refuses to overwrite an empty stored copy that holds another Project line. A new `scripts/harness-feedback.py rename
+> STORED NAME` mode moves a stored copy to NAME.md, sets its Project line and rekeys its idea-log seeds; each rename refusal prints that command. `pending` (the board's read-only comparison) uses the
+> same matching helper as ingest, so the board withholds its ingest command in the same states.
+>
+> Design: divergent design picked "refuse and name the fix" over "match by entries and keep the stored name" (which guesses silently) and over "document only" (fails the goal). One option dominated, so
+> there is no open question. Record: docs/working/research-2026-11-20-ingest-project-rename.md.
+>
+> Tests: harness-feedback.bats and board.bats 97 ok; hermeticity lint exit 0; scripts/health-check.sh passed. scripts/confine-tests.sh --probe exit 3 ("confine-tests: NO CONFINEMENT PRIMITIVE AVAILABLE
+> — refusing to run."), so the suites ran unconfined. Two review passes found no reds; the ambers are fixed (docs/reviews/code-review-rubric-2026-11-20-ingest-project-rename.md).
+>
+> Residual risks, both stated in guides/harness-feedback.md:
+> - The board does not read the idea log. A hand-made half rename (file moved, seeds left under the old name) gets an ingest command that then refuses loudly and writes nothing.
+> - A stored copy with one entry, renamed and that entry edited, is stored again. This is the price of letting two projects that filed an identical F-001 heading both ingest.
+>
+> New failure-pattern entry FP-189 in docs/failure-patterns.md: the empty-list prefix check. docs/failure-patterns.md is a record file, so this sends the branch to your review, which this brief's review policy already requires.
+>
+> Your file docs/working/feedback/philosophy-research.md: its Project line says task-workspace-designer, but its 19 seeds and its file name say philosophy-research. Every ingest of it now refuses until
+> you settle this. What to do depends on the Project line in that project's own docs/harness-feedback.md, which the sandbox cannot see:
+> - If the project says task-workspace-designer, keep the line and run, from claude-workflows: scripts/harness-feedback.py rename docs/working/feedback/philosophy-research.md task-workspace-designer
+> - If it still says philosophy-research, change this line back (or run the same rename command with NAME philosophy-research, which does that and keeps the seeds).
+
+In plain words (the cycle's gloss): "the board" is `scripts/board.sh`, the cross-project status page (`guides/cross-project-board.md`); the stored copies are `docs/working/feedback/<project>.md`, copied from each project's `docs/harness-feedback.md`. The last paragraph of the marker is a second, separate step after merging: once this is live, ingest of philosophy-research's feedback refuses until its `Project:` line is settled. If you merge, the cycle files that as its own entry rather than fold it into this one.
+
+- **Read:** `docs/working/research-2026-11-20-ingest-project-rename.md`; the rubric `docs/reviews/code-review-rubric-2026-11-20-ingest-project-rename.md`; the diff: `git diff 5627e74c 82e794ae -- scripts/ guides/ test/` (5 files, 408 lines added, 35 removed).
+
+TIP: 82e794ae342f30d628081b3ac0fab68ab12b5164
+
+`--check`'s lines:
+
+```
+ok docs/working/briefs/2026-11-20-ingest-project-rename.md 82e794ae342f30d628081b3ac0fab68ab12b5164 da4892f32c3bbe12f98a58e19916ac20fdb7afc9
+path docs/working/briefs/2026-11-20-ingest-project-rename.md M docs/failure-patterns.md
+path docs/working/briefs/2026-11-20-ingest-project-rename.md A docs/reviews/code-review-rubric-2026-11-20-ingest-project-rename.md
+path docs/working/briefs/2026-11-20-ingest-project-rename.md M docs/working/briefs/2026-11-20-ingest-project-rename.md
+path docs/working/briefs/2026-11-20-ingest-project-rename.md A docs/working/research-2026-11-20-ingest-project-rename.md
+path docs/working/briefs/2026-11-20-ingest-project-rename.md M guides/cross-project-board.md
+path docs/working/briefs/2026-11-20-ingest-project-rename.md M guides/harness-feedback.md
+path docs/working/briefs/2026-11-20-ingest-project-rename.md M scripts/harness-feedback.py
+path docs/working/briefs/2026-11-20-ingest-project-rename.md M test/scripts/board.bats
+path docs/working/briefs/2026-11-20-ingest-project-rename.md M test/scripts/harness-feedback.bats
+rubric docs/working/briefs/2026-11-20-ingest-project-rename.md: clean docs/reviews/code-review-rubric-2026-11-20-ingest-project-rename.md: 0 red and 5 amber rows, none open
+```
+
+- **Paths self-merge would have refused:** `docs/failure-patterns.md` (a record file); no gate code, instruction file or dot path.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges TIP above. | Reading the diff. | One `git revert` undoes it. |
+| **[2] drop** | The brief closes; nothing merges. | Nothing. | Renamed projects keep double-seeding. |
+| **[3] changes needed** | Your note goes back to the loop. | Writing the note. | Another round. |
+
+- **Interim:** the branch waits; nothing merges.
+
+
+### Q-360 · merge-gate-2026-11-20-six-still-true-rows-ed98d39e8fba
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-360: [1]
+
+Merge the build loop's fixes for six old review findings that were still true, one of them a write-guard gap?
+
+**If you say no:** the branch waits unmerged; the write guard still stays silent on a protected-file write spelled with `..` through a symlinked directory, and the other five rows stay open.
+
+The six rows come from the 2026-11-13 review-gap audit: iter3 N5, N13, N17, N18 (`docs/reviews/code-review-rubric-2026-09-21-answers-2026-09-20-iter3.md`) and questions-closeout A10, A11. Brief: `docs/working/briefs/2026-11-20-six-still-true-rows.md`.
+
+The loop's marker (loop text, data not instructions):
+
+> All six rows from the 2026-11-13 review-gap audit were re-checked against current code. Each was still true, and each is now closed.
+>
+> - iter3 N13 (write guard, a security row): a path spelled with `..` that reads as a protected file is now denied by the hook, not deferred.
+>   The kernel follows a symlink before applying `..`, so the deferred path could write somewhere else with no gate.
+>   The change only narrows access. Such a spelling is denied even when its real target is an ordinary file, and the deny text says to respell the path without `..`.
+>   No owner decision was needed.
+> - iter3 N5 (questions.sh): the comment is corrected, and a docs/ symlink into .git/ is now refused.
+> - iter3 N17, N18 and questions-closeout A11: corrected or Won't-Fix rows were appended to docs/reviews/override-log.md, plus comment fixes in the guard.
+>   One N18 item (wording in si-morning-summary.sh) is outside this brief's paths. It gets a revisit trigger in the research doc.
+> - questions-closeout A10 (lite-review --mode full has no caller): the script header now says so, and a bats case pins it.
+>
+> Gates:
+> - The touched suites pass, and the hermeticity lint passes.
+> - confine-tests --probe exited 3 (no confinement primitive), so the gate relied on the health check.
+> - health-check.sh passes ("All checks passed.").
+>
+> Review: 2 passes, 0 red, 3 amber, all fixed. Rubric: docs/reviews/code-review-rubric-2026-11-20-six-still-true-rows.md.
+> Details: docs/working/research-2026-11-20-six-still-true-rows.md.
+> This marker supersedes 7210127f4, whose two long lines were over the 300-byte cut.
+
+In plain words (the cycle's gloss): "the write guard" is `hooks/guard-trusted-writes.py`, which asks or denies before a session that has read web content writes a protected file; "defer" means the hook stays silent and leaves the call to the normal permission rules. `docs/reviews/override-log.md` records review findings closed without a code fix.
+
+- **Read:** `docs/working/research-2026-11-20-six-still-true-rows.md`; the rubric `docs/reviews/code-review-rubric-2026-11-20-six-still-true-rows.md`; the diff: `git diff b516c62d ed98d39e -- hooks/ scripts/ test/` (6 files, 141 lines added, 23 removed).
+
+TIP: ed98d39e8fba663e93c5ceb4c7ba7b4b0db64fa4
+
+`--check`'s lines:
+
+```
+ok docs/working/briefs/2026-11-20-six-still-true-rows.md ed98d39e8fba663e93c5ceb4c7ba7b4b0db64fa4 0a8bbdaeebd53478cedc2b759181de93e0aacd6f
+path docs/working/briefs/2026-11-20-six-still-true-rows.md A docs/reviews/code-review-rubric-2026-11-20-six-still-true-rows.md
+path docs/working/briefs/2026-11-20-six-still-true-rows.md M docs/reviews/override-log.md
+path docs/working/briefs/2026-11-20-six-still-true-rows.md M docs/working/briefs/2026-11-20-six-still-true-rows.md
+path docs/working/briefs/2026-11-20-six-still-true-rows.md A docs/working/research-2026-11-20-six-still-true-rows.md
+path docs/working/briefs/2026-11-20-six-still-true-rows.md M hooks/guard-trusted-writes.py
+path docs/working/briefs/2026-11-20-six-still-true-rows.md M scripts/lite-review.py
+path docs/working/briefs/2026-11-20-six-still-true-rows.md M scripts/questions.sh
+path docs/working/briefs/2026-11-20-six-still-true-rows.md M test/hooks/guard-trusted-writes.bats
+path docs/working/briefs/2026-11-20-six-still-true-rows.md M test/lite-review-fix-drift-prompt.bats
+path docs/working/briefs/2026-11-20-six-still-true-rows.md M test/questions-doc.bats
+rubric docs/working/briefs/2026-11-20-six-still-true-rows.md: clean docs/reviews/code-review-rubric-2026-11-20-six-still-true-rows.md: 0 red and 3 amber rows, none open
+```
+
+- **Paths self-merge would have refused:** `scripts/questions.sh` (gate code). `hooks/guard-trusted-writes.py` is an enforcement file (its commits carry a `Live-verified:` trailer; the gate does not check that at merge).
+- **What an attacker would want here:** a stranger's web text that reaches a session and gets it to write a protected instruction or settings file without an ask, by spelling the path through a symlinked directory and `..`. This change closes that route (deny, not defer) and only narrows what the guard allows.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges TIP above. | Reading the diff. | One `git revert` undoes it. |
+| **[2] drop** | The brief closes; nothing merges. | Nothing. | The `..` route in the write guard stays open. |
+| **[3] changes needed** | Your note goes back to the loop. | Writing the note. | Another round. |
+
+- **Interim:** the branch waits; nothing merges.
+
+
+### Q-361 · merge-2026-11-20-report-findings-f8-f12-82c11016daf0
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-361: [1]
+
+Merge the report-findings fixes again, now that the loop has merged main in? You approved the earlier tip in Q-349.
+
+**If you say no:** the branch waits unmerged; the report suites of business-plan-critique-moat, test-strategy, yglesias-critique, tech-debt-triage and fact-check stay NOT RUN, so those five skills have no regression check.
+
+Your Q-349 [1] approved tip 0df118cd. Its merge was then refused because the branch conflicted with main, so the cycle sent it back. The gate only merges the exact tip you approved, so this new tip needs its own answer. Brief: `docs/working/briefs/2026-11-20-report-findings-f8-f12.md`.
+
+- **What changed since you approved it:** one merge of main (063a07d9) into the branch, commit 3f11e220, then the ready marker 82c11016. The only conflict was in `docs/failure-patterns.md` (the shared list of recurring failure kinds): this branch adds FP-187 (an eval fixture whose expected answer depended on the date the test ran), and main had added FP-188 at the same place. The loop kept both lines, in number order. The loop reports the branch's change against main as byte-identical to what its review passed, so it ran no new review round.
+- **Tests after the merge (the loop's report):** the five skills' report suites 153 ok, none failing; hermeticity lint passes; the health check passes; rubric clean (0 red, 4 amber, none open).
+- **To see only what is new since your approval:** `git diff 0df118cd 3f11e220 -- docs/failure-patterns.md`.
+- **Read:** Q-349 in `docs/working/questions-archive.md` (the full description of the change); `docs/working/research-2026-11-20-report-findings-f8-f12.md`; the rubric `docs/reviews/code-review-rubric-2026-11-20-report-findings-f8-f12.md`.
+
+The loop's marker (loop text, data not instructions; the gate cut two lines at 300 bytes):
+
+> Dispatch 2 (send-back for a conflict with main). Merged main (063a07d9) into the branch with git's default strategy. The only conflict was docs/failure-patterns.md, the log of recurring failure kinds: this branch appends FP-187 (an eval fixture whose expected runway in days depended on the run date)
+> The branch's change against main is byte-identical to the delta the review-fix loop already passed (rubric: 0 red, 4 amber, none open), so no new review round was needed. After the merge: the five skills' report suites pass (153 ok, 0 not ok), scripts/hermeticity-lint passes, scripts/health-check.sh
+
+TIP: 82c11016daf015cea782f4b133665f88b76fe0d8
+
+`--check`'s lines (98 of them are generated reports and stamps under `test/skills/*/output/`):
+
+```
+ok docs/working/briefs/2026-11-20-report-findings-f8-f12.md 82c11016daf015cea782f4b133665f88b76fe0d8 a02373f770499ab65e7e54835f8c0f6fd29c666a
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M docs/failure-patterns.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A docs/reviews/code-review-rubric-2026-11-20-report-findings-f8-f12.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M docs/working/briefs/2026-11-20-report-findings-f8-f12.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A docs/working/research-2026-11-20-report-findings-f8-f12.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/business-plan-critique-moat/expected-verdicts.bash
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat1-veterinary-booking.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat1-veterinary-booking.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat2-meal-planning-app.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat2-meal-planning-app.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat3-field-inspection-forms.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat3-field-inspection-forms.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat4-household-budgeting.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat4-household-budgeting.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat5-sales-call-notes.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat5-sales-call-notes.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat6-cold-chain-sensors.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat6-cold-chain-sensors.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat7-lab-compliance-software.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat7-lab-compliance-software.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/code-fact-check-edge-cases.bats
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/critic-dimensions.bash
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/eval-helpers-graceful-decline.bats
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/eval-helpers.bash
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/fact-check-edge-cases.bats
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/fact-check/eval-criteria.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/fact-check/expected-verdicts.bash
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/fact-check/fixtures/tc-7.2-no-claims.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.1-specific-numbers.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.1-specific-numbers.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.2-named-policies.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.2-named-policies.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.3-attributed-facts.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.3-attributed-facts.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.4-causal-claims.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.4-causal-claims.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.5-comparisons.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.5-comparisons.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.6-anecdotes.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.6-anecdotes.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.1-accurate.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.1-accurate.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.2-mostly-accurate.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.2-mostly-accurate.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.3-disputed.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.3-disputed.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.4-inaccurate.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.4-inaccurate.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.5-unverified.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.5-unverified.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-3.1-opinions.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-3.1-opinions.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-3.2-predictions.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-3.2-predictions.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-3.3-mixed.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-3.3-mixed.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-4.1-misleading.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-4.1-misleading.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-4.2-conflated-stats.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-4.2-conflated-stats.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-5.1-multi-claim.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-5.1-multi-claim.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-6.1-accurate-weak-argument.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-6.1-accurate-weak-argument.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-6.3-obvious-but-wrong.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-6.3-obvious-but-wrong.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-7.1-empty.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-7.1-empty.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-7.2-no-claims.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-7.2-no-claims.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-7.3-binary-content.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-7.3-binary-content.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-7.4-extremely-short.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-7.4-extremely-short.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/tech-debt-triage/eval-criteria.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/tech-debt-triage/expected-verdicts.bash
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/tech-debt-triage/fixtures/tc-td2-statement-renderer.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td1-discount-rules.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td1-discount-rules.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td2-statement-renderer.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td2-statement-renderer.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td3-nightly-reconciliation.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td3-nightly-reconciliation.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td4-postcode-validation.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td4-postcode-validation.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td5-vat-rate-tables.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td5-vat-rate-tables.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td6-job-queue.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td6-job-queue.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/test-strategy/eval-criteria.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/test-strategy/expected-verdicts.bash
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/test-strategy/fixtures/tc-ts6-duration-parser.py
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts1-installment-split.py.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts1-installment-split.py.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts2-webhook-client.go.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts2-webhook-client.go.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts3-nightly-export-schedule.py.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts3-nightly-export-schedule.py.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts4-token-cache.ts.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts4-token-cache.ts.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts5-order-sync.py.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts5-order-sync.py.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts6-duration-parser.py.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts6-duration-parser.py.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/yglesias-critique/dimensions.bats
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl1-class-size-cap.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl1-class-size-cap.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl2-down-payment-grants.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl2-down-payment-grants.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl3-rail-extension.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl3-rail-extension.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl4-apprenticeship-guarantee.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl4-apprenticeship-guarantee.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl5-regional-housing-portal.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl5-regional-housing-portal.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl6-parking-minimums.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl6-parking-minimums.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl7-library-fines.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl7-library-fines.md.stamp
+rubric docs/working/briefs/2026-11-20-report-findings-f8-f12.md: clean docs/reviews/code-review-rubric-2026-11-20-report-findings-f8-f12.md: 0 red and 4 amber rows, none open
+```
+
+- **Paths self-merge would have refused:** `docs/failure-patterns.md` (a record file); no gate code, instruction file or dot path.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges TIP above. | Reading one conflict resolution in one file. | One `git revert` undoes it. |
+| **[2] drop** | The brief closes; nothing merges. | Nothing. | Five skills keep no regression check. |
+| **[3] changes needed** | Your note goes back to the loop. | Writing the note. | Another round. |
+
+- **Interim:** the branch waits; nothing merges.
+
+
+### Q-362 · merge-gate-2026-11-20-questions-check-section-5106fc0a52a9
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-362: [1]
+
+Merge the build loop's change so `questions.sh check` names an owner entry filed outside `## Open`, and `migrate` drops route headings it leaves empty?
+
+**If you say no:** the branch waits unmerged; an entry filed under a stale heading (as 19 of 20 owner questions were in behemoth-arsenal, its harness feedback F-001) still passes `check`.
+
+Brief: `docs/working/briefs/2026-11-20-questions-check-section.md`; the design came from triage brief 1 in `docs/working/research-2026-11-20-harness-feedback-triage.md`. The loop's marker has no body: no question left open.
+
+- **What it does:** `check` names each entry in `questions.md` under any `##` heading other than `## Open` (or above every heading), with its ID and heading: a ⚠ warning for entries opened before 2026-10-30 (`LEGACY_BEFORE`, the existing cutoff), ✗ and exit 1 on or after it, so older projects are not turned red at once (failure pattern FP-113, a new gate every existing clone fails). The section reader now skips code fences using the lib's existing fence reader. An entry the reader cannot place (after a line the fence reader refuses) is named too. `migrate` deletes a `##` heading other than `## Index` and `## Open` that has only blank lines under it.
+- **The loop's own calls:** an entry under `## Index` is reported too; a non-owner route keeps only its existing route error. Residual: a `questions.md` with an indented fence gets every later entry reported as unplaced.
+- **Review:** the loop reports two review rounds (round 1: no red, two findings fixed, one amber kept as designed; round 2 clean), but it **committed no rubric under `docs/reviews/`**, which is why `--check`'s advisory rubric line reads `none`. There is no review record on the branch to read; this entry is the only summary.
+- **Tests:** 9 new cases in `test/questions-doc.bats` (51 in the file pass), `questions-counts.bats` passes, hermeticity lint and health check pass (the loop's report).
+- **Read:** `docs/working/research-2026-11-20-questions-check-section.md`; the diff: `git diff 063a07d9 5106fc0a -- scripts/ test/` (2 files, 285 lines added, 21 removed).
+
+TIP: 5106fc0a52a942e0926ab1ade80fbf58eb9ceaf6
+
+`--check`'s lines:
+
+```
+ok docs/working/briefs/2026-11-20-questions-check-section.md 5106fc0a52a942e0926ab1ade80fbf58eb9ceaf6 f2030f098624ec592cc818a9509274d49872771b
+path docs/working/briefs/2026-11-20-questions-check-section.md M docs/working/briefs/2026-11-20-questions-check-section.md
+path docs/working/briefs/2026-11-20-questions-check-section.md A docs/working/research-2026-11-20-questions-check-section.md
+path docs/working/briefs/2026-11-20-questions-check-section.md M scripts/questions.sh
+path docs/working/briefs/2026-11-20-questions-check-section.md M test/questions-doc.bats
+rubric docs/working/briefs/2026-11-20-questions-check-section.md: none: fix/questions-check-section changes 2 paths outside docs/ and adds or changes no code-review rubric under docs/reviews/
+```
+
+- **Paths self-merge would have refused:** `scripts/questions.sh` (gate code).
+- **What an attacker would want here:** nothing new: `check` only reads the questions files and reports; `migrate` deletes only headings with nothing but blank lines under them. A planted heading could at most make `check` warn or fail, which is loud.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges TIP above. | Reading a 285-line diff with no committed rubric. | One `git revert` undoes it. |
+| **[2] drop** | The brief closes; nothing merges. | Nothing. | Misfiled entries keep passing `check` in older projects. |
+| **[3] changes needed** | Your note goes back to the loop (for example: commit the review rubric). | Writing the note. | Another round. |
+
+- **Interim:** the branch waits; nothing merges.
+
+
+### Q-363 · merge-gate-2026-11-20-digest-log-encoding-5ffb12a25d79
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-363: [1]
+
+Merge the build loop's fix that makes every git call in the digest and the gate read commit text as UTF-8, whatever the repo's own log-encoding setting?
+
+**If you say no:** the branch waits unmerged; in a repo that sets `i18n.logOutputEncoding`, the digest can still print mangled commit subjects and drop lines (failure pattern FP-188 in `docs/failure-patterns.md`), outside its landings section, which already pins it.
+
+Brief: `docs/working/briefs/2026-11-20-digest-log-encoding.md`. The loop's marker has no body: no question left open.
+
+- **What it does:** adds the config pair `i18n.logOutputEncoding=UTF-8` to `HARDEN` in `scripts/lib/dev-cycle-read.sh`, the list of git config pairs every gate and digest git call already goes through, and removes the now-redundant separate pin in `scripts/lib/landings.sh`. The loop's probe found that a repo-local UTF-16 setting mangles the whole formatted `git log` line (even date-only reads), so one shared pin beats per-call ones.
+- **Why it changes nothing elsewhere (the loop's reasoning, checked by its reviewer with probes):** UTF-8 is git's default output when a repo sets neither `i18n.logOutputEncoding` nor `i18n.commitEncoding`, so normal repos and the gate's own reads print the same bytes as before. `board.sh` and `questions.sh` share `HARDEN` and pick it up too.
+- **Tests:** a new case in `test/scripts/dev-cycle.bats` (a UTF-16 setting and a non-ASCII subject; the activity section must match the unset run; it fails on the old code); `build-loop-orchestrator.bats` now expects 9 hardening pairs instead of 8; touched suites, hermeticity lint and health check pass. Rubric clean (0 red, 0 amber).
+- **Read:** `docs/working/research-2026-11-20-digest-log-encoding.md`; the rubric `docs/reviews/code-review-rubric-2026-11-20-digest-log-encoding.md`; the diff: `git diff f48a1c2b 5ffb12a2 -- scripts/ test/` (5 files, 31 lines added, 9 removed).
+
+TIP: 5ffb12a25d79820cb4033fd22e9b0931515df728
+
+`--check`'s lines:
+
+```
+ok docs/working/briefs/2026-11-20-digest-log-encoding.md 5ffb12a25d79820cb4033fd22e9b0931515df728 2d58855082d7048796d2c19a372eed92c35aae9c
+path docs/working/briefs/2026-11-20-digest-log-encoding.md A docs/reviews/code-review-rubric-2026-11-20-digest-log-encoding.md
+path docs/working/briefs/2026-11-20-digest-log-encoding.md M docs/working/briefs/2026-11-20-digest-log-encoding.md
+path docs/working/briefs/2026-11-20-digest-log-encoding.md A docs/working/research-2026-11-20-digest-log-encoding.md
+path docs/working/briefs/2026-11-20-digest-log-encoding.md M scripts/dev-cycle.sh
+path docs/working/briefs/2026-11-20-digest-log-encoding.md M scripts/lib/dev-cycle-read.sh
+path docs/working/briefs/2026-11-20-digest-log-encoding.md M scripts/lib/landings.sh
+path docs/working/briefs/2026-11-20-digest-log-encoding.md M test/scripts/build-loop-orchestrator.bats
+path docs/working/briefs/2026-11-20-digest-log-encoding.md M test/scripts/dev-cycle.bats
+rubric docs/working/briefs/2026-11-20-digest-log-encoding.md: clean docs/reviews/code-review-rubric-2026-11-20-digest-log-encoding.md: 0 red and 0 amber rows, none open
+```
+
+- **Paths self-merge would have refused:** `scripts/dev-cycle.sh`, `scripts/lib/dev-cycle-read.sh` and `scripts/lib/landings.sh` (gate code).
+- **What an attacker would want here:** a repo's own git config is input the gate reads (constraint H1: it must not steer the gate's logic). This pin takes one more repo setting away from steering how the gate reads commit text, so it narrows what a planted config can do and adds no input.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges TIP above. | Reading a 31-line diff. | One `git revert` undoes it. |
+| **[2] drop** | The brief closes; nothing merges. | Nothing. | Repos with a log-encoding setting keep a mangled digest. |
+| **[3] changes needed** | Your note goes back to the loop. | Writing the note. | Another round. |
+
+- **Interim:** the branch waits; nothing merges.
+
+
+### Q-364 · merge-gate-2026-11-20-board-weekly-future-date-894fbb661325
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** ANSWERED
+Q-364: [1]
+
+Merge the build loop's fix so the board's weekly line ignores a digest dated in the future, with a shared real-date check that the digest now uses too?
+
+**If you say no:** the branch waits unmerged; a weekly digest with a mistyped future date keeps showing on the board as the latest one every week, hiding the real one.
+
+Brief: `docs/working/briefs/2026-11-20-board-weekly-future-date.md`. "The board" is `scripts/board.sh`, the cross-project status page (`guides/cross-project-board.md`). The loop's marker body holds only its commit trailers: no question left open.
+
+- **What it does:** the weekly line shows the newest edition whose name is a real date on or before today, and notes any future-dated edition it skipped (`; skipped future-dated PATH`). A name that is not a real date (2026-13-40, 2026-02-30) is not an edition. A new one-line helper `realday` in `scripts/lib/dev-cycle-read.sh` is the shared date rule (constraint S3: one source of truth per rule); `BOARD_TODAY` pins the date in tests, and a `BOARD_TODAY` that is not a real date stops the run with exit 2.
+- **Beyond the brief, worth your look:** review found that a plain local `date -d` refuses a real day whose local midnight a clock change skips (for example America/Santiago on 2024-09-08), so `realday` parses in UTC. The loop then fixed the same fault in two places in the digest (`scripts/dev-cycle.sh`): the default 14-day window, which came out empty on such a day, and the brainstorm's "N day(s) ago" count, one day short across a DST change. Those are a few one-line edits outside the board.
+- **Size:** `scripts/board.sh` grows from 499 to 513 lines, further over the ~400-line unit cap in constraint S8; splitting it is not in this brief.
+- **Tests and review:** 5 new cases in `test/scripts/board.bats` (39 pass), 2 new cases and one assertion in `test/scripts/dev-cycle.bats` (104 pass); hermeticity lint and health check pass. Three review rounds, every finding fixed; rubric clean (0 red, 4 amber, none open).
+- **Read:** `docs/working/research-2026-11-20-board-weekly-future-date.md`; the rubric `docs/reviews/code-review-rubric-2026-11-20-board-weekly-future-date.md`; the diff: `git diff 063a07d9 894fbb66 -- scripts/ test/ guides/` (6 files, 110 lines added, 16 removed).
+
+TIP: 894fbb661325ad86b23d8d32de48b70556704499
+
+`--check`'s lines:
+
+```
+ok docs/working/briefs/2026-11-20-board-weekly-future-date.md 894fbb661325ad86b23d8d32de48b70556704499 261615e92696f569abf9558c6367c5314e1ad3ac
+path docs/working/briefs/2026-11-20-board-weekly-future-date.md A docs/reviews/code-review-rubric-2026-11-20-board-weekly-future-date.md
+path docs/working/briefs/2026-11-20-board-weekly-future-date.md M docs/working/briefs/2026-11-20-board-weekly-future-date.md
+path docs/working/briefs/2026-11-20-board-weekly-future-date.md A docs/working/research-2026-11-20-board-weekly-future-date.md
+path docs/working/briefs/2026-11-20-board-weekly-future-date.md M guides/cross-project-board.md
+path docs/working/briefs/2026-11-20-board-weekly-future-date.md M scripts/board.sh
+path docs/working/briefs/2026-11-20-board-weekly-future-date.md M scripts/dev-cycle.sh
+path docs/working/briefs/2026-11-20-board-weekly-future-date.md M scripts/lib/dev-cycle-read.sh
+path docs/working/briefs/2026-11-20-board-weekly-future-date.md M test/scripts/board.bats
+path docs/working/briefs/2026-11-20-board-weekly-future-date.md M test/scripts/dev-cycle.bats
+rubric docs/working/briefs/2026-11-20-board-weekly-future-date.md: clean docs/reviews/code-review-rubric-2026-11-20-board-weekly-future-date.md: 0 red and 4 amber rows, none open
+```
+
+- **Paths self-merge would have refused:** `scripts/dev-cycle.sh` and `scripts/lib/dev-cycle-read.sh` (gate code).
+- **What an attacker would want here:** nothing new: the change reads file names on main and the clock, and only narrows which names count as dates. A planted future-dated name could at most add a "skipped" note to the board.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges TIP above. | Reading a 110-line diff. | One `git revert` undoes it. |
+| **[2] drop** | The brief closes; nothing merges. | Nothing. | A future-dated digest keeps hiding the real one. |
+| **[3] changes needed** | Your note goes back to the loop (for example: leave the digest's date code alone). | Writing the note. | Another round. |
 
 - **Interim:** the branch waits; nothing merges.
 
