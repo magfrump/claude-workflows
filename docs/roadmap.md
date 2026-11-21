@@ -140,38 +140,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
-- **Agent: `--cycle-diff` lets a cycle record lose its earlier blocks** (filed 2026-11-19, step 6).
-  Motive: iteration 2026-11-20-0121 landed `docs/working/cycles/cycle-2026-11-19.md` holding only its
-  own block (a script truncated the file before appending), as 18a43829 and fd63f0ae, and
-  `--cycle-diff` printed `ok`; iteration 0128 restored the 28 earlier blocks from 72ba83a0. The
-  skill says each iteration appends its own block and never edits earlier ones, and step 0.2 reads
-  the last `Main at:` line, so a record that loses blocks breaks the next window silently. First
-  step: a review brief adding to `--cycle-diff` the rule that a changed record keeps the base's
-  text as a prefix (append-only, as it already holds the idea log), with a bats case for this
-  shape; gate code.
-  2026-11-20: briefed (iteration 2148), review; the rule also takes step 10's rewrite of the last
-  block's `9.`/`10.` lines: `docs/working/briefs/2026-11-20-cycle-diff-record-prefix.md`.
-  2026-11-20: ready at f2d9abc5 (rubric clean; deletion now refused too; replay over 279 lands
-  refuses 10): merge asked in Q-339.
-
-- **Agent: Build loops start in the orchestrator's removed worktree** (filed 2026-11-19, step 7; herald F-008). Motive: every loop
-  dispatched before the cycle's land loses its first Bash call, because the cycle removes its
-  worktree after the land while the loop's shell starts there; it reproduced in the 2026-11-19
-  herald triage dispatch. First step: the hermetic probe in group F of
-  `docs/working/research-2026-11-19-herald-friction-triage.md` (does a main-session `cd` before
-  an Agent call move the subagent's start directory?), then divergent design over its four
-  approaches. Gate code, so a review merge.
-  2026-11-20: probe and pick briefed (iteration 2107) as research only, self-merge:
-  `docs/working/briefs/closed/2026-11-20-loop-start-dir-research.md`, done 319559d9
-  (`docs/working/research-2026-11-20-loop-start-dir-research.md`): about 45% of loops (31 of 69) were
-  refused at least once; subagents run in the main shell's cwd, which the land's `cd WT && …` leaves
-  in WT. Pick R2 (Path A): park the shell with a bare `cd WTB` call, remove in a later call. Built
-  as a review brief (iteration 2133): `docs/working/briefs/2026-11-20-remove-worktrees-parked-shell.md`.
-  The orchestrator applies R2 by hand from iteration 2133 on.
-  2026-11-20: ready at 415006de (step 0.3 states the form; D13 and the prompt line corrected; no
-  code-review rubric committed): merge asked in Q-337; its observable is watch Q-338.
-
-
 ## Next
 
 1. **Agent first-pass playtest before each `you: walkthrough`** (owner request, 2026-11-12;
@@ -506,6 +474,16 @@ Unranked. Each names the signal that motivates it.
 ## Done
 
 Items finished since the last cycle, with the merge.
+
+- **`--cycle-diff` lets a cycle record lose its earlier blocks**: the gate now refuses a record change that drops
+  or rewrites earlier blocks, or deletes the record. Done fec9f7a3 (approved merge, Q-339 [1]), brief
+  `docs/working/briefs/closed/2026-11-20-cycle-diff-record-prefix.md`. Live at the release Q-336.
+
+- **Build loops start in the orchestrator's removed worktree** (herald F-008): research
+  `docs/working/briefs/closed/2026-11-20-loop-start-dir-research.md` (done 319559d9), then R2 in the skill and the
+  prompt line. Done cd16883e (approved merge, Q-337 [1]), brief
+  `docs/working/briefs/closed/2026-11-20-remove-worktrees-parked-shell.md`. Live at the release Q-336; watch Q-338
+  holds its observable.
 
 - **Regenerate the skill eval reports** (Q-321 [2]; Q-328 [3], fix first): 18 skills' report suites now
   pass whole, up from 6; 274 reports landed. Done 4f1e4150 (self-merge, two dispatches, 272 model runs),
