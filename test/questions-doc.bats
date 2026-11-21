@@ -684,6 +684,140 @@ parse_ids() { grep -ao '^### Q-[0-9]*' "$1" | sed 's/^### //' | paste -sd' '; }
     [ "$(grep -ac '^### Q-003' "$BATS_TEST_TMPDIR/watching.md")" -eq 1 ]
 }
 
+# --- check: an entry outside ## Open (brief 2026-11-20-questions-check-section) ---
+# behemoth-arsenal F-001: a migration left route headings in questions.md, owner
+# entries were appended under them, and check passed.
+
+@test "check refuses an owner entry opened on the cutoff under a stale heading or above every heading, naming both" {
+    printf '\n## Watched conditions\n' >> "$QUESTIONS_LIVE"
+    add_dated Q-009 'you: judgment' OPEN 2026-10-30
+    bash "$QS" index
+    run --separate-stderr bash "$QS" check
+    [ "$status" -eq 1 ] && [[ "$stderr" == *"✗ Q-009 in questions.md: sits under '## Watched conditions', not under ## Open — move it there"* ]] \
+        || { echo "$stderr"; return 1; }
+    [[ "$stderr" != *"Q-001 in questions.md"* ]] || { echo "$stderr"; return 1; }
+
+    setup
+    sed -i '1a\
+\
+### Q-009 · on-top\
+**Needs:** you: fyi · **Opened:** 2026-11-02 · **Status:** OPEN' "$QUESTIONS_LIVE"
+    bash "$QS" index
+    run --separate-stderr bash "$QS" check
+    [ "$status" -eq 1 ] && [[ "$stderr" == *"✗ Q-009 in questions.md: sits above every ## heading, not under ## Open"* ]] || { echo "$stderr"; return 1; }
+}
+
+@test "check only warns about an owner entry under a stale heading opened before the cutoff" {
+    printf '\n## Watched conditions\n' >> "$QUESTIONS_LIVE"
+    add_dated Q-009 'you: judgment' OPEN 2026-10-29
+    bash "$QS" index
+    run --separate-stderr bash "$QS" check
+    [ "$status" -eq 0 ] || { echo "$stderr"; return 1; }
+    [[ "$stderr" == *"⚠ Q-009 in questions.md: sits under '## Watched conditions', not under ## Open — move it there (opened before 2026-10-30, so not refused)"* ]] \
+        || { echo "$stderr"; return 1; }
+}
+
+@test "check reads sections outside code fences: a fenced entry is not placed, a fenced ## line opens no section" {
+    printf '\n## Watched conditions\n\n```md\n### Q-009 · fenced-example\n**Needs:** you: judgment · **Opened:** 2026-11-02 · **Status:** OPEN\n```\n' >> "$QUESTIONS_LIVE"
+    bash "$QS" index
+    run --separate-stderr bash "$QS" check
+    [ "$status" -eq 0 ] && [[ "$stderr" != *"Q-009"* ]] || { echo "$stderr"; return 1; }
+    sed -i '/^```/d' "$QUESTIONS_LIVE"   # the same entry unfenced is refused
+    run --separate-stderr bash "$QS" check
+    [ "$status" -eq 1 ] && [[ "$stderr" == *"✗ Q-009 in questions.md: sits under '## Watched conditions'"* ]] || { echo "$stderr"; return 1; }
+
+    setup
+    printf '\n~~~\n## Not a heading\n~~~\n' >> "$QUESTIONS_LIVE"
+    add_dated Q-009 'you: judgment' OPEN 2026-11-02
+    bash "$QS" index
+    run --separate-stderr bash "$QS" check
+    [ "$status" -eq 0 ] || { echo "$stderr"; return 1; }
+    sed -i '/^~~~$/d' "$QUESTIONS_LIVE"
+    run --separate-stderr bash "$QS" check
+    [ "$status" -eq 1 ] && [[ "$stderr" == *"✗ Q-009 in questions.md: sits under '## Not a heading'"* ]] || { echo "$stderr"; return 1; }
+}
+
+@test "check names an entry it cannot place, after a fence that never closes or a line the fence reader refuses" {
+    printf '\n```\nnever closed\n' >> "$QUESTIONS_LIVE"
+    add_dated Q-009 'you: judgment' OPEN 2026-11-02
+    add_dated Q-010 'you: judgment' OPEN 2026-10-01
+    bash "$QS" index
+    local n; n="$(grep -an '^```$' "$QUESTIONS_LIVE" | cut -d: -f1)"
+    run --separate-stderr bash "$QS" check
+    [ "$status" -eq 1 ] && [[ "$stderr" == *"✗ Q-009 in questions.md: not placed in a section, so where it sits is unchecked: the code fence opened at line $n is never closed"* ]] \
+        || { echo "$stderr"; return 1; }
+    [[ "$stderr" == *"⚠ Q-010 in questions.md: not placed in a section"*"(opened before 2026-10-30, so not refused)"* ]] || { echo "$stderr"; return 1; }
+
+    sed -i 's/^```$/  ```/' "$QUESTIONS_LIVE"
+    run --separate-stderr bash "$QS" check
+    [ "$status" -eq 1 ] && [[ "$stderr" == *"✗ Q-009 in questions.md: not placed in a section, so where it sits is unchecked: line $n is a fence-like line that is not a plain column-0 fence"* ]] \
+        || { echo "$stderr"; return 1; }
+}
+
+@test "a fenced example in watching.md is not judged against ## Closed" {
+    make_watching
+    sed -i '/^## Open$/a\
+\
+```\
+### Q-010 · closed-example\
+**Needs:** trigger · **Opened:** 2026-10-30 · **Status:** ANSWERED\
+```' "$BATS_TEST_TMPDIR/watching.md"
+    bash "$QS" index
+    run --separate-stderr bash "$QS" check
+    [ "$status" -eq 0 ] || { echo "$stderr"; return 1; }
+    sed -i '/^```$/d' "$BATS_TEST_TMPDIR/watching.md"
+    run --separate-stderr bash "$QS" check
+    [ "$status" -eq 1 ] && [[ "$stderr" == *"Q-010 is ANSWERED (closed) but sits above watching.md's ## Closed"* ]] || { echo "$stderr"; return 1; }
+}
+
+@test "check and migrate refuse without the dev cycle's fence reader beside them" {
+    mkdir -p "$BATS_TEST_TMPDIR/bare"
+    cp "$QS" "$BATS_TEST_TMPDIR/bare/questions.sh"
+    local before; before="$(sha256sum < "$QUESTIONS_LIVE")"
+    for sub in check migrate; do
+        run --separate-stderr bash "$BATS_TEST_TMPDIR/bare/questions.sh" "$sub"
+        [ "$status" -eq 1 ] && [[ "$stderr" == *"$sub needs $BATS_TEST_TMPDIR/bare/lib/dev-cycle-read.sh (its FENCE_AWK finds the code fences)"* ]] \
+            || { echo "$sub: $stderr"; return 1; }
+        [[ "$output" != *"✓"* ]] || { echo "$sub: $output"; return 1; }
+    done
+    [ "$(sha256sum < "$QUESTIONS_LIVE")" = "$before" ]
+}
+
+@test "migrate drops a route heading it empties and keeps Index, Open, a fenced line and any heading with something under it" {
+    printf '\n## Deferred\n' >> "$QUESTIONS_LIVE"
+    add_dated Q-004 deferred OPEN 2026-10-30
+    printf '\n## Watched conditions\n' >> "$QUESTIONS_LIVE"
+    add_dated Q-005 trigger OPEN 2026-10-30
+    add_dated Q-006 'you: judgment' OPEN 2026-10-28
+    printf '\n## Agent work\n\n```\n## Fenced\n```\n\nKept: prose under a heading is never dropped.\n' >> "$QUESTIONS_LIVE"
+    add_dated Q-007 agent OPEN 2026-10-30
+    printf '\n## Trailing\n' >> "$QUESTIONS_LIVE"
+    add_dated Q-008 trigger OPEN 2026-10-30
+    bash "$QS" index
+    run bash "$QS" migrate
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+    [[ "$output" == *"removed the empty heading '## Deferred'"* && "$output" == *"removed the empty heading '## Trailing'"* ]] || { echo "$output"; return 1; }
+    [ "$(grep -a '^## ' "$QUESTIONS_LIVE" | paste -sd'|')" = '## Index|## Open|## Watched conditions|## Agent work|## Fenced' ] \
+        || { grep -a '^## ' "$QUESTIONS_LIVE"; return 1; }
+    grep -aqx 'Kept: prose under a heading is never dropped.' "$QUESTIONS_LIVE"
+    [ "$(parse_ids "$QUESTIONS_LIVE")" = "Q-001 Q-006" ]
+    # The owner entry left under the kept heading is still named, and only warned (opened before the cutoff).
+    run --separate-stderr bash "$QS" check
+    [ "$status" -eq 0 ] && [[ "$stderr" == *"⚠ Q-006 in questions.md: sits under '## Watched conditions'"* ]] || { echo "$stderr"; return 1; }
+    local before; before="$(sha256sum < "$QUESTIONS_LIVE")"
+    run bash "$QS" migrate
+    [ "$status" -eq 0 ] && [[ "$output" != *"removed"* ]] && [ "$(sha256sum < "$QUESTIONS_LIVE")" = "$before" ] || { echo "$output"; return 1; }
+}
+
+@test "migrate keeps ## Open when it empties it" {
+    sed -i '/^### Q-001/,/^- \*\*Interim/d' "$QUESTIONS_LIVE"
+    bash "$QS" index
+    run bash "$QS" migrate
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+    [ "$(grep -a '^## ' "$QUESTIONS_LIVE" | paste -sd'|')" = '## Index|## Open' ] || { cat "$QUESTIONS_LIVE"; return 1; }
+    [[ "$output" != *"removed"* ]]
+}
+
 # The rule lives in the global instructions; the skill points at it by name, and
 # the build-loop prompt names it and adds a short summary of its own, for agents
 # that lack that file (brief 2026-11-06-owner-entry-gloss-rule). A rename of the bullet
