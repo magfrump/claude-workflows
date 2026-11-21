@@ -33,6 +33,8 @@
 #   ~/.claude/scripts/questions.sh open       list live entries and open watches, one per line (ID, route, slug)
 #   ~/.claude/scripts/questions.sh migrate    move agent/deferred/trigger entries out of questions.md
 #   ~/.claude/scripts/questions.sh init       create empty live/archive/watching files if absent
+#   ~/.claude/scripts/questions.sh counts --since YYYY-MM-DD [--until YYYY-MM-DD]
+#                                             the weekly digest's ask counter for that window
 #   (In claude-workflows, scripts/questions.sh is the same file.)
 #
 # Which files: the docs/working/ of the git repo you run it FROM (the toplevel
@@ -657,7 +659,138 @@ cmd_init() {
     done
 }
 
+# --- counts: the weekly digest's ask counter (skills/dev-cycle, weekly digest) ---
+# The answer date is the first commit that adds an entry's heading to the
+# archive (one `git log -p` pass), and that commit is the answer's sitting.
+# Whether the owner took the first option is read by the dev cycle's own answer
+# rule, ANSWER_AWK in lib/dev-cycle-read.sh, sourced rather than restated (repo
+# S3): its "keep" is [1]; [2], [3] are other options; anything it cannot read
+# (free text, withdrawn, and [4] or higher, which it does not model) is
+# counted as not first and listed by ID. Entries and routes come from
+# parse_entries and ROUTES. Nothing is dropped silently: an answered entry
+# with no archive commit is listed as undated, and a Needs line `check` would
+# refuse stops the count, by ID.
+
+# archive_dates: "ID<TAB>date<TAB>commit" per heading ever added to the
+# archive: its earliest author date, the older commit on a tie (git log lists
+# newest first). Exits non-zero when git cannot read the archive's history.
+archive_dates() {
+    local log
+    log="$(git -C "$(dirname -- "$ARCHIVE")" -c log.showSignature=false log --no-color \
+        --no-ext-diff --no-textconv --diff-merges=first-parent --format='@%H %as' -U0 -p -- "./$(basename -- "$ARCHIVE")")" || return 1
+    # Spelled out: mawk has no {n} interval.
+    awk '
+        /^@[0-9a-f]+ [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/ { c = substr($1, 2); d = $2; next }
+        /^\+### Q-[0-9]+ / { id = $2; if (!(id in bd) || d <= bd[id]) { bd[id] = d; bc[id] = c } }
+        END { for (id in bd) printf "%s\t%s\t%s\n", id, bd[id], bc[id] }
+    ' <<<"$log"
+}
+
+# ask_class ROUTE SLUG: the counter's row for an owner route, else nothing.
+ask_class() {
+    [[ -n "$(route_home "$1")" ]] && return 0
+    if [[ "$1" != "${ROUTES[0]}" ]]; then printf '%s' "${1#you: }"
+    elif [[ "$2" == merge-* ]]; then printf merge
+    elif [[ "$2" == stopped-* || "$2" == blocked-* ]]; then printf re-dispatch
+    else printf 'real choice'; fi
+}
+
+days_between() { echo $(( ( $(date -u -d "$2" +%s) - $(date -u -d "$1" +%s) ) / 86400 )); }
+
+# median_max "N N ...": "median<TAB>max" of the waits, or "-<TAB>-" for none.
+median_max() {
+    tr ' ' '\n' <<<"$1" | awk 'NF' | sort -n | awk '
+        { v[NR] = $1 }
+        END {
+            if (!NR) { print "-\t-"; exit }
+            m = (NR % 2) ? v[(NR + 1) / 2] : (v[NR / 2] + v[NR / 2 + 1]) / 2
+            printf "%s\t%s\n", m, v[NR]
+        }'
+}
+
+cmd_counts() {
+    local since="" until="" lib file id route opened status slug class date commit r i
+    while (( $# )); do
+        case "$1" in
+            --since) since="${2:-}"; shift 2 || die "--since needs a date" ;;
+            --until) until="${2:-}"; shift 2 || die "--until needs a date" ;;
+            *) die "counts: unknown argument '$1' (usage: counts --since YYYY-MM-DD [--until YYYY-MM-DD])" ;;
+        esac
+    done
+    for date in "$since" "${until:-$since}"; do
+        if [[ ! "$date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || ! date -u -d "$date" +%s >/dev/null 2>&1; then
+            die "counts needs --since YYYY-MM-DD (and an optional --until YYYY-MM-DD), got '$date'"
+        fi
+    done
+    require_files
+    lib="$(dirname -- "${BASH_SOURCE[0]}")/lib/dev-cycle-read.sh"
+    [[ -f "$lib" ]] || die "counts needs $lib (its ANSWER_AWK reads the answers); nothing counted"
+    # shellcheck source=lib/dev-cycle-read.sh
+    source "$lib"
+
+    local -A dated=() sha=() opn=() ans=() first=() waits=() sittings=() days=()
+    local undated="" unread="" other="" history
+    # Into a variable first: a die inside < <(...) would end only that subshell.
+    history="$(archive_dates)" || die "cannot read the git history of $ARCHIVE; nothing counted"
+    while IFS=$'\t' read -r id date commit; do
+        [[ -n "$id" ]] && { dated[$id]="$date"; sha[$id]="$commit"; }
+    done <<<"$history"
+
+    for file in "$LIVE" "$ARCHIVE"; do
+        while IFS=$'\t' read -r id route opened status slug _; do
+            if [[ ! "$id" =~ ^Q-[0-9]+$ || ! "$route" =~ ^($VALID_ROUTES)$ \
+                  || ! "$opened" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ || ! "$status" =~ ^(OPEN|ANSWERED)$ ]]; then
+                die "$id: malformed Needs line (route '$route', Opened '$opened', Status '$status'); nothing counted — run: $QS_CMD check"
+            fi
+            class="$(ask_class "$route" "$slug")"
+            if [[ -n "$class" && ! "$opened" < "$since" && ( -z "$until" || ! "$opened" > "$until" ) ]]; then
+                opn[$class]=$(( ${opn[$class]:-0} + 1 ))
+            fi
+            [[ "$status" == ANSWERED ]] || continue
+            date="${dated[$id]:-}"
+            if [[ "$file" == "$LIVE" || -z "$date" ]]; then
+                [[ -n "$class" ]] && undated="$undated $id"; continue
+            fi
+            [[ "$date" < "$since" || ( -n "$until" && "$date" > "$until" ) ]] && continue
+            if [[ -z "$class" ]]; then other="$other $id"; continue; fi
+            ans[$class]=$(( ${ans[$class]:-0} + 1 ))
+            waits[$class]="${waits[$class]:-} $(days_between "$opened" "$date")"
+            [[ "$route" == "${ROUTES[0]}" ]] || continue
+            sittings[${sha[$id]}]=1; days[$date]=1
+            r="$(awk -v id="$id" "$FENCE_AWK$ANSWER_AWK" "$ARCHIVE")" || r=""
+            r="${r%%$'\n'*}"  # its second line is the heading
+            case "$r" in
+                keep) first[$class]=$(( ${first[$class]:-0} + 1 )) ;;
+                drop|done) ;;
+                unrecognized) unread="$unread $id" ;;
+                *) die "$(basename -- "$ARCHIVE") cannot be read for $id's answer (${r:-no entry}); nothing counted" ;;
+            esac
+        done < <(parse_entries "$file")
+    done
+
+    printf 'Ask counter, %s to %s (answer date: the first commit adding the entry to %s)\n\n' \
+        "$since" "${until:-now}" "$(basename -- "$ARCHIVE")"
+    echo "| Class | Opened | Answered | First option | Median wait (days) | Max wait (days) |"
+    echo "|---|---|---|---|---|---|"
+    local -a classes=(merge re-dispatch 'real choice')
+    for i in "${!ROUTES[@]}"; do
+        (( i > 0 )) && [[ -z "${ROUTE_HOME[i]}" ]] && classes+=("${ROUTES[i]#you: }")
+    done
+    for class in "${classes[@]}"; do
+        r="$(median_max "${waits[$class]:-}")"
+        printf '| %s | %s | %s | %s | %s | %s |\n' "$class" "${opn[$class]:-0}" "${ans[$class]:-0}" \
+            "$([[ "$class" == merge || "$class" == re-dispatch || "$class" == 'real choice' ]] && echo "${first[$class]:-0}" || echo n/a)" \
+            "${r%%$'\t'*}" "${r#*$'\t'}"
+    done
+    printf '\nSittings: %s (distinct commits recording a judgment answer); distinct answer dates: %s\n' \
+        "${#sittings[@]}" "${#days[@]}"
+    printf 'Not read as an option (counted as not first option):%s\n' "${unread:- none}"
+    printf 'Undated (answered, but no commit adds it to the archive):%s\n' "${undated:- none}"
+    printf 'Not counted (answered in the window, not an owner route):%s\n' "${other:- none}"
+}
+
 case "${1:-}" in
+    counts)  shift; cmd_counts "$@" ;;
     init)    cmd_init ;;
     check)   cmd_check ;;
     index)   cmd_index ;;
