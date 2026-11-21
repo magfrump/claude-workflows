@@ -1,6 +1,6 @@
 # Code Review Rubric — board.sh weekly line skips a future-dated digest (brief 2026-11-20-board-weekly-future-date)
 
-**Commit:** 799cde84 (pass 1 reviewed) → 49261297 (pass 2 reviewed) → e8e5b76a (pass 2 fixes)
+**Commit:** 799cde84 (pass 1 reviewed) → 49261297 (pass 2 reviewed) → efe1703e (pass 3 reviewed) → pass 3 fixes
 **Scope:** `063a07d9..HEAD`, branch `fix/board-weekly-future-date` | **Reviewed:** 2026-11-20 | **Status: ✅ PASSES (pass 2, all rows resolved)**. Single-sample review: no findings is not proof that none exist.
 
 One fresh read-only reviewer per pass covered code-fact-check (comments, guide and research doc against the code), security and trust boundary (board.sh runs on the host over container-writable repos; S1: honest same-uid slips only), performance of the walk, and test coverage of the brief's three cases.
@@ -18,8 +18,9 @@ None.
 | # | Finding | Domain | Severity | Source | Legibility-target | Considered overrides | Status | Author note |
 |---|---|---|---|---|---|---|---|---|
 | A1 | `realday` parsed with local `date -d`, which rejects a real day whose local midnight a clock change skips (America/Santiago 2024-09-08), so the board would refuse its whole run that day. `scripts/lib/dev-cycle-read.sh:236` | Correctness | Bug | Pass 1 | for-author | — | Fixed 49261297 | `date -u -d`, and a bats case under TZ=America/Santiago. |
-| A2 | The research doc said the digest's brainstorm-age check keeps a local parse because its arithmetic needs it; the local parse is itself faulty across DST. `docs/working/research-2026-11-20-board-weekly-future-date.md` | Docs | Incorrect | Pass 2 | for-author | — | Fixed (pass 2 fixes, final commit) | Reworded; the code it described is fixed too (A3). |
-| A3 | The digest's default window (`TODAY - 14 days`, `scripts/dev-cycle.sh:248`) fails on a skipped-midnight TODAY with a misleading --since message; predates this branch. | Correctness | Pre-existing | Pass 2 | for-author | — | Fixed (pass 2 fixes, final commit) | `date -u -d` for the window and the brainstorm-age count; guard uses realday. |
+| A2 | The research doc said the digest's brainstorm-age check keeps a local parse because its arithmetic needs it; the local parse is itself faulty across DST. `docs/working/research-2026-11-20-board-weekly-future-date.md` | Docs | Incorrect | Pass 2 | for-author | — | Fixed e8e5b76a, efe1703e | Reworded; the code it described is fixed too (A3). |
+| A3 | The digest's default window (`TODAY - 14 days`, `scripts/dev-cycle.sh:248`) fails on a skipped-midnight TODAY with a misleading --since message; predates this branch. | Correctness | Pre-existing | Pass 2 | for-author | — | Fixed efe1703e | `date -u -d` for the window and the brainstorm-age count; guard uses realday. |
+| A4 | The brainstorm-age UTC fix had no test: putting back a local parse would still pass. `scripts/dev-cycle.sh:695` | Tests | Coverage gap | Pass 3 | for-author | — | Fixed (pass 3 fixes) | New York DST and Santiago skipped-midnight cases in `test/scripts/dev-cycle.bats`. |
 
 ---
 
@@ -32,6 +33,7 @@ None.
 | C3 | Research doc said the board adds no new requirement; it now needs GNU date on the host. | Pass 1 | Low | for-author | — | Fixed 49261297: guide and doc say so. |
 | C4 | Skip note named a repo-relative path while the shown edition is a checkout path. | Pass 1 | Informational | for-author | — | Fixed 49261297: both checkout paths. |
 | C5 | `realday` comment said --since also skips a future day. | Pass 2 | Informational | for-author | — | Fixed e8e5b76a. |
+| C7 | realday comment and research doc lagged the brainstorm guard; rubric cells lacked hashes. | Pass 3 | Informational | for-author | — | Fixed (pass 3 fixes). |
 | C6 | No test of a well-shaped impossible --since. | Pass 2 | Low | for-author | — | Fixed e8e5b76a: 2026-02-30 case. |
 
 ---

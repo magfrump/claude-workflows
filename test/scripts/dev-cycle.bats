@@ -341,6 +341,20 @@ make_repo() {
     [ "$status" -eq 0 ] && [[ "$output" == *"Window: since 2024-08-25 ("* ]] || { echo "$stderr"; echo "$output" | sed -n 3p; return 1; }
 }
 
+@test "the brainstorm age counts calendar days across a clock change and on a skipped local midnight" {
+    mkdir -p docs/working
+    printf '# Idea log\n\n## Brainstorm 2026-03-01\n- own (signal: a)\n' > docs/working/idea-log.md
+    git add -A && git commit -q -m brainstorm
+    # New York springs forward on 2026-03-08: a local count gave 13.
+    TZ=America/New_York DEV_CYCLE_TODAY=2026-03-15 run --separate-stderr bash "$DC" --since=2000-01-01
+    [ "$status" -eq 0 ] && [[ "$output" == *"Last brainstorm: 2026-03-01 (14 day(s) ago)"* ]] || { echo "$output" | grep -i brainstorm; return 1; }
+    # Santiago skipped 2024-09-08's midnight: the old guard printed none recorded.
+    printf '# Idea log\n\n## Brainstorm 2024-09-08\n- own (signal: a)\n' > docs/working/idea-log.md
+    git add -A && git commit -q -m brainstorm2
+    TZ=America/Santiago DEV_CYCLE_TODAY=2024-09-10 run --separate-stderr bash "$DC" --since=2000-01-01
+    [ "$status" -eq 0 ] && [[ "$output" == *"Last brainstorm: 2024-09-08 (2 day(s) ago)"* ]] || { echo "$output" | grep -i brainstorm; return 1; }
+}
+
 @test "--since includes commits from the start date itself" {
     GIT_COMMITTER_DATE="$(date +%F)T00:00:30" git commit -q --allow-empty --date="$(date +%F)T00:00:30" -m "just after midnight"
     # All commits here are from today: a window starting today counts all of them.
