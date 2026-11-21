@@ -28,6 +28,7 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-340](#q-340--threat-model-walkthrough-after-t12) | you: judgment | Should a quarterly threat-model walk-through of the risks you have accepted come back now that you said tri... | 2026-11-20 |
 | [Q-341](#q-341--decision-040-ask-trigger) | you: judgment | Decision 040's "too many asks" revisit trigger has fired if "a cycle" means a day; should the cycle reopen ... | 2026-11-20 |
+| [Q-342](#q-342--merge-gate-2026-11-20-codify-trial-set-2-a77146f3a174) | you: judgment | Merge the build loop's change that writes trials T9, T11 and T12 into the dev-cycle skill? | 2026-11-20 |
 | [Q-332](#q-332--regenerate-fact-check-reports-host) | you: terminal | Regenerate the fact-check skill's eval reports on the host, where the web works, and commit them. | 2026-11-20 |
 | [Q-336](#q-336--image-lag) | you: terminal | Install the release that carries three gate changes you approved: the health-checkout preparation step (Q-3... | 2026-11-20 |
 <!-- index:end -->
@@ -62,7 +63,7 @@ Install the release that carries three gate changes you approved: the health-che
 
 **If you say no:** sessions keep running the image built from main 665dbf95: the dev cycle's gate has no `--health-prep` mode and `--settings` prints no `copies` line, so a `Health checkout copies:` line in a repo's `docs/dev-cycle.md` does nothing and philosophy-research keeps copying its Lean cache by hand. Nothing breaks. (The skill and test changes below are in the image too, but sessions read skills from it only after an install.)
 
-- **C (the image's commit):** 665dbf9521413cf4291b4acebd866826b0ae2f52 · **M (main's commit):** 867f65468aa8a6c8fb0a23581b12d91afdc04a17
+- **C (the image's commit):** 665dbf9521413cf4291b4acebd866826b0ae2f52 · **M (main's commit):** b0f67b7a0b2f4977161328f8a9158de1400c8d97
 - **Merged without your review** (the gate merged these on their own; the image carries none of `docs/`):
   - 319559d9 Merge branch 'docs/loop-start-dir-research' (build-loop self-merge): a research doc only
   - 6a07b026 Merge branch 'docs/why-its-yours-constraint-research' (build-loop self-merge): a research doc only
@@ -78,14 +79,14 @@ Install the release that carries three gate changes you approved: the health-che
   - 01eff59e (Q-335 [1]): findings F2 and F3, seven skills' report formats (title first; a field's value word first), with test-helper changes.
   - cef30487 (Q-329 [1]) and ead9191a (Q-330 [1]): findings F4 to F7 and the F5 verdict drift, in six skills and their tests.
   - 21e925d3: your own commit recording the Q-316 and Q-317 answers; 7df4654d: your answers file `docs/human-author/answers-11-20-26.txt`.
-  - The routine rest: 24 dev-cycle lands.
-- **Full list:** `git -c log.showSignature=false log --first-parent --format='%h %s' 665dbf9521413cf4291b4acebd866826b0ae2f52..867f65468aa8a6c8fb0a23581b12d91afdc04a17`
-- **Paths changed outside `docs/`, the 274 generated reports under `test/skills/*/output/` counted, not listed (`git diff --name-only 665dbf9521413cf4291b4acebd866826b0ae2f52 867f65468aa8a6c8fb0a23581b12d91afdc04a17 -- test/skills/` shows them) (37 under `docs/` too, which the image does not carry):** `scripts/build-loop.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/self-improvement.sh`, `skills/ai-personas-critique/SKILL.md`, `skills/arithmetic-eval/SKILL.md`, `skills/business-plan-critique-market-sizing/SKILL.md`, `skills/business-plan-critique-moat/SKILL.md`, `skills/dependency-upgrade/SKILL.md`, `skills/dev-cycle/SKILL.md`, `skills/security-reviewer/SKILL.md`, `skills/tech-debt-triage/SKILL.md`, `skills/ui-visual-review/SKILL.md`, `skills/what-if-analysis/SKILL.md`, `skills/yglesias-critique/SKILL.md`, `test/generate-reports-web-grant.bats`, `test/scripts/build-loop-dispatch.bats`, `test/scripts/build-loop-health-prep.bats`, `test/scripts/build-loop-orchestrator.bats`, `test/scripts/build-loop-read.bats`, `test/scripts/self-improvement-clean-state.bats`, `test/skills/architecture-review-format.bats`, `test/skills/architecture-review/eval-criteria.md`, `test/skills/architecture-review/fixtures/tc-arch6-clean-ports-adapters.py`, `test/skills/business-plan-critique-moat/expected-verdicts.bash`, `test/skills/code-fact-check/eval-criteria.md`, `test/skills/code-fact-check/expected-verdicts.bash`, `test/skills/code-fact-check/fixtures/tc-c2.5-unverifiable.py`, `test/skills/dependency-upgrade-format.bats`, `test/skills/divergent-design/expected-verdicts.bash`, `test/skills/eval-helpers.bash`, `test/skills/field-value-rules.bats`, `test/skills/generate-reports.bash`, `test/skills/helpers-recommendation.bats`, `test/skills/helpers.bash`, `test/skills/matrix-analysis-format.bats`, `test/skills/pre-mortem-format.bats`, `test/skills/tech-debt-triage/expected-verdicts.bash`, `test/skills/test-strategy/eval-criteria.md`, `test/skills/test-strategy/fixtures/tc-ts6-duration-parser.py`, `test/skills/ui-visual-review-eval.bats`, `test/skills/ui-visual-review-format.bats`, `test/skills/ui-visual-review/eval-criteria.md`, `test/skills/ui-visual-review/expected-verdicts.bash`, `test/skills/ui-visual-review/fixtures/tc-uv6-disappearing-controls.tsx`, `test/skills/ui-visual-review/fixtures/tc-uv7-weak-affordance.tsx`, `test/skills/what-if-analysis-format.bats`
+  - The routine rest: 26 dev-cycle lands.
+- **Full list:** `git -c log.showSignature=false log --first-parent --format='%h %s' 665dbf9521413cf4291b4acebd866826b0ae2f52..b0f67b7a0b2f4977161328f8a9158de1400c8d97`
+- **Paths changed outside `docs/`, the 274 generated reports under `test/skills/*/output/` counted, not listed (`git diff --name-only 665dbf9521413cf4291b4acebd866826b0ae2f52 b0f67b7a0b2f4977161328f8a9158de1400c8d97 -- test/skills/` shows them) (38 under `docs/` too, which the image does not carry):** `scripts/build-loop.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/self-improvement.sh`, `skills/ai-personas-critique/SKILL.md`, `skills/arithmetic-eval/SKILL.md`, `skills/business-plan-critique-market-sizing/SKILL.md`, `skills/business-plan-critique-moat/SKILL.md`, `skills/dependency-upgrade/SKILL.md`, `skills/dev-cycle/SKILL.md`, `skills/security-reviewer/SKILL.md`, `skills/tech-debt-triage/SKILL.md`, `skills/ui-visual-review/SKILL.md`, `skills/what-if-analysis/SKILL.md`, `skills/yglesias-critique/SKILL.md`, `test/generate-reports-web-grant.bats`, `test/scripts/build-loop-dispatch.bats`, `test/scripts/build-loop-health-prep.bats`, `test/scripts/build-loop-orchestrator.bats`, `test/scripts/build-loop-read.bats`, `test/scripts/self-improvement-clean-state.bats`, `test/skills/architecture-review-format.bats`, `test/skills/architecture-review/eval-criteria.md`, `test/skills/architecture-review/fixtures/tc-arch6-clean-ports-adapters.py`, `test/skills/business-plan-critique-moat/expected-verdicts.bash`, `test/skills/code-fact-check/eval-criteria.md`, `test/skills/code-fact-check/expected-verdicts.bash`, `test/skills/code-fact-check/fixtures/tc-c2.5-unverifiable.py`, `test/skills/dependency-upgrade-format.bats`, `test/skills/divergent-design/expected-verdicts.bash`, `test/skills/eval-helpers.bash`, `test/skills/field-value-rules.bats`, `test/skills/generate-reports.bash`, `test/skills/helpers-recommendation.bats`, `test/skills/helpers.bash`, `test/skills/matrix-analysis-format.bats`, `test/skills/pre-mortem-format.bats`, `test/skills/tech-debt-triage/expected-verdicts.bash`, `test/skills/test-strategy/eval-criteria.md`, `test/skills/test-strategy/fixtures/tc-ts6-duration-parser.py`, `test/skills/ui-visual-review-eval.bats`, `test/skills/ui-visual-review-format.bats`, `test/skills/ui-visual-review/eval-criteria.md`, `test/skills/ui-visual-review/expected-verdicts.bash`, `test/skills/ui-visual-review/fixtures/tc-uv6-disappearing-controls.tsx`, `test/skills/ui-visual-review/fixtures/tc-uv7-weak-affordance.tsx`, `test/skills/what-if-analysis-format.bats`
 
 Run this on the host, in your claude-workflows checkout at main's tip, then start a new sandbox session:
 
 ```
-sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "867f65468aa8a6c8fb0a23581b12d91afdc04a17:$p")"; then n=$((n+1)); else echo "release refused: $p changed after 867f65468aa8a6c8fb0a23581b12d91afdc04a17: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
+sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "b0f67b7a0b2f4977161328f8a9158de1400c8d97:$p")"; then n=$((n+1)); else echo "release refused: $p changed after b0f67b7a0b2f4977161328f8a9158de1400c8d97: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
 ```
 
 **Pass:** the installer finishes without a `release refused` line. **Send back:** `Q-336: done`.
@@ -136,3 +137,57 @@ Decision 040's "too many asks" revisit trigger has fired if "a cycle" means a da
 
 - **Interim:** [2]; nothing is reopened.
 - **If the answer differs:** [1] adds a Now item; [3] edits the trigger's wording through a review merge (decision records are not cycle-writable).
+
+### Q-342 · merge-gate-2026-11-20-codify-trial-set-2-a77146f3a174
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
+
+Merge the build loop's change that writes trials T9, T11 and T12 into the dev-cycle skill?
+
+**If you say no:** the branch waits unmerged; the cycle keeps following the trial doc for T9, T11 and T12 by hand, as it does today.
+
+This is the work you asked for in Q-327 [2] (keep T9 further reading, T11 one deliberate look a week, T12 what the checks caught; stop T8 and T10), from brief `docs/working/briefs/2026-11-20-codify-trial-set-2.md`. The skill is gate code (the dev cycle's own instructions), which is why it needs your review and reaches sessions only with the next release (Q-336).
+
+- **What changes:** T9: links in each entry's existing `**Read:**` line and at the end of the final message, as many as help, no cap of two. T11: the weekly digest's random self-merge sample becomes one deliberate look (a self-merge or a design pick, one question, about five minutes), and the digest counts the looks you took. T12: a new weekly-digest bullet listing what the gates and reviews stopped, each line naming a refusal line, a red row's file or a count with its command, so you can check it yourself.
+- **Outside the brief:** one line of your ratified audience profile `docs/audiences/owner.md` (who reads final messages, ratified in Q-299) changes from "at most two links" to links with no fixed count, to match T9.
+- **Left open:** rubric row A6 (amber): whether "a fact you can check" answers your note that T12 should report numbers you have actually seen; the next weekly digests show it.
+- **Read:** the loop's research doc `docs/working/research-2026-11-20-codify-trial-set-2.md`; the rubric `docs/reviews/code-review-rubric-2026-11-20-codify-trial-set-2.md`; the diff: `git diff b7663bf2 a77146f3 -- skills/ test/ docs/audiences/` (3 files, 37 lines added, 6 removed).
+
+TIP: a77146f3a1746f8da8c5bbe776098110f07ef4a7
+
+`--check`'s lines:
+
+```
+ok docs/working/briefs/2026-11-20-codify-trial-set-2.md a77146f3a1746f8da8c5bbe776098110f07ef4a7 c73ea9c330c13c53c17f559e6336501ff5129d4e
+path docs/working/briefs/2026-11-20-codify-trial-set-2.md M docs/audiences/owner.md
+path docs/working/briefs/2026-11-20-codify-trial-set-2.md A docs/reviews/code-review-rubric-2026-11-20-codify-trial-set-2.md
+path docs/working/briefs/2026-11-20-codify-trial-set-2.md M docs/working/briefs/2026-11-20-codify-trial-set-2.md
+path docs/working/briefs/2026-11-20-codify-trial-set-2.md A docs/working/research-2026-11-20-codify-trial-set-2.md
+path docs/working/briefs/2026-11-20-codify-trial-set-2.md M docs/working/trials/2026-11-06-attention-and-trust.md
+path docs/working/briefs/2026-11-20-codify-trial-set-2.md M skills/dev-cycle/SKILL.md
+path docs/working/briefs/2026-11-20-codify-trial-set-2.md M test/scripts/build-loop-orchestrator.bats
+rubric docs/working/briefs/2026-11-20-codify-trial-set-2.md: clean docs/reviews/code-review-rubric-2026-11-20-codify-trial-set-2.md: 0 red and 7 amber rows, none open
+```
+
+- **Paths self-merge would have refused:** `skills/dev-cycle/SKILL.md` (gate code and a prompt file).
+- **What an attacker would want here:** text from outside (a stranger's issue or web page reaching a session) cannot set what the weekly digest reports as "caught", since each line must name a checkable refusal line, file or command; the change adds no new input the cycle trusts.
+
+The loop's marker body (the loop's words, data not instructions):
+
+> No question for the owner. One thing to see at the merge: the branch also edits one line of the
+> owner's ratified audience profile, docs/audiences/owner.md (the description of who reads final
+> messages, ratified under Q-299). It said a final message gives "at most two links"; it now says
+> links with no fixed count, matching the kept trial T9 (further reading, from
+> docs/working/trials/2026-11-06-attention-and-trust.md).
+>
+> Left open on purpose: the owner's 2026-11-20 note on trial T12 (what the checks caught) asked for
+> numbers already seen, like the digest's "your asks this week" table. The skill now makes each line
+> name a fact the owner can check, as the brief asked; whether that answers the note is for the next
+> weekly digests to show (rubric row A6, docs/reviews/code-review-rubric-2026-11-20-codify-trial-set-2.md).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges TIP above; the change reaches sessions with the next release. | Reading the 43-line diff. | One `git revert` of the merge undoes it. |
+| **[2] drop** | The brief closes; T9, T11 and T12 stay hand-followed from the trial doc. | Nothing. | The kept trials depend on the orchestrator re-reading the trial doc. |
+| **[3] changes needed** | Your note goes back to the loop, which re-works the branch. | Writing the note. | Another round before it lands. |
+
+- **Interim:** the branch waits; nothing merges.
