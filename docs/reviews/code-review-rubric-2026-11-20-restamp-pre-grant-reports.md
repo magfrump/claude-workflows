@@ -19,8 +19,8 @@ Loop closed at 00d51833
 
 | # | Finding | Domain | Severity | Source | Location | Legibility-target | Considered overrides | Status |
 |---|---|---|---|---|---|---|---|---|
-| A1 | The reviewer did not run the health check, so it could not confirm the 312 cleared warnings itself | Tests | Unverified | code-fact-check | `test/skills/runner-contract.bash:273` | for-author | — | Accepted: the author's run on 00d51833 shows 0 warnings and `All checks passed.` (research doc, Tests) |
-| A2 | The harness hash covers only its hashed files, so "argv unchanged" is proven for the hashed harness and these runners, not for inputs outside it such as the CLI version | Docs | Scope | code-fact-check | `test/skills/runner-contract.bash:181` | for-author | — | Accepted: the commit claims nothing beyond the hashed inputs, and the brief rules out regeneration |
+| A1 | The reviewer did not run the health check, so it could not confirm the 312 cleared warnings itself | Tests | Unverified | code-fact-check | `test/skills/runner-contract.bash:273` | for-author | — | Fixed: verified by the author's health-check run on 00d51833, 0 warnings and `All checks passed.` (research doc, Tests) |
+| A2 | The harness hash covers only its hashed files, so "argv unchanged" is proven for the hashed harness and these runners, not for inputs outside it such as the CLI version | Docs | Scope | code-fact-check | `test/skills/runner-contract.bash:181` | for-author | — | Accepted: the commit claims nothing beyond the hashed inputs, and the brief rules out regeneration. Revisit if a report regeneration of these skills shows output drift: regenerate then |
 
 ---
 
