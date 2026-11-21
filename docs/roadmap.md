@@ -49,11 +49,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   it reaches sessions with a release that re-blesses (watch Q-167 asks for that bless's hint lines).
 
 
-- **Agent: `questions.sh check` flags an entry outside `## Open`, and `migrate` drops a heading it empties** (filed 2026-11-20, step 7; behemoth-arsenal harness feedback F-001; triage brief 1 in `docs/working/research-2026-11-20-harness-feedback-triage.md`). Motive: after a migration left stale route headings, 19 of 20 owner questions there were filed under "Watched conditions". First step: a review brief (gate code) once the ask counter (Q-344) settles `scripts/questions.sh`.
-
 - **Agent: `guides/validation-gates.md` names the commit helper's literal-pathspecs guard** (filed 2026-11-20, step 7; the si-commit loop's nit). Motive: line 33 lists `si_commit_child_work`'s hardening but not the guard Q-348 moves into the lib. First step: once Q-348 merges, one line in that guide, riding with the next review unit that touches `guides/` (the cycle cannot write it).
-
-- **Agent: the board's weekly line trusts a future-dated file name** (filed 2026-11-20, step 7; same finding). Motive: the lib's `isweekly` takes the latest `YYYY-MM-DD.md` name, so a mistyped future date shows as latest every week. First step: once Q-352 merges, a small review brief to ignore dates after today and say so on the line.
 
 - **Agent: the digest's other sections read commit subjects under the repo's own log encoding** (filed 2026-11-20, step 7; the out-of-loop loop's follow-up, `docs/working/research-2026-11-20-out-of-loop-landings.md`, failure pattern FP-188). Motive: a repo-local `i18n.logOutputEncoding` cut subjects short and dropped a line in the new section; the digest's other `git log %s` reads have the same exposure. First step: once Q-353 merges, a review brief pinning `i18n.logOutputEncoding=UTF-8` in the digest's git calls, with a test.
 
@@ -61,15 +57,19 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
-- **Agent: close the six still-true rows of the 2026-11-13 review-gap audit** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-six-still-true-rows.md` (review).
+- **Agent: close the six still-true rows of the 2026-11-13 review-gap audit** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-six-still-true-rows.md` (review). Ready at ed98d39e; merge entry Q-360 (gate code: `scripts/questions.sh`).
 
-- **Agent: answers files count as the owner's answer** (from Now; Q-345 [1]). Brief `docs/working/briefs/2026-11-20-answers-file-route.md` (review, gate code).
+- **Agent: answers files count as the owner's answer** (from Now; Q-345 [1]). Brief `docs/working/briefs/2026-11-20-answers-file-route.md` (review, gate code). Ready at a7a04dc9; merge entry Q-358.
 
-- **Agent: `harness-feedback.py ingest` and a renamed project** (from Now: the renamed-project and empty-copy-overwrite items, one function). Brief `docs/working/briefs/2026-11-20-ingest-project-rename.md` (review).
+- **Agent: `harness-feedback.py ingest` and a renamed project** (from Now: the renamed-project and empty-copy-overwrite items, one function). Brief `docs/working/briefs/2026-11-20-ingest-project-rename.md` (review). Ready at 82e794ae; merge entry Q-359.
 
 - **Agent: other `printf | grep -q` pipelines under `pipefail`** (from Now, filed 2026-11-20; FP-175). Brief `docs/working/briefs/2026-11-20-pipefail-grep-q.md` (review). Ready at 265fdab2; merge entry Q-357.
 
-- **Agent: fix report findings F8 to F12 so five held-back skills' reports can land** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-report-findings-f8-f12.md` (review; skills are prompt files). Ready at 0df118cd; merge entry Q-349. Q-349 [1]: the merge was refused because the main checkout holds untracked `test/skills/fact-check/output/` reports (the owner's Q-332 host run); retried next iteration.
+- **Agent: fix report findings F8 to F12 so five held-back skills' reports can land** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-report-findings-f8-f12.md` (review; skills are prompt files). Ready at 0df118cd; merge entry Q-349. Q-349 [1]: the approved merge now conflicts with the default branch (iteration 2026-11-21-0624), so it was sent back to its loop to merge main in.
+
+- **Agent: `questions.sh check` flags an entry outside `## Open`, and `migrate` drops a heading it empties** (from Now, filed 2026-11-20; behemoth-arsenal F-001). Brief `docs/working/briefs/2026-11-20-questions-check-section.md` (review, gate code).
+
+- **Agent: the board's weekly line ignores a future-dated digest** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-board-weekly-future-date.md` (review).
 
 ## Next
 
