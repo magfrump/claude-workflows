@@ -140,6 +140,20 @@ make_repo() {
     [[ "$output" != *"No merges in the window"* ]]
 }
 
+@test "a repo-local log output encoding changes nothing in the activity section (brief 2026-11-20-digest-log-encoding, FP-188)" {
+    activity() { printf '%s\n' "$output" | sed -n '/^## 1\. Activity/,/^## 2\./p'; }
+    git checkout -q -b f4 && git commit -q --allow-empty -m "feature 4" && git checkout -q main
+    git merge -q --no-ff f4 -m "merge: café — ünïcode"
+    run --separate-stderr bash "$DC" --since=2000-01-01
+    want="$(activity)"
+    [[ "$want" == *"4 merge(s)"* && "$want" == *"merge: café — ünïcode"$'\n'* ]] || { echo "$want"; return 1; }
+    git config i18n.logOutputEncoding UTF-16
+    run --separate-stderr bash "$DC" --since=2000-01-01
+    [ "$status" -eq 0 ] || { echo "$stderr"; return 1; }
+    [ "$(activity)" == "$want" ] || { diff <(echo "$want") <(activity); return 1; }
+    [[ "$stderr" != *"null byte"* ]] || { echo "$stderr"; return 1; }
+}
+
 @test "the scrub strips C0, C1, bidi and tag characters from stdout and stderr" {
     mkdir -p docs/decisions
     # C1 CSI (U+009B), RLO (U+202E), a tag character (U+E0041), ESC, CR.
@@ -335,6 +349,26 @@ make_repo() {
     [[ "$output" == *"Window: since 2026-03-01 (from --since)"* ]]
 }
 
+@test "the default window holds on a day whose local midnight a clock change skips" {
+    # Chile's clocks went from 00:00 to 01:00 on 2024-09-08: a local parse of that day fails.
+    TZ=America/Santiago DEV_CYCLE_TODAY=2024-09-08 run --separate-stderr bash "$DC"
+    [ "$status" -eq 0 ] && [[ "$output" == *"Window: since 2024-08-25 ("* ]] || { echo "$stderr"; echo "$output" | sed -n 3p; return 1; }
+}
+
+@test "the brainstorm age counts calendar days across a clock change and on a skipped local midnight" {
+    mkdir -p docs/working
+    printf '# Idea log\n\n## Brainstorm 2026-03-01\n- own (signal: a)\n' > docs/working/idea-log.md
+    git add -A && git commit -q -m brainstorm
+    # New York springs forward on 2026-03-08: a local count gave 13.
+    TZ=America/New_York DEV_CYCLE_TODAY=2026-03-15 run --separate-stderr bash "$DC" --since=2000-01-01
+    [ "$status" -eq 0 ] && [[ "$output" == *"Last brainstorm: 2026-03-01 (14 day(s) ago)"* ]] || { echo "$output" | grep -i brainstorm; return 1; }
+    # Santiago skipped 2024-09-08's midnight: the old guard printed none recorded.
+    printf '# Idea log\n\n## Brainstorm 2024-09-08\n- own (signal: a)\n' > docs/working/idea-log.md
+    git add -A && git commit -q -m brainstorm2
+    TZ=America/Santiago DEV_CYCLE_TODAY=2024-09-10 run --separate-stderr bash "$DC" --since=2000-01-01
+    [ "$status" -eq 0 ] && [[ "$output" == *"Last brainstorm: 2024-09-08 (2 day(s) ago)"* ]] || { echo "$output" | grep -i brainstorm; return 1; }
+}
+
 @test "--since includes commits from the start date itself" {
     GIT_COMMITTER_DATE="$(date +%F)T00:00:30" git commit -q --allow-empty --date="$(date +%F)T00:00:30" -m "just after midnight"
     # All commits here are from today: a window starting today counts all of them.
@@ -463,6 +497,9 @@ EOF
     [ "$status" -eq 1 ]
     run --separate-stderr bash "$DC" --since=2026-13-45
     [ "$status" -eq 1 ]
+    # Well shaped but not a real day: the lib's realday refuses it.
+    run --separate-stderr bash "$DC" --since=2026-02-30
+    [ "$status" -eq 1 ] && [[ "$stderr" == *"--since must be a real YYYY-MM-DD date"* ]]
     run --separate-stderr bash "$DC" --bogus
     [ "$status" -eq 1 ]
     # An empty value is an error, not "no flag", and the message is plain.
@@ -960,6 +997,86 @@ skip docs/working/Weekly/2026-11-13.md: not one of the dev cycle's own files" ] 
                 "unrecognized Q-8" "unrecognized Q-9" "unrecognized Q-11" "unrecognized Q-12"; do
         [[ "$output" == *"$want"* ]] || { echo "missing: $want"; echo "$output"; return 1; }
     done
+}
+
+# af_entries: questions.md with entries opened 2026-10-12 (ID STATUS ANSWER-LINE), committed.
+af_entries() {
+    mkdir -p docs/working docs/human-author
+    {
+        echo '# Questions'; echo
+        while [[ $# -gt 0 ]]; do
+            printf '### %s · x\n**Needs:** you: judgment · **Opened:** 2026-10-12 · **Status:** %s\n\nq?\n\n%s\n\n' "$1" "$2" "$3"; shift 3
+        done
+    } > docs/working/questions.md
+    GIT_COMMITTER_DATE='2026-10-01T12:00:00+00:00' git add -A
+    GIT_COMMITTER_DATE='2026-10-01T12:00:00+00:00' git commit -qm q
+}
+# af_commit DATE MESSAGE: commit the tree with that committer date (YYYY-MM-DD, noon UTC).
+af_commit() { git add -A && GIT_COMMITTER_DATE="$1T12:00:00+00:00" git commit -qm "$2"; }
+
+@test "--check-answer reads an owner's answers file added on or after the entry's Opened date; a conflict skips naming both (brief 2026-11-20-answers-file-route)" {
+    af_entries Q-1 OPEN '' Q-2 OPEN '' Q-3 ANSWERED 'Q-3: [2]' Q-4 ANSWERED 'Q-4: [1]' Q-5 ANSWERED 'Q-5: [3]' \
+        Q-6 OPEN '' Q-7 OPEN '' Q-8 OPEN '' Q-10 OPEN ''
+    printf '### Q-9 · x\n**Needs:** you: judgment · **Status:** OPEN\n\nq?\n' >> docs/working/questions.md
+    # An answers file added before Q-6 opened is not read (an old file's ID may name another question).
+    printf 'Q-6: [1]\n' > docs/human-author/answers-10-11-26.txt; af_commit 2026-10-11 old
+    printf '%s\n' 'Q-1: [1]' '- Q-2: drop, because' 'Q-3: [1]' 'Q-4: keep' 'Q-5: it shipped, see the thread' 'Q-7: [1]' 'Q-7: [2]' '```' 'Q-10: [1]' '```' 'Q-9: [1]' \
+        > docs/human-author/answers-10-12-26.txt
+    # Any other file under docs/human-author/ is not read.
+    printf 'Q-8: [1]\n' > docs/human-author/notes.txt; printf 'Q-8: [1]\n' > docs/human-author/answers.md
+    af_commit 2026-10-12 answers
+    F=docs/human-author/answers-10-12-26.txt
+    run --separate-stderr bash "$DC" --check-answer Q-1 Q-2 Q-3 Q-4 Q-5 Q-6 Q-7 Q-8 Q-9 Q-10
+    [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output"; echo "$stderr"; return 1; }
+    [ "$output" = "keep Q-1 from $F:1
+drop Q-2 from $F:2
+skip Q-3: its entry in docs/working/questions.md reads drop but $F:3 reads keep
+keep Q-4
+done Q-5
+open Q-6
+skip Q-7: $F:6 reads keep but $F:7 reads drop
+open Q-8
+skip Q-9: its entry in docs/working/questions.md has no Opened: date (YYYY-MM-DD), so $F:11 is not read as its answer
+open Q-10" ] || { echo "$output"; return 1; }
+    # A file merged in from a side branch dates from the merge; a working-tree-only file counts for nothing.
+    git checkout -q -b side; printf 'Q-6: [2]\n' > docs/human-author/answers-late.txt; af_commit 2026-10-01 side
+    git checkout -q main; GIT_COMMITTER_DATE='2026-10-20T12:00:00+00:00' git merge -q --no-ff -m merge side
+    printf 'Q-8: [1]\n' > docs/human-author/answers-wt.txt
+    run --separate-stderr bash "$DC" --check-answer Q-6 Q-8
+    [ "$output" = "drop Q-6 from docs/human-author/answers-late.txt:1
+open Q-8" ] || { echo "$output"; return 1; }
+}
+
+@test "--check-answer names an answers file it cannot read, unless it predates the entry (brief 2026-11-20-answers-file-route)" {
+    af_entries Q-1 OPEN '' Q-2 ANSWERED 'Q-2: [1]'
+    ln -s answers-x.txt docs/human-author/answers-link.txt; af_commit 2026-10-11 link
+    run --separate-stderr bash "$DC" --check-answer Q-1 Q-2
+    [ "$output" = "open Q-1
+keep Q-2" ] || { echo "$output"; return 1; }
+    git rm -q docs/human-author/answers-link.txt; af_commit 2026-10-12 unlink; mkdir -p docs/human-author; ln -s answers-x.txt docs/human-author/answers-link.txt; af_commit 2026-10-13 relink
+    run --separate-stderr bash "$DC" --check-answer Q-1 Q-2
+    W="an answers file on or after its Opened: date cannot be read: docs/human-author/answers-link.txt is not a regular file on the default branch"
+    [ "$output" = "skip Q-1: $W
+skip Q-2: $W" ] || { echo "$output"; return 1; }
+    git rm -q docs/human-author/answers-link.txt; mkdir -p docs/human-author; printf 'Q-1: [1]\n```\n' > docs/human-author/answers-fence.txt; af_commit 2026-10-13 fence
+    run --separate-stderr bash "$DC" --check-answer Q-1
+    [ "$output" = "skip Q-1: an answers file on or after its Opened: date cannot be read: the code fence opened at line 2 of docs/human-author/answers-fence.txt is never closed, so the file is not read" ] || { echo "$output"; return 1; }
+    # An answers file added before the entry opened and edited since: its line for the ID is named, not read.
+    git rm -q docs/human-author/answers-fence.txt; mkdir -p docs/human-author; printf 'x\n' > docs/human-author/answers-old.txt; af_commit 2026-10-11 old
+    printf 'Q-1: [1]\n' >> docs/human-author/answers-old.txt; af_commit 2026-10-13 append
+    run --separate-stderr bash "$DC" --check-answer Q-1 Q-2
+    [ "$output" = "skip Q-1: docs/human-author/answers-old.txt:2 is in a file added before the entry opened (2026-10-11) and changed since (2026-10-13), so it is not read
+keep Q-2" ] || { echo "$output"; return 1; }
+    # The index is read per default-branch commit: moving MAIN_SHA and back re-reads it (board.sh's post-check does).
+    run bash -c 'source "$1/scripts/lib/dev-cycle-read.sh" && resolve_main && check_answer Q-1 && MAIN_SHA="$(git rev-parse main~1)" && check_answer Q-1 && resolve_main && check_answer Q-1' _ "$REPO_ROOT"
+    [ "$output" = "skip Q-1: docs/human-author/answers-old.txt:2 is in a file added before the entry opened (2026-10-11) and changed since (2026-10-13), so it is not read
+open Q-1
+skip Q-1: docs/human-author/answers-old.txt:2 is in a file added before the entry opened (2026-10-11) and changed since (2026-10-13), so it is not read" ] || { echo "$output"; return 1; }
+    git rm -q docs/human-author/answers-old.txt; mkdir -p docs/human-author; printf 'Q-1: [1]\n```\n' > docs/human-author/answers-fence.txt; af_commit 2026-10-13 fence-again
+    # A directory named answers-NAME is not a file to read either; it is named, never looked into.
+    git rm -q docs/human-author/answers-fence.txt; mkdir -p docs/human-author/answers-dir; printf 'Q-1: [1]\n' > docs/human-author/answers-dir/a.txt; af_commit 2026-10-13 dir
+    run --separate-stderr bash "$DC" --check-answer Q-1
+    [ "$output" = "skip Q-1: an answers file on or after its Opened: date cannot be read: docs/human-author/answers-dir is not a regular file on the default branch" ] || { echo "$output"; return 1; }
 }
 
 @test "--check-brief reads the status line from the default branch only" {

@@ -259,3 +259,36 @@ write_tasks() {
   [ "$(echo "$stdout" | jq 'length')" -eq 1 ]
   rm -f "$stderr_file"
 }
+
+# --- FP-175: a match followed by a large tail is still a match ---
+# Under pipefail, `echo "$fpath" | grep -q` lost the match when grep exited
+# at its first matching line and echo died of SIGPIPE writing the rest (exit
+# 141). A files_touched entry is planner text, so it can hold newlines. With
+# 200 KB after the matching line the old code lost the match 50 of 50 times
+# in a probe; at 70-120 KB only 1-6 of 200. The rejection message is the
+# assertion, since the old code's accepted task then also breaks jq.
+
+big_path() {
+  printf '%s\n' "$1"
+  head -c 200000 /dev/zero | tr '\0' x
+}
+
+@test "traversal in files_touched is rejected even with a large tail after it (FP-175)" {
+  local f="$TEST_TMPDIR/tasks.json"
+  big_path '../escape' > "$TEST_TMPDIR/path"
+  jq -n --rawfile p "$TEST_TMPDIR/path" \
+    '[{id: "t-trav-big", description: "d", files_touched: [$p], independent: true}]' > "$f"
+  result=$(validate_task_json "$f" 2>"$TEST_TMPDIR/err")
+  grep -q 'directory traversal in files_touched' "$TEST_TMPDIR/err"
+  [ "$(echo "$result" | jq 'length')" -eq 0 ]
+}
+
+@test "glob in files_touched is rejected even with a large tail after it (FP-175)" {
+  local f="$TEST_TMPDIR/tasks.json"
+  big_path '*.sh' > "$TEST_TMPDIR/path"
+  jq -n --rawfile p "$TEST_TMPDIR/path" \
+    '[{id: "t-glob-big", description: "d", files_touched: [$p], independent: true}]' > "$f"
+  result=$(validate_task_json "$f" 2>"$TEST_TMPDIR/err")
+  grep -q 'glob pattern in files_touched' "$TEST_TMPDIR/err"
+  [ "$(echo "$result" | jq 'length')" -eq 0 ]
+}

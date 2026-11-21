@@ -2,7 +2,9 @@
 # The dev cycle's reader, used by scripts/dev-cycle.sh and kept apart so
 # scripts/build-loop.sh can share it: the output scrub, the plain-file
 # and path-form rules, the cycle's own file names, the Markdown shapes the
-# readers refuse (FENCE_AWK), the brief, branch and answer checks, the
+# readers refuse (FENCE_AWK), the brief, branch and answer checks (the
+# answer read from the questions files and the owner's answers files under
+# docs/human-author/, see check_answer), the
 # instruction-file import walks, the read-as-truth rule and self-merge floor
 # they serve, and the default branch.
 #
@@ -38,7 +40,8 @@
 # (build-loop.sh calls it inside a condition).
 # Every script that calls scrub_reexec shares its DEV_CYCLE_SCRUBBED marker.
 # Inputs: check_brief, check_branch, check_answer, main_entry and brief_fields
-# read the default branch's commit, never the working tree (check_brief also
+# read the default branch's commit (check_answer also its first-parent log, for
+# when each answers file was added), never the working tree (check_brief also
 # refuses a brief path that is not plain in the working tree, which the cycle
 # writes). main_imports walks main's commit first, listing and checking the
 # working tree as it goes, and then reads the working tree's own files (the
@@ -229,6 +232,12 @@ anybrief() { isbrief "$1" || isclosed "$1"; }
 isrecord() { [[ "$1" =~ ^docs/working/cycles/cycle-$DIGIT{4}-$DIGIT{2}-$DIGIT{2}\.md$ ]]; }
 # A weekly digest: the skill's step 9 writes one a week, and it lands with the record.
 isweekly() { [[ "$1" =~ ^docs/working/weekly/$DIGIT{4}-$DIGIT{2}-$DIGIT{2}\.md$ ]]; }
+# A YYYY-MM-DD that names a real calendar day (GNU date: 2026-13-40 and
+# 2026-02-30 do not): the one date rule for the digest's cycle records,
+# --since and brainstorm date and the board's weekly line (the records and the line also skip a
+# day after their own TODAY). In UTC, since a local midnight a clock change
+# skips is no time.
+realday() { [[ "$1" =~ ^$DIGIT{4}-$DIGIT{2}-$DIGIT{2}$ ]] && date -u -d "$1" >/dev/null 2>&1; }
 # watching.md holds the cycle's watches (decision 040), and
 # roadmap-from-questions.md the agent entries `questions.sh migrate` left for
 # step 6 to fold into the roadmap and delete.
@@ -320,9 +329,14 @@ oddwhy() {  # the reason fence() refused a file, for a skip line
 # GIT_NO_REPLACE_OBJECTS); no hook or fsmonitor command, which the checkout
 # could edit (H1); no core.attributesFile, as gate_repo reads none; git log's
 # own date format and no signature check (a bad log.date stops git log;
-# log.showSignature runs gpg.program); and no commit signing (commit.gpgSign
+# log.showSignature runs gpg.program); no commit signing (commit.gpgSign
 # runs gpg.program on a commit or merge; the gate's own merge commit also
-# passes --no-gpg-sign: U4b1 i2 security F1). GIT_CONFIG_GLOBAL=/dev/null and
+# passes --no-gpg-sign: U4b1 i2 security F1); and message text read as UTF-8
+# (i18n.logOutputEncoding, which defaults to i18n.commitEncoding: a
+# repo-local UTF-16 cut subjects and dropped lines, FP-188; brief
+# 2026-11-20-digest-log-encoding). UTF-8 is git's own default, so where the
+# repository sets neither key (gate_repo, --main-log and every other gate
+# mode) the bytes read are unchanged. GIT_CONFIG_GLOBAL=/dev/null and
 # GIT_CONFIG_NOSYSTEM: the user's or system merge.* settings would change the
 # merge gate_repo computes and --main-log re-derives (A17); so a repository
 # owned by another uid needs safe.directory some other way.
@@ -332,7 +346,7 @@ oddwhy() {  # the reason fence() refused a file, for a skip line
 # plain decimal (010 reads as 8 here and as 10 to git) exits 1. A second call
 # returns at once: it would count HARDEN's pairs as the caller's
 # (CALLER_COUNT).
-HARDEN=(core.useReplaceRefs=false core.hooksPath=/dev/null core.fsmonitor=false core.attributesFile=/dev/null log.date=default log.showSignature=false commit.gpgSign=false)
+HARDEN=(core.useReplaceRefs=false core.hooksPath=/dev/null core.fsmonitor=false core.attributesFile=/dev/null log.date=default log.showSignature=false commit.gpgSign=false i18n.logOutputEncoding=UTF-8)
 CALLER_COUNT=""
 git_harden() {
   [[ -z "$CALLER_COUNT" ]] || return 0
@@ -1105,7 +1119,9 @@ floor_why() {
 # "odd N WHY", "unbalanced N" or "quoted N" (the file cannot be trusted; N is
 # the line, WHY the oddwhy reason), or nothing when the file has no such entry;
 # after keep, drop, done, open or unrecognized, a second line holds the entry's
-# heading after "### " (check_answer splits it off). A trailing CR is dropped.
+# heading after "### " and a third its header line's "**Opened:**" field (the
+# last one, blanks trimmed; empty when there is none), which check_answer
+# splits off. A trailing CR is dropped.
 # Fences are tracked across the whole file (FENCE_AWK), and no fenced line is
 # read. Each of these makes the whole file a skip for every ID, naming the line
 # and the reason: anything FENCE_AWK refuses (see its comment), a fence still
@@ -1133,8 +1149,11 @@ floor_why() {
 # label read here but not there lets --cycle-diff pass an answer: i2
 # architecture 1; build-loop-orchestrator.bats checks the label regex).
 # --cycle-diff runs this program itself (id Q-) for the whole-file skips.
+# OPTION_AWK is the option rule alone (the leading-token reading above), which
+# ANSWER_AWK starts with and ANSWERS_FILE_AWK (an owner's answers file) shares:
+# one rule for what an answer's text means (S3).
 # shellcheck disable=SC2016  # awk code, not shell: $0 and the rest must stay literal
-ANSWER_AWK='
+OPTION_AWK='
 function option(span,   s, w, r, t) {
   s = tolower(span); sub(/^[ \t*]+/, "", s)
   if (substr(s, 1, 3) == "[1]") return "keep"
@@ -1149,6 +1168,9 @@ function option(span,   s, w, r, t) {
   if (w == "2" || w == "drop") return "drop"
   return "done"
 }
+'
+# shellcheck disable=SC2016  # awk code, not shell: $0 and the rest must stay literal
+ANSWER_AWK="$OPTION_AWK"'
 function heading(l,   h) {
   if (substr(l, 1, 4) != "### ") return 0
   h = substr(l, 5)
@@ -1161,8 +1183,12 @@ heading($0) { count++; inside = (count == 1); header = 0; if (inside) head = sub
 /^(#|##|###) / { inside = 0; next }
 !inside { next }
 !header && /^\*\*Needs:\*\*/ {
-  header = 1; v = ""; n = split($0, fld, " · ")
-  for (i = 1; i <= n; i++) { f = fld[i]; sub(/^[ \t]+/, "", f); if (substr(f, 1, 12) == "**Status:** ") v = substr(f, 13) }
+  header = 1; v = ""; opened = ""; n = split($0, fld, " · ")
+  for (i = 1; i <= n; i++) {
+    f = fld[i]; sub(/^[ \t]+/, "", f)
+    if (substr(f, 1, 12) == "**Status:** ") v = substr(f, 13)
+    if (substr(f, 1, 12) == "**Opened:** ") { opened = substr(f, 13); sub(/[ \t]+$/, "", opened) }
+  }
   sub(/[ \t]+$/, "", v); answered = (v == "ANSWERED")
   next
 }
@@ -1186,8 +1212,79 @@ END {
   else if (infence) print "unbalanced " fline
   else if (qline) print "quoted " qline
   else if (count > 1) print "dup"
-  else if (count) { print (!answered ? "open" : done ? result : "unrecognized"); print head }
+  else if (count) { print (!answered ? "open" : done ? result : "unrecognized"); print head; print opened }
 }'
+# The owner's answers files (brief 2026-11-20-answers-file-route; Q-345 [1]:
+# the owner chose to have the gate read them): docs/human-author/answers-NAME
+# (NAME any characters but a slash; any other file under docs/human-author/ is
+# not read), as stored on the default branch's commit. Each line outside fences
+# (FENCE_AWK, so a file it refuses is not read) that starts, after an optional
+# "- ", with "Q-NNN:" is that ID's answer from the file, its text read by
+# OPTION_AWK (ANSWER_AWK's rule): "ID<TAB>LINE<TAB>RESULT" per line, printed only
+# at the end so a refusal is the whole output.
+# shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
+ANSWERS_FILE_AWK='
+{ sub(/\r$/, "") }
+fence($0) { next }
+{
+  t = $0; sub(/^- /, "", t)
+  if (match(t, /^Q-[0123456789]+:/)) { rows[++nrows] = substr(t, 1, RLENGTH - 1) "\t" NR "\t" option(substr(t, RLENGTH + 1)) }
+}
+END {
+  if (odd) print "odd " odd " " oddwhy
+  else if (infence) print "unbalanced " fline
+  else for (i = 1; i <= nrows; i++) print rows[i]
+}'
+# answers_index: the answers files on MAIN_SHA, read once per MAIN_SHA (a
+# caller that moves MAIN_SHA, as board.sh's post-check does, gets a fresh read).
+# Each file's date is the committer date (YYYY-MM-DD, as %cs prints it) of the
+# newest first-parent commit that added it (diffed against its first parent,
+# renames off), so a file merged in from a side branch dates from its merge.
+# Both sides of the date window are the writer's local calendar date: %cs is
+# in the committer's own zone, and questions.sh writes Opened: by date +%F.
+# Sets ANS_ROWS ("ID<TAB>PATH<TAB>LINE<TAB>RESULT<TAB>DATE<TAB>CHANGED" per
+# answer line, CHANGED the newest add or change)
+# and ANS_BAD ("DATE<TAB>WHY" per answers-NAME entry that could not be read:
+# not a regular file or not an allowed path form (main_entry), a read that
+# failed, a file FENCE_AWK refuses, or no adding commit found, DATE then
+# empty), WHY naming the path. Returns 1 with ANS_WHY when the files cannot be
+# listed at all.
+ANS_FOR=""; ANS_ROWS=(); ANS_BAD=(); ANS_WHY=""
+answers_index() {
+  local - ents=() toks=() t d="" p e c id l res flt
+  local -A added=() changed=()
+  set -o pipefail
+  [[ "$ANS_FOR" != "$MAIN_SHA" || -z "$MAIN_SHA" ]] || return 0
+  ANS_FOR=""; ANS_ROWS=(); ANS_BAD=(); ANS_WHY=""
+  nul_list ents git ls-tree -z --full-tree "$MAIN_SHA" -- docs/human-author/ \
+    || { ANS_WHY="docs/human-author/ could not be listed on the default branch"; return 1; }
+  # -z: each commit is "\001DATE" then NUL, then its names, the first after a
+  # newline, each ending in NUL. Newest first, so a name's first date wins: in
+  # added the newest add, in changed the newest add or change.
+  for flt in A AM; do
+    nul_list toks git log --first-parent --diff-merges=first-parent --root --no-renames --diff-filter="$flt" \
+        --no-textconv --no-ext-diff --name-only -z --format=%x01%cs "$MAIN_SHA" -- docs/human-author/ \
+      || { ANS_WHY="the commits that added or changed files under docs/human-author/ could not be listed"; return 1; }
+    for t in "${toks[@]}"; do
+      if [[ "$t" == $'\001'* ]]; then d="${t#$'\001'}"; continue; fi
+      t="${t#$'\n'}"; [[ "$t" == docs/human-author/* ]] || continue
+      c="${t#docs/human-author/}"; c="docs/human-author/${c%%/*}"  # a file below a directory dates the directory
+      if [[ "$flt" == A ]]; then [[ -n "${added[$c]+set}" ]] || added["$c"]="$d"
+      else [[ -n "${changed[$c]+set}" ]] || changed["$c"]="$d"; fi
+    done
+  done
+  for e in "${ents[@]}"; do
+    p="${e#*$'\t'}"
+    [[ "$p" == docs/human-author/answers-* && "$p" != docs/human-author/answers-*/* ]] || continue
+    d="${added[$p]-}"
+    if [[ -z "$d" ]]; then ANS_BAD+=($'\t'"${p//[$'\n\t']/ } has no adding commit on the default branch's first-parent history"); continue; fi
+    if ! main_file "$p" "$OPTION_AWK$ANSWERS_FILE_AWK"; then ANS_BAD+=("$d"$'\t'"${FILE_WHY//[$'\n\t']/ }"); continue; fi
+    while IFS=$'\t' read -r id l res; do
+      [[ -n "$id" ]] && ANS_ROWS+=("$id"$'\t'"$p"$'\t'"$l"$'\t'"$res"$'\t'"$d"$'\t'"${changed[$p]-$d}")
+    done <<<"$FILE_OUT"
+  done
+  ANS_FOR="$MAIN_SHA"
+}
 # One answer, from docs/working/questions.md and questions-archive.md on the
 # default branch's commit, never the working tree: an answer that unblocks
 # autonomous work must have reached main (plan D8), because a build loop can
@@ -1198,10 +1295,34 @@ END {
 # "### " (as written, CR dropped; "Q-NNN · SLUG" by the questions grammar),
 # else empties it; a caller that reads it (build-loop.sh --approved) calls
 # check_answer in its own shell, its output to a file.
+# The owner's answers files (answers_index) count too, for an entry found in
+# the questions files whose header has an Opened: date YYYY-MM-DD: a file
+# dated on or after it is read, an older one is not (an old file's Q-NNN may
+# name another question: the ID-collision history). Every "Q-NNN:" line those
+# files hold for the ID must read the same; then an open entry prints that
+# answer as "RESULT Q-NNN from PATH:LINE" (the first such line), and an
+# answered entry whose result is the same prints as before (the questions
+# file's own line wins, and it also wins over a file line read as
+# unrecognized: a prose answer the entry has since recorded as an option).
+# Any other disagreement, between two file lines or with the entry's own
+# answer, is a skip naming both; so is an answers-NAME entry in
+# that window that could not be read, and, for an open entry with no Opened:
+# date, any file line for the ID (none is read as its answer), and, for an
+# open entry, a line for the ID in a file added before Opened: but changed on
+# or after it. An entry recorded as prose (unrecognized) that meets a file's
+# option is a skip on purpose: neither source alone reads as that option.
+# A renamed or copied old file dates from its new name (renames are off): a
+# known limit of the window.
+# answer_word LINE ID: check_answer's line LINE for ID with an answers file's
+# " from PATH:LINE" suffix dropped (the same answer), for a caller that
+# matches the line whole; any other line is printed as it is.
+answer_word() {
+  case "$1" in "keep $2 from "*|"drop $2 from "*|"done $2 from "*|"unrecognized $2 from "*) printf '%s\n' "${1%% from *}" ;; *) printf '%s\n' "$1" ;; esac
+}
 ANSWER_HEADING=""
 # shellcheck disable=SC2034  # ANSWER_HEADING is read by the caller
 check_answer() {
-  local - a="$1" f e r hit="" where="" n why head=""; set -o pipefail  # as brief_fields
+  local - a="$1" f e r hit="" where="" n why head="" opened="" rest row id p l res d c src="" fr=""; set -o pipefail  # as brief_fields
   ANSWER_HEADING=""
   if [[ ! "$a" =~ ^Q-[0123456789]+$ ]]; then echo "skip ${a//$'\n'/ }: not a question ID (Q- and digits)"; return; fi
   if ! main_by_name; then echo "skip $a: no default branch found by name (origin/HEAD, main or master), or resolve_main has not run"; return; fi
@@ -1223,8 +1344,40 @@ check_answer() {
       quoted\ *) echo "skip $a: line ${r#quoted } of $f is a question heading inside a code fence (questions.sh archive splits entries there), so no entry in $f is read"; return ;;
     esac
     if [[ -n "$hit" ]]; then echo "skip $a: an entry with this heading in both $where and $f"; return; fi
-    hit="${r%%$'\n'*}"; head="${r#*$'\n'}"; where="$f"
+    # Three lines (result, heading, Opened); $(...) drops trailing empty ones.
+    hit="${r%%$'\n'*}"; rest=""; [[ "$r" != *$'\n'* ]] || rest="${r#*$'\n'}"
+    head="${rest%%$'\n'*}"; opened=""; [[ "$rest" != *$'\n'* ]] || opened="${rest#*$'\n'}"; where="$f"
   done
-  if [[ -n "$hit" ]]; then ANSWER_HEADING="$head"; echo "$hit $a"
-  else echo "skip $a: no such entry in docs/working/questions.md or questions-archive.md on the default branch"; fi
+  if [[ -z "$hit" ]]; then echo "skip $a: no such entry in docs/working/questions.md or questions-archive.md on the default branch"; return; fi
+  answers_index || { echo "skip $a: $ANS_WHY, so no answers file is read"; return; }
+  [[ "$opened" =~ ^[0123456789]{4}-[0123456789]{2}-[0123456789]{2}$ ]] || opened=""
+  if [[ -z "$opened" ]]; then
+    if [[ "$hit" == open ]]; then
+      for row in "${ANS_ROWS[@]}"; do
+        IFS=$'\t' read -r id p l _ <<<"$row"; [[ "$id" == "$a" ]] || continue
+        echo "skip $a: its entry in $where has no Opened: date (YYYY-MM-DD), so $p:$l is not read as its answer"; return
+      done
+    fi
+    ANSWER_HEADING="$head"; echo "$hit $a"; return
+  fi
+  for row in "${ANS_BAD[@]}"; do
+    d="${row%%$'\t'*}"; why="${row#*$'\t'}"  # not read: a tab is IFS whitespace, and an empty DATE would be dropped
+    [[ -n "$d" && "$d" < "$opened" ]] && continue
+    echo "skip $a: an answers file on or after its Opened: date cannot be read: $why"; return
+  done
+  for row in "${ANS_ROWS[@]}"; do
+    IFS=$'\t' read -r id p l res d c <<<"$row"
+    [[ "$id" == "$a" ]] || continue
+    if [[ "$d" < "$opened" ]]; then
+      # An older file edited since: its line may be this entry's answer or an old one's (an ID collision).
+      [[ "$c" < "$opened" || "$hit" != open ]] || { echo "skip $a: $p:$l is in a file added before the entry opened ($d) and changed since ($c), so it is not read"; return; }
+      continue
+    fi
+    if [[ -z "$src" ]]; then fr="$res"; src="$p:$l"
+    elif [[ "$res" != "$fr" ]]; then echo "skip $a: $src reads $fr but $p:$l reads $res"; return; fi
+  done
+  # A recorded reading of a prose line (unrecognized in the file) is the recorder's; a different option is a conflict.
+  if [[ -n "$src" && "$hit" != open && "$hit" != "$fr" && "$fr" != unrecognized ]]; then echo "skip $a: its entry in $where reads $hit but $src reads $fr"; return; fi
+  ANSWER_HEADING="$head"
+  if [[ -n "$src" && "$hit" == open ]]; then echo "$fr $a from $src"; else echo "$hit $a"; fi
 }

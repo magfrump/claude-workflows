@@ -26,12 +26,16 @@
 # them in questions.md; `migrate` moves them out losslessly.
 #
 # Usage:
-#   ~/.claude/scripts/questions.sh check      validate both files (exit 1 on problems)
+#   ~/.claude/scripts/questions.sh check      validate both files (exit 1 on problems); an entry in
+#                                             questions.md outside its `## Open` section is named with
+#                                             its heading (warned if opened before LEGACY_BEFORE)
 #   ~/.claude/scripts/questions.sh index      regenerate the index tables in place
 #   ~/.claude/scripts/questions.sh archive    move ANSWERED entries to the archive, reindex
 #   ~/.claude/scripts/questions.sh next-id    print the next free Q-NNN
 #   ~/.claude/scripts/questions.sh open       list live entries and open watches, one per line (ID, route, slug)
-#   ~/.claude/scripts/questions.sh migrate    move agent/deferred/trigger entries out of questions.md
+#   ~/.claude/scripts/questions.sh migrate    move agent/deferred/trigger entries out of questions.md,
+#                                             then drop each `##` heading there (never Index or Open)
+#                                             left with nothing but blank lines under it
 #   ~/.claude/scripts/questions.sh init       create empty live/archive/watching files if absent
 #   ~/.claude/scripts/questions.sh counts --since YYYY-MM-DD [--until YYYY-MM-DD]
 #                                             the weekly digest's ask counter for that window
@@ -51,14 +55,16 @@
 # there would be a success claim about files that were never read.
 #
 # Writes never go through a symlinked questions file or docs/working/ dir,
-# and, for the default paths, never land outside the git toplevel (an
-# ancestor symlink such as a symlinked docs/ is caught by that check, not by
-# the per-file one). Explicit QUESTIONS_LIVE/ARCHIVE paths get only the
-# symlink checks. Because the script runs inside arbitrary
-# cloned repos, docs/working/ and its files are attacker-authored input: a
-# planted symlink would otherwise turn `archive`, `index` or `init` into an
-# append/overwrite/create of any file the user can write (security review
-# 2026-09-21, finding 2). See assert_write_target.
+# and, for the default paths, never land outside the git toplevel or inside
+# its .git/. That check, not the per-file one, is what catches an ancestor
+# symlink: a symlinked docs/ that leads outside the repo or into .git/ is
+# refused, while one that stays in the working tree (docs -> ./site/docs, a
+# real layout) is followed and written through (iter3 N5). Explicit
+# QUESTIONS_LIVE/ARCHIVE paths get only the symlink checks. Because the
+# script runs inside arbitrary cloned repos, docs/working/ and its files are
+# attacker-authored input: a planted symlink would otherwise turn `archive`,
+# `index` or `init` into an append/overwrite/create of any file the user can
+# write (security review 2026-09-21, finding 2). See assert_write_target.
 
 set -euo pipefail
 
@@ -99,8 +105,9 @@ WATCHING_OVERRIDE="${QUESTIONS_WATCHING:-${QUESTIONS_LIVE:-}}"
 # --- Refuse a write destination that is, or resolves through, a symlink ---
 # Checked for the file itself (-L is true for a dangling link too, which -e
 # misses — that gap is how `init` used to create files at a link's target) and
-# for its directory. A default path must also resolve inside $PROJECT_ROOT,
-# which catches a symlinked ancestor such as docs/ -> /elsewhere. An explicit
+# for its directory. A default path must also resolve inside $PROJECT_ROOT
+# and outside its .git/, which catches a symlinked ancestor such as
+# docs/ -> /elsewhere or docs/ -> .git. An explicit
 # QUESTIONS_LIVE/QUESTIONS_ARCHIVE is the operator's choice, so it is exempt
 # from the containment check but not from the symlink check.
 assert_write_target() {
@@ -113,6 +120,10 @@ assert_write_target() {
         resolved="$(realpath -m -- "$file")"
         [[ "$resolved" == "$root"/* ]] \
             || die "refusing to write: $file resolves to $resolved, outside $root"
+        # e.g. docs -> .git: a questions doc there is one nobody would find (as
+        # for a $PWD inside .git, above).
+        [[ "$resolved" != "$root"/.git/* ]] \
+            || die "refusing to write: $file resolves to $resolved, inside $root/.git"
     fi
     return 0
 }
@@ -280,30 +291,96 @@ extract_entry() {
     ' "$file"
 }
 
-# --- Emit "ID<TAB>1" for each entry under a `## Closed` heading, else "ID<TAB>0" ---
+# --- The dev cycle's reader lib: FENCE_AWK (check, migrate), ANSWER_AWK (counts) ---
+# One fence model for every reader of these files (repo S3): the lib's, which
+# --check-answer already applies to questions.md. Missing, the command stops
+# and names it (H2) rather than reading sections without fences.
+# need_lib COMMAND WHY WHAT-IS-SKIPPED
+need_lib() {
+    local lib
+    lib="$(dirname -- "${BASH_SOURCE[0]}")/lib/dev-cycle-read.sh"
+    [[ -f "$lib" ]] || die "$1 needs $lib ($2); $3"
+    # shellcheck source=lib/dev-cycle-read.sh
+    source "$lib"
+}
+
+# --- Each entry's section: "ID<TAB>h<TAB>heading" or "ID<TAB>u<TAB>why" ---
+# The heading is the last `## ` line above the entry (empty above the first),
+# both read outside code fences (FENCE_AWK), so a fenced `## ` line opens no
+# section and a fenced `### Q-` line is no entry and is not printed. An entry
+# the reader cannot place is printed with u: after a line FENCE_AWK refuses
+# ("odd LINE CODE", CODE as oddwhy takes it), or inside a fence that never
+# closes ("open LINE", the fence's first line). Needs need_lib first.
 entry_sections() {
-    awk '
-        /^## / && !/^### / { closed = ($0 ~ /^## Closed[[:space:]]*$/) }
-        /^### Q-[0-9]+ / {
-            line = $0; sub(/^### /, "", line); split(line, parts, " · ")
-            print parts[1] "\t" (closed ? 1 : 0)
+    awk "$FENCE_AWK"'
+        { l = $0; sub(/\r$/, "", l); was = infence; f = fence(l) }
+        was && !infence { np = 0 }   # the fence closed: what was inside is text
+        !f && l ~ /^## / { head = l; next }
+        l ~ /^### Q-[0-9]+ / {
+            id = l; sub(/^### /, "", id); split(id, p, " · ")
+            if (!f) print p[1] "\th\t" head
+            else if (odd) print p[1] "\tu\todd " odd " " oddwhy
+            else pend[++np] = p[1]
+        }
+        END {
+            if (infence) for (i = 1; i <= np; i++) print pend[i] "\tu\t" (odd ? "odd " odd " " oddwhy : "open " fline)
         }
     ' "$1"
 }
 
+# unplaced_why WHY: entry_sections' u reason, in words.
+unplaced_why() {
+    local w="$1"
+    if [[ "$w" == open\ * ]]; then
+        echo "the code fence opened at line ${w#open } is never closed"
+    else
+        w="${w#odd }"
+        echo "line ${w%% *} $(oddwhy "${w#* }")"
+    fi
+}
+
+# section_problem RC FILE ID OPENED TEXT: report an entry that is not where
+# its file's sections say it should be (TEXT says how), as an error, or only a
+# warning when it was opened before LEGACY_BEFORE: entries filed by hand under
+# a stale heading exist in older projects (behemoth-arsenal F-001), and
+# refusing them all at once would fail every such clone's check at the next
+# install (failure pattern FP-113). Prints the new rc.
+section_problem() {
+    if [[ "$4" < "$LEGACY_BEFORE" ]]; then
+        echo "  ⚠ $3 in $(basename "$2"): $5 (opened before $LEGACY_BEFORE, so not refused)" >&2
+        echo "$1"
+    else
+        echo "  ✗ $3 in $(basename "$2"): $5" >&2
+        echo 1
+    fi
+}
+
 cmd_check() {
-    local rc=0 file seen_ids="" id route opened status slug home
+    local rc=0 file seen_ids="" id route opened status slug home kind text place h secs
     local -a files=("$LIVE" "$ARCHIVE")
-    local -A closed=()
+    local -A sect=()
+    need_lib check "its FENCE_AWK finds the code fences" "stopped before reading either file"
     # The watching file is optional (no file, no entry to check); present but
     # not a plain file, it is reported like a missing questions file.
     if [[ -e "$WATCHING" || -L "$WATCHING" ]]; then
         files+=("$WATCHING")
-        [[ -f "$WATCHING" ]] && while IFS=$'\t' read -r id home; do closed[$id]="$home"; done < <(entry_sections "$WATCHING")
     fi
 
     for file in "${files[@]}"; do
         [[ -f "$file" ]] || { echo "  ✗ missing: $file" >&2; rc=1; continue; }
+
+        # Each entry's section (entry_sections), for the live and watching
+        # files: an entry fenced as text has none and is not placed.
+        sect=()
+        if [[ "$file" == "$LIVE" || "$file" == "$WATCHING" ]]; then
+            # Into a variable first, so a reader that fails is reported, not
+            # read as a file whose entries have no section to check.
+            if secs="$(entry_sections "$file")"; then
+                while IFS=$'\t' read -r id kind text; do [[ -n "$id" ]] && sect[$id]="$kind$text"; done <<<"$secs"
+            else
+                echo "  ✗ $(basename "$file"): its sections could not be read, so where each entry sits is unchecked" >&2; rc=1
+            fi
+        fi
 
         # Precondition for every other assertion below. An invalid byte makes
         # grep report the file as binary and emit nothing, so without this the
@@ -358,14 +435,34 @@ cmd_check() {
                     echo "  ✗ $id: route '$route' is refused in questions.md; it belongs in $home — run: $QS_CMD migrate" >&2; rc=1
                 fi
             fi
+            place="${sect[$id]-}"
+            if [[ "$place" == u* && "$file" == "$WATCHING" ]]; then
+                # Strict here, as before this reader was fence-aware: the
+                # watching file is newer than LEGACY_BEFORE's reason, and an
+                # unplaced watch would otherwise skip the ## Closed rule below.
+                echo "  ✗ $id in watching.md: not placed in a section, so whether it sits under ## Closed is unchecked: $(unplaced_why "${place#u}")" >&2; rc=1
+            elif [[ "$place" == u* ]]; then
+                rc="$(section_problem "$rc" "$file" "$id" "$opened" "not placed in a section, so where it sits is unchecked: $(unplaced_why "${place#u}")")"
+            elif [[ "$file" == "$LIVE" && -z "$home" && "$place" == h* && ! "${place#h}" =~ ^\#\#\ Open[[:space:]]*$ ]]; then
+                # Only `## Open` holds entries (init writes Index, then Open):
+                # one under any other heading, such as a route heading a
+                # migration left behind, is misfiled where nobody looks. A
+                # non-owner route is left to the route check above, whose
+                # remedy (migrate) moves it out of the file altogether.
+                h="${place#h}"
+                rc="$(section_problem "$rc" "$file" "$id" "$opened" "sits $([[ -n "$h" ]] && echo "under '$h'" || echo 'above every ## heading'), not under ## Open — move it there")"
+            fi
             if [[ "$file" == "$WATCHING" ]]; then
                 if [[ "$home" != "$WATCH_HOME" ]]; then
                     echo "  ✗ $id: route '$route' does not belong in watching.md (only deferred and trigger watches do)" >&2; rc=1
                 fi
-                if [[ "${closed[$id]:-0}" == 1 && "$status" == "OPEN" ]]; then
-                    echo "  ✗ $id is OPEN but sits under watching.md's ## Closed" >&2; rc=1
-                elif [[ "${closed[$id]:-0}" == 0 && "$status" == "ANSWERED" ]]; then
-                    echo "  ✗ $id is ANSWERED (closed) but sits above watching.md's ## Closed" >&2; rc=1
+                if [[ "$place" == h* ]]; then
+                    [[ "${place#h}" =~ ^\#\#\ Closed[[:space:]]*$ ]] && h=1 || h=0
+                    if [[ "$h" == 1 && "$status" == "OPEN" ]]; then
+                        echo "  ✗ $id is OPEN but sits under watching.md's ## Closed" >&2; rc=1
+                    elif [[ "$h" == 0 && "$status" == "ANSWERED" ]]; then
+                        echo "  ✗ $id is ANSWERED (closed) but sits above watching.md's ## Closed" >&2; rc=1
+                    fi
                 fi
             fi
         done < <(parse_entries "$file")
@@ -528,9 +625,31 @@ listing_with_entry() {
     cat -- "$LISTING" && cat -- "$1" && echo
 }
 
+# live_without_empty_headings [1]: the live file without each `## ` heading,
+# other than `## Index` and `## Open`, whose section holds nothing but blank
+# lines, and without those blank lines; with 1, only those headings, one per
+# line. Such a heading is what a migration leaves behind (a route heading
+# from before decision 040), and a later entry appended under it is misfiled
+# (behemoth-arsenal F-001). Any other line under it, prose included, keeps
+# it: nothing but a heading and blank lines is ever dropped. Headings are read
+# outside code fences (FENCE_AWK); a line it refuses, and all after it, count
+# as content, so a file it cannot read loses no heading. Needs need_lib first.
+live_without_empty_headings() {
+    awk -v list="${1:-0}" "$FENCE_AWK"'
+        { l = $0; sub(/\r$/, "", l); f = fence(l) }
+        cand && !f && l ~ /^[ \t]*$/ { buf = buf $0 "\n"; next }
+        cand && !f && l ~ /^##? / { if (list) print head; cand = 0 }   # empty: dropped
+        cand { if (!list) printf "%s", buf; cand = 0 }                 # content: kept
+        !f && l ~ /^## / && l !~ /^## (Index|Open)[ \t]*$/ { cand = 1; head = l; buf = $0 "\n"; next }
+        !list { print }
+        END { if (cand && list) print head }
+    ' "$LIVE"
+}
+
 cmd_migrate() {
-    local moved=0 id route status home entry
+    local moved=0 id route status home entry heads h
     require_files
+    need_lib migrate "its FENCE_AWK finds the code fences" "stopped before reading either file"
     assert_write_targets
     assert_write_target "$LISTING" "${QUESTIONS_LIVE:-}"
     [[ ! -e "$LISTING" || -f "$LISTING" ]] || die "refusing to write: $LISTING is not a regular file"
@@ -560,6 +679,14 @@ cmd_migrate() {
         moved=$((moved + 1))
         echo "  → moved $id ($route) to $([[ "$home" == "$WATCH_HOME" ]] && echo "$WATCHING" || echo "$LISTING")"
     done < <(parse_entries "$LIVE")
+
+    # Every run, not only one that moved something, so a run interrupted
+    # after its last move still drops the heading when re-run.
+    heads="$(live_without_empty_headings 1)"
+    if [[ -n "$heads" ]]; then
+        replace_with "$LIVE" live_without_empty_headings
+        while IFS= read -r h; do echo "  → removed the empty heading '$h' from $LIVE"; done <<<"$heads"
+    fi
 
     cmd_index
     echo "  ✓ migrated $moved entr$([[ $moved -eq 1 ]] && echo y || echo ies)"
@@ -715,7 +842,7 @@ median_max() {
 }
 
 cmd_counts() {
-    local since="" until="" lib file id route opened status slug class date commit r i
+    local since="" until="" file id route opened status slug class date commit r i
     while (( $# )); do
         case "$1" in
             --since) since="${2:-}"; shift 2 || die "--since needs a date" ;;
@@ -729,10 +856,7 @@ cmd_counts() {
         fi
     done
     require_files
-    lib="$(dirname -- "${BASH_SOURCE[0]}")/lib/dev-cycle-read.sh"
-    [[ -f "$lib" ]] || die "counts needs $lib (its ANSWER_AWK reads the answers); nothing counted"
-    # shellcheck source=lib/dev-cycle-read.sh
-    source "$lib"
+    need_lib counts "its ANSWER_AWK reads the answers" "nothing counted"
 
     local -A dated=() sha=() opn=() ans=() first=() waits=() sittings=() days=()
     local undated="" unread="" other="" history

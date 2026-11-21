@@ -212,6 +212,26 @@ other $O docs: x
 other $T answer"
 }
 
+@test "--main-log reads a commit that only adds or changes the owner's answers files as answers, and one with any other path or shape as other (brief 2026-11-20-answers-file-route)" {
+    qs; S="$(git rev-parse main)"; mkdir -p docs/human-author
+    printf 'Q-001: [1]\n' > docs/human-author/answers-10-12-26.txt; printf 'Q-002: [1]\n' > docs/human-author/answers-10-12-26-2.txt; commit_all answers; A1="$(git rev-parse main)"
+    printf 'more\n' >> docs/human-author/answers-10-12-26.txt; commit_all fix; A2="$(git rev-parse main)"
+    # Another file there, an answers file beside another path, a deletion, an executable one, one below a directory.
+    echo n > docs/human-author/notes.txt; commit_all notes; O1="$(git rev-parse main)"
+    echo z > docs/human-author/answers-z.txt; echo y > y.txt; commit_all mixed; O2="$(git rev-parse main)"
+    git rm -q docs/human-author/answers-z.txt; commit_all delete; O3="$(git rev-parse main)"
+    echo e > docs/human-author/answers-e.txt; chmod +x docs/human-author/answers-e.txt; commit_all exec; O4="$(git rev-parse main)"
+    mkdir -p docs/human-author/answers-d; echo d > docs/human-author/answers-d/a.txt; commit_all dir; O5="$(git rev-parse main)"
+    ml "$S" 2 "main $O5 7
+answers $A1 answers
+answers $A2 fix
+other $O1 notes
+other $O2 mixed
+other $O3 delete
+other $O4 exec
+other $O5 dir"
+}
+
 @test "--main-log reads other for a near miss of each class, and refuses a SINCE off main's first-parent history (T39, U3b2)" {
     qs; S="$(git rev-parse main)"; work feat/x; X="$(git rev-parse feat/x)"
     M="Merge branch 'feat/x' (build-loop self-merge)"$'\n\n'"Build-loop-gate: 2026-10-01-x"
@@ -411,12 +431,12 @@ shim() {
     L="$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
     run env -i PATH="$PATH" GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=c bash -c 'source "$1"; git_harden; git_harden; echo "caller $CALLER_COUNT"; printf "pair %s\n" "${HARDEN[@]}"; env | grep "^GIT_" | sort' _ "$L"
     [ "$status" -eq 0 ] || { echo "$output"; return 1; }
-    H="core.useReplaceRefs=false core.hooksPath=/dev/null core.fsmonitor=false core.attributesFile=/dev/null log.date=default log.showSignature=false commit.gpgSign=false"
+    H="core.useReplaceRefs=false core.hooksPath=/dev/null core.fsmonitor=false core.attributesFile=/dev/null log.date=default log.showSignature=false commit.gpgSign=false i18n.logOutputEncoding=UTF-8"
     E="GIT_ALLOW_PROTOCOL=none GIT_ATTR_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 GIT_LITERAL_PATHSPECS=1 GIT_NO_REPLACE_OBJECTS=1 GIT_OPTIONAL_LOCKS=0"
     want="caller 1"; for kv in $H; do want+=$'\n'"pair $kv"; done
     k=0; keys="GIT_CONFIG_KEY_0=user.name"; vals="GIT_CONFIG_VALUE_0=c"
     for kv in $H; do k=$((k + 1)); keys+=$'\n'"GIT_CONFIG_KEY_$k=${kv%%=*}"; vals+=$'\n'"GIT_CONFIG_VALUE_$k=${kv#*=}"; done
-    want+=$'\n'"$(printf '%s\n' $E "GIT_CONFIG_COUNT=8" "$keys" "$vals" | LC_ALL=C sort)"
+    want+=$'\n'"$(printf '%s\n' $E "GIT_CONFIG_COUNT=9" "$keys" "$vals" | LC_ALL=C sort)"
     [ "$output" = "$want" ] || { diff <(echo "$want") <(echo "$output"); return 1; }
     # d6.sh repeats neither list: it runs the lib's git_harden (its own test above).
     ! grep -nE '^[^#]*(GIT_NO_REPLACE_OBJECTS|core\.hooksPath)' "$REPO_ROOT/scripts/d6.sh" || return 1

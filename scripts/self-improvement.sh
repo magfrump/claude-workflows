@@ -1827,7 +1827,8 @@ Then git add the resolved files and git commit to complete the merge." || RESOLV
             # from HEAD. "No unmerged paths" alone also matches a merge git
             # refused outright, and a resolution staged but never committed —
             # see merge_landed().
-            if merge_landed "$BRANCH" && ! git diff --name-only --diff-filter=U | grep -q .; then
+            # Here-string, not a pipe: under pipefail a SIGPIPE 141 read as "no conflicts" (FP-175).
+            if merge_landed "$BRANCH" && ! grep -q . <<< "$(git diff --name-only --diff-filter=U)"; then
                 MERGE_STATUS="conflict_resolved"
             else
                 MERGE_STATUS="conflict_unresolved"

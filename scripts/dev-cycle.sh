@@ -71,7 +71,13 @@
 #             NUL byte, a byte-order mark on line 1, a question heading
 #             inside a fence, a questions file that is not a regular file
 #             under plain directories on the default branch, or a default
-#             branch whose tree or file could not be read).
+#             branch whose tree or file could not be read). The owner's
+#             answers files on that commit count too (docs/human-author/answers-NAME,
+#             added in a first-parent commit dated on or after the entry's
+#             Opened: date): "<option> Q-NNN from PATH:LINE" when only a file
+#             answers an open entry, and a skip naming both sides when two
+#             answers disagree or such a file cannot be read (the lib's
+#             check_answer has the rule).
 #   --check-brief, --check-branch and --check-answer need a default branch
 #   found by name (origin/HEAD, main or master): they read its commit.
 #
@@ -127,8 +133,9 @@ done
 
 # Every git call from here on, the lib's and questions.sh's included, runs
 # hardened, as build-loop.sh's do (the lib's git_harden: no hook, fsmonitor,
-# replace ref, user or system config, or transport): D6 runs the digest as
-# gate code. File names are literal, not pathspecs.
+# replace ref, user or system config, or transport, and message text in UTF-8
+# whatever the repo's log output encoding): D6 runs the digest as gate code.
+# File names are literal, not pathspecs.
 git_harden
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || { echo "Not inside a git repository" >&2; exit 1; }
 cd "$ROOT"
@@ -227,10 +234,10 @@ if dirok docs/working/cycles; then
       # Keep the newest skipped date (not future-dated) to warn when it is newer
       # than the record the window starts from.
       skipped "$f" && [[ "$SKIP_AT" == "$f" && "$d" > "$skipped_record" && ! "$d" > "$TODAY" ]] \
-        && date -d "$d" >/dev/null 2>&1 && skipped_record="$d"
+        && realday "$d" && skipped_record="$d"
       continue
     fi
-    date -d "$d" >/dev/null 2>&1 || continue  # a name that is not a real date
+    realday "$d" || continue  # a name that is not a real date
     [[ "$d" > "$last_record" && ! "$d" > "$TODAY" ]] && last_record="$d"  # ignore future-dated
   done
 else
@@ -245,14 +252,14 @@ elif [[ -n "$last_record" ]]; then
     source_note+="; a newer record, docs/working/cycles/cycle-$skipped_record.md, was skipped as not a plain file (section 8), so this window may start too early"
   fi
 else
-  SINCE="$(date -d "$TODAY - 14 days" +%F)"
+  SINCE="$(date -u -d "$TODAY - 14 days" +%F)"  # UTC: a skipped local midnight is no time
   if [[ $records_skipped -gt 0 ]]; then
     source_note="no readable cycle record (records, or a directory above them, were skipped as not a plain file or directory: section 8), so the default of 14 days"
   else
     source_note="no cycle record found, so the default of 14 days (the previous cycle, if any, did not write its record)"
   fi
 fi
-if ! [[ "$SINCE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || ! date -d "$SINCE" >/dev/null 2>&1; then echo "--since must be a real YYYY-MM-DD date" >&2; exit 1; fi
+if ! realday "$SINCE"; then echo "--since must be a real YYYY-MM-DD date" >&2; exit 1; fi
 
 echo "# Dev-cycle digest — $TODAY"
 echo
@@ -691,8 +698,8 @@ if inrepo "$LOG"; then
   # No {n} intervals in the awk regex: mawk, Debian's default awk, lacks them.
   # Each committed copy of a line cancels one working-tree copy (a multiset difference).
   seeded="$(awk -v from="$bs_from" '{ sub(/\r$/, "") } FILENAME == ARGV[1] { old[$0]++; next } FNR > from && /^- [^ ]/ && index(substr($0, 4), "(signal: ") && /\)[[:space:]]*$/ { if (old[$0] > 0) old[$0]--; else c++ } END { print c + 0 }' <(if [[ -n "$bs_old" ]]; then git cat-file blob "$bs_old"; fi) "$LOG")"
-  if [[ -n "$last_bs" ]] && date -d "$last_bs" >/dev/null 2>&1; then
-    echo "- Last brainstorm: $last_bs ($(( ($(date -d "$TODAY" +%s) - $(date -d "$last_bs" +%s)) / 86400 )) day(s) ago)"
+  if [[ -n "$last_bs" ]] && realday "$last_bs"; then
+    echo "- Last brainstorm: $last_bs ($(( ($(date -u -d "$TODAY" +%s) - $(date -u -d "$last_bs" +%s)) / 86400 )) day(s) ago)"
   else
     echo "- Last brainstorm: none recorded in $LOG"
   fi

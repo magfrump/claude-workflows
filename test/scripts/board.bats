@@ -99,6 +99,19 @@ mkrepo() {
     [[ "$output" != *Q-001* ]]
 }
 
+@test "a refusal line followed by a long check output is reported once (FP-175)" {
+    # 3000 refusals make about 220 KB of check output after the first one.
+    # A pipe into grep -m1 under pipefail lost that match to SIGPIPE 141 and
+    # ran the head -n1 fallback too, doubling the line.
+    mkrepo alpha
+    for i in $(seq 3000); do printf '\n### Q-9 · Bad Heading %d\n' "$i"; done \
+        >> "$BATS_TEST_TMPDIR/alpha/docs/working/questions.md"; commit "$BATS_TEST_TMPDIR/alpha"
+    board
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"UNREADABLE (questions.sh check: ✗ questions.md: malformed entry heading: ### Q-9 · Bad Heading 1)"* ]]
+    [[ "$output" != *"Bad Heading 1"$'\n'* ]]
+}
+
 @test "an unknown route is refused by name" {
     mkrepo alpha
     entry Q-007 odd-route 'you: someday' OPEN >> "$BATS_TEST_TMPDIR/alpha/docs/working/questions.md"
@@ -238,6 +251,19 @@ refused() {
     ans alpha Q-001 '[2]'; refused alpha "Q-001 is already ANSWERED on main"
     run cat "$HOME/.local/state/claude-board/runs.log"
     [[ "$output" == *" answer Q-001 written"*" answer Q-001 printed"* ]]
+}
+
+@test "an entry the owner's answers file answers is off the listing, and answer names the file (brief 2026-11-20-answers-file-route)" {
+    offmain alpha; a="$BATS_TEST_TMPDIR/alpha"
+    git -C "$a" checkout -q main && mkdir -p "$a/docs/human-author" && printf 'Q-001: [1]\n' > "$a/docs/human-author/answers-x.txt"
+    commit "$a"; git -C "$a" checkout -q work
+    board
+    [[ "$output" != *Q-001* && "$output" == *Q-002* ]] || { echo "$output"; false; }
+    ans alpha Q-001 '[2]'; refused alpha "Q-001 is already answered by the owner's answers file docs/human-author/answers-x.txt:1 on main"
+    # A prose line there is no option: the board records one, and the recorded option is what the cycle reads.
+    git -C "$a" checkout -q main && printf 'Q-002: let me think about it\n' >> "$a/docs/human-author/answers-x.txt"; commit "$a"; git -C "$a" checkout -q work
+    ans alpha Q-002 '[1]'
+    [ "$status" -eq 0 ] && [[ "$output" == *"The cycle's reader reads it as keep."* ]] || { echo "$output"; false; }
 }
 
 @test "answer prints the line instead, and moves nothing, for each case it cannot write safely" {
@@ -557,7 +583,7 @@ fbline() { printf '%s\n' "$output" | awk -v h="== $BATS_TEST_TMPDIR/$1" '$0 == h
     # The renamed project: stored with this Project line, but under the old file name.
     git -C "$CW" mv docs/working/feedback/beta.md docs/working/feedback/old-name.md; hfile "$CW/docs/working/feedback/old-name.md" beta F-001; commit "$CW"
     board
-    [ "$(fbline beta)" = "feedback: 1 not copied (F-002); no command: its stored copy is docs/working/feedback/old-name.md, not docs/working/feedback/beta.md, so ingest would store it twice" ] || { echo "$output"; false; }
+    [ "$(fbline beta)" = "feedback: 1 not copied (F-002); no command: its stored copy is docs/working/feedback/old-name.md, not docs/working/feedback/beta.md, so ingest refuses until it is renamed" ] || { echo "$output"; false; }
 }
 
 @test "feedback: a stored copy failing check, or two with one Project, or a non-file there, is NOT COMPARED on every project, exit 1" {
@@ -614,6 +640,57 @@ fbline() { printf '%s\n' "$output" | awk -v h="== $BATS_TEST_TMPDIR/$1" '$0 == h
     board
     [ "$status" -eq 1 ] && [[ "$output" == *"   weekly UNREADABLE: docs/working/weekly is not a directory on the default branch"* ]] || { echo "$output"; false; }
     [[ "$output" == *"1 project, 2 open for you, 1 unreadable or refused; exit 1"* ]]
+}
+
+# The weekly line skips a future-dated edition (docs/working/research-2026-11-20-board-weekly-future-date.md).
+wk() { local a="$1"; shift; mkdir -p "$a/docs/working/weekly"; for d in "$@"; do echo w > "$a/docs/working/weekly/$d.md"; done; commit "$a"; }
+
+@test "weekly: a future-dated edition is skipped and named, and the latest on or before today is shown" {
+    mkrepo alpha; a="$BATS_TEST_TMPDIR/alpha"; wk "$a" 2026-11-19 2027-11-19
+    BOARD_TODAY=2026-11-20 board
+    [ "$status" -eq 0 ] || { echo "$output"; false; }
+    [[ "$output" == *$'\n'"   weekly: $a/docs/working/weekly/2026-11-19.md (2026-11-19); skipped future-dated $a/docs/working/weekly/2027-11-19.md"$'\n'* ]] || { echo "$output"; false; }
+    [[ "$output" == *"1 project, 2 open for you, 0 unreadable or refused; exit 0"* ]]
+    # Today's own edition is not future-dated; with two after today, the newest and a count.
+    wk "$a" 2026-11-20 2028-01-01
+    BOARD_TODAY=2026-11-20 board
+    [ "$status" -eq 0 ] && [[ "$output" == *"   weekly: $a/docs/working/weekly/2026-11-20.md (2026-11-20); skipped 2 future-dated, the newest $a/docs/working/weekly/2028-01-01.md"$'\n'* ]] || { echo "$output"; false; }
+}
+
+@test "weekly: only a future-dated edition is none yet plus the skip; a skipped one is named even when the shown one is UNREADABLE" {
+    mkrepo alpha; a="$BATS_TEST_TMPDIR/alpha"; wk "$a" 2027-11-19
+    BOARD_TODAY=2026-11-20 board
+    [ "$status" -eq 0 ] && [[ "$output" == *$'\n'"   weekly: none yet; skipped future-dated $a/docs/working/weekly/2027-11-19.md"$'\n'* ]] || { echo "$output"; false; }
+    mkdir -p "$a/elsewhere"; ln -s ../../elsewhere/x "$a/docs/working/weekly/2026-11-13.md"; commit "$a"
+    BOARD_TODAY=2026-11-20 board
+    [ "$status" -eq 1 ] && [[ "$output" == *"   weekly UNREADABLE: docs/working/weekly/2026-11-13.md is not a regular file on the default branch; skipped future-dated $a/docs/working/weekly/2027-11-19.md"* ]] || { echo "$output"; false; }
+}
+
+@test "weekly: an impossible date is not an edition, neither shown nor skipped" {
+    mkrepo alpha; a="$BATS_TEST_TMPDIR/alpha"; wk "$a" 2026-11-06 2026-13-40 2026-02-30
+    BOARD_TODAY=2026-11-20 board
+    [ "$status" -eq 0 ] && [[ "$output" == *$'\n'"   weekly: $a/docs/working/weekly/2026-11-06.md (2026-11-06)"$'\n'* ]] || { echo "$output"; false; }
+    [[ "$output" != *2026-13-40* && "$output" != *2026-02-30* && "$output" != *skipped* ]]
+    git -C "$a" rm -q docs/working/weekly/2026-11-06.md; commit "$a"
+    BOARD_TODAY=2026-11-20 board
+    [ "$status" -eq 0 ] && [[ "$output" == *$'\n'"   weekly: none yet"$'\n'* ]] || { echo "$output"; false; }
+}
+
+@test "weekly: a day whose local midnight a clock change skips is still a real date" {
+    mkrepo alpha; a="$BATS_TEST_TMPDIR/alpha"; wk "$a" 2024-09-08
+    # Chile's clocks went from 00:00 to 01:00 on 2024-09-08, so local midnight did not exist.
+    TZ=America/Santiago BOARD_TODAY=2024-09-08 board
+    [ "$status" -eq 0 ] && [[ "$output" == *"   weekly: $a/docs/working/weekly/2024-09-08.md (2024-09-08)"$'\n'* ]] || { echo "$output"; false; }
+}
+
+@test "weekly: unpinned, today is the local date; a BOARD_TODAY that is not a real date refuses the run" {
+    mkrepo alpha; a="$BATS_TEST_TMPDIR/alpha"; wk "$a" 2000-01-03 9999-12-31
+    unset BOARD_TODAY; board
+    [ "$status" -eq 0 ] && [[ "$output" == *"   weekly: $a/docs/working/weekly/2000-01-03.md (2000-01-03); skipped future-dated $a/docs/working/weekly/9999-12-31.md"* ]] || { echo "$output"; false; }
+    for t in 2026-13-01 2026-11-2 tomorrow; do
+        BOARD_TODAY="$t" board
+        [ "$status" -eq 2 ] && [[ "$output" == "board: refusing to run: today's date ($t) is not a real YYYY-MM-DD date" ]] || { echo "[$t] $output"; false; }
+    done
 }
 
 @test "feedback: pending failing in an unmodelled way (an uncaught error) is UNREADABLE with its last line, never a count" {
