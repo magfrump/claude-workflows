@@ -45,7 +45,8 @@ Two tiers of policy path:
           worktrees under `.worktrees/` since 7b46a90e and b3e25cf1, and the shape
           is kept for any such worktree, such as one left from before in this or
           another repo) is judged by its path RELATIVE to the worktree root, so an
-          ordinary file there gets no opinion, as in the main checkout. The worktree's own policy files stay SOFT:
+          ordinary file there gets no opinion, as in the main checkout. The
+          worktree's own policy files stay SOFT:
           everything the SOFT name rules above match, judged on the relative path
           (_is_soft_parts: its `.claude/`, `.md`/`.txt`/extensionless files under
           skills/agents/commands/memories, CLAUDE.md, CLAUDE.local.md, AGENTS.md,
@@ -255,8 +256,8 @@ def _is_hard(cand: Path, dirs) -> bool:
 # `.worktrees/` since b3e25cf1); the case stays for any such worktree, such as
 # one left from before in this repo or another, so a write there is judged as it
 # was when it was made (docs/working/research-2026-11-20-write-guard-wt-exemption.md).
-# Without this, the blanket `.claude` SOFT rule makes every edit there ask once a session is web-tainted. A path inside one is
-# classified by its path RELATIVE to the worktree root, but only when the root is
+# Without this, the blanket `.claude` SOFT rule makes every edit there ask once
+# a session is web-tainted. A path inside one is classified by its path RELATIVE to the worktree root, but only when the root is
 # a verified linked worktree; anything unverifiable keeps today's SOFT (H2).
 _SOFT_SEGS = {"skills", "memories", "commands", "agents"}
 
