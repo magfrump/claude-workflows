@@ -3,7 +3,7 @@
 **Goal:** every git read in the dev-cycle digest (`scripts/dev-cycle.sh` and the lib code it calls) prints message text in UTF-8, even when the repo sets `i18n.logOutputEncoding` (brief `docs/working/briefs/2026-11-20-digest-log-encoding.md`).
 **Problem framing:** the setting changes the bytes git prints for a formatted commit, not just `%s`, so the fix belongs where every git call gets its config: the lib's `HARDEN` pairs. Considered and discarded: pinning per call site (`git -c ...` at each `%s` read), which restates the flag (S3) and misses the reads that print only dates.
 **Project state:** before this branch only `scripts/lib/landings.sh`'s `gate_git` pinned the key (cite: f48a1c2b | scripts/lib/landings.sh:22).
-**Task status:** implemented, tested, under review.
+**Task status:** done; review clean (docs/reviews/code-review-rubric-2026-11-20-digest-log-encoding.md).
 
 ## What exists
 
@@ -45,7 +45,7 @@ Keep or drop `landings.sh`'s per-call pin: dropped. `HARDEN` now covers it, `lan
 ## Tests
 
 - New case in `test/scripts/dev-cycle.bats`: "a repo-local log output encoding changes nothing in the activity section". It builds a fixture with a merge subject `merge: café — ünïcode`, takes section 1 without the setting and again with `i18n.logOutputEncoding UTF-16`, and requires the two to be identical, with no "null byte" warning on stderr. On the old code it fails: the subject printed as `merge: caf�   �n�code` (checked before the fix).
-- `scripts/confine-tests.sh --probe` exited 3: "confine-tests: NO CONFINEMENT PRIMITIVE AVAILABLE — refusing to run." So the touched suites ran through `scripts/run-tests.sh`, alongside `scripts/hermeticity-lint --root .` and `scripts/health-check.sh`.
+- `scripts/confine-tests.sh --probe` exited 3: "confine-tests: NO CONFINEMENT PRIMITIVE AVAILABLE — refusing to run." So the touched suites ran through `scripts/run-tests.sh` instead: dev-cycle, dev-cycle-landings, build-loop-orchestrator and build-loop-check, 250 ok, exit 0. `scripts/hermeticity-lint --root .` passed (152 files), and `scripts/health-check.sh` printed "All checks passed." (rc 0) on this branch.
 
 ## Files read
 
