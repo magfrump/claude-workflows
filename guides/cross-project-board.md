@@ -32,8 +32,7 @@ One block per project:
    Q-012  you: judgment     pick-a-name
 ```
 
-- The second line is the date of main's last commit and the number of open watches (`deferred`/`trigger` entries in `watching.md`), given as a count.
-- The `feedback` line (below) counts the project's harness feedback not yet copied to claude-workflows, and the `weekly` line names the latest weekly digest on main.
+- The second line is the date of main's last commit and the number of open watches (`deferred`/`trigger` entries in `watching.md`), given as a count. The `feedback` and `weekly` lines are described below.
 - Then each open owner entry as `ID  route  slug`, most costly route first, or `nothing open for you`. An entry already marked ANSWERED on main but not yet archived is left out.
 - What is read is main's commit (`docs/working/questions.md`, `questions-archive.md`, `watching.md`), not whatever branch or edits the checkout has: that is what the dev cycle reads.
 - A project that cannot be read says so in its block, never as an empty list: `no questions doc on main`, `UNREADABLE (questions.sh check: …)` with the first refusal, `UNREADABLE: no branch named main or master`, `UNREADABLE Q-NNN (check_answer: …)` when an entry's file cannot be read, or `UNREADABLE: the board stopped reading this repo (exit N)`. A bad registry line prints `REGISTRY LINE N: …`.

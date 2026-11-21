@@ -380,11 +380,9 @@ def span(es):
 
 
 def cmd_pending(args):
-    """Read-only, for the board: one line saying what of FILE the stored copies
-    (claude-workflows main's docs/working/feedback/*.md, as files) do not hold.
-    CW and SRC only shape the ingest command printed. Runs no git. Exit 3 when
-    a file cannot be read or compared, so the board counts it as unreadable
-    (1 stays an uncaught error's)."""
+    """Read-only, for board.sh: one line on what of FILE the STORED copies lack.
+    CW and SRC only shape the printed ingest command; runs no git. Exit 3 when a
+    file cannot be read or compared (1 stays an uncaught error's)."""
     if len(args) < 3:
         raise Usage("pending takes FILE CW SRC [STORED...]")
     (src, cw, shown), stored = args[:3], args[3:]
@@ -425,17 +423,14 @@ def cmd_pending(args):
                 print(f"feedback: {len(entries)} entries, stored under Project {other} "
                       f"({name}); renamed? No command: ingest would store and seed them twice")
                 return 0
-        stored_entries, stored_texts = [], []
-    else:
-        name, _p, stored_entries, stored_texts = match
-        n = len(stored_entries)
-        if [sig(e) for e in stored_entries] != [sig(e) for e in entries[:n]]:
-            bad = next(i for i, e in enumerate(stored_entries)
-                       if i >= len(entries) or sig(e) != sig(entries[i]))
-            print(f"feedback: {stored_entries[bad]['id']} differs from the stored copy "
-                  f"{name}; no command: ingest would refuse it")
-            return 0
+    stored_entries, stored_texts = match[2:] if match else ([], [])
     n = len(stored_entries)
+    if [sig(e) for e in stored_entries] != [sig(e) for e in entries[:n]]:
+        bad = next(i for i, e in enumerate(stored_entries)
+                   if i >= len(entries) or sig(e) != sig(entries[i]))
+        print(f"feedback: {stored_entries[bad]['id']} differs from the stored copy "
+              f"{match[0]}; no command: ingest would refuse it")
+        return 0
     new = entries[n:]
     changed = [e for e, t, o in zip(entries, texts, stored_texts) if t != o]
     if not new and not changed:

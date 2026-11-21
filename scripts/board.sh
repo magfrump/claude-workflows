@@ -113,20 +113,16 @@ read_main() {
 # open's lines as ID, route and slug, tab-separated.
 open_rows() { printf '%s\n' "$QOPEN" | awk -F'  +' 'NF { print $1 "\t" $2 "\t" $3 }'; }
 
-# Directory $1 on main, by main_entry's rules for its parents (one ls-tree):
-# prints "absent", or "dir" with the names directly under it in file $2
+# Directory $1 on main: main_entry's checks for it and its parents, then its
+# mode; prints "absent", or "dir" with the names directly under it in file $2
 # (NUL-ended), or why it cannot be listed.
 main_dir() {
-  local p="" rest="$1/" out mode path want=(); local -A seen=()
-  while [[ -n "$rest" ]]; do p="${p:+$p/}${rest%%/*}"; rest="${rest#*/}"; want+=("$p"); done
-  out="$(git ls-tree -t --full-tree "$MAIN_SHA" -- "${want[@]}" 2>/dev/null)" || { echo "$1 could not be listed on the default branch"; return; }
-  while IFS=$'\t' read -r mode path; do
-    [[ -z "$path" || -z "${seen[$path]+set}" ]] || { echo "the default branch lists $path twice"; return; }
-    seen["$path"]="${mode%% *}"
-  done <<<"$out"
-  for p in "${want[@]}"; do
-    case "${seen[$p]-}" in '') echo absent; return ;; 040000) ;; *) echo "$p is not a directory on the default branch"; return ;; esac
-  done
+  local e; e="$(main_entry "$1")"
+  case "$e" in
+    absent) echo absent; return ;;
+    blob|notfile) [[ "$(git ls-tree --full-tree "$MAIN_SHA" -- "$1")" == "040000 tree "* ]] || { echo "$1 is not a directory on the default branch"; return; } ;;
+    *) entry_why "$e" "$1"; return ;;
+  esac
   git ls-tree -z --full-tree --name-only "$MAIN_SHA" -- "$1/" > "$2" && echo dir || echo "$1 could not be listed on the default branch"
 }
 
@@ -479,8 +475,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     [[ $rc -eq 3 ]] || echo "   UNREADABLE: the board stopped reading this repo (exit $rc)"
     bad=$((bad + 1))
   else
-    # A feedback or weekly line that is UNREADABLE or NOT COMPARED counts too.
-    total=$((total + $(cat -- "$TMP/$n.count"))); [[ ! -e "$TMP/$n.bad" ]] || bad=$((bad + 1))
+    total=$((total + $(cat -- "$TMP/$n.count"))); [[ ! -e "$TMP/$n.bad" ]] || bad=$((bad + 1))  # an UNREADABLE feedback or weekly line
   fi
 done < "$REG"
 

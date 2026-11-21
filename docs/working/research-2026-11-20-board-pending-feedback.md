@@ -48,7 +48,7 @@ Smaller choices made here (one line each; none had 3 or more viable options):
 - Failure-pattern grep: FP-038, FP-043, FP-138 (keywords: board, harness-feedback, ingest, rename, weekly, ls-tree, main_entry, seed-count, present-but-inert)
   - FP-138 (a rename left a file name contradicting its contents): the reason stored copies are matched by their Project line, and a mismatched file name withholds the command.
   - FP-038 and FP-043 are loose matches on "rename" (a JSON-load guard, a pathlib write escape); neither bears on this read-only listing.
-- `git ls-tree -t PATH` for a tree lists that tree's children as well as the entry, so `main_dir` (like `main_entry`) checks duplicates over the whole listing.
+- `main_entry` answers `notfile` for a directory, so `main_dir` runs `main_entry` on the directory (parents, duplicates, path form) and then reads its own mode with one `git ls-tree`: only `040000 tree` is a directory.
 - After the owner copies, the line keeps counting until that commit reaches claude-workflows' main (the guide says so).
 
 ## The new lines and their failure states (criterion 4)
@@ -69,7 +69,10 @@ Weekly:
 
 ## Tests
 
-- `test/scripts/board.bats`: 8 new cases (not copied with command, all copied, changed, no line without a file or for the harness repo; UNREADABLE file and symlink; differs, other file name, other Project; NOT COMPARED for a bad stored copy, a shared Project and a symlinked copy; no harness repo and two; weekly latest, absent-from-main, none yet; weekly symlinked edition and directory; `pending` crashing), and `harness-feedback.py` added to the beside-the-script refusal case.
+Size gate (pr-prep 1a): 400 code lines against main after trimming (417 at first; the gate fires above 400).
+
+
+- `test/scripts/board.bats`: 8 new cases (not copied with command, all copied, changed, no line without a file or for the harness repo; UNREADABLE file and symlink; differs and other file name (the other withheld states are covered in harness-feedback.bats, since the board prints pending's line verbatim); NOT COMPARED for a bad stored copy, a shared Project and a symlinked copy; no harness repo and two; weekly latest, absent-from-main, none yet; weekly symlinked edition and directory; `pending` crashing), and `harness-feedback.py` added to the beside-the-script refusal case.
 - `test/scripts/harness-feedback.bats`: 4 new cases covering every `pending` state, usage included.
 - `scripts/confine-tests.sh --probe`: exit 3, first line "confine-tests: NO CONFINEMENT PRIMITIVE AVAILABLE — refusing to run." So the suites ran through `bats` / `scripts/run-tests.sh` plus `scripts/hermeticity-lint --root .` (passes).
 

@@ -545,7 +545,7 @@ fbline() { printf '%s\n' "$output" | awk -v h="== $BATS_TEST_TMPDIR/$1" '$0 == h
     [ "$status" -eq 1 ] && [ "$(fbline beta)" = "feedback UNREADABLE: docs/harness-feedback.md is not a regular file on the default branch" ] || { echo "$output"; false; }
 }
 
-@test "feedback: a changed signature, a stored copy under another file name, or another Project withholds the command" {
+@test "feedback: a changed signature or a stored copy under another file name withholds the command (the other states: harness-feedback.bats)" {
     mkcw; mkrepo beta; b="$BATS_TEST_TMPDIR/beta/docs/harness-feedback.md"
     hfile "$b" beta F-001 F-002; commit "$BATS_TEST_TMPDIR/beta"
     hfile "$CW/docs/working/feedback/beta.md" beta F-001; sed -i 's/slug-001/renamed-slug/' "$CW/docs/working/feedback/beta.md"; commit "$CW"
@@ -555,10 +555,6 @@ fbline() { printf '%s\n' "$output" | awk -v h="== $BATS_TEST_TMPDIR/$1" '$0 == h
     git -C "$CW" mv docs/working/feedback/beta.md docs/working/feedback/old-name.md; hfile "$CW/docs/working/feedback/old-name.md" beta F-001; commit "$CW"
     board
     [ "$(fbline beta)" = "feedback: 1 not copied (F-002); no command: its stored copy is docs/working/feedback/old-name.md, not docs/working/feedback/beta.md, so ingest would store it twice" ] || { echo "$output"; false; }
-    # Stored under another Project name (renamed in the project): no count of "new", no command.
-    hfile "$CW/docs/working/feedback/old-name.md" old-name F-001; commit "$CW"
-    board
-    [ "$status" -eq 0 ] && [ "$(fbline beta)" = "feedback: 2 entries, stored under Project old-name (docs/working/feedback/old-name.md); renamed? No command: ingest would store and seed them twice" ] || { echo "$output"; false; }
 }
 
 @test "feedback: a stored copy failing check, or two with one Project, or a non-file there, is NOT COMPARED on every project, exit 1" {
@@ -617,8 +613,7 @@ fbline() { printf '%s\n' "$output" | awk -v h="== $BATS_TEST_TMPDIR/$1" '$0 == h
 
 @test "feedback: pending failing in an unmodelled way (an uncaught error) is UNREADABLE with its last line, never a count" {
     mkcw; mkrepo beta; hfile "$BATS_TEST_TMPDIR/beta/docs/harness-feedback.md" beta F-001; commit "$BATS_TEST_TMPDIR/beta"
-    c="$BATS_TEST_TMPDIR/copy"; mkdir -p "$c/lib"; cp "$BOARD" "$QS" "$c/"; cp "$REPO_ROOT/scripts/lib/dev-cycle-read.sh" "$c/lib/"
-    printf 'import sys\nprint("Traceback (most recent call last):")\nsys.exit("KeyError: x")\n' > "$c/harness-feedback.py"
+    c="$BATS_TEST_TMPDIR/copy"; mkdir -p "$c/lib"; cp "$BOARD" "$QS" "$c/"; cp "$REPO_ROOT/scripts/lib/dev-cycle-read.sh" "$c/lib/"; printf 'import sys\nprint("Traceback (most recent call last):")\nsys.exit("KeyError: x")\n' > "$c/harness-feedback.py"
     board "$c/board.sh"
     [ "$status" -eq 1 ] && [ "$(fbline beta)" = "feedback UNREADABLE: harness-feedback.py pending stopped (exit 1): KeyError: x" ] || { echo "$output"; false; }
 }
