@@ -1240,7 +1240,7 @@ END {
 # listed at all.
 ANS_FOR=""; ANS_ROWS=(); ANS_BAD=(); ANS_WHY=""
 answers_index() {
-  local - ents=() toks=() t d="" p e c id l res f flt
+  local - ents=() toks=() t d="" p e c id l res flt
   local -A added=() changed=()
   set -o pipefail
   [[ "$ANS_FOR" != "$MAIN_SHA" || -z "$MAIN_SHA" ]] || return 0
@@ -1296,8 +1296,12 @@ answers_index() {
 # Any other disagreement, between two file lines or with the entry's own
 # answer, is a skip naming both; so is an answers-NAME entry in
 # that window that could not be read, and, for an open entry with no Opened:
-# date, any file line for the ID (none is read as its answer), and a line for
-# the ID in a file added before Opened: but changed on or after it.
+# date, any file line for the ID (none is read as its answer), and, for an
+# open entry, a line for the ID in a file added before Opened: but changed on
+# or after it. An entry recorded as prose (unrecognized) that meets a file's
+# option is a skip on purpose: neither source alone reads as that option.
+# A renamed or copied old file dates from its new name (renames are off): a
+# known limit of the window.
 # answer_word LINE ID: check_answer's line LINE for ID with an answers file's
 # " from PATH:LINE" suffix dropped (the same answer), for a caller that
 # matches the line whole; any other line is printed as it is.
@@ -1355,7 +1359,7 @@ check_answer() {
     [[ "$id" == "$a" ]] || continue
     if [[ "$d" < "$opened" ]]; then
       # An older file edited since: its line may be this entry's answer or an old one's (an ID collision).
-      [[ "$c" < "$opened" ]] || { echo "skip $a: $p:$l is in a file added before the entry opened ($d) and changed since ($c), so it is not read"; return; }
+      [[ "$c" < "$opened" || "$hit" != open ]] || { echo "skip $a: $p:$l is in a file added before the entry opened ($d) and changed since ($c), so it is not read"; return; }
       continue
     fi
     if [[ -z "$src" ]]; then fr="$res"; src="$p:$l"

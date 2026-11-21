@@ -111,6 +111,13 @@ silently ignored (now a named skip), an undated unreadable row lost its reason (
 parsing), the cache key was not cleared on a failed re-read, rubric-check and board.sh
 matched the line whole. Documented: the two `other` shapes and the date zones.
 
+## Review (round 2)
+
+Nothing blocking. Applied: the edited-old-file skip only for an open entry; board.sh's
+`answer` writes through when the file's line is prose (unrecognized); comment fixes (the
+`other` shapes, the rename limit, the deliberate prose-entry skip). Left as is: the
+`git log` pair per call where callers run `check_answer` in `$(...)` (about 20 files here).
+
 ## Verification
 
 - New bats cases: `test/scripts/dev-cycle.bats` (a file answer, an older file not read, a

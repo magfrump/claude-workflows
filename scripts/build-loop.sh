@@ -193,8 +193,8 @@
 #                 changed) directly under docs/human-author/ named
 #                 answers-NAME, added or changed: the owner's answers files,
 #                 which --check-answer reads (it also reads such a file
-#                 merged in, or changed beside a questions file: those
-#                 commits are other, and listed as such). Any other commit,
+#                 merged in, or changed beside other paths: those commits
+#                 are other, and listed as such). Any other commit,
 #                 or one whose message, parents or changes cannot be read, is
 #                 other. The class is read from the commit's own text (and
 #                 objects are not re-hashed): it catches an honest slip, not a
