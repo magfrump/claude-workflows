@@ -570,7 +570,7 @@ fbline() { printf '%s\n' "$output" | awk -v h="== $BATS_TEST_TMPDIR/$1" '$0 == h
     # The renamed project: stored with this Project line, but under the old file name.
     git -C "$CW" mv docs/working/feedback/beta.md docs/working/feedback/old-name.md; hfile "$CW/docs/working/feedback/old-name.md" beta F-001; commit "$CW"
     board
-    [ "$(fbline beta)" = "feedback: 1 not copied (F-002); no command: its stored copy is docs/working/feedback/old-name.md, not docs/working/feedback/beta.md, so ingest would store it twice" ] || { echo "$output"; false; }
+    [ "$(fbline beta)" = "feedback: 1 not copied (F-002); no command: its stored copy is docs/working/feedback/old-name.md, not docs/working/feedback/beta.md, so ingest refuses until it is renamed" ] || { echo "$output"; false; }
 }
 
 @test "feedback: a stored copy failing check, or two with one Project, or a non-file there, is NOT COMPARED on every project, exit 1" {

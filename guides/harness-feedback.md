@@ -94,9 +94,36 @@ skipped, so rerunning on a newer copy adds only the new entries. A project's fil
 grows, so a copy whose entries do not start with the stored copy's entries (same IDs, slugs
 and meta lines, in order) is refused: it is another project under the same `Project:` name,
 or entries were removed. An old entry edited in the project (its meta line, say) is
-refused the same way: rename its `Project:` line, or delete the stored copy here by hand. A file that fails `check` is refused whole, and in both cases
-nothing is written. `ingest` refuses to run outside a claude-workflows checkout. A file already under `docs/working/feedback/` is seeded
-in place, not copied. Commit the copy and the idea log together.
+refused the same way: delete the stored copy here (`git rm`), and the next `ingest` stores
+the new copy and seeds only entries not yet seeded. A file that fails `check` is refused
+whole, as is any stored copy here that fails `check`, or two that hold one `Project:` name;
+in every case nothing is written. `ingest` refuses to run outside a claude-workflows
+checkout. A file already under `docs/working/feedback/` is seeded in place, not copied.
+Commit the copy and the idea log together.
+
+**A renamed project.** Seeds and the stored copy's file name both key on the `Project:`
+name, so `ingest` refuses, naming the stored file, rather than store or seed a project
+twice when its name and the stored copy's disagree: its entries are stored under another
+`Project:` name (the stored signatures lead this file's, and the stored copy holds two or
+more entries or its one entry's text is unchanged: two projects that filed one F-001
+heading stay apart, and a one-entry copy renamed and edited is stored again), its stored copy has another
+file name, or the idea log seeds this copy under another name (the `Project:` line was
+edited here). The board's `pending` reads no idea log, so in that last state it still prints
+the command, which then refuses. `ingest` also refuses a stored `NAME.md` that holds another
+`Project:` line, even one with no entries (another project under this file name: no rename
+command). For the renamed states the refusal prints one command:
+
+```
+scripts/harness-feedback.py rename docs/working/feedback/OLD.md NEW
+```
+
+It moves the stored copy to `docs/working/feedback/NEW.md`, sets its `Project:` line to NEW
+and rewrites that copy's seeds in the idea log to `harness feedback NEW F-NNN,
+docs/working/feedback/NEW.md`; commit both. It refuses when `NEW.md` exists or another
+stored copy holds NEW. Then the next `ingest` of the project's file seeds only its new
+entries. If the project was not renamed, set its `Project:` line back instead. `rename`
+with the copy's own name (`rename docs/working/feedback/OLD.md OLD`) keeps the file and
+only rekeys its seeds and its `Project:` line.
 
 **When to copy.** The cross-project board (`guides/cross-project-board.md`) counts each project's entries on main not yet copied to claude-workflows' main, and prints this
 command unless `ingest` would refuse the copy or store it twice (a changed signature, a renamed project); `scripts/harness-feedback.py pending` makes that comparison, read-only.
