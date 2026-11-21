@@ -391,13 +391,23 @@ select_run_rubric() {
         # Basename first so a commit range encoded only in the filename counts.
         haystack=$(printf '%s\n' "${f##*/}"; cat "$f")
         score=0
-        if [ -n "$short" ] && printf '%s' "$haystack" | grep -qiE "(^|[^0-9a-fA-F])${short}[0-9a-fA-F]*([^0-9a-fA-F]|$)"; then
+        # Here-strings, not `printf | grep -q`: under this script's pipefail,
+        # grep -q exits at its first match, printf dies of SIGPIPE writing the
+        # rest, and the pipeline's 141 silently drops the point. That broke ties
+        # under load, and dropped any point whose match was followed by more
+        # text than the pipe absorbs (always from about 128 KiB on the dev host)
+        # (docs/working/research-2026-11-20-rubric-selection-flake.md).
+        if [ -n "$short" ] && grep -qiE "(^|[^0-9a-fA-F])${short}[0-9a-fA-F]*([^0-9a-fA-F]|$)" <<< "$haystack"; then
             score=$((score + 2))
         fi
-        if [ -n "$run_date" ] && printf '%s' "$haystack" | grep -qF "$run_date"; then
+        if [ -n "$run_date" ] && grep -qF -- "$run_date" <<< "$haystack"; then
             score=$((score + 1))
         fi
         [ "$score" -gt 0 ] || continue
+        # What decides a tie: the score alone (commit match 2, date match 1),
+        # computed from the file's name and content. Two files on the best score
+        # are a tie and emit nothing; glob order, mtimes and run timing never
+        # pick between them.
         if [ "$score" -gt "$best_score" ]; then
             best_score=$score
             best=$f
