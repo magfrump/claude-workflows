@@ -69,7 +69,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 - **Agent: other `printf | grep -q` pipelines under `pipefail`** (from Now, filed 2026-11-20; FP-175). Brief `docs/working/briefs/2026-11-20-pipefail-grep-q.md` (review).
 
-- **Agent: the write guard's Bash deny names the Read tool, and the taint docstring covers subagents** (from Now, filed 2026-11-20; F-022 and F-021's comment). Brief `docs/working/briefs/2026-11-20-guard-read-route-text.md` (review).
+- **Agent: the write guard's Bash deny names the Read tool, and the taint docstring covers subagents** (from Now, filed 2026-11-20; F-022 and F-021's comment). Brief `docs/working/briefs/2026-11-20-guard-read-route-text.md` (review). Ready at cfa82ec6; merge entry Q-356.
 
 - **Agent: the cross-project board lists harness feedback not yet copied here, and each repo's latest weekly digest** (from Now, owner request 2026-11-20). Brief `docs/working/briefs/2026-11-20-board-pending-feedback.md` (review, host code). Ready at 87ce7a6d; merge entry Q-352.
 
