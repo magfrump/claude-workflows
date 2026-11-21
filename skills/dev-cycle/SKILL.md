@@ -936,7 +936,8 @@ optional look below, and lands with this iteration. Keep each part short, and sa
   plain line each, or "nothing". Each line names what the owner can check for themselves:
   the refusal line quoted, a red row's file, or a count with the command that reproduces it,
   so it points at a fact in the code or history rather than asking to be trusted;
-- the ask counter: asks opened and answered, and how often the owner picked the default;
+- the ask counter: paste the output of `~/.claude/scripts/questions.sh counts --since FIRST --until LAST`,
+  FIRST and LAST the first and last days of the digest's window (no hand count);
 - stale entries: one line per `you:` entry open 21 days or more, with a proposed fate. One
   whose own closure line is met proposes closing, with the evidence: only the owner's answer
   closes it (`--cycle-diff`; step 0.1's image entries aside), while watches and agent items close in steps 3 and 6;
