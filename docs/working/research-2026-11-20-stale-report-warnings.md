@@ -16,7 +16,7 @@ The 81 warned stamps (in 11 skills) were written by the regeneration's dispatch 
 
 - `report_stamp` (l. 223-230) writes four inputs: `skill`, `runner`, `fixture` and `harness`. `check_report_stamp` (l. 250-275) fails only on the first three (Q-071 [1], the owner's ruling that only a skill's own inputs gate freshness). A different `harness` line only calls `_stamp_warn` (l. 272-273), which prints `# WARNING:` on bats fd 3, even in passing tests.
 - `_stamp_harness_hash` (l. 186-196) hashes `generate-reports.bash` and `transcript.jq` with comment and blank lines dropped, plus `declare -p RUNNER_ALLOWED_TOOLS` and `declare -f reset_runner_settings check_runner_settings`. It is one hash for the whole harness, not a per-skill one: any code-line change to `generate-reports.bash` changes it for every skill.
-- The check runs inside `resolve_skill_report` (`test/skills/helpers.bash:51`) and the claim-report loader (`test/skills/eval-helpers.bash:69`), both called from per-test `setup()`. So one stale stamp warns once per test that loads it, not once per report. That is how 81 stamps become the roadmap's 312 lines. I did not re-count the 312: that needs the per-skill suites, which the brief's command list leaves out.
+- The check runs inside `resolve_skill_report` (`test/skills/helpers.bash:51`) and the claim-report loader (`test/skills/eval-helpers.bash:69`). Format suites call them from `setup()` and eval suites from each test body (through `eval_fixture`), so either way they run once per test. So one stale stamp warns once per test that loads it, not once per report. That is how 81 stamps become the roadmap's 312 lines. I did not re-count the 312: that needs the per-skill suites, which the brief's command list leaves out.
 
 ### The stamps today
 
@@ -44,7 +44,7 @@ All 11 warned skills were generated before the grant. Two skills are split becau
 
 ### Whether the grant can change these skills' output
 
-The grant (diff `eb5b55c1..846eee77 -- test/skills/generate-reports.bash`) adds one behaviour. It sets `WEB_GRANT` to the names that are both in the runner's `FIXTURE_TOOLS` and in `WebSearch|WebFetch`. It appends `--allowedTools "$WEB_GRANT"` only when that is non-empty. 846eee77 changed only comments. The other added lines are comments too, which the hash drops anyway.
+The grant (diff `eb5b55c1..846eee77 -- test/skills/generate-reports.bash`) adds one behaviour. It sets `WEB_GRANT` to the names that appear in all three of: the runner's `FIXTURE_TOOLS`, `WebSearch|WebFetch`, and `RUNNER_ALLOWED_TOOLS`. It appends `--allowedTools "$WEB_GRANT"` only when that is non-empty. 846eee77 changed only comments. The other added lines are comments too, which the hash drops anyway.
 
 The 11 runners' `FIXTURE_TOOLS` are `Read,Grep,Glob` (api-consistency-reviewer, architecture-review, code-fact-check, divergent-design, performance-reviewer, self-eval), `none` (business-plan-critique-unit-economics, cowen-critique, design-space-situating, pre-mortem) and `Agent` (matrix-analysis). `rg -n 'WebSearch|WebFetch' test/skills/*/runner.bash` matches only `test/skills/fact-check/runner.bash`. For all 11, `WEB_GRANT` is empty and the argv is unchanged. matrix-analysis's sub-agents inherit `--tools Agent`, which has no web tool.
 
@@ -60,7 +60,7 @@ Diagnosis: the warning is information, not a gate, by design (Q-071 [1]). The ha
 
 | Option | What it means | Cost | Weakness |
 |---|---|---|---|
-| **[1] Regenerate** the 81 reports with `generate-reports.bash` | Fresh stamps from fresh runs | 81 headless runs. Dispatch 2 averaged about 61 s per run (5,683 s for 93), so about 80 min; no owner time | Same argv, so no information gained. Model variation can flip graded verdicts and turn green suites red with no input change. |
+| **[1] Regenerate** the 81 reports with `generate-reports.bash` | Fresh stamps from fresh runs | 81 headless runs. Dispatch 2 took 5,683 s for 93 runs, three at a time, so about 80 min at the same rate; no owner time | Same argv, so no information gained. Model variation can flip graded verdicts and turn green suites red with no input change. |
 | **[2] Re-stamp** the harness line of the 81 stamps to the current hash, after confirming each one's skill, runner and fixture lines still pass | Stamps record that generation under today's harness would use the same argv | One small doc-backed commit; no runs; no owner time | The stamp asserts a harness the report did not run under. It is sound only with the argv argument above, which the commit body must carry. A later harness change that touches every skill warns again. |
 | **[3] Narrow the hash**: hash the argv a skill's generation would build (or its `WEB_GRANT` and tool list) instead of the whole harness | A harness change warns only the skills it can affect | Code in `runner-contract.bash` and the generator, plus tests; one build loop | It duplicates the generator's argv logic in the stamp (against S3), or it needs a dry-run mode. The existing 81 stamps would still need re-stamping or a format bump (a format bump fails all 130, which is worse). |
 | **[4] Aggregate the warning**: print one summary line per suite instead of one per test | Less noise per run | Small change to `_stamp_warn` callers | The warning is still always on, so it still hides a new one, just in fewer lines. It does not touch the cause. |
