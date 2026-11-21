@@ -54,6 +54,15 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   because T11 and T12 live in the weekly digest and have had one edition. Ask again after the
   2026-11-20 weekly digest.
   2026-11-20: the digest ran (`docs/working/weekly/2026-11-20.md`); the trial-end question is Q-327.
+  2026-11-20: Q-327 answered [2] T9 T11 T12 (owner in session, from the answers file 7df4654d): T8 and T10
+  stop now. Kept: T9 (owner: "more than two links is fine when appropriate", links most valuable in
+  `questions.md`), T11 (the digest is worthwhile but not easily surfaced; owner: integrate it into the
+  cross-project board), T12 (owner: alright, but it "doesn't really address the chain of trust between the
+  reports and the facts in the code"; a good trust answer reports numbers the owner has actually seen, like
+  the digest's "your asks this week"). Next: one review brief writing T9, T11 and T12 into the dev-cycle skill
+  (gate code), with T9 loosened to "links where they help" and T12 reshaped toward seen numbers; the T11 board
+  integration rides with the board item below. The owner's feedback goes into the trial doc in that change
+  (the cycle does not write `docs/working/trials/`).
 
 - **Review-gap audit in Behemoth Arsenal** (owner feedback 2026-10-29, point 3). Motive: the
   gap that prompted the audit came up in Behemoth Arsenal; the run here (84f8532e,
@@ -61,6 +70,13 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   main open, and its fixes merged. What remains is the read-only paste in that repo, which
   is the owner's: Q-302. First step after the answer: compare its gaps and causes with this
   repo's, and file any cause the fixes here do not cover.
+  2026-11-20: Q-302 answered done; the audit's output is in `docs/human-author/answers-11-20-26.txt`
+  (7df4654d): 44 GAPs, all landed 2026-08-22 to 09-17, none since (31 bypassed, 13 no-gate), and one fix
+  proposed per cause (a blocking rubric check on every change to main, including hand merges and
+  fast-forwards; a rubric `Commit:` stamp that must be an ancestor; lapsed revisit triggers as open rows; the
+  stale line made blocking; a one-time re-tally of six rows). Now agent work: a research pass comparing these
+  causes with this repo's (`docs/working/research-2026-11-13-review-gap-audit.md`) and the merged fixes, filing
+  any cause not covered; Behemoth Arsenal's own fixes are that repo's.
 
 - **Agent: A reproducible ask counter (`questions.sh counts`) for the weekly digest** (filed 2026-11-19,
   step 7; area B's B2). Motive: the owner-load numbers in area B's research were counted by hand; the
@@ -110,13 +126,17 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   working tree (for example, comparing each project's highest F-NNN on its main with the highest in this repo's
   `docs/working/feedback/PROJECT.md` on main), and what one listing line per project says (its count and the
   ingest command); then a review brief (`scripts/board.sh` is host code under H1's trust rules). Related owner
-  feedback, not yet recorded: the weekly digest surfaced in the same board (answers file 7df4654d, on Q-327's T11).
+  feedback, recorded with Q-327 [2]: the weekly digest surfaced in the same board (T11).
 
-- **Agent: Gate-only changes approved by the release paste (area A's [5n])** (filed 2026-11-19, step 7).
-  Motive: 25 merge entries in two weeks, 24 answered [1]; the pick would remove about a quarter.
-  First step: the review brief drafted in section 8 of
-  `docs/working/research-2026-11-19-area-a-merge-friction.md`, after the auto send-back build merges.
-  Held: Q-323 asks whether to build it at all.
+- **Agent: record the egress probe results in `devcontainer-config/egress/android.txt`** (filed 2026-11-20,
+  step 7; Q-255 answered passed). Motive: the comment above `plugins-artifacts.gradle.org` still reads
+  "Fronting: NOT YET PROBED", though the probe ran on 2026-11-07 (all four foreign-Host probes 403,
+  `docs/working/history-terminal-entries-2026-11-18.md`), and the herald check of 2026-11-20 (Q-255) showed the
+  2026-10-28 fix holding: 0 rejected addresses, 0 `FAIL sni=dl.google.com`, a successful build. Q-255's entry
+  held the edit for this result because it changes the blessed hash and forces a re-bless. First step: a review
+  brief (an egress list is an enforcement file: `Live-verified:` trailer) replacing the line with both results;
+  it reaches sessions with a release that re-blesses (watch Q-167 asks for that bless's hint lines).
+
 
 ## In flight
 
@@ -171,6 +191,13 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
    since the first (which project to try first) depends on which repos have walkthroughs.
 
 ## Ideas
+
+- **Gate-only changes approved by the release paste (area A's [5n])**: parked (Q-323 [2], owner in session
+  2026-11-20: "I like the separate merge entries, reading 1-2 things at a time rather than all in a lump").
+  Signal: 25 merge entries in two weeks, 24 answered [1]
+  (`docs/working/research-2026-11-19-area-a-merge-friction.md`, section 8 holds the drafted brief). Brings it
+  back: watch Q-262 (`docs/working/watching.md`), if merge entries pass 11 a week in 3 of 4 weekly digests or
+  the owner names them as a blocker.
 
 - **Models answer their own questions from the repo's docs** (owner request 2026-11-11;
   parked, moved from Now 2026-11-18). Signal: the measure
