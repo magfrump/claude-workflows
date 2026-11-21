@@ -65,7 +65,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 - **Agent: fix report findings F8 to F12 so five held-back skills' reports can land** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-report-findings-f8-f12.md` (review; skills are prompt files). Q-349 [1] approved tip 0df118cd, which then conflicted with main and was sent back (iteration 2026-11-21-0624); the loop merged main in, ready at 82c11016; merge entry Q-361.
 
-- **Agent: `questions.sh check` flags an entry outside `## Open`, and `migrate` drops a heading it empties** (from Now, filed 2026-11-20; behemoth-arsenal F-001). Brief `docs/working/briefs/2026-11-20-questions-check-section.md` (review, gate code).
+- **Agent: `questions.sh check` flags an entry outside `## Open`, and `migrate` drops a heading it empties** (from Now, filed 2026-11-20; behemoth-arsenal F-001). Brief `docs/working/briefs/2026-11-20-questions-check-section.md` (review, gate code). Ready at 5106fc0a; merge entry Q-362.
 
 - **Agent: the board's weekly line ignores a future-dated digest** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-board-weekly-future-date.md` (review).
 

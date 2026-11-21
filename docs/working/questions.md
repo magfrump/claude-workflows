@@ -31,6 +31,7 @@ The index below is generated — edit entries, not the table.
 | [Q-359](#q-359--merge-2026-11-20-ingest-project-rename-82e794ae342f) | you: judgment | Merge the build loop's fix so harness-feedback ingest refuses a renamed project instead of storing or seedi... | 2026-11-20 |
 | [Q-360](#q-360--merge-gate-2026-11-20-six-still-true-rows-ed98d39e8fba) | you: judgment | Merge the build loop's fixes for six old review findings that were still true, one of them a write-guard gap? | 2026-11-20 |
 | [Q-361](#q-361--merge-2026-11-20-report-findings-f8-f12-82c11016daf0) | you: judgment | Merge the report-findings fixes again, now that the loop has merged main in? You approved the earlier tip i... | 2026-11-20 |
+| [Q-362](#q-362--merge-gate-2026-11-20-questions-check-section-5106fc0a52a9) | you: judgment | Merge the build loop's change so `questions.sh check` names an owner entry filed outside `## Open`, and `mi... | 2026-11-20 |
 | [Q-350](#q-350--threat-model-walkthrough-2026-q4) | you: walkthrough | Walk through the risks you accepted in the build-loop design (about 20 minutes) and say for each: keep, tig... | 2026-11-20 |
 | [Q-332](#q-332--regenerate-fact-check-reports-host) | you: terminal | Regenerate the fact-check skill's eval reports on the host, where the web works, and commit them. | 2026-11-20 |
 | [Q-336](#q-336--image-lag) | you: terminal | Install the release that carries nine changes you approved: the health-checkout preparation step (Q-333), w... | 2026-11-20 |
@@ -66,7 +67,7 @@ Install the release that carries nine changes you approved: the health-checkout 
 
 **If you say no:** sessions keep running the image built from main 665dbf95: the dev cycle's gate has no `--health-prep` mode and `--settings` prints no `copies` line, so a `Health checkout copies:` line in a repo's `docs/dev-cycle.md` does nothing and philosophy-research keeps copying its Lean cache by hand. Nothing breaks. (The skill and test changes below are in the image too, but sessions read skills from it only after an install.)
 
-- **C (the image's commit):** 665dbf9521413cf4291b4acebd866826b0ae2f52 · **M (main's commit):** 2a9ebfaabf9421401265f9b4e92c1743afb21c97
+- **C (the image's commit):** 665dbf9521413cf4291b4acebd866826b0ae2f52 · **M (main's commit):** c5096fd2cf308dd5c196cec64f9d94b3122ac240
 - **Merged without your review** (the gate merged these on their own; the image carries none of `docs/`):
   - 319559d9 Merge branch 'docs/loop-start-dir-research' (build-loop self-merge): a research doc only
   - 6a07b026 Merge branch 'docs/why-its-yours-constraint-research' (build-loop self-merge): a research doc only
@@ -96,14 +97,14 @@ Install the release that carries nine changes you approved: the health-checkout 
   - 01eff59e (Q-335 [1]): findings F2 and F3, seven skills' report formats (title first; a field's value word first), with test-helper changes.
   - cef30487 (Q-329 [1]) and ead9191a (Q-330 [1]): findings F4 to F7 and the F5 verdict drift, in six skills and their tests.
   - 21e925d3: your own commit recording the Q-316 and Q-317 answers; 7df4654d: your answers file `docs/human-author/answers-11-20-26.txt`; ad4f0eef: your harness-feedback ingest (three `docs/working/feedback/` files).
-  - The routine rest: 52 dev-cycle lands.
-- **Full list:** `git -c log.showSignature=false log --first-parent --format='%h %s' 665dbf9521413cf4291b4acebd866826b0ae2f52..2a9ebfaabf9421401265f9b4e92c1743afb21c97`
-- **Paths changed outside `docs/`, the 274 generated reports under `test/skills/*/output/` counted, not listed (`git diff --name-only 665dbf9521413cf4291b4acebd866826b0ae2f52 2a9ebfaabf9421401265f9b4e92c1743afb21c97 -- test/skills/` shows them) (82 under `docs/` too, which the image does not carry):** `guides/bare-host-hook-wiring.md`, `guides/cross-project-board.md`, `guides/harness-feedback.md`, `hooks/guard-trusted-writes.py`, `hooks/web-taint-mark.py`, `scripts/board.sh`, `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/harness-feedback.py`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/landings.sh`, `scripts/lib/rubric-check.sh`, `scripts/lib/si-commit.sh`, `scripts/questions.sh`, `scripts/self-improvement.sh`, `skills/ai-personas-critique/SKILL.md`, `skills/arithmetic-eval/SKILL.md`, `skills/business-plan-critique-market-sizing/SKILL.md`, `skills/business-plan-critique-moat/SKILL.md`, `skills/dependency-upgrade/SKILL.md`, `skills/dev-cycle/SKILL.md`, `skills/security-reviewer/SKILL.md`, `skills/tech-debt-triage/SKILL.md`, `skills/ui-visual-review/SKILL.md`, `skills/what-if-analysis/SKILL.md`, `skills/yglesias-critique/SKILL.md`, `test/generate-reports-web-grant.bats`, `test/hooks/guard-trusted-writes.bats`, `test/rubric-selection.bats`, `test/scripts/board.bats`, `test/scripts/build-loop-dispatch.bats`, `test/scripts/build-loop-health-prep.bats`, `test/scripts/build-loop-orchestrator.bats`, `test/scripts/build-loop-read.bats`, `test/scripts/dev-cycle-landings.bats`, `test/scripts/harness-feedback.bats`, `test/scripts/questions-counts.bats`, `test/scripts/self-improvement-clean-state.bats`, `test/si-commit-child-work.bats`, `test/skills/architecture-review-format.bats`, `test/skills/architecture-review/eval-criteria.md`, `test/skills/architecture-review/fixtures/tc-arch6-clean-ports-adapters.py`, `test/skills/business-plan-critique-moat/expected-verdicts.bash`, `test/skills/code-fact-check/eval-criteria.md`, `test/skills/code-fact-check/expected-verdicts.bash`, `test/skills/code-fact-check/fixtures/tc-c2.5-unverifiable.py`, `test/skills/dependency-upgrade-format.bats`, `test/skills/divergent-design/expected-verdicts.bash`, `test/skills/eval-helpers.bash`, `test/skills/field-value-rules.bats`, `test/skills/generate-reports.bash`, `test/skills/helpers-recommendation.bats`, `test/skills/helpers.bash`, `test/skills/matrix-analysis-format.bats`, `test/skills/pre-mortem-format.bats`, `test/skills/tech-debt-triage/expected-verdicts.bash`, `test/skills/test-strategy/eval-criteria.md`, `test/skills/test-strategy/fixtures/tc-ts6-duration-parser.py`, `test/skills/ui-visual-review-eval.bats`, `test/skills/ui-visual-review-format.bats`, `test/skills/ui-visual-review/eval-criteria.md`, `test/skills/ui-visual-review/expected-verdicts.bash`, `test/skills/ui-visual-review/fixtures/tc-uv6-disappearing-controls.tsx`, `test/skills/ui-visual-review/fixtures/tc-uv7-weak-affordance.tsx`, `test/skills/what-if-analysis-format.bats`
+  - The routine rest: 54 dev-cycle lands.
+- **Full list:** `git -c log.showSignature=false log --first-parent --format='%h %s' 665dbf9521413cf4291b4acebd866826b0ae2f52..c5096fd2cf308dd5c196cec64f9d94b3122ac240`
+- **Paths changed outside `docs/`, the 274 generated reports under `test/skills/*/output/` counted, not listed (`git diff --name-only 665dbf9521413cf4291b4acebd866826b0ae2f52 c5096fd2cf308dd5c196cec64f9d94b3122ac240 -- test/skills/` shows them) (83 under `docs/` too, which the image does not carry):** `guides/bare-host-hook-wiring.md`, `guides/cross-project-board.md`, `guides/harness-feedback.md`, `hooks/guard-trusted-writes.py`, `hooks/web-taint-mark.py`, `scripts/board.sh`, `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/harness-feedback.py`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/landings.sh`, `scripts/lib/rubric-check.sh`, `scripts/lib/si-commit.sh`, `scripts/questions.sh`, `scripts/self-improvement.sh`, `skills/ai-personas-critique/SKILL.md`, `skills/arithmetic-eval/SKILL.md`, `skills/business-plan-critique-market-sizing/SKILL.md`, `skills/business-plan-critique-moat/SKILL.md`, `skills/dependency-upgrade/SKILL.md`, `skills/dev-cycle/SKILL.md`, `skills/security-reviewer/SKILL.md`, `skills/tech-debt-triage/SKILL.md`, `skills/ui-visual-review/SKILL.md`, `skills/what-if-analysis/SKILL.md`, `skills/yglesias-critique/SKILL.md`, `test/generate-reports-web-grant.bats`, `test/hooks/guard-trusted-writes.bats`, `test/rubric-selection.bats`, `test/scripts/board.bats`, `test/scripts/build-loop-dispatch.bats`, `test/scripts/build-loop-health-prep.bats`, `test/scripts/build-loop-orchestrator.bats`, `test/scripts/build-loop-read.bats`, `test/scripts/dev-cycle-landings.bats`, `test/scripts/harness-feedback.bats`, `test/scripts/questions-counts.bats`, `test/scripts/self-improvement-clean-state.bats`, `test/si-commit-child-work.bats`, `test/skills/architecture-review-format.bats`, `test/skills/architecture-review/eval-criteria.md`, `test/skills/architecture-review/fixtures/tc-arch6-clean-ports-adapters.py`, `test/skills/business-plan-critique-moat/expected-verdicts.bash`, `test/skills/code-fact-check/eval-criteria.md`, `test/skills/code-fact-check/expected-verdicts.bash`, `test/skills/code-fact-check/fixtures/tc-c2.5-unverifiable.py`, `test/skills/dependency-upgrade-format.bats`, `test/skills/divergent-design/expected-verdicts.bash`, `test/skills/eval-helpers.bash`, `test/skills/field-value-rules.bats`, `test/skills/generate-reports.bash`, `test/skills/helpers-recommendation.bats`, `test/skills/helpers.bash`, `test/skills/matrix-analysis-format.bats`, `test/skills/pre-mortem-format.bats`, `test/skills/tech-debt-triage/expected-verdicts.bash`, `test/skills/test-strategy/eval-criteria.md`, `test/skills/test-strategy/fixtures/tc-ts6-duration-parser.py`, `test/skills/ui-visual-review-eval.bats`, `test/skills/ui-visual-review-format.bats`, `test/skills/ui-visual-review/eval-criteria.md`, `test/skills/ui-visual-review/expected-verdicts.bash`, `test/skills/ui-visual-review/fixtures/tc-uv6-disappearing-controls.tsx`, `test/skills/ui-visual-review/fixtures/tc-uv7-weak-affordance.tsx`, `test/skills/what-if-analysis-format.bats`
 
 Run this on the host, in your claude-workflows checkout at main's tip, then start a new sandbox session:
 
 ```
-sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "2a9ebfaabf9421401265f9b4e92c1743afb21c97:$p")"; then n=$((n+1)); else echo "release refused: $p changed after 2a9ebfaabf9421401265f9b4e92c1743afb21c97: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
+sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "c5096fd2cf308dd5c196cec64f9d94b3122ac240:$p")"; then n=$((n+1)); else echo "release refused: $p changed after c5096fd2cf308dd5c196cec64f9d94b3122ac240: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
 ```
 
 **Pass:** the installer finishes without a `release refused` line. **Send back:** `Q-336: done`.
@@ -509,5 +510,44 @@ rubric docs/working/briefs/2026-11-20-report-findings-f8-f12.md: clean docs/revi
 | **[1] merge** | The gate merges TIP above. | Reading one conflict resolution in one file. | One `git revert` undoes it. |
 | **[2] drop** | The brief closes; nothing merges. | Nothing. | Five skills keep no regression check. |
 | **[3] changes needed** | Your note goes back to the loop. | Writing the note. | Another round. |
+
+- **Interim:** the branch waits; nothing merges.
+
+### Q-362 · merge-gate-2026-11-20-questions-check-section-5106fc0a52a9
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
+
+Merge the build loop's change so `questions.sh check` names an owner entry filed outside `## Open`, and `migrate` drops route headings it leaves empty?
+
+**If you say no:** the branch waits unmerged; an entry filed under a stale heading (as 19 of 20 owner questions were in behemoth-arsenal, its harness feedback F-001) still passes `check`.
+
+Brief: `docs/working/briefs/2026-11-20-questions-check-section.md`; the design came from triage brief 1 in `docs/working/research-2026-11-20-harness-feedback-triage.md`. The loop's marker has no body: no question left open.
+
+- **What it does:** `check` names each entry in `questions.md` under any `##` heading other than `## Open` (or above every heading), with its ID and heading: a ⚠ warning for entries opened before 2026-10-30 (`LEGACY_BEFORE`, the existing cutoff), ✗ and exit 1 on or after it, so older projects are not turned red at once (failure pattern FP-113, a new gate every existing clone fails). The section reader now skips code fences using the lib's existing fence reader. An entry the reader cannot place (after a line the fence reader refuses) is named too. `migrate` deletes a `##` heading other than `## Index` and `## Open` that has only blank lines under it.
+- **The loop's own calls:** an entry under `## Index` is reported too; a non-owner route keeps only its existing route error. Residual: a `questions.md` with an indented fence gets every later entry reported as unplaced.
+- **Review:** the loop reports two review rounds (round 1: no red, two findings fixed, one amber kept as designed; round 2 clean), but it **committed no rubric under `docs/reviews/`**, which is why `--check`'s advisory rubric line reads `none`. There is no review record on the branch to read; this entry is the only summary.
+- **Tests:** 9 new cases in `test/questions-doc.bats` (51 in the file pass), `questions-counts.bats` passes, hermeticity lint and health check pass (the loop's report).
+- **Read:** `docs/working/research-2026-11-20-questions-check-section.md`; the diff: `git diff 063a07d9 5106fc0a -- scripts/ test/` (2 files, 285 lines added, 21 removed).
+
+TIP: 5106fc0a52a942e0926ab1ade80fbf58eb9ceaf6
+
+`--check`'s lines:
+
+```
+ok docs/working/briefs/2026-11-20-questions-check-section.md 5106fc0a52a942e0926ab1ade80fbf58eb9ceaf6 f2030f098624ec592cc818a9509274d49872771b
+path docs/working/briefs/2026-11-20-questions-check-section.md M docs/working/briefs/2026-11-20-questions-check-section.md
+path docs/working/briefs/2026-11-20-questions-check-section.md A docs/working/research-2026-11-20-questions-check-section.md
+path docs/working/briefs/2026-11-20-questions-check-section.md M scripts/questions.sh
+path docs/working/briefs/2026-11-20-questions-check-section.md M test/questions-doc.bats
+rubric docs/working/briefs/2026-11-20-questions-check-section.md: none: fix/questions-check-section changes 2 paths outside docs/ and adds or changes no code-review rubric under docs/reviews/
+```
+
+- **Paths self-merge would have refused:** `scripts/questions.sh` (gate code).
+- **What an attacker would want here:** nothing new: `check` only reads the questions files and reports; `migrate` deletes only headings with nothing but blank lines under them. A planted heading could at most make `check` warn or fail, which is loud.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges TIP above. | Reading a 285-line diff with no committed rubric. | One `git revert` undoes it. |
+| **[2] drop** | The brief closes; nothing merges. | Nothing. | Misfiled entries keep passing `check` in older projects. |
+| **[3] changes needed** | Your note goes back to the loop (for example: commit the review rubric). | Writing the note. | Another round. |
 
 - **Interim:** the branch waits; nothing merges.
