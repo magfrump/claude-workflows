@@ -73,15 +73,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 - **Agent: the dev cycle lists code landings on main that came outside the build loop** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-out-of-loop-landings.md` (review, gate code).
 
-- **Agent: fix report findings F8 to F12 so five held-back skills' reports can land** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-report-findings-f8-f12.md` (review; skills are prompt files). Ready at 0df118cd; merge entry Q-349.
+- **Agent: fix report findings F8 to F12 so five held-back skills' reports can land** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-report-findings-f8-f12.md` (review; skills are prompt files). Ready at 0df118cd; merge entry Q-349. Q-349 [1]: the merge was refused because the main checkout holds untracked `test/skills/fact-check/output/` reports (the owner's Q-332 host run); retried next iteration.
 
-- **Agent: `si_commit_child_work` should turn literal pathspecs off itself** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-si-commit-literal-pathspecs.md` (review, `scripts/lib/` is gate code). Ready at 1925b0ea; merge entry Q-348.
-
-- **Agent: the write guard's `.claude/wt-*` exemption is stale** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-write-guard-wt-exemption.md` (review). Ready at e7222f55; merge entry Q-343. `.claude/wt-q096b` still exists in the main checkout, so the brief decides drop versus correct the comments.
-
-- **Write trials T9, T11 and T12 into the dev-cycle skill** (from Now "Trial week: less friction, less habituation", 2026-11-20; Q-327 [2]). Brief `docs/working/briefs/2026-11-20-codify-trial-set-2.md` (review, gate code). Ready at a77146f3; merge entry Q-342. The T11 board integration rides with the board item in Now.
-
-- **Agent: A reproducible ask counter (`questions.sh counts`) for the weekly digest** (from Now, filed 2026-11-19; area B's B2). Brief `docs/working/briefs/2026-11-20-ask-counter.md` (review, gate code). Ready at 47210f4b; merge entry Q-344.
+- **Agent: A reproducible ask counter (`questions.sh counts`) for the weekly digest** (from Now, filed 2026-11-19; area B's B2). Brief `docs/working/briefs/2026-11-20-ask-counter.md` (review, gate code). Ready at 47210f4b; merge entry Q-344. Q-344 [1]: the approved merge conflicted with main after Q-342 merged (both edit step 9's weekly digest); sent back to its loop (2026-11-20).
 
 ## Next
 
@@ -144,6 +138,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   its brief's rule "nothing writes outside the health checkout", which no H or S line in
   `docs/constraints.md` states; the same sample takes it, with the question for the owner whether
   that rule becomes a constraint (a `constraints-builder` amend run).
+  2026-11-20 (iteration 2026-11-21-0336): step 4b fired on `skills/dev-cycle/SKILL.md` as
+  9e27a4ea (Q-342) changed it (trials T9, T11 and T12 written in); the same sample takes it.
   2026-11-19 (iteration 0121 UTC): step 4b fired on `skills/code-review/SKILL.md` and decision
   032's amendment (d383a484, Q-315: the lever #3 cache claims withdrawn); the same sample takes
   them, with one question: do other review-cost decisions (log rows 33-35) rest on the same
@@ -424,6 +420,9 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- Write trials T9, T11 and T12 into the dev-cycle skill: 9e27a4ea (approved merge, Q-342 [1]), brief `docs/working/briefs/closed/2026-11-20-codify-trial-set-2.md`.
+- The write guard's `.claude/wt-*` exemption: kept, comments corrected: abd8e21f (approved merge, Q-343 [1]), brief `docs/working/briefs/closed/2026-11-20-write-guard-wt-exemption.md`.
+- `si_commit_child_work` turns literal pathspecs off itself: 2c388cfc (approved merge, Q-348 [1]), brief `docs/working/briefs/closed/2026-11-20-si-commit-literal-pathspecs.md`.
 - Re-stamp the 81 pre-grant report stamps: 88c695fd (self-merge), `docs/working/research-2026-11-20-restamp-pre-grant-reports.md`, brief `docs/working/briefs/closed/2026-11-20-restamp-pre-grant-reports.md`. The health check's 312 stale-report warnings are gone (0 on the branch); the 11 skills' 23 suites pass.
 - Why the health check prints 312 stale-report warnings: 1bb24e5c (self-merge), `docs/working/research-2026-11-20-stale-report-warnings.md`, brief `docs/working/briefs/closed/2026-11-20-stale-report-warnings.md`. 81 stamps in 11 skills predate the web-tools grant, which cannot change those runners' output; the re-stamp is In flight.
 - `test/rubric-selection.bats` flake: 8daaa173 (self-merge), `docs/working/research-2026-11-20-rubric-selection-flake.md`, brief `docs/working/briefs/closed/2026-11-20-rubric-selection-flake.md`. Cause: `printf | grep -q` under `pipefail` (SIGPIPE read as no match); 2 of 200 failed under load before, 0 of 200 after. The Idea "`test/rubric-selection.bats` looks load-sensitive" is answered by it.
