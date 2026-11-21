@@ -67,7 +67,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 - **Agent: `questions.sh check` flags an entry outside `## Open`, and `migrate` drops a heading it empties** (from Now, filed 2026-11-20; behemoth-arsenal F-001). Brief `docs/working/briefs/2026-11-20-questions-check-section.md` (review, gate code). Ready at 5106fc0a; merge entry Q-362.
 
-- **Agent: the board's weekly line ignores a future-dated digest** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-board-weekly-future-date.md` (review).
+- **Agent: the board's weekly line ignores a future-dated digest** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-board-weekly-future-date.md` (review). Ready at 894fbb66; merge entry Q-364.
 
 - **Agent: the digest reads commit subjects under UTF-8** (from Now, filed 2026-11-20; FP-188). Brief `docs/working/briefs/2026-11-20-digest-log-encoding.md` (review, gate code). Ready at 5ffb12a2; merge entry Q-363.
 
