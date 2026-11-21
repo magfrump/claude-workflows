@@ -3,7 +3,7 @@
 Brief: `docs/working/briefs/2026-11-20-board-feedback-research.md` (self-merge, research only, Paths: none).
 Date: 2026-11-20. Base: main at 9d405e46.
 Method: reads, `git` and `rg` only (acceptance criterion 6); the board was not run.
-Review: a fact-check and design reviewer, three rounds; every finding is addressed below (see "Review record").
+Review: a fact-check and design reviewer, four rounds, the last clean; every finding is addressed below (see "Review record").
 
 ## Sources read
 
@@ -157,6 +157,8 @@ Round 2 (same reviewer, on 3c522476): seven of the eight resolved; one new High 
 - Low, an empty glob: `nullglob`, zero stored paths allowed.
 
 Round 3 (same reviewer, on 39de5cdd): the five round-2 fixes held; one Medium and three Lows. Fixed: the weekly directory check now uses `ls-tree -t --full-tree` over `docs`, `docs/working` and `docs/working/weekly` with main_entry's parent rules; a latest edition that is not a blob is UNREADABLE; board.sh's cost recounted (about 55 lines, 25 under S8's 500); the dev-cycle goal line names the changed and differs states and when the command is withheld.
+
+Round 4 (on 9cac63dd): clean.
 
 ## For the dev cycle
 
