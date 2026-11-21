@@ -440,6 +440,7 @@ install_layout() {
       guard "$(file_payload Edit "$f" "$s")"
       [ "$status" -eq 0 ] && [ "$(jq -r '.hookSpecificOutput.permissionDecision' <<<"$output")" = deny ] \
         || { echo "not denied ($s): $f -> $output"; return 1; }
+      [[ "$output" == *"without \`..\`"* ]] || { echo "no respelling text ($s): $f -> $output"; return 1; }
     done
   done
 }
