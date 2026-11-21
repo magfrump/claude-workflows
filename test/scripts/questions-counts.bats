@@ -136,3 +136,52 @@ counts() { cd "$P" && run bash "$QS" counts "$@"; }
     [ "$status" -eq 1 ] || { echo "$output"; return 1; }
     [[ "$output" == *"counts needs $BATS_TEST_TMPDIR/bare/lib/dev-cycle-read.sh"*"nothing counted"* ]] || { echo "$output"; return 1; }
 }
+
+@test "counts refuses an unreadable questions file instead of printing an empty table" {
+    chmod 000 "$P/docs/working/questions-archive.md"
+    counts --since 2026-11-01
+    chmod 644 "$P/docs/working/questions-archive.md"
+    [ "$status" -eq 1 ] || { echo "$output"; return 1; }
+    [[ "$output" == *"nothing counted"* && "$output" != *"| merge |"* ]] || { echo "$output"; return 1; }
+}
+
+@test "counts refuses a duplicate ID and an Opened that is not a calendar date, by ID" {
+    cp "$P/docs/working/questions.md" "$BATS_TEST_TMPDIR/live.before"
+    live Q-003 'you: judgment' 2026-11-01 OPEN pick-again 'Q-003 again.'
+    counts --since 2026-11-01
+    [ "$status" -eq 1 ] && [[ "$output" == *"Q-003: duplicate id; nothing counted"* ]] || { echo "$output"; return 1; }
+    cp "$BATS_TEST_TMPDIR/live.before" "$P/docs/working/questions.md"
+    sed -i 's/\*\*Opened:\*\* 2026-11-04 · \*\*Status:\*\* ANSWERED$/**Opened:** 2026-11-99 · **Status:** ANSWERED/' "$P/docs/working/questions-archive.md"
+    counts --since 2026-11-01
+    [ "$status" -eq 1 ] && [[ "$output" == *"Q-005: malformed Needs line (route 'you: fyi', Opened '2026-11-99'"* ]] || { echo "$output"; return 1; }
+}
+
+@test "counts lists an answered entry with no answer line as not read, and a non-owner route as not counted" {
+    commit 2026-11-06 Q-015 'you: judgment' 2026-11-06 no-answer-line 'The owner said nothing recordable.' \
+                      Q-016 agent 2026-11-06 agent-work 'Done by the loop.'
+    counts --since 2026-11-06 --until 2026-11-06
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+    [[ "$output" == *"| real choice | 1 | 1 | 0 | 0 | 0 |"* ]] || { echo "$output"; return 1; }
+    [[ "$output" == *"Not read as an option (counted as not first option): Q-015"* ]] || { echo "$output"; return 1; }
+    [[ "$output" == *"Not counted (answered in the window, not an owner route): Q-016"* ]] || { echo "$output"; return 1; }
+}
+
+@test "counts dates an answer added in a merge's conflict resolution by the merge commit" {
+    git -C "$P" checkout -q -b side
+    commit 2026-11-06 Q-017 'you: judgment' 2026-11-05 side-one 'Q-017: [1]'
+    git -C "$P" checkout -q main
+    commit 2026-11-06 Q-018 'you: judgment' 2026-11-05 main-one 'Q-018: [1]'
+    GIT_AUTHOR_DATE=2026-11-07T12:00:00+0000 GIT_COMMITTER_DATE=2026-11-07T12:00:00+0000 \
+        git -C "$P" -c user.name=t -c user.email=t@example.invalid merge -q --no-edit side 2>/dev/null || true
+    # Resolve the append-append conflict by hand, adding Q-019 only here.
+    git -C "$P" show main:docs/working/questions-archive.md > "$P/docs/working/questions-archive.md"
+    entry Q-017 'you: judgment' 2026-11-05 ANSWERED side-one 'Q-017: [1]' >> "$P/docs/working/questions-archive.md"
+    entry Q-019 'you: judgment' 2026-11-05 ANSWERED in-the-merge 'Q-019: [2]' >> "$P/docs/working/questions-archive.md"
+    git -C "$P" add -A
+    GIT_AUTHOR_DATE=2026-11-07T12:00:00+0000 GIT_COMMITTER_DATE=2026-11-07T12:00:00+0000 \
+        git -C "$P" -c user.name=t -c user.email=t@example.invalid commit -q --no-edit
+    counts --since 2026-11-07 --until 2026-11-07
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+    [[ "$output" == *"| real choice | 0 | 1 | 0 | 2 | 2 |"* ]] || { echo "$output"; return 1; }
+    [[ "$output" == *"Sittings: 1 "* ]] || { echo "$output"; return 1; }
+}

@@ -668,15 +668,21 @@ cmd_init() {
 # (free text, withdrawn, and [4] or higher, which it does not model) is
 # counted as not first and listed by ID. Entries and routes come from
 # parse_entries and ROUTES. Nothing is dropped silently: an answered entry
-# with no archive commit is listed as undated, and a Needs line `check` would
-# refuse stops the count, by ID.
+# with no archive commit is listed as undated, and a file it cannot read, a
+# duplicate ID, a missing slug or a Needs line with a route outside ROUTES, an
+# Opened that is not a date or a Status other than OPEN or ANSWERED stops the
+# count, by ID (`check` names the other problems).
 
 # archive_dates: "ID<TAB>date<TAB>commit" per heading ever added to the
-# archive: its earliest author date, the older commit on a tie (git log lists
-# newest first). Exits non-zero when git cannot read the archive's history.
+# archive: its earliest author date (in the author's own offset, as the dev
+# cycle's local `date +%F`), the older commit on a tie (git log lists newest
+# first). A merge is diffed against its first parent: a heading added while
+# resolving a conflict exists only there. Hardened with the lib's HARDEN.
+# Exits non-zero when git cannot read the archive's history.
 archive_dates() {
-    local log
-    log="$(git -C "$(dirname -- "$ARCHIVE")" -c log.showSignature=false log --no-color \
+    local log h; local -a cfg=()
+    for h in "${HARDEN[@]}"; do cfg+=(-c "$h"); done
+    log="$(git -C "$(dirname -- "$ARCHIVE")" "${cfg[@]}" log --no-color --text \
         --no-ext-diff --no-textconv --diff-merges=first-parent --format='@%H %as' -U0 -p -- "./$(basename -- "$ARCHIVE")")" || return 1
     # Spelled out: mawk has no {n} interval.
     awk '
@@ -736,25 +742,32 @@ cmd_counts() {
         [[ -n "$id" ]] && { dated[$id]="$date"; sha[$id]="$commit"; }
     done <<<"$history"
 
+    local -A seen=(); local entries wait
     for file in "$LIVE" "$ARCHIVE"; do
+        # Into a variable too: a failed read must stop the count, not empty it.
+        if [[ ! -r "$file" ]] || ! entries="$(parse_entries "$file")"; then die "cannot read $file; nothing counted"; fi
         while IFS=$'\t' read -r id route opened status slug _; do
-            if [[ ! "$id" =~ ^Q-[0-9]+$ || ! "$route" =~ ^($VALID_ROUTES)$ \
-                  || ! "$opened" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ || ! "$status" =~ ^(OPEN|ANSWERED)$ ]]; then
+            [[ -n "$id" ]] || continue
+            if [[ ! "$id" =~ ^Q-[0-9]+$ || ! "$route" =~ ^($VALID_ROUTES)$ || ! "$status" =~ ^(OPEN|ANSWERED)$ \
+                  || ! "$opened" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || ! date -u -d "$opened" >/dev/null 2>&1; then
                 die "$id: malformed Needs line (route '$route', Opened '$opened', Status '$status'); nothing counted — run: $QS_CMD check"
             fi
+            [[ -n "$slug" ]] || die "$id: no slug in its heading; nothing counted — run: $QS_CMD check"
+            [[ -z "${seen[$id]:-}" ]] || die "$id: duplicate id; nothing counted — run: $QS_CMD check"
+            seen[$id]=1
             class="$(ask_class "$route" "$slug")"
             if [[ -n "$class" && ! "$opened" < "$since" && ( -z "$until" || ! "$opened" > "$until" ) ]]; then
                 opn[$class]=$(( ${opn[$class]:-0} + 1 ))
             fi
             [[ "$status" == ANSWERED ]] || continue
             date="${dated[$id]:-}"
-            if [[ "$file" == "$LIVE" || -z "$date" ]]; then
-                [[ -n "$class" ]] && undated="$undated $id"; continue
-            fi
+            if [[ "$file" == "$LIVE" || -z "$date" ]]; then undated="$undated $id"; continue; fi
             [[ "$date" < "$since" || ( -n "$until" && "$date" > "$until" ) ]] && continue
             if [[ -z "$class" ]]; then other="$other $id"; continue; fi
             ans[$class]=$(( ${ans[$class]:-0} + 1 ))
-            waits[$class]="${waits[$class]:-} $(days_between "$opened" "$date")"
+            wait="$(days_between "$opened" "$date")"
+            (( wait >= 0 )) || die "$id: answered $date, before its Opened $opened; nothing counted"
+            waits[$class]="${waits[$class]:-} $wait"
             [[ "$route" == "${ROUTES[0]}" ]] || continue
             sittings[${sha[$id]}]=1; days[$date]=1
             r="$(awk -v id="$id" "$FENCE_AWK$ANSWER_AWK" "$ARCHIVE")" || r=""
@@ -765,10 +778,10 @@ cmd_counts() {
                 unrecognized) unread="$unread $id" ;;
                 *) die "$(basename -- "$ARCHIVE") cannot be read for $id's answer (${r:-no entry}); nothing counted" ;;
             esac
-        done < <(parse_entries "$file")
+        done <<<"$entries"
     done
 
-    printf 'Ask counter, %s to %s (answer date: the first commit adding the entry to %s)\n\n' \
+    printf 'Ask counter, %s to %s (answer date: the first commit adding the entry to %s, author date)\n\n' \
         "$since" "${until:-now}" "$(basename -- "$ARCHIVE")"
     echo "| Class | Opened | Answered | First option | Median wait (days) | Max wait (days) |"
     echo "|---|---|---|---|---|---|"
