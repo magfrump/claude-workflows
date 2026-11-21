@@ -2,7 +2,9 @@
 
 Date: 2026-11-20 · Branch: feat/ask-counter (dispatched at b7663bf2) · Policy: review
 
-Failure-pattern grep: `rg -n -i "questions\.sh|under-count|undercount|silently dropped|vacuous" docs/failure-patterns.md` — no entry names questions.sh; the live class is `vacuous-assertion` (FP-163 subject relocated so the real default goes untested, FP-168 bare `! grep` in bats). Failure-pattern skip: the one fix commit (958c0044) repairs a failure swallowed by a process substitution, in code not yet merged; that class is already FP-147 (exit status read through a process substitution is lost), so a new entry would duplicate it.
+Failure-pattern grep: `rg -n -i "questions\.sh|under-count|undercount|silently dropped|vacuous" docs/failure-patterns.md` — no entry names questions.sh; the live class is `vacuous-assertion` (FP-163 subject relocated so the real default goes untested, FP-168 bare `! grep` in bats).
+
+Failure-pattern skip: the one fix commit (958c0044) repairs a failure swallowed by a process substitution, in code not yet merged; that class is already FP-147 (exit status read through a process substitution is lost), so a new entry would duplicate it.
 
 Applied: the tests run `counts` from inside a fixture repo with no `QUESTIONS_*` override (the default position), every assertion is a positive match on an exact row, and each refusal case asserts the exit code and the message.
 
