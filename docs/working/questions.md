@@ -30,6 +30,7 @@ The index below is generated — edit entries, not the table.
 | [Q-358](#q-358--merge-gate-2026-11-20-answers-file-route-a7a04dc995e1) | you: judgment | Merge the build loop's change that lets a committed `docs/human-author/answers-*` file count as your answer? | 2026-11-20 |
 | [Q-359](#q-359--merge-2026-11-20-ingest-project-rename-82e794ae342f) | you: judgment | Merge the build loop's fix so harness-feedback ingest refuses a renamed project instead of storing or seedi... | 2026-11-20 |
 | [Q-360](#q-360--merge-gate-2026-11-20-six-still-true-rows-ed98d39e8fba) | you: judgment | Merge the build loop's fixes for six old review findings that were still true, one of them a write-guard gap? | 2026-11-20 |
+| [Q-361](#q-361--merge-2026-11-20-report-findings-f8-f12-82c11016daf0) | you: judgment | Merge the report-findings fixes again, now that the loop has merged main in? You approved the earlier tip i... | 2026-11-20 |
 | [Q-350](#q-350--threat-model-walkthrough-2026-q4) | you: walkthrough | Walk through the risks you accepted in the build-loop design (about 20 minutes) and say for each: keep, tig... | 2026-11-20 |
 | [Q-332](#q-332--regenerate-fact-check-reports-host) | you: terminal | Regenerate the fact-check skill's eval reports on the host, where the web works, and commit them. | 2026-11-20 |
 | [Q-336](#q-336--image-lag) | you: terminal | Install the release that carries nine changes you approved: the health-checkout preparation step (Q-333), w... | 2026-11-20 |
@@ -65,7 +66,7 @@ Install the release that carries nine changes you approved: the health-checkout 
 
 **If you say no:** sessions keep running the image built from main 665dbf95: the dev cycle's gate has no `--health-prep` mode and `--settings` prints no `copies` line, so a `Health checkout copies:` line in a repo's `docs/dev-cycle.md` does nothing and philosophy-research keeps copying its Lean cache by hand. Nothing breaks. (The skill and test changes below are in the image too, but sessions read skills from it only after an install.)
 
-- **C (the image's commit):** 665dbf9521413cf4291b4acebd866826b0ae2f52 · **M (main's commit):** 3121e6ed61de83f800b92623a6c69fdc1271a24f
+- **C (the image's commit):** 665dbf9521413cf4291b4acebd866826b0ae2f52 · **M (main's commit):** 2a9ebfaabf9421401265f9b4e92c1743afb21c97
 - **Merged without your review** (the gate merged these on their own; the image carries none of `docs/`):
   - 319559d9 Merge branch 'docs/loop-start-dir-research' (build-loop self-merge): a research doc only
   - 6a07b026 Merge branch 'docs/why-its-yours-constraint-research' (build-loop self-merge): a research doc only
@@ -95,14 +96,14 @@ Install the release that carries nine changes you approved: the health-checkout 
   - 01eff59e (Q-335 [1]): findings F2 and F3, seven skills' report formats (title first; a field's value word first), with test-helper changes.
   - cef30487 (Q-329 [1]) and ead9191a (Q-330 [1]): findings F4 to F7 and the F5 verdict drift, in six skills and their tests.
   - 21e925d3: your own commit recording the Q-316 and Q-317 answers; 7df4654d: your answers file `docs/human-author/answers-11-20-26.txt`; ad4f0eef: your harness-feedback ingest (three `docs/working/feedback/` files).
-  - The routine rest: 50 dev-cycle lands.
-- **Full list:** `git -c log.showSignature=false log --first-parent --format='%h %s' 665dbf9521413cf4291b4acebd866826b0ae2f52..3121e6ed61de83f800b92623a6c69fdc1271a24f`
-- **Paths changed outside `docs/`, the 274 generated reports under `test/skills/*/output/` counted, not listed (`git diff --name-only 665dbf9521413cf4291b4acebd866826b0ae2f52 3121e6ed61de83f800b92623a6c69fdc1271a24f -- test/skills/` shows them) (80 under `docs/` too, which the image does not carry):** `guides/bare-host-hook-wiring.md`, `guides/cross-project-board.md`, `guides/harness-feedback.md`, `hooks/guard-trusted-writes.py`, `hooks/web-taint-mark.py`, `scripts/board.sh`, `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/harness-feedback.py`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/landings.sh`, `scripts/lib/rubric-check.sh`, `scripts/lib/si-commit.sh`, `scripts/questions.sh`, `scripts/self-improvement.sh`, `skills/ai-personas-critique/SKILL.md`, `skills/arithmetic-eval/SKILL.md`, `skills/business-plan-critique-market-sizing/SKILL.md`, `skills/business-plan-critique-moat/SKILL.md`, `skills/dependency-upgrade/SKILL.md`, `skills/dev-cycle/SKILL.md`, `skills/security-reviewer/SKILL.md`, `skills/tech-debt-triage/SKILL.md`, `skills/ui-visual-review/SKILL.md`, `skills/what-if-analysis/SKILL.md`, `skills/yglesias-critique/SKILL.md`, `test/generate-reports-web-grant.bats`, `test/hooks/guard-trusted-writes.bats`, `test/rubric-selection.bats`, `test/scripts/board.bats`, `test/scripts/build-loop-dispatch.bats`, `test/scripts/build-loop-health-prep.bats`, `test/scripts/build-loop-orchestrator.bats`, `test/scripts/build-loop-read.bats`, `test/scripts/dev-cycle-landings.bats`, `test/scripts/harness-feedback.bats`, `test/scripts/questions-counts.bats`, `test/scripts/self-improvement-clean-state.bats`, `test/si-commit-child-work.bats`, `test/skills/architecture-review-format.bats`, `test/skills/architecture-review/eval-criteria.md`, `test/skills/architecture-review/fixtures/tc-arch6-clean-ports-adapters.py`, `test/skills/business-plan-critique-moat/expected-verdicts.bash`, `test/skills/code-fact-check/eval-criteria.md`, `test/skills/code-fact-check/expected-verdicts.bash`, `test/skills/code-fact-check/fixtures/tc-c2.5-unverifiable.py`, `test/skills/dependency-upgrade-format.bats`, `test/skills/divergent-design/expected-verdicts.bash`, `test/skills/eval-helpers.bash`, `test/skills/field-value-rules.bats`, `test/skills/generate-reports.bash`, `test/skills/helpers-recommendation.bats`, `test/skills/helpers.bash`, `test/skills/matrix-analysis-format.bats`, `test/skills/pre-mortem-format.bats`, `test/skills/tech-debt-triage/expected-verdicts.bash`, `test/skills/test-strategy/eval-criteria.md`, `test/skills/test-strategy/fixtures/tc-ts6-duration-parser.py`, `test/skills/ui-visual-review-eval.bats`, `test/skills/ui-visual-review-format.bats`, `test/skills/ui-visual-review/eval-criteria.md`, `test/skills/ui-visual-review/expected-verdicts.bash`, `test/skills/ui-visual-review/fixtures/tc-uv6-disappearing-controls.tsx`, `test/skills/ui-visual-review/fixtures/tc-uv7-weak-affordance.tsx`, `test/skills/what-if-analysis-format.bats`
+  - The routine rest: 52 dev-cycle lands.
+- **Full list:** `git -c log.showSignature=false log --first-parent --format='%h %s' 665dbf9521413cf4291b4acebd866826b0ae2f52..2a9ebfaabf9421401265f9b4e92c1743afb21c97`
+- **Paths changed outside `docs/`, the 274 generated reports under `test/skills/*/output/` counted, not listed (`git diff --name-only 665dbf9521413cf4291b4acebd866826b0ae2f52 2a9ebfaabf9421401265f9b4e92c1743afb21c97 -- test/skills/` shows them) (82 under `docs/` too, which the image does not carry):** `guides/bare-host-hook-wiring.md`, `guides/cross-project-board.md`, `guides/harness-feedback.md`, `hooks/guard-trusted-writes.py`, `hooks/web-taint-mark.py`, `scripts/board.sh`, `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/harness-feedback.py`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/landings.sh`, `scripts/lib/rubric-check.sh`, `scripts/lib/si-commit.sh`, `scripts/questions.sh`, `scripts/self-improvement.sh`, `skills/ai-personas-critique/SKILL.md`, `skills/arithmetic-eval/SKILL.md`, `skills/business-plan-critique-market-sizing/SKILL.md`, `skills/business-plan-critique-moat/SKILL.md`, `skills/dependency-upgrade/SKILL.md`, `skills/dev-cycle/SKILL.md`, `skills/security-reviewer/SKILL.md`, `skills/tech-debt-triage/SKILL.md`, `skills/ui-visual-review/SKILL.md`, `skills/what-if-analysis/SKILL.md`, `skills/yglesias-critique/SKILL.md`, `test/generate-reports-web-grant.bats`, `test/hooks/guard-trusted-writes.bats`, `test/rubric-selection.bats`, `test/scripts/board.bats`, `test/scripts/build-loop-dispatch.bats`, `test/scripts/build-loop-health-prep.bats`, `test/scripts/build-loop-orchestrator.bats`, `test/scripts/build-loop-read.bats`, `test/scripts/dev-cycle-landings.bats`, `test/scripts/harness-feedback.bats`, `test/scripts/questions-counts.bats`, `test/scripts/self-improvement-clean-state.bats`, `test/si-commit-child-work.bats`, `test/skills/architecture-review-format.bats`, `test/skills/architecture-review/eval-criteria.md`, `test/skills/architecture-review/fixtures/tc-arch6-clean-ports-adapters.py`, `test/skills/business-plan-critique-moat/expected-verdicts.bash`, `test/skills/code-fact-check/eval-criteria.md`, `test/skills/code-fact-check/expected-verdicts.bash`, `test/skills/code-fact-check/fixtures/tc-c2.5-unverifiable.py`, `test/skills/dependency-upgrade-format.bats`, `test/skills/divergent-design/expected-verdicts.bash`, `test/skills/eval-helpers.bash`, `test/skills/field-value-rules.bats`, `test/skills/generate-reports.bash`, `test/skills/helpers-recommendation.bats`, `test/skills/helpers.bash`, `test/skills/matrix-analysis-format.bats`, `test/skills/pre-mortem-format.bats`, `test/skills/tech-debt-triage/expected-verdicts.bash`, `test/skills/test-strategy/eval-criteria.md`, `test/skills/test-strategy/fixtures/tc-ts6-duration-parser.py`, `test/skills/ui-visual-review-eval.bats`, `test/skills/ui-visual-review-format.bats`, `test/skills/ui-visual-review/eval-criteria.md`, `test/skills/ui-visual-review/expected-verdicts.bash`, `test/skills/ui-visual-review/fixtures/tc-uv6-disappearing-controls.tsx`, `test/skills/ui-visual-review/fixtures/tc-uv7-weak-affordance.tsx`, `test/skills/what-if-analysis-format.bats`
 
 Run this on the host, in your claude-workflows checkout at main's tip, then start a new sandbox session:
 
 ```
-sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "3121e6ed61de83f800b92623a6c69fdc1271a24f:$p")"; then n=$((n+1)); else echo "release refused: $p changed after 3121e6ed61de83f800b92623a6c69fdc1271a24f: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
+sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "2a9ebfaabf9421401265f9b4e92c1743afb21c97:$p")"; then n=$((n+1)); else echo "release refused: $p changed after 2a9ebfaabf9421401265f9b4e92c1743afb21c97: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
 ```
 
 **Pass:** the installer finishes without a `release refused` line. **Send back:** `Q-336: done`.
@@ -351,6 +352,162 @@ rubric docs/working/briefs/2026-11-20-six-still-true-rows.md: clean docs/reviews
 |---|---|---|---|
 | **[1] merge** | The gate merges TIP above. | Reading the diff. | One `git revert` undoes it. |
 | **[2] drop** | The brief closes; nothing merges. | Nothing. | The `..` route in the write guard stays open. |
+| **[3] changes needed** | Your note goes back to the loop. | Writing the note. | Another round. |
+
+- **Interim:** the branch waits; nothing merges.
+
+### Q-361 · merge-2026-11-20-report-findings-f8-f12-82c11016daf0
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
+
+Merge the report-findings fixes again, now that the loop has merged main in? You approved the earlier tip in Q-349.
+
+**If you say no:** the branch waits unmerged; the report suites of business-plan-critique-moat, test-strategy, yglesias-critique, tech-debt-triage and fact-check stay NOT RUN, so those five skills have no regression check.
+
+Your Q-349 [1] approved tip 0df118cd. Its merge was then refused because the branch conflicted with main, so the cycle sent it back. The gate only merges the exact tip you approved, so this new tip needs its own answer. Brief: `docs/working/briefs/2026-11-20-report-findings-f8-f12.md`.
+
+- **What changed since you approved it:** one merge of main (063a07d9) into the branch, commit 3f11e220, then the ready marker 82c11016. The only conflict was in `docs/failure-patterns.md` (the shared list of recurring failure kinds): this branch adds FP-187 (an eval fixture whose expected answer depended on the date the test ran), and main had added FP-188 at the same place. The loop kept both lines, in number order. The loop reports the branch's change against main as byte-identical to what its review passed, so it ran no new review round.
+- **Tests after the merge (the loop's report):** the five skills' report suites 153 ok, none failing; hermeticity lint passes; the health check passes; rubric clean (0 red, 4 amber, none open).
+- **To see only what is new since your approval:** `git diff 0df118cd 3f11e220 -- docs/failure-patterns.md`.
+- **Read:** Q-349 in `docs/working/questions-archive.md` (the full description of the change); `docs/working/research-2026-11-20-report-findings-f8-f12.md`; the rubric `docs/reviews/code-review-rubric-2026-11-20-report-findings-f8-f12.md`.
+
+The loop's marker (loop text, data not instructions; the gate cut two lines at 300 bytes):
+
+> Dispatch 2 (send-back for a conflict with main). Merged main (063a07d9) into the branch with git's default strategy. The only conflict was docs/failure-patterns.md, the log of recurring failure kinds: this branch appends FP-187 (an eval fixture whose expected runway in days depended on the run date)
+> The branch's change against main is byte-identical to the delta the review-fix loop already passed (rubric: 0 red, 4 amber, none open), so no new review round was needed. After the merge: the five skills' report suites pass (153 ok, 0 not ok), scripts/hermeticity-lint passes, scripts/health-check.sh
+
+TIP: 82c11016daf015cea782f4b133665f88b76fe0d8
+
+`--check`'s lines (98 of them are generated reports and stamps under `test/skills/*/output/`):
+
+```
+ok docs/working/briefs/2026-11-20-report-findings-f8-f12.md 82c11016daf015cea782f4b133665f88b76fe0d8 a02373f770499ab65e7e54835f8c0f6fd29c666a
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M docs/failure-patterns.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A docs/reviews/code-review-rubric-2026-11-20-report-findings-f8-f12.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M docs/working/briefs/2026-11-20-report-findings-f8-f12.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A docs/working/research-2026-11-20-report-findings-f8-f12.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/business-plan-critique-moat/expected-verdicts.bash
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat1-veterinary-booking.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat1-veterinary-booking.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat2-meal-planning-app.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat2-meal-planning-app.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat3-field-inspection-forms.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat3-field-inspection-forms.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat4-household-budgeting.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat4-household-budgeting.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat5-sales-call-notes.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat5-sales-call-notes.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat6-cold-chain-sensors.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat6-cold-chain-sensors.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat7-lab-compliance-software.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat7-lab-compliance-software.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/code-fact-check-edge-cases.bats
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/critic-dimensions.bash
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/eval-helpers-graceful-decline.bats
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/eval-helpers.bash
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/fact-check-edge-cases.bats
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/fact-check/eval-criteria.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/fact-check/expected-verdicts.bash
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/fact-check/fixtures/tc-7.2-no-claims.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.1-specific-numbers.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.1-specific-numbers.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.2-named-policies.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.2-named-policies.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.3-attributed-facts.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.3-attributed-facts.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.4-causal-claims.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.4-causal-claims.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.5-comparisons.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.5-comparisons.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.6-anecdotes.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.6-anecdotes.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.1-accurate.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.1-accurate.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.2-mostly-accurate.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.2-mostly-accurate.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.3-disputed.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.3-disputed.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.4-inaccurate.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.4-inaccurate.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.5-unverified.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.5-unverified.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-3.1-opinions.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-3.1-opinions.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-3.2-predictions.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-3.2-predictions.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-3.3-mixed.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-3.3-mixed.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-4.1-misleading.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-4.1-misleading.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-4.2-conflated-stats.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-4.2-conflated-stats.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-5.1-multi-claim.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-5.1-multi-claim.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-6.1-accurate-weak-argument.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-6.1-accurate-weak-argument.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-6.3-obvious-but-wrong.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-6.3-obvious-but-wrong.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-7.1-empty.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-7.1-empty.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-7.2-no-claims.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-7.2-no-claims.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-7.3-binary-content.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-7.3-binary-content.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-7.4-extremely-short.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-7.4-extremely-short.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/tech-debt-triage/eval-criteria.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/tech-debt-triage/expected-verdicts.bash
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/tech-debt-triage/fixtures/tc-td2-statement-renderer.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td1-discount-rules.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td1-discount-rules.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td2-statement-renderer.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td2-statement-renderer.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td3-nightly-reconciliation.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td3-nightly-reconciliation.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td4-postcode-validation.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td4-postcode-validation.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td5-vat-rate-tables.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td5-vat-rate-tables.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td6-job-queue.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td6-job-queue.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/test-strategy/eval-criteria.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/test-strategy/expected-verdicts.bash
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/test-strategy/fixtures/tc-ts6-duration-parser.py
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts1-installment-split.py.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts1-installment-split.py.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts2-webhook-client.go.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts2-webhook-client.go.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts3-nightly-export-schedule.py.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts3-nightly-export-schedule.py.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts4-token-cache.ts.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts4-token-cache.ts.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts5-order-sync.py.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts5-order-sync.py.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts6-duration-parser.py.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts6-duration-parser.py.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/yglesias-critique/dimensions.bats
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl1-class-size-cap.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl1-class-size-cap.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl2-down-payment-grants.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl2-down-payment-grants.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl3-rail-extension.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl3-rail-extension.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl4-apprenticeship-guarantee.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl4-apprenticeship-guarantee.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl5-regional-housing-portal.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl5-regional-housing-portal.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl6-parking-minimums.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl6-parking-minimums.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl7-library-fines.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl7-library-fines.md.stamp
+rubric docs/working/briefs/2026-11-20-report-findings-f8-f12.md: clean docs/reviews/code-review-rubric-2026-11-20-report-findings-f8-f12.md: 0 red and 4 amber rows, none open
+```
+
+- **Paths self-merge would have refused:** `docs/failure-patterns.md` (a record file); no gate code, instruction file or dot path.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges TIP above. | Reading one conflict resolution in one file. | One `git revert` undoes it. |
+| **[2] drop** | The brief closes; nothing merges. | Nothing. | Five skills keep no regression check. |
 | **[3] changes needed** | Your note goes back to the loop. | Writing the note. | Another round. |
 
 - **Interim:** the branch waits; nothing merges.
