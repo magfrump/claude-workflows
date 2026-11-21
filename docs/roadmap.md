@@ -55,7 +55,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 - **Agent: fix report findings F8 to F12 so five held-back skills' reports can land** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-report-findings-f8-f12.md` (review; skills are prompt files). Q-349 [1] approved tip 0df118cd, which then conflicted with main and was sent back (iteration 2026-11-21-0624); the loop merged main in, ready at 82c11016; merge entry Q-361 [1] approved, but the merge was refused (iteration 2026-11-21-0749): the main checkout holds untracked `test/skills/fact-check/output/` reports at paths the merge adds (your Q-332 host run); retried each iteration.
 
-- **Agent: `| head` readers under `set -e` can abort a script** (from Now, filed 2026-11-20; FP-175). Brief `docs/working/briefs/2026-11-20-head-readers-set-e.md` (review, gate code if it touches `scripts/lib/`).
+- **Agent: `| head` readers under `set -e` can abort a script** (from Now, filed 2026-11-20; FP-175). Brief `docs/working/briefs/2026-11-20-head-readers-set-e.md` (review, gate code if it touches `scripts/lib/`). Ready at 5a016447; merge entry Q-366.
 
 ## Next
 
@@ -76,6 +76,12 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
    since the first (which project to try first) depends on which repos have walkthroughs.
 
 ## Ideas
+
+- **Split `scripts/board.sh` under the S8 line cap.** Signal: the board-weekly loop (f68df711, Q-364) grew it from 499 to 513 lines, past the ~400-line cap in constraint S8. Would change: a smaller unit the next board feature can land in.
+- **`--check` flags a code-touching review brief with no committed rubric.** Signal: Q-362 merged 40e34124 with rubric `none` although its loop reported two review rounds. Would change: the merge entry carries a required line, so the owner is not the first to notice the missing record.
+- **An approved merge refused for the main checkout's state files one terminal entry.** Signal: Q-361 [1] refused at iteration 0749, as Q-349 was on 2026-11-20, for the owner's untracked `test/skills/fact-check/output/` reports. Would change: one paste naming the paths, instead of a quiet retry each iteration.
+- **Step 6 stages a closed brief after its `Applied:` edit.** Signal: iteration 2026-11-21-0749 needed a third land because `git mv` staged the briefs without their `Applied:` lines. Would change: one sentence in `skills/dev-cycle/SKILL.md` step 6 (gate code, a review unit).
+- **An approval carries to a new tip whose change against main is unchanged.** Signal: Q-361 re-asked after Q-349 [1] for a pure merge of main. Would change: what an answer approves, so it needs a divergent-design pass and the owner's call before any build.
 
 - **Gate-only changes approved by the release paste (area A's [5n])**: parked (Q-323 [2], owner in session
   2026-11-20: "I like the separate merge entries, reading 1-2 things at a time rather than all in a lump").
@@ -157,6 +163,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   2026-11-12-0741, held to ride a review unit on the decision log, and none is queued.
 - **Keep a release entry's live-check history in a linked working doc.** Signal: iteration
   2026-11-12-1944 rewrote Q-273's release notes around four dated paragraphs it had to keep.
+  2026-11-21 (iteration 2026-11-21-0815): step 4b fired on 3422221b (Q-358, `skills/dev-cycle/SKILL.md` steps 0.2 and 7: answers files read as the owner's answer); the same sample takes it.
 
 Unranked. Each names the signal that motivates it.
 
