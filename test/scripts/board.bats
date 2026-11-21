@@ -642,6 +642,57 @@ fbline() { printf '%s\n' "$output" | awk -v h="== $BATS_TEST_TMPDIR/$1" '$0 == h
     [[ "$output" == *"1 project, 2 open for you, 1 unreadable or refused; exit 1"* ]]
 }
 
+# The weekly line skips a future-dated edition (docs/working/research-2026-11-20-board-weekly-future-date.md).
+wk() { local a="$1"; shift; mkdir -p "$a/docs/working/weekly"; for d in "$@"; do echo w > "$a/docs/working/weekly/$d.md"; done; commit "$a"; }
+
+@test "weekly: a future-dated edition is skipped and named, and the latest on or before today is shown" {
+    mkrepo alpha; a="$BATS_TEST_TMPDIR/alpha"; wk "$a" 2026-11-19 2027-11-19
+    BOARD_TODAY=2026-11-20 board
+    [ "$status" -eq 0 ] || { echo "$output"; false; }
+    [[ "$output" == *$'\n'"   weekly: $a/docs/working/weekly/2026-11-19.md (2026-11-19); skipped future-dated $a/docs/working/weekly/2027-11-19.md"$'\n'* ]] || { echo "$output"; false; }
+    [[ "$output" == *"1 project, 2 open for you, 0 unreadable or refused; exit 0"* ]]
+    # Today's own edition is not future-dated; with two after today, the newest and a count.
+    wk "$a" 2026-11-20 2028-01-01
+    BOARD_TODAY=2026-11-20 board
+    [ "$status" -eq 0 ] && [[ "$output" == *"   weekly: $a/docs/working/weekly/2026-11-20.md (2026-11-20); skipped 2 future-dated, the newest $a/docs/working/weekly/2028-01-01.md"$'\n'* ]] || { echo "$output"; false; }
+}
+
+@test "weekly: only a future-dated edition is none yet plus the skip; a skipped one is named even when the shown one is UNREADABLE" {
+    mkrepo alpha; a="$BATS_TEST_TMPDIR/alpha"; wk "$a" 2027-11-19
+    BOARD_TODAY=2026-11-20 board
+    [ "$status" -eq 0 ] && [[ "$output" == *$'\n'"   weekly: none yet; skipped future-dated $a/docs/working/weekly/2027-11-19.md"$'\n'* ]] || { echo "$output"; false; }
+    mkdir -p "$a/elsewhere"; ln -s ../../elsewhere/x "$a/docs/working/weekly/2026-11-13.md"; commit "$a"
+    BOARD_TODAY=2026-11-20 board
+    [ "$status" -eq 1 ] && [[ "$output" == *"   weekly UNREADABLE: docs/working/weekly/2026-11-13.md is not a regular file on the default branch; skipped future-dated $a/docs/working/weekly/2027-11-19.md"* ]] || { echo "$output"; false; }
+}
+
+@test "weekly: an impossible date is not an edition, neither shown nor skipped" {
+    mkrepo alpha; a="$BATS_TEST_TMPDIR/alpha"; wk "$a" 2026-11-06 2026-13-40 2026-02-30
+    BOARD_TODAY=2026-11-20 board
+    [ "$status" -eq 0 ] && [[ "$output" == *$'\n'"   weekly: $a/docs/working/weekly/2026-11-06.md (2026-11-06)"$'\n'* ]] || { echo "$output"; false; }
+    [[ "$output" != *2026-13-40* && "$output" != *2026-02-30* && "$output" != *skipped* ]]
+    git -C "$a" rm -q docs/working/weekly/2026-11-06.md; commit "$a"
+    BOARD_TODAY=2026-11-20 board
+    [ "$status" -eq 0 ] && [[ "$output" == *$'\n'"   weekly: none yet"$'\n'* ]] || { echo "$output"; false; }
+}
+
+@test "weekly: a day whose local midnight a clock change skips is still a real date" {
+    mkrepo alpha; a="$BATS_TEST_TMPDIR/alpha"; wk "$a" 2024-09-08
+    # Chile's clocks went from 00:00 to 01:00 on 2024-09-08, so local midnight did not exist.
+    TZ=America/Santiago BOARD_TODAY=2024-09-08 board
+    [ "$status" -eq 0 ] && [[ "$output" == *"   weekly: $a/docs/working/weekly/2024-09-08.md (2024-09-08)"$'\n'* ]] || { echo "$output"; false; }
+}
+
+@test "weekly: unpinned, today is the local date; a BOARD_TODAY that is not a real date refuses the run" {
+    mkrepo alpha; a="$BATS_TEST_TMPDIR/alpha"; wk "$a" 2000-01-03 9999-12-31
+    unset BOARD_TODAY; board
+    [ "$status" -eq 0 ] && [[ "$output" == *"   weekly: $a/docs/working/weekly/2000-01-03.md (2000-01-03); skipped future-dated $a/docs/working/weekly/9999-12-31.md"* ]] || { echo "$output"; false; }
+    for t in 2026-13-01 2026-11-2 tomorrow; do
+        BOARD_TODAY="$t" board
+        [ "$status" -eq 2 ] && [[ "$output" == "board: refusing to run: today's date ($t) is not a real YYYY-MM-DD date" ]] || { echo "[$t] $output"; false; }
+    done
+}
+
 @test "feedback: pending failing in an unmodelled way (an uncaught error) is UNREADABLE with its last line, never a count" {
     mkcw; mkrepo beta; hfile "$BATS_TEST_TMPDIR/beta/docs/harness-feedback.md" beta F-001; commit "$BATS_TEST_TMPDIR/beta"
     c="$BATS_TEST_TMPDIR/copy"; mkdir -p "$c/lib"; cp "$BOARD" "$QS" "$c/"; cp "$REPO_ROOT/scripts/lib/dev-cycle-read.sh" "$c/lib/"; printf 'import sys\nprint("Traceback (most recent call last):")\nsys.exit("KeyError: x")\n' > "$c/harness-feedback.py"
