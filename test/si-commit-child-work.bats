@@ -44,6 +44,22 @@ commit_work() { si_commit_child_work "$WT" "$1" "$REPO"; }
   [ -z "$(git -C "$WT" status --porcelain)" ]
 }
 
+@test "an inherited GIT_LITERAL_PATHSPECS=1 still excludes the message file" {
+  # The dev-cycle reader exports it; under it the add's ":(exclude)" magic is a
+  # file name, so the add failed unless the lib turns it off for that call.
+  export GIT_LITERAL_PATHSPECS=1
+  echo changed > "$WT/a.txt"
+  printf 'feat: literal\n' > "$WT/$SI_COMMIT_MSG_FILE"
+  run commit_work "task"
+  [ "$status" -eq 0 ]
+  [ "$(git -C "$WT" log -1 --format=%s)" = "feat: literal" ]
+  run git -C "$WT" ls-tree -r --name-only HEAD
+  [[ "$output" != *"$SI_COMMIT_MSG_FILE"* ]]
+  [ "$(git -C "$WT" show HEAD:a.txt)" = changed ]
+  # Scoped to the call: the caller's value is left as it was.
+  [ "$GIT_LITERAL_PATHSPECS" = 1 ]
+}
+
 @test "with no message file the task description is the message" {
   echo changed > "$WT/a.txt"
   run commit_work "fix: the task description"
