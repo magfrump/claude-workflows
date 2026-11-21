@@ -127,8 +127,9 @@ done
 
 # Every git call from here on, the lib's and questions.sh's included, runs
 # hardened, as build-loop.sh's do (the lib's git_harden: no hook, fsmonitor,
-# replace ref, user or system config, or transport): D6 runs the digest as
-# gate code. File names are literal, not pathspecs.
+# replace ref, user or system config, or transport, and message text in UTF-8
+# whatever the repo's log output encoding): D6 runs the digest as gate code.
+# File names are literal, not pathspecs.
 git_harden
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || { echo "Not inside a git repository" >&2; exit 1; }
 cd "$ROOT"

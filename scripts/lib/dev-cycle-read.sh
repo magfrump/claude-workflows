@@ -320,9 +320,14 @@ oddwhy() {  # the reason fence() refused a file, for a skip line
 # GIT_NO_REPLACE_OBJECTS); no hook or fsmonitor command, which the checkout
 # could edit (H1); no core.attributesFile, as gate_repo reads none; git log's
 # own date format and no signature check (a bad log.date stops git log;
-# log.showSignature runs gpg.program); and no commit signing (commit.gpgSign
+# log.showSignature runs gpg.program); no commit signing (commit.gpgSign
 # runs gpg.program on a commit or merge; the gate's own merge commit also
-# passes --no-gpg-sign: U4b1 i2 security F1). GIT_CONFIG_GLOBAL=/dev/null and
+# passes --no-gpg-sign: U4b1 i2 security F1); and message text read as UTF-8
+# (i18n.logOutputEncoding, which defaults to i18n.commitEncoding: a
+# repo-local UTF-16 cut subjects and dropped lines, FP-188; brief
+# 2026-11-20-digest-log-encoding). UTF-8 is git's own default, so where the
+# repository sets neither key (gate_repo, --main-log and every other gate
+# mode) the bytes read are unchanged. GIT_CONFIG_GLOBAL=/dev/null and
 # GIT_CONFIG_NOSYSTEM: the user's or system merge.* settings would change the
 # merge gate_repo computes and --main-log re-derives (A17); so a repository
 # owned by another uid needs safe.directory some other way.
@@ -332,7 +337,7 @@ oddwhy() {  # the reason fence() refused a file, for a skip line
 # plain decimal (010 reads as 8 here and as 10 to git) exits 1. A second call
 # returns at once: it would count HARDEN's pairs as the caller's
 # (CALLER_COUNT).
-HARDEN=(core.useReplaceRefs=false core.hooksPath=/dev/null core.fsmonitor=false core.attributesFile=/dev/null log.date=default log.showSignature=false commit.gpgSign=false)
+HARDEN=(core.useReplaceRefs=false core.hooksPath=/dev/null core.fsmonitor=false core.attributesFile=/dev/null log.date=default log.showSignature=false commit.gpgSign=false i18n.logOutputEncoding=UTF-8)
 CALLER_COUNT=""
 git_harden() {
   [[ -z "$CALLER_COUNT" ]] || return 0

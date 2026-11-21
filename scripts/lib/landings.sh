@@ -16,10 +16,12 @@ GATE_TMP=""
 # equal). gate_git keeps its return contract only: it runs in the checkout,
 # not build-loop.sh's isolated gate repository, so repo config applies; the
 # one key that changes what these reads print, the log output encoding, is
-# pinned (review R1: UTF-16 cut subjects and dropped a stale line silently).
+# pinned to UTF-8 by the reader lib's HARDEN for every git call the digest
+# makes (review R1: UTF-16 cut subjects and dropped a stale line silently;
+# FP-188).
 gate_git() {
   local rc=0
-  git -c i18n.logOutputEncoding=UTF-8 "$@" 2>"$GATE_TMP/err" || rc=$?
+  git "$@" 2>"$GATE_TMP/err" || rc=$?
   [[ ! -s "$GATE_TMP/err" ]] || return 3
   return "$rc"
 }

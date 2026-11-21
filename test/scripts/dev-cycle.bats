@@ -140,6 +140,20 @@ make_repo() {
     [[ "$output" != *"No merges in the window"* ]]
 }
 
+@test "a repo-local log output encoding changes nothing in the activity section (brief 2026-11-20-digest-log-encoding, FP-188)" {
+    activity() { printf '%s\n' "$output" | sed -n '/^## 1\. Activity/,/^## 2\./p'; }
+    git checkout -q -b f4 && git commit -q --allow-empty -m "feature 4" && git checkout -q main
+    git merge -q --no-ff f4 -m "merge: café — ünïcode"
+    run --separate-stderr bash "$DC" --since=2000-01-01
+    want="$(activity)"
+    [[ "$want" == *"4 merge(s)"* && "$want" == *"merge: café — ünïcode"$'\n'* ]] || { echo "$want"; return 1; }
+    git config i18n.logOutputEncoding UTF-16
+    run --separate-stderr bash "$DC" --since=2000-01-01
+    [ "$status" -eq 0 ] || { echo "$stderr"; return 1; }
+    [ "$(activity)" == "$want" ] || { diff <(echo "$want") <(activity); return 1; }
+    [[ "$stderr" != *"null byte"* ]] || { echo "$stderr"; return 1; }
+}
+
 @test "the scrub strips C0, C1, bidi and tag characters from stdout and stderr" {
     mkdir -p docs/decisions
     # C1 CSI (U+009B), RLO (U+202E), a tag character (U+E0041), ESC, CR.
