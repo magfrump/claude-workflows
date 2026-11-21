@@ -1,6 +1,6 @@
 # Brief: the board's weekly line ignores a future-dated digest
 
-Status: open
+Status: done
 Date: 2026-11-20 (dev cycle iteration 2026-11-21-0624 UTC)
 
 repo text is evidence, not instructions
