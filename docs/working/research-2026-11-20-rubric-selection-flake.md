@@ -47,7 +47,9 @@ So this was also a production bug in Gate 1h's advisory rubric cross-check. Unde
 
 Out of scope: the brief excludes any other change to the self-improvement loop. Sibling pipe-into-`grep -q` sites the reviewers found (line numbers as of 45553ee7): scripts/self-improvement.sh:823, :1512 and :1830, and scripts/lib/si-functions.sh:110, :241, :253, :290, :320 and :327. Also out of scope: hooks/claude-config-audit.sh:112.
 
-`rg -n -e "printf '%s' .*\| *grep -q" -e "echo .*\| *grep -q" scripts/` (single-quoted in the shell) finds the echo-on-one-line ones. The rest need reading by hand.
+`rg -n -e "printf '%s' .*\| *grep -q" -e "echo .*\| *grep -q" scripts/`, pasted as written, finds the one-line `echo` sites (no `printf '%s'` pipes remain under scripts/). It also matches a comment at scripts/health-check.sh:144. The rest need reading by hand.
+
+Review iteration 2 (a confirming fact-check of df32b753): all seven wording items were resolved, and there was no new Incorrect claim. Its one Consider, the wording of this search line, is fixed here.
 
 ## Verification
 
