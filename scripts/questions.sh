@@ -51,11 +51,13 @@
 # there would be a success claim about files that were never read.
 #
 # Writes never go through a symlinked questions file or docs/working/ dir,
-# and, for the default paths, never land outside the git toplevel (an
-# ancestor symlink such as a symlinked docs/ is caught by that check, not by
-# the per-file one). Explicit QUESTIONS_LIVE/ARCHIVE paths get only the
-# symlink checks. Because the script runs inside arbitrary
-# cloned repos, docs/working/ and its files are attacker-authored input: a
+# and, for the default paths, never land outside the git toplevel or inside
+# its .git/. That check, not the per-file one, is what catches an ancestor
+# symlink: a symlinked docs/ that leads outside the repo or into .git/ is
+# refused, while one that stays in the working tree (docs -> ./site/docs, a
+# real layout) is followed and written through (iter3 N5). Explicit
+# QUESTIONS_LIVE/ARCHIVE paths get only the symlink checks. Because the
+# script runs inside arbitrary cloned repos, docs/working/ and its files are attacker-authored input: a
 # planted symlink would otherwise turn `archive`, `index` or `init` into an
 # append/overwrite/create of any file the user can write (security review
 # 2026-09-21, finding 2). See assert_write_target.
@@ -99,8 +101,9 @@ WATCHING_OVERRIDE="${QUESTIONS_WATCHING:-${QUESTIONS_LIVE:-}}"
 # --- Refuse a write destination that is, or resolves through, a symlink ---
 # Checked for the file itself (-L is true for a dangling link too, which -e
 # misses — that gap is how `init` used to create files at a link's target) and
-# for its directory. A default path must also resolve inside $PROJECT_ROOT,
-# which catches a symlinked ancestor such as docs/ -> /elsewhere. An explicit
+# for its directory. A default path must also resolve inside $PROJECT_ROOT
+# and outside its .git/, which catches a symlinked ancestor such as
+# docs/ -> /elsewhere or docs/ -> .git. An explicit
 # QUESTIONS_LIVE/QUESTIONS_ARCHIVE is the operator's choice, so it is exempt
 # from the containment check but not from the symlink check.
 assert_write_target() {
@@ -113,6 +116,10 @@ assert_write_target() {
         resolved="$(realpath -m -- "$file")"
         [[ "$resolved" == "$root"/* ]] \
             || die "refusing to write: $file resolves to $resolved, outside $root"
+        # e.g. docs -> .git: a questions doc there is one nobody would find (as
+        # for a $PWD inside .git, above).
+        [[ "$resolved" != "$root"/.git/* ]] \
+            || die "refusing to write: $file resolves to $resolved, inside $root/.git"
     fi
     return 0
 }
