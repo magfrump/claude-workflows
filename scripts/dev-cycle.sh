@@ -76,12 +76,15 @@
 #   found by name (origin/HEAD, main or master): they read its commit.
 #
 # Every revisit trigger is printed every run (an output line over 4096 bytes is cut);
-# nothing carries forward.
+# nothing carries forward. Section 6b lists each first-parent commit in the
+# window that changes skills/, workflows/, scripts/ or hooks/ and is not a
+# build-loop merge (no Build-loop-gate: line), with the code-review rubric it
+# carried and that rubric's open rows (lib/landings.sh; advisory, no verdict).
 # Acts on $PWD's git repo (like questions.sh), so the installed copy serves any
 # project. Its git reads are hardened (the lib's git_harden): they read no user
 # or system git config (a repository owned by another user that needs a global
 # safe.directory reads as "Not inside a git repository") and no transport (a
-# partial clone's missing object fails). Read-only: writes nothing to the repo (one temp file, removed on exit).
+# partial clone's missing object fails). Read-only: writes nothing to the repo (one temp file and one temp directory, removed on exit).
 # Exit: 0 digest printed (or, for the check modes, every argument answered: a
 # skip is an answer, not an error); 1 bad usage, a GIT_CONFIG_COUNT that is not
 # plain decimal, not a git repo, no perl or lib/dev-cycle-read.sh, or no
@@ -607,6 +610,22 @@ if [[ ${#flagged[@]} -eq 0 ]]; then
 else
   printf '%s\n' "${flagged[@]:0:30}"
   [[ ${#flagged[@]} -le 30 ]] || echo "… $((${#flagged[@]} - 30)) more"
+fi
+
+printf '\n%s\n\n' "## 6b. Code landings outside the build loop"
+# lib/landings.sh's landings_section, over lib/rubric-check.sh's rubric_lines,
+# both beside the reader lib: step 4 files each landing it lists.
+nl="**Out-of-loop landings were NOT checked** —"
+for f in rubric-check landings; do
+  f="$SCRIPT_DIR/lib/$f.sh"
+  if [[ ! -f "$f" || -L "$f" ]]; then echo "$nl lib/${f##*/} is missing beside this script."; nl=""; break; fi
+  if ! bash -n -- "$f" 2>/dev/null; then echo "$nl lib/${f##*/} does not parse."; nl=""; break; fi
+  # shellcheck source=/dev/null  # lib/rubric-check.sh, then lib/landings.sh
+  source "$f"
+done
+if [[ -n "$nl" ]]; then
+  trap 'rm -f -- "${qs_err:-/nonexistent}"; [[ -z "$GATE_TMP" ]] || rm -rf -- "$GATE_TMP"' EXIT
+  landings_section "$SINCE"
 fi
 
 printf '\n%s\n\n' "## 7. Inputs for steps 4b and 5"

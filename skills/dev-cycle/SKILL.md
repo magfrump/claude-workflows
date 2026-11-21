@@ -365,8 +365,8 @@ the iteration with no record, so the next one starts from the same `Main at:`:
 4. **The digest**: `dev-cycle.sh` through d6 from WT. It
 reads the window start, triggers, questions, roadmap and idea log from that working tree. Keep
 its output. It is read-only. Its sections feed the steps: 1 activity (context), 2 triggers
-(step 2), 3 watched questions (step 3), 4 spot-check sample and 6 merges with code but no
-docs (step 4), 5 roadmap (steps 6 and 8), 7 inputs (steps 4b and 5), 7b pending migrations (step
+(step 2), 3 watched questions (step 3), 4 spot-check sample, 6 merges with code but no
+docs and 6b code landings outside the build loop (step 4), 5 roadmap (steps 6 and 8), 7 inputs (steps 4b and 5), 7b pending migrations (step
 1b), 8 skipped inputs (the record's `### Skipped inputs`). If the digest says the repo has no
 `docs/working/questions.md`, step 1 creates it unless section 8 blocks the path. Then check the Window line, in this order:
 
@@ -572,6 +572,16 @@ code path. Also check every merge the digest lists under "Merges with code but n
 fourth rule). A claim that no longer holds is a finding: fix it if mechanical, otherwise file
 it on the roadmap. Record what was checked even when everything held. This is closer to code
 review than to an audit; a deep audit is step 4b's job.
+
+**Out-of-loop landings.** For each landing the digest's section 6b lists (a commit on main
+that changed `skills/`, `workflows/`, `scripts/` or `hooks/` without a build-loop merge),
+file one roadmap Now item, a post-hoc review for step 8 to brief, naming its SHA, its code
+paths and the rubric lines the section printed (open rows, `unread` or `none`), unless an
+item already names that SHA (windows overlap on the record's day). File a `Not read` line
+the same way, saying what could not be read. Record the count on the `4.` line, after what
+was checked (`out-of-loop landings: N filed`, or `0`). The section is advisory: nothing
+waits on it. If the count is 0 for ten full cycles in a row, remove this step and the
+section (design: `docs/working/research-2026-11-20-out-of-loop-landings.md`).
 
 **Drift check** (D2). For each sampled merge a build loop made (a `--merge` commit, with a
 `Build-loop-gate:` trailer), read one Path A decision from the divergent-design record in
