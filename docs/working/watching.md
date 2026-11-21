@@ -33,6 +33,7 @@ Maintained by `~/.claude/scripts/questions.sh` (`check` · `index` · `migrate`)
 | [Q-338](#q-338--parked-shell-removal-observable) | trigger | Replace R2 (worktrees removed in a separate call after a bare `cd` into `.worktrees`) with option 2 (each r... | 2026-11-20 |
 | [Q-346](#q-346--loop-idle-on-unanswered-tool-call) | trigger | Reopen philosophy-research's harness feedback F-020 (a background subagent blocks silently on a write that ... | 2026-11-20 |
 | [Q-347](#q-347--second-toolchain-cache-loss) | trigger | Bring back a per-project cache volume (belegarth-herald's harness feedback F-013: toolchain caches wiped on... | 2026-11-20 |
+| [Q-355](#q-355--decision-040-asks-per-day) | trigger | Reopen decision 040's asks-per-day question (Q-341 [1], answered "no change" by `docs/working/research-2026... | 2026-11-20 |
 <!-- index:end -->
 
 ## Open
@@ -171,6 +172,16 @@ Bring the next quarterly threat-model walkthrough back as a `you: walkthrough` e
 - **Condition:** the first cycle iteration on or after 2027-02-20.
 - **When it fires:** refresh the table from the decision records and questions files since the last walkthrough (a research brief like the first), file the entry, and open the next quarter's watch. Then close this one.
 - **Interim:** nothing is scheduled; Q-350 is the current walkthrough.
+
+### Q-355 · decision-040-asks-per-day
+**Needs:** trigger · **Opened:** 2026-11-20 · **Status:** OPEN
+
+Reopen decision 040's asks-per-day question (Q-341 [1], answered "no change" by `docs/working/research-2026-11-20-reopen-040-asks-per-day.md`, merged c3698169) if the owner's load grows past this record's baseline.
+
+- **Read:** that research doc (baseline: 64 asks in 2026-11-13 to 11-20, 8.0 a day; merge entries per landing 0.59; the owner's Q-323 [2] words "I like the separate merge entries, reading 1-2 things at a time rather than all in a lump"), decision 040's revisit triggers.
+- **Condition** (any): merge entries per landing over 0.75 in a weekly digest's window with at least 20 landings; a judgment entry with a `Blocks:` line waiting over 48 hours, three times in one week; merge entries touching only skill text, only the failure-pattern library or only paths the self-merge floor allows exceeding 5 in a week; the owner names asks, or reading them, as a burden.
+- **When it fires:** rerun the research doc's options (sections 4 and 6) on the new numbers, with `questions.sh counts` once it is on main (Q-354).
+- **Interim:** decision 040's per-day trigger is answered by that record; the trigger pass cites it and this watch rather than reopening on every busy day.
 
 ## Closed
 
