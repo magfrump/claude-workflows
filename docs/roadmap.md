@@ -53,13 +53,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 - **Agent: `questions.sh check` flags an entry outside `## Open`, and `migrate` drops a heading it empties** (filed 2026-11-20, step 7; behemoth-arsenal harness feedback F-001; triage brief 1 in `docs/working/research-2026-11-20-harness-feedback-triage.md`). Motive: after a migration left stale route headings, 19 of 20 owner questions there were filed under "Watched conditions". First step: a review brief (gate code) once the ask counter (Q-344) settles `scripts/questions.sh`.
 
-- **Agent: answers files count as the owner's answer** (filed 2026-11-20, step 7; behemoth-arsenal F-002, philosophy-research F-004 and F-005, this repo's 7df4654d; triage brief 2). Q-345 answered [1] (2026-11-20, in session): the gate reads `Q-NNN: [N]` lines from new `docs/human-author/answers-*` files on main dated after the entry opened. First step: a review brief (gate code: `scripts/lib/dev-cycle-read.sh`, `scripts/build-loop.sh`, the skill).
-
 - **Agent: `guides/validation-gates.md` names the commit helper's literal-pathspecs guard** (filed 2026-11-20, step 7; the si-commit loop's nit). Motive: line 33 lists `si_commit_child_work`'s hardening but not the guard Q-348 moves into the lib. First step: once Q-348 merges, one line in that guide, riding with the next review unit that touches `guides/` (the cycle cannot write it).
-
-- **Agent: `harness-feedback.py ingest` stores a renamed project twice** (filed 2026-11-20, step 7; the board research's side finding). Motive: ad4f0eef changed `docs/working/feedback/philosophy-research.md`'s `Project:` line to `task-workspace-designer`; ingest keyed on that line would re-seed 22 entries (19 duplicates) and write a second copy. First step: confirm the rename is intended (that project is philosophy-research), then fix the file or teach ingest to refuse a project name that changes under an existing file.
-
-- **Agent: `harness-feedback.py ingest` overwrites an empty stored copy under another project name** (filed 2026-11-20, step 7; the board loop's finding, `docs/working/research-2026-11-20-board-pending-feedback.md`). Motive: an empty entry list counts as a prefix of any list, so a stored file with zero entries and a different `Project:` line is overwritten. First step: fold into the "`ingest` stores a renamed project twice" item's brief (same function).
 
 - **Agent: the board's weekly line trusts a future-dated file name** (filed 2026-11-20, step 7; same finding). Motive: the lib's `isweekly` takes the latest `YYYY-MM-DD.md` name, so a mistyped future date shows as latest every week. First step: once Q-352 merges, a small review brief to ignore dates after today and say so on the line.
 
@@ -67,17 +61,13 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
+- **Agent: answers files count as the owner's answer** (from Now; Q-345 [1]). Brief `docs/working/briefs/2026-11-20-answers-file-route.md` (review, gate code).
+
+- **Agent: `harness-feedback.py ingest` and a renamed project** (from Now: the renamed-project and empty-copy-overwrite items, one function). Brief `docs/working/briefs/2026-11-20-ingest-project-rename.md` (review).
+
 - **Agent: other `printf | grep -q` pipelines under `pipefail`** (from Now, filed 2026-11-20; FP-175). Brief `docs/working/briefs/2026-11-20-pipefail-grep-q.md` (review).
 
-- **Agent: the write guard's Bash deny names the Read tool, and the taint docstring covers subagents** (from Now, filed 2026-11-20; F-022 and F-021's comment). Brief `docs/working/briefs/2026-11-20-guard-read-route-text.md` (review). Ready at cfa82ec6; merge entry Q-356.
-
-- **Agent: the cross-project board lists harness feedback not yet copied here, and each repo's latest weekly digest** (from Now, owner request 2026-11-20). Brief `docs/working/briefs/2026-11-20-board-pending-feedback.md` (review, host code). Ready at 87ce7a6d; merge entry Q-352.
-
-- **Agent: the dev cycle lists code landings on main that came outside the build loop** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-out-of-loop-landings.md` (review, gate code). Ready at 93e88269; merge entry Q-353.
-
 - **Agent: fix report findings F8 to F12 so five held-back skills' reports can land** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-report-findings-f8-f12.md` (review; skills are prompt files). Ready at 0df118cd; merge entry Q-349. Q-349 [1]: the merge was refused because the main checkout holds untracked `test/skills/fact-check/output/` reports (the owner's Q-332 host run); retried next iteration.
-
-- **Agent: A reproducible ask counter (`questions.sh counts`) for the weekly digest** (from Now, filed 2026-11-19; area B's B2). Brief `docs/working/briefs/2026-11-20-ask-counter.md` (review, gate code). Ready at 47210f4b; merge entry Q-344. Q-344 [1]: the approved merge conflicted with main after Q-342 merged (both edit step 9's weekly digest); sent back to its loop (2026-11-20). Ready again at 8a4df684 after merging main; merge entry Q-354 (an approval covers one tip).
 
 ## Next
 
@@ -422,6 +412,10 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- The write guard's Bash deny names a read-only route; taint docstring covers subagents: b9319b18 (approved merge, Q-356 [1]).
+- The cross-project board lists harness feedback not yet copied, and each repo's latest weekly digest: 8409f853 (approved merge, Q-352 [1]); its host check rides in Q-336.
+- A reproducible ask counter (`questions.sh counts`): d80b3250 (approved merge, Q-354 [1], first approved as Q-344 and sent back once for a conflict).
+- The digest lists code landings outside the build loop (section 6b): 24d9ba2a (approved merge, Q-353 [1]).
 - Reopen decision 040 on asks per day (Q-341 [1]): c3698169 (self-merge), `docs/working/research-2026-11-20-reopen-040-asks-per-day.md`, brief `docs/working/briefs/closed/2026-11-20-reopen-040-asks-per-day.md`. No change: the owner's Q-323 [2] words (separate merge entries, read 1-2 at a time) rule out the options that would cut asks a lot; watch Q-355 holds the baseline and reopen triggers.
 - Prepare the first quarterly threat-model walkthrough: 10785140 (self-merge), `docs/working/research-2026-11-20-threat-model-walkthrough-prep.md`, brief `docs/working/briefs/closed/2026-11-20-threat-model-walkthrough-prep.md`; filed as Q-350 (you: walkthrough), next due 2027-02-20 (watch Q-351).
 - Write trials T9, T11 and T12 into the dev-cycle skill: 9e27a4ea (approved merge, Q-342 [1]), brief `docs/working/briefs/closed/2026-11-20-codify-trial-set-2.md`.

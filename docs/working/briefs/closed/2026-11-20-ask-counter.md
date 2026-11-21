@@ -56,4 +56,4 @@ Over the next 4 weekly digests, any of these:
 - Counting deliberate looks (T11 counts them by hand until its verdict).
 
 Dispatched: 2
-Applied: Q-344=redispatch
+Applied: Q-344=redispatch, Q-354=merged
