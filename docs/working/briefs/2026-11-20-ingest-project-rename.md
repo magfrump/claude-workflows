@@ -30,3 +30,5 @@ Policy: review
 
 - Editing any file under `docs/working/feedback/` or the idea log, and running `ingest` on real files.
 - Editing `docs/roadmap.md`, the questions files or `docs/working/watching.md`: the dev cycle owns those.
+
+Dispatched: 1
