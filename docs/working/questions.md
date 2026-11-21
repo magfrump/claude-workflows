@@ -32,6 +32,7 @@ The index below is generated — edit entries, not the table.
 | [Q-343](#q-343--merge-2026-11-20-write-guard-wt-exemption-e7222f55bc6e) | you: judgment | Merge the build loop's change that keeps the write guard's `.claude/wt-*` worktree case and corrects the co... | 2026-11-20 |
 | [Q-344](#q-344--merge-gate-2026-11-20-ask-counter-47210f4bf75f) | you: judgment | Merge the build loop's `questions.sh counts`, a reproducible ask counter for the weekly digest? | 2026-11-20 |
 | [Q-345](#q-345--answers-file-counts-as-answer) | you: judgment | Should a committed answers file under `docs/human-author/` (like `answers-11-20-26.txt`) count as your answ... | 2026-11-20 |
+| [Q-348](#q-348--merge-gate-2026-11-20-si-commit-literal-pathspecs-1925b0ea957e) | you: judgment | Merge the build loop's fix that makes the self-improvement loop's commit helper work when literal pathspecs... | 2026-11-20 |
 | [Q-332](#q-332--regenerate-fact-check-reports-host) | you: terminal | Regenerate the fact-check skill's eval reports on the host, where the web works, and commit them. | 2026-11-20 |
 | [Q-336](#q-336--image-lag) | you: terminal | Install the release that carries three gate changes you approved: the health-checkout preparation step (Q-3... | 2026-11-20 |
 <!-- index:end -->
@@ -66,7 +67,7 @@ Install the release that carries three gate changes you approved: the health-che
 
 **If you say no:** sessions keep running the image built from main 665dbf95: the dev cycle's gate has no `--health-prep` mode and `--settings` prints no `copies` line, so a `Health checkout copies:` line in a repo's `docs/dev-cycle.md` does nothing and philosophy-research keeps copying its Lean cache by hand. Nothing breaks. (The skill and test changes below are in the image too, but sessions read skills from it only after an install.)
 
-- **C (the image's commit):** 665dbf9521413cf4291b4acebd866826b0ae2f52 · **M (main's commit):** aa91635c042a4a2d5e767ca7c8912b1ed049da5a
+- **C (the image's commit):** 665dbf9521413cf4291b4acebd866826b0ae2f52 · **M (main's commit):** 55bace85c6707da037c12a91c5eb837e616f2d55
 - **Merged without your review** (the gate merged these on their own; the image carries none of `docs/`):
   - 319559d9 Merge branch 'docs/loop-start-dir-research' (build-loop self-merge): a research doc only
   - 6a07b026 Merge branch 'docs/why-its-yours-constraint-research' (build-loop self-merge): a research doc only
@@ -83,14 +84,14 @@ Install the release that carries three gate changes you approved: the health-che
   - 01eff59e (Q-335 [1]): findings F2 and F3, seven skills' report formats (title first; a field's value word first), with test-helper changes.
   - cef30487 (Q-329 [1]) and ead9191a (Q-330 [1]): findings F4 to F7 and the F5 verdict drift, in six skills and their tests.
   - 21e925d3: your own commit recording the Q-316 and Q-317 answers; 7df4654d: your answers file `docs/human-author/answers-11-20-26.txt`; ad4f0eef: your harness-feedback ingest (three `docs/working/feedback/` files).
-  - The routine rest: 30 dev-cycle lands.
-- **Full list:** `git -c log.showSignature=false log --first-parent --format='%h %s' 665dbf9521413cf4291b4acebd866826b0ae2f52..aa91635c042a4a2d5e767ca7c8912b1ed049da5a`
-- **Paths changed outside `docs/`, the 274 generated reports under `test/skills/*/output/` counted, not listed (`git diff --name-only 665dbf9521413cf4291b4acebd866826b0ae2f52 aa91635c042a4a2d5e767ca7c8912b1ed049da5a -- test/skills/` shows them) (45 under `docs/` too, which the image does not carry):** `scripts/build-loop.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/self-improvement.sh`, `skills/ai-personas-critique/SKILL.md`, `skills/arithmetic-eval/SKILL.md`, `skills/business-plan-critique-market-sizing/SKILL.md`, `skills/business-plan-critique-moat/SKILL.md`, `skills/dependency-upgrade/SKILL.md`, `skills/dev-cycle/SKILL.md`, `skills/security-reviewer/SKILL.md`, `skills/tech-debt-triage/SKILL.md`, `skills/ui-visual-review/SKILL.md`, `skills/what-if-analysis/SKILL.md`, `skills/yglesias-critique/SKILL.md`, `test/generate-reports-web-grant.bats`, `test/scripts/build-loop-dispatch.bats`, `test/scripts/build-loop-health-prep.bats`, `test/scripts/build-loop-orchestrator.bats`, `test/scripts/build-loop-read.bats`, `test/scripts/self-improvement-clean-state.bats`, `test/skills/architecture-review-format.bats`, `test/skills/architecture-review/eval-criteria.md`, `test/skills/architecture-review/fixtures/tc-arch6-clean-ports-adapters.py`, `test/skills/business-plan-critique-moat/expected-verdicts.bash`, `test/skills/code-fact-check/eval-criteria.md`, `test/skills/code-fact-check/expected-verdicts.bash`, `test/skills/code-fact-check/fixtures/tc-c2.5-unverifiable.py`, `test/skills/dependency-upgrade-format.bats`, `test/skills/divergent-design/expected-verdicts.bash`, `test/skills/eval-helpers.bash`, `test/skills/field-value-rules.bats`, `test/skills/generate-reports.bash`, `test/skills/helpers-recommendation.bats`, `test/skills/helpers.bash`, `test/skills/matrix-analysis-format.bats`, `test/skills/pre-mortem-format.bats`, `test/skills/tech-debt-triage/expected-verdicts.bash`, `test/skills/test-strategy/eval-criteria.md`, `test/skills/test-strategy/fixtures/tc-ts6-duration-parser.py`, `test/skills/ui-visual-review-eval.bats`, `test/skills/ui-visual-review-format.bats`, `test/skills/ui-visual-review/eval-criteria.md`, `test/skills/ui-visual-review/expected-verdicts.bash`, `test/skills/ui-visual-review/fixtures/tc-uv6-disappearing-controls.tsx`, `test/skills/ui-visual-review/fixtures/tc-uv7-weak-affordance.tsx`, `test/skills/what-if-analysis-format.bats`
+  - The routine rest: 32 dev-cycle lands.
+- **Full list:** `git -c log.showSignature=false log --first-parent --format='%h %s' 665dbf9521413cf4291b4acebd866826b0ae2f52..55bace85c6707da037c12a91c5eb837e616f2d55`
+- **Paths changed outside `docs/`, the 274 generated reports under `test/skills/*/output/` counted, not listed (`git diff --name-only 665dbf9521413cf4291b4acebd866826b0ae2f52 55bace85c6707da037c12a91c5eb837e616f2d55 -- test/skills/` shows them) (46 under `docs/` too, which the image does not carry):** `scripts/build-loop.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/self-improvement.sh`, `skills/ai-personas-critique/SKILL.md`, `skills/arithmetic-eval/SKILL.md`, `skills/business-plan-critique-market-sizing/SKILL.md`, `skills/business-plan-critique-moat/SKILL.md`, `skills/dependency-upgrade/SKILL.md`, `skills/dev-cycle/SKILL.md`, `skills/security-reviewer/SKILL.md`, `skills/tech-debt-triage/SKILL.md`, `skills/ui-visual-review/SKILL.md`, `skills/what-if-analysis/SKILL.md`, `skills/yglesias-critique/SKILL.md`, `test/generate-reports-web-grant.bats`, `test/scripts/build-loop-dispatch.bats`, `test/scripts/build-loop-health-prep.bats`, `test/scripts/build-loop-orchestrator.bats`, `test/scripts/build-loop-read.bats`, `test/scripts/self-improvement-clean-state.bats`, `test/skills/architecture-review-format.bats`, `test/skills/architecture-review/eval-criteria.md`, `test/skills/architecture-review/fixtures/tc-arch6-clean-ports-adapters.py`, `test/skills/business-plan-critique-moat/expected-verdicts.bash`, `test/skills/code-fact-check/eval-criteria.md`, `test/skills/code-fact-check/expected-verdicts.bash`, `test/skills/code-fact-check/fixtures/tc-c2.5-unverifiable.py`, `test/skills/dependency-upgrade-format.bats`, `test/skills/divergent-design/expected-verdicts.bash`, `test/skills/eval-helpers.bash`, `test/skills/field-value-rules.bats`, `test/skills/generate-reports.bash`, `test/skills/helpers-recommendation.bats`, `test/skills/helpers.bash`, `test/skills/matrix-analysis-format.bats`, `test/skills/pre-mortem-format.bats`, `test/skills/tech-debt-triage/expected-verdicts.bash`, `test/skills/test-strategy/eval-criteria.md`, `test/skills/test-strategy/fixtures/tc-ts6-duration-parser.py`, `test/skills/ui-visual-review-eval.bats`, `test/skills/ui-visual-review-format.bats`, `test/skills/ui-visual-review/eval-criteria.md`, `test/skills/ui-visual-review/expected-verdicts.bash`, `test/skills/ui-visual-review/fixtures/tc-uv6-disappearing-controls.tsx`, `test/skills/ui-visual-review/fixtures/tc-uv7-weak-affordance.tsx`, `test/skills/what-if-analysis-format.bats`
 
 Run this on the host, in your claude-workflows checkout at main's tip, then start a new sandbox session:
 
 ```
-sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "aa91635c042a4a2d5e767ca7c8912b1ed049da5a:$p")"; then n=$((n+1)); else echo "release refused: $p changed after aa91635c042a4a2d5e767ca7c8912b1ed049da5a: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
+sh -c 'n=0; if cd "/home/magfrump/claude-workflows"; then n=1; fi; if h="$(git rev-parse HEAD)" && test "$h" = "$(git rev-parse refs/heads/main)"; then n=$((n+1)); else echo "release refused: this checkout is not at the tip of main"; fi; for p in scripts/build-loop.sh scripts/d6.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/ devcontainer-config/install.sh; do if g="$(git rev-parse "HEAD:$p")" && test "$g" = "$(git rev-parse "55bace85c6707da037c12a91c5eb837e616f2d55:$p")"; then n=$((n+1)); else echo "release refused: $p changed after 55bace85c6707da037c12a91c5eb837e616f2d55: run the dev cycle for a new paste"; fi; done; case "$n" in 9) ./devcontainer-config/install.sh;; *) echo "release refused: $n of 9 checks passed"; false;; esac'
 ```
 
 **Pass:** the installer finishes without a `release refused` line. **Send back:** `Q-336: done`.
@@ -296,3 +297,43 @@ The triage loop's tentative pick is [1], on S10 (spend your attention last, `doc
 - **Blocks:** the roadmap Now item "answers files count as the owner's answer" (brief 2 of the triage).
 - **Interim:** nothing is built; the cycle reads a new answers file by hand and asks you to confirm in session.
 - **If the answer differs:** [2] is a smaller brief to the same paths; [3] closes the item.
+
+### Q-348 · merge-gate-2026-11-20-si-commit-literal-pathspecs-1925b0ea957e
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
+
+Merge the build loop's fix that makes the self-improvement loop's commit helper work when literal pathspecs are exported?
+
+**If you say no:** the branch waits unmerged; the helper keeps relying on its one caller's guard (5eab5704), and `test/si-commit-child-work.bats` keeps failing 8 of 15 cases whenever `GIT_LITERAL_PATHSPECS=1` is exported, as the dev-cycle reader does.
+
+`si_commit_child_work` (in `scripts/lib/si-commit.sh`, gate code because everything under `scripts/lib/` is) commits a self-improvement child's work with `git add -A -- . ":(exclude).si-commit-msg"`. Under `GIT_LITERAL_PATHSPECS=1` git reads that exclude as a file name, and the add fails. Brief: `docs/working/briefs/2026-11-20-si-commit-literal-pathspecs.md`.
+
+- **What changes:** the lib sets `GIT_LITERAL_PATHSPECS=0` on that one `git add` only (not exported); the caller's copy of the guard in `scripts/self-improvement.sh` is removed so the rule has one home (S3, one source of truth per rule, `docs/constraints.md`); a new bats case exports the variable and checks the commit, that the message file is not committed, and that the caller's value is still 1.
+- **Tests:** the helper's suite 16/16 and the self-improvement clean-state suite 29/29, each with the variable exported and unset; health check and hermeticity lint pass. Rubric clean (0 red, 0 amber).
+- **Left for later:** `guides/validation-gates.md:33` lists this helper's hardening but not the new guard; the cycle cannot write `guides/`, so it is a roadmap item.
+- **Read:** `docs/working/research-2026-11-20-si-commit-literal-pathspecs.md`; the rubric `docs/reviews/code-review-rubric-2026-11-20-si-commit-literal-pathspecs.md`; the diff: `git diff 10c42a29 1925b0ea -- scripts/ test/` (3 files, 27 lines added, 5 removed).
+
+TIP: 1925b0ea957ed9cda91c14b43c2c2fb6773475c8
+
+`--check`'s lines:
+
+```
+ok docs/working/briefs/2026-11-20-si-commit-literal-pathspecs.md 1925b0ea957ed9cda91c14b43c2c2fb6773475c8 9ee93e1d1f9047414761fc46c3fbe047e96766bb
+path docs/working/briefs/2026-11-20-si-commit-literal-pathspecs.md A docs/reviews/code-review-rubric-2026-11-20-si-commit-literal-pathspecs.md
+path docs/working/briefs/2026-11-20-si-commit-literal-pathspecs.md M docs/working/briefs/2026-11-20-si-commit-literal-pathspecs.md
+path docs/working/briefs/2026-11-20-si-commit-literal-pathspecs.md A docs/working/research-2026-11-20-si-commit-literal-pathspecs.md
+path docs/working/briefs/2026-11-20-si-commit-literal-pathspecs.md M scripts/lib/si-commit.sh
+path docs/working/briefs/2026-11-20-si-commit-literal-pathspecs.md M scripts/self-improvement.sh
+path docs/working/briefs/2026-11-20-si-commit-literal-pathspecs.md M test/si-commit-child-work.bats
+rubric docs/working/briefs/2026-11-20-si-commit-literal-pathspecs.md: clean docs/reviews/code-review-rubric-2026-11-20-si-commit-literal-pathspecs.md: 0 red and 0 amber rows, none open
+```
+
+- **Paths self-merge would have refused:** `scripts/lib/si-commit.sh` (gate code).
+- **What an attacker would want here:** nothing new: the change narrows a git variable for one call and adds no input the loop trusts.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges TIP above. | Reading a 32-line diff. | One `git revert` undoes it. |
+| **[2] drop** | The brief closes; the caller's guard stays the only one. | Nothing. | A new caller of the helper fails the same way. |
+| **[3] changes needed** | Your note goes back to the loop. | Writing the note. | Another round. |
+
+- **Interim:** the branch waits; nothing merges.

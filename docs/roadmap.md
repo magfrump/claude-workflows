@@ -39,19 +39,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   what remains here is the first live `--probe` run.
   2026-11-18: the run-or-refuse question now waits on watch Q-301 (`docs/working/watching.md`), not Q-278.
 
-- **Agent: the cross-project board shows which projects have new harness feedback to copy here** (owner
-  request, 2026-11-20, in session: "I would like the cross-project board to also surface projects that have new
-  harness feedback to copy to this repo"). Motive: each project records harness friction in its own
-  `docs/harness-feedback.md`, and it reaches this repo only when the owner copies it and
-  `scripts/harness-feedback.py ingest` files it under `docs/working/feedback/PROJECT.md`; nothing says when a
-  project has entries this repo has not ingested, so feedback waits until the owner happens to look. The board
-  (`scripts/board.sh`, host only; guide `guides/cross-project-board.md`) already reads every registered repo's
-  default branch. First step: a research pass on how the board can tell "new" without reading this repo's
-  working tree (for example, comparing each project's highest F-NNN on its main with the highest in this repo's
-  `docs/working/feedback/PROJECT.md` on main), and what one listing line per project says (its count and the
-  ingest command); then a review brief (`scripts/board.sh` is host code under H1's trust rules). Related owner
-  feedback, recorded with Q-327 [2]: the weekly digest surfaced in the same board (T11).
-
 - **Agent: record the egress probe results in `devcontainer-config/egress/android.txt`** (filed 2026-11-20,
   step 7; Q-255 answered passed). Motive: the comment above `plugins-artifacts.gradle.org` still reads
   "Fronting: NOT YET PROBED", though the probe ran on 2026-11-07 (all four foreign-Host probes 403,
@@ -74,13 +61,17 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 - **Agent: the write guard's Bash deny names the Read tool, and the taint docstring covers subagents** (filed 2026-11-20, step 7; philosophy-research F-022, and F-021's comment fix; triage brief 3). Rides after Q-343 (the write-guard merge entry), which edits the same hook. First step: a review brief to `hooks/guard-trusted-writes.py`, `hooks/web-taint-mark.py` and the guard's bats.
 
+- **Agent: `guides/validation-gates.md` names the commit helper's literal-pathspecs guard** (filed 2026-11-20, step 7; the si-commit loop's nit). Motive: line 33 lists `si_commit_child_work`'s hardening but not the guard Q-348 moves into the lib. First step: once Q-348 merges, one line in that guide, riding with the next review unit that touches `guides/` (the cycle cannot write it).
+
 ## In flight
+
+- **Agent: the cross-project board shows which projects have new harness feedback to copy here** (from Now, owner request 2026-11-20; with T11's digest-on-the-board note). Brief `docs/working/briefs/2026-11-20-board-feedback-research.md` (self-merge, research only).
 
 - **Agent: fix report findings F8 to F12 so five held-back skills' reports can land** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-report-findings-f8-f12.md` (review; skills are prompt files).
 
 - **Agent: `test/rubric-selection.bats` "emits nothing when two candidates tie" is flaky** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-rubric-selection-flake.md` (self-merge; the selector is in `scripts/self-improvement.sh`).
 
-- **Agent: `si_commit_child_work` should turn literal pathspecs off itself** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-si-commit-literal-pathspecs.md` (review, `scripts/lib/` is gate code).
+- **Agent: `si_commit_child_work` should turn literal pathspecs off itself** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-si-commit-literal-pathspecs.md` (review, `scripts/lib/` is gate code). Ready at 1925b0ea; merge entry Q-348.
 
 - **Agent: the write guard's `.claude/wt-*` exemption is stale** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-write-guard-wt-exemption.md` (review). Ready at e7222f55; merge entry Q-343. `.claude/wt-q096b` still exists in the main checkout, so the brief decides drop versus correct the comments.
 
