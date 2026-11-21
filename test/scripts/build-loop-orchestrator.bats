@@ -854,6 +854,49 @@ refuse docs/working/watching.md: Q-011's heading changed or is gone; a watch clo
     cd_is "refuse docs/working/questions.md: Q-001's heading, Needs or answer lines changed or are gone, and Q-001 is not in --answered"
 }
 
+# blk HHMM MAIN [9-LINE [10-LINE]]: one iteration block of a cycle record for 2026-10-11.
+blk() { printf '%s\n' "## Iteration 2026-10-11-$1" "Branch: chore/dev-cycle-2026-10-11-$1" "Main at: $2" '### Steps' '8. briefs: none' "${3-9. land: this commit.}" ${4+"$4"} '### Paths landed' '- M docs/roadmap.md' '### Roadmap diff' '- none'; }
+
+@test "--cycle-diff and --land-cycle keep a cycle record's earlier blocks and its last block but for its 9. and 10. lines and lines added under its ### Paths landed; a new record is not judged (brief 2026-11-20-cycle-diff-record-prefix)" {
+    R=docs/working/cycles/cycle-2026-10-11.md; B=chore/dev-cycle-2026-10-12
+    qa; git checkout -q main; mkdir -p docs/working/cycles
+    { echo '# Cycle 2026-10-11'; echo; blk 0100 a '9. land: 1111111 (landed)' '10. dispatch: none'; echo; blk 0200 b; } > "$R"; commit_all record
+    git checkout -q "$B"; git merge -q --ff-only main
+    E="refuse $R: the base's text before its last ## Iteration block changed (an earlier block dropped or edited); an iteration only appends its own block"
+    L="refuse $R: the base's last block (## Iteration 2026-10-11-0200) changed other than its 9. land: and 10. dispatch: lines and lines added under its ### Paths landed; an iteration only appends its own block"
+    # An appended block passes.
+    { echo; blk 0300 c; } >> "$R"; git add -A; cd_is ok; git reset -q --hard
+    # Step 10's land: the last block's 9. line rewritten and its 10. line added; with a block appended after it too.
+    { echo '# Cycle 2026-10-11'; echo; blk 0100 a '9. land: 1111111 (landed)' '10. dispatch: none'; echo; blk 0200 b '9. land: 2222222 (landed, main at 3333333)' '10. dispatch: x dispatched 1'; } > "$R"; git add -A; cd_is ok
+    { echo; blk 0300 c; } >> "$R"; git add -A; cd_is ok; git reset -q --hard
+    # Iteration 0121's shape: the record holds only the new block.
+    { echo '# Cycle 2026-10-11'; echo; blk 0300 c; } > "$R"; git add -A; cd_is "$E"; git reset -q --hard
+    # An earlier block edited (its 9. line too: only the last block's are free), or the title line.
+    sed -i 's/^Main at: a$/Main at: z/' "$R"; git add -A; cd_is "$E"; git reset -q --hard
+    sed -i 's/^9\. land: 1111111 (landed)$/9. land: 9999999/' "$R"; git add -A; cd_is "$E"; git reset -q --hard
+    # The last block's other lines edited, a line added to it, or the block cut short: refused, an appended block or not.
+    sed -i 's/^Main at: b$/Main at: z/' "$R"; git add -A; cd_is "$L"; { echo; blk 0300 c; } >> "$R"; git add -A; cd_is "$L"; git reset -q --hard
+    # Step 10's land adds its own paths under the last block's ### Paths landed (here, or mid-section before ### Roadmap diff): taken, a block appended or not.
+    P='- M docs/working/questions.md'; pl() { awk -v p="$P" -v w="$1" '{ print } $0 == w { n++ } $0 == w && n == 2 { print p }' "$R" > "$R.x" && mv "$R.x" "$R"; }
+    pl '- M docs/roadmap.md'; git add -A; cd_is ok; { echo; blk 0300 c; } >> "$R"; git add -A; cd_is ok; git reset -q --hard
+    pl '### Paths landed'; git add -A; cd_is ok; git reset -q --hard
+    # A Paths landed line dropped, or a line added elsewhere in the last block (under ### Steps, after ### Roadmap diff's line), refuses.
+    awk '$0 == "- M docs/roadmap.md" && ++n == 2 { next } { print }' "$R" > "$R.x"; mv "$R.x" "$R"; git add -A; cd_is "$L"; git reset -q --hard
+    pl '### Steps'; git add -A; cd_is "$L"; git reset -q --hard
+    echo '- moved' >> "$R"; git add -A; cd_is "$L"; git reset -q --hard
+    # A line added to an earlier block refuses as an earlier block edited.
+    awk '{ print } $0 == "### Steps" && ++n == 1 { print "added" }' "$R" > "$R.x"; mv "$R.x" "$R"; git add -A; cd_is "$E"; git reset -q --hard
+    head -n -2 "$R" > "$R.x"; mv "$R.x" "$R"; git add -A; cd_is "$L"; git reset -q --hard
+    # Deleting a record refuses; a new record is not judged.
+    git rm -q "$R"; cd_is "refuse $R: it is deleted"; git reset -q --hard
+    printf '%s\n' '# Cycle 2026-10-12' 'Branch: x' > docs/working/cycles/cycle-2026-10-12.md; git add -A; cd_is ok; git reset -q --hard
+    # --land-cycle judges the merge against main the same way.
+    M="$(git rev-parse main)"; { echo '# Cycle 2026-10-11'; echo; blk 0300 c; } > "$R"; rec "Branch: $B"
+    lc_is "$E" --main "$M"
+    git checkout -q main -- "$R"; { echo; blk 0300 c; } >> "$R"; commit_all fixed; bl --land-cycle --main "$M"
+    [ "$status" -eq 0 ] && [[ "$output" == "landed $B "* ]] || { show; return 1; }
+}
+
 # legacy: the questions files questions.sh init writes, plus an owner entry (Q-001) and three legacy
 # routes registry line questions-owner-routes-040 matches (Q-002 an open watch, Q-003 a closed one with
 # its answer, Q-004 agent work), on main; then a chore branch. GONE ID: the gone refusal for ID.

@@ -253,7 +253,17 @@
 #                 040): free, a close under "## Closed" included, but an
 #                 entry heading line (not fence-aware) ("### Q-NNN ...") on BASE that is no line
 #                 of the index's copy refuses, as does deleting the file; a
-#                 new one is not judged. Every path meets
+#                 new one is not judged. A cycle record
+#                 (docs/working/cycles/cycle-YYYY-MM-DD.md): BASE's bytes before
+#                 its last "## Iteration" line (all of them when it has none)
+#                 must start the index's, and that last block must stay, line
+#                 for line up to the index's next "## Iteration" line, but for
+#                 its "9. land:" and "10. dispatch:" lines and lines added in
+#                 its "### Paths landed" section (step 10's land writes both)
+#                 and trailing blank lines: an iteration appends its own block
+#                 (not fence-aware: a "## Iteration" line inserted in the last
+#                 block ends it there). Deleting one refuses; a new one is not
+#                 judged; a fix to a landed block lands by hand. Every path meets
 #                 these rules (row 745). A path other than the cycle's own
 #                 files, a .md under docs/ or README.md, compared
 #                 lower-cased, refuses (the paths an in-cycle fix may touch;
@@ -2389,6 +2399,53 @@ END {
   if (!free && h[1] != h[2]) print "its ## headings changed"
   for (b in need) if (!(b in named)) print "the brief " b ", named outside Done on the base, is named on no line"
 }'
+# The cycle rules' cycle-record rule over the base's last iteration block
+# (file 1, from its "## Iteration" line) and the listing's side from the same
+# byte (file 2, up to its next "## Iteration" line: what follows is appended).
+# Both blocks, the "9. land:" and "10. dispatch:" lines (step 10's land
+# rewrites them) and trailing blank lines left out, must match line for line,
+# but for lines the listing's side adds inside the block's "### Paths landed"
+# section (step 10's land lists its own paths there); prints the base block's
+# heading when they do not. Line-oriented, not fence-aware, as the record's
+# own readers (step 0.2's last Main at:).
+# shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
+RECORD_AWK='
+function kept(l) { return l !~ /^(9\. land|10\. dispatch):/ }
+FNR == 1 && NR == 1 { head = $0 }
+NR == FNR { if (kept($0)) o[++no] = $0; next }
+FNR > 1 && /^## Iteration( |$)/ { done = 1 }
+!done && kept($0) { n[++nn] = $0 }
+END {
+  while (no > 0 && o[no] == "") no--
+  while (nn > 0 && n[nn] == "") nn--
+  # The Paths landed section on the listing side: after its heading, before the next "### " line.
+  ps = 0; pe = nn + 1
+  for (j = 1; j <= nn; j++) if (!ps && n[j] == "### Paths landed") ps = j; else if (ps && n[j] ~ /^### /) { pe = j; break }
+  # Every base line, in order; a side line matching none only inside that section.
+  i = 1; same = 1
+  for (j = 1; same && j <= nn; j++) if (i <= no && o[i] == n[j]) i++; else same = (ps && j > ps && j < pe)
+  if (!same || i <= no) print substr(head, 1, 80)
+}'
+# record_kept PATH OLD NEW: a changed cycle record keeps the base's text up to
+# its last "## Iteration" line byte for byte (all of it when it has none), and
+# that last block but its 9. and 10. lines and lines added under its ### Paths
+# landed (RECORD_AWK): an iteration appends its own block, and step 10's land
+# rewrites those two lines and lists its own paths (brief
+# 2026-11-20-cycle-diff-record-prefix: iteration 0121 landed a record holding
+# only its own block). Prints a refuse line and fails otherwise.
+record_kept() {
+  local k rc=0 w
+  k="$(LC_ALL=C grep -abE -- '^## Iteration( |$)' "$2")" || rc=$?
+  [[ "$rc" -le 1 ]] || { echo "refuse $1: it could not be compared"; return 1; }
+  if [[ -n "$k" ]]; then k="${k##*$'\n'}"; k="${k%%:*}"; else k="$(wc -c < "$2")"; k="$((k))"; fi
+  if [[ "$(wc -c < "$3")" -lt "$k" ]] || ! cmp -s -n "$k" "$2" "$3"; then
+    echo "refuse $1: the base's text before its last ## Iteration block changed (an earlier block dropped or edited); an iteration only appends its own block"; return 1
+  fi
+  [[ "$rc" -eq 0 ]] || return 0
+  { tail -c +"$((k + 1))" "$2" > "$2.l" && tail -c +"$((k + 1))" "$3" > "$3.l" && w="$(LC_ALL=C awk "$RECORD_AWK" "$2.l" "$3.l")"; } \
+    || { echo "refuse $1: it could not be compared"; return 1; }
+  [[ -z "$w" ]] || { echo "refuse $1: the base's last block ($w) changed other than its 9. land: and 10. dispatch: lines and lines added under its ### Paths landed; an iteration only appends its own block"; return 1; }
+}
 # cyc_blob MODE ID OUT: the blob ID into OUT, read in the gate repository; an
 # absent side (MODE 000000) is an empty file. Returns non-zero when MODE is
 # neither 000000 nor 100644 (a symlink, an executable), or the read fails.
@@ -2527,7 +2584,7 @@ cycle_rules() {
     case "$p" in
       docs/working/questions.md|docs/working/questions-archive.md) qi+=("$i"); continue ;;
       docs/roadmap.md|docs/working/idea-log.md|docs/working/watching.md) ;;
-      *) continue ;;
+      *) isrecord "$p" || continue ;;
     esac
     if ! cyc_blob "${RAW_OM[i]}" "${RAW_OO[i]}" "$t.o" || ! cyc_blob "${RAW_NM[i]}" "${RAW_NO[i]}" "$t.n"; then echo "refuse $p: a side is not a regular file (mode 100644), or could not be read"; bad=1; continue; fi
     if [[ "${RAW_OM[i]}" == 000000 ]]; then continue; fi
@@ -2536,6 +2593,8 @@ cycle_rules() {
       # Seeding and "## Brainstorm" only append: the base's bytes start the index's.
       k="$(wc -c < "$t.o")"
       [[ "$(wc -c < "$t.n")" -ge "$k" ]] && cmp -s -n "$k" "$t.o" "$t.n" || { echo "refuse $p: edited other than by appending"; bad=1; }
+    elif isrecord "$p"; then
+      record_kept "$p" "$t.o" "$t.n" || bad=1
     elif [[ "$p" == docs/working/watching.md ]]; then
       # The cycle's own watches (decision 040): any edit, a close under
       # "## Closed" included, but a watch's heading is never dropped: each
