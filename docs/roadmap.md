@@ -59,19 +59,19 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 - **Agent: `guides/validation-gates.md` names the commit helper's literal-pathspecs guard** (filed 2026-11-20, step 7; the si-commit loop's nit). Motive: line 33 lists `si_commit_child_work`'s hardening but not the guard Q-348 moves into the lib. First step: once Q-348 merges, one line in that guide, riding with the next review unit that touches `guides/` (the cycle cannot write it).
 
-- **Agent: the cross-project board lists harness feedback not yet copied here, and each repo's latest weekly digest** (owner request 2026-11-20; research merged 7f086d40, `docs/working/research-2026-11-20-board-feedback-research.md`). Motive: 37 entries waited a median 5 days, at most 18, before being copied. First step: the review brief in that doc's "For the dev cycle" section (`scripts/board.sh`, a read-only `pending` mode in `scripts/harness-feedback.py`, their bats and guides; about 220 lines; host code).
-
 - **Agent: `harness-feedback.py ingest` stores a renamed project twice** (filed 2026-11-20, step 7; the board research's side finding). Motive: ad4f0eef changed `docs/working/feedback/philosophy-research.md`'s `Project:` line to `task-workspace-designer`; ingest keyed on that line would re-seed 22 entries (19 duplicates) and write a second copy. First step: confirm the rename is intended (that project is philosophy-research), then fix the file or teach ingest to refuse a project name that changes under an existing file.
 
 - **Agent: other `printf | grep -q` pipelines under `pipefail`** (filed 2026-11-20, step 7; the rubric flake loop's follow-up, `docs/working/research-2026-11-20-rubric-selection-flake.md`). Motive: the same shape that dropped the selector's points (failure pattern FP-175) is at `scripts/self-improvement.sh:823`, `:1512`, `:1830`, `scripts/lib/si-functions.sh:110`, `:241`, `:253`, `:290`, `:320`, `:327` and `hooks/claude-config-audit.sh:112` (as of 45553ee7). First step: a review brief (`scripts/lib/` is gate code, the hook an enforcement file) checking which can see a large enough input to lose a match, and switching those to here-strings.
 
 ## In flight
 
+- **Agent: the cross-project board lists harness feedback not yet copied here, and each repo's latest weekly digest** (from Now, owner request 2026-11-20). Brief `docs/working/briefs/2026-11-20-board-pending-feedback.md` (review, host code).
+
 - **Agent: re-stamp the 81 report stamps written before the web-tools grant** (filed 2026-11-20, step 7; the stale-warnings research's brief). Brief `docs/working/briefs/2026-11-20-restamp-pre-grant-reports.md` (self-merge; `.stamp` files under 11 skills' `output/`).
 
 - **Agent: the dev cycle lists code landings on main that came outside the build loop** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-out-of-loop-landings.md` (review, gate code).
 
-- **Agent: fix report findings F8 to F12 so five held-back skills' reports can land** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-report-findings-f8-f12.md` (review; skills are prompt files).
+- **Agent: fix report findings F8 to F12 so five held-back skills' reports can land** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-report-findings-f8-f12.md` (review; skills are prompt files). Ready at 0df118cd; merge entry Q-349.
 
 - **Agent: `si_commit_child_work` should turn literal pathspecs off itself** (from Now, filed 2026-11-20). Brief `docs/working/briefs/2026-11-20-si-commit-literal-pathspecs.md` (review, `scripts/lib/` is gate code). Ready at 1925b0ea; merge entry Q-348.
 

@@ -33,6 +33,7 @@ The index below is generated — edit entries, not the table.
 | [Q-344](#q-344--merge-gate-2026-11-20-ask-counter-47210f4bf75f) | you: judgment | Merge the build loop's `questions.sh counts`, a reproducible ask counter for the weekly digest? | 2026-11-20 |
 | [Q-345](#q-345--answers-file-counts-as-answer) | you: judgment | Should a committed answers file under `docs/human-author/` (like `answers-11-20-26.txt`) count as your answ... | 2026-11-20 |
 | [Q-348](#q-348--merge-gate-2026-11-20-si-commit-literal-pathspecs-1925b0ea957e) | you: judgment | Merge the build loop's fix that makes the self-improvement loop's commit helper work when literal pathspecs... | 2026-11-20 |
+| [Q-349](#q-349--merge-2026-11-20-report-findings-f8-f12-0df118cda24b) | you: judgment | Merge the build loop's fixes for report findings F8 to F12, which bring back the eval reports of the five s... | 2026-11-20 |
 | [Q-332](#q-332--regenerate-fact-check-reports-host) | you: terminal | Regenerate the fact-check skill's eval reports on the host, where the web works, and commit them. | 2026-11-20 |
 | [Q-336](#q-336--image-lag) | you: terminal | Install the release that carries three gate changes you approved: the health-checkout preparation step (Q-3... | 2026-11-20 |
 <!-- index:end -->
@@ -338,5 +339,157 @@ rubric docs/working/briefs/2026-11-20-si-commit-literal-pathspecs.md: clean docs
 | **[1] merge** | The gate merges TIP above. | Reading a 32-line diff. | One `git revert` undoes it. |
 | **[2] drop** | The brief closes; the caller's guard stays the only one. | Nothing. | A new caller of the helper fails the same way. |
 | **[3] changes needed** | Your note goes back to the loop. | Writing the note. | Another round. |
+
+- **Interim:** the branch waits; nothing merges.
+
+### Q-349 · merge-2026-11-20-report-findings-f8-f12-0df118cda24b
+**Needs:** you: judgment · **Opened:** 2026-11-20 · **Status:** OPEN
+
+Merge the build loop's fixes for report findings F8 to F12, which bring back the eval reports of the five skills held back since the regeneration?
+
+**If you say no:** the branch waits unmerged; the report suites of business-plan-critique-moat, test-strategy, yglesias-critique, tech-debt-triage and fact-check stay NOT RUN, so those five skills have no regression check.
+
+The regeneration (4f1e4150) held back five skills' reports because 14 cases failed on fresh output (findings F8 to F12 in `docs/working/research-2026-11-19-regenerate-skill-reports.md`). Brief: `docs/working/briefs/2026-11-20-report-findings-f8-f12.md`.
+
+- **What changed, per finding:** F8 (moat tc-moat4) and F10 (yglesias tc-ygl7) and F12's tc-3.3, tc-7.1, tc-7.3: the test was wrong (patterns widened; an optional section checked only when present; a new `graceful_decline` check for empty and binary input). F9 (test-strategy tc-ts6), F11 (tech-debt tc-td2) and F12's tc-7.2: the fixture was wrong (a "well-tested" parser that had real gaps, fixed in five rounds; a stated date instead of the run date; a request instead of a statement). No skill text changed. Three fixtures were regenerated; the other 95 reports are restored unchanged from before the hold-back.
+- **One owner file:** a new failure pattern, FP-187 in `docs/failure-patterns.md` (a fixture whose expected answer depends on the date the test runs), one line; that file is yours, which is why this needs review.
+- **Worth knowing:** fact-check's 23 reports were generated in the sandbox, so Q-332 (regenerate them on the host, where the web works) may be moot; tc-ts6 may still turn up a new gap on a later model run (its `eval-criteria.md` records the rounds).
+- **Tests:** all five report suites pass; health check passes with 2 report suites NOT RUN (code-review's and draft-review's, which have no generator), down from 14. Rubric clean (0 red, 4 amber, all fixed).
+- **Read:** `docs/working/research-2026-11-20-report-findings-f8-f12.md`; the rubric `docs/reviews/code-review-rubric-2026-11-20-report-findings-f8-f12.md`; the non-report diff: `git diff a8bcff67 0df118cd -- docs/failure-patterns.md test/skills/eval-helpers.bash test/skills/yglesias-critique/dimensions.bats 'test/skills/*/expected-verdicts.bash' 'test/skills/*/fixtures/'` (118 files in all, 98 of them generated reports and stamps).
+
+TIP: 0df118cda24be3816add011de2dcfdfe0eb7a73f
+
+`--check`'s lines:
+
+```
+ok docs/working/briefs/2026-11-20-report-findings-f8-f12.md 0df118cda24be3816add011de2dcfdfe0eb7a73f 3f4cfd820edc30ac4d82626ca6ae0eb324763313
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M docs/failure-patterns.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A docs/reviews/code-review-rubric-2026-11-20-report-findings-f8-f12.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M docs/working/briefs/2026-11-20-report-findings-f8-f12.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A docs/working/research-2026-11-20-report-findings-f8-f12.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/business-plan-critique-moat/expected-verdicts.bash
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat1-veterinary-booking.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat1-veterinary-booking.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat2-meal-planning-app.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat2-meal-planning-app.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat3-field-inspection-forms.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat3-field-inspection-forms.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat4-household-budgeting.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat4-household-budgeting.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat5-sales-call-notes.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat5-sales-call-notes.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat6-cold-chain-sensors.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat6-cold-chain-sensors.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat7-lab-compliance-software.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/business-plan-critique-moat/output/tc-moat7-lab-compliance-software.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/code-fact-check-edge-cases.bats
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/critic-dimensions.bash
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/eval-helpers-graceful-decline.bats
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/eval-helpers.bash
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/fact-check-edge-cases.bats
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/fact-check/eval-criteria.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/fact-check/expected-verdicts.bash
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/fact-check/fixtures/tc-7.2-no-claims.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.1-specific-numbers.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.1-specific-numbers.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.2-named-policies.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.2-named-policies.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.3-attributed-facts.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.3-attributed-facts.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.4-causal-claims.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.4-causal-claims.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.5-comparisons.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.5-comparisons.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.6-anecdotes.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-1.6-anecdotes.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.1-accurate.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.1-accurate.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.2-mostly-accurate.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.2-mostly-accurate.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.3-disputed.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.3-disputed.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.4-inaccurate.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.4-inaccurate.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.5-unverified.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-2.5-unverified.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-3.1-opinions.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-3.1-opinions.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-3.2-predictions.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-3.2-predictions.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-3.3-mixed.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-3.3-mixed.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-4.1-misleading.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-4.1-misleading.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-4.2-conflated-stats.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-4.2-conflated-stats.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-5.1-multi-claim.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-5.1-multi-claim.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-6.1-accurate-weak-argument.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-6.1-accurate-weak-argument.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-6.3-obvious-but-wrong.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-6.3-obvious-but-wrong.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-7.1-empty.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-7.1-empty.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-7.2-no-claims.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-7.2-no-claims.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-7.3-binary-content.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-7.3-binary-content.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-7.4-extremely-short.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/fact-check/output/tc-7.4-extremely-short.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/tech-debt-triage/eval-criteria.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/tech-debt-triage/expected-verdicts.bash
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/tech-debt-triage/fixtures/tc-td2-statement-renderer.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td1-discount-rules.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td1-discount-rules.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td2-statement-renderer.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td2-statement-renderer.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td3-nightly-reconciliation.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td3-nightly-reconciliation.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td4-postcode-validation.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td4-postcode-validation.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td5-vat-rate-tables.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td5-vat-rate-tables.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td6-job-queue.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/tech-debt-triage/output/tc-td6-job-queue.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/test-strategy/eval-criteria.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/test-strategy/expected-verdicts.bash
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/test-strategy/fixtures/tc-ts6-duration-parser.py
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts1-installment-split.py.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts1-installment-split.py.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts2-webhook-client.go.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts2-webhook-client.go.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts3-nightly-export-schedule.py.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts3-nightly-export-schedule.py.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts4-token-cache.ts.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts4-token-cache.ts.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts5-order-sync.py.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts5-order-sync.py.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts6-duration-parser.py.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/test-strategy/output/tc-ts6-duration-parser.py.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md M test/skills/yglesias-critique/dimensions.bats
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl1-class-size-cap.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl1-class-size-cap.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl2-down-payment-grants.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl2-down-payment-grants.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl3-rail-extension.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl3-rail-extension.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl4-apprenticeship-guarantee.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl4-apprenticeship-guarantee.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl5-regional-housing-portal.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl5-regional-housing-portal.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl6-parking-minimums.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl6-parking-minimums.md.stamp
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl7-library-fines.md.report.md
+path docs/working/briefs/2026-11-20-report-findings-f8-f12.md A test/skills/yglesias-critique/output/tc-ygl7-library-fines.md.stamp
+rubric docs/working/briefs/2026-11-20-report-findings-f8-f12.md: clean docs/reviews/code-review-rubric-2026-11-20-report-findings-f8-f12.md: 0 red and 4 amber rows, none open
+```
+
+- **Paths self-merge would have refused:** `docs/failure-patterns.md` (your file, on the self-merge floor).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The gate merges TIP above; the five suites run in every health check. | Reading FP-187 and skimming the test changes. | One `git revert` undoes it. |
+| **[2] drop** | The brief closes; the five suites stay NOT RUN. | Nothing. | Five skills keep no regression check. |
+| **[3] changes needed** | Your note goes back to the loop (for example, leave FP-187 out). | Writing the note. | Another round. |
 
 - **Interim:** the branch waits; nothing merges.
