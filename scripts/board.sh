@@ -22,7 +22,7 @@
 # with the reason); 3 (answer only) written to main, but the checkout with
 # main checked out is behind it, and the repair is printed; 2 the run refused
 # before reading any repo (a missing file beside this script, no perl or
-# python3, no registry, bad arguments).
+# python3, no registry, bad arguments, a today that is not a real date).
 #
 # Trust (H1): the repos are container-writable, so nothing from them runs here.
 # questions.sh, harness-feedback.py and the lib are the copies beside it (the installed,
@@ -52,6 +52,9 @@ command -v python3 >/dev/null 2>&1 || die "refusing to run: python3 is missing, 
 # shellcheck source=lib/dev-cycle-read.sh
 source "$LIB"
 scrub_reexec "$SELF" "$@"
+# Today, the local date as the digest takes it (BOARD_TODAY: tests pin it).
+TODAY="${BOARD_TODAY:-$(date +%F)}"
+realday "$TODAY" || die "refusing to run: today's date ($TODAY) is not a real YYYY-MM-DD date"
 # Away from every repo before the first git call, so no repo's config is read
 # unhardened; then drop an inherited GIT_DIR and the like, and harden.
 cd /
@@ -158,16 +161,27 @@ feedback() {
   [[ ( $rc -eq 0 || $rc -eq 3 ) && -n "$out" ]] || out="feedback UNREADABLE: harness-feedback.py pending stopped (exit $rc): ${out##*$'\n'}"
   echo "   ${out%%$'\n'*}"; [[ $rc -eq 0 ]]
 }
-# The weekly line: main's latest docs/working/weekly/YYYY-MM-DD.md, never an
-# older one when the latest is not a file. Returns 1 after UNREADABLE.
+# The weekly line: main's latest docs/working/weekly/YYYY-MM-DD.md that is a
+# real date on or before TODAY, never an older one when it is not a file; any
+# dated after TODAY are skipped and named (the newest, and a count). Returns 1
+# after UNREADABLE.
 weekly() {
-  local d e x l="" w=docs/working/weekly
+  local d e x i l="" f="" s="" k=0 w=docs/working/weekly
+  local -a ws=()
   d="$(main_dir "$w" "$TMP/$1/wk")"
   case "$d" in absent) return 0 ;; dir) ;; *) echo "   weekly UNREADABLE: $d"; return 1 ;; esac
-  while IFS= read -r -d '' x; do ! isweekly "$x" || l="$x"; done < "$TMP/$1/wk"
-  [[ -n "$l" ]] || { echo "   weekly: none yet"; return 0; }
-  e="$(main_entry "$l")"; [[ "$e" == blob ]] || { echo "   weekly UNREADABLE: $(entry_why "$e" "$l")"; return 1; }
-  x="${l##*/}"; echo "   weekly: $TOP/$l (${x%.md})"
+  while IFS= read -r -d '' x; do ! isweekly "$x" || ws+=("$x"); done < "$TMP/$1/wk"
+  # Names come sorted: walk back from the newest, so realday forks date only
+  # for the future-dated few and the one shown.
+  for ((i = ${#ws[@]} - 1; i >= 0; i--)); do
+    x="${ws[i]##*/}"; x="${x%.md}"
+    realday "$x" || continue
+    if [[ "$x" > "$TODAY" ]]; then k=$((k + 1)); [[ -n "$f" ]] || f="${ws[i]}"; else l="${ws[i]}"; break; fi
+  done
+  case $k in 0) ;; 1) s="; skipped future-dated $f" ;; *) s="; skipped $k future-dated, the newest $f" ;; esac
+  [[ -n "$l" ]] || { echo "   weekly: none yet$s"; return 0; }
+  e="$(main_entry "$l")"; [[ "$e" == blob ]] || { echo "   weekly UNREADABLE: $(entry_why "$e" "$l")$s"; return 1; }
+  x="${l##*/}"; echo "   weekly: $TOP/$l (${x%.md})$s"
 }
 
 # One project's block. Runs in its own subshell (it cds and sets MAIN_*);

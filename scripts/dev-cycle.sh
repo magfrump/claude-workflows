@@ -227,10 +227,10 @@ if dirok docs/working/cycles; then
       # Keep the newest skipped date (not future-dated) to warn when it is newer
       # than the record the window starts from.
       skipped "$f" && [[ "$SKIP_AT" == "$f" && "$d" > "$skipped_record" && ! "$d" > "$TODAY" ]] \
-        && date -d "$d" >/dev/null 2>&1 && skipped_record="$d"
+        && realday "$d" && skipped_record="$d"
       continue
     fi
-    date -d "$d" >/dev/null 2>&1 || continue  # a name that is not a real date
+    realday "$d" || continue  # a name that is not a real date
     [[ "$d" > "$last_record" && ! "$d" > "$TODAY" ]] && last_record="$d"  # ignore future-dated
   done
 else
